@@ -1,0 +1,96 @@
+name: Windows Build Check
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        qt_version: [5, 6]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          path: source
+
+      - name: Install MSYS2 (Qt5)
+        if: matrix.qt_version == 5
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          cache: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-ccache
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-qt5-base
+            mingw-w64-ucrt-x86_64-qt5-svg
+            mingw-w64-ucrt-x86_64-qt5-tools
+            mingw-w64-ucrt-x86_64-sqlite3
+            mingw-w64-ucrt-x86_64-pkg-config
+
+      - name: Install MSYS2 (Qt6)
+        if: matrix.qt_version == 6
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          cache: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-ccache
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-qt6-base
+            mingw-w64-ucrt-x86_64-qt6-svg
+            mingw-w64-ucrt-x86_64-qt6-tools
+            mingw-w64-ucrt-x86_64-sqlite3
+            mingw-w64-ucrt-x86_64-pkg-config
+
+#      - name: Cache ccache
+#        uses: actions/cache@v5
+#        with:
+#          path: C:\Users\runneradmin\AppData\Local\ccache
+#          key: ccache-windows-qt${{ matrix.qt_version }}-${{ github.ref_name }}-${{ github.sha }}
+#          restore-keys: |
+#            ccache-windows-qt${{ matrix.qt_version }}-${{ github.ref_name }}-
+#            ccache-windows-qt${{ matrix.qt_version }}-
+
+      - name: Configure, build, install
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          SOURCE_DIR=$(cygpath -u "${{ github.workspace }}/source")
+          BUILD_DIR=$(cygpath -u "${{ github.workspace }}/build")
+          INSTALL_DIR=$(cygpath -u "${{ github.workspace }}/install")
+
+          cmake -S "$SOURCE_DIR" -B "$BUILD_DIR" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=/ucrt64 \
+            -DQT_VERSION_MAJOR=${{ matrix.qt_version }} \
+            -DBUILD_WITH_KF5=OFF \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_POLICY_DEFAULT_CMP0077=NEW \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DCMAKE_C_COMPILER_LAUNCHER=/ucrt64/bin/ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=/ucrt64/bin/ccache \
+            -DSQLite3_INCLUDE_DIR=/ucrt64/include \
+            -DSQLite3_LIBRARY=/ucrt64/lib/libsqlite3.dll.a
+
+          cmake --build "$BUILD_DIR" -j"$(nproc)"
+          cmake --install "$BUILD_DIR" --prefix "$INSTALL_DIR"
