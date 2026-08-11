@@ -35,11 +35,11 @@ jobs:
             set -euo pipefail
 
             if [ "${{ matrix.qt_version }}" = "5" ]; then
-              sudo pkg install -y qt5-buildtools qt5-core qt5-gui qt5-widgets \
+              sudo pkg install -y git qt5-buildtools qt5-core qt5-gui qt5-widgets \
                 qt5-svg qt5-sql qt5-sqldrivers-sqlite3 qt5-linguisttools cmake ninja ccache \
                 pkgconf sqlite3
             else
-              sudo pkg install -y qt6-base qt6-svg qt6-tools qt6-buildtools \
+              sudo pkg install -y git qt6 \
                 cmake ninja ccache pkgconf sqlite3
             fi
 
