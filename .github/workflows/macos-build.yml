@@ -56,7 +56,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$QT_PREFIX" \
             -DQT_VERSION_MAJOR=${{ matrix.qt_version }} \
-            -DBUILD_WITH_KF5=OFF \
+            -DBUILD_WITH_KF=OFF \
             -DPACKAGE_TESTS=OFF \
             -DCMAKE_POLICY_DEFAULT_CMP0077=NEW \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
