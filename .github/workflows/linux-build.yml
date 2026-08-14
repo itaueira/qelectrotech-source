@@ -38,6 +38,11 @@ jobs:
           sudo apt-get install -y \
             qt5-qmake qtbase5-dev qtbase5-private-dev qttools5-dev qttools5-dev-tools libqt5svg5-dev libqt5sql5-sqlite qttranslations5-l10n \
             libsqlite3-dev cmake ninja-build ccache pkg-config g++
+            
+          # Install OpenGL fix for Ubuntu 22.04
+          if [[ "${{ matrix.os }}" == *"22.04"*]]; then
+            sudo apt-get install -y libgl1-mesa-dev libegl1-mesa-dev
+          fi
 
       - name: Install Qt6 dependencies
         if: matrix.qt_version == 6
@@ -46,6 +51,11 @@ jobs:
           sudo apt-get install -y \
             qt6-base-dev qt6-base-private-dev libqt6svg6-dev libqt6sql6-sqlite qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools qt6-base-private-dev \
             libsqlite3-dev cmake ninja-build ccache pkg-config g++
+            
+          # Install OpenGL fix for Ubuntu 22.04
+          if [[ "${{ matrix.os }}" == *"22.04"*]]; then
+            sudo apt-get install -y libgl1-mesa-dev libegl1-mesa-dev
+          fi
 
 #      - name: Cache ccache
 #        uses: actions/cache@v5
