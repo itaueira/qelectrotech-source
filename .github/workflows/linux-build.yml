@@ -40,7 +40,7 @@ jobs:
             libsqlite3-dev cmake ninja-build ccache pkg-config g++
             
           # Install OpenGL fix for Ubuntu 22.04
-          if [[ "${{ matrix.os }}" == *"22.04"*]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04" || "${{ matrix.os }}" == "ubuntu-22.04-arm" ]]; then
             sudo apt-get install -y libgl1-mesa-dev libegl1-mesa-dev
           fi
 
@@ -53,7 +53,7 @@ jobs:
             libsqlite3-dev cmake ninja-build ccache pkg-config g++
             
           # Install OpenGL fix for Ubuntu 22.04
-          if [[ "${{ matrix.os }}" == *"22.04"*]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04" || "${{ matrix.os }}" == "ubuntu-22.04-arm" ]]; then
             sudo apt-get install -y libgl1-mesa-dev libegl1-mesa-dev
           fi
 

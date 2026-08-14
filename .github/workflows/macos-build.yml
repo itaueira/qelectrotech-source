@@ -19,7 +19,6 @@ jobs:
       matrix:
         os:
           - macos-latest
-          - macos-latest-large
         qt_version: [5, 6]
     continue-on-error: ${{ matrix.qt_version == 6 }}
     steps:
