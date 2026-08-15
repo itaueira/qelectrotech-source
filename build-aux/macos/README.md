@@ -87,12 +87,7 @@ Developer ID — but everything up to that point is fully testable this way.
 ## Known gaps / TODO
 
 - Version extraction assumes `sources/qetversion.cpp`'s
-  `return QVersionNumber{...}` format doesn't change — see the ongoing
-  discussion about consolidating version definitions into a single
-  `VERSION` file to remove this fragility.
-- `CMAKE_OSX_DEPLOYMENT_TARGET` is hardcoded to `12.3`, matching
-  `Info.plist`'s `LSMinimumSystemVersion` — if that ever changes, update
-  both places (or better: derive one from the other).
-- Not yet tested end-to-end on real hardware. Expect some iteration,
-  especially around the codesign loop and the notarization function's
-  local-profile fallback.
+  `return QVersionNumber{...}` format doesn't change: single
+  `VERSION` file would be better.
+- `CMAKE_OSX_DEPLOYMENT_TARGET` gets set to the minimum version supported by the installed (using brew) Qt framework.`Info.plist`'s `LSMinimumSystemVersion` 
+  is adjusted accordingly. If support of a lower version should be necessary then the Qt framework has to be built separately.
