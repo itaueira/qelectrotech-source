@@ -110,9 +110,12 @@ fi
 # CMAKE_OSX_DEPLOYMENT_TARGET can't go lower than this and mean anything --
 # dyld refuses to load Qt on anything older regardless of what we claim.
 # ---------------------------------------------------------------------------
-QTCORE_BINARY="$QT_PREFIX/lib/QtCore.framework/Versions/A/QtCore"
-if [ ! -f "$QTCORE_BINARY" ]; then
-  echo "ERROR: QtCore not found at $QTCORE_BINARY -- cannot determine minimum macOS version" >&2
+QTCORE_BINARY="$(find "$QT_PREFIX/lib" -maxdepth 4 \( -path "*/QtCore.framework/Versions/*/QtCore" -o -name "libQt5Core.dylib" -o -name "libQt6Core.dylib" -o -name "libQtCore.dylib" \) -type f 2>/dev/null | head -1)"
+
+if [ -z "$QTCORE_BINARY" ] || [ ! -f "$QTCORE_BINARY" ]; then
+  echo "ERROR: could not locate QtCore under $QT_PREFIX/lib -- cannot determine minimum macOS version" >&2
+  echo "Contents of $QT_PREFIX/lib:" >&2
+  find "$QT_PREFIX/lib" -maxdepth 2 >&2
   exit 1
 fi
 
