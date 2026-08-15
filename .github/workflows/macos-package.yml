@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           # Only request signing/notarization if the certificate secret
           # actually exists -- lets this workflow run (unsigned) before
-          # Laurent's certificate is ever added to secrets.
+          # Laurent's certificate is ever added to secrets. 
           ARGS="--arch=${{ matrix.arch }} --qt-version=${{ matrix.qt_version }} --non-interactive"
           if [ -n "${MACOS_CERTIFICATE_P12_BASE64:-}" ]; then
             ARGS="$ARGS --sign"
