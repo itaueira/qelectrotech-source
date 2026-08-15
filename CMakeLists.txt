@@ -132,6 +132,18 @@ if(WIN32)
         ${QM_FILES}
         ${QET_DIR}/qelectrotech.qrc
     )
+elseif(APPLE)
+    add_executable(
+        ${PROJECT_NAME}
+        MACOSX_BUNDLE
+        ${QET_RES_FILES}
+        ${QET_SRC_FILES}
+        ${QM_FILES}
+        ${QET_DIR}/qelectrotech.qrc
+    )
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST "${QET_DIR}/build-aux/macos/Info.plist"
+    )
 else()
     add_executable(
         ${PROJECT_NAME}
