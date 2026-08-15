@@ -227,6 +227,13 @@ if [ "$DO_SIGN" = true ]; then
 
     CERT_PATH="$(mktemp)"
     echo "$MACOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERT_PATH"
+    
+    echo "=== Diagnostics: decoded cert file ==="
+    ls -la "$CERT_PATH"
+    echo "SHA256: $(shasum -a 256 "$CERT_PATH" | awk '{print $1}')"
+    file "$CERT_PATH"
+    openssl pkcs12 -in "$CERT_PATH" -info -noout -passin "pass:$MACOS_CERTIFICATE_PASSWORD" 2>&1 || echo "openssl could not parse the decoded file"    
+    
     security import "$CERT_PATH" -k "$TEMP_KEYCHAIN" \
       -P "${MACOS_CERTIFICATE_PASSWORD:?MACOS_CERTIFICATE_PASSWORD must be set}" \
       -T /usr/bin/codesign
