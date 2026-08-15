@@ -110,7 +110,11 @@ fi
 # CMAKE_OSX_DEPLOYMENT_TARGET can't go lower than this and mean anything --
 # dyld refuses to load Qt on anything older regardless of what we claim.
 # ---------------------------------------------------------------------------
-QTCORE_BINARY="$(find "$QT_PREFIX/lib" -maxdepth 4 \( -path "*/QtCore.framework/Versions/*/QtCore" -o -name "libQt5Core.dylib" -o -name "libQt6Core.dylib" -o -name "libQtCore.dylib" \) -type f 2>/dev/null | head -1)"
+if [ -f "$QT_PREFIX/lib/QtCore.framework/QtCore" ]; then
+  QTCORE_BINARY="$QT_PREFIX/lib/QtCore.framework/QtCore"
+else
+  QTCORE_BINARY="$(find "$QT_PREFIX/lib" -maxdepth 2 \( -name "libQt5Core.dylib" -o -name "libQt6Core.dylib" -o -name "libQtCore.dylib" \) -type f 2>/dev/null | head -1)"
+fi
 
 if [ -z "$QTCORE_BINARY" ] || [ ! -f "$QTCORE_BINARY" ]; then
   echo "ERROR: could not locate QtCore under $QT_PREFIX/lib -- cannot determine minimum macOS version" >&2
@@ -118,6 +122,8 @@ if [ -z "$QTCORE_BINARY" ] || [ ! -f "$QTCORE_BINARY" ]; then
   find "$QT_PREFIX/lib" -maxdepth 2 >&2
   exit 1
 fi
+
+echo "Found QtCore at: $QTCORE_BINARY"
 
 # sort -V | tail -1 takes the highest value reported, in case of multiple
 # LC_BUILD_VERSION entries (e.g. a universal/fat binary) -- the app's real
