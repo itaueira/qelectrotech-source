@@ -1,0 +1,311 @@
+#!/usr/bin/env bash
+#
+# build-aux/macos/package_dmg.sh
+#
+# Configure, build, bundle, (optionally) sign, (optionally) notarize, and
+# package QElectroTech as a macOS DMG. Works identically whether called by
+# CI or run by hand on a developer's own Mac.
+#
+# This script assumes the source tree is already at the state you want to
+# build -- it does NOT check out, pull, or update anything. In CI that's
+# actions/checkout's job. For local repeated use, see update_and_package.sh
+# in this same directory, which pulls first and then calls this script.
+#
+# Usage:
+#   ./package_dmg.sh [--arch=arm64|x86_64] [--qt-version=5|6] \
+#                     [--sign] [--notarize] [--non-interactive]
+#
+# Examples:
+#   ./package_dmg.sh                                       # quick local test, unsigned
+#   ./package_dmg.sh --sign                                # signed, no notarization
+#   ./package_dmg.sh --sign --notarize --non-interactive   # full CI pipeline
+#
+# Signing identity and notarization credentials are read from environment
+# variables (see "Signing" and "Notarization" sections below) so this script
+# never hardcodes anyone's personal identity. See README.md in this
+# directory for the full list of variables and how to set them up, both
+# locally and in CI.
+
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+ARCH="$(uname -m)"          # arm64 or x86_64 -- auto-detected unless overridden
+QT_VERSION_MAJOR=6
+DO_SIGN=false
+DO_NOTARIZE=false
+NON_INTERACTIVE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --arch=*)          ARCH="${arg#*=}" ;;
+    --qt-version=*)     QT_VERSION_MAJOR="${arg#*=}" ;;
+    --sign)              DO_SIGN=true ;;
+    --notarize)          DO_NOTARIZE=true ;;
+    --non-interactive)   NON_INTERACTIVE=true ;;
+    -h|--help)
+      sed -n '2,20p' "$0"
+      exit 0
+      ;;
+    *)
+      echo "ERROR: unknown argument: $arg" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [ "$DO_NOTARIZE" = true ] && [ "$DO_SIGN" = false ]; then
+  echo "ERROR: --notarize requires --sign (Apple will not notarize an unsigned app)." >&2
+  exit 1
+fi
+
+case "$ARCH" in
+  arm64|x86_64) ;;
+  *) echo "ERROR: --arch must be arm64 or x86_64, got: $ARCH" >&2; exit 1 ;;
+esac
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+BUILD_DIR="$SOURCE_DIR/build-macos-$ARCH"
+INSTALL_DIR="$SOURCE_DIR/install-macos-$ARCH"
+APPNAME="QElectroTech"
+
+# Matches the extraction logic Laurent's original script used --
+# sources/qetversion.cpp is the one place this project's version number is
+# actually defined at build time (see the discussion around merging this
+# with CMakeLists.txt's project() version, tracked separately).
+VERSION="$(cat "$SOURCE_DIR/sources/qetversion.cpp" | grep "return QVersionNumber{" | head -n 1 | awk -F "{" '{ print $2 }' | awk -F "}" '{ print $1 }' | sed -e 's/,/./g' -e 's/ //g')"
+HEAD="$(git -C "$SOURCE_DIR" rev-parse --short HEAD)"
+
+# Matches Info.plist's LSMinimumSystemVersion.
+MACOS_DEPLOYMENT_TARGET="12.3"
+
+DMG_NAME="${APPNAME}-${VERSION}-r${HEAD}-${ARCH}.dmg"
+
+echo "=== Packaging $APPNAME $VERSION r$HEAD ($ARCH, Qt$QT_VERSION_MAJOR) ==="
+echo "    sign=$DO_SIGN  notarize=$DO_NOTARIZE  non-interactive=$NON_INTERACTIVE"
+
+# ---------------------------------------------------------------------------
+# Locate Qt (via Homebrew, matching macos-build.yml's own convention)
+# ---------------------------------------------------------------------------
+if [ "$QT_VERSION_MAJOR" = "5" ]; then
+  QT_PREFIX="$(brew --prefix qt@5)"
+else
+  QT_PREFIX="$(brew --prefix qt)"
+fi
+MACDEPLOYQT="$QT_PREFIX/bin/macdeployqt"
+
+if [ ! -x "$MACDEPLOYQT" ]; then
+  echo "ERROR: macdeployqt not found at $MACDEPLOYQT" >&2
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Configure, build (CMake -- replaces the old qmake -spec macx-clang / make)
+# ---------------------------------------------------------------------------
+cmake -S "$SOURCE_DIR" -B "$BUILD_DIR" -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH="$QT_PREFIX" \
+  -DQT_VERSION_MAJOR="$QT_VERSION_MAJOR" \
+  -DCMAKE_OSX_ARCHITECTURES="$ARCH" \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOS_DEPLOYMENT_TARGET" \
+  -DBUILD_WITH_KF=OFF \
+  -DPACKAGE_TESTS=OFF \
+  -DCMAKE_POLICY_DEFAULT_CMP0077=NEW \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+cmake --build "$BUILD_DIR" -j"$(sysctl -n hw.ncpu)"
+cmake --install "$BUILD_DIR" --prefix "$INSTALL_DIR"
+
+BUNDLE="$(find "$INSTALL_DIR" -maxdepth 2 -name "*.app" | head -1)"
+if [ -z "$BUNDLE" ]; then
+  echo "ERROR: no .app bundle found under $INSTALL_DIR" >&2
+  exit 1
+fi
+echo "Bundle: $BUNDLE"
+
+# Patch the real version into Info.plist -- CFBundleShortVersionString ships
+# empty in the source tree's Info.plist, filled in here at build time.
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" \
+  "$BUNDLE/Contents/Info.plist"
+
+# ---------------------------------------------------------------------------
+# Bundle Qt frameworks
+#
+# NOTE: once CMakeLists.txt gains qt_generate_deploy_app_script(), this
+# explicit macdeployqt call becomes unnecessary -- `cmake --install` above
+# would trigger it automatically. Left explicit for now since that CMake
+# change hasn't landed yet.
+# ---------------------------------------------------------------------------
+"$MACDEPLOYQT" "$BUNDLE"
+
+# ---------------------------------------------------------------------------
+# Signing
+#
+# Identity resolution, in order:
+#   1. QET_SIGNING_IDENTITY env var, if set (CI, or a developer overriding it)
+#   2. The first valid "Developer ID Application" identity already present
+#      in whichever keychain is active -- covers a maintainer running this
+#      locally with their own certificate already in their login keychain.
+#
+# If --sign was requested but no identity can be found, this is a hard
+# error (you asked for signing, you should know if it silently didn't
+# happen). If --sign was NOT requested, packaging proceeds unsigned with a
+# clear warning -- this is what lets basic CI packaging work today, before
+# any certificate is configured at all.
+# ---------------------------------------------------------------------------
+TEMP_KEYCHAIN=""
+
+cleanup_keychain() {
+  if [ -n "$TEMP_KEYCHAIN" ]; then
+    security delete-keychain "$TEMP_KEYCHAIN" 2>/dev/null || true
+  fi
+}
+trap cleanup_keychain EXIT
+
+if [ "$DO_SIGN" = true ]; then
+  if [ -n "${MACOS_CERTIFICATE_P12_BASE64:-}" ]; then
+    # --- CI mode: import the certificate into a dedicated, ephemeral keychain ---
+    echo "Importing signing certificate into a temporary keychain..."
+    TEMP_KEYCHAIN="qet-signing-$$.keychain-db"
+    KEYCHAIN_PASSWORD="$(uuidgen)"
+
+    security create-keychain -p "$KEYCHAIN_PASSWORD" "$TEMP_KEYCHAIN"
+    security set-keychain-settings -lut 900 "$TEMP_KEYCHAIN"
+    security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$TEMP_KEYCHAIN"
+
+    CERT_PATH="$(mktemp)"
+    echo "$MACOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERT_PATH"
+    security import "$CERT_PATH" -k "$TEMP_KEYCHAIN" \
+      -P "${MACOS_CERTIFICATE_PASSWORD:?MACOS_CERTIFICATE_PASSWORD must be set}" \
+      -T /usr/bin/codesign
+    rm -f "$CERT_PATH"
+
+    security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$TEMP_KEYCHAIN"
+    security list-keychains -d user -s "$TEMP_KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+
+    IDENTITY="$(security find-identity -v -p codesigning "$TEMP_KEYCHAIN" | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')"
+  else
+    # --- Local mode: use whatever's already in the default keychain ---
+    IDENTITY="${QET_SIGNING_IDENTITY:-$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')}"
+  fi
+
+  if [ -z "${IDENTITY:-}" ]; then
+    echo "ERROR: --sign requested but no 'Developer ID Application' identity found." >&2
+    exit 1
+  fi
+  echo "Signing with identity: $IDENTITY"
+
+  # Sign every bundled dylib and framework individually before signing the
+  # bundle itself -- macdeployqt's own signing isn't always sufficient for
+  # nested frameworks, hence the explicit pass here.
+  find "$BUNDLE/Contents/Frameworks" -name "*.dylib" -print0 2>/dev/null | \
+    while IFS= read -r -d '' lib; do
+      codesign --force --sign "$IDENTITY" --timestamp --options=runtime "$lib"
+    done
+  find "$BUNDLE/Contents/Frameworks" -name "*.framework" -maxdepth 1 -print0 2>/dev/null | \
+    while IFS= read -r -d '' fw; do
+      codesign --force --sign "$IDENTITY" --timestamp --options=runtime "$fw"
+    done
+  find "$BUNDLE/Contents/PlugIns" -name "*.dylib" -print0 2>/dev/null | \
+    while IFS= read -r -d '' lib; do
+      codesign --force --sign "$IDENTITY" --timestamp --options=runtime "$lib"
+    done
+
+  codesign --force --sign "$IDENTITY" --timestamp --options=runtime "$BUNDLE"
+  codesign --verify --deep --strict --verbose=2 "$BUNDLE"
+  echo "Signing OK."
+else
+  echo "WARNING: --sign not requested -- producing an UNSIGNED bundle."
+fi
+
+# ---------------------------------------------------------------------------
+# Notarize the .app (before it goes into the DMG)
+# ---------------------------------------------------------------------------
+notarize() {
+  local target="$1"
+  local zip_path
+  zip_path="$(mktemp -t qet-notarize).zip"
+  /usr/bin/ditto -c -k --keepParent "$target" "$zip_path"
+
+  if [ -n "${NOTARY_API_KEY_BASE64:-}" ]; then
+    # --- CI mode: App Store Connect API key, passed explicitly ---
+    local key_path
+    key_path="$(mktemp -t qet-notary-key).p8"
+    echo "$NOTARY_API_KEY_BASE64" | base64 --decode > "$key_path"
+    xcrun notarytool submit "$zip_path" \
+      --key "$key_path" \
+      --key-id "${NOTARY_KEY_ID:?NOTARY_KEY_ID must be set}" \
+      --issuer "${NOTARY_ISSUER_ID:?NOTARY_ISSUER_ID must be set}" \
+      --wait
+    local status=$?
+    rm -f "$key_path"
+  else
+    # --- Local mode: relies on a keychain profile already stored via
+    #     `xcrun notarytool store-credentials` on this machine ---
+    xcrun notarytool submit "$zip_path" \
+      --keychain-profile "${QET_NOTARIZE_PROFILE:-org.qelectrotech}" \
+      --wait
+    local status=$?
+  fi
+
+  rm -f "$zip_path"
+  return $status
+}
+
+if [ "$DO_NOTARIZE" = true ]; then
+  if [ "$NON_INTERACTIVE" = false ]; then
+    echo -e "\033[1;31mNotarize the .app \"${APPNAME}-${VERSION}-r${HEAD}\"? n/Y\033[m"
+    read -r ans
+    [ "$ans" = "n" ] && DO_NOTARIZE_APP=false || DO_NOTARIZE_APP=true
+  else
+    DO_NOTARIZE_APP=true
+  fi
+
+  if [ "$DO_NOTARIZE_APP" = true ]; then
+    echo "Notarizing .app..."
+    if ! notarize "$BUNDLE"; then
+      echo "ERROR: app notarization failed. Check the log with:" >&2
+      echo "  xcrun notarytool log <submission-id> --keychain-profile ${QET_NOTARIZE_PROFILE:-org.qelectrotech}" >&2
+      exit 1
+    fi
+    xcrun stapler staple "$BUNDLE"
+    echo "App notarized and stapled OK."
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Create the DMG
+# ---------------------------------------------------------------------------
+DMG_STAGING="$(mktemp -d)"
+cp -R "$BUNDLE" "$DMG_STAGING/"
+ln -s /Applications "$DMG_STAGING/Applications"
+
+hdiutil create -ov -srcfolder "$DMG_STAGING" -format UDBZ -volname "$APPNAME" "$DMG_NAME"
+rm -rf "$DMG_STAGING"
+
+echo "DMG created: $DMG_NAME"
+
+# ---------------------------------------------------------------------------
+# Sign + notarize the DMG itself
+# ---------------------------------------------------------------------------
+if [ "$DO_SIGN" = true ]; then
+  codesign --sign "$IDENTITY" --timestamp "$DMG_NAME"
+fi
+
+if [ "$DO_NOTARIZE" = true ] && [ "${DO_NOTARIZE_APP:-false}" = true ]; then
+  echo "Notarizing DMG..."
+  if ! notarize "$DMG_NAME"; then
+    echo "ERROR: DMG notarization failed. Check the log with:" >&2
+    echo "  xcrun notarytool log <submission-id> --keychain-profile ${QET_NOTARIZE_PROFILE:-org.qelectrotech}" >&2
+    exit 1
+  fi
+  xcrun stapler staple "$DMG_NAME"
+  echo "DMG notarized and stapled OK."
+fi
+
+echo "=== Done: $DMG_NAME ==="
