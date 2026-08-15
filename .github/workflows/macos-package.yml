@@ -53,7 +53,7 @@ jobs:
           if [ -n "${MACOS_CERTIFICATE_P12_BASE64:-}" ]; then
             ARGS="$ARGS --sign --notarize"
           fi
-          ./build-aux/macos/package_dmg.sh $ARGS
+          bash build-aux/macos/package_dmg.sh $ARGS
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
