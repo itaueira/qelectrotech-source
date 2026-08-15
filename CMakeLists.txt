@@ -143,6 +143,7 @@ elseif(APPLE)
     )
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST "${QET_DIR}/build-aux/macos/Info.plist"
+        MACOSX_BUNDLE_BUNDLE_NAME "QElectroTech"
     )
 else()
     add_executable(
@@ -322,7 +323,10 @@ if(NOT BUILD_WITH_KF)
     )
 endif()
 
-install(TARGETS ${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME}
+  BUNDLE DESTINATION .
+  RUNTIME DESTINATION ${QET_BINARY_PATH}
+)
 
 if ((NOT MINGW) AND (NOT WIN32))
     install(DIRECTORY ico/breeze-icons/16x16   DESTINATION ${QET_ICONS_PATH})

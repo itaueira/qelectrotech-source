@@ -128,11 +128,58 @@ if [ -z "$BUNDLE" ]; then
 fi
 echo "Bundle: $BUNDLE"
 
+# ---------------------------------------------------------------------------
+# Reorganize CMake's flat install output into the bundle structure
+#
+# CMakeLists.txt's install() rules for the resource directories (lang,
+# elements, examples, titleblocks) and the icon are not yet bundle-aware --
+# they land in a flat layout alongside the bundle rather than inside it.
+# This is intentionally handled here rather than in CMake for now (see the
+# "Option A vs B" discussion) -- easier to iterate on without a full
+# reconfigure/rebuild each time.
+# ---------------------------------------------------------------------------
+RESOURCES="$BUNDLE/Contents/Resources"
+mkdir -p "$RESOURCES"
+
+# QET_LANG_PATH's "../Resources/lang/" is relative to $INSTALL_DIR itself
+# (not the bundle), so it lands one directory above $INSTALL_DIR.
+LANG_SRC="$(dirname "$INSTALL_DIR")/Resources/lang"
+if [ -d "$LANG_SRC" ]; then
+  mv "$LANG_SRC" "$RESOURCES/lang"
+else
+  echo "WARNING: expected lang files at $LANG_SRC, not found -- skipping" >&2
+fi
+
+# elements/examples/titleblocks land flat under $INSTALL_DIR/share/qelectrotech.
+SHARE_QET="$INSTALL_DIR/share/qelectrotech"
+for dir in elements examples titleblocks; do
+  if [ -d "$SHARE_QET/$dir" ]; then
+    mv "$SHARE_QET/$dir" "$RESOURCES/$dir"
+  else
+    echo "WARNING: expected $dir at $SHARE_QET/$dir, not found -- skipping" >&2
+  fi
+done
+
+# The .icns is never installed by CMake at all yet -- Info.plist already
+# references "qelectrotech.icns" as CFBundleIconFile, so it just needs to
+# actually exist at this path.
+ICNS_SRC="$SOURCE_DIR/ico/mac_icon/qelectrotech.icns"
+if [ -f "$ICNS_SRC" ]; then
+  cp "$ICNS_SRC" "$RESOURCES/qelectrotech.icns"
+else
+  echo "WARNING: icon not found at $ICNS_SRC -- bundle will use a default icon" >&2
+fi
+
+# Clean up now-empty leftover directories from the flat install.
+rmdir "$(dirname "$INSTALL_DIR")/Resources" 2>/dev/null || true
+rm -rf "$SHARE_QET" 2>/dev/null || true
+
 # Patch the real version into Info.plist -- CFBundleShortVersionString ships
 # empty in the source tree's Info.plist, filled in here at build time.
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" \
   "$BUNDLE/Contents/Info.plist"
-
+  
+  
 # ---------------------------------------------------------------------------
 # Bundle Qt frameworks
 #
