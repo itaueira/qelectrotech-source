@@ -81,8 +81,6 @@ APPNAME="QElectroTech"
 VERSION="$(cat "$SOURCE_DIR/sources/qetversion.cpp" | grep "return QVersionNumber{" | head -n 1 | awk -F "{" '{ print $2 }' | awk -F "}" '{ print $1 }' | sed -e 's/,/./g' -e 's/ //g')"
 HEAD="$(git -C "$SOURCE_DIR" rev-parse --short HEAD)"
 
-# Matches Info.plist's LSMinimumSystemVersion.
-MACOS_DEPLOYMENT_TARGET="12.3"
 
 DMG_NAME="${APPNAME}-${VERSION}-r${HEAD}-${ARCH}.dmg"
 
@@ -103,6 +101,32 @@ if [ ! -x "$MACDEPLOYQT" ]; then
   echo "ERROR: macdeployqt not found at $MACDEPLOYQT" >&2
   exit 1
 fi
+
+# ---------------------------------------------------------------------------
+# Determine the real minimum macOS version from Qt itself, rather than a
+# hardcoded guess. QtCore's own LC_BUILD_VERSION load command records the
+# actual minimum OS the installed Qt build requires -- this is the real,
+# binding floor for the whole bundle, since our own
+# CMAKE_OSX_DEPLOYMENT_TARGET can't go lower than this and mean anything --
+# dyld refuses to load Qt on anything older regardless of what we claim.
+# ---------------------------------------------------------------------------
+QTCORE_BINARY="$QT_PREFIX/lib/QtCore.framework/Versions/A/QtCore"
+if [ ! -f "$QTCORE_BINARY" ]; then
+  echo "ERROR: QtCore not found at $QTCORE_BINARY -- cannot determine minimum macOS version" >&2
+  exit 1
+fi
+
+# sort -V | tail -1 takes the highest value reported, in case of multiple
+# LC_BUILD_VERSION entries (e.g. a universal/fat binary) -- the app's real
+# floor is the strictest constraint across whatever's actually bundled.
+MACOS_DEPLOYMENT_TARGET="$(vtool -show-build "$QTCORE_BINARY" | grep "minos" | awk '{print $2}' | sort -V | tail -1)"
+
+if [ -z "$MACOS_DEPLOYMENT_TARGET" ]; then
+  echo "ERROR: could not determine minimum macOS version from $QTCORE_BINARY" >&2
+  exit 1
+fi
+
+echo "Detected minimum macOS version from Qt: $MACOS_DEPLOYMENT_TARGET"
 
 # ---------------------------------------------------------------------------
 # Configure, build (CMake -- replaces the old qmake -spec macx-clang / make)
@@ -177,6 +201,8 @@ rm -rf "$SHARE_QET" 2>/dev/null || true
 # Patch the real version into Info.plist -- CFBundleShortVersionString ships
 # empty in the source tree's Info.plist, filled in here at build time.
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" \
+  "$BUNDLE/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :LSMinimumSystemVersion $MACOS_DEPLOYMENT_TARGET" \
   "$BUNDLE/Contents/Info.plist"
   
   
