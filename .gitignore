@@ -14,3 +14,7 @@ build/
 build-*/
 # Ajuste pessoal da ferramenta de IA; o versionado e .claude/settings.json
 .claude/settings.local.json
+
+# Projetos reais da ACME usados para teste. Nunca entram no repositório: ele é público,
+# e arquivo de projeto carrega nome de fornecedor e código de peça (regras 3 e 4 do CLAUDE.md).
+/tmp/
