@@ -7,3 +7,5 @@ doc/*
 !doc/QElectroTech.qch
 QElectroTech.tag
 !doc/doc-utils
+# Material interno da ACME — analise de concorrencia, nao versionar
+todo/_interno/
