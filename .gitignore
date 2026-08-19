@@ -9,3 +9,8 @@ QElectroTech.tag
 !doc/doc-utils
 # Material interno da ACME — analise de concorrencia, nao versionar
 todo/_interno/
+# Build local (fora do controle de versao)
+build/
+build-*/
+# Ajuste pessoal da ferramenta de IA; o versionado e .claude/settings.json
+.claude/settings.local.json
