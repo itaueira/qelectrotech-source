@@ -18,6 +18,8 @@
 
 #include "qetproject.h"
 
+#include "environment/projectlock.h"
+
 #include "ElementsCollection/xmlelementcollection.h"
 #include "autoNum/assignvariables.h"
 #include "autoNum/numerotationcontext.h"
@@ -108,6 +110,10 @@ QETProject::QETProject(const QString &path, QObject *parent) :
 		return;
 	}
 
+	// Remember the file as it was read, so that saving can tell whether
+	// somebody else wrote to it meanwhile.
+	captureDiskState();
+
 	init();
 }
 
@@ -152,6 +158,15 @@ QETProject::QETProject(KAutoSaveFile *backup, QObject *parent) :
 */
 QETProject::~QETProject()
 {
+		//Release the in-use lock first: whatever happens below, the next
+		//station to open this project must not find a lock nobody holds.
+	if (m_open_lock)
+	{
+		m_open_lock->release();
+		delete m_open_lock;
+		m_open_lock = nullptr;
+	}
+
 		//Wait for any in-flight async crash-recovery backup to finish: the worker
 		//writes through &m_backup_file, a member that would otherwise be destroyed
 		//under it (issue #492).
@@ -1084,6 +1099,69 @@ bool QETProject::close()
 	@see setFilePath()
 	@return true if the project was successfully saved, else false
 */
+/**
+	@brief QETProject::acquireOpenLock
+	@return true when this project now holds the in-use lock of its file
+*/
+bool QETProject::acquireOpenLock()
+{
+	if (m_file_path.isEmpty()) {
+		return false;
+	}
+	if (!m_open_lock) {
+		m_open_lock = new ProjectLock(m_file_path);
+	}
+	// A lock that cannot be written is not an error to push at the user: a
+	// share where the project is readable but not writable is a real case,
+	// and drawing has to work there.
+	return m_open_lock->acquire();
+}
+
+/**
+	@brief QETProject::openLockHolder
+	@return who holds the in-use lock, empty when nobody does
+*/
+QString QETProject::openLockHolder() const
+{
+	if (m_file_path.isEmpty()) {
+		return QString();
+	}
+	const ProjectLock lock(m_file_path);
+	if (!lock.exists()) {
+		return QString();
+	}
+	return lock.holder().description();
+}
+
+/**
+	@brief QETProject::diskStateOf
+	@param file_path
+	@return the size and last-modified time of @a file_path, a null state when
+	it does not exist
+*/
+QETProject::DiskState QETProject::diskStateOf(const QString &file_path)
+{
+	return FileDiskState::of(file_path);
+}
+
+/**
+	@brief QETProject::captureDiskState
+*/
+void QETProject::captureDiskState()
+{
+	m_disk_state = diskStateOf(m_file_path);
+}
+
+/**
+	@brief QETProject::changedOnDiskByOthers
+	@return true when the file changed on disk since this project read or
+	wrote it
+*/
+bool QETProject::changedOnDiskByOthers() const
+{
+	return FileDiskState::changedSince(m_file_path, m_disk_state);
+}
+
 QETResult QETProject::write()
 {
 		// this operation requires a filepath
@@ -1104,10 +1182,20 @@ QETResult QETProject::write()
 			return(QString("the file %1 was opened read-only and thus will not be written").arg(m_file_path));
 	}
 
+		// Refuse instead of overwriting somebody else's work. The editor asks
+		// this question before calling write() so that it can offer to save a
+		// copy; this is the backstop for every other caller.
+	if (changedOnDiskByOthers()) {
+		return(QString("the file %1 was changed by someone else since it was opened; "
+			       "it will not be overwritten").arg(m_file_path));
+	}
+
 	QDomDocument xml_project(toXml());
 	QString error_message;
 	if (!QET::writeXmlFile(xml_project, m_file_path, &error_message))
 		return(error_message);
+
+	captureDiskState();
 
 		// The project has just been written to a writable file (e.g. saved to
 		// a new location with "Save As"), so it is no longer read-only.

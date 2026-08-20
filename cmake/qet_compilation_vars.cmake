@@ -316,6 +316,14 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.h
 
+  ${QET_DIR}/sources/environment/filediskstate.h
+  ${QET_DIR}/sources/environment/projectlock.cpp
+  ${QET_DIR}/sources/environment/projectlock.h
+  ${QET_DIR}/sources/environment/qetenvironment.cpp
+  ${QET_DIR}/sources/environment/qetenvironment.h
+  ${QET_DIR}/sources/environment/ui/environmentdialog.cpp
+  ${QET_DIR}/sources/environment/ui/environmentdialog.h
+
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
   ${QET_DIR}/sources/dataBase/projectdatabase.h
 

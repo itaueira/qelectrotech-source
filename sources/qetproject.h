@@ -35,6 +35,8 @@
 #	include <KAutoSaveFile>
 #endif
 
+#include "environment/filediskstate.h"
+
 #include <QHash>
 #include <QFuture>
 
@@ -44,6 +46,7 @@ class QETResult;
 class TitleBlockTemplate;
 class MoveTitleBlockTemplatesHandler;
 class NumerotationContext;
+class ProjectLock;
 class QUndoStack;
 class XmlElementCollection;
 class QTimer;
@@ -196,6 +199,31 @@ class QETProject : public QObject
 		QETResult write();
 		bool isReadOnly() const;
 		void setReadOnly(bool);
+
+		/// The rule itself lives in FileDiskState, so that it can be tested
+		/// without opening a project.
+		using DiskState = FileDiskState;
+
+		/**
+			Take the in-use lock of this project's file, so that another
+			station opening it sees who has it and since when. Released when
+			the project is destroyed.
+			@return true when the lock is ours
+		*/
+		bool acquireOpenLock();
+		/// Who holds the in-use lock, empty when nobody does
+		QString openLockHolder() const;
+
+		/// Remember the file as it is on disk right now
+		void captureDiskState();
+		/**
+			@return true when the file changed on disk since this project last
+			read or wrote it. False when there is nothing to compare against -
+			a project never saved, or a file that disappeared, are different
+			problems with different answers.
+		*/
+		bool changedOnDiskByOthers() const;
+		static DiskState diskStateOf(const QString &file_path);
 		bool isEmpty() const;
 		ElementsLocation importElement(ElementsLocation &location);
 		QString integrateTitleBlockTemplate(const TitleBlockTemplateLocation &, MoveTitleBlockTemplatesHandler *handler);
@@ -279,6 +307,10 @@ class QETProject : public QObject
 		static bool m_backup_enabled;
 			/// File path this project is saved to
 		QString m_file_path;
+		/// The file as this project last saw it, for the concurrent-save guard
+		DiskState m_disk_state;
+		/// The in-use lock, held while this project is open
+		ProjectLock *m_open_lock = nullptr;
 			/// Current state of the project
 		ProjectState m_state;
 			/// Diagrams carried by the project

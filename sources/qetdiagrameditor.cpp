@@ -18,6 +18,8 @@
 #include "qetdiagrameditor.h"
 
 #include "catalog/ui/catalogbrowserdialog.h"
+#include "environment/projectlock.h"
+#include "environment/ui/environmentdialog.h"
 #include "catalog/ui/catalogmanagerdialog.h"
 #include "catalog/ui/catalogpartdialog.h"
 #include "catalog/ui/catalogprojectactions.h"
@@ -526,6 +528,13 @@ void QETDiagramEditor::setUpActions()
 	connect(m_catalog_missing, &QAction::triggered, this, [this]()
 	{
 		CatalogProjectActions::showMissingPartReport(this->currentProject(), this);
+	});
+
+	m_environment = new QAction(QET::Icons::Configure, tr("Environnement de travail"), this);
+	connect(m_environment, &QAction::triggered, this, [this]()
+	{
+		EnvironmentDialog dialog(this);
+		dialog.exec();
 	});
 
 		//Launch the plugin of terminal generator
@@ -1058,6 +1067,8 @@ void QETDiagramEditor::setUpMenu()
 	menu_catalogue -> addAction(m_catalog_missing);
 	menu_catalogue -> addSeparator();
 	menu_catalogue -> addAction(m_catalog_manager);
+	menu_catalogue -> addSeparator();
+	menu_catalogue -> addAction(m_environment);
 
 	main_tool_bar         -> toggleViewAction() -> setStatusTip(tr("Affiche ou non la barre d'outils principale"));
 	view_tool_bar         -> toggleViewAction() -> setStatusTip(tr("Affiche ou non la barre d'outils Affichage"));
@@ -1140,6 +1151,29 @@ bool QETDiagramEditor::event(QEvent *e)
 void QETDiagramEditor::save()
 {
 	if (ProjectView *project_view = currentProjectView()) {
+			//Somebody else wrote to this file since we read it. Overwriting
+			//would throw their work away without a word, which is the one
+			//thing a shared environment must never do: refuse, and offer the
+			//copy instead.
+		QETProject *project = project_view -> project();
+		if (project && project -> changedOnDiskByOthers())
+		{
+			const QMessageBox::StandardButton answer = QET::QetMessageBox::warning(
+				this,
+				tr("Le fichier a changé entre-temps", "message box title"),
+				tr("%1 a été modifié par quelqu'un d'autre depuis que vous l'avez "
+				   "ouvert.\n\nL'enregistrer par-dessus effacerait ce travail. "
+				   "Enregistrez plutôt une copie, puis comparez les deux.")
+					.arg(project -> filePath()),
+				QMessageBox::Save | QMessageBox::Cancel,
+				QMessageBox::Save);
+			if (answer != QMessageBox::Save) {
+				return;
+			}
+			saveAs();
+			return;
+		}
+
 		QETResult saved = project_view -> save();
 
 		if (saved.isOk()) {
@@ -1344,6 +1378,32 @@ bool QETDiagramEditor::openAndAddProject(
 		}
 	}
 
+		//Is somebody else working on this project right now? On a shared
+		//environment this is the case that costs an afternoon, so it is said
+		//before the file is loaded, with a name and an hour, and the project
+		//opens read-only rather than becoming a second copy that will
+		//overwrite the first.
+	ProjectLock open_lock(filepath);
+	bool held_by_somebody_else = open_lock.exists() && !open_lock.isStale();
+	if (held_by_somebody_else && interactive)
+	{
+		const QMessageBox::StandardButton answer = QET::QetMessageBox::warning(
+			this,
+			tr("Projet déjà ouvert ailleurs", "message box title"),
+			tr("Ce projet est ouvert par %1.\n\n"
+			   "Ouvrir en lecture seule est le choix sûr : vous verrez le dessin, "
+			   "sans risque d'écraser son travail. Forcer l'ouverture en écriture "
+			   "n'a de sens que si vous savez que cette session n'existe plus.")
+				.arg(open_lock.holder().description()),
+			QMessageBox::Ok | QMessageBox::Ignore,
+			QMessageBox::Ok);
+		if (answer == QMessageBox::Ignore)
+		{
+			open_lock.forceRelease();
+			held_by_somebody_else = false;
+		}
+	}
+
 	//Create the project
 	DialogWaiting::instance(this);
 
@@ -1374,6 +1434,12 @@ bool QETDiagramEditor::openAndAddProject(
 		delete project;
 		DialogWaiting::dropInstance();
 		return(false);
+	}
+
+	if (held_by_somebody_else) {
+		project -> setReadOnly(true);
+	} else {
+		project -> acquireOpenLock();
 	}
 
 	QETApp::projectsRecentFiles() -> fileWasOpened(filepath);
@@ -1865,6 +1931,8 @@ void QETDiagramEditor::slot_updateActions()
 	m_catalog_assign              -> setEnabled(editable_project);
 	m_catalog_register            -> setEnabled(editable_project);
 	m_catalog_missing             -> setEnabled(opened_project);
+		//The environment belongs to the station, not to a project.
+	m_environment                 -> setEnabled(true);
 
 
 	slot_updateUndoStack();

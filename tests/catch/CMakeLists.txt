@@ -87,6 +87,7 @@ add_executable(
     src/borderproperties_test.cpp
     src/catalog_test.cpp
     src/catalogassignment_test.cpp
+    src/environment_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -106,6 +107,14 @@ add_executable(
     ${QET_DIR}/sources/catalog/catalogproperty.h
     ${QET_DIR}/sources/catalog/catalogschema.cpp
     ${QET_DIR}/sources/catalog/catalogschema.h
+    # The environment and the in-use lock have the same property as the
+    # catalog core: no QETApp, no Diagram, so the rules that decide
+    # whether a project gets overwritten can be tested cheaply.
+    ${QET_DIR}/sources/environment/filediskstate.h
+    ${QET_DIR}/sources/environment/projectlock.cpp
+    ${QET_DIR}/sources/environment/projectlock.h
+    ${QET_DIR}/sources/environment/qetenvironment.cpp
+    ${QET_DIR}/sources/environment/qetenvironment.h
     )
 
 if(NOT BUILD_WITH_KF)

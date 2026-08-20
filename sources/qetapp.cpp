@@ -18,6 +18,7 @@
 #include "qetapp.h"
 
 #include "catalog/catalog.h"
+#include "environment/qetenvironment.h"
 #include "configdialog.h"
 #include "ui/configpage/configpages.h"
 #include "editor/ui/qetelementeditor.h"
@@ -682,7 +683,7 @@ QString QETApp::customElementsDir()
 			}
 		}
 
-		m_custom_element_dir = dataDir() + "/elements/";
+		m_custom_element_dir = QETEnvironment::path() + "/elements/";
 		return m_custom_element_dir;
 	}
 }
@@ -719,7 +720,7 @@ QString QETApp::companyElementsDir()
 			}
 		}
 
-		m_company_element_dir = dataDir() + "/elements-company/";
+		m_company_element_dir = QETEnvironment::path() + "/elements-company/";
 		return m_company_element_dir;
 	}
 }
@@ -844,7 +845,7 @@ QString QETApp::companyTitleBlockTemplatesDir()
 		return m_user_company_tbt_dir;
 	}
 
-	return(dataDir() + "/titleblocks-company/");
+	return(QETEnvironment::path() + "/titleblocks-company/");
 }
 
 /**
@@ -877,7 +878,7 @@ QString QETApp::customTitleBlockTemplatesDir()
 		return m_user_custom_tbt_dir;
 	}
 
-	return(dataDir() + "/titleblocks/");
+	return(QETEnvironment::path() + "/titleblocks/");
 }
 
 /**
@@ -909,7 +910,7 @@ QString QETApp::userMacrosDir()
 		return m_user_macros_dir;
 	}
 
-	return(dataDir() + "/macros/");
+	return(QETEnvironment::path() + "/macros/");
 }
 
 /**
@@ -928,7 +929,7 @@ QString QETApp::catalogPath()
 	if (!configured.isEmpty()) {
 		return configured;
 	}
-	return dataDir() + QStringLiteral("/catalog.sqlite");
+	return QETEnvironment::catalogFile();
 }
 
 /**
@@ -2377,6 +2378,11 @@ void QETApp::initStyle()
 */
 void QETApp::initConfiguration()
 {
+		// The environment falls back to this, and it must be the very same
+		// folder QETApp::dataDir() answers - saying it here is what keeps the
+		// two from drifting apart.
+	QETEnvironment::setDefaultPath(dataDir());
+
 	// create configuration files if necessary
 	// cree les dossiers de configuration si necessaire
 	QDir config_dir(QETApp::configDir());
