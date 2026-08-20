@@ -39,6 +39,7 @@ class QMainWindow;
 class AboutQET;
 class QETDiagramEditor;
 class QETElementEditor;
+class Catalog;
 class ElementsCollectionCache;
 class TitleBlockTemplate;
 class TitleBlockTemplatesCollection;
@@ -97,6 +98,10 @@ class QETApp : public QObject
 		static QMap<uint, QETProject *> registeredProjects();
 		static QETProject *project(const uint &);
 		static int projectId(const QETProject *);
+		static QString catalogPath();
+		static void setCatalogPath(const QString &);
+		static Catalog *catalog();
+		static void closeCatalog();
 		static QString configDir();
 		static QString dataDir();
 		static QString documentDir();
@@ -225,6 +230,7 @@ class QETApp : public QObject
 		static TitleBlockTemplatesFilesCollection *m_company_tbt_collection;
 		static TitleBlockTemplatesFilesCollection *m_custom_tbt_collection;
 		static ElementsCollectionCache *collections_cache_;
+		static Catalog *m_catalog;
 		static QMap<uint, QETProject *> registered_projects_;
 		static uint next_project_id;
 		static RecentFiles *m_projects_recent_files;

@@ -389,6 +389,8 @@ void projectDataBase::createElementNomenclatureView()
 						 "ei.quantity_auxiliary4 AS quantity_auxiliary4,"
 						 "ei.unity_auxiliary4 AS unity_auxiliary4,"
 					 "ei.exclude_from_bom AS exclude_from_bom,"
+					 "ei.part_code AS part_code,"
+					 "ei.part_revision AS part_revision,"
 					 
 					 "ei.plc_type AS plc_type,"
 					 "ei.plc_address AS plc_address,"

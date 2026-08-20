@@ -292,6 +292,22 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/autoNum/ui/selectautonumw.cpp
   ${QET_DIR}/sources/autoNum/ui/selectautonumw.h
 
+  ${QET_DIR}/sources/catalog/catalog.cpp
+  ${QET_DIR}/sources/catalog/catalog.h
+  ${QET_DIR}/sources/catalog/catalogclass.cpp
+  ${QET_DIR}/sources/catalog/catalogclass.h
+  ${QET_DIR}/sources/catalog/catalogpart.cpp
+  ${QET_DIR}/sources/catalog/catalogpart.h
+  ${QET_DIR}/sources/catalog/catalogproperty.cpp
+  ${QET_DIR}/sources/catalog/catalogproperty.h
+  ${QET_DIR}/sources/catalog/catalogschema.cpp
+  ${QET_DIR}/sources/catalog/catalogschema.h
+
+  ${QET_DIR}/sources/catalog/ui/catalogmanagerdialog.cpp
+  ${QET_DIR}/sources/catalog/ui/catalogmanagerdialog.h
+  ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.cpp
+  ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.h
+
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
   ${QET_DIR}/sources/dataBase/projectdatabase.h
 

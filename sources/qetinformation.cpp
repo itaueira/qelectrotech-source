@@ -195,7 +195,9 @@ QStringList QETInformation::elementInfoKeys()
 						 ELMT_PLC_FUNCTION,
 						 ELMT_PLC_COMMENT,
 						 ELMT_PLC_CROSSREF,
-						 "exclude_from_bom" };
+						 "exclude_from_bom",
+						 ELMT_PART_CODE,
+						 ELMT_PART_REVISION };
 	return list;
 }
 
@@ -268,6 +270,8 @@ QString QETInformation::translatedInfoKey(const QString &info)
 	else if (info == ELMT_SUPPLIER)                    return QObject::tr("Fournisseur");
 	else if (info == ELMT_QUANTITY)                    return QObject::tr("Quantité");
 	else if (info == ELMT_UNITY)                       return QObject::tr("Unité");
+	else if (info == ELMT_PART_CODE)                   return QObject::tr("Référence de la pièce");
+	else if (info == ELMT_PART_REVISION)               return QObject::tr("Révision de la pièce");
 	else if (info == ELMT_LOCATION)                    return QObject::tr("Localisation (+)");
 	else if (info == COND_FUNCTION)                    return QObject::tr("Fonction");
 	else if (info == COND_TENSION_PROTOCOL)            return QObject::tr("Tension / Protocole");

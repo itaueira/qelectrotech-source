@@ -85,9 +85,23 @@ add_executable(
     ${PROJECT_NAME}
     tst_My_test.cpp
     src/borderproperties_test.cpp
+    src/catalog_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
+    # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
+    # not on Diagram - which is what lets the test binary link it with these
+    # five sources instead of half the program.
+    ${QET_DIR}/sources/catalog/catalog.cpp
+    ${QET_DIR}/sources/catalog/catalog.h
+    ${QET_DIR}/sources/catalog/catalogclass.cpp
+    ${QET_DIR}/sources/catalog/catalogclass.h
+    ${QET_DIR}/sources/catalog/catalogpart.cpp
+    ${QET_DIR}/sources/catalog/catalogpart.h
+    ${QET_DIR}/sources/catalog/catalogproperty.cpp
+    ${QET_DIR}/sources/catalog/catalogproperty.h
+    ${QET_DIR}/sources/catalog/catalogschema.cpp
+    ${QET_DIR}/sources/catalog/catalogschema.h
     )
 
 if(NOT BUILD_WITH_KF)

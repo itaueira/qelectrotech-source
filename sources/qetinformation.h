@@ -136,6 +136,14 @@ namespace QETInformation
 	static QString ELMT_PLC_T3          = "plc_t3";
 	static QString ELMT_PLC_T4          = "plc_t4";
 
+	/** Link from a component to the catalog part assigned to it.
+	 * Written in the .qet by code and revision, never by database
+	 * identifier: a project has to open on a machine that cannot reach the
+	 * shared catalog, with the values it recorded, and the revision is what
+	 * keeps a delivered project on the data it was delivered with. **/
+	static QString ELMT_PART_CODE       = "part_code";
+	static QString ELMT_PART_REVISION   = "part_revision";
+
 
 
 

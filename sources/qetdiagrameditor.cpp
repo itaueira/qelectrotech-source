@@ -16,6 +16,8 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "qetdiagrameditor.h"
+
+#include "catalog/ui/catalogmanagerdialog.h"
 #include <QCoreApplication>
 #include "ElementsCollection/elementscollectionwidget.h"
 #include "QWidgetAnimation/qwidgetanimation.h"
@@ -488,6 +490,16 @@ void QETDiagramEditor::setUpActions()
 		}
 	});
 
+		//Manage the classes and the properties of the shared catalog. The
+		//catalog is shared by the whole office and does not belong to one
+		//project, so this action stays enabled even with no project open.
+	m_catalog_manager = new QAction(QET::Icons::TableOfContent, tr("Classes et propriétés du catalogue"), this);
+	connect(m_catalog_manager, &QAction::triggered, this, [this]()
+	{
+		CatalogManagerDialog dialog(QETApp::catalog(), this);
+		dialog.exec();
+	});
+
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
 	connect(m_project_terminalBloc, &QAction::triggered, this, &QETDiagramEditor::generateTerminalBlock);
@@ -848,6 +860,7 @@ void QETDiagramEditor::setUpMenu()
 	QMenu* menu_fichier	  = new QMenu(tr("&Fichier"), this);
 	QMenu* menu_edition	  = new QMenu(tr("&Édition"), this);
 	QMenu* menu_project	  = new QMenu(tr("&Projet"), this);
+	QMenu* menu_catalogue = new QMenu(tr("&Catalogue"), this);
 	QMenu* menu_affichage = new QMenu(tr("Afficha&ge"), this);
 	// QMenu *menu_outils    = new QMenu(tr("O&utils"), this);
 	windows_menu = new QMenu(tr("Fe&nêtres"), this);
@@ -855,6 +868,7 @@ void QETDiagramEditor::setUpMenu()
 	insertMenu(settings_menu_, menu_fichier);
 	insertMenu(settings_menu_, menu_edition);
 	insertMenu(settings_menu_, menu_project);
+	insertMenu(settings_menu_, menu_catalogue);
 	insertMenu(settings_menu_, menu_affichage);
 	insertMenu(help_menu_, windows_menu);
 
@@ -913,6 +927,10 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addSeparator();
 	menu_project -> addAction(m_export_project_db);
 #endif
+
+	// menu Catalogue. The catalog is shared by the office and does not
+	// belong to a project, which is why it has a menu of its own.
+	menu_catalogue -> addAction(m_catalog_manager);
 
 	main_tool_bar         -> toggleViewAction() -> setStatusTip(tr("Affiche ou non la barre d'outils principale"));
 	view_tool_bar         -> toggleViewAction() -> setStatusTip(tr("Affiche ou non la barre d'outils Affichage"));

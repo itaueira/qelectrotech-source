@@ -17,6 +17,7 @@
 */
 #include "qetapp.h"
 
+#include "catalog/catalog.h"
 #include "configdialog.h"
 #include "ui/configpage/configpages.h"
 #include "editor/ui/qetelementeditor.h"
@@ -77,6 +78,7 @@ TitleBlockTemplatesFilesCollection *QETApp::m_common_tbt_collection;
 TitleBlockTemplatesFilesCollection *QETApp::m_company_tbt_collection;
 TitleBlockTemplatesFilesCollection *QETApp::m_custom_tbt_collection;
 ElementsCollectionCache *QETApp::collections_cache_ = nullptr;
+Catalog *QETApp::m_catalog = nullptr;
 QMap<uint, QETProject *> QETApp::registered_projects_ = QMap<uint, QETProject *>();
 uint QETApp::next_project_id = 0;
 RecentFiles *QETApp::m_projects_recent_files = nullptr;
@@ -908,6 +910,72 @@ QString QETApp::userMacrosDir()
 	}
 
 	return(dataDir() + "/macros/");
+}
+
+/**
+	@brief QETApp::catalogPath
+	@return the file of the shared catalog.
+
+	Configurable, because the catalog only earns its keep when the whole
+	engineering office points at the same one, on a network share. The
+	default sits next to the user collections; T38 moves that default into
+	the shared environment folder, where it belongs.
+*/
+QString QETApp::catalogPath()
+{
+	QSettings settings;
+	const QString configured = settings.value(QStringLiteral("catalog/path")).toString();
+	if (!configured.isEmpty()) {
+		return configured;
+	}
+	return dataDir() + QStringLiteral("/catalog.sqlite");
+}
+
+/**
+	@brief QETApp::setCatalogPath
+	@param path : empty to go back to the default
+	Closes the open catalog, so that the next call to catalog() opens the new
+	one.
+*/
+void QETApp::setCatalogPath(const QString &path)
+{
+	QSettings settings;
+	settings.setValue(QStringLiteral("catalog/path"), path);
+	closeCatalog();
+}
+
+/**
+	@brief QETApp::catalog
+	@return the shared catalog, opened on first use.
+
+	Never nullptr: a catalog that could not be opened is still returned,
+	closed, so that a project referencing parts opens anyway and the
+	interface can say the catalog is unreachable instead of crashing.
+*/
+Catalog *QETApp::catalog()
+{
+	if (!m_catalog)
+	{
+		m_catalog = new Catalog();
+		QString error;
+		if (!m_catalog->open(catalogPath(), &error))
+		{
+			qWarning() << "QETApp::catalog: " << error;
+		}
+	}
+	return m_catalog;
+}
+
+/**
+	@brief QETApp::closeCatalog
+*/
+void QETApp::closeCatalog()
+{
+	if (m_catalog)
+	{
+		delete m_catalog;
+		m_catalog = nullptr;
+	}
 }
 
 /**
