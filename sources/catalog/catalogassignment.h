@@ -91,6 +91,17 @@ class CatalogAssignment
 		static bool isWithoutPart(const QHash<QString, QString> &values);
 
 		/// The information keys that carry the link to the catalog
+		/**
+			@brief The element information key that says which component an
+			accessory belongs to.
+
+			Holds the uuid of the owner, not its tag: a tag is renumbered, and a
+			link that breaks when the project is renumbered is worse than no
+			link. The accessory keeps its own location - the handle is on the
+			door while the breaker is on the plate - because it is an element of
+			its own and carries its own `location`.
+		*/
+		static QString accessoryOwnerKey();
 		static QString partCodeKey();
 		static QString partRevisionKey();
 };

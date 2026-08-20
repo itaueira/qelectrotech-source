@@ -17,7 +17,10 @@
 */
 #include "../../../sources/catalog/catalog.h"
 #include "../../../sources/catalog/catalogassignment.h"
+#include "../../../sources/catalog/catalogclass.h"
 #include "qt_catch_tostring.h"
+
+#include <QTemporaryDir>
 
 namespace
 {
@@ -260,4 +263,68 @@ TEST_CASE("CU-13.2 — la pièce par défaut d'un symbole est une pièce comme l
 	const CatalogPart missing = fixture.catalog.partByCode(QStringLiteral("NAO-EXISTE"));
 	CHECK(missing.isNull());
 	CHECK(CatalogAssignment::valuesForElement(fixture.catalog, missing).isEmpty());
+}
+
+TEST_CASE("CU-13.5 — o acessório diz de quem ele é", "[catalog]")
+{
+	SECTION("a chave guarda o uuid do dono, não a tag dele")
+	{
+			//Tag é renumerada. Um vínculo que quebra quando o projeto é
+			//renumerado é pior que nenhum vínculo — por isso a chave existe
+			//separada e o teste diz o que ela guarda.
+		CHECK(CatalogAssignment::accessoryOwnerKey() ==
+		      QStringLiteral("accessory_of"));
+
+			//E não é uma chave que a atribuição de peça escreve ou apaga: o
+			//acessório continua rattaché depois de trocar a peça do dono.
+		CHECK_FALSE(CatalogAssignment::protectedElementKeys()
+			    .contains(CatalogAssignment::accessoryOwnerKey()));
+	}
+}
+
+TEST_CASE("a ancestralidade de classe responde por descendência, não por igualdade", "[catalog]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	Catalog catalog;
+	QString error;
+	REQUIRE(catalog.open(dir.path() + QStringLiteral("/c.sqlite"), &error));
+
+	const CatalogClass accessory =
+			catalog.classByKey(QStringLiteral("accessory"));
+	REQUIRE(accessory.id > 0);
+
+	SECTION("a própria classe conta")
+	{
+		CHECK(catalog.isDescendantOf(accessory.id,
+					     QStringLiteral("accessory")));
+	}
+
+	SECTION("uma classe que a casa criou debaixo dela também conta")
+	{
+			//"Acessório de porta" debaixo de "Acessório" continua sendo
+			//acessório — é o motivo de a pergunta ser por descendência.
+		CatalogClass door(QStringLiteral("door_accessory"),
+				  QStringLiteral("Acessório de porta"));
+		door.parent_id = accessory.id;
+		const int id = catalog.addClass(door, &error);
+		REQUIRE(id > 0);
+		CHECK(catalog.isDescendantOf(id, QStringLiteral("accessory")));
+	}
+
+	SECTION("um contator não é acessório")
+	{
+		const CatalogClass contactor =
+				catalog.classByKey(QStringLiteral("contactor"));
+		REQUIRE(contactor.id > 0);
+		CHECK_FALSE(catalog.isDescendantOf(contactor.id,
+						   QStringLiteral("accessory")));
+	}
+
+	SECTION("chave vazia e classe inexistente não são descendentes de nada")
+	{
+		CHECK_FALSE(catalog.isDescendantOf(accessory.id, QString()));
+		CHECK_FALSE(catalog.isDescendantOf(999999,
+						   QStringLiteral("accessory")));
+	}
 }

@@ -68,6 +68,21 @@ namespace CatalogProjectActions
 		       const Catalog &catalog,
 		       const CatalogPart &part);
 
+	/**
+		Link @a accessory to the component it belongs to, asking which one.
+
+		The other half of "accessory as a first class object": the accessory
+		is drawn on the folio like any other symbol, in its own location, and
+		this says whose it is. The link holds the uuid of the owner and not
+		its tag, so renumbering the project does not break it.
+
+		@return true when a link was made
+	*/
+	bool linkAccessory(Element *accessory, QWidget *parent);
+
+	/// Every component of @a project that could own an accessory
+	QList<Element *> possibleOwners(QETProject *project, Element *accessory);
+
 	/// Show the end of project report of the components with no part
 	void showMissingPartReport(QETProject *project, QWidget *parent);
 }

@@ -65,6 +65,18 @@ class ElementInfoWidget : public AbstractElementPropertiesEditorWidget
 	private:
 		void buildInterface();
 		ElementInfoPartWidget *infoPartWidgetForKey(const QString &key) const;
+		/**
+			@brief Say, without stopping anything, that the tag being typed is
+			already somebody else's.
+
+			The modal question of T07 is asked when the change is committed. This
+			panel commits on every keystroke, so a box here would be a box per
+			letter. Instead the field says it itself: red text and a tooltip
+			naming the component that already carries the tag. Nothing is blocked
+			- two cabinets may each legitimately have their own -Q1, and this
+			panel is where somebody would deliberately do that.
+		*/
+		void warnAboutLabelCollision();
 		QStringList predefinedKeys() const;
 
 	private slots:

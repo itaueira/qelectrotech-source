@@ -689,6 +689,43 @@ void QETDiagramEditor::setUpActions()
 	connect(m_align_conductor_text, &QAction::triggered,
 		this, &QETDiagramEditor::alignConductorTexts);
 
+		//An accessory drawn on the folio, in its own location, saying whose it
+		//is. Reached from the menu on the selected element rather than asked
+		//when the symbol is inserted - see the T13 task file for why.
+	m_link_accessory = new QAction(
+				tr("Lier l'accessoire sélectionné à un composant…"), this);
+	connect(m_link_accessory, &QAction::triggered, this, [this]()
+	{
+		DiagramView *view = this->currentDiagramView();
+		if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+			return;
+		}
+		Element *accessory = nullptr;
+		const QList<QGraphicsItem *> items = view->diagram()->selectedItems();
+		for (QGraphicsItem *item : items)
+		{
+			if (Element *element = qgraphicsitem_cast<Element *>(item))
+			{
+				if (accessory) {
+					QMessageBox::information(this,
+						tr("Lier un accessoire"),
+						tr("Sélectionnez un seul accessoire."));
+					return;
+				}
+				accessory = element;
+			}
+		}
+		if (!accessory) {
+			QMessageBox::information(this, tr("Lier un accessoire"),
+				tr("Sélectionnez l'accessoire à rattacher."));
+			return;
+		}
+		if (CatalogProjectActions::linkAccessory(accessory, this)) {
+			statusBar()->showMessage(
+						tr("Accessoire rattaché. Ctrl+Z annule."), 6000);
+		}
+	});
+
 	m_iec_structure = new QAction(
 				tr("Structure d'identification (CEI 81346)…"), this);
 	connect(m_iec_structure, &QAction::triggered, this, [this]()
@@ -1618,6 +1655,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_catalogue -> addAction(m_catalog_assign);
 	menu_catalogue -> addAction(m_catalog_register);
 	menu_catalogue -> addSeparator();
+	menu_catalogue -> addAction(m_link_accessory);
 	menu_catalogue -> addAction(m_catalog_missing);
 	menu_catalogue -> addSeparator();
 	menu_catalogue -> addAction(m_catalog_import);
@@ -2499,6 +2537,7 @@ void QETDiagramEditor::slot_updateActions()
 		//Catalog menu. Browsing and managing the catalog do not need a
 		//project: the catalog belongs to the office, not to one drawing.
 	m_catalog_assign              -> setEnabled(editable_project);
+	m_link_accessory              -> setEnabled(editable_project);
 	m_catalog_register            -> setEnabled(editable_project);
 	m_catalog_missing             -> setEnabled(opened_project);
 		//The environment belongs to the station, not to a project.

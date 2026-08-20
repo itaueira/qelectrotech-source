@@ -256,11 +256,16 @@ void CreateSymbolDialog::fillTerminals()
 	for (int row = 0 ; row < m_symbol.terminals.size() ; ++row) {
 		const SymbolTerminal &terminal = m_symbol.terminals.at(row);
 
+			//Editable, and this is the escape hatch of the whole dialog: the
+			//connection points are deduced from the free ends of the drawing,
+			//which covers the drawing anybody actually makes. When it does not
+			//- a point wanted where no line ends - the position is typed here
+			//and snapped to the main grid on the way in.
 		QTableWidgetItem *position = new QTableWidgetItem(
 					QStringLiteral("%1 ; %2")
 					.arg(terminal.position.x())
 					.arg(terminal.position.y()));
-		position->setFlags(position->flags() & ~Qt::ItemIsEditable);
+		position->setToolTip(tr("x ; y — sera ramené sur la grille principale"));
 		m_terminals->setItem(row, ColumnPosition, position);
 
 		QComboBox *orientation = new QComboBox(m_terminals);
@@ -331,6 +336,23 @@ void CreateSymbolDialog::readTerminals()
 					m_terminals->cellWidget(row, ColumnOrientation))) {
 			terminal.orientation = Qet::Orientation(
 						orientation->currentData().toInt());
+		}
+		if (QTableWidgetItem *position = m_terminals->item(row, ColumnPosition))
+		{
+				//"12 ; 30", and anything else is ignored rather than reset to
+				//zero: a half typed coordinate must not throw the point to the
+				//origin while it is being typed.
+			const QStringList parts =
+					position->text().split(QLatin1Char(';'));
+			if (parts.size() == 2)
+			{
+				bool x_ok = false, y_ok = false;
+				const qreal x = parts.at(0).trimmed().toDouble(&x_ok);
+				const qreal y = parts.at(1).trimmed().toDouble(&y_ok);
+				if (x_ok && y_ok) {
+					terminal.position = m_grid.snapToMain(QPointF(x, y));
+				}
+			}
 		}
 		if (QTableWidgetItem *label = m_terminals->item(row, ColumnLabel)) {
 			terminal.label = label->text().trimmed();
@@ -410,6 +432,10 @@ void CreateSymbolDialog::refreshProblems()
 void CreateSymbolDialog::terminalsChanged()
 {
 	readTerminals();
+		//Rebuilt rather than left as typed: the position was snapped on the
+		//way in, and a table that goes on showing 23 while the point sits at
+		//20 is a table that lies about what will be saved.
+	fillTerminals();
 	refreshProblems();
 }
 

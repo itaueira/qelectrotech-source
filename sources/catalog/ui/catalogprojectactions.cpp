@@ -16,6 +16,11 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "catalogprojectactions.h"
+#include "../catalogclass.h"
+#include "../../qetapp.h"
+#include "../../undocommand/changeelementinformationcommand.h"
+#include <QMessageBox>
+#include <QInputDialog>
 
 #include "../../ElementsCollection/elementslocation.h"
 #include "../../diagram.h"
@@ -306,4 +311,138 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 	layout->addWidget(buttons);
 
 	dialog.exec();
+}
+
+/**
+	@brief CatalogProjectActions::possibleOwners
+	@param project
+	@param accessory
+	@return the components an accessory could belong to
+*/
+QList<Element *> CatalogProjectActions::possibleOwners(QETProject *project,
+						       Element *accessory)
+{
+	QList<Element *> owners;
+	const QList<Element *> all = components(project);
+	for (Element *element : all)
+	{
+			//An accessory does not own itself, and it does not own another
+			//accessory either: nesting them would make the bill of material
+			//a tree nobody asked for.
+		if (element == accessory) {
+			continue;
+		}
+		if (!element->elementInformations()
+				.value(CatalogAssignment::accessoryOwnerKey())
+				.toString().isEmpty()) {
+			continue;
+		}
+		owners << element;
+	}
+	return owners;
+}
+
+/**
+	@brief CatalogProjectActions::linkAccessory
+	@param accessory
+	@param parent
+	@return true when a link was made
+*/
+bool CatalogProjectActions::linkAccessory(Element *accessory, QWidget *parent)
+{
+	if (!accessory || !accessory->diagram() ||
+			!accessory->diagram()->project()) {
+		return false;
+	}
+	QETProject *project = accessory->diagram()->project();
+
+	Catalog *catalog = QETApp::catalog();
+	const QString own_class = accessory->elementInformations()
+			.value(QStringLiteral("catalog_class")).toString();
+	if (catalog && !own_class.isEmpty())
+	{
+			//A warning and not a refusal: the shop knows what it drew better
+			//than the class tree does, and refusing on a class somebody
+			//forgot to set would be refusing the right thing for a
+			//bookkeeping reason.
+		const CatalogClass symbol_class = catalog->classByKey(own_class);
+		if (symbol_class.id > 0 &&
+				!catalog->isDescendantOf(symbol_class.id,
+							 QStringLiteral("accessory")))
+		{
+			if (QMessageBox::question(parent,
+					QObject::tr("Lier un accessoire"),
+					QObject::tr("« %1 » n'est pas de la classe Accessoire, "
+						    "mais de « %2 ». Le lier quand même ?")
+						.arg(accessory->actualLabel(), symbol_class.name))
+					!= QMessageBox::Yes) {
+				return false;
+			}
+		}
+	}
+
+	const QList<Element *> owners = possibleOwners(project, accessory);
+	if (owners.isEmpty())
+	{
+		QMessageBox::information(parent, QObject::tr("Lier un accessoire"),
+			QObject::tr("Ce projet n'a aucun composant auquel rattacher "
+				    "l'accessoire."));
+		return false;
+	}
+
+		//Named by tag and folio, because a tag alone repeats across folios and
+		//the projectist is choosing between things they can see.
+	QStringList labels;
+	for (Element *owner : owners)
+	{
+		const QString tag = owner->actualLabel().isEmpty()
+				? QObject::tr("(sans repère)")
+				: owner->actualLabel();
+		const QString folio = owner->diagram() && !owner->diagram()->title().isEmpty()
+				? owner->diagram()->title()
+				: QObject::tr("folio %1").arg(
+					  owner->diagram()
+					  ? owner->diagram()->folioIndex() + 1 : 0);
+		labels << QStringLiteral("%1 — %2").arg(tag, folio);
+	}
+
+	const QString current = accessory->elementInformations()
+			.value(CatalogAssignment::accessoryOwnerKey()).toString();
+	int start = 0;
+	for (int i = 0 ; i < owners.size() ; ++i)
+	{
+		if (owners.at(i)->uuid().toString() == current) {
+			start = i;
+			break;
+		}
+	}
+
+	bool chosen = false;
+	const QString picked = QInputDialog::getItem(parent,
+			QObject::tr("Lier un accessoire"),
+			QObject::tr("À quel composant « %1 » appartient-il ?")
+				.arg(accessory->actualLabel()),
+			labels, start, false, &chosen);
+	if (!chosen) {
+		return false;
+	}
+
+	Element *owner = owners.value(labels.indexOf(picked));
+	if (!owner) {
+		return false;
+	}
+
+	DiagramContext old_information = accessory->elementInformations();
+	DiagramContext new_information = old_information;
+	new_information.addValue(CatalogAssignment::accessoryOwnerKey(),
+				 owner->uuid().toString());
+	if (old_information == new_information) {
+		return false;
+	}
+
+	accessory->diagram()->undoStack().push(
+				new ChangeElementInformationCommand(accessory,
+								   old_information,
+								   new_information));
+	return true;
 }

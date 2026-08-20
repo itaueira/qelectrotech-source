@@ -246,6 +246,13 @@ void ElementInfoWidget::enableLiveEdit()
 {
 	for (ElementInfoPartWidget *eipw : m_eipw_list)
 		connect(eipw, &ElementInfoPartWidget::textChanged, this, &ElementInfoWidget::apply);
+		//The tag field says it itself while it is being typed. See
+		//warnAboutLabelCollision() for why this is not the modal question.
+	if (ElementInfoPartWidget *label_field =
+			infoPartWidgetForKey(QETInformation::ELMT_LABEL)) {
+		connect(label_field, &ElementInfoPartWidget::textChanged,
+			this, &ElementInfoWidget::warnAboutLabelCollision);
+	}
 	connect(ui->m_auto_num_locked_cb, &QCheckBox::clicked, this, &ElementInfoWidget::apply);
 
 	if (m_potential_isolating_cb) {
@@ -264,6 +271,14 @@ void ElementInfoWidget::disableLiveEdit()
 {
 	for (ElementInfoPartWidget *eipw : m_eipw_list)
 		disconnect(eipw, &ElementInfoPartWidget::textChanged, this, &ElementInfoWidget::apply);
+	if (ElementInfoPartWidget *label_field =
+			infoPartWidgetForKey(QETInformation::ELMT_LABEL))
+	{
+		disconnect(label_field, &ElementInfoPartWidget::textChanged,
+			   this, &ElementInfoWidget::warnAboutLabelCollision);
+		label_field->setStyleSheet(QString());
+		label_field->setToolTip(QString());
+	}
 	disconnect(ui->m_auto_num_locked_cb, &QCheckBox::clicked, this, &ElementInfoWidget::apply);
 
 	if (m_potential_isolating_cb) {
@@ -393,6 +408,42 @@ void ElementInfoWidget::removeCustomProperty(CustomElementInfoPartWidget *widget
 	widget->deleteLater();
 
 	if (m_live_edit) apply();
+}
+
+/**
+	@brief ElementInfoWidget::warnAboutLabelCollision
+*/
+void ElementInfoWidget::warnAboutLabelCollision()
+{
+	ElementInfoPartWidget *field = infoPartWidgetForKey(QETInformation::ELMT_LABEL);
+	if (!field) {
+		return;
+	}
+
+	Element *other = nullptr;
+	if (m_element && m_element->diagram() && m_element->diagram()->project())
+	{
+		other = ProjectRenumberer::elementWithLabel(
+					m_element->diagram()->project(),
+					field->text(),
+					m_element->elementInformations()
+						.value(IecStructure::locationKey()).toString(),
+					m_element);
+	}
+
+	if (other)
+	{
+		field->setStyleSheet(QStringLiteral("QLineEdit { color : #C13A2E; }"));
+		field->setToolTip(tr("« %1 » est déjà le repère d'un autre composant, "
+				     "au même endroit. Deux composants avec le même "
+				     "repère, c'est une erreur que personne ne voit "
+				     "avant le montage.").arg(field->text()));
+	}
+	else
+	{
+		field->setStyleSheet(QString());
+		field->setToolTip(QString());
+	}
 }
 
 /**

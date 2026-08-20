@@ -719,6 +719,35 @@ QList<CatalogProperty> Catalog::ownProperties(int class_id) const
 }
 
 /**
+	@brief Catalog::isDescendantOf
+	@param class_id
+	@param ancestor_key
+	@return true when @a class_id is @a ancestor_key or descends from it
+*/
+bool Catalog::isDescendantOf(int class_id, const QString &ancestor_key) const
+{
+	if (ancestor_key.isEmpty()) {
+		return false;
+	}
+		//Walked with a step limit rather than trusted: a parent_id cycle in a
+		//hand edited catalog would otherwise hang the program, and a hang is
+		//harder to diagnose than a wrong answer.
+	int id = class_id;
+	for (int step = 0 ; step < 64 && id > 0 ; ++step)
+	{
+		const CatalogClass current = classById(id);
+		if (current.id <= 0) {
+			return false;
+		}
+		if (current.key == ancestor_key) {
+			return true;
+		}
+		id = current.parent_id;
+	}
+	return false;
+}
+
+/**
 	@brief Catalog::effectiveProperties
 	@param class_id
 	@return the properties of @a class_id, the inherited ones first.

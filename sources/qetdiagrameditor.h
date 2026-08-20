@@ -239,6 +239,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_show_conductor_text = nullptr,///< Action to show the number of the selected conductors
 		*m_hide_conductor_text = nullptr,///< Action to hide it
 		*m_align_conductor_text = nullptr,///< Action to line the conductor numbers up on one axis
+		*m_link_accessory = nullptr,    ///< Action to say which component an accessory belongs to
 		*m_export_project_db,		///Export to file the internal database of the current project
 		*m_tile_window,			///< Show MDI subwindows as tile
 		*m_cascade_window,		///< Show MDI subwindows as cascade

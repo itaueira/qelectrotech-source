@@ -91,6 +91,14 @@ class Catalog : public QObject
 		CatalogClass classById(int class_id) const;
 		CatalogClass classByKey(const QString &key) const;
 		QList<CatalogClass> childClasses(int parent_id) const;
+		/**
+			@param class_id
+			@param ancestor_key
+			@return true when @a class_id is @a ancestor_key or descends from it.
+			Asked rather than compared against one key because a shop that adds
+			"Accessoire de porte" under "Accessoire" still has accessories.
+		*/
+		bool isDescendantOf(int class_id, const QString &ancestor_key) const;
 		/// @return @a class_id and every class below it
 		QList<int> descendantClassIds(int class_id) const;
 		/// @return the ancestry of @a class_id, root first, @a class_id last

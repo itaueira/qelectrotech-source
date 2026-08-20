@@ -29,6 +29,16 @@ QString CatalogAssignment::partCodeKey()
 }
 
 /**
+	@brief CatalogAssignment::accessoryOwnerKey
+	@return the element information key holding the uuid of the component an
+	accessory belongs to
+*/
+QString CatalogAssignment::accessoryOwnerKey()
+{
+	return QStringLiteral("accessory_of");
+}
+
+/**
 	@brief CatalogAssignment::partRevisionKey
 	@return the element information key holding the part revision
 */
