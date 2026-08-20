@@ -721,6 +721,14 @@ QDomElement Terminal::toXml(QDomDocument &doc) const
 	// end for backward compatibility
 
 	qdo.setAttribute("orientation", d->m_orientation);
+
+	// Only written when the project overrides the name of the symbol
+	// definition. Writing is strict, and an attribute a plain QElectroTech
+	// does not know is ignored on its side, so a project saved here still
+	// opens there.
+	if (!d->m_instance_name.isEmpty()) {
+		qdo.setAttribute("name", d->m_instance_name);
+	}
 	return(qdo);
 }
 
@@ -779,11 +787,17 @@ bool Terminal::valideXml(QDomElement &terminal)
 */
 bool Terminal::fromXml(QDomElement &terminal)
 {
-	return (
+	const bool matches =
 		qFuzzyCompare(terminal.attribute("x").toDouble(), dock_elmt_.x()) &&
 		qFuzzyCompare(terminal.attribute("y").toDouble(), dock_elmt_.y()) &&
-		(terminal.attribute("orientation").toInt() == d->m_orientation)
-	);
+		(terminal.attribute("orientation").toInt() == d->m_orientation);
+
+	// Reading is tolerant: a project saved before the name existed simply
+	// keeps the name of its symbol definition.
+	if (matches && terminal.hasAttribute("name")) {
+		d->m_instance_name = terminal.attribute("name");
+	}
+	return matches;
 }
 
 /**
@@ -853,6 +867,14 @@ QString Terminal::name() const
 			}
 		}
 	}
+	// The name the project gave this terminal comes next: the symbol carries
+	// provisional labels because the same symbol serves twenty products, and
+	// the real pin numbers arrive with the catalog part assigned to the
+	// component. The master label still wins above, because there the number
+	// comes from the master element itself.
+	if (!d->m_instance_name.isEmpty()) {
+		return d->m_instance_name;
+	}
 	return d->m_name;
 }
 
@@ -864,6 +886,29 @@ QString Terminal::name() const
 QString Terminal::baseName() const
 {
 	return d->m_name;
+}
+
+/**
+	@brief Terminal::instanceName
+	@return the name this terminal carries in this project, empty when it still
+	uses the one from the symbol definition
+*/
+QString Terminal::instanceName() const
+{
+	return d->m_instance_name;
+}
+
+/**
+	@brief Terminal::setInstanceName
+	@param name : empty to go back to the name of the symbol definition
+*/
+void Terminal::setInstanceName(const QString &name)
+{
+	if (d->m_instance_name == name) {
+		return;
+	}
+	d->m_instance_name = name;
+	update();
 }
 
 /**

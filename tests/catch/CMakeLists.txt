@@ -86,14 +86,18 @@ add_executable(
     tst_My_test.cpp
     src/borderproperties_test.cpp
     src/catalog_test.cpp
+    src/catalogassignment_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
-    # not on Diagram - which is what lets the test binary link it with these
-    # five sources instead of half the program.
+    # not on Diagram - which is what lets the test binary link it with the
+    # handful of sources below instead of half the program. Keep it that way:
+    # the day the core needs an Element, these tests stop being cheap.
     ${QET_DIR}/sources/catalog/catalog.cpp
     ${QET_DIR}/sources/catalog/catalog.h
+    ${QET_DIR}/sources/catalog/catalogassignment.cpp
+    ${QET_DIR}/sources/catalog/catalogassignment.h
     ${QET_DIR}/sources/catalog/catalogclass.cpp
     ${QET_DIR}/sources/catalog/catalogclass.h
     ${QET_DIR}/sources/catalog/catalogpart.cpp

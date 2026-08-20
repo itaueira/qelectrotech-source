@@ -17,7 +17,10 @@
 */
 #include "qetdiagrameditor.h"
 
+#include "catalog/ui/catalogbrowserdialog.h"
 #include "catalog/ui/catalogmanagerdialog.h"
+#include "catalog/ui/catalogpartdialog.h"
+#include "catalog/ui/catalogprojectactions.h"
 #include <QCoreApplication>
 #include "ElementsCollection/elementscollectionwidget.h"
 #include "QWidgetAnimation/qwidgetanimation.h"
@@ -500,6 +503,31 @@ void QETDiagramEditor::setUpActions()
 		dialog.exec();
 	});
 
+	m_catalog_browse = new QAction(QET::Icons::TableOfContent, tr("Parcourir le catalogue"), this);
+	connect(m_catalog_browse, &QAction::triggered, this, [this]()
+	{
+		CatalogBrowserDialog dialog(QETApp::catalog(), this);
+		dialog.exec();
+	});
+
+		//The most repeated action of the day, so it gets a shortcut - and it
+		//goes through the shortcut manager, because what is repeated all day is
+		//what people want to rebind.
+	m_catalog_assign = new QAction(QET::Icons::TableOfContent, tr("Attribuer une pièce aux composants sélectionnés"), this);
+	ShortcutManager::instance().registerAction(m_catalog_assign, "diagrameditor.catalog_assign",
+						   tr("Éditeur de schémas"),
+						   Qt::CTRL | Qt::SHIFT | Qt::Key_P);
+	connect(m_catalog_assign, &QAction::triggered, this, &QETDiagramEditor::assignCatalogPart);
+
+	m_catalog_register = new QAction(QET::Icons::TableOfContent, tr("Enregistrer les composants sélectionnés comme pièce"), this);
+	connect(m_catalog_register, &QAction::triggered, this, &QETDiagramEditor::registerCatalogPart);
+
+	m_catalog_missing = new QAction(QET::Icons::TableOfContent, tr("Composants sans pièce"), this);
+	connect(m_catalog_missing, &QAction::triggered, this, [this]()
+	{
+		CatalogProjectActions::showMissingPartReport(this->currentProject(), this);
+	});
+
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
 	connect(m_project_terminalBloc, &QAction::triggered, this, &QETDiagramEditor::generateTerminalBlock);
@@ -852,6 +880,99 @@ void QETDiagramEditor::setUpToolBar()
 }
 
 /**
+	@brief QETDiagramEditor::assignCatalogPart
+	Assign one catalog part to every component selected on the current folio.
+
+	The most repeated action of the day, which is why it is one dialog and one
+	confirmation and nothing else. Assigning a part removes the accessories
+	the components had, so the user is told before it happens rather than
+	after.
+*/
+void QETDiagramEditor::assignCatalogPart()
+{
+	DiagramView *diagram_view = currentDiagramView();
+	if (!diagram_view || !diagram_view->diagram()) {
+		return;
+	}
+
+	QList<Element *> selected;
+	const QList<QGraphicsItem *> items = diagram_view->diagram()->selectedItems();
+	for (QGraphicsItem *item : items)
+	{
+		if (Element *element = qgraphicsitem_cast<Element *>(item)) {
+			selected.append(element);
+		}
+	}
+
+	if (selected.isEmpty())
+	{
+		QET::QetMessageBox::information(this, tr("Aucun composant sélectionné"),
+						tr("Sélectionnez le ou les composants qui doivent "
+						   "recevoir la pièce."));
+		return;
+	}
+
+	Catalog *catalog = QETApp::catalog();
+	const CatalogPart part = CatalogBrowserDialog::choosePart(catalog, this);
+	if (part.isNull()) {
+		return;
+	}
+
+	const int count = CatalogProjectActions::assignPart(selected, *catalog, part);
+	statusBar()->showMessage(tr("Pièce %1 attribuée à %n composant(s).", "", count)
+				 .arg(part.code), 4000);
+}
+
+/**
+	@brief QETDiagramEditor::registerCatalogPart
+	Save the components selected on the folio as a catalog part.
+
+	This is the registration flow that makes the catalog grow at the speed of
+	the projects: draw the circuit, fix the terminal numbers, fill in the
+	code, save. Select the coil and all its contacts together and the part
+	keeps the numbers of each symbol apart.
+*/
+void QETDiagramEditor::registerCatalogPart()
+{
+	DiagramView *diagram_view = currentDiagramView();
+	if (!diagram_view || !diagram_view->diagram()) {
+		return;
+	}
+
+	QList<Element *> selected;
+	const QList<QGraphicsItem *> items = diagram_view->diagram()->selectedItems();
+	for (QGraphicsItem *item : items)
+	{
+		if (Element *element = qgraphicsitem_cast<Element *>(item)) {
+			selected.append(element);
+		}
+	}
+
+	if (selected.isEmpty())
+	{
+		QET::QetMessageBox::information(this, tr("Aucun composant sélectionné"),
+						tr("Sélectionnez les symboles du composant — la bobine et "
+						   "tous ses contacts — avant d'enregistrer la pièce."));
+		return;
+	}
+
+	Catalog *catalog = QETApp::catalog();
+	CatalogPart part = CatalogProjectActions::partFromElements(*catalog, selected);
+
+	CatalogPartDialog dialog(catalog, part, this);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+	// Registering a part from a circuit and not assigning it back to that
+	// circuit would leave the drawing without the code that was just typed.
+	const CatalogPart saved = dialog.part();
+	const int count = CatalogProjectActions::assignPart(selected, *catalog, saved);
+	statusBar()->showMessage(tr("Pièce %1 enregistrée et attribuée à %n composant(s).", "", count)
+				 .arg(saved.code), 4000);
+}
+
+/**
 	@brief QETDiagramEditor::setUpMenu
 */
 void QETDiagramEditor::setUpMenu()
@@ -930,6 +1051,12 @@ void QETDiagramEditor::setUpMenu()
 
 	// menu Catalogue. The catalog is shared by the office and does not
 	// belong to a project, which is why it has a menu of its own.
+	menu_catalogue -> addAction(m_catalog_browse);
+	menu_catalogue -> addAction(m_catalog_assign);
+	menu_catalogue -> addAction(m_catalog_register);
+	menu_catalogue -> addSeparator();
+	menu_catalogue -> addAction(m_catalog_missing);
+	menu_catalogue -> addSeparator();
 	menu_catalogue -> addAction(m_catalog_manager);
 
 	main_tool_bar         -> toggleViewAction() -> setStatusTip(tr("Affiche ou non la barre d'outils principale"));
@@ -1732,6 +1859,12 @@ void QETDiagramEditor::slot_updateActions()
 	m_export_project_db           -> setEnabled(editable_project);
 #endif
 	m_project_terminalBloc        -> setEnabled(editable_project);
+
+		//Catalog menu. Browsing and managing the catalog do not need a
+		//project: the catalog belongs to the office, not to one drawing.
+	m_catalog_assign              -> setEnabled(editable_project);
+	m_catalog_register            -> setEnabled(editable_project);
+	m_catalog_missing             -> setEnabled(opened_project);
 
 
 	slot_updateUndoStack();

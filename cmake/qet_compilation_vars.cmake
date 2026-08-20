@@ -294,6 +294,8 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/catalog/catalog.cpp
   ${QET_DIR}/sources/catalog/catalog.h
+  ${QET_DIR}/sources/catalog/catalogassignment.cpp
+  ${QET_DIR}/sources/catalog/catalogassignment.h
   ${QET_DIR}/sources/catalog/catalogclass.cpp
   ${QET_DIR}/sources/catalog/catalogclass.h
   ${QET_DIR}/sources/catalog/catalogpart.cpp
@@ -303,8 +305,14 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/catalog/catalogschema.cpp
   ${QET_DIR}/sources/catalog/catalogschema.h
 
+  ${QET_DIR}/sources/catalog/ui/catalogbrowserdialog.cpp
+  ${QET_DIR}/sources/catalog/ui/catalogbrowserdialog.h
   ${QET_DIR}/sources/catalog/ui/catalogmanagerdialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogmanagerdialog.h
+  ${QET_DIR}/sources/catalog/ui/catalogpartdialog.cpp
+  ${QET_DIR}/sources/catalog/ui/catalogpartdialog.h
+  ${QET_DIR}/sources/catalog/ui/catalogprojectactions.cpp
+  ${QET_DIR}/sources/catalog/ui/catalogprojectactions.h
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.h
 
@@ -777,6 +785,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/addelementtextcommand.h
   ${QET_DIR}/sources/undocommand/adddiagramcommand.cpp
   ${QET_DIR}/sources/undocommand/adddiagramcommand.h
+  ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.cpp
+  ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.h
   ${QET_DIR}/sources/undocommand/addgraphicsobjectcommand.cpp
   ${QET_DIR}/sources/undocommand/addgraphicsobjectcommand.h
   ${QET_DIR}/sources/undocommand/changeelementdatacommand.cpp

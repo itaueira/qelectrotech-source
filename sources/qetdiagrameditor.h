@@ -158,6 +158,8 @@ class QETDiagramEditor : public QETMainWindow
 
 	private slots:
 		void selectionChanged();
+		void assignCatalogPart();
+		void registerCatalogPart();
 
 	public:
 		QAction
@@ -210,6 +212,10 @@ class QETDiagramEditor : public QETMainWindow
 		*m_project_export_wiring_list, ///< Action to export the wiring list
 		*m_terminal_numbering,         ///< Action to launch terminal numbering
 		*m_catalog_manager = nullptr,   ///< Action to open the catalog classes and properties
+		*m_catalog_browse = nullptr,    ///< Action to browse the catalog parts
+		*m_catalog_assign = nullptr,    ///< Action to assign a catalog part to the selection
+		*m_catalog_register = nullptr,  ///< Action to save the selected components as a catalog part
+		*m_catalog_missing = nullptr,   ///< Action to report the components with no part
 		*m_export_project_db,		///Export to file the internal database of the current project
 		*m_tile_window,			///< Show MDI subwindows as tile
 		*m_cascade_window,		///< Show MDI subwindows as cascade

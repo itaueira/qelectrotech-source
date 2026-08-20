@@ -117,6 +117,19 @@ class TerminalData : public PropertiesInterface
 
 		TerminalData::Type m_type = TerminalData::Generic;
 
+		/**
+			@brief m_instance_name
+			The name this terminal carries **in this project**, overriding the
+			one the symbol definition gave it. Empty means "use m_name".
+
+			It belongs to the .qet and not to the .elmt on purpose: the symbol
+			carries provisional labels (1, 2, A1, L1) because the same symbol
+			serves twenty different products, and the real pin numbers come
+			from the catalog part assigned to the component. Written today by
+			the part assignment; the mechanism itself is not catalog specific.
+		*/
+		QString m_instance_name;
+
 		/// Whether to display the terminal name as a text label
 		bool m_show_name = false;
 		/// Position of the text label relative to the terminal
