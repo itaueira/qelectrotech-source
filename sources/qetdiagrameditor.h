@@ -161,6 +161,9 @@ class QETDiagramEditor : public QETMainWindow
 		void assignCatalogPart();
 		void registerCatalogPart();
 		void renumberComponents();
+		void createSymbolFromSelection();
+		void saveSelectionAsGroup();
+		void insertGroup();
 
 	public:
 		QAction
@@ -221,6 +224,9 @@ class QETDiagramEditor : public QETMainWindow
 		*m_catalog_import = nullptr,    ///< Action to import parts from a spreadsheet
 		*m_catalog_repository = nullptr,///< Action to browse the shared part repository
 		*m_renumber_components = nullptr,///< Action to renumber the components, with a preview
+		*m_create_symbol = nullptr,     ///< Action to turn the selected drawing into a symbol
+		*m_save_group = nullptr,        ///< Action to file the selection as a graphic grouping
+		*m_insert_group = nullptr,      ///< Action to insert a graphic grouping
 		*m_export_project_db,		///Export to file the internal database of the current project
 		*m_tile_window,			///< Show MDI subwindows as tile
 		*m_cascade_window,		///< Show MDI subwindows as cascade

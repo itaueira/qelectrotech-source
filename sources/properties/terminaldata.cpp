@@ -115,6 +115,17 @@ QDomElement TerminalData::toXml(QDomDocument &xml_document) const
 
 	xml_element.setAttribute("type", typeToString(m_type));
 
+		//The contact semantics, written only when the symbol declared them.
+		//A terminal with nothing to say produces exactly the same line it
+		//always produced, which keeps a plain symbol readable by any
+		//QElectroTech and keeps the diff of the elements collection honest.
+	if (m_role != CatalogPinRole::Unknown) {
+		xml_element.setAttribute("role", CatalogPin::roleToString(m_role));
+	}
+	if (!m_pair.isEmpty()) {
+		xml_element.setAttribute("pair", m_pair);
+	}
+
 	if (m_show_name) {
 		xml_element.setAttribute("show_name", "true");
 		xml_element.setAttribute("label_x", QString::number(m_label_pos.x()));
@@ -181,6 +192,12 @@ bool TerminalData::fromXml (const QDomElement &xml_element)
 				xml_element.attribute("orientation"));
 
 	m_type = typeFromString(xml_element.attribute("type"));
+
+		//An old symbol has neither attribute, and comes out Unknown with an
+		//empty pair — which is what it is: a connection point that does not
+		//say what it is for.
+	m_role = CatalogPin::roleFromString(xml_element.attribute("role"));
+	m_pair = xml_element.attribute("pair");
 
 	m_show_name = (xml_element.attribute("show_name") == QLatin1String("true"));
 	if (m_show_name) {

@@ -19,6 +19,7 @@
 #define TERMINALDATA_H
 
 #include "../qet.h"
+#include "../catalog/catalogpart.h"
 #include "propertiesinterface.h"
 
 #include <QColor>
@@ -129,6 +130,33 @@ class TerminalData : public PropertiesInterface
 			the part assignment; the mechanism itself is not catalog specific.
 		*/
 		QString m_instance_name;
+
+		/**
+			@brief m_role
+			What this connection point is for: a plain terminal, a coil
+			terminal, one end of a NO contact, one pole of a power contact.
+
+			Declared by the symbol (T35) and read by whatever needs to count
+			contacts: free contacts left, a schematic asking for more
+			contacts than the part has, power told apart from control.
+			Without it the drawing knows where wires attach and nothing
+			about what they attach to.
+
+			It uses the same vocabulary as the pin of a catalog part
+			(CatalogPinRole) so that the declaration of the symbol and the
+			declaration of the product can be compared directly, with no
+			mapping table in between to fall out of step.
+
+			Absent from a symbol that says nothing, and then written nowhere.
+		*/
+		CatalogPinRole m_role = CatalogPinRole::Unknown;
+
+		/**
+			@brief m_pair
+			Two connection points carrying the same non empty pair name are
+			one contact. Empty means the point stands alone.
+		*/
+		QString m_pair;
 
 		/// Whether to display the terminal name as a text label
 		bool m_show_name = false;

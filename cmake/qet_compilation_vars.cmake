@@ -482,13 +482,23 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ElementsCollection/elementstreeview.h
   ${QET_DIR}/sources/ElementsCollection/fileelementcollectionitem.cpp
   ${QET_DIR}/sources/ElementsCollection/fileelementcollectionitem.h
+  ${QET_DIR}/sources/ElementsCollection/sheetsymbolextractor.cpp
+  ${QET_DIR}/sources/ElementsCollection/sheetsymbolextractor.h
+  ${QET_DIR}/sources/ElementsCollection/symbolbuilder.cpp
+  ${QET_DIR}/sources/ElementsCollection/symbolbuilder.h
+  ${QET_DIR}/sources/ElementsCollection/symbolgroup.cpp
+  ${QET_DIR}/sources/ElementsCollection/symbolgroup.h
   ${QET_DIR}/sources/ElementsCollection/xmlelementcollection.cpp
   ${QET_DIR}/sources/ElementsCollection/xmlelementcollection.h
   ${QET_DIR}/sources/ElementsCollection/xmlprojectelementcollectionitem.cpp
   ${QET_DIR}/sources/ElementsCollection/xmlprojectelementcollectionitem.h
 
+  ${QET_DIR}/sources/ElementsCollection/ui/createsymboldialog.cpp
+  ${QET_DIR}/sources/ElementsCollection/ui/createsymboldialog.h
   ${QET_DIR}/sources/ElementsCollection/ui/renamedialog.cpp
   ${QET_DIR}/sources/ElementsCollection/ui/renamedialog.h
+  ${QET_DIR}/sources/ElementsCollection/ui/symbolgroupdialog.cpp
+  ${QET_DIR}/sources/ElementsCollection/ui/symbolgroupdialog.h
 
   ${QET_DIR}/sources/factory/elementfactory.cpp
   ${QET_DIR}/sources/factory/elementfactory.h

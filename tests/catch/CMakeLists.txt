@@ -89,6 +89,7 @@ add_executable(
     src/catalogassignment_test.cpp
     src/catalogimport_test.cpp
     src/environment_test.cpp
+    src/symbol_test.cpp
     src/iecstructure_test.cpp
     src/renumber_test.cpp
     main.cpp
@@ -133,6 +134,14 @@ add_executable(
     # The environment and the in-use lock have the same property as the
     # catalog core: no QETApp, no Diagram, so the rules that decide
     # whether a project gets overwritten can be tested cheaply.
+    # The symbol being built out of the drawing is geometry, validation and
+    # XML: no scene, no item, no window. SheetSymbolExtractor is the part that
+    # does touch the graphics items, and it is deliberately not here — it is
+    # kept thin for exactly that reason.
+    ${QET_DIR}/sources/ElementsCollection/symbolbuilder.cpp
+    ${QET_DIR}/sources/ElementsCollection/symbolbuilder.h
+    ${QET_DIR}/sources/ElementsCollection/symbolgroup.cpp
+    ${QET_DIR}/sources/ElementsCollection/symbolgroup.h
     ${QET_DIR}/sources/environment/filediskstate.h
     ${QET_DIR}/sources/environment/projectlock.cpp
     ${QET_DIR}/sources/environment/projectlock.h

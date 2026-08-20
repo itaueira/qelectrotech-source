@@ -17,6 +17,10 @@
 */
 #include "qetdiagrameditor.h"
 
+#include "ElementsCollection/sheetsymbolextractor.h"
+#include "ElementsCollection/ui/createsymboldialog.h"
+#include "ElementsCollection/ui/symbolgroupdialog.h"
+
 #include "autoNum/ui/renumberdialog.h"
 #include "catalog/ui/catalogbrowserdialog.h"
 #include "catalog/ui/catalogimportdialog.h"
@@ -558,6 +562,25 @@ void QETDiagramEditor::setUpActions()
 	connect(m_renumber_components, &QAction::triggered,
 		this, &QETDiagramEditor::renumberComponents);
 
+		//Making a symbol on the sheet, with the drawing tools everybody
+		//already uses, instead of in a separate program. The separate program
+		//is why nobody makes symbols: a similar one gets used and disguised,
+		//and the library stops representing what is actually built.
+	m_create_symbol = new QAction(QET::Icons::ElementNew,
+				      tr("Créer un symbole à partir du dessin sélectionné"),
+				      this);
+	connect(m_create_symbol, &QAction::triggered,
+		this, &QETDiagramEditor::createSymbolFromSelection);
+
+	m_save_group = new QAction(tr("Enregistrer la sélection en groupement"),
+				   this);
+	connect(m_save_group, &QAction::triggered,
+		this, &QETDiagramEditor::saveSelectionAsGroup);
+
+	m_insert_group = new QAction(tr("Insérer un groupement…"), this);
+	connect(m_insert_group, &QAction::triggered,
+		this, &QETDiagramEditor::insertGroup);
+
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
 	connect(m_project_terminalBloc, &QAction::triggered, this, &QETDiagramEditor::generateTerminalBlock);
@@ -907,6 +930,10 @@ void QETDiagramEditor::setUpToolBar()
 	addToolBar(Qt::TopToolBarArea, diagram_tool_bar);
 	addToolBar(Qt::TopToolBarArea, m_add_item_tool_bar);
 	addToolBar(Qt::TopToolBarArea, m_depth_tool_bar);
+
+		//The selected tool has to be recognisable, which means the icon on it
+		//has to stay visible. See QETApp::toolBarStyleSheet().
+	QETApp::styleToolBars(this);
 }
 
 /**
@@ -1043,6 +1070,137 @@ void QETDiagramEditor::renumberComponents()
 				    "", dialog.appliedCount()), 5000);
 }
 
+
+/**
+	@brief QETDiagramEditor::createSymbolFromSelection
+	Turn what is drawn and selected on the sheet into a symbol of the library.
+
+	The step that was missing: the drawing tools of the sheet are the tools
+	everybody knows, so a symbol should be made with them. What the drawing
+	cannot say - the class, the provisional label of each connection point,
+	which pair of points is a NO contact - is asked for in the dialog, and
+	only there.
+*/
+void QETDiagramEditor::createSymbolFromSelection()
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+
+	DiagramContent content(view->diagram(), true);
+	const QString refusal = SheetSymbolExtractor::refusal(content);
+	if (!refusal.isEmpty()) {
+		QMessageBox::information(this, tr("Créer un symbole"), refusal);
+		return;
+	}
+
+	const SymbolGrid grid;
+	const SymbolDefinition symbol =
+			SheetSymbolExtractor::fromSelection(content, grid);
+
+	CreateSymbolDialog dialog(symbol, QETApp::catalog(), this);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+		//The collection is reloaded so the new symbol is in the panel at
+		//once: making a symbol and then not finding it is the same as not
+		//having made it.
+	if (m_element_collection_widget) {
+		m_element_collection_widget->reload();
+	}
+	statusBar()->showMessage(
+				tr("Symbole enregistré : %1").arg(dialog.savedPath()),
+				8000);
+}
+
+/**
+	@brief QETDiagramEditor::saveSelectionAsGroup
+	File the selected piece of schematic in the library, catalog parts and all.
+*/
+void QETDiagramEditor::saveSelectionAsGroup()
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram()) {
+		return;
+	}
+	if (view->diagram()->selectedItems().isEmpty()) {
+		QMessageBox::information(this, tr("Enregistrer un groupement"),
+			tr("Rien n'est sélectionné. Sélectionnez le morceau de schéma "
+			   "à enregistrer."));
+		return;
+	}
+
+		//The very fragment the copy command produces. Nothing is translated
+		//into another format on the way in, so nothing can be lost on the
+		//way out - the assigned parts included.
+	const QDomDocument fragment = view->diagram()->toXml(false);
+	const QString path = SymbolGroupDialog::saveSelection(fragment, this);
+	if (path.isEmpty()) {
+		return;
+	}
+	statusBar()->showMessage(tr("Groupement enregistré : %1").arg(path), 8000);
+}
+
+/**
+	@brief QETDiagramEditor::insertGroup
+	Insert a filed piece of schematic into the sheet, in one undoable step.
+*/
+void QETDiagramEditor::insertGroup()
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+
+	const SymbolGroup group = SymbolGroupDialog::chooseGroup(this);
+	if (group.isNull()) {
+		return;
+	}
+
+	QDomDocument fragment;
+	fragment.appendChild(fragment.importNode(
+				     group.fragment.documentElement()
+				     .firstChildElement(QStringLiteral("diagram")), true));
+	if (fragment.documentElement().isNull()) {
+			//A file written before the wrapper existed, or by hand: the
+			//fragment is the whole document.
+		fragment = group.fragment;
+	}
+
+		//Read in and pushed as one command, the same way a paste is: undoing
+		//an insertion has to be one Ctrl+Z, not thirty.
+	Diagram *diagram = view->diagram();
+	DiagramContent inserted;
+		//Where the projectist is looking, not at the corner of the sheet: a
+		//grouping that lands off screen reads as one that did not arrive.
+	const QPointF where =
+			view->mapToScene(view->viewport()->rect().center());
+	diagram->fromXml(fragment, where, false, &inserted);
+	if (!inserted.count()) {
+		QMessageBox::warning(this, tr("Insérer un groupement"),
+			tr("« %1 » n'a rien apporté sur la folio.").arg(group.name));
+		return;
+	}
+
+	diagram->clearSelection();
+	diagram->undoStack().push(new PasteDiagramCommand(diagram, inserted));
+	view->adjustSceneRect();
+
+	const QStringList codes = group.partCodes();
+	if (codes.isEmpty()) {
+		statusBar()->showMessage(
+					tr("« %1 » inséré. Ctrl+Z annule tout d'un coup.")
+					.arg(group.name), 8000);
+	} else {
+		statusBar()->showMessage(
+					tr("« %1 » inséré avec %n pièce(s) déjà attribuée(s). "
+					   "Ctrl+Z annule tout d'un coup.", "", codes.size())
+					.arg(group.name), 8000);
+	}
+}
+
 /**
 	@brief QETDiagramEditor::setUpMenu
 */
@@ -1095,6 +1253,10 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addActions(m_row_column_actions_group.actions());
 	menu_edition -> addSeparator();
 	menu_edition -> addActions(m_depth_action_group->actions());
+	menu_edition -> addSeparator();
+	menu_edition -> addAction(m_create_symbol);
+	menu_edition -> addAction(m_save_group);
+	menu_edition -> addAction(m_insert_group);
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_find);
 	menu_edition -> addAction(m_jump_to_element);
@@ -1988,6 +2150,9 @@ void QETDiagramEditor::slot_updateActions()
 	m_project_export_wiring_list  -> setEnabled(opened_project);
 	m_terminal_numbering          -> setEnabled(editable_project);
 	m_renumber_components         -> setEnabled(editable_project);
+	m_create_symbol               -> setEnabled(editable_project);
+	m_save_group                  -> setEnabled(editable_project);
+	m_insert_group                -> setEnabled(editable_project);
 #ifdef QET_EXPORT_PROJECT_DB
 	m_export_project_db           -> setEnabled(editable_project);
 #endif

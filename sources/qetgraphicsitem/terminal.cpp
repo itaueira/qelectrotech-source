@@ -912,6 +912,28 @@ void Terminal::setInstanceName(const QString &name)
 }
 
 /**
+	@brief Terminal::role
+	@return what this connection point is for, as the symbol declared it.
+	Unknown for every symbol that says nothing, which is most of the
+	collection: the declaration is what T35 lets a symbol carry, not
+	something the older symbols are missing.
+*/
+CatalogPinRole Terminal::role() const
+{
+	return d->m_role;
+}
+
+/**
+	@brief Terminal::contactPair
+	@return the pair name shared with the other half of the contact, empty
+	when this connection point stands alone
+*/
+QString Terminal::contactPair() const
+{
+	return d->m_pair;
+}
+
+/**
 	@brief Terminal::terminalType
 	@return the type of this terminal (Generic, Inner, Outer, No, Nc, Common)
 */

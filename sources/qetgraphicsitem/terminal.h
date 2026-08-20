@@ -79,6 +79,10 @@ class Terminal : public QGraphicsObject
 		QString   baseName            () const;
 		QString   instanceName        () const;
 		void      setInstanceName     (const QString &name);
+		/// what this connection point is for, as the symbol declared it (T35)
+		CatalogPinRole role           () const;
+		/// the other connection point this one forms a contact with
+		QString   contactPair         () const;
 		TerminalData::Type terminalType() const;
 		bool useMasterLabel() const { return d->m_use_master_label; }
 		void setUseMasterLabel(bool use);

@@ -62,6 +62,25 @@ static int adjust_grp_row         = 4;
 static int frame_grp_row          = 5;
 static int hold_to_bottom_grp_row = 6;
 
+namespace
+{
+	/**
+		The label to show for an information key: what QElectroTech calls it
+		when it knows the key, the key itself when it does not.
+
+		A property added by a catalog class (T12) is element information like
+		any other, but QETInformation has never heard of it and returns an
+		empty string for it. Showing the key is not pretty; showing a blank
+		row in the list of what can be displayed is worse - it looks like a
+		bug and it hides a property that works.
+	*/
+	QString infoLabel(const QString &key)
+	{
+		const QString translated = QETInformation::translatedInfoKey(key);
+		return translated.isEmpty() ? key : translated;
+	}
+}
+
 DynamicElementTextModel::DynamicElementTextModel(Element *element, QObject *parent) :
 	QStandardItemModel(parent),
 	m_element(element)
@@ -1475,7 +1494,7 @@ void DynamicElementTextModel::updateDataFromText(DynamicElementTextItem *deti,
 			qsi->setData(deti->toPlainText(), Qt::DisplayRole);
 			QString info_name = deti->infoName();
 			qsi->child(info_txt_row,1)->setData(info_name, Qt::UserRole+2);
-			qsi->child(info_txt_row,1)->setData(QETInformation::translatedInfoKey(info_name), Qt::DisplayRole);
+			qsi->child(info_txt_row,1)->setData(infoLabel(info_name), Qt::DisplayRole);
 			break;
 		}
 		case compositeText:
@@ -1638,7 +1657,7 @@ QWidget *DynamicTextItemDelegate::createEditor(
 
 			QStringList strl = availableInfo(deti);
 			for (int i=0; i<strl.size();++i) {
-				qcb -> addItem(QETInformation::translatedInfoKey(strl[i]), strl[i]);
+				qcb -> addItem(infoLabel(strl[i]), strl[i]);
 			}
 			return qcb;
 		}
@@ -1976,11 +1995,34 @@ QStringList DynamicTextItemDelegate::availableInfo(
 		QStringList info_list = QETInformation::elementInfoKeys();
 		info_list.removeAll("formula"); //No need to have formula
 		DiagramContext dc = elmt->elementInformations();
-		
+
 		for(const QString& info : info_list)
 		{
 			if(dc.contains(info))
 				qstrl << info;
+		}
+
+			//The properties a catalog class declares (T12) are element
+			//information too, and QETInformation has no way to know about
+			//them: they are invented by whoever set up the catalog. Offering
+			//whatever the component actually carries is what makes "show the
+			//rating of the fuse next to the symbol" possible without
+			//touching the drawing.
+			//The keys the machinery uses for itself are left out - showing
+			//"1" beside a component because auto_num_locked is set would be
+			//nobody's intention.
+		static const QStringList machinery = {
+			QStringLiteral("formula"),
+			QStringLiteral("auto_num_locked"),
+			QStringLiteral("exclude_from_bom"),
+			QStringLiteral("potential_isolating"),
+			QStringLiteral("part_revision"),
+			QStringLiteral("catalog_class")};
+		const QStringList carried = dc.keys();
+		for(const QString& key : carried)
+		{
+			if(!qstrl.contains(key) && !machinery.contains(key))
+				qstrl << key;
 		}
 	}
 	return qstrl;

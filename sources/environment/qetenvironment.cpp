@@ -156,7 +156,8 @@ QStringList QETEnvironment::skeletonFolders()
 		 QStringLiteral("elements-company"),
 		 QStringLiteral("titleblocks"),
 		 QStringLiteral("titleblocks-company"),
-		 QStringLiteral("macros") };
+		 QStringLiteral("macros"),
+		 QStringLiteral("groupings") };
 }
 
 /**
@@ -261,6 +262,15 @@ QString QETEnvironment::companyTitleBlocksDir()
 QString QETEnvironment::macrosDir()
 {
 	return subDir(QStringLiteral("macros"));
+}
+
+/**
+	@brief QETEnvironment::groupingsDir
+	@return where the graphic groupings are filed
+*/
+QString QETEnvironment::groupingsDir()
+{
+	return subDir(QStringLiteral("groupings"));
 }
 
 /**

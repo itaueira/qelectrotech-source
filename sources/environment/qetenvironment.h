@@ -65,6 +65,14 @@ class QETEnvironment
 		static QString titleBlocksDir();
 		static QString companyTitleBlocksDir();
 		static QString macrosDir();
+		/**
+			@brief Where the graphic groupings are filed (T35).
+			Apart from the macros on purpose: a macro has variables and asks
+			questions when inserted, a grouping is a finished piece of
+			schematic that comes in as it was drawn. Mixing them in one
+			folder would mean the projectist has to remember which is which.
+		*/
+		static QString groupingsDir();
 		static QString catalogFile();
 
 		/// The relative names of the folders an environment holds

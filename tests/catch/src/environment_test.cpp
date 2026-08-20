@@ -101,7 +101,7 @@ TEST_CASE("CU-38.1 — pointer le programme sur un dossier suffit")
 	CHECK(QDir(QETEnvironment::path()) == QDir(wanted));
 
 	// Pointing at an empty folder is enough: the skeleton is created, so
-	// nobody has to know which six sub-folders to make by hand.
+	// nobody has to know which sub-folders to make by hand.
 	CHECK(QETEnvironment::looksLikeEnvironment(wanted));
 	const QStringList folders = QETEnvironment::skeletonFolders();
 	for (const QString &folder : folders) {
@@ -114,6 +114,7 @@ TEST_CASE("CU-38.1 — pointer le programme sur un dossier suffit")
 	CHECK(QETEnvironment::companyElementsDir().startsWith(wanted));
 	CHECK(QETEnvironment::titleBlocksDir().startsWith(wanted));
 	CHECK(QETEnvironment::macrosDir().startsWith(wanted));
+	CHECK(QETEnvironment::groupingsDir().startsWith(wanted));
 	CHECK(QETEnvironment::catalogFile().startsWith(wanted));
 
 	// Emptying the setting goes back to the default instead of leaving the
