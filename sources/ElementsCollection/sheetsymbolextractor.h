@@ -60,6 +60,17 @@ class SheetSymbolExtractor
 
 		/// the css like style string of the element definition for this pen
 		static QString styleOf(const QPen &pen, const QBrush &brush);
+		/**
+			@brief The pen a style string of the element definition means.
+			The way back, needed to explode a symbol into drawing again. It
+			reads the same four declarations styleOf() writes, and the pair
+			round trips for every appearance a schematic actually uses.
+		*/
+		static QPen penFor(const QString &style);
+		/// The brush a style string of the element definition means
+		static QBrush brushFor(const QString &style);
+		/// the colour @a name means, invalid when the name is not one of ours
+		static QColor colorFor(const QString &name);
 
 	private:
 		static SymbolShape shapeOf(const QetShapeItem *item);

@@ -17,6 +17,8 @@
 */
 #include "iecstructure.h"
 
+#include <QCoreApplication>
+
 /**
 	@brief IecStructure::IecStructure
 */
@@ -221,4 +223,90 @@ QString IecStructure::productKey()
 QString IecStructure::folioLocationKey()
 {
 	return QStringLiteral("locmach");
+}
+
+/*
+	IecStructureSettings
+*/
+
+IecStructureSettings::IecStructureSettings()
+{
+}
+
+QString IecStructureSettings::xmlTagName()
+{
+	return QStringLiteral("iec_structure");
+}
+
+QString IecStructureSettings::displayToString(IecTagDisplay display)
+{
+	return display == IecTagDisplay::Full ? QStringLiteral("full")
+					      : QStringLiteral("short");
+}
+
+IecTagDisplay IecStructureSettings::displayFromString(const QString &string)
+{
+		//Anything unknown reads as the short form: a project written by a
+		//later version that invents a third display still opens, and opens
+		//showing the tag the shop floor is used to.
+	return string == QLatin1String("full") ? IecTagDisplay::Full
+					       : IecTagDisplay::Short;
+}
+
+QString IecStructureSettings::translatedDisplay(IecTagDisplay display)
+{
+	switch (display) {
+		case IecTagDisplay::Short:
+			return QCoreApplication::translate("IecStructureSettings",
+				"Courte : -K3");
+		case IecTagDisplay::Full:
+			return QCoreApplication::translate("IecStructureSettings",
+				"Complète : =CT1+A1-K3");
+	}
+	return QString();
+}
+
+QString IecStructureSettings::displayedTag(const IecStructure &folio,
+					   const IecStructure &element) const
+{
+	if (!enabled) {
+			//Not "almost the same": the same. This return is what makes a
+			//delivered project safe to open.
+		return element.product;
+	}
+	const IecStructure full = IecStructure::inherit(folio, element);
+	return display == IecTagDisplay::Full ? full.toFullTag()
+					      : full.toShortTag();
+}
+
+bool IecStructureSettings::operator==(const IecStructureSettings &other) const
+{
+	return enabled == other.enabled && display == other.display;
+}
+
+bool IecStructureSettings::operator!=(const IecStructureSettings &other) const
+{
+	return !(*this == other);
+}
+
+QDomElement IecStructureSettings::toXml(QDomDocument &document) const
+{
+	QDomElement element = document.createElement(xmlTagName());
+	element.setAttribute(QStringLiteral("enabled"),
+			     enabled ? QStringLiteral("true")
+				     : QStringLiteral("false"));
+	element.setAttribute(QStringLiteral("display"), displayToString(display));
+	return element;
+}
+
+void IecStructureSettings::fromXml(const QDomElement &element)
+{
+	if (element.isNull() || element.tagName() != xmlTagName()) {
+			//A project saved before this existed says nothing, and silence
+			//means off. Reading is tolerant; that is the rule.
+		return;
+	}
+	enabled = element.attribute(QStringLiteral("enabled")) ==
+			QLatin1String("true");
+	display = displayFromString(element.attribute(QStringLiteral("display")));
 }

@@ -294,3 +294,42 @@ int ProjectRenumberer::applyPlan(const QList<Element *> &elements, const Renumbe
 	diagram->undoStack().push(command);
 	return count;
 }
+
+/**
+	@brief ProjectRenumberer::elementWithLabel
+	@param project
+	@param label
+	@param location
+	@param except
+	@return the component already carrying @a label in @a location
+*/
+Element *ProjectRenumberer::elementWithLabel(QETProject *project,
+					     const QString &label,
+					     const QString &location,
+					     Element *except)
+{
+	const QString wanted = label.trimmed();
+	if (!project || wanted.isEmpty()) {
+		return nullptr;
+	}
+
+	const QList<Element *> element_list = components(project);
+	for (Element *element : element_list)
+	{
+		if (!element || element == except) {
+			continue;
+		}
+		const DiagramContext info = element->elementInformations();
+		if (info.value(QStringLiteral("label")).toString().trimmed() != wanted) {
+			continue;
+		}
+			//Two cabinets may each have their own -Q1. Only a collision in
+			//the same location is a collision.
+		if (info.value(IecStructure::locationKey()).toString().trimmed()
+				!= location.trimmed()) {
+			continue;
+		}
+		return element;
+	}
+	return nullptr;
+}

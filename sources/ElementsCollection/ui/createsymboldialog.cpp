@@ -37,6 +37,8 @@
 #include <QVBoxLayout>
 
 #include "../../catalog/catalog.h"
+#include "../../catalog/ui/catalogbrowserdialog.h"
+#include "../../catalog/catalogassignment.h"
 #include "../../catalog/catalogclass.h"
 #include "../../catalog/catalogproperty.h"
 #include "../../qetapp.h"
@@ -127,6 +129,19 @@ void CreateSymbolDialog::setUpWidget()
 	}
 	form->addRow(tr("Rôle dans le renvoi de folio :"), m_link_type);
 
+		//Optional, and normally left empty: one contactor symbol serves twenty
+		//contactors. Worth having for the ones the shop always buys, where
+		//filling the part in again on every insertion is typing the same
+		//answer forever.
+	QHBoxLayout *part_layout = new QHBoxLayout();
+	m_default_part = new QLabel(tr("aucune — symbole générique"), this);
+	m_choose_part = new QPushButton(tr("Choisir…"), this);
+	m_clear_part = new QPushButton(tr("Retirer"), this);
+	part_layout->addWidget(m_default_part, 1);
+	part_layout->addWidget(m_choose_part);
+	part_layout->addWidget(m_clear_part);
+	form->addRow(tr("Pièce par défaut :"), part_layout);
+
 	QHBoxLayout *folder_layout = new QHBoxLayout();
 	m_folder = new QLineEdit(QETApp::companyElementsDir(), this);
 	m_folder_button = new QPushButton(tr("Parcourir…"), this);
@@ -212,6 +227,10 @@ void CreateSymbolDialog::setUpWidget()
 	connect(box, &QDialogButtonBox::rejected, this, &QDialog::reject);
 	connect(m_folder_button, &QPushButton::clicked,
 		this, &CreateSymbolDialog::chooseFolder);
+	connect(m_choose_part, &QPushButton::clicked,
+		this, &CreateSymbolDialog::chooseDefaultPart);
+	connect(m_clear_part, &QPushButton::clicked,
+		this, &CreateSymbolDialog::clearDefaultPart);
 	connect(m_add_terminal, &QPushButton::clicked,
 		this, &CreateSymbolDialog::addTerminal);
 	connect(m_remove_terminal, &QPushButton::clicked,
@@ -378,12 +397,87 @@ void CreateSymbolDialog::refreshProblems()
 		summary << tr("%1 NO, %2 NF, %3 de puissance")
 			   .arg(no).arg(nc).arg(power);
 	}
+	if (!m_symbol.default_part_code.isEmpty()) {
+		summary << tr("pièce %1 incluse").arg(m_symbol.default_part_code);
+		m_default_part->setText(m_symbol.default_part_code);
+	} else {
+		m_default_part->setText(tr("aucune — symbole générique"));
+	}
+	m_clear_part->setEnabled(!m_symbol.default_part_code.isEmpty());
 	m_summary->setText(summary.join(QStringLiteral(" · ")));
 }
 
 void CreateSymbolDialog::terminalsChanged()
 {
 	readTerminals();
+	refreshProblems();
+}
+
+/**
+	@brief CreateSymbolDialog::chooseDefaultPart
+	Pick the catalog part this symbol is for.
+
+	Two things happen when a part is chosen, and both are the point: the values
+	of the part are written into the symbol, so a component inserted from it
+	arrives with manufacturer and code already filled; and the provisional
+	labels of the connection points are replaced by the real pin numbers of the
+	product, because for a symbol that is for one product there is nothing
+	provisional about them.
+*/
+void CreateSymbolDialog::chooseDefaultPart()
+{
+	if (!m_catalog) {
+		QMessageBox::information(this, tr("Pièce par défaut"),
+			tr("Le catalogue n'est pas disponible."));
+		return;
+	}
+
+	const CatalogPart part = CatalogBrowserDialog::choosePart(m_catalog, this);
+	if (part.isNull()) {
+		return;
+	}
+
+	readTerminals();
+	m_symbol.default_part_code = part.code;
+	m_symbol.default_part_values =
+			CatalogAssignment::valuesForElement(*m_catalog, part);
+
+		//The real pin numbers, in the reading order of the connection points -
+		//the same order and the same rule the assignment uses on the sheet, so
+		//that a symbol made this way and a part assigned later agree.
+	const QStringList names = CatalogAssignment::terminalNames(
+				part, QString(), m_symbol.terminals.size());
+	for (int i = 0 ; i < m_symbol.terminals.size() && i < names.size() ; ++i) {
+		if (!names.at(i).isEmpty()) {
+			m_symbol.terminals[i].label = names.at(i);
+		}
+	}
+
+	if (m_symbol.class_key.isEmpty() && part.class_id > 0) {
+		const CatalogClass part_class = m_catalog->classById(part.class_id);
+		if (!part_class.key.isEmpty()) {
+			const int index = m_class->findData(part_class.key);
+			if (index >= 0) {
+				m_class->setCurrentIndex(index);
+			}
+		}
+	}
+
+	fillTerminals();
+	refreshProblems();
+}
+
+/**
+	@brief CreateSymbolDialog::clearDefaultPart
+	Back to a generic symbol. The provisional labels are not put back: the
+	person who chose the part may well have wanted those numbers anyway, and
+	guessing which of them to undo would be guessing.
+*/
+void CreateSymbolDialog::clearDefaultPart()
+{
+	readTerminals();
+	m_symbol.default_part_code.clear();
+	m_symbol.default_part_values.clear();
 	refreshProblems();
 }
 

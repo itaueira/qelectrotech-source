@@ -283,6 +283,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/autoNum/projectrenumberer.h
   ${QET_DIR}/sources/autoNum/renumberplan.cpp
   ${QET_DIR}/sources/autoNum/renumberplan.h
+  ${QET_DIR}/sources/autoNum/ui/iecstructuredialog.cpp
+  ${QET_DIR}/sources/autoNum/ui/iecstructuredialog.h
   ${QET_DIR}/sources/autoNum/ui/renumberdialog.cpp
   ${QET_DIR}/sources/autoNum/ui/renumberdialog.h
   ${QET_DIR}/sources/autoNum/numerotationcontextcommands.cpp
@@ -335,6 +337,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/catalog/ui/catalogpartdialog.h
   ${QET_DIR}/sources/catalog/ui/catalogprojectactions.cpp
   ${QET_DIR}/sources/catalog/ui/catalogprojectactions.h
+  ${QET_DIR}/sources/catalog/ui/catalogreplacedialog.cpp
+  ${QET_DIR}/sources/catalog/ui/catalogreplacedialog.h
   ${QET_DIR}/sources/catalog/ui/catalogrepositorydialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogrepositorydialog.h
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.cpp
@@ -839,8 +843,12 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/changeelementinformationcommand.h
   ${QET_DIR}/sources/undocommand/changetitleblockcommand.cpp
   ${QET_DIR}/sources/undocommand/changetitleblockcommand.h
+  ${QET_DIR}/sources/undocommand/conductortextcommand.cpp
+  ${QET_DIR}/sources/undocommand/conductortextcommand.h
   ${QET_DIR}/sources/undocommand/deleteqgraphicsitemcommand.cpp
   ${QET_DIR}/sources/undocommand/deleteqgraphicsitemcommand.h
+  ${QET_DIR}/sources/undocommand/explodeelementcommand.cpp
+  ${QET_DIR}/sources/undocommand/explodeelementcommand.h
   ${QET_DIR}/sources/undocommand/itemmodelcommand.cpp
   ${QET_DIR}/sources/undocommand/itemmodelcommand.h
   ${QET_DIR}/sources/undocommand/linkelementcommand.cpp

@@ -47,6 +47,9 @@ int Diagram::xGrid  = 10;
 int Diagram::yGrid  = 10;
 int Diagram::xKeyGrid = 10;
 int Diagram::yKeyGrid = 10;
+bool Diagram::displayFineGrid = false;
+bool Diagram::displayTerminals = false;
+bool Diagram::displayEmptyTextFields = false;
 int Diagram::xKeyGridFine = 1;
 int Diagram::yKeyGridFine = 1;
 const qreal Diagram::margin = 5.0;
@@ -276,6 +279,46 @@ void Diagram::drawBackground(QPainter *p, const QRectF &r) {
 		p -> setPen(pen);
 		if (zoom_factor > 0.5) // no grid below ... !
 				p -> drawPoints(points);
+
+			//The finer grid, under the main one and fainter than it, so the
+			//main grid stays the one the eye lands on: it is the one the
+			//connection points have to sit on.
+			//Only drawn when zoomed in enough for the dots to be apart from
+			//each other, otherwise it is a grey wash over the folio.
+		if (Diagram::displayFineGrid && zoom_factor > 2.0)
+		{
+			const int fine_x = qMax(1, settings.value(
+				QStringLiteral("diagrameditor/key_fine_Xgrid"),
+				Diagram::xKeyGridFine).toInt());
+			const int fine_y = qMax(1, settings.value(
+				QStringLiteral("diagrameditor/key_fine_Ygrid"),
+				Diagram::yKeyGridFine).toInt());
+
+			QPen fine_pen = pen;
+			QColor fine_color = pen.color();
+			fine_color.setAlpha(70);
+			fine_pen.setColor(fine_color);
+			fine_pen.setWidth(1);
+			p->setPen(fine_pen);
+
+			int fx = (int)ceil(rect.x());
+			while (fx % fine_x) ++ fx;
+			int fy = (int)ceil(rect.y());
+			while (fy % fine_y) ++ fy;
+
+			QPolygon fine_points;
+			for (int gx = fx ; gx < limit_x ; gx += fine_x) {
+				for (int gy = fy ; gy < limit_y ; gy += fine_y) {
+						//The main grid already drew these, and drawing them
+						//again in a fainter pen only makes them muddy.
+					if (gx % xGrid == 0 && gy % yGrid == 0) {
+						continue;
+					}
+					fine_points << QPoint(gx, gy);
+				}
+			}
+			p->drawPoints(fine_points);
+		}
 	}
 
 	if (draw_guides_) {

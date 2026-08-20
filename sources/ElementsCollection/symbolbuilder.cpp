@@ -735,18 +735,33 @@ QDomDocument SymbolDefinition::toXml() const
 	names.appendChild(name_element);
 	root.appendChild(names);
 
-		//The class of the symbol travels as element information, which is what
-		//a component reads to know which properties it has (T12).
-	if (!class_key.trimmed().isEmpty()) {
+		//The class of the symbol, and the values of the default part when the
+		//symbol is for one particular product, travel as element information:
+		//that is what a component reads to know what it is.
+	if (!class_key.trimmed().isEmpty() || !default_part_values.isEmpty()) {
 		QDomElement informations =
 				document.createElement(QStringLiteral("elementInformations"));
-		QDomElement info =
-				document.createElement(QStringLiteral("elementInformation"));
-		info.setAttribute(QStringLiteral("name"),
-				  QStringLiteral("catalog_class"));
-		info.setAttribute(QStringLiteral("show"), QStringLiteral("0"));
-		info.appendChild(document.createTextNode(class_key.trimmed()));
-		informations.appendChild(info);
+		if (!class_key.trimmed().isEmpty()) {
+			QDomElement info =
+					document.createElement(QStringLiteral("elementInformation"));
+			info.setAttribute(QStringLiteral("name"),
+					  QStringLiteral("catalog_class"));
+			info.setAttribute(QStringLiteral("show"), QStringLiteral("0"));
+			info.appendChild(document.createTextNode(class_key.trimmed()));
+			informations.appendChild(info);
+		}
+			//Sorted, so the same symbol always produces the same file.
+		QStringList value_keys = default_part_values.keys();
+		value_keys.sort();
+		for (const QString &key : value_keys) {
+			QDomElement info =
+					document.createElement(QStringLiteral("elementInformation"));
+			info.setAttribute(QStringLiteral("name"), key);
+			info.setAttribute(QStringLiteral("show"), QStringLiteral("1"));
+			info.appendChild(document.createTextNode(
+						 default_part_values.value(key)));
+			informations.appendChild(info);
+		}
 		root.appendChild(informations);
 	}
 
@@ -984,9 +999,14 @@ SymbolDefinition SymbolDefinition::fromXml(const QDomElement &definition)
 		QDomElement info = element_informations.firstChildElement(
 					QStringLiteral("elementInformation"));
 		while (!info.isNull()) {
-			if (info.attribute(QStringLiteral("name")) ==
-					QLatin1String("catalog_class")) {
+			const QString name = info.attribute(QStringLiteral("name"));
+			if (name == QLatin1String("catalog_class")) {
 				symbol.class_key = info.text();
+			} else if (!name.isEmpty()) {
+				symbol.default_part_values.insert(name, info.text());
+				if (name == QLatin1String("part_code")) {
+					symbol.default_part_code = info.text();
+				}
 			}
 			info = info.nextSiblingElement(
 						QStringLiteral("elementInformation"));

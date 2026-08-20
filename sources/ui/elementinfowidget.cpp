@@ -16,9 +16,13 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "elementinfowidget.h"
+#include <QMessageBox>
 #include <QCheckBox>
 #include <QPushButton>
+#include "../autoNum/iecstructure.h"
+#include "../autoNum/projectrenumberer.h"
 #include "../diagram.h"
+#include "../qetproject.h"
 #include "../qetapp.h"
 #include "../qetgraphicsitem/element.h"
 #include "../qetinformation.h"
@@ -127,6 +131,65 @@ QUndoCommand* ElementInfoWidget::associatedUndo() const
 		if (!lock_touched) {
 			new_info.addValue(QStringLiteral("auto_num_locked"),
 					  !new_label.trimmed().isEmpty());
+		}
+	}
+
+		//A tag that another component already carries, in the same location.
+		//Asked once, when the change is committed - not while the field is
+		//being typed into, which is why the live edit mode is left out: a
+		//modal box per keystroke would be unusable, and the dock is a live
+		//editor.
+	if (!m_live_edit && new_label != old_label &&
+			!new_label.trimmed().isEmpty() && m_element &&
+			m_element->diagram() && m_element->diagram()->project())
+	{
+		Element *other = ProjectRenumberer::elementWithLabel(
+					m_element->diagram()->project(),
+					new_label,
+					new_info.value(IecStructure::locationKey()).toString(),
+					m_element);
+		if (other)
+		{
+				//window() and not this: associatedUndo() is const, so `this` is
+				//a const pointer, and QWidget::window() hands back a usable
+				//parent from a const method. The box belongs to the dialog
+				//anyway, not to the field inside it.
+			QMessageBox question(window());
+			question.setWindowTitle(tr("Repère déjà utilisé"));
+			question.setIcon(QMessageBox::Warning);
+			question.setText(tr("« %1 » est déjà le repère d'un autre "
+					    "composant, au même endroit.").arg(new_label));
+			question.setInformativeText(
+				tr("Deux composants avec le même repère, c'est une erreur "
+				   "que personne ne voit avant le montage : la borne câblée "
+				   "d'après le schéma va au mauvais appareil.\n\n"
+				   "Aller le voir, ou garder le doublon en le sachant ?"));
+			QPushButton *go = question.addButton(
+						tr("Aller jusqu'à l'autre"),
+						QMessageBox::ActionRole);
+			QPushButton *overwrite = question.addButton(
+						tr("Garder le doublon"),
+						QMessageBox::DestructiveRole);
+			question.addButton(QMessageBox::Cancel);
+			question.setDefaultButton(go);
+			question.exec();
+
+			if (question.clickedButton() == go)
+			{
+					//Shown rather than described: the folio comes forward and
+					//the other component is selected, so the two can be
+					//compared instead of remembered.
+				if (Diagram *other_diagram = other->diagram())
+				{
+					other_diagram->clearSelection();
+					other->setSelected(true);
+					other_diagram->showMe();
+				}
+				return nullptr;
+			}
+			if (question.clickedButton() != overwrite) {
+				return nullptr;
+			}
 		}
 	}
 

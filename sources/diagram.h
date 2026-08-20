@@ -95,6 +95,48 @@ class Diagram : public QGraphicsScene
 		/// Key grid y step size
 		static int yKeyGrid;
 		/// Key grid fine x step size
+		/**
+			@brief Whether the finer grid is drawn under the main one.
+
+			Two grids, and each has a job. Connection points and the
+			insertion point of a symbol have to land on the main grid, or
+			the conductor never quite touches. The drawing itself has to
+			line up with nothing, so it is free to use a finer step - and
+			seeing that step is what makes it usable.
+
+			Off in normal use: a schematic with a one unit grid drawn on it
+			is a schematic nobody can read.
+
+			These three are static, like the grid steps beside them, because
+			they are the way this program has always held a drawing
+			preference: one setting for every folio of every project, saved
+			in the QSettings, not in the .qet. A drawing comfort does not
+			belong in the file the customer receives.
+		*/
+		static bool displayFineGrid;
+		/**
+			@brief Whether connection points are drawn even when nothing is
+			near them.
+
+			A terminal shows itself when the cursor comes close, which is
+			right for wiring and useless for checking a symbol: you have to
+			hunt for the points with the mouse to find out where they are.
+			Switched on, they are all visible at once - and switched off
+			again for normal work, because a visible terminal is a terminal
+			somebody drags by accident.
+		*/
+		static bool displayTerminals;
+		/**
+			@brief Whether a text field with nothing in it is drawn as a
+			placeholder.
+
+			A field bound to component information that has no value yet
+			draws nothing at all, so positioning it means moving something
+			invisible. Shown as its own key in brackets while the switch is
+			on.
+		*/
+		static bool displayEmptyTextFields;
+
 		static int xKeyGridFine;
 		/// Key grid fine y step size
 		static int yKeyGridFine;

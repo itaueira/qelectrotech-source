@@ -15,6 +15,8 @@
 	You should have received a copy of the GNU General Public License
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <QDomDocument>
+
 #include "../../../sources/autoNum/iecstructure.h"
 #include "qt_catch_tostring.h"
 
@@ -146,4 +148,128 @@ TEST_CASE("IecStructure — les champs où les trois parties vivent")
 	CHECK(IecStructure::productKey() == QStringLiteral("label"));
 	CHECK(IecStructure::productKey() != QStringLiteral("designation"));
 	CHECK(IecStructure::folioLocationKey() == QStringLiteral("locmach"));
+}
+
+TEST_CASE("CU-10.1 — desligada, a estrutura não muda nada", "[iec]")
+{
+	IecStructureSettings settings;
+
+	SECTION("o padrão é desligada, e é o que protege projeto entregue")
+	{
+		CHECK_FALSE(settings.enabled);
+		CHECK(settings.display == IecTagDisplay::Short);
+	}
+
+	SECTION("desligada, a tag que sai é exatamente a que entrou")
+	{
+			//Nem "quase igual": igual. Com a estrutura desligada, o folio
+			//pode carregar função e localização e nada disso aparece.
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("A1"),
+					 QString());
+		const IecStructure element(QString(), QString(),
+					   QStringLiteral("K3"));
+		CHECK(settings.displayedTag(folio, element) == QStringLiteral("K3"));
+
+			//Inclusive quando o próprio componente declara função e
+			//localização: desligado é desligado.
+		const IecStructure declared(QStringLiteral("CT9"),
+					    QStringLiteral("B2"),
+					    QStringLiteral("K3"));
+		CHECK(settings.displayedTag(folio, declared) == QStringLiteral("K3"));
+	}
+}
+
+TEST_CASE("CU-10.2 e CU-10.3 — ligada, a tag herda e aparece", "[iec]")
+{
+	IecStructureSettings settings;
+	settings.enabled = true;
+
+	const IecStructure folio(QStringLiteral("CT1"),
+				 QStringLiteral("A1"),
+				 QString());
+
+	SECTION("curta mostra só o produto, com o traço da norma")
+	{
+		settings.display = IecTagDisplay::Short;
+		const IecStructure element(QString(), QString(),
+					   QStringLiteral("K3"));
+		CHECK(settings.displayedTag(folio, element) == QStringLiteral("-K3"));
+	}
+
+	SECTION("completa mostra as três partes, herdadas do folio")
+	{
+		settings.display = IecTagDisplay::Full;
+		const IecStructure element(QString(), QString(),
+					   QStringLiteral("K3"));
+		CHECK(settings.displayedTag(folio, element) ==
+		      QStringLiteral("=CT1+A1-K3"));
+	}
+
+	SECTION("o que o componente declara vence o que o folio dá, campo a campo")
+	{
+		settings.display = IecTagDisplay::Full;
+			//Componente movido para outro armário: sobrescreve o + e
+			//continua herdando o = do folio.
+		const IecStructure element(QString(), QStringLiteral("B2"),
+					   QStringLiteral("K3"));
+		CHECK(settings.displayedTag(folio, element) ==
+		      QStringLiteral("=CT1+B2-K3"));
+	}
+}
+
+TEST_CASE("o interruptor da estrutura viaja no .qet", "[iec]")
+{
+	IecStructureSettings settings;
+	settings.enabled = true;
+	settings.display = IecTagDisplay::Full;
+
+	QDomDocument document;
+	const QDomElement element = settings.toXml(document);
+
+	SECTION("ida e volta preserva as duas decisões")
+	{
+		IecStructureSettings read;
+		read.fromXml(element);
+		CHECK(read == settings);
+		CHECK(read.enabled);
+		CHECK(read.display == IecTagDisplay::Full);
+	}
+
+	SECTION("projeto antigo, sem o elemento, abre com a estrutura desligada")
+	{
+			//É a leitura tolerante da regra do fork: campo ausente assume o
+			//padrão e não gera erro.
+		IecStructureSettings read;
+		read.enabled = true;
+		read.fromXml(QDomElement());
+			//Nada foi lido, então nada mudou — e o padrão de um objeto novo
+			//é desligado.
+		IecStructureSettings fresh;
+		fresh.fromXml(QDomElement());
+		CHECK_FALSE(fresh.enabled);
+	}
+
+	SECTION("exibição desconhecida cai na curta em vez de recusar o arquivo")
+	{
+		QDomDocument other;
+		QDomElement broken = other.createElement(
+					IecStructureSettings::xmlTagName());
+		broken.setAttribute(QStringLiteral("enabled"), QStringLiteral("true"));
+		broken.setAttribute(QStringLiteral("display"),
+				    QStringLiteral("holografica"));
+		IecStructureSettings read;
+		read.fromXml(broken);
+		CHECK(read.enabled);
+		CHECK(read.display == IecTagDisplay::Short);
+	}
+
+	SECTION("as duas exibições têm nome traduzido")
+	{
+		for (IecTagDisplay display : {IecTagDisplay::Short, IecTagDisplay::Full}) {
+			CHECK_FALSE(IecStructureSettings::translatedDisplay(display).isEmpty());
+			CHECK(IecStructureSettings::displayFromString(
+				      IecStructureSettings::displayToString(display)) == display);
+		}
+	}
 }

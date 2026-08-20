@@ -17,6 +17,8 @@
 */
 #include "catalogimport.h"
 
+#include <QHash>
+
 #include "catalog.h"
 
 #include <QCoreApplication>
@@ -429,6 +431,16 @@ CatalogImportReport CatalogImporter::import(Catalog &catalog,
 		part.origin = origin;
 		part.origin_date = stamp;
 
+		// The properties of the class the part is going into, so that a cell
+		// can be read as what the column is for. Fetched per part because two
+		// rows of the same sheet can belong to two classes.
+		const QList<CatalogProperty> class_properties =
+				catalog.effectiveProperties(class_id);
+		QHash<QString, CatalogProperty> property_by_key;
+		for (const CatalogProperty &property : class_properties) {
+			property_by_key.insert(property.key, property);
+		}
+
 		const QStringList property_keys = profile.value_columns.keys();
 		for (const QString &key : property_keys)
 		{
@@ -436,7 +448,13 @@ CatalogImportReport CatalogImporter::import(Catalog &catalog,
 			if (header.isEmpty() || table.columnIndex(header) < 0) {
 				continue;
 			}
-			const QString value = table.value(row, header);
+			QString value = table.value(row, header);
+			// A date column of an .xlsx arrives as a serial number. The
+			// property says it is a date, so this is the one place where
+			// converting is not guessing.
+			if (property_by_key.contains(key)) {
+				value = property_by_key.value(key).fromSpreadsheetCell(value);
+			}
 			// An empty cell leaves what was there: a supplier's list rarely
 			// fills every column, and treating a gap as "erase this" is how
 			// an import destroys a catalog.

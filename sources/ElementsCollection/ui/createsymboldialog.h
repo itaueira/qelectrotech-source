@@ -68,6 +68,8 @@ class CreateSymbolDialog : public QDialog
 		QString savedPath() const;
 
 	private slots:
+		void chooseDefaultPart();
+		void clearDefaultPart();
 		void addTerminal();
 		void removeTerminal();
 		void pairSelected();
@@ -92,6 +94,9 @@ class CreateSymbolDialog : public QDialog
 		QLineEdit *m_name = nullptr;
 		QComboBox *m_class = nullptr;
 		QComboBox *m_link_type = nullptr;
+		QLabel *m_default_part = nullptr;
+		QPushButton *m_choose_part = nullptr;
+		QPushButton *m_clear_part = nullptr;
 		QLineEdit *m_folder = nullptr;
 		QPushButton *m_folder_button = nullptr;
 		QTableWidget *m_terminals = nullptr;

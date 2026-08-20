@@ -164,6 +164,9 @@ class QETDiagramEditor : public QETMainWindow
 		void createSymbolFromSelection();
 		void saveSelectionAsGroup();
 		void insertGroup();
+		void explodeSelection();
+		void setConductorTextVisible(bool visible);
+		void alignConductorTexts();
 
 	public:
 		QAction
@@ -227,6 +230,15 @@ class QETDiagramEditor : public QETMainWindow
 		*m_create_symbol = nullptr,     ///< Action to turn the selected drawing into a symbol
 		*m_save_group = nullptr,        ///< Action to file the selection as a graphic grouping
 		*m_insert_group = nullptr,      ///< Action to insert a graphic grouping
+		*m_iec_structure = nullptr,     ///< Action to turn the IEC 81346 structure on for this project
+		*m_explode_element = nullptr,   ///< Action to turn a placed symbol back into drawing
+		*m_replace_part = nullptr,      ///< Action to swap a catalog part across the project
+		*m_show_fine_grid = nullptr,    ///< Action to draw the finer grid
+		*m_show_terminals = nullptr,    ///< Action to keep the connection points visible
+		*m_show_empty_fields = nullptr, ///< Action to show the text fields that have no value
+		*m_show_conductor_text = nullptr,///< Action to show the number of the selected conductors
+		*m_hide_conductor_text = nullptr,///< Action to hide it
+		*m_align_conductor_text = nullptr,///< Action to line the conductor numbers up on one axis
 		*m_export_project_db,		///Export to file the internal database of the current project
 		*m_tile_window,			///< Show MDI subwindows as tile
 		*m_cascade_window,		///< Show MDI subwindows as cascade

@@ -19,6 +19,7 @@
 #define CATALOGPROPERTY_H
 
 #include <QList>
+#include <QDate>
 #include <QString>
 #include <QStringList>
 #include <QVariant>
@@ -94,6 +95,36 @@ class CatalogProperty
 		static CatalogPropertyType typeFromString(const QString &string,
 							  bool *ok = nullptr);
 		static QString translatedTypeName(CatalogPropertyType type);
+
+		/**
+			@brief Turn a spreadsheet cell into something this property accepts.
+			@param raw : the cell as the reader produced it
+
+			One case, and it is the case that bites: a date column of an .xlsx
+			arrives as a serial number - 45292 rather than 01/01/2024 - because
+			that is what the file holds. Read as text it becomes a five digit
+			number in a date field, and nobody notices until they filter by date.
+
+			Converted only when this property is a Date and the cell is a whole
+			number in the range a spreadsheet date can occupy. Anything else is
+			returned untouched: a date already written as text stays as it is,
+			and a number in a numeric field stays a number.
+		*/
+		QString fromSpreadsheetCell(const QString &raw) const;
+
+		/**
+			@brief The date a spreadsheet serial number means.
+			@param serial : days since the epoch of the workbook
+			@return an invalid date when @a serial is outside the range a date
+			column can hold, so the caller can leave the cell alone.
+
+			The epoch is 30/12/1899, not 01/01/1900: the format counts a
+			29/02/1900 that never existed, and shifting the epoch back a day is
+			how every reader compensates. Serial 1 is 31/12/1899 and serial
+			45292 is 01/01/2024 - both checked by test, because this is exactly
+			the kind of off by one that ships.
+		*/
+		static QDate dateFromSpreadsheetSerial(qint64 serial);
 		static QList<CatalogPropertyType> allTypes();
 
 		static QString listBehaviourToString(CatalogListBehaviour behaviour);

@@ -447,3 +447,56 @@ QString CatalogProperty::keyFromName(const QString &name)
 	}
 	return stripped;
 }
+
+/**
+	@brief CatalogProperty::dateFromSpreadsheetSerial
+	@param serial
+	@return the date @a serial means, invalid when it means nothing
+*/
+QDate CatalogProperty::dateFromSpreadsheetSerial(qint64 serial)
+{
+		//Below 1 there is no date, and above roughly the year 9999 there is
+		//no date either - a serial that large is a quantity, a code or a
+		//price that landed in the wrong column.
+	if (serial < 1 || serial > 2958465) {
+		return QDate();
+	}
+		//30/12/1899 and not 01/01/1900: the spreadsheet format counts a
+		//29/02/1900 that never existed, and moving the epoch back one day is
+		//how every reader compensates for it.
+	return QDate(1899, 12, 30).addDays(serial);
+}
+
+/**
+	@brief CatalogProperty::fromSpreadsheetCell
+	@param raw
+	@return @a raw, converted when this property is a date and @a raw is a
+	serial number
+*/
+QString CatalogProperty::fromSpreadsheetCell(const QString &raw) const
+{
+	if (type != CatalogPropertyType::Date) {
+		return raw;
+	}
+	const QString trimmed = raw.trimmed();
+	if (trimmed.isEmpty()) {
+		return raw;
+	}
+
+	bool is_number = false;
+	const qint64 serial = trimmed.toLongLong(&is_number);
+	if (!is_number) {
+			//Already a date written as text. Left exactly as it is: the
+			//person who typed it knows the format they meant.
+		return raw;
+	}
+
+	const QDate date = dateFromSpreadsheetSerial(serial);
+	if (!date.isValid()) {
+			//A number that is not a plausible date. Kept, so it shows up in
+			//the field and can be seen to be wrong, instead of quietly
+			//becoming a date in the year 1900.
+		return raw;
+	}
+	return date.toString(Qt::ISODate);
+}

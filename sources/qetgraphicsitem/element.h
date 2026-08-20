@@ -150,6 +150,19 @@ class Element : public QetGraphicsItem
 		bool isFreezeLabel() const {return m_freeze_label;}
 		void freezeNewAddedElement();
 		QString actualLabel();
+		/**
+			@brief The tag as the drawing should show it.
+			With the IEC 81346 structure off - the default - this is @a label
+			untouched. See the implementation for why it is composed here and
+			not stored.
+		*/
+		QString composedLabel(const QString &label);
+		/**
+			@brief Say the tag again, without anything having changed.
+			The composed tag is built when the text is drawn, so a change of the
+			project setting has nothing in the model to notice.
+		*/
+		void refreshLabel();
 
 		QString name() const override;
 		ElementsLocation location() const;

@@ -20,6 +20,7 @@
 #include <algorithm>
 
 #include <QCoreApplication>
+#include <QHash>
 #include <QVector>
 
 #include "../diagramcontent.h"
@@ -91,6 +92,108 @@ QString SheetSymbolExtractor::styleOf(const QPen &pen, const QBrush &brush)
 
 	return QStringLiteral("line-style:%1;line-weight:%2;filling:%3;color:%4")
 			.arg(line_style, line_weight, filling, color);
+}
+
+namespace
+{
+	/// the declarations of a css like style string, by name
+	QHash<QString, QString> styleDeclarations(const QString &style)
+	{
+		QHash<QString, QString> declarations;
+		const QStringList parts = style.split(QLatin1Char(';'),
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+						     Qt::SkipEmptyParts);
+#else
+						     QString::SkipEmptyParts);
+#endif
+		for (const QString &part : parts) {
+			const int colon = part.indexOf(QLatin1Char(':'));
+			if (colon <= 0) {
+				continue;
+			}
+			declarations.insert(part.left(colon).trimmed(),
+					    part.mid(colon + 1).trimmed());
+		}
+		return declarations;
+	}
+}
+
+QColor SheetSymbolExtractor::colorFor(const QString &name)
+{
+	static const QHash<QString, QColor> named = {
+		{QStringLiteral("black"),     QColor(Qt::black)},
+		{QStringLiteral("white"),     QColor(Qt::white)},
+		{QStringLiteral("green"),     QColor(Qt::green)},
+		{QStringLiteral("red"),       QColor(Qt::red)},
+		{QStringLiteral("blue"),      QColor(Qt::blue)},
+		{QStringLiteral("gray"),      QColor(Qt::gray)},
+		{QStringLiteral("yellow"),    QColor(Qt::yellow)},
+		{QStringLiteral("cyan"),      QColor(Qt::cyan)},
+		{QStringLiteral("magenta"),   QColor(Qt::magenta)},
+		{QStringLiteral("lightgray"), QColor(Qt::lightGray)}
+	};
+	if (named.contains(name)) {
+		return named.value(name);
+	}
+		//The definition format has a long tail of HTML colour names this
+		//does not carry. Letting QColor try is free, and what it does not
+		//know comes back invalid for the caller to fall back on.
+	const QColor guess(name);
+	return guess.isValid() ? guess : QColor();
+}
+
+QPen SheetSymbolExtractor::penFor(const QString &style)
+{
+	const QHash<QString, QString> declarations = styleDeclarations(style);
+
+	QPen pen(Qt::black);
+	pen.setCapStyle(Qt::RoundCap);
+	pen.setJoinStyle(Qt::RoundJoin);
+
+	const QString line_style = declarations.value(QStringLiteral("line-style"));
+	if (line_style == QLatin1String("dashed")) {
+		pen.setStyle(Qt::DashLine);
+	} else if (line_style == QLatin1String("dotted")) {
+		pen.setStyle(Qt::DotLine);
+	} else if (line_style == QLatin1String("dashdotted")) {
+		pen.setStyle(Qt::DashDotLine);
+	} else {
+		pen.setStyle(Qt::SolidLine);
+	}
+
+		//The same four steps styleOf() chooses between, read back to the
+		//middle of each range: a symbol exploded and made into a block again
+		//comes out with the weight it went in with.
+	const QString weight = declarations.value(QStringLiteral("line-weight"));
+	if (weight == QLatin1String("none")) {
+		pen.setStyle(Qt::NoPen);
+	} else if (weight == QLatin1String("thin")) {
+		pen.setWidthF(0.4);
+	} else if (weight == QLatin1String("hight")) {
+		pen.setWidthF(2.0);
+	} else if (weight == QLatin1String("eleve")) {
+		pen.setWidthF(4.0);
+	} else {
+		pen.setWidthF(1.0);
+	}
+
+	const QColor color = colorFor(declarations.value(QStringLiteral("color")));
+	pen.setColor(color.isValid() ? color : QColor(Qt::black));
+	return pen;
+}
+
+QBrush SheetSymbolExtractor::brushFor(const QString &style)
+{
+	const QHash<QString, QString> declarations = styleDeclarations(style);
+	const QString filling = declarations.value(QStringLiteral("filling"));
+	if (filling.isEmpty() || filling == QLatin1String("none")) {
+		return QBrush(Qt::NoBrush);
+	}
+	const QColor color = colorFor(filling);
+	if (!color.isValid()) {
+		return QBrush(Qt::NoBrush);
+	}
+	return QBrush(color, Qt::SolidPattern);
 }
 
 SymbolShape SheetSymbolExtractor::shapeOf(const QetShapeItem *item)

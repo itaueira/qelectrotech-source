@@ -21,6 +21,7 @@
 #include "ElementsCollection/elementslocation.h"
 #include "NameList/nameslist.h"
 #include "project/projectpropertieshandler.h"
+#include "autoNum/iecstructure.h"
 #include "borderproperties.h"
 #include "conductorproperties.h"
 #include "dataBase/projectdatabase.h"
@@ -233,6 +234,23 @@ class QETProject : public QObject
 		bool projectWasModified();
 		bool projectOptionsWereModified();
 		DiagramContext projectProperties();
+
+		/**
+			@brief Whether this project uses the IEC 81346 identification
+			structure, and how much of the tag it writes on the drawing.
+
+			A property of the project and not of the application: two customers,
+			two requirements, the same workstation. Off by default, and off means
+			the drawing reads exactly as it always read.
+		*/
+		IecStructureSettings iecSettings() const;
+		void setIecSettings(const IecStructureSettings &settings);
+		/**
+			@brief Make every component say the text of its tag again.
+			The composed tag is built when the text is drawn, so a change of the
+			setting leaves nothing in the model for a text to notice.
+		*/
+		void refreshElementLabels();
 		void setProjectProperties(const DiagramContext &);
 		QUndoStack* undoStack() {return m_undo_stack;}
 
@@ -355,6 +373,7 @@ class QETProject : public QObject
 	bool m_auto_break_conductor = false;
 		XmlElementCollection *m_elements_collection = nullptr;
 		bool m_freeze_new_elements = false;
+		IecStructureSettings m_iec_settings;
 		bool m_freeze_new_conductors = false;
 		QTimer m_save_backup_timer,
 			   m_autosave_timer;

@@ -2440,6 +2440,22 @@ void QETApp::initConfiguration()
 		// two from drifting apart.
 	QETEnvironment::setDefaultPath(dataDir());
 
+		//The three drawing switches of T35. Held in the QSettings and not in
+		//the .qet on purpose: a drawing comfort belongs to the workstation,
+		//not to the file the customer receives.
+	{
+		QSettings drawing_settings;
+		Diagram::displayFineGrid = drawing_settings.value(
+					QStringLiteral("diagrameditor/display-fine-grid"),
+					false).toBool();
+		Diagram::displayTerminals = drawing_settings.value(
+					QStringLiteral("diagrameditor/display-terminals"),
+					false).toBool();
+		Diagram::displayEmptyTextFields = drawing_settings.value(
+					QStringLiteral("diagrameditor/display-empty-fields"),
+					false).toBool();
+	}
+
 	// create configuration files if necessary
 	// cree les dossiers de configuration si necessaire
 	QDir config_dir(QETApp::configDir());

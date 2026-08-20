@@ -21,8 +21,12 @@
 #include "ElementsCollection/ui/createsymboldialog.h"
 #include "ElementsCollection/ui/symbolgroupdialog.h"
 
+#include "autoNum/ui/iecstructuredialog.h"
 #include "autoNum/ui/renumberdialog.h"
 #include "catalog/ui/catalogbrowserdialog.h"
+#include "undocommand/explodeelementcommand.h"
+#include "undocommand/conductortextcommand.h"
+#include "catalog/ui/catalogreplacedialog.h"
 #include "catalog/ui/catalogimportdialog.h"
 #include "catalog/ui/catalogrepositorydialog.h"
 #include "environment/projectlock.h"
@@ -580,6 +584,121 @@ void QETDiagramEditor::setUpActions()
 	m_insert_group = new QAction(tr("Insérer un groupement…"), this);
 	connect(m_insert_group, &QAction::triggered,
 		this, &QETDiagramEditor::insertGroup);
+
+		//The norm is a property of the project, not of the program: two
+		//customers, two requirements, the same workstation.
+		//The other half of creating a symbol: draw, make a block, and when the
+		//block turns out to need a line moved, explode it and make it again.
+	m_explode_element = new QAction(
+				tr("Éclater le symbole en dessin"), this);
+	connect(m_explode_element, &QAction::triggered,
+		this, &QETDiagramEditor::explodeSelection);
+
+	m_replace_part = new QAction(
+				tr("Remplacer une pièce dans tout le projet…"), this);
+	connect(m_replace_part, &QAction::triggered, this, [this]()
+	{
+		if (QETProject *project = this->currentProject())
+		{
+			CatalogReplaceDialog dialog(project, QETApp::catalog(), this);
+			dialog.exec();
+			if (dialog.replacedCount()) {
+				statusBar()->showMessage(
+							tr("%n composant(s) ont changé de pièce. "
+							   "Ctrl+Z annule tout d'un coup.",
+							   "", dialog.replacedCount()), 8000);
+			}
+		}
+	});
+
+		//The three switches of T35: on while a symbol is being drawn, off the
+		//rest of the time. Checkable, because the answer to "is this on?" has
+		//to be visible in the menu without trying it.
+	m_show_fine_grid = new QAction(tr("Afficher la grille fine"), this);
+	m_show_fine_grid->setCheckable(true);
+	m_show_fine_grid->setChecked(Diagram::displayFineGrid);
+	m_show_fine_grid->setStatusTip(
+				tr("La grille fine sert au dessin ; les points de "
+				   "raccordement, eux, doivent rester sur la grille "
+				   "principale."));
+	connect(m_show_fine_grid, &QAction::toggled, this, [this](bool on)
+	{
+		Diagram::displayFineGrid = on;
+		QSettings settings;
+		settings.setValue(QStringLiteral("diagrameditor/display-fine-grid"), on);
+		for (ProjectView *view : this->openedProjects()) {
+			for (Diagram *diagram : view->project()->diagrams()) {
+				diagram->update();
+			}
+		}
+	});
+
+	m_show_terminals = new QAction(
+				tr("Afficher les points de raccordement"), this);
+	m_show_terminals->setCheckable(true);
+	m_show_terminals->setChecked(Diagram::displayTerminals);
+	m_show_terminals->setStatusTip(
+				tr("À laisser désactivé pour le travail courant : un point "
+				   "visible est un point qu'on déplace par accident."));
+	connect(m_show_terminals, &QAction::toggled, this, [this](bool on)
+	{
+		Diagram::displayTerminals = on;
+		QSettings settings;
+		settings.setValue(QStringLiteral("diagrameditor/display-terminals"), on);
+		for (ProjectView *view : this->openedProjects()) {
+			for (Diagram *diagram : view->project()->diagrams()) {
+				diagram->update();
+			}
+		}
+	});
+
+	m_show_empty_fields = new QAction(
+				tr("Afficher les attributs vides"), this);
+	m_show_empty_fields->setCheckable(true);
+	m_show_empty_fields->setChecked(Diagram::displayEmptyTextFields);
+	connect(m_show_empty_fields, &QAction::toggled, this, [this](bool on)
+	{
+		Diagram::displayEmptyTextFields = on;
+		QSettings settings;
+		settings.setValue(
+					QStringLiteral("diagrameditor/display-empty-fields"), on);
+		for (ProjectView *view : this->openedProjects()) {
+			for (Diagram *diagram : view->project()->diagrams()) {
+				diagram->update();
+			}
+		}
+	});
+
+		//Renumbering fills a folio with text. These two put it back in order,
+		//and neither touches a number: the drawing stops repeating it, the
+		//wiring list keeps it.
+	m_show_conductor_text = new QAction(
+				tr("Afficher le numéro des conducteurs sélectionnés"), this);
+	connect(m_show_conductor_text, &QAction::triggered,
+		this, [this]() { this->setConductorTextVisible(true); });
+
+	m_hide_conductor_text = new QAction(
+				tr("Masquer le numéro des conducteurs sélectionnés"), this);
+	connect(m_hide_conductor_text, &QAction::triggered,
+		this, [this]() { this->setConductorTextVisible(false); });
+
+	m_align_conductor_text = new QAction(
+				tr("Aligner le numéro des conducteurs sélectionnés"), this);
+	m_align_conductor_text->setStatusTip(
+				tr("Remplace le fait de déplacer chaque texte à la main."));
+	connect(m_align_conductor_text, &QAction::triggered,
+		this, &QETDiagramEditor::alignConductorTexts);
+
+	m_iec_structure = new QAction(
+				tr("Structure d'identification (CEI 81346)…"), this);
+	connect(m_iec_structure, &QAction::triggered, this, [this]()
+	{
+		if (QETProject *project = this->currentProject())
+		{
+			IecStructureDialog dialog(project, this);
+			dialog.exec();
+		}
+	});
 
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
@@ -1201,6 +1320,210 @@ void QETDiagramEditor::insertGroup()
 	}
 }
 
+
+/**
+	@brief QETDiagramEditor::explodeSelection
+	Turn the selected components back into the drawing they were made of.
+*/
+void QETDiagramEditor::explodeSelection()
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+
+	QList<Element *> selected;
+	const QList<QGraphicsItem *> items = view->diagram()->selectedItems();
+	for (QGraphicsItem *item : items)
+	{
+		if (Element *element = qgraphicsitem_cast<Element *>(item)) {
+			selected.append(element);
+		}
+	}
+
+	if (selected.isEmpty()) {
+		QMessageBox::information(this, tr("Éclater le symbole"),
+			tr("Sélectionnez le ou les symboles à éclater."));
+		return;
+	}
+
+		//Refusals said one by one and before anything happens: a command that
+		//silently does nothing to three of five selected symbols is worse
+		//than a command that explains itself.
+	QStringList refusals;
+	for (Element *element : selected)
+	{
+		const QString refusal = ExplodeElementCommand::refusal(element);
+		if (!refusal.isEmpty()) {
+			refusals << refusal;
+		}
+	}
+
+	ExplodeElementCommand *command = new ExplodeElementCommand(selected);
+	if (command->isEmpty())
+	{
+		delete command;
+		QMessageBox::information(this, tr("Éclater le symbole"),
+			refusals.isEmpty()
+			? tr("Aucun des symboles sélectionnés n'a pu être éclaté.")
+			: refusals.join(QStringLiteral("\n\n")));
+		return;
+	}
+
+	const int exploded = command->elementCount();
+	const int pieces = command->pieceCount();
+	view->diagram()->clearSelection();
+	view->diagram()->undoStack().push(command);
+
+	QString message = tr("%n symbole(s) éclaté(s) en %1 formes et textes. "
+			     "Ctrl+Z annule tout d'un coup.", "", exploded)
+			.arg(pieces);
+	if (!refusals.isEmpty()) {
+		message += QStringLiteral(" ") +
+				tr("%n symbole(s) refusé(s).", "", refusals.size());
+	}
+	statusBar()->showMessage(message, 10000);
+
+	if (!refusals.isEmpty()) {
+		QMessageBox::information(this, tr("Éclater le symbole"),
+					 refusals.join(QStringLiteral("\n\n")));
+	}
+}
+
+
+/**
+	@brief QETDiagramEditor::setConductorTextVisible
+	@param visible
+	Show or hide the number of the selected conductors, without touching the
+	number itself.
+*/
+void QETDiagramEditor::setConductorTextVisible(bool visible)
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+
+	const DiagramContent content(view->diagram(), true);
+	const QList<Conductor *> conductors = content.conductors();
+	if (conductors.isEmpty()) {
+		QMessageBox::information(this, tr("Numéro des conducteurs"),
+			tr("Sélectionnez les conducteurs dont le numéro doit être "
+			   "affiché ou masqué."));
+		return;
+	}
+
+	ConductorTextCommand *command =
+			new ConductorTextCommand(conductors, visible);
+	if (command->isEmpty()) {
+		delete command;
+		statusBar()->showMessage(
+					tr("Les conducteurs sélectionnés sont déjà comme ça."),
+					5000);
+		return;
+	}
+
+	const int count = command->conductorCount();
+	view->diagram()->undoStack().push(command);
+	statusBar()->showMessage(
+				visible
+				? tr("Numéro affiché sur %n conducteur(s). Le numéro "
+				     "lui-même n'a pas changé.", "", count)
+				: tr("Numéro masqué sur %n conducteur(s). Le numéro "
+				     "lui-même n'a pas changé.", "", count),
+				8000);
+}
+
+/**
+	@brief QETDiagramEditor::alignConductorTexts
+	Line the numbers of the selected conductors up on one axis.
+
+	The specification asks for two clicks defining an axis. This does it from
+	the selection instead: the conductors chosen already say where the axis is
+	- they are parallel, and the axis is perpendicular to them - so asking the
+	user to draw it would be asking them to say twice what they already said.
+
+	Which coordinate is shared is decided by the conductors, not guessed: a
+	column of horizontal wires gets the same x, a row of vertical ones the
+	same y.
+*/
+void QETDiagramEditor::alignConductorTexts()
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+
+	const DiagramContent content(view->diagram(), true);
+	QList<Conductor *> conductors;
+	for (Conductor *conductor : content.conductors())
+	{
+		if (conductor && conductor->textItem() &&
+				conductor->properties().m_show_text) {
+			conductors << conductor;
+		}
+	}
+	if (conductors.size() < 2) {
+		QMessageBox::information(this, tr("Aligner les numéros"),
+			tr("Sélectionnez au moins deux conducteurs dont le numéro est "
+			   "affiché."));
+		return;
+	}
+
+		//Which way the wires run, decided by counting rather than by looking
+		//at the first one: one stray diagonal must not choose the axis for
+		//the whole selection.
+	int horizontal = 0;
+	for (Conductor *conductor : conductors)
+	{
+		const QRectF box = conductor->boundingRect();
+		if (box.width() >= box.height()) {
+			horizontal++;
+		}
+	}
+	const bool wires_are_horizontal = horizontal * 2 >= conductors.size();
+
+		//The axis is the average of where the texts already are, so the
+		//alignment moves everything the least it can: the projectist who put
+		//three of them roughly right does not see all three jump.
+	qreal sum = 0.0;
+	for (Conductor *conductor : conductors)
+	{
+		const QPointF position = conductor->textItem()->pos();
+		sum += wires_are_horizontal ? position.y() : position.x();
+	}
+	const qreal axis = sum / conductors.size();
+
+	MoveConductorsTextsCommand *command =
+			new MoveConductorsTextsCommand(view->diagram());
+	int moved = 0;
+	for (Conductor *conductor : conductors)
+	{
+		ConductorTextItem *text = conductor->textItem();
+		const QPointF old_position = text->pos();
+		const QPointF new_position = wires_are_horizontal
+				? QPointF(old_position.x(), axis)
+				: QPointF(axis, old_position.y());
+		if (QLineF(old_position, new_position).length() < 0.01) {
+			continue;
+		}
+			//Marked as moved by the user, because it was: from here on the
+			//automatic placement must leave these texts where they were put.
+		command->addTextMovement(text, old_position, new_position, true);
+		moved++;
+	}
+
+	if (!moved) {
+		delete command;
+		statusBar()->showMessage(
+					tr("Les numéros sont déjà alignés."), 5000);
+		return;
+	}
+	view->diagram()->undoStack().push(command);
+	statusBar()->showMessage(
+				tr("%n numéro(s) alignés sur un même axe.", "", moved), 8000);
+}
+
 /**
 	@brief QETDiagramEditor::setUpMenu
 */
@@ -1248,6 +1571,9 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addActions(m_selection_actions_group.actions());
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_conductor_reset);
+	menu_edition -> addAction(m_show_conductor_text);
+	menu_edition -> addAction(m_hide_conductor_text);
+	menu_edition -> addAction(m_align_conductor_text);
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_edit_diagram_properties);
 	menu_edition -> addActions(m_row_column_actions_group.actions());
@@ -1255,6 +1581,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addActions(m_depth_action_group->actions());
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_create_symbol);
+	menu_edition -> addAction(m_explode_element);
 	menu_edition -> addAction(m_save_group);
 	menu_edition -> addAction(m_insert_group);
 	menu_edition -> addSeparator();
@@ -1278,6 +1605,8 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addAction(m_project_export_wiring_list);
 	menu_project -> addAction(m_terminal_numbering);
 	menu_project -> addAction(m_renumber_components);
+	menu_project -> addAction(m_iec_structure);
+	menu_project -> addAction(m_replace_part);
 #ifdef QET_EXPORT_PROJECT_DB
 	menu_project -> addSeparator();
 	menu_project -> addAction(m_export_project_db);
@@ -1316,6 +1645,9 @@ void QETDiagramEditor::setUpMenu()
 	menu_affichage -> addAction(m_mode_visualise);
 	menu_affichage -> addSeparator();
 	menu_affichage -> addAction(m_draw_grid);
+	menu_affichage -> addAction(m_show_fine_grid);
+	menu_affichage -> addAction(m_show_terminals);
+	menu_affichage -> addAction(m_show_empty_fields);
 	menu_affichage -> addAction(m_draw_guides);
 	menu_affichage -> addAction(m_grey_background);
 	menu_affichage -> addSeparator();
@@ -2150,7 +2482,13 @@ void QETDiagramEditor::slot_updateActions()
 	m_project_export_wiring_list  -> setEnabled(opened_project);
 	m_terminal_numbering          -> setEnabled(editable_project);
 	m_renumber_components         -> setEnabled(editable_project);
+	m_iec_structure               -> setEnabled(editable_project);
 	m_create_symbol               -> setEnabled(editable_project);
+	m_explode_element             -> setEnabled(editable_project);
+	m_show_conductor_text         -> setEnabled(editable_project);
+	m_hide_conductor_text         -> setEnabled(editable_project);
+	m_align_conductor_text        -> setEnabled(editable_project);
+	m_replace_part                -> setEnabled(editable_project);
 	m_save_group                  -> setEnabled(editable_project);
 	m_insert_group                -> setEnabled(editable_project);
 #ifdef QET_EXPORT_PROJECT_DB

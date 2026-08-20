@@ -90,6 +90,26 @@ namespace ProjectRenumberer
 	bool isFrozen(const Element *element);
 
 	/**
+		@brief The component that already carries @a label, if any.
+		@param project
+		@param label : the tag being typed
+		@param location : the `+` part of the component being typed into
+		@param except : the component being edited, which does not count as a
+		collision with itself
+		@return the other component, or nullptr
+
+		The location is part of the comparison and not ignored: two cabinets
+		may each legitimately have their own -Q1, and refusing that would be
+		refusing the way a real installation is tagged. Same rule as
+		Renumberer::isLabelFree, said again here because this lookup answers
+		one typed label rather than planning a whole renumbering.
+	*/
+	Element *elementWithLabel(QETProject *project,
+				  const QString &label,
+				  const QString &location,
+				  Element *except = nullptr);
+
+	/**
 		Apply @a plan to @a elements through the undo stack of the project,
 		so that one Ctrl+Z takes the whole renumbering back.
 		@return how many components changed

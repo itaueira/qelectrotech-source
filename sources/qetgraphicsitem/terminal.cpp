@@ -209,7 +209,11 @@ void Terminal::paint(
 		t.setColor(m_hovered_color);
 		painter -> setPen(t);
 		painter -> setBrush(m_hovered_color);
-		if (m_hovered) {
+			//The docking point is a single pixel unless the cursor is on it,
+			//which is right for wiring and useless for checking a symbol:
+			//finding out where the points are means hunting for them with the
+			//mouse. With the switch of T35 on, they are all visible at once.
+		if (m_hovered || Diagram::displayTerminals) {
 			painter -> setRenderHint(QPainter::Antialiasing, true);
 			painter -> drawEllipse(QRectF(c.x() - 2.5, c.y() - 2.5, 5.0, 5.0));
 		} else painter -> drawPoint(c);

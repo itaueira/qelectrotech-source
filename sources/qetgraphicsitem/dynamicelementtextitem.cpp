@@ -690,6 +690,26 @@ void DynamicElementTextItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 void DynamicElementTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
 	DiagramTextItem::paint(painter, option, widget);
+
+		//A field bound to component information that has no value yet draws
+		//nothing at all, so placing it means moving something invisible.
+		//With the switch of T35 on it says which information it is bound to,
+		//in brackets and in grey - visible enough to grab, different enough
+		//from a real value that nobody mistakes it for one.
+	if (Diagram::displayEmptyTextFields && toPlainText().isEmpty())
+	{
+		painter->save();
+		QFont placeholder_font = font();
+		placeholder_font.setItalic(true);
+		painter->setFont(placeholder_font);
+		painter->setPen(QPen(QColor(140, 140, 140)));
+		const QString what = m_text_from == ElementInfo && !m_info_name.isEmpty()
+				? m_info_name
+				: tr("texte");
+		painter->drawText(QPointF(0.0, painter->fontMetrics().ascent()),
+				  QStringLiteral("[%1]").arg(what));
+		painter->restore();
+	}
 	
 	if (m_frame)
 	{

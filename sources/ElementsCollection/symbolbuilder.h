@@ -19,6 +19,7 @@
 #define SYMBOLBUILDER_H
 
 #include <QDomDocument>
+#include <QHash>
 #include <QList>
 #include <QPointF>
 #include <QPolygonF>
@@ -269,6 +270,22 @@ class SymbolDefinition
 		QString name;
 		/// key of the catalog class the symbol belongs to (T12)
 		QString class_key;
+		/**
+			@brief The catalog part this symbol is for, when it is for one.
+
+			Most symbols are not: one contactor symbol serves twenty
+			contactors, and that is why the connection points carry
+			provisional labels. But some are - the contactor the shop keeps
+			in stock, the terminal it always uses - and for those, filling
+			the part in again on every insertion is typing the same answer
+			forever.
+
+			Empty on a generic symbol, which is the normal case. When set,
+			the values of the part and the real pin numbers are written into
+			the definition, so a component inserted from this symbol arrives
+			with the part already assigned.
+		*/
+		QString default_part_code;
 		SymbolLinkType link_type = SymbolLinkType::Simple;
 		/// free text shown in the library, the "informations" of the definition
 		QString description;
@@ -277,6 +294,14 @@ class SymbolDefinition
 		QUuid uuid;
 		/// bumped when a used symbol is changed by revision instead of in place
 		int revision = 1;
+
+		/**
+			@brief The values a default part writes into the component.
+			Empty when the symbol is generic. Written into the definition as
+			element information, which is where a component reads what it
+			knows about itself.
+		*/
+		QHash<QString, QString> default_part_values;
 
 		QList<SymbolShape> shapes;
 		QList<SymbolTerminal> terminals;

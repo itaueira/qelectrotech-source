@@ -18,6 +18,7 @@
 #ifndef IECSTRUCTURE_H
 #define IECSTRUCTURE_H
 
+#include <QDomElement>
 #include <QString>
 
 /**
@@ -95,6 +96,68 @@ class IecStructure
 		QString plant;     ///< `=` function
 		QString location;  ///< `+` location
 		QString product;   ///< `-` product, i.e. the tag
+};
+
+/**
+	@brief How much of the identification structure is written next to a
+	component.
+
+	The full tag is correct and long: `=CT1+A1-K3` beside every symbol on a
+	crowded folio is a folio nobody reads. The short form `-K3` is what a
+	schematic normally carries, with the function and the location said once,
+	in the title block. Both are the norm; which one belongs on the drawing
+	is a decision of the person drawing it.
+*/
+enum class IecTagDisplay
+{
+	Short,  ///< -K3
+	Full    ///< =CT1+A1-K3
+};
+
+/**
+	@brief Whether one project uses the identification structure, and how it
+	shows it.
+
+	**Off by default, and off means nothing changes.** A project drawn before
+	the norm existed, opened with the switch off, shows exactly the tags it
+	always showed - not "almost the same", the same. That is the whole reason
+	the switch exists rather than the structure being always on, and it is
+	the case that protects work already delivered.
+
+	Belongs to the project and not to the application: two customers, two
+	requirements, and the same workstation draws for both.
+*/
+class IecStructureSettings
+{
+	public:
+		IecStructureSettings();
+
+		bool enabled = false;
+		IecTagDisplay display = IecTagDisplay::Short;
+
+		/**
+			@brief The tag to write next to a component.
+			@param folio : the structure the folio carries
+			@param element : the structure the component carries, its tag
+			included as the product part
+			@return with the structure off, the product part alone - the tag
+			as it always was. With it on, the short or the full form of what
+			the component inherits from the folio.
+		*/
+		QString displayedTag(const IecStructure &folio,
+				     const IecStructure &element) const;
+
+		bool operator==(const IecStructureSettings &other) const;
+		bool operator!=(const IecStructureSettings &other) const;
+
+		QDomElement toXml(QDomDocument &document) const;
+		void fromXml(const QDomElement &element);
+		/// the tag name toXml() writes and fromXml() reads
+		static QString xmlTagName();
+
+		static QString displayToString(IecTagDisplay display);
+		static IecTagDisplay displayFromString(const QString &string);
+		static QString translatedDisplay(IecTagDisplay display);
 };
 
 #endif // IECSTRUCTURE_H

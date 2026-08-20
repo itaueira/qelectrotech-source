@@ -16,6 +16,8 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "element.h"
+
+#include "../autoNum/iecstructure.h"
 #include "../qetapp.h"
 #include "../qetproject.h"
 #include "../PropertiesEditor/propertieseditordialog.h"
@@ -1748,16 +1750,86 @@ void Element::freezeNewAddedElement()
 */
 QString Element::actualLabel()
 {
+	QString label;
 	if (m_data.m_informations.value(QStringLiteral("formula")).toString().isEmpty()) {
-		return m_data.m_informations.value(QStringLiteral("label")).toString();
+		label = m_data.m_informations.value(QStringLiteral("label")).toString();
 	} else {
-	return autonum::AssignVariables::formulaToLabel(
-				m_data.m_informations.value(
-					QStringLiteral("formula")).toString(),
-				m_autoNum_seq,
-				diagram(),
-				this);
+		label = autonum::AssignVariables::formulaToLabel(
+					m_data.m_informations.value(
+						QStringLiteral("formula")).toString(),
+					m_autoNum_seq,
+					diagram(),
+					this);
 	}
+	return composedLabel(label);
+}
+
+/**
+	@brief Element::composedLabel
+	@param label : the tag as the component carries it
+	@return the tag as the drawing should show it.
+
+	With the IEC 81346 structure off - which is the default, and the state of
+	every project drawn so far - this returns @a label untouched. That is not
+	a shortcut, it is the requirement: a delivered project opened here has to
+	read exactly as it read when it was delivered.
+
+	With the structure on, the function and the location parts are inherited
+	from the folio unless the component overrides them, and the tag is written
+	short (-K3) or full (=CT1+A1-K3) as the project says.
+
+	Composed here, at the one place every label already passes through, rather
+	than written into the `label` field: the field goes on holding what
+	somebody typed, so turning the structure off puts the drawing back with
+	nothing to undo. Storing the composition would have made the switch a one
+	way door.
+*/
+QString Element::composedLabel(const QString &label)
+{
+	Diagram *diagram_ = diagram();
+	if (!diagram_) {
+		return label;
+	}
+	QETProject *project = diagram_->project();
+	if (!project) {
+		return label;
+	}
+	const IecStructureSettings settings = project->iecSettings();
+	if (!settings.enabled) {
+		return label;
+	}
+
+		//What the component says. A tag typed with the separators already in
+		//it is read apart rather than escaped, so a project where somebody
+		//wrote "=CT1+A1-K3" by hand does not end up saying it twice.
+	IecStructure element_structure = IecStructure::fromTag(label);
+	const QString own_plant = m_data.m_informations.value(
+				IecStructure::plantKey()).toString();
+	const QString own_location = m_data.m_informations.value(
+				IecStructure::locationKey()).toString();
+	if (!own_plant.isEmpty()) {
+		element_structure.plant = own_plant;
+	}
+	if (!own_location.isEmpty()) {
+		element_structure.location = own_location;
+	}
+
+	const DiagramContext folio_info =
+			diagram_->border_and_titleblock.titleblockInformation();
+	const IecStructure folio_structure(
+				folio_info.value(IecStructure::plantKey()).toString(),
+				folio_info.value(IecStructure::folioLocationKey()).toString(),
+				QString());
+
+	return settings.displayedTag(folio_structure, element_structure);
+}
+
+/**
+	@brief Element::refreshLabel
+*/
+void Element::refreshLabel()
+{
+	emit elementInfoChange(m_data.m_informations, m_data.m_informations);
 }
 
 /**

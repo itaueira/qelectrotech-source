@@ -1026,6 +1026,13 @@ QDomDocument QETProject::toXml()
 	project_root.setAttribute("title", project_title_);
 	xml_doc.appendChild(project_root);
 
+		//The IEC 81346 setting, written only when the structure is on: a
+		//project that never heard of the norm keeps a .qet without a trace of
+		//it, which is what lets it go back to an unmodified QElectroTech.
+	if (m_iec_settings.enabled) {
+		project_root.appendChild(m_iec_settings.toXml(xml_doc));
+	}
+
 	// titleblock templates, if any
 	if (m_titleblocks_collection.templates().count()) {
 		QDomElement titleblocktemplates_elmt = xml_doc.createElement("titleblocktemplates");
@@ -1612,6 +1619,13 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 
 	m_data_base.blockSignals(true);
 
+		//The IEC 81346 setting, read before the folios are built because a
+		//component asks the project for it while it draws its tag. Absent
+		//from every project written before this existed, and absent means
+		//off - which is exactly what a delivered project needs.
+	m_iec_settings.fromXml(xml_project.documentElement().firstChildElement(
+				       IecStructureSettings::xmlTagName()));
+
 		//Load the project-wide properties
 	readProjectPropertiesXml(xml_project);
 
@@ -2115,6 +2129,52 @@ bool QETProject::projectOptionsWereModified()
 DiagramContext QETProject::projectProperties()
 {
 	return(m_project_properties);
+}
+
+/**
+	@brief QETProject::iecSettings
+	@return whether this project uses the IEC 81346 structure, and how it shows
+	the tag
+*/
+IecStructureSettings QETProject::iecSettings() const
+{
+	return m_iec_settings;
+}
+
+/**
+	@brief QETProject::setIecSettings
+	@param settings
+*/
+void QETProject::setIecSettings(const IecStructureSettings &settings)
+{
+	if (m_iec_settings == settings) {
+		return;
+	}
+	m_iec_settings = settings;
+	setModified(true);
+	refreshElementLabels();
+}
+
+/**
+	@brief QETProject::refreshElementLabels
+	Ask every component to say its tag again.
+
+	The composed tag is built when the text is drawn, out of the setting and
+	out of what the component and the folio carry - nothing is written into
+	the model. That is what makes turning the structure off harmless, and it
+	is also why changing the setting needs this: no piece of data changed, so
+	no text would know to update itself.
+*/
+void QETProject::refreshElementLabels()
+{
+	const QList<Diagram *> diagram_list = diagrams();
+	for (Diagram *diagram : diagram_list)
+	{
+		const QList<Element *> element_list = diagram->elements();
+		for (Element *element : element_list) {
+			element->refreshLabel();
+		}
+	}
 }
 
 /**

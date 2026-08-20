@@ -18,6 +18,7 @@
 #include "../../../sources/catalog/catalog.h"
 #include "../../../sources/catalog/catalogimport.h"
 #include "../../../sources/catalog/catalogpackage.h"
+#include "../../../sources/catalog/catalogproperty.h"
 #include "../../../sources/catalog/catalogtablereader.h"
 #include "qt_catch_tostring.h"
 
@@ -516,4 +517,55 @@ TEST_CASE("CU-14.1 — le catalogue ressort en planilha, et le rond-point se ref
 	CHECK(reread.value(2, QStringLiteral("designation"))
 	      == exported.value(2, QStringLiteral("designation")));
 	CHECK(reread.value(2, QStringLiteral("designation")).contains(QLatin1Char(';')));
+}
+
+TEST_CASE("CU-14.1 — data de planilha chega como data, não como número", "[catalog]")
+{
+	CatalogProperty date_property(QStringLiteral("entrega"),
+				      QStringLiteral("Data de entrega"),
+				      CatalogPropertyType::Date);
+	CatalogProperty text_property(QStringLiteral("obs"),
+				      QStringLiteral("Observação"),
+				      CatalogPropertyType::Text);
+
+	SECTION("a época é 30/12/1899, e isto é onde o erro de um dia mora")
+	{
+			//Serial 1 é 31/12/1899 e não 01/01/1900, porque o formato conta um
+			//29/02/1900 que nunca existiu. Fixado aqui para ninguém "corrigir".
+		CHECK(CatalogProperty::dateFromSpreadsheetSerial(1) ==
+		      QDate(1899, 12, 31));
+		CHECK(CatalogProperty::dateFromSpreadsheetSerial(45292) ==
+		      QDate(2024, 1, 1));
+	}
+
+	SECTION("número de série numa coluna de data vira data")
+	{
+		CHECK(date_property.fromSpreadsheetCell(QStringLiteral("45292")) ==
+		      QStringLiteral("2024-01-01"));
+	}
+
+	SECTION("data já escrita como texto fica como está")
+	{
+			//Quem digitou sabe o formato que quis; converter seria adivinhar.
+		CHECK(date_property.fromSpreadsheetCell(QStringLiteral("01/01/2024")) ==
+		      QStringLiteral("01/01/2024"));
+		CHECK(date_property.fromSpreadsheetCell(QString()).isEmpty());
+	}
+
+	SECTION("número que não é data plausível fica visível como número")
+	{
+			//Melhor um número que se vê que está errado do que uma data do
+			//ano 1900 que passa desapercebida.
+		CHECK(date_property.fromSpreadsheetCell(QStringLiteral("0")) ==
+		      QStringLiteral("0"));
+		CHECK(date_property.fromSpreadsheetCell(QStringLiteral("99999999")) ==
+		      QStringLiteral("99999999"));
+		CHECK_FALSE(CatalogProperty::dateFromSpreadsheetSerial(0).isValid());
+	}
+
+	SECTION("coluna que não é de data não é tocada")
+	{
+		CHECK(text_property.fromSpreadsheetCell(QStringLiteral("45292")) ==
+		      QStringLiteral("45292"));
+	}
 }
