@@ -85,6 +85,7 @@ class CatalogSchema
 		static bool applyStep(QSqlDatabase &db, int version, QString *error);
 		static bool createVersion1(QSqlDatabase &db, QString *error);
 		static bool createVersion2(QSqlDatabase &db, QString *error);
+		static bool createVersion3(QSqlDatabase &db, QString *error);
 };
 
 #endif // CATALOGSCHEMA_H

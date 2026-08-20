@@ -180,6 +180,22 @@ class Catalog : public QObject
 		QHash<QString, QString> effectiveValues(const CatalogPart &part) const;
 
 		// ---------------------------------------------------------------
+		// Spreadsheet import profiles
+		// ---------------------------------------------------------------
+		/**
+			The column mapping of a supplier's list, kept in the catalog so
+			that the second person to import the same list does not map the
+			columns again. The payload is whatever the profile serialises
+			itself to; this class does not read it.
+		*/
+		QStringList importProfileNames() const;
+		QString importProfile(const QString &name) const;
+		bool saveImportProfile(const QString &name,
+				       const QString &payload,
+				       QString *error = nullptr);
+		bool removeImportProfile(const QString &name, QString *error = nullptr);
+
+		// ---------------------------------------------------------------
 		// Model bootstrap
 		// ---------------------------------------------------------------
 		/**
@@ -196,6 +212,7 @@ class Catalog : public QObject
 		void classesChanged();
 		void propertiesChanged(int class_id);
 		void partsChanged();
+		void importProfilesChanged();
 		void listsChanged();
 
 	private:

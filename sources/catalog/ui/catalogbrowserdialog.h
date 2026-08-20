@@ -65,6 +65,7 @@ class CatalogBrowserDialog : public QDialog
 		void createPart();
 		void editSelectedPart();
 		void removeSelectedPart();
+		void searchRepository();
 		void acceptSelection();
 
 	private:
@@ -89,6 +90,7 @@ class CatalogBrowserDialog : public QDialog
 		QPushButton *m_new_part = nullptr;
 		QPushButton *m_edit_part = nullptr;
 		QPushButton *m_remove_part = nullptr;
+		QPushButton *m_repository = nullptr;
 		QPushButton *m_choose = nullptr;
 };
 

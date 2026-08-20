@@ -27,7 +27,7 @@
 namespace
 {
 	/// Highest schema version this build writes and understands.
-	const int CATALOG_SCHEMA_VERSION = 2;
+	const int CATALOG_SCHEMA_VERSION = 3;
 
 	/// Run one statement, filling @a error with the driver message on failure.
 	bool exec(QSqlDatabase &db, const QString &statement, QString *error)
@@ -148,6 +148,7 @@ bool CatalogSchema::applyStep(QSqlDatabase &db, int version, QString *error)
 	{
 		case 1:  ok = createVersion1(db, error); break;
 		case 2:  ok = createVersion2(db, error); break;
+		case 3:  ok = createVersion3(db, error); break;
 		default:
 			if (error)
 			{
@@ -315,6 +316,24 @@ bool CatalogSchema::createVersion2(QSqlDatabase &db, QString *error)
 	}
 
 	return true;
+}
+
+/**
+	@brief CatalogSchema::createVersion3
+	The column mapping profiles of the spreadsheet importer (T14).
+
+	They live here and not in the settings of the station on purpose: the
+	layout of a supplier's price list is a fact about that supplier, not about
+	whoever happens to import it. Stored as the XML the profile serialises
+	itself to, so that adding a field to a profile is not another migration.
+*/
+bool CatalogSchema::createVersion3(QSqlDatabase &db, QString *error)
+{
+	return exec(db, QStringLiteral("CREATE TABLE catalog_import_profile ("
+				       "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+				       "name TEXT NOT NULL UNIQUE,"
+				       "payload TEXT NOT NULL,"
+				       "updated_at TEXT)"), error);
 }
 
 /**

@@ -298,21 +298,35 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/catalog/catalogassignment.h
   ${QET_DIR}/sources/catalog/catalogclass.cpp
   ${QET_DIR}/sources/catalog/catalogclass.h
+  ${QET_DIR}/sources/catalog/catalogimport.cpp
+  ${QET_DIR}/sources/catalog/catalogimport.h
+  ${QET_DIR}/sources/catalog/catalogpackage.cpp
+  ${QET_DIR}/sources/catalog/catalogpackage.h
   ${QET_DIR}/sources/catalog/catalogpart.cpp
   ${QET_DIR}/sources/catalog/catalogpart.h
   ${QET_DIR}/sources/catalog/catalogproperty.cpp
   ${QET_DIR}/sources/catalog/catalogproperty.h
+  ${QET_DIR}/sources/catalog/catalogrepository.cpp
+  ${QET_DIR}/sources/catalog/catalogrepository.h
   ${QET_DIR}/sources/catalog/catalogschema.cpp
   ${QET_DIR}/sources/catalog/catalogschema.h
+  ${QET_DIR}/sources/catalog/catalogtable.cpp
+  ${QET_DIR}/sources/catalog/catalogtable.h
+  ${QET_DIR}/sources/catalog/catalogtablereader.cpp
+  ${QET_DIR}/sources/catalog/catalogtablereader.h
 
   ${QET_DIR}/sources/catalog/ui/catalogbrowserdialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogbrowserdialog.h
+  ${QET_DIR}/sources/catalog/ui/catalogimportdialog.cpp
+  ${QET_DIR}/sources/catalog/ui/catalogimportdialog.h
   ${QET_DIR}/sources/catalog/ui/catalogmanagerdialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogmanagerdialog.h
   ${QET_DIR}/sources/catalog/ui/catalogpartdialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogpartdialog.h
   ${QET_DIR}/sources/catalog/ui/catalogprojectactions.cpp
   ${QET_DIR}/sources/catalog/ui/catalogprojectactions.h
+  ${QET_DIR}/sources/catalog/ui/catalogrepositorydialog.cpp
+  ${QET_DIR}/sources/catalog/ui/catalogrepositorydialog.h
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.h
 

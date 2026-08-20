@@ -217,6 +217,8 @@ class QETDiagramEditor : public QETMainWindow
 		*m_catalog_register = nullptr,  ///< Action to save the selected components as a catalog part
 		*m_catalog_missing = nullptr,   ///< Action to report the components with no part
 		*m_environment = nullptr,       ///< Action to see and change the work environment
+		*m_catalog_import = nullptr,    ///< Action to import parts from a spreadsheet
+		*m_catalog_repository = nullptr,///< Action to browse the shared part repository
 		*m_export_project_db,		///Export to file the internal database of the current project
 		*m_tile_window,			///< Show MDI subwindows as tile
 		*m_cascade_window,		///< Show MDI subwindows as cascade

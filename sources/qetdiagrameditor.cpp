@@ -18,6 +18,8 @@
 #include "qetdiagrameditor.h"
 
 #include "catalog/ui/catalogbrowserdialog.h"
+#include "catalog/ui/catalogimportdialog.h"
+#include "catalog/ui/catalogrepositorydialog.h"
 #include "environment/projectlock.h"
 #include "environment/ui/environmentdialog.h"
 #include "catalog/ui/catalogmanagerdialog.h"
@@ -534,6 +536,20 @@ void QETDiagramEditor::setUpActions()
 	connect(m_environment, &QAction::triggered, this, [this]()
 	{
 		EnvironmentDialog dialog(this);
+		dialog.exec();
+	});
+
+	m_catalog_import = new QAction(QET::Icons::DocumentSpreadsheet, tr("Importer des pièces depuis une feuille de calcul"), this);
+	connect(m_catalog_import, &QAction::triggered, this, [this]()
+	{
+		CatalogImportDialog dialog(QETApp::catalog(), this);
+		dialog.exec();
+	});
+
+	m_catalog_repository = new QAction(QET::Icons::FolderShowAll, tr("Répertoire de pièces partagé"), this);
+	connect(m_catalog_repository, &QAction::triggered, this, [this]()
+	{
+		CatalogRepositoryDialog dialog(QETApp::catalog(), this);
 		dialog.exec();
 	});
 
@@ -1065,6 +1081,9 @@ void QETDiagramEditor::setUpMenu()
 	menu_catalogue -> addAction(m_catalog_register);
 	menu_catalogue -> addSeparator();
 	menu_catalogue -> addAction(m_catalog_missing);
+	menu_catalogue -> addSeparator();
+	menu_catalogue -> addAction(m_catalog_import);
+	menu_catalogue -> addAction(m_catalog_repository);
 	menu_catalogue -> addSeparator();
 	menu_catalogue -> addAction(m_catalog_manager);
 	menu_catalogue -> addSeparator();
@@ -1933,6 +1952,8 @@ void QETDiagramEditor::slot_updateActions()
 	m_catalog_missing             -> setEnabled(opened_project);
 		//The environment belongs to the station, not to a project.
 	m_environment                 -> setEnabled(true);
+	m_catalog_import              -> setEnabled(true);
+	m_catalog_repository          -> setEnabled(true);
 
 
 	slot_updateUndoStack();

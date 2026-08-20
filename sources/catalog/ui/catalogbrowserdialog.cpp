@@ -19,6 +19,7 @@
 
 #include "../catalog.h"
 #include "catalogpartdialog.h"
+#include "catalogrepositorydialog.h"
 
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -110,6 +111,10 @@ void CatalogBrowserDialog::buildWidgets()
 	splitter->setStretchFactor(0, 2);
 	splitter->setStretchFactor(1, 1);
 
+	m_repository  = new QPushButton(tr("Chercher dans le répertoire…"), this);
+	m_repository->setToolTip(tr("Quand la pièce n'est pas encore au catalogue local : la "
+				    "chercher dans le répertoire partagé, l'importer, et revenir "
+				    "ici pour l'attribuer."));
 	m_new_part    = new QPushButton(tr("Nouvelle pièce…"), this);
 	m_edit_part   = new QPushButton(tr("Modifier…"), this);
 	m_remove_part = new QPushButton(tr("Supprimer"), this);
@@ -120,6 +125,7 @@ void CatalogBrowserDialog::buildWidgets()
 	m_status->setWordWrap(true);
 
 	QDialogButtonBox *buttons = new QDialogButtonBox(this);
+	buttons->addButton(m_repository, QDialogButtonBox::ActionRole);
 	buttons->addButton(m_new_part, QDialogButtonBox::ActionRole);
 	buttons->addButton(m_edit_part, QDialogButtonBox::ActionRole);
 	buttons->addButton(m_remove_part, QDialogButtonBox::ActionRole);
@@ -142,6 +148,8 @@ void CatalogBrowserDialog::buildWidgets()
 		this, &CatalogBrowserDialog::selectionChanged);
 	connect(m_results_table, &QTableWidget::doubleClicked,
 		this, &CatalogBrowserDialog::acceptSelection);
+	connect(m_repository, &QPushButton::clicked,
+		this, &CatalogBrowserDialog::searchRepository);
 	connect(m_new_part, &QPushButton::clicked, this, &CatalogBrowserDialog::createPart);
 	connect(m_edit_part, &QPushButton::clicked, this, &CatalogBrowserDialog::editSelectedPart);
 	connect(m_remove_part, &QPushButton::clicked, this, &CatalogBrowserDialog::removeSelectedPart);
@@ -267,6 +275,7 @@ void CatalogBrowserDialog::selectionChanged()
 	m_edit_part->setEnabled(has_selection && writable);
 	m_remove_part->setEnabled(has_selection && writable);
 	m_new_part->setEnabled(writable);
+	m_repository->setEnabled(writable);
 
 	showPreview(m_selected);
 }
@@ -359,6 +368,38 @@ void CatalogBrowserDialog::showPreview(const CatalogPart &part)
 						 Qt::KeepAspectRatio, Qt::SmoothTransformation));
 		m_image->setText(QString());
 	}
+}
+
+/**
+	@brief CatalogBrowserDialog::searchRepository
+	Go to the shared repository, bring a part back, and select it here so that
+	the assignment the user was in the middle of simply continues.
+*/
+void CatalogBrowserDialog::searchRepository()
+{
+	const CatalogPart imported = CatalogRepositoryDialog::findAndImport(m_catalog, this);
+	if (imported.isNull()) {
+		return;
+	}
+
+	// Show what was just brought in, whatever the filters were: the user asked
+	// for that part, and hiding it behind a stale filter would look like the
+	// import failed.
+	clearFilters();
+	m_text->setText(imported.code);
+	search();
+
+	for (int row = 0 ; row < m_results.size() ; ++row)
+	{
+		if (m_results.at(row).code == imported.code)
+		{
+			m_results_table->setCurrentCell(row, 0);
+			break;
+		}
+	}
+	m_status->setText(tr("« %1 » importée du répertoire. Elle est sélectionnée : "
+			     "« Attribuer » termine ce que vous étiez en train de faire.")
+			  .arg(imported.code));
 }
 
 /**

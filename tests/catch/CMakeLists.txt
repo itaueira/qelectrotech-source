@@ -87,6 +87,7 @@ add_executable(
     src/borderproperties_test.cpp
     src/catalog_test.cpp
     src/catalogassignment_test.cpp
+    src/catalogimport_test.cpp
     src/environment_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
@@ -101,12 +102,22 @@ add_executable(
     ${QET_DIR}/sources/catalog/catalogassignment.h
     ${QET_DIR}/sources/catalog/catalogclass.cpp
     ${QET_DIR}/sources/catalog/catalogclass.h
+    ${QET_DIR}/sources/catalog/catalogimport.cpp
+    ${QET_DIR}/sources/catalog/catalogimport.h
+    ${QET_DIR}/sources/catalog/catalogpackage.cpp
+    ${QET_DIR}/sources/catalog/catalogpackage.h
     ${QET_DIR}/sources/catalog/catalogpart.cpp
     ${QET_DIR}/sources/catalog/catalogpart.h
     ${QET_DIR}/sources/catalog/catalogproperty.cpp
     ${QET_DIR}/sources/catalog/catalogproperty.h
+    ${QET_DIR}/sources/catalog/catalogrepository.cpp
+    ${QET_DIR}/sources/catalog/catalogrepository.h
     ${QET_DIR}/sources/catalog/catalogschema.cpp
     ${QET_DIR}/sources/catalog/catalogschema.h
+    ${QET_DIR}/sources/catalog/catalogtable.cpp
+    ${QET_DIR}/sources/catalog/catalogtable.h
+    ${QET_DIR}/sources/catalog/catalogtablereader.cpp
+    ${QET_DIR}/sources/catalog/catalogtablereader.h
     # The environment and the in-use lock have the same property as the
     # catalog core: no QETApp, no Diagram, so the rules that decide
     # whether a project gets overwritten can be tested cheaply.

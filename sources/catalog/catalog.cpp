@@ -1890,6 +1890,117 @@ QHash<QString, QString> Catalog::effectiveValues(const CatalogPart &part) const
 }
 
 // -----------------------------------------------------------------------------
+// Spreadsheet import profiles
+// -----------------------------------------------------------------------------
+
+/**
+	@brief Catalog::importProfileNames
+	@return the name of every saved profile, sorted
+*/
+QStringList Catalog::importProfileNames() const
+{
+	QStringList names;
+	if (!isOpen()) {
+		return names;
+	}
+
+	QSqlQuery query(const_cast<QSqlDatabase &>(m_database));
+	if (query.exec(QStringLiteral("SELECT name FROM catalog_import_profile ORDER BY name")))
+	{
+		while (query.next()) {
+			names.append(query.value(0).toString());
+		}
+	}
+	return names;
+}
+
+/**
+	@brief Catalog::importProfile
+	@param name
+	@return the payload of @a name, empty when there is no such profile
+*/
+QString Catalog::importProfile(const QString &name) const
+{
+	if (!isOpen()) {
+		return QString();
+	}
+
+	QSqlQuery query(const_cast<QSqlDatabase &>(m_database));
+	query.prepare(QStringLiteral("SELECT payload FROM catalog_import_profile "
+				     "WHERE name = :name"));
+	query.bindValue(QStringLiteral(":name"), name);
+	if (query.exec() && query.next()) {
+		return query.value(0).toString();
+	}
+	return QString();
+}
+
+/**
+	@brief Catalog::saveImportProfile
+	@param name
+	@param payload
+	@param error
+	@return true on success
+*/
+bool Catalog::saveImportProfile(const QString &name, const QString &payload, QString *error)
+{
+	if (!requireWritable(error)) {
+		return false;
+	}
+	if (name.trimmed().isEmpty())
+	{
+		setError(error, QCoreApplication::translate("Catalog",
+							    "Le profil doit avoir un nom."));
+		return false;
+	}
+
+	QSqlQuery query(m_database);
+	query.prepare(QStringLiteral("INSERT INTO catalog_import_profile (name, payload, updated_at) "
+				     "VALUES (:name, :payload, :updated_at) "
+				     "ON CONFLICT(name) DO UPDATE SET payload = :payload2, "
+				     "updated_at = :updated_at2"));
+	query.bindValue(QStringLiteral(":name"), name.trimmed());
+	query.bindValue(QStringLiteral(":payload"), payload);
+	query.bindValue(QStringLiteral(":updated_at"), isoNow());
+	query.bindValue(QStringLiteral(":payload2"), payload);
+	query.bindValue(QStringLiteral(":updated_at2"), isoNow());
+
+	if (!query.exec())
+	{
+		setError(error, query.lastError().text());
+		return false;
+	}
+
+	emit importProfilesChanged();
+	return true;
+}
+
+/**
+	@brief Catalog::removeImportProfile
+	@param name
+	@param error
+	@return true on success
+*/
+bool Catalog::removeImportProfile(const QString &name, QString *error)
+{
+	if (!requireWritable(error)) {
+		return false;
+	}
+
+	QSqlQuery query(m_database);
+	query.prepare(QStringLiteral("DELETE FROM catalog_import_profile WHERE name = :name"));
+	query.bindValue(QStringLiteral(":name"), name);
+	if (!query.exec())
+	{
+		setError(error, query.lastError().text());
+		return false;
+	}
+
+	emit importProfilesChanged();
+	return true;
+}
+
+// -----------------------------------------------------------------------------
 // Model bootstrap
 // -----------------------------------------------------------------------------
 
@@ -2051,16 +2162,19 @@ bool Catalog::seedDefaultModel(QString *error)
 
 	// The keys are on purpose the ones QElectroTech already uses for the
 	// fixed fields of an element, so that assigning a part needs no mapping
-	// table. The three measures are what the physical view of the part will
-	// read, and what the revision use case of the specification exercises.
+	// table. The names are on purpose the ones the program already shows for
+	// those keys: one field with two names, depending on which dialog is open,
+	// is how a user learns to distrust both. The three measures are what the
+	// physical view of the part will read, and what the revision use case of
+	// the specification exercises.
 	static const SeedProperty seed_properties[] = {
-		{ "designation",                    QT_TRANSLATE_NOOP("Catalog", "Désignation"),            CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
-		{ "description",                    QT_TRANSLATE_NOOP("Catalog", "Description"),            CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
+		{ "designation",                    QT_TRANSLATE_NOOP("Catalog", "Numéro d'article"),            CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
+		{ "description",                    QT_TRANSLATE_NOOP("Catalog", "Description textuelle"),            CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
 		{ "comment",                        QT_TRANSLATE_NOOP("Catalog", "Commentaire"),            CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
 		{ "function",                       QT_TRANSLATE_NOOP("Catalog", "Fonction"),               CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
 		{ "manufacturer",                   QT_TRANSLATE_NOOP("Catalog", "Fabricant"),              CatalogPropertyType::Text,    1, CatalogListBehaviour::Suggested, "" },
-		{ "manufacturer_reference",         QT_TRANSLATE_NOOP("Catalog", "Référence fabricant"),    CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
-		{ "machine_manufacturer_reference", QT_TRANSLATE_NOOP("Catalog", "Référence constructeur"), CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
+		{ "manufacturer_reference",         QT_TRANSLATE_NOOP("Catalog", "Numéro de commande"),    CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
+		{ "machine_manufacturer_reference", QT_TRANSLATE_NOOP("Catalog", "Numéro interne"), CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
 		{ "supplier",                       QT_TRANSLATE_NOOP("Catalog", "Fournisseur"),            CatalogPropertyType::Text,    2, CatalogListBehaviour::Suggested, "" },
 		{ "quantity",                       QT_TRANSLATE_NOOP("Catalog", "Quantité"),               CatalogPropertyType::Decimal, 0, CatalogListBehaviour::None,      "" },
 		{ "unity",                          QT_TRANSLATE_NOOP("Catalog", "Unité"),                  CatalogPropertyType::Text,    3, CatalogListBehaviour::Suggested, "" },
