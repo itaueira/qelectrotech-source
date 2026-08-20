@@ -66,6 +66,16 @@ class CatalogClass
 		bool has_symbol = true;  ///< false when objects of this class never have a symbol
 		int order_index = 0;     ///< position among the siblings
 		QString uuid;            ///< stable identity across catalogs, for part packages
+		/**
+			The numbering format of this class, as the XML a NumberingFormat
+			serialises itself to. Empty means "whatever the renumbering offers as
+			its default".
+
+			On the class and not in the command, because that is the registered
+			decision of T07: changing how a class is numbered has to change every
+			object of that class, and a rule that lives in a dialog cannot.
+		*/
+		QString numbering_format;
 };
 
 #endif // CATALOGCLASS_H

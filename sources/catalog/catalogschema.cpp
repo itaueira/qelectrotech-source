@@ -27,7 +27,7 @@
 namespace
 {
 	/// Highest schema version this build writes and understands.
-	const int CATALOG_SCHEMA_VERSION = 3;
+	const int CATALOG_SCHEMA_VERSION = 4;
 
 	/// Run one statement, filling @a error with the driver message on failure.
 	bool exec(QSqlDatabase &db, const QString &statement, QString *error)
@@ -149,6 +149,7 @@ bool CatalogSchema::applyStep(QSqlDatabase &db, int version, QString *error)
 		case 1:  ok = createVersion1(db, error); break;
 		case 2:  ok = createVersion2(db, error); break;
 		case 3:  ok = createVersion3(db, error); break;
+		case 4:  ok = createVersion4(db, error); break;
 		default:
 			if (error)
 			{
@@ -334,6 +335,21 @@ bool CatalogSchema::createVersion3(QSqlDatabase &db, QString *error)
 				       "name TEXT NOT NULL UNIQUE,"
 				       "payload TEXT NOT NULL,"
 				       "updated_at TEXT)"), error);
+}
+
+/**
+	@brief CatalogSchema::createVersion4
+	The numbering format of a class (T07).
+
+	The registered decision of T07 is that the rule of how to number lives on
+	the class, not in the command. So it is a column here and not a setting of
+	the station: two people renumbering the same project have to get the same
+	answer, and a rule kept per station cannot promise that.
+*/
+bool CatalogSchema::createVersion4(QSqlDatabase &db, QString *error)
+{
+	return exec(db, QStringLiteral("ALTER TABLE catalog_class "
+				       "ADD COLUMN numbering_format TEXT"), error);
 }
 
 /**

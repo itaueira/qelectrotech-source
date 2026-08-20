@@ -160,6 +160,7 @@ class QETDiagramEditor : public QETMainWindow
 		void selectionChanged();
 		void assignCatalogPart();
 		void registerCatalogPart();
+		void renumberComponents();
 
 	public:
 		QAction
@@ -219,6 +220,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_environment = nullptr,       ///< Action to see and change the work environment
 		*m_catalog_import = nullptr,    ///< Action to import parts from a spreadsheet
 		*m_catalog_repository = nullptr,///< Action to browse the shared part repository
+		*m_renumber_components = nullptr,///< Action to renumber the components, with a preview
 		*m_export_project_db,		///Export to file the internal database of the current project
 		*m_tile_window,			///< Show MDI subwindows as tile
 		*m_cascade_window,		///< Show MDI subwindows as cascade

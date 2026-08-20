@@ -18,10 +18,12 @@
 #include "catalogmanagerdialog.h"
 
 #include "../catalog.h"
+#include "../../autoNum/numberingformat.h"
 #include "../catalogschema.h"
 #include "catalogpropertydialog.h"
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFont>
 #include <QFormLayout>
@@ -102,6 +104,20 @@ void CatalogManagerDialog::buildWidgets()
 	m_class_has_symbol  = new QCheckBox(tr("Les objets de cette classe ont un symbole de schéma"), this);
 	m_class_has_symbol->setToolTip(tr("À décocher pour une pièce qui n'a jamais de symbole : butée de "
 					  "bornier, poignée de porte, étiquette de bouton, fusible."));
+	m_class_numbering   = new QComboBox(this);
+	m_class_numbering->addItem(tr("(le format proposé par la renumérotation)"), QString());
+	{
+		const QList<NumberingFormat> formats = NumberingFormat::builtinFormats();
+		for (const NumberingFormat &format : formats) {
+			m_class_numbering->addItem(format.name + QStringLiteral("  —  ") + format.pattern,
+						   format.toXml());
+		}
+	}
+	m_class_numbering->setToolTip(tr("La règle de numérotation des objets de cette classe. Elle "
+					 "vit ici et non dans la commande, pour que deux personnes "
+					 "renumérotant le même projet obtiennent la même chose. Une "
+					 "sous-classe qui ne dit rien suit sa classe mère, comme pour "
+					 "la racine du repère."));
 	m_apply_class       = new QPushButton(tr("Appliquer"), this);
 
 	QWidget *class_tab = new QWidget(this);
@@ -112,6 +128,7 @@ void CatalogManagerDialog::buildWidgets()
 	class_form->addRow(tr("Racine du repère"), m_class_root);
 	class_form->addRow(tr("Racine CEI 81346"), m_class_root_iec);
 	class_form->addRow(QString(), m_class_has_symbol);
+	class_form->addRow(tr("Format de numérotation"), m_class_numbering);
 	class_form->addRow(QString(), m_apply_class);
 
 	// --- the properties tab ---------------------------------------------
@@ -333,6 +350,26 @@ void CatalogManagerDialog::classSelected()
 	m_class_root_iec->setText(catalog_class.root_iec);
 	m_class_has_symbol->setChecked(catalog_class.has_symbol);
 
+	// The stored format is matched by name, not by the whole document: a
+	// format whose pattern was edited elsewhere still selects its own row.
+	int numbering_index = 0;
+	if (!catalog_class.numbering_format.isEmpty())
+	{
+		const QString stored_name =
+			NumberingFormat::fromXml(catalog_class.numbering_format).name;
+		for (int index = 1 ; index < m_class_numbering->count() ; ++index)
+		{
+			const QString candidate =
+				NumberingFormat::fromXml(m_class_numbering->itemData(index).toString()).name;
+			if (candidate == stored_name)
+			{
+				numbering_index = index;
+				break;
+			}
+		}
+	}
+	m_class_numbering->setCurrentIndex(numbering_index);
+
 	reloadPropertyTable();
 	updateEnabledState();
 }
@@ -530,6 +567,7 @@ void CatalogManagerDialog::applyClassChanges()
 	catalog_class.root        = m_class_root->text().trimmed();
 	catalog_class.root_iec    = m_class_root_iec->text().trimmed();
 	catalog_class.has_symbol  = m_class_has_symbol->isChecked();
+	catalog_class.numbering_format = m_class_numbering->currentData().toString();
 
 	if (catalog_class.root != previous_root || catalog_class.root_iec != previous_root_iec)
 	{

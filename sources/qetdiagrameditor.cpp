@@ -17,6 +17,7 @@
 */
 #include "qetdiagrameditor.h"
 
+#include "autoNum/ui/renumberdialog.h"
 #include "catalog/ui/catalogbrowserdialog.h"
 #include "catalog/ui/catalogimportdialog.h"
 #include "catalog/ui/catalogrepositorydialog.h"
@@ -553,6 +554,10 @@ void QETDiagramEditor::setUpActions()
 		dialog.exec();
 	});
 
+	m_renumber_components = new QAction(tr("Renuméroter les composants"), this);
+	connect(m_renumber_components, &QAction::triggered,
+		this, &QETDiagramEditor::renumberComponents);
+
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
 	connect(m_project_terminalBloc, &QAction::triggered, this, &QETDiagramEditor::generateTerminalBlock);
@@ -998,6 +1003,47 @@ void QETDiagramEditor::registerCatalogPart()
 }
 
 /**
+	@brief QETDiagramEditor::renumberComponents
+	Renumber the components, showing what would change before changing it.
+
+	Half of the number one pain of the office is renumbering: inserting a folio
+	in the middle, or duplicating a circuit, and correcting the tags by hand
+	afterwards. This is the command that stops that being by hand - and it
+	shows the "from → to" table first, because renumbering blind is worse than
+	not renumbering.
+*/
+void QETDiagramEditor::renumberComponents()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+	QList<Element *> selected;
+	if (DiagramView *diagram_view = currentDiagramView())
+	{
+		if (diagram_view->diagram())
+		{
+			const QList<QGraphicsItem *> items = diagram_view->diagram()->selectedItems();
+			for (QGraphicsItem *item : items)
+			{
+				if (Element *element = qgraphicsitem_cast<Element *>(item)) {
+					selected.append(element);
+				}
+			}
+		}
+	}
+
+	RenumberDialog dialog(project, QETApp::catalog(), selected, this);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+	statusBar()->showMessage(tr("%n composant(s) renuméroté(s). Ctrl+Z annule tout d'un coup.",
+				    "", dialog.appliedCount()), 5000);
+}
+
+/**
 	@brief QETDiagramEditor::setUpMenu
 */
 void QETDiagramEditor::setUpMenu()
@@ -1069,6 +1115,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addAction(m_project_terminalBloc);
 	menu_project -> addAction(m_project_export_wiring_list);
 	menu_project -> addAction(m_terminal_numbering);
+	menu_project -> addAction(m_renumber_components);
 #ifdef QET_EXPORT_PROJECT_DB
 	menu_project -> addSeparator();
 	menu_project -> addAction(m_export_project_db);
@@ -1940,6 +1987,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_terminal_strip_dialog       -> setEnabled(editable_project);
 	m_project_export_wiring_list  -> setEnabled(opened_project);
 	m_terminal_numbering          -> setEnabled(editable_project);
+	m_renumber_components         -> setEnabled(editable_project);
 #ifdef QET_EXPORT_PROJECT_DB
 	m_export_project_db           -> setEnabled(editable_project);
 #endif

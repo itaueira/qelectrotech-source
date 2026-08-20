@@ -275,6 +275,16 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/autoNum/assignvariables.cpp
   ${QET_DIR}/sources/autoNum/assignvariables.h
+  ${QET_DIR}/sources/autoNum/iecstructure.cpp
+  ${QET_DIR}/sources/autoNum/iecstructure.h
+  ${QET_DIR}/sources/autoNum/numberingformat.cpp
+  ${QET_DIR}/sources/autoNum/numberingformat.h
+  ${QET_DIR}/sources/autoNum/projectrenumberer.cpp
+  ${QET_DIR}/sources/autoNum/projectrenumberer.h
+  ${QET_DIR}/sources/autoNum/renumberplan.cpp
+  ${QET_DIR}/sources/autoNum/renumberplan.h
+  ${QET_DIR}/sources/autoNum/ui/renumberdialog.cpp
+  ${QET_DIR}/sources/autoNum/ui/renumberdialog.h
   ${QET_DIR}/sources/autoNum/numerotationcontextcommands.cpp
   ${QET_DIR}/sources/autoNum/numerotationcontextcommands.h
   ${QET_DIR}/sources/autoNum/numerotationcontext.cpp
@@ -809,6 +819,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/adddiagramcommand.h
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.cpp
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.h
+  ${QET_DIR}/sources/undocommand/renumbercommand.cpp
+  ${QET_DIR}/sources/undocommand/renumbercommand.h
   ${QET_DIR}/sources/undocommand/addgraphicsobjectcommand.cpp
   ${QET_DIR}/sources/undocommand/addgraphicsobjectcommand.h
   ${QET_DIR}/sources/undocommand/changeelementdatacommand.cpp

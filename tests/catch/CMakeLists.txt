@@ -89,9 +89,21 @@ add_executable(
     src/catalogassignment_test.cpp
     src/catalogimport_test.cpp
     src/environment_test.cpp
+    src/iecstructure_test.cpp
+    src/renumber_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
+    # The numbering rules and the IEC structure have the same property as the
+    # catalog core: no Element, no Diagram, so the ordering and the inheritance
+    # can be tested without a project open. ProjectRenumberer is the part that
+    # does need one, and it is deliberately not here.
+    ${QET_DIR}/sources/autoNum/iecstructure.cpp
+    ${QET_DIR}/sources/autoNum/iecstructure.h
+    ${QET_DIR}/sources/autoNum/numberingformat.cpp
+    ${QET_DIR}/sources/autoNum/numberingformat.h
+    ${QET_DIR}/sources/autoNum/renumberplan.cpp
+    ${QET_DIR}/sources/autoNum/renumberplan.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:

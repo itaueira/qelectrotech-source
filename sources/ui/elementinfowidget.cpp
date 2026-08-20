@@ -107,8 +107,28 @@ void ElementInfoWidget::apply()
 */
 QUndoCommand* ElementInfoWidget::associatedUndo() const
 {
-	const auto new_info = currentInfo();
+	auto new_info = currentInfo();
 	const auto old_info = m_element -> elementInformations();
+
+		//Typing a tag by hand freezes this component: the renumbering
+		//processes stop touching it. Whoever typed "24 Vcc" does not want the
+		//next "renumber everything" to turn it into "37", and having to
+		//remember to tick a box for that is having to remember it every time.
+		//
+		//Clearing the tag does the opposite and unfreezes: it is how a
+		//component is handed back to automatic numbering.
+	const QString new_label = new_info.value(QETInformation::ELMT_LABEL).toString();
+	const QString old_label = old_info.value(QETInformation::ELMT_LABEL).toString();
+	if (new_label != old_label)
+	{
+		const bool lock_touched =
+			new_info.value(QStringLiteral("auto_num_locked"))
+			!= old_info.value(QStringLiteral("auto_num_locked"));
+		if (!lock_touched) {
+			new_info.addValue(QStringLiteral("auto_num_locked"),
+					  !new_label.trimmed().isEmpty());
+		}
+	}
 
 	if (old_info != new_info)
 		return (new ChangeElementInformationCommand(m_element, old_info, new_info));

@@ -22,6 +22,7 @@
 
 class Catalog;
 class QCheckBox;
+class QComboBox;
 class QLabel;
 class QLineEdit;
 class QListWidget;
@@ -90,6 +91,7 @@ class CatalogManagerDialog : public QDialog
 		QLineEdit *m_class_root = nullptr;
 		QLineEdit *m_class_root_iec = nullptr;
 		QCheckBox *m_class_has_symbol = nullptr;
+		QComboBox *m_class_numbering = nullptr;
 		QPushButton *m_apply_class = nullptr;
 
 		QTableWidget *m_property_table = nullptr;

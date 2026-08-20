@@ -328,7 +328,7 @@ void Catalog::reloadClasses()
 
 	QSqlQuery query(m_database);
 	if (!query.exec(QStringLiteral("SELECT id, parent_id, key, name, description, root, "
-				       "root_iec, has_symbol, order_index, uuid "
+				       "root_iec, has_symbol, order_index, uuid, numbering_format "
 				       "FROM catalog_class ORDER BY order_index, name")))
 	{
 		m_last_error = query.lastError().text();
@@ -348,6 +348,7 @@ void Catalog::reloadClasses()
 		catalog_class.has_symbol  = query.value(7).toInt() != 0;
 		catalog_class.order_index = query.value(8).toInt();
 		catalog_class.uuid        = query.value(9).toString();
+		catalog_class.numbering_format = query.value(10).toString();
 		m_classes.append(catalog_class);
 	}
 }
@@ -562,7 +563,8 @@ bool Catalog::updateClass(const CatalogClass &catalog_class, QString *error)
 	query.prepare(QStringLiteral("UPDATE catalog_class SET parent_id = :parent_id, "
 				     "key = :key, name = :name, description = :description, "
 				     "root = :root, root_iec = :root_iec, "
-				     "has_symbol = :has_symbol, order_index = :order_index "
+				     "has_symbol = :has_symbol, order_index = :order_index, "
+				     "numbering_format = :numbering_format "
 				     "WHERE id = :id"));
 	query.bindValue(QStringLiteral(":parent_id"),
 			catalog_class.parent_id > 0 ? QVariant(catalog_class.parent_id) : QVariant());
@@ -573,6 +575,7 @@ bool Catalog::updateClass(const CatalogClass &catalog_class, QString *error)
 	query.bindValue(QStringLiteral(":root_iec"), catalog_class.root_iec);
 	query.bindValue(QStringLiteral(":has_symbol"), catalog_class.has_symbol ? 1 : 0);
 	query.bindValue(QStringLiteral(":order_index"), catalog_class.order_index);
+	query.bindValue(QStringLiteral(":numbering_format"), catalog_class.numbering_format);
 	query.bindValue(QStringLiteral(":id"), catalog_class.id);
 
 	if (!query.exec())
