@@ -27,6 +27,8 @@
 
 #include <QApplication>
 #include <QDomImplementation>
+#include <QSettings>
+#include <QStyleHints>
 
 #include <QStyleFactory>
 #include <QtConcurrentRun>
@@ -152,6 +154,30 @@ QGuiApplication::setHighDpiScaleFactorRoundingPolicy(QetSettings::hdpiScaleFacto
 	QetLogger::instance().installCrashHandler();
 
 	SingleApplication app(argc, argv, true);
+
+	// Appearance. The workstations here run Windows in dark mode, and the
+	// QElectroTech icons are drawn for a light background: on a dark palette
+	// the element panel and the toolbars become nearly unreadable. So the
+	// light scheme is forced, and the setting below is the way out until the
+	// appearance preference of T40 exists.
+	//
+	// Set here, before QETApp is constructed, because QETApp::initStyle()
+	// captures qApp->palette() as the palette it will restore, and it has to
+	// capture the light one.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+	{
+		QSettings appearance_settings;
+		const QString scheme =
+			appearance_settings.value(QStringLiteral("appearance/color-scheme"),
+						  QStringLiteral("light")).toString();
+		if (scheme == QLatin1String("light")) {
+			app.styleHints()->setColorScheme(Qt::ColorScheme::Light);
+		} else if (scheme == QLatin1String("dark")) {
+			app.styleHints()->setColorScheme(Qt::ColorScheme::Dark);
+		}
+		// Anything else, "system" included, leaves the desktop in charge.
+	}
+#endif
 #ifdef Q_OS_MACOS
 	app.setStyle(QStyleFactory::create("Fusion"));
 	// Installed as early as possible, before anything else can run an
