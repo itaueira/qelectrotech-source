@@ -504,6 +504,8 @@ void QETTitleBlockTemplateEditor::initToolbars()
 	display_toolbar -> addAction(zoom_fit_);
 	display_toolbar -> addAction(zoom_reset_);
 	addToolBar(Qt::TopToolBarArea, display_toolbar);
+
+	QETApp::styleToolBars(this);
 }
 
 /**

@@ -102,6 +102,31 @@ class QETApp : public QObject
 		static void setCatalogPath(const QString &);
 		static Catalog *catalog();
 		static void closeCatalog();
+		/**
+			@brief The look of a tool bar button, so that a selected tool
+			stays readable.
+
+			Windows fills the checked state of a tool button with the accent
+			colour of the desktop, at full strength. When that accent is a
+			dark blue - the default here - the icon drawn on top of it
+			disappears, and the button that is switched on is the one hardest
+			to identify. Which is backwards.
+
+			Replaced by a light tint plus a border: the border is what says
+			"pressed", and the tint only has to be different from the tool bar
+			behind it, not loud. Written with palette() roles rather than
+			fixed colours so it keeps working if the appearance preference of
+			T40 switches the scheme.
+
+			Applied to the tool bars, never to the application: a non empty
+			application style sheet wraps every widget in QStyleSheetStyle and
+			takes over from per widget QWidget::setStyle(), which is a much
+			bigger change than colouring a button.
+		*/
+		static QString toolBarStyleSheet();
+		/// Apply toolBarStyleSheet() to every tool bar of @a window
+		static void styleToolBars(QWidget *window);
+
 		static QString configDir();
 		static QString dataDir();
 		static QString documentDir();

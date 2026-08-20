@@ -1078,6 +1078,8 @@ void QETElementEditor::setupActions()
 	parts_toolbar -> setObjectName("parts");
 	parts_toolbar -> addActions(m_add_part_action_grp -> actions());
 	addToolBar(Qt::LeftToolBarArea, parts_toolbar);
+
+	QETApp::styleToolBars(this);
 }
 
 /**

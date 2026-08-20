@@ -17,6 +17,8 @@
 */
 #include "qetapp.h"
 
+#include <QToolBar>
+
 #include "catalog/catalog.h"
 #include "environment/qetenvironment.h"
 #include "configdialog.h"
@@ -1792,6 +1794,61 @@ void QETApp::setMainWindowVisible(QMainWindow *window, bool visible) {
 void QETApp::invertMainWindowVisibility(QWidget *window) {
 	if (QMainWindow *w = qobject_cast<QMainWindow *>(window))
 		setMainWindowVisible(w, !w -> isVisible());
+}
+
+/**
+	@brief QETApp::toolBarStyleSheet
+	@return the style sheet that keeps the icon of a checked tool button
+	readable
+*/
+QString QETApp::toolBarStyleSheet()
+{
+		//Every state is written out rather than only the checked one: a style
+		//sheet that mentions a border for one state of a widget makes Qt draw
+		//that widget itself in every state, so saying nothing about the others
+		//would leave them flat and inconsistent instead of native.
+	return QStringLiteral(
+		"QToolBar QToolButton {"
+		"  background-color : transparent;"
+		"  border : 1px solid transparent;"
+		"  border-radius : 4px;"
+		"  padding : 2px;"
+		"}"
+		"QToolBar QToolButton:hover {"
+		"  background-color : palette(midlight);"
+		"  border-color : palette(mid);"
+		"}"
+		"QToolBar QToolButton:checked {"
+		"  background-color : palette(midlight);"
+		"  border-color : palette(dark);"
+		"}"
+		"QToolBar QToolButton:checked:hover {"
+		"  background-color : palette(light);"
+		"  border-color : palette(dark);"
+		"}"
+		"QToolBar QToolButton:pressed {"
+		"  background-color : palette(mid);"
+		"  border-color : palette(dark);"
+		"}"
+		"QToolBar QToolButton:disabled {"
+		"  background-color : transparent;"
+		"  border-color : transparent;"
+		"}");
+}
+
+/**
+	@brief QETApp::styleToolBars
+	@param window : the window whose tool bars are to be styled
+*/
+void QETApp::styleToolBars(QWidget *window)
+{
+	if (!window) {
+		return;
+	}
+	const QList<QToolBar *> bars = window->findChildren<QToolBar *>();
+	for (QToolBar *bar : bars) {
+		bar->setStyleSheet(toolBarStyleSheet());
+	}
 }
 
 /**
