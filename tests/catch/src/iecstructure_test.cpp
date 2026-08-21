@@ -18,9 +18,10 @@
 #include <QDomDocument>
 
 #include "../../../sources/autoNum/iecstructure.h"
+#include "../../../sources/diagramcontext.h"
 #include "qt_catch_tostring.h"
 
-TEST_CASE("CU-10.1 — désactivée, la structure ne touche à rien")
+TEST_CASE("CU-10.1 — désactivée, la structure ne touche à rien", "[iec]")
 {
 	// This is the case that protects production, and the first one to run on
 	// any change to T10: a tag written before the norm existed reads back as
@@ -46,7 +47,7 @@ TEST_CASE("CU-10.1 — désactivée, la structure ne touche à rien")
 	CHECK(IecStructure::fromTag(QString()).isEmpty());
 }
 
-TEST_CASE("CU-10.2 — l'héritage en cascade : personne ne tape =CT1 deux fois")
+TEST_CASE("CU-10.2 — l'héritage en cascade : personne ne tape =CT1 deux fois", "[iec]")
 {
 	const IecStructure project(QStringLiteral("CT1"), QString(), QString());
 	const IecStructure folio(QString(), QStringLiteral("A1"), QString());
@@ -66,7 +67,7 @@ TEST_CASE("CU-10.2 — l'héritage en cascade : personne ne tape =CT1 deux fois"
 	CHECK(resolved.toFullTag() == QStringLiteral("=CT1+A1-K3"));
 }
 
-TEST_CASE("CU-10.3 — la surcharge explicite ne touche que celui qui la porte")
+TEST_CASE("CU-10.3 — la surcharge explicite ne touche que celui qui la porte", "[iec]")
 {
 	const IecStructure project(QStringLiteral("CT1"), QString(), QString());
 	const IecStructure folio(QString(), QStringLiteral("A1"), QString());
@@ -84,7 +85,7 @@ TEST_CASE("CU-10.3 — la surcharge explicite ne touche que celui qui la porte")
 	      == QStringLiteral("=CT1+A1-K4"));
 }
 
-TEST_CASE("CU-10.4 — court ou complet change l'affichage, pas la donnée")
+TEST_CASE("CU-10.4 — court ou complet change l'affichage, pas la donnée", "[iec]")
 {
 	const IecStructure resolved(QStringLiteral("CT1"),
 				    QStringLiteral("A1"),
@@ -107,7 +108,7 @@ TEST_CASE("CU-10.4 — court ou complet change l'affichage, pas la donnée")
 	CHECK(with_dash.toShortTag() == QStringLiteral("-K3"));
 }
 
-TEST_CASE("CU-10.5 — allumer la structure en cours de route ne perd aucun repère")
+TEST_CASE("CU-10.5 — allumer la structure en cours de route ne perd aucun repère", "[iec]")
 {
 	// Forty components already numbered, with no structure at all. Turning the
 	// norm on must leave every tag where it is, with = and + empty, waiting to
@@ -135,7 +136,7 @@ TEST_CASE("CU-10.5 — allumer la structure en cours de route ne perd aucun rep�
 	CHECK(first.toFullTag() == QStringLiteral("=CT1-K1"));
 }
 
-TEST_CASE("IecStructure — les champs où les trois parties vivent")
+TEST_CASE("IecStructure — les champs où les trois parties vivent", "[iec]")
 {
 	// The specification of T10 said the `-` part was the `designation` field.
 	// It is not: `designation` is what QElectroTech labels "Numéro d'article",
@@ -317,4 +318,100 @@ TEST_CASE("a tag digitada com separador não é lida duas vezes", "[iec]")
 	CHECK(lida.location == QStringLiteral("A1"));
 	CHECK(lida.product == QStringLiteral("Q1"));
 	CHECK(lida.toFullTag() == QStringLiteral("=CT1+A1-Q1"));
+}
+
+TEST_CASE("a leitura da estrutura mora num lugar só", "[iec]")
+{
+	// Por que este caso existe: a mesma leitura estava escrita duas vezes —
+	// em Element::composedLabel, que compõe a tag DESENHADA, e no diálogo das
+	// configurações, cuja previsão promete mostrar o que o desenho vai fazer.
+	// Idênticas na hora em que foram escritas, e livres para divergir depois.
+	// Uma previsão que divergiu é pior que previsão nenhuma: ela é lida como
+	// garantia. Agora os dois chamam estas duas funções, e este caso as prova
+	// contra a DiagramContext de verdade.
+
+	SECTION("o folio guarda o + em locmach, e não na chave do componente")
+	{
+		// A assimetria que o cabeçalho de IecStructure marca como o único
+		// ponto que vale ter num lugar só. Um folio que trouxesse o + na
+		// chave do componente não daria nada para herdar.
+		DiagramContext folio;
+		folio.addValue(QStringLiteral("plant"),   QStringLiteral("CT1"));
+		folio.addValue(QStringLiteral("locmach"), QStringLiteral("QCM"));
+		folio.addValue(QStringLiteral("location"), QStringLiteral("NAO-E-DAQUI"));
+
+		const IecStructure lido = IecStructure::fromFolioInformation(folio);
+		CHECK(lido.plant    == QStringLiteral("CT1"));
+		CHECK(lido.location == QStringLiteral("QCM"));
+		CHECK(lido.product.isEmpty());
+	}
+
+	SECTION("folio vazio não inventa nada")
+	{
+		const IecStructure lido = IecStructure::fromFolioInformation(DiagramContext());
+		CHECK(lido.isEmpty());
+	}
+
+	SECTION("o componente sem = nem + é a tag e nada mais")
+	{
+		DiagramContext elemento;
+		const IecStructure lido =
+				IecStructure::fromElementInformation(QStringLiteral("K3"), elemento);
+		CHECK(lido.product == QStringLiteral("K3"));
+		CHECK(lido.plant.isEmpty());
+		CHECK(lido.location.isEmpty());
+	}
+
+	SECTION("o que o componente declara entra por cima da tag, campo a campo")
+	{
+		DiagramContext elemento;
+		elemento.addValue(QStringLiteral("location"), QStringLiteral("A2"));
+
+		const IecStructure lido =
+				IecStructure::fromElementInformation(QStringLiteral("=CT1+A1-K3"), elemento);
+		// O + do componente vence...
+		CHECK(lido.location == QStringLiteral("A2"));
+		// ...e o = que ele não declarou continua sendo o que a tag dizia.
+		CHECK(lido.plant   == QStringLiteral("CT1"));
+		CHECK(lido.product == QStringLiteral("K3"));
+	}
+
+	SECTION("campo vazio no componente não apaga o que a tag trazia")
+	{
+		DiagramContext elemento;
+		elemento.addValue(QStringLiteral("plant"),    QString());
+		elemento.addValue(QStringLiteral("location"), QString());
+
+		const IecStructure lido =
+				IecStructure::fromElementInformation(QStringLiteral("=CT1+A1-K3"), elemento);
+		CHECK(lido.plant    == QStringLiteral("CT1"));
+		CHECK(lido.location == QStringLiteral("A1"));
+	}
+
+	SECTION("a cadeia inteira, a mesma que o desenho e a previsão percorrem")
+	{
+		DiagramContext folio;
+		folio.addValue(QStringLiteral("plant"),   QStringLiteral("CT1"));
+		folio.addValue(QStringLiteral("locmach"), QStringLiteral("QCM"));
+
+		DiagramContext elemento;   // herda tudo do folio
+
+		IecStructureSettings ligada;
+		ligada.enabled = true;
+		ligada.display = IecTagDisplay::Full;
+
+		CHECK(ligada.displayedTag(
+				  IecStructure::fromFolioInformation(folio),
+				  IecStructure::fromElementInformation(QStringLiteral("K3"), elemento))
+		      == QStringLiteral("=CT1+QCM-K3"));
+
+		// E desligada, a mesma cadeia devolve a tag intocada — é o que faz o
+		// interruptor ser reversível.
+		IecStructureSettings desligada;
+		desligada.enabled = false;
+		CHECK(desligada.displayedTag(
+				  IecStructure::fromFolioInformation(folio),
+				  IecStructure::fromElementInformation(QStringLiteral("K3"), elemento))
+		      == QStringLiteral("K3"));
+	}
 }

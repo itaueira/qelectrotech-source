@@ -103,6 +103,24 @@ add_executable(
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
+    # O saco de chave/valor que o carimbo, o folio e o componente usam para
+    # guardar informação. Entra para que a leitura da estrutura IEC possa ser
+    # testada contra a DiagramContext DE VERDADE, e não contra um dublê que
+    # continuaria passando depois de a classe entregue mudar.
+    #
+    # Ele arrasta três arquivos atrás — diagramcontext usa QET::findInDomElement,
+    # e qet.cpp usa QET::Icons e o ShortcutManager. Conferido um por um: nenhum
+    # dos quatro referencia QETApp, Element, Diagram ou QETProject, então a
+    # regra que os comentários abaixo protegem continua valendo. Só de Qt eles
+    # dependem, e Qt::Widgets já estava ligado.
+    ${QET_DIR}/sources/diagramcontext.cpp
+    ${QET_DIR}/sources/diagramcontext.h
+    ${QET_DIR}/sources/qet.cpp
+    ${QET_DIR}/sources/qet.h
+    ${QET_DIR}/sources/qeticons.cpp
+    ${QET_DIR}/sources/qeticons.h
+    ${QET_DIR}/sources/shortcutmanager.cpp
+    ${QET_DIR}/sources/shortcutmanager.h
     # O vocabulário de variáveis do carimbo, e a limpeza do que ninguém
     # preencheu. Entra aqui porque depende só de QObject e QHash: dá para
     # testar sem arrastar o carimbo inteiro, que arrastaria o programa atrás.
@@ -182,6 +200,20 @@ if(NOT BUILD_WITH_KF)
         )
 endif()
 
+# A raiz do repositorio no caminho de inclusao. O programa a ganha de graca
+# (CMAKE_INCLUDE_CURRENT_DIR ON na raiz, CMakeLists.txt:60); este alvo mora em
+# tests/catch/ e por isso nao. Precisa dela porque diagramcontext.h inclui
+# "pugixml/src/pugixml.hpp", caminho que so resolve a partir da raiz.
+#
+# Isto escolhe de proposito o cabecalho do submodulo (1.16) e nao o da copia que
+# o FetchContent baixa (1.15), porque e assim que o programa compila. Teste que
+# compila diferente do programa testa outra coisa. A diferenca de versao entre
+# cabecalho e biblioteca vem do upstream e esta registrada em todo/BUILD.md.
+target_include_directories(
+    ${PROJECT_NAME}
+    PRIVATE
+    ${QET_DIR})
+
 target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
@@ -189,6 +221,7 @@ target_link_libraries(
     PRIVATE
     ${KF_PRIVATE_LIBRARIES}
     ${QET_PRIVATE_LIBRARIES}
+    pugixml::pugixml
     Qt::Test)
 
 # Onde estão os arquivos de exemplo que o teste importa de verdade. Existe para que

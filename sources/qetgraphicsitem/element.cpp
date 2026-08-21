@@ -1824,27 +1824,14 @@ QString Element::composedLabel(const QString &label)
 		return label;
 	}
 
-		//What the component says. A tag typed with the separators already in
-		//it is read apart rather than escaped, so a project where somebody
-		//wrote "=CT1+A1-K3" by hand does not end up saying it twice.
-	IecStructure element_structure = IecStructure::fromTag(label);
-	const QString own_plant = m_data.m_informations.value(
-				IecStructure::plantKey()).toString();
-	const QString own_location = m_data.m_informations.value(
-				IecStructure::locationKey()).toString();
-	if (!own_plant.isEmpty()) {
-		element_structure.plant = own_plant;
-	}
-	if (!own_location.isEmpty()) {
-		element_structure.location = own_location;
-	}
-
-	const DiagramContext folio_info =
-			diagram_->border_and_titleblock.titleblockInformation();
-	const IecStructure folio_structure(
-				folio_info.value(IecStructure::plantKey()).toString(),
-				folio_info.value(IecStructure::folioLocationKey()).toString(),
-				QString());
+		//Read in IecStructure and not here: the dialog of the settings shows
+		//a preview of this very composition, and a second copy of the reading
+		//is a preview free to stop matching the drawing.
+	const IecStructure element_structure =
+			IecStructure::fromElementInformation(label, m_data.m_informations);
+	const IecStructure folio_structure =
+			IecStructure::fromFolioInformation(
+				diagram_->border_and_titleblock.titleblockInformation());
 
 	return settings.displayedTag(folio_structure, element_structure);
 }

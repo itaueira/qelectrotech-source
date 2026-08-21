@@ -17,6 +17,8 @@
 */
 #include "iecstructure.h"
 
+#include "../diagramcontext.h"
+
 #include <QCoreApplication>
 
 /**
@@ -186,6 +188,36 @@ IecStructure IecStructure::fromTag(const QString &tag)
 	}
 
 	return structure;
+}
+
+/**
+	@brief IecStructure::fromElementInformation
+	@param label
+	@param info
+	@return the structure the component describes
+*/
+IecStructure IecStructure::fromElementInformation(const QString &label,
+						  const DiagramContext &info)
+{
+		//A tag typed with the separators already in it is read apart rather
+		//than escaped, so a project where somebody wrote "=CT1+A1-K3" by hand
+		//does not end up saying it twice.
+	return inherit(fromTag(label),
+		       IecStructure(info.value(plantKey()).toString(),
+				    info.value(locationKey()).toString(),
+				    QString()));
+}
+
+/**
+	@brief IecStructure::fromFolioInformation
+	@param info
+	@return the structure the folio describes
+*/
+IecStructure IecStructure::fromFolioInformation(const DiagramContext &info)
+{
+	return IecStructure(info.value(plantKey()).toString(),
+			    info.value(folioLocationKey()).toString(),
+			    QString());
 }
 
 /**

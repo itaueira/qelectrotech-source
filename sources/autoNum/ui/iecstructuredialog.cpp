@@ -146,12 +146,14 @@ void IecStructureDialog::refreshPreview()
 		return;
 	}
 
-	const DiagramContext folio_info =
-			sample_diagram->border_and_titleblock.titleblockInformation();
-	const QString folio_plant =
-			folio_info.value(IecStructure::plantKey()).toString();
-	const QString folio_location =
-			folio_info.value(IecStructure::folioLocationKey()).toString();
+		//Through IecStructure, and not by reading the keys again here: what
+		//this preview is worth is that it composes the tag the same way the
+		//drawing does. Reading it twice would let the two drift, and a
+		//preview that drifts is worse than no preview.
+	const IecStructure folio_structure = IecStructure::fromFolioInformation(
+				sample_diagram->border_and_titleblock.titleblockInformation());
+	const QString folio_plant = folio_structure.plant;
+	const QString folio_location = folio_structure.location;
 
 	if (folio_plant.isEmpty() && folio_location.isEmpty()) {
 		m_folio_note->setText(
@@ -168,20 +170,10 @@ void IecStructureDialog::refreshPreview()
 	}
 
 	const QString stored = sample->elementInformations()
-			.value(QStringLiteral("label")).toString();
+			.value(IecStructure::productKey()).toString();
 
-	IecStructure element_structure = IecStructure::fromTag(stored);
-	const QString own_plant = sample->elementInformations()
-			.value(IecStructure::plantKey()).toString();
-	const QString own_location = sample->elementInformations()
-			.value(IecStructure::locationKey()).toString();
-	if (!own_plant.isEmpty()) {
-		element_structure.plant = own_plant;
-	}
-	if (!own_location.isEmpty()) {
-		element_structure.location = own_location;
-	}
-	const IecStructure folio_structure(folio_plant, folio_location, QString());
+	const IecStructure element_structure = IecStructure::fromElementInformation(
+				stored, sample->elementInformations());
 
 	IecStructureSettings off;
 	off.enabled = false;

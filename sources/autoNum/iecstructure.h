@@ -21,6 +21,8 @@
 #include <QDomElement>
 #include <QString>
 
+class DiagramContext;
+
 /**
 	@brief The IecStructure class
 	The identification structure of IEC 81346: `=` function, `+` location,
@@ -84,6 +86,34 @@ class IecStructure
 			looks like.
 		*/
 		static IecStructure fromTag(const QString &tag);
+
+		/**
+			@param label : the tag the component carries
+			@param info : the component information
+			@return the structure the component describes.
+
+			Read here and not at each caller: the drawing composes the tag in
+			Element, and the dialog of the settings shows a preview of it. Two
+			copies of this reading is two copies free to drift, and the whole
+			promise of that preview is that it says what the drawing will do.
+
+			Note it is `inherit` doing the work, and not an `if` per field
+			written again: what the component sets itself goes on top of what
+			its tag already said, which is the same rule the norm uses from
+			project to folio to component.
+		*/
+		static IecStructure fromElementInformation(const QString &label,
+							   const DiagramContext &info);
+
+		/**
+			@param info : the folio information
+			@return the structure the folio describes.
+
+			Its own function, because the folio keeps the location part under
+			another key than the component does - see the table above. That
+			asymmetry is the one thing here worth having in a single place.
+		*/
+		static IecStructure fromFolioInformation(const DiagramContext &info);
 
 		/// The element information keys the three parts are stored in
 		static QString plantKey();
