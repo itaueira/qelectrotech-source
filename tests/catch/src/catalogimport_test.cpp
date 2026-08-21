@@ -569,3 +569,114 @@ TEST_CASE("CU-14.1 — data de planilha chega como data, não como número", "[c
 		      QStringLiteral("45292"));
 	}
 }
+
+TEST_CASE("CU-14.1 — as peças do projeto real entram, e o arquivo entregue é o testado",
+	  "[catalog][dados-reais]")
+{
+	// This reads the file that actually ships, todo/exemplos/pecas-do-projeto.csv,
+	// and not a copy of it written here. The distinction is the point: a copy
+	// would keep passing after the shipped file broke, which is the failure mode
+	// that makes a green suite worthless.
+	//
+	// The rows are the 11 distinct part codes found in the ACME project of
+	// 14 folios, taken from the designation and manufacturer fields that were
+	// already filled in it. So this test answers a question no invented fixture
+	// can: does the real list, with its accents, its uppercase, its decimal
+	// commas and its plus signs inside a code, import without a single rejection.
+	const QString path = QStringLiteral(QET_TEST_DATA_DIR) +
+			     QStringLiteral("/pecas-do-projeto.csv");
+	QFile file(path);
+	REQUIRE(file.open(QIODevice::ReadOnly));
+	const QString text = QString::fromUtf8(file.readAll());
+	file.close();
+
+	const CatalogTable table = CatalogTableReader::parseCsv(text);
+	REQUIRE(table.headers.size() == 5);
+	REQUIRE(table.rowCount() == 11);
+
+	Catalog catalog;
+	QString error;
+	REQUIRE(catalog.openInMemory(&error));
+
+	CatalogImportProfile profile;
+	// The class comes from a column, and the column carries the stable key and
+	// not the visible name. The name is translated when the tree is seeded, so a
+	// file saying "Componente" would import here and be refused on a machine
+	// running in French - the key never moves.
+	profile.class_column = QStringLiteral("classe");
+	profile.code_column = QStringLiteral("codigo");
+	profile.value_columns.insert(QStringLiteral("manufacturer"),
+				     QStringLiteral("manufacturer"));
+	profile.value_columns.insert(QStringLiteral("designation"),
+				     QStringLiteral("designation"));
+	profile.value_columns.insert(QStringLiteral("description"),
+				     QStringLiteral("description"));
+
+	const CatalogImportReport report = CatalogImporter::import(
+				catalog, table, profile,
+				QStringLiteral("projeto CT1-QCM"));
+
+	// Not a single rejection, and the reasons printed when there is one - a
+	// count alone would say "10 of 11" and leave whoever reads it guessing.
+	for (const CatalogImportReport::Rejection &rejection : report.rejections) {
+		WARN(QString("linha %1 (%2): %3").arg(rejection.row)
+		     .arg(rejection.code, rejection.reason).toStdString());
+	}
+	CHECK(report.rejected() == 0);
+	CHECK(report.created == 11);
+
+	SECTION("a classe de cada peça é a que o arquivo diz")
+	{
+		const int plc_id = catalog.classByKey(QStringLiteral("plc")).id;
+		const int button_id = catalog.classByKey(QStringLiteral("push_button")).id;
+		const int component_id = catalog.classByKey(QStringLiteral("component")).id;
+		REQUIRE(plc_id > 0);
+
+		CHECK(catalog.partByCode(QStringLiteral("750-670")).class_id == plc_id);
+		CHECK(catalog.partByCode(
+			      QStringLiteral("CSW-CWC3F45 WH + AF3F + BC10F-CSW"))
+		      .class_id == button_id);
+		CHECK(catalog.partByCode(QStringLiteral("LSW-PF14ALP11")).class_id
+		      == component_id);
+	}
+
+	SECTION("o texto atravessa inteiro: acento, maiúscula e vírgula decimal")
+	{
+		// "6,2A" inside the description is the case that would break if the
+		// delimiter had been guessed as the comma. The guess is tested
+		// elsewhere; here it is tested on the file that ships.
+		const CatalogPart part = catalog.partByCode(
+					QStringLiteral("CFW500B06P2T4DB20C2"));
+		REQUIRE_FALSE(part.isNull());
+		CHECK(part.values.value(QStringLiteral("description"))
+		      .contains(QStringLiteral("6,2A")));
+		CHECK(part.values.value(QStringLiteral("description"))
+		      .contains(QStringLiteral("FREQUÊNCIA")));
+		CHECK(part.values.value(QStringLiteral("manufacturer"))
+		      == QStringLiteral("WEG"));
+	}
+
+	SECTION("um código com sinal de mais dentro não vira dois códigos")
+	{
+		// Three of the real codes are a kit written as "A + B + C". Nothing
+		// should split them, and nothing should trim them into each other.
+		CHECK_FALSE(catalog.partByCode(
+				    QStringLiteral("CSW-BESGS WH + AF3F + BC01B-CSW + PBW-1Y"))
+			    .isNull());
+		CHECK_FALSE(catalog.partByCode(
+				    QStringLiteral("CISC-PP21A + ACIS-PFP")).isNull());
+		CHECK(catalog.partByCode(QStringLiteral("CISC-PP21A")).isNull());
+	}
+
+	SECTION("reimportar o mesmo arquivo não cria peça repetida")
+	{
+		// The office will import the list again next month. Twice must be the
+		// same as once, which is what the Update policy promises.
+		const CatalogImportReport again = CatalogImporter::import(
+					catalog, table, profile,
+					QStringLiteral("projeto CT1-QCM"));
+		CHECK(again.created == 0);
+		CHECK(again.updated == 11);
+		CHECK(catalog.parts(0).size() == 11);
+	}
+}

@@ -185,6 +185,15 @@ target_link_libraries(
     ${QET_PRIVATE_LIBRARIES}
     Qt::Test)
 
+# Onde estão os arquivos de exemplo que o teste importa de verdade. Existe para que
+# o teste prove o arquivo QUE É ENTREGUE, e não uma cópia dele escrita no próprio
+# teste: uma cópia continuaria passando depois de o arquivo entregue quebrar.
+get_filename_component(QET_ABS_DIR "${QET_DIR}" ABSOLUTE)
+target_compile_definitions(
+    ${PROJECT_NAME}
+    PRIVATE
+    QET_TEST_DATA_DIR="${QET_ABS_DIR}/todo/exemplos")
+
 if (DEFINED ENV{CATCH_INCLUDE_DIR})
     set(CATCH_INCLUDE_DIR $ENV{CATCH_INCLUDE_DIR})
 else ()
