@@ -152,9 +152,18 @@ class Element : public QetGraphicsItem
 		QString actualLabel();
 		/**
 			@brief The tag as the drawing should show it.
-			With the IEC 81346 structure off - the default - this is @a label
-			untouched. See the implementation for why it is composed here and
-			not stored.
+
+			**Display only.** Not to be written back into the component, and
+			not to be used where the result is stored or compared - see
+			actualLabel() for why that distinction is the whole point here.
+
+			With the IEC 81346 structure off, which is the default, this is
+			actualLabel() untouched.
+		*/
+		QString displayedLabel();
+		/**
+			@brief The IEC 81346 composition of @a label, if the project asked
+			for it. Display only, same warning as displayedLabel().
 		*/
 		QString composedLabel(const QString &label);
 		/**

@@ -30,6 +30,7 @@ class QLineEdit;
 class QListWidget;
 class QPushButton;
 class QTableWidget;
+class SymbolPreview;
 
 /**
 	@brief Turns what was drawn on the sheet into a symbol of the library.
@@ -76,6 +77,8 @@ class CreateSymbolDialog : public QDialog
 		void unpairSelected();
 		void chooseFolder();
 		void terminalsChanged();
+		void terminalRowChanged();
+		void terminalPickedInPreview(int index);
 		void save();
 
 	private:
@@ -100,6 +103,7 @@ class CreateSymbolDialog : public QDialog
 		QLineEdit *m_folder = nullptr;
 		QPushButton *m_folder_button = nullptr;
 		QTableWidget *m_terminals = nullptr;
+		SymbolPreview *m_preview = nullptr;
 		QPushButton *m_add_terminal = nullptr;
 		QPushButton *m_remove_terminal = nullptr;
 		QPushButton *m_pair = nullptr;

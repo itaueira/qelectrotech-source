@@ -1748,20 +1748,45 @@ void Element::freezeNewAddedElement()
 	This function is useful when label is based on formula, because label can change at any time.
 	@return
 */
+/**
+	@brief Element::actualLabel
+	@return the tag the component carries: the field, or what the formula
+	produces.
+
+	**This is not display, it is data.** Six places in this file write the
+	result back into the `label` field, which is how a tag coming from a
+	formula gets materialised - and other code stores it, exports it and
+	compares by it.
+
+	So the IEC 81346 composition is deliberately **not** here. It was, for one
+	round, and the consequence was exactly the failure the T10 record claimed
+	to have avoided: the composed tag got written into the field, turning the
+	structure off no longer gave the drawing back, and the terminals of a strip
+	inherited a composed name nobody could read. Composition that reaches
+	stored data is a one way door.
+
+	Use displayedLabel() to draw the tag. Use this one for everything else.
+*/
 QString Element::actualLabel()
 {
-	QString label;
 	if (m_data.m_informations.value(QStringLiteral("formula")).toString().isEmpty()) {
-		label = m_data.m_informations.value(QStringLiteral("label")).toString();
-	} else {
-		label = autonum::AssignVariables::formulaToLabel(
-					m_data.m_informations.value(
-						QStringLiteral("formula")).toString(),
-					m_autoNum_seq,
-					diagram(),
-					this);
+		return m_data.m_informations.value(QStringLiteral("label")).toString();
 	}
-	return composedLabel(label);
+	return autonum::AssignVariables::formulaToLabel(
+				m_data.m_informations.value(
+					QStringLiteral("formula")).toString(),
+				m_autoNum_seq,
+				diagram(),
+				this);
+}
+
+/**
+	@brief Element::displayedLabel
+	@return the tag as the drawing should show it
+*/
+QString Element::displayedLabel()
+{
+	return composedLabel(actualLabel());
 }
 
 /**

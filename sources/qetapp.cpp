@@ -222,17 +222,49 @@ void QETApp::setLanguage(const QString &desired_language) {
 #endif
 	QString qt_l10n_path = QLibraryInfo::path(QLibraryInfo::TranslationsPath);
 #endif
-	if (!qtTranslator.load("qt_" + desired_language, qt_l10n_path))
+	// desired_language may be a full locale such as "pt_BR"; the Qt catalogues
+	// exist under both forms depending on the language, so try the locale and
+	// then the base language, in each of the two folders.
+	const QString qt_base_language = desired_language.section('_', 0, 0);
+	const QStringList qt_candidates = qt_base_language == desired_language
+			? QStringList{desired_language}
+			: QStringList{desired_language, qt_base_language};
+	const QStringList qt_folders{qt_l10n_path, languages_path};
+
+	auto load_qt_catalog = [&](QTranslator &translator, const QString &prefix) -> bool
 	{
-		qWarning() << "failed to load"
-				   << "qt_" + desired_language << qt_l10n_path << "("
-				   << __FILE__ << __LINE__ << __FUNCTION__ << ")";
-		if(!qtTranslator.load("qt_" + desired_language, languages_path))
-			qWarning() << "failed to load"
-					   << "qt_" + desired_language << languages_path << "("
-					   << __FILE__ << __LINE__ << __FUNCTION__ << ")";
+		for (const QString &folder : qt_folders) {
+			for (const QString &language : qt_candidates) {
+				if (translator.load(prefix + language, folder)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	};
+
+	if (!load_qt_catalog(qtTranslator, QStringLiteral("qt_"))) {
+		qWarning() << "failed to load qt_" << desired_language
+				   << "in" << qt_folders << "(" << __FILE__ << __LINE__
+				   << __FUNCTION__ << ")";
 	}
 	qApp->installTranslator(&qtTranslator);
+
+	/* Qt 6 split the monolithic catalogue: the standard dialog buttons, the
+	 * file dialog and the message boxes are in qtbase_XX.qm, and qt_XX.qm is a
+	 * stub - 106 bytes for pt_BR against 291 kB for qtbase_pt_BR. Loading only
+	 * qt_XX is why every standard button reads "OK / Cancel / Apply" in a
+	 * program otherwise fully translated. Installed after qtTranslator so that
+	 * where the two overlap, the more specific catalogue wins: Qt asks the
+	 * translators in reverse order of installation.
+	 */
+	if (!load_qt_catalog(qtBaseTranslator, QStringLiteral("qtbase_"))) {
+		qWarning() << "failed to load qtbase_" << desired_language
+				   << "in" << qt_folders
+				   << "- the standard dialog buttons will stay in English ("
+				   << __FILE__ << __LINE__ << __FUNCTION__ << ")";
+	}
+	qApp->installTranslator(&qtBaseTranslator);
 
 	// load translations for the QET application
 	// charge les traductions pour l'application QET

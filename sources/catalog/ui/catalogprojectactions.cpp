@@ -16,6 +16,9 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "catalogprojectactions.h"
+#include "catalogbrowserdialog.h"
+#include <algorithm>
+#include <QPushButton>
 #include "../catalogclass.h"
 #include "../../qetapp.h"
 #include "../../undocommand/changeelementinformationcommand.h"
@@ -304,6 +307,76 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 
 	QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Close, &dialog);
 	QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::accept);
+
+		//O relatório era um beco sem saída: dizia quem falta e não deixava
+		//resolver. Agora o caminho fecha aqui — escolhe as linhas, escolhe a
+		//peça, atribui, e a lista encurta na hora.
+	QPushButton *assign = new QPushButton(
+				QObject::tr("Attribuer une pièce…"), &dialog);
+	assign->setToolTip(QObject::tr(
+		"Attribue une pièce du catalogue aux composants sélectionnés dans "
+		"cette liste, sans avoir à les retrouver un par un sur les folios."));
+	assign->setEnabled(false);
+	buttons->addButton(assign, QDialogButtonBox::ActionRole);
+
+	QObject::connect(table, &QTableWidget::itemSelectionChanged, assign,
+			 [table, assign]()
+	{
+		assign->setEnabled(!table->selectedItems().isEmpty());
+	});
+
+	QObject::connect(assign, &QPushButton::clicked, &dialog,
+			 [&dialog, table, summary, missing, all]()
+	{
+		Catalog *catalog = QETApp::catalog();
+		if (!catalog) {
+			return;
+		}
+
+		QList<Element *> chosen;
+		const QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+		for (const QTableWidgetSelectionRange &range : ranges) {
+			for (int row = range.topRow() ; row <= range.bottomRow() ; ++row) {
+				if (row >= 0 && row < missing.size()) {
+					chosen << missing.at(row);
+				}
+			}
+		}
+		if (chosen.isEmpty()) {
+			return;
+		}
+
+		const CatalogPart part =
+				CatalogBrowserDialog::choosePart(catalog, &dialog);
+		if (part.isNull()) {
+			return;
+		}
+
+		const int touched = assignPart(chosen, *catalog, part);
+		if (!touched) {
+			return;
+		}
+
+			//As linhas atribuídas somem da lista, porque a lista é "quem
+			//falta" e eles não faltam mais. Uma lista que não encurta ao ser
+			//trabalhada não diz se o trabalho está acabando.
+		QList<int> rows;
+		for (Element *element : chosen) {
+			const int row = missing.indexOf(element);
+			if (row >= 0) {
+				rows << row;
+			}
+		}
+		std::sort(rows.begin(), rows.end(), std::greater<int>());
+		for (int row : rows) {
+			table->removeRow(row);
+		}
+
+		summary->setText(QObject::tr(
+			"%1 composant(s) sur %2 n'ont plus de pièce à attribuer. "
+			"Double-cliquez une ligne pour aller au composant.")
+				.arg(table->rowCount()).arg(all.size()));
+	});
 
 	QVBoxLayout *layout = new QVBoxLayout(&dialog);
 	layout->addWidget(summary);

@@ -526,13 +526,21 @@ void QETDiagramEditor::setUpActions()
 		//The most repeated action of the day, so it gets a shortcut - and it
 		//goes through the shortcut manager, because what is repeated all day is
 		//what people want to rebind.
-	m_catalog_assign = new QAction(QET::Icons::TableOfContent, tr("Attribuer une pièce aux composants sélectionnés"), this);
+	m_catalog_assign = new QAction(QET::Icons::TableOfContent, tr("Attribuer une pièce"), this);
+	m_catalog_assign->setToolTip(tr(
+				   "Attribue une pièce du catalogue aux composants sélectionnés : "
+				   "informations, numéros de bornes et accessoires suivent."));
+	m_catalog_assign->setStatusTip(m_catalog_assign->toolTip());
 	ShortcutManager::instance().registerAction(m_catalog_assign, "diagrameditor.catalog_assign",
 						   tr("Éditeur de schémas"),
 						   Qt::CTRL | Qt::SHIFT | Qt::Key_P);
 	connect(m_catalog_assign, &QAction::triggered, this, &QETDiagramEditor::assignCatalogPart);
 
-	m_catalog_register = new QAction(QET::Icons::TableOfContent, tr("Enregistrer les composants sélectionnés comme pièce"), this);
+	m_catalog_register = new QAction(QET::Icons::TableOfContent, tr("Enregistrer une pièce"), this);
+	m_catalog_register->setToolTip(tr(
+				   "Crée une pièce du catalogue à partir des composants "
+				   "sélectionnés, avec une broche par borne."));
+	m_catalog_register->setStatusTip(m_catalog_register->toolTip());
 	connect(m_catalog_register, &QAction::triggered, this, &QETDiagramEditor::registerCatalogPart);
 
 	m_catalog_missing = new QAction(QET::Icons::TableOfContent, tr("Composants sans pièce"), this);
@@ -548,21 +556,33 @@ void QETDiagramEditor::setUpActions()
 		dialog.exec();
 	});
 
-	m_catalog_import = new QAction(QET::Icons::DocumentSpreadsheet, tr("Importer des pièces depuis une feuille de calcul"), this);
+	m_catalog_import = new QAction(QET::Icons::DocumentSpreadsheet, tr("Importer des pièces…"), this);
+	m_catalog_import->setToolTip(tr(
+				   "Importe des pièces depuis un fichier .csv ou .xlsx, avec un "
+				   "rapport de ce qui est entré et de ce qui a été refusé."));
+	m_catalog_import->setStatusTip(m_catalog_import->toolTip());
 	connect(m_catalog_import, &QAction::triggered, this, [this]()
 	{
 		CatalogImportDialog dialog(QETApp::catalog(), this);
 		dialog.exec();
 	});
 
-	m_catalog_repository = new QAction(QET::Icons::FolderShowAll, tr("Répertoire de pièces partagé"), this);
+	m_catalog_repository = new QAction(QET::Icons::FolderShowAll, tr("Répertoire partagé…"), this);
+	m_catalog_repository->setToolTip(tr(
+				   "Cherche et publie des pièces dans le répertoire partagé du "
+				   "bureau."));
+	m_catalog_repository->setStatusTip(m_catalog_repository->toolTip());
 	connect(m_catalog_repository, &QAction::triggered, this, [this]()
 	{
 		CatalogRepositoryDialog dialog(QETApp::catalog(), this);
 		dialog.exec();
 	});
 
-	m_renumber_components = new QAction(tr("Renuméroter les composants"), this);
+	m_renumber_components = new QAction(tr("Renuméroter…"), this);
+	m_renumber_components->setToolTip(tr(
+				   "Renumérote les composants du projet, avec la table « de → vers "
+				   "» affichée avant d'appliquer."));
+	m_renumber_components->setStatusTip(m_renumber_components->toolTip());
 	connect(m_renumber_components, &QAction::triggered,
 		this, &QETDiagramEditor::renumberComponents);
 
@@ -571,17 +591,30 @@ void QETDiagramEditor::setUpActions()
 		//is why nobody makes symbols: a similar one gets used and disguised,
 		//and the library stops representing what is actually built.
 	m_create_symbol = new QAction(QET::Icons::ElementNew,
-				      tr("Créer un symbole à partir du dessin sélectionné"),
+				      tr("Créer un symbole…"),
 				      this);
+	m_create_symbol->setToolTip(tr(
+				   "Transforme le dessin sélectionné en symbole de la bibliothèque "
+				   ": les points de raccordement sont déduits des bouts libres du "
+				   "dessin."));
+	m_create_symbol->setStatusTip(m_create_symbol->toolTip());
 	connect(m_create_symbol, &QAction::triggered,
 		this, &QETDiagramEditor::createSymbolFromSelection);
 
-	m_save_group = new QAction(tr("Enregistrer la sélection en groupement"),
+	m_save_group = new QAction(tr("Enregistrer un groupement…"),
 				   this);
+	m_save_group->setToolTip(tr(
+				   "Garde le morceau de schéma sélectionné dans la bibliothèque, "
+				   "avec les pièces déjà attribuées."));
+	m_save_group->setStatusTip(m_save_group->toolTip());
 	connect(m_save_group, &QAction::triggered,
 		this, &QETDiagramEditor::saveSelectionAsGroup);
 
 	m_insert_group = new QAction(tr("Insérer un groupement…"), this);
+	m_insert_group->setToolTip(tr(
+				   "Insère un morceau de schéma de la bibliothèque, pièces "
+				   "comprises."));
+	m_insert_group->setStatusTip(m_insert_group->toolTip());
 	connect(m_insert_group, &QAction::triggered,
 		this, &QETDiagramEditor::insertGroup);
 
@@ -590,12 +623,20 @@ void QETDiagramEditor::setUpActions()
 		//The other half of creating a symbol: draw, make a block, and when the
 		//block turns out to need a line moved, explode it and make it again.
 	m_explode_element = new QAction(
-				tr("Éclater le symbole en dessin"), this);
+				tr("Éclater le symbole"), this);
+	m_explode_element->setToolTip(tr(
+				   "Rend le composant sélectionné à ses lignes et ses textes, pour "
+				   "les reprendre et refaire le bloc."));
+	m_explode_element->setStatusTip(m_explode_element->toolTip());
 	connect(m_explode_element, &QAction::triggered,
 		this, &QETDiagramEditor::explodeSelection);
 
 	m_replace_part = new QAction(
-				tr("Remplacer une pièce dans tout le projet…"), this);
+				tr("Remplacer une pièce…"), this);
+	m_replace_part->setToolTip(tr(
+				   "Échange une pièce contre une autre sur tous les composants du "
+				   "projet, en une seule fois annulable."));
+	m_replace_part->setStatusTip(m_replace_part->toolTip());
 	connect(m_replace_part, &QAction::triggered, this, [this]()
 	{
 		if (QETProject *project = this->currentProject())
@@ -614,7 +655,12 @@ void QETDiagramEditor::setUpActions()
 		//The three switches of T35: on while a symbol is being drawn, off the
 		//rest of the time. Checkable, because the answer to "is this on?" has
 		//to be visible in the menu without trying it.
-	m_show_fine_grid = new QAction(tr("Afficher la grille fine"), this);
+	m_show_fine_grid = new QAction(tr("Grille fine"), this);
+	m_show_fine_grid->setToolTip(tr(
+				   "Affiche la grille fine sous la principale. Elle sert au dessin "
+				   "; les points de raccordement, eux, doivent rester sur la "
+				   "principale."));
+	m_show_fine_grid->setStatusTip(m_show_fine_grid->toolTip());
 	m_show_fine_grid->setCheckable(true);
 	m_show_fine_grid->setChecked(Diagram::displayFineGrid);
 	m_show_fine_grid->setStatusTip(
@@ -634,7 +680,12 @@ void QETDiagramEditor::setUpActions()
 	});
 
 	m_show_terminals = new QAction(
-				tr("Afficher les points de raccordement"), this);
+				tr("Points de raccordement"), this);
+	m_show_terminals->setToolTip(tr(
+				   "Garde tous les points de raccordement visibles. À laisser "
+				   "désactivé pour le travail courant : un point visible est un "
+				   "point qu'on déplace par accident."));
+	m_show_terminals->setStatusTip(m_show_terminals->toolTip());
 	m_show_terminals->setCheckable(true);
 	m_show_terminals->setChecked(Diagram::displayTerminals);
 	m_show_terminals->setStatusTip(
@@ -653,7 +704,11 @@ void QETDiagramEditor::setUpActions()
 	});
 
 	m_show_empty_fields = new QAction(
-				tr("Afficher les attributs vides"), this);
+				tr("Attributs vides"), this);
+	m_show_empty_fields->setToolTip(tr(
+				   "Montre en gris les champs de texte qui n'ont pas encore de "
+				   "valeur, pour pouvoir les placer."));
+	m_show_empty_fields->setStatusTip(m_show_empty_fields->toolTip());
 	m_show_empty_fields->setCheckable(true);
 	m_show_empty_fields->setChecked(Diagram::displayEmptyTextFields);
 	connect(m_show_empty_fields, &QAction::toggled, this, [this](bool on)
@@ -673,17 +728,29 @@ void QETDiagramEditor::setUpActions()
 		//and neither touches a number: the drawing stops repeating it, the
 		//wiring list keeps it.
 	m_show_conductor_text = new QAction(
-				tr("Afficher le numéro des conducteurs sélectionnés"), this);
+				tr("Afficher le numéro"), this);
+	m_show_conductor_text->setToolTip(tr(
+				   "Réaffiche le numéro sur les conducteurs sélectionnés. Le "
+				   "numéro lui-même ne change pas."));
+	m_show_conductor_text->setStatusTip(m_show_conductor_text->toolTip());
 	connect(m_show_conductor_text, &QAction::triggered,
 		this, [this]() { this->setConductorTextVisible(true); });
 
 	m_hide_conductor_text = new QAction(
-				tr("Masquer le numéro des conducteurs sélectionnés"), this);
+				tr("Masquer le numéro"), this);
+	m_hide_conductor_text->setToolTip(tr(
+				   "Cache le numéro sur les conducteurs sélectionnés. Le numéro "
+				   "lui-même ne change pas : il reste dans la liste de câblage."));
+	m_hide_conductor_text->setStatusTip(m_hide_conductor_text->toolTip());
 	connect(m_hide_conductor_text, &QAction::triggered,
 		this, [this]() { this->setConductorTextVisible(false); });
 
 	m_align_conductor_text = new QAction(
-				tr("Aligner le numéro des conducteurs sélectionnés"), this);
+				tr("Aligner les numéros"), this);
+	m_align_conductor_text->setToolTip(tr(
+				   "Aligne sur un même axe le numéro des conducteurs sélectionnés. "
+				   "Remplace le fait de déplacer chaque texte à la main."));
+	m_align_conductor_text->setStatusTip(m_align_conductor_text->toolTip());
 	m_align_conductor_text->setStatusTip(
 				tr("Remplace le fait de déplacer chaque texte à la main."));
 	connect(m_align_conductor_text, &QAction::triggered,
@@ -693,7 +760,10 @@ void QETDiagramEditor::setUpActions()
 		//is. Reached from the menu on the selected element rather than asked
 		//when the symbol is inserted - see the T13 task file for why.
 	m_link_accessory = new QAction(
-				tr("Lier l'accessoire sélectionné à un composant…"), this);
+				tr("Lier un accessoire…"), this);
+	m_link_accessory->setToolTip(tr(
+				   "Dit à quel composant appartient l'accessoire sélectionné."));
+	m_link_accessory->setStatusTip(m_link_accessory->toolTip());
 	connect(m_link_accessory, &QAction::triggered, this, [this]()
 	{
 		DiagramView *view = this->currentDiagramView();
@@ -727,7 +797,11 @@ void QETDiagramEditor::setUpActions()
 	});
 
 	m_iec_structure = new QAction(
-				tr("Structure d'identification (CEI 81346)…"), this);
+				tr("Structure CEI 81346…"), this);
+	m_iec_structure->setToolTip(tr(
+				   "Active la structure d'identification de la norme pour ce "
+				   "projet, et choisit ce qui est écrit sur le dessin."));
+	m_iec_structure->setStatusTip(m_iec_structure->toolTip());
 	connect(m_iec_structure, &QAction::triggered, this, [this]()
 	{
 		if (QETProject *project = this->currentProject())
@@ -1576,6 +1650,14 @@ void QETDiagramEditor::setUpMenu()
 	windows_menu = new QMenu(tr("Fe&nêtres"), this);
 
 	insertMenu(settings_menu_, menu_fichier);
+		//Rótulo curto no menu, texto inteiro na dica. Sem isto o Qt não
+		//mostra dica em item de menu, e encurtar o rótulo esconderia a
+		//informação em vez de mudá-la de lugar.
+	for (QMenu *menu : {menu_fichier, menu_edition, menu_project,
+			    menu_catalogue, menu_affichage}) {
+		menu->setToolTipsVisible(true);
+	}
+
 	insertMenu(settings_menu_, menu_edition);
 	insertMenu(settings_menu_, menu_project);
 	insertMenu(settings_menu_, menu_catalogue);

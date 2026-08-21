@@ -17,6 +17,8 @@
 */
 #include "createsymboldialog.h"
 
+#include "symbolpreview.h"
+
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDir>
@@ -167,6 +169,7 @@ void CreateSymbolDialog::setUpWidget()
 	explanation->setWordWrap(true);
 	terminals_layout->addWidget(explanation);
 
+	QHBoxLayout *table_and_preview = new QHBoxLayout();
 	m_terminals = new QTableWidget(0, ColumnCount, terminals_box);
 	m_terminals->setHorizontalHeaderLabels(
 				QStringList{tr("Position"),
@@ -177,7 +180,14 @@ void CreateSymbolDialog::setUpWidget()
 	m_terminals->horizontalHeader()->setStretchLastSection(true);
 	m_terminals->verticalHeader()->setVisible(false);
 	m_terminals->setSelectionBehavior(QAbstractItemView::SelectRows);
-	terminals_layout->addWidget(m_terminals);
+	table_and_preview->addWidget(m_terminals, 3);
+
+		//O desenho ao lado da tabela. A tabela diz o que o ponto é; o desenho
+		//diz qual ponto é. Sem o segundo, declarar contato é adivinhação — foi
+		//exatamente o que o teste E.3 mostrou.
+	m_preview = new SymbolPreview(terminals_box);
+	table_and_preview->addWidget(m_preview, 2);
+	terminals_layout->addLayout(table_and_preview);
 
 	QHBoxLayout *buttons = new QHBoxLayout();
 	m_add_terminal = new QPushButton(tr("Ajouter un point"), terminals_box);
@@ -241,6 +251,10 @@ void CreateSymbolDialog::setUpWidget()
 		this, &CreateSymbolDialog::unpairSelected);
 	connect(m_terminals, &QTableWidget::itemChanged,
 		this, &CreateSymbolDialog::terminalsChanged);
+	connect(m_terminals, &QTableWidget::currentCellChanged,
+		this, &CreateSymbolDialog::terminalRowChanged);
+	connect(m_preview, &SymbolPreview::terminalPicked,
+		this, &CreateSymbolDialog::terminalPickedInPreview);
 	connect(m_name, &QLineEdit::textChanged,
 		this, &CreateSymbolDialog::terminalsChanged);
 	connect(m_class,
@@ -299,6 +313,11 @@ void CreateSymbolDialog::fillTerminals()
 
 	m_terminals->resizeColumnsToContents();
 	m_terminals->blockSignals(blocked);
+
+	if (m_preview) {
+		m_preview->setSymbol(m_symbol);
+		m_preview->setHighlighted(m_terminals->currentRow());
+	}
 
 		//The properties of the chosen class, so a value can be shown next to
 		//the symbol without anybody having to remember its key.
@@ -427,6 +446,33 @@ void CreateSymbolDialog::refreshProblems()
 	}
 	m_clear_part->setEnabled(!m_symbol.default_part_code.isEmpty());
 	m_summary->setText(summary.join(QStringLiteral(" · ")));
+}
+
+/**
+	@brief CreateSymbolDialog::terminalRowChanged
+	A linha escolhida na tabela passa a ser o ponto destacado no desenho.
+*/
+void CreateSymbolDialog::terminalRowChanged()
+{
+	if (m_preview) {
+		m_preview->setHighlighted(m_terminals->currentRow());
+	}
+}
+
+/**
+	@brief CreateSymbolDialog::terminalPickedInPreview
+	@param index
+	O caminho de volta: clicar o ponto no desenho seleciona a linha dele.
+	É a direção que o projetista precisa mais — ele está olhando o desenho e
+	quer dizer o que aquele ponto é.
+*/
+void CreateSymbolDialog::terminalPickedInPreview(int index)
+{
+	if (index < 0 || index >= m_terminals->rowCount()) {
+		return;
+	}
+	m_terminals->setCurrentCell(index, ColumnLabel);
+	m_terminals->setFocus();
 }
 
 void CreateSymbolDialog::terminalsChanged()

@@ -273,3 +273,48 @@ TEST_CASE("o interruptor da estrutura viaja no .qet", "[iec]")
 		}
 	}
 }
+
+TEST_CASE("compor duas vezes dá o mesmo que compor uma", "[iec]")
+{
+		//Isto não é curiosidade matemática: em 21/08/2026 o Renan encontrou a
+		//composição sendo GRAVADA no campo da tag, porque ela morava dentro do
+		//actualLabel() e seis lugares do element.cpp escrevem o resultado dele
+		//de volta no dado. A composição ser idempotente é o que impediu a
+		//corrupção de crescer a cada passada — o campo ficou errado uma vez, e
+		//não vinte. O conserto foi tirar a composição de lá; este teste guarda
+		//a propriedade que limitou o estrago, para o dia em que alguém compor
+		//no lugar errado de novo.
+	IecStructureSettings settings;
+	settings.enabled = true;
+
+	const IecStructure folio(QStringLiteral("CT1"),
+				 QStringLiteral("A1"),
+				 QString());
+
+	for (IecTagDisplay display : {IecTagDisplay::Short, IecTagDisplay::Full})
+	{
+		settings.display = display;
+		const IecStructure element(QString(), QString(), QStringLiteral("Q1"));
+
+		const QString uma_vez = settings.displayedTag(folio, element);
+		const QString duas = settings.displayedTag(
+					folio, IecStructure::fromTag(uma_vez));
+		const QString tres = settings.displayedTag(
+					folio, IecStructure::fromTag(duas));
+
+		CHECK(duas == uma_vez);
+		CHECK(tres == uma_vez);
+	}
+}
+
+TEST_CASE("a tag digitada com separador não é lida duas vezes", "[iec]")
+{
+		//Projeto onde alguém escreveu "=CT1+A1-Q1" à mão no campo. Lido como
+		//produto inteiro, a composição sairia "=CT1+A1-=CT1+A1-Q1".
+	const IecStructure lida = IecStructure::fromTag(
+				QStringLiteral("=CT1+A1-Q1"));
+	CHECK(lida.plant == QStringLiteral("CT1"));
+	CHECK(lida.location == QStringLiteral("A1"));
+	CHECK(lida.product == QStringLiteral("Q1"));
+	CHECK(lida.toFullTag() == QStringLiteral("=CT1+A1-Q1"));
+}

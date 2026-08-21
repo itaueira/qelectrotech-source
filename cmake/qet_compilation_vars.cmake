@@ -503,6 +503,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ElementsCollection/ui/renamedialog.h
   ${QET_DIR}/sources/ElementsCollection/ui/symbolgroupdialog.cpp
   ${QET_DIR}/sources/ElementsCollection/ui/symbolgroupdialog.h
+  ${QET_DIR}/sources/ElementsCollection/ui/symbolpreview.cpp
+  ${QET_DIR}/sources/ElementsCollection/ui/symbolpreview.h
 
   ${QET_DIR}/sources/factory/elementfactory.cpp
   ${QET_DIR}/sources/factory/elementfactory.h

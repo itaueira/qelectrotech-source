@@ -117,6 +117,11 @@ void CatalogBrowserDialog::buildWidgets()
 				    "ici pour l'attribuer."));
 	m_new_part    = new QPushButton(tr("Nouvelle pièce…"), this);
 	m_edit_part   = new QPushButton(tr("Modifier…"), this);
+	m_duplicate_part = new QPushButton(tr("Dupliquer…"), this);
+	m_duplicate_part->setToolTip(tr(
+			   "Ouvre une pièce neuve avec les valeurs de celle-ci et le code "
+			   "vide. Cataloguer une famille — même produit, un champ qui "
+			   "change — devient remplir un champ au lieu de tout retaper."));
 	m_remove_part = new QPushButton(tr("Supprimer"), this);
 	m_choose      = new QPushButton(tr("Attribuer"), this);
 	m_choose->setDefault(true);
@@ -128,6 +133,7 @@ void CatalogBrowserDialog::buildWidgets()
 	buttons->addButton(m_repository, QDialogButtonBox::ActionRole);
 	buttons->addButton(m_new_part, QDialogButtonBox::ActionRole);
 	buttons->addButton(m_edit_part, QDialogButtonBox::ActionRole);
+	buttons->addButton(m_duplicate_part, QDialogButtonBox::ActionRole);
 	buttons->addButton(m_remove_part, QDialogButtonBox::ActionRole);
 	buttons->addButton(m_choose, QDialogButtonBox::AcceptRole);
 	buttons->addButton(QDialogButtonBox::Close);
@@ -152,6 +158,7 @@ void CatalogBrowserDialog::buildWidgets()
 		this, &CatalogBrowserDialog::searchRepository);
 	connect(m_new_part, &QPushButton::clicked, this, &CatalogBrowserDialog::createPart);
 	connect(m_edit_part, &QPushButton::clicked, this, &CatalogBrowserDialog::editSelectedPart);
+	connect(m_duplicate_part, &QPushButton::clicked, this, &CatalogBrowserDialog::duplicateSelectedPart);
 	connect(m_remove_part, &QPushButton::clicked, this, &CatalogBrowserDialog::removeSelectedPart);
 	connect(m_choose, &QPushButton::clicked, this, &CatalogBrowserDialog::acceptSelection);
 	connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -273,6 +280,7 @@ void CatalogBrowserDialog::selectionChanged()
 	const bool writable = m_catalog && m_catalog->isWritable();
 	m_choose->setEnabled(has_selection);
 	m_edit_part->setEnabled(has_selection && writable);
+	m_duplicate_part->setEnabled(has_selection && writable);
 	m_remove_part->setEnabled(has_selection && writable);
 	m_new_part->setEnabled(writable);
 	m_repository->setEnabled(writable);
@@ -439,6 +447,37 @@ void CatalogBrowserDialog::editSelectedPart()
 	}
 }
 
+/**
+	@brief CatalogBrowserDialog::duplicateSelectedPart
+	Abre uma peça nova com os valores desta e o código vazio.
+
+	Cadastrar uma família de peças — o mesmo produto com uma faixa, uma tensão
+	ou um calibre diferente — era retypar tudo por causa de um campo. O que
+	**não** é copiado é o que identifica o produto: o código, e a revisão. O
+	resto vem, inclusive pinos e acessórios, porque numa família é justamente o
+	resto que se repete.
+*/
+void CatalogBrowserDialog::duplicateSelectedPart()
+{
+	if (m_selected.isNull()) {
+		return;
+	}
+
+	CatalogPart copy = m_selected;
+	copy.id = 0;
+	copy.code.clear();
+	copy.revision = 1;
+	copy.is_current = true;
+	copy.origin.clear();
+	copy.origin_date.clear();
+
+	CatalogPartDialog dialog(m_catalog, copy, this);
+	if (dialog.exec() == QDialog::Accepted)
+	{
+		fillManufacturerFilter();
+		search();
+	}
+}
 /**
 	@brief CatalogBrowserDialog::removeSelectedPart
 */

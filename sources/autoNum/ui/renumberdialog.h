@@ -29,6 +29,8 @@ class Element;
 class QETProject;
 class QCheckBox;
 class QComboBox;
+class QLineEdit;
+class QSpinBox;
 class QLabel;
 class QRadioButton;
 class QTableWidget;
@@ -75,6 +77,8 @@ class RenumberDialog : public QDialog
 		QRadioButton *m_only_selection = nullptr;
 		QComboBox *m_format = nullptr;
 		QComboBox *m_orientation = nullptr;
+		QSpinBox *m_start = nullptr;
+		QLineEdit *m_skip_prefixes = nullptr;
 		QCheckBox *m_only_changes = nullptr;
 		QTableWidget *m_preview = nullptr;
 		QLabel *m_summary = nullptr;

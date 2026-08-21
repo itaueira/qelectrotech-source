@@ -217,6 +217,16 @@ class QETApp : public QObject
 	private:
 		static QETApp *m_qetapp;
 		QTranslator qtTranslator;
+		/**
+			@brief The Qt Base catalogue, where the standard dialog buttons are.
+
+			Qt 6 split the monolithic qt_XX.qm: "OK", "Cancel", "Apply",
+			"Save", the file dialog and the message boxes moved to
+			qtbase_XX.qm, and qt_XX.qm was left a stub - 106 bytes for pt_BR,
+			against 291 kB for qtbase_pt_BR. Loading only qt_XX leaves every
+			standard button in English, in every language, on every platform.
+		*/
+		QTranslator qtBaseTranslator;
 		QTranslator qetTranslator;
 		QSystemTrayIcon *m_qsti;
 		QSplashScreen *m_splash_screen;

@@ -64,6 +64,7 @@ class CatalogBrowserDialog : public QDialog
 		void selectionChanged();
 		void createPart();
 		void editSelectedPart();
+		void duplicateSelectedPart();
 		void removeSelectedPart();
 		void searchRepository();
 		void acceptSelection();
@@ -89,6 +90,7 @@ class CatalogBrowserDialog : public QDialog
 		QLabel *m_status = nullptr;
 		QPushButton *m_new_part = nullptr;
 		QPushButton *m_edit_part = nullptr;
+		QPushButton *m_duplicate_part = nullptr;
 		QPushButton *m_remove_part = nullptr;
 		QPushButton *m_repository = nullptr;
 		QPushButton *m_choose = nullptr;
