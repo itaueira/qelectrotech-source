@@ -94,6 +94,7 @@ add_executable(
     src/catalog_test.cpp
     src/catalogassignment_test.cpp
     src/catalogimport_test.cpp
+    src/titleblockvariables_test.cpp
     src/environment_test.cpp
     src/symbol_test.cpp
     src/symbolpreview_test.cpp
@@ -102,6 +103,11 @@ add_executable(
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
+    # O vocabulário de variáveis do carimbo, e a limpeza do que ninguém
+    # preencheu. Entra aqui porque depende só de QObject e QHash: dá para
+    # testar sem arrastar o carimbo inteiro, que arrastaria o programa atrás.
+    ${QET_DIR}/sources/qetinformation.cpp
+    ${QET_DIR}/sources/qetinformation.h
     # The numbering rules and the IEC structure have the same property as the
     # catalog core: no Element, no Diagram, so the ordering and the inheritance
     # can be tested without a project open. ProjectRenumberer is the part that

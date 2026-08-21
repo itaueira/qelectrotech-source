@@ -21,6 +21,7 @@
 #include "createdxf.h"
 #include "qet.h"
 #include "qetapp.h"
+#include "qetinformation.h"
 // uncomment the line below to get more debug information
 //#define TITLEBLOCK_TEMPLATE_DEBUG
 
@@ -1819,7 +1820,14 @@ QString TitleBlockTemplate::interpreteVariables(
 		interpreted_string.replace("%" % key,
 					   diagram_context[key].toString());
 	}
-	return(interpreted_string);
+		//What the context never carried is dropped instead of printed. The
+		//loop above only touches the keys the context has, so a variable it
+		//does not have used to reach the folio as its own source code - which
+		//is what a projectist saw as "%{saveddate}" in a footer field they
+		//expected to be blank. Six of the project variables only enter the
+		//context when the project is saved, so a project just opened showed
+		//them.
+	return(QETInformation::stripUnresolvedVariables(interpreted_string));
 }
 
 /**

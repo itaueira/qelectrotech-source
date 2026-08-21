@@ -18,6 +18,8 @@
 
 #include <QObject>
 #include <QHash>
+#include <QRegularExpression>
+#include <algorithm>
 #include "qetinformation.h"
 
 /**
@@ -49,6 +51,42 @@ QStringList QETInformation::titleblockInfoKeys()
 							  PROJECT_SAVED_FILE_NAME,
 							  PROJECT_SAVED_FILE_PATH };
 	return info_list;
+}
+
+/**
+	@brief QETInformation::stripUnresolvedVariables
+	@param text
+	@return @a text without the variables nothing filled in
+*/
+QString QETInformation::stripUnresolvedVariables(const QString &text)
+{
+	if (!text.contains(QLatin1Char('%'))) {
+		return text;
+	}
+	QString stripped = text;
+
+		//The braced form goes unconditionally: the braces are what make it a
+		//variable reference and nothing else, so "%{whatever}" left standing
+		//can only be a variable that was never filled - including a custom
+		//field somebody added to the template and never gave a value.
+	static const QRegularExpression braced(QStringLiteral("%\\{[^{}]*\\}"));
+	stripped.remove(braced);
+
+		//The bare form only goes for the vocabulary the title block actually
+		//has, and longest first so that "%folio-total" is not eaten as
+		//"%folio" plus a stray "-total". Anything else beginning with a per
+		//cent sign is left exactly as typed: a title block legitimately says
+		//"100%", and a cell that lost its per cent sign would be a worse bug
+		//than the one being fixed.
+	QStringList keys = titleblockInfoKeys();
+	std::sort(keys.begin(), keys.end(),
+		  [](const QString &a, const QString &b) {
+			return a.length() > b.length();
+		  });
+	for (const QString &key : keys) {
+		stripped.remove(QLatin1Char('%') % key);
+	}
+	return stripped;
 }
 
 /**

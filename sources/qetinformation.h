@@ -152,6 +152,23 @@ namespace QETInformation
 	QString titleblockInfoKeysToVar(const QString &info);
 	QHash <QString, QString> titleblockTranslatedKeyHashVar();
 
+	/**
+		@brief Drop the title block variables @a text still names but nothing
+		filled in.
+
+		A variable the diagram context never carried used to survive
+		substitution as its own source code, so the folio printed
+		"%{saveddate}" where a person expected an empty field. Six of the
+		project variables reach the context only when the project is saved,
+		which is why a project just opened showed them.
+
+		An empty field looks empty. That is the whole rule.
+
+		@param text the cell text, after the known variables were replaced
+		@return the same text with the unresolved variables removed
+	*/
+	QString stripUnresolvedVariables(const QString &text);
+
 	QStringList folioReportInfoKeys();
 	QHash <QString, QString> folioReportInfoKeyToVar();
 	QString folioReportInfoToVar(const QString &info);
