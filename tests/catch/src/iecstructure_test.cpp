@@ -415,3 +415,54 @@ TEST_CASE("a leitura da estrutura mora num lugar só", "[iec]")
 		      == QStringLiteral("K3"));
 	}
 }
+
+TEST_CASE("CU-10.7 — elemento sem tag não ganha uma feita de prefixo", "[iec]")
+{
+	// Achado medindo o projeto de 14 folhas, e não no papel: ligada a norma
+	// no modo completo, 99 textos do desenho passaram a dizer "=CT1+QCM"
+	// sozinho — a instalação e o local de algo que nunca foi nomeado. Na tela
+	// isso se lê como designação de verdade, e são 99 pontos onde o
+	// projetista procuraria um componente que não existe.
+
+	IecStructureSettings ligada;
+	ligada.enabled = true;
+
+	DiagramContext folio;
+	folio.addValue(QStringLiteral("plant"),   QStringLiteral("CT1"));
+	folio.addValue(QStringLiteral("locmach"), QStringLiteral("QCM"));
+	const IecStructure do_folio = IecStructure::fromFolioInformation(folio);
+
+	SECTION("no modo completo, elemento de tag vazia não mostra nada")
+	{
+		ligada.display = IecTagDisplay::Full;
+		const IecStructure sem_tag = IecStructure::fromElementInformation(
+					QString(), DiagramContext());
+		CHECK(ligada.displayedTag(do_folio, sem_tag).isEmpty());
+	}
+
+	SECTION("no modo curto também — aqui já estava certo, e fica preso")
+	{
+		ligada.display = IecTagDisplay::Short;
+		const IecStructure sem_tag = IecStructure::fromElementInformation(
+					QString(), DiagramContext());
+		CHECK(ligada.displayedTag(do_folio, sem_tag).isEmpty());
+	}
+
+	SECTION("quem tem tag continua compondo — a guarda não engoliu o recurso")
+	{
+		ligada.display = IecTagDisplay::Full;
+		const IecStructure com_tag = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), DiagramContext());
+		CHECK(ligada.displayedTag(do_folio, com_tag)
+		      == QStringLiteral("=CT1+QCM-K3"));
+	}
+
+	SECTION("a guarda está no displayedTag, não no toFullTag")
+	{
+		// Um folio tem = e + e nenhum produto, e a tag dele é legítima:
+		// "=CT1+QCM" é o nome do quadro. Se a guarda estivesse dentro de
+		// toFullTag(), o carimbo perderia isso junto.
+		CHECK(do_folio.toFullTag() == QStringLiteral("=CT1+QCM"));
+		CHECK(do_folio.product.isEmpty());
+	}
+}

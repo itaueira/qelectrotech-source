@@ -306,6 +306,19 @@ QString IecStructureSettings::displayedTag(const IecStructure &folio,
 			//delivered project safe to open.
 		return element.product;
 	}
+
+		//An element that carries no designation shows none. Composing
+		//anyway draws "=CT1+A1" on its own - the plant and the location
+		//of something that was never named - and that reads on the
+		//drawing like a real designation. Measured on the 14 folio
+		//project: 99 texts of that kind. The short display never had
+		//the problem, because toShortTag() is empty without a product;
+		//the guard sits here, and not in toFullTag(), because a folio
+		//tag legitimately has no product part.
+	if (element.product.isEmpty()) {
+		return QString();
+	}
+
 	const IecStructure full = IecStructure::inherit(folio, element);
 	return display == IecTagDisplay::Full ? full.toFullTag()
 					      : full.toShortTag();
