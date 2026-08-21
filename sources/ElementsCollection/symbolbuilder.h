@@ -19,6 +19,9 @@
 #define SYMBOLBUILDER_H
 
 #include <QDomDocument>
+#include <QPen>
+#include <QColor>
+#include <QBrush>
 #include <QHash>
 #include <QList>
 #include <QPointF>
@@ -106,6 +109,21 @@ class SymbolShape
 
 		QRectF bounds() const;
 		bool isValid() const;
+
+		/**
+			@brief The pen this shape's style string asks for.
+
+			Here, and not with whatever reads the sheet, because the style
+			string is a field of this class: the shape knows how it wants to
+			be drawn. Keeping it here is also what lets a widget that draws a
+			symbol be tested — the alternative dragged in the whole chain of
+			graphics items for the sake of two functions.
+		*/
+		static QPen penFor(const QString &style);
+		/// The brush that style string asks for
+		static QBrush brushFor(const QString &style);
+		/// the colour @a name means in the element definition, invalid if none
+		static QColor colorFor(const QString &name);
 
 		static QString defaultStyle();
 		static QString typeToString(SymbolShapeType type);

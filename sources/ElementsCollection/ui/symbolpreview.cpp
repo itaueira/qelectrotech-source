@@ -22,7 +22,6 @@
 #include <QPaintEvent>
 #include <QtMath>
 
-#include "../sheetsymbolextractor.h"
 
 namespace
 {
@@ -74,6 +73,14 @@ void SymbolPreview::setHighlighted(int index)
 int SymbolPreview::highlighted() const
 {
 	return m_highlighted;
+}
+
+QPointF SymbolPreview::widgetPositionOf(int index) const
+{
+	if (index < 0 || index >= m_symbol.terminals.size()) {
+		return QPointF();
+	}
+	return viewTransform().map(m_symbol.terminals.at(index).position);
 }
 
 QTransform SymbolPreview::viewTransform() const
@@ -136,11 +143,11 @@ void SymbolPreview::paintEvent(QPaintEvent *)
 		if (!shape.isValid()) {
 			continue;
 		}
-		QPen pen = SheetSymbolExtractor::penFor(shape.style);
+		QPen pen = SymbolShape::penFor(shape.style);
 		pen.setCosmetic(true);
 		pen.setWidthF(qMax(1.0, pen.widthF()));
 		painter.setPen(pen);
-		painter.setBrush(SheetSymbolExtractor::brushFor(shape.style));
+		painter.setBrush(SymbolShape::brushFor(shape.style));
 
 		QPolygonF points;
 		for (const QPointF &point : shape.points) {

@@ -56,6 +56,15 @@ class SymbolPreview : public QWidget
 
 		QSize sizeHint() const override;
 
+		/**
+			@brief Onde, no widget, o ponto de ligação @a index é desenhado.
+			Existe para o teste poder clicar exatamente nele em vez de adivinhar
+			coordenada — e, de passagem, para quem lê o código saber que a
+			correspondência desenho↔tabela é calculada e não aproximada.
+			@return posição no widget, ou um ponto nulo se @a index não existe
+		*/
+		QPointF widgetPositionOf(int index) const;
+
 	signals:
 		/// a connection point was clicked in the picture
 		void terminalPicked(int index);

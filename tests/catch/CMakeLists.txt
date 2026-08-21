@@ -66,6 +66,12 @@ if(QT_VERSION_MAJOR GREATER_EQUAL 6)
   find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS GuiPrivate)
 endif()
 
+# Qt Test, e só no alvo de teste: ele traz o QTest e o QSignalSpy, que são o que
+# permite construir um widget, clicar nele e afirmar sobre o resultado — sem
+# nada disso aparecer na tela, porque o main.cpp força a plataforma "offscreen".
+# O programa não linka isto, e não deve.
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test)
+
 Include(FetchContent)
 
 FetchContent_Declare(
@@ -90,6 +96,7 @@ add_executable(
     src/catalogimport_test.cpp
     src/environment_test.cpp
     src/symbol_test.cpp
+    src/symbolpreview_test.cpp
     src/iecstructure_test.cpp
     src/renumber_test.cpp
     main.cpp
@@ -142,6 +149,12 @@ add_executable(
     ${QET_DIR}/sources/ElementsCollection/symbolbuilder.h
     ${QET_DIR}/sources/ElementsCollection/symbolgroup.cpp
     ${QET_DIR}/sources/ElementsCollection/symbolgroup.h
+    # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
+    # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
+    # não depende de item gráfico nenhum: a leitura da caneta a partir da string
+    # de estilo mora no SymbolShape, que é onde a string mora.
+    ${QET_DIR}/sources/ElementsCollection/ui/symbolpreview.cpp
+    ${QET_DIR}/sources/ElementsCollection/ui/symbolpreview.h
     ${QET_DIR}/sources/environment/filediskstate.h
     ${QET_DIR}/sources/environment/projectlock.cpp
     ${QET_DIR}/sources/environment/projectlock.h
@@ -169,7 +182,8 @@ target_link_libraries(
     Catch2::Catch2
     PRIVATE
     ${KF_PRIVATE_LIBRARIES}
-    ${QET_PRIVATE_LIBRARIES})
+    ${QET_PRIVATE_LIBRARIES}
+    Qt::Test)
 
 if (DEFINED ENV{CATCH_INCLUDE_DIR})
     set(CATCH_INCLUDE_DIR $ENV{CATCH_INCLUDE_DIR})
