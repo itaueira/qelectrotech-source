@@ -84,7 +84,11 @@ QString QETInformation::stripUnresolvedVariables(const QString &text)
 			return a.length() > b.length();
 		  });
 	for (const QString &key : keys) {
-		stripped.remove(QLatin1Char('%') % key);
+			//Plain +, and not the % of QStringBuilder: % needs <QStringBuilder>,
+			//which Qt6 pulls in on its own and Qt5 does not, so % here builds on
+			//one and not the other. remove() takes a QString anyway, so the
+			//builder would buy nothing.
+		stripped.remove(QLatin1Char('%') + key);
 	}
 	return stripped;
 }
