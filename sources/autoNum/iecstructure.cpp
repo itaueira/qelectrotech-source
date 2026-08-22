@@ -22,6 +22,23 @@
 #include <QCoreApplication>
 
 /**
+	@param text
+	@return true when @a text is nothing but digits
+*/
+static bool isNumber(const QString &text)
+{
+	if (text.isEmpty()) {
+		return false;
+	}
+	for (const QChar &character : text) {
+		if (!character.isDigit()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
 	@brief IecStructure::IecStructure
 */
 IecStructure::IecStructure()
@@ -32,34 +49,39 @@ IecStructure::IecStructure()
 	@param plant : the `=` part
 	@param location : the `+` part
 	@param product : the `-` part
+	@param connection : the `:` part
 */
 IecStructure::IecStructure(const QString &plant,
 			   const QString &location,
-			   const QString &product) :
+			   const QString &product,
+			   const QString &connection) :
 	plant(plant),
 	location(location),
-	product(product)
+	product(product),
+	connection(connection)
 {}
 
 /**
 	@brief IecStructure::isEmpty
-	@return true when none of the three parts carries anything
+	@return true when none of the parts carries anything
 */
 bool IecStructure::isEmpty() const
 {
-	return plant.isEmpty() && location.isEmpty() && product.isEmpty();
+	return plant.isEmpty() && location.isEmpty() && product.isEmpty()
+	       && connection.isEmpty();
 }
 
 /**
 	@brief IecStructure::operator==
 	@param other
-	@return true when the three parts are the same
+	@return true when the parts are the same
 */
 bool IecStructure::operator==(const IecStructure &other) const
 {
 	return plant == other.plant
 	       && location == other.location
-	       && product == other.product;
+	       && product == other.product
+	       && connection == other.connection;
 }
 
 /**
@@ -95,6 +117,9 @@ IecStructure IecStructure::inherit(const IecStructure &parent, const IecStructur
 	if (!child.product.isEmpty()) {
 		result.product = child.product;
 	}
+	if (!child.connection.isEmpty()) {
+		result.connection = child.connection;
+	}
 
 	return result;
 }
@@ -120,6 +145,9 @@ QString IecStructure::toFullTag() const
 		       ? product
 		       : QLatin1Char('-') + product;
 	}
+	if (!connection.isEmpty()) {
+		tag += QLatin1Char(':') + connection;
+	}
 	return tag;
 }
 
@@ -131,13 +159,99 @@ QString IecStructure::toFullTag() const
 QString IecStructure::toShortTag(bool with_dash) const
 {
 	if (product.isEmpty()) {
-		return QString();
+			//A connection with no product is a terminal whose strip the
+			//drawing does not name here: it is `7`. The dash would put a
+			//product where there is none, and `-:7` a separator with nothing
+			//on either side of it.
+		return connection;
 	}
+
 	QString bare = product;
 	while (bare.startsWith(QLatin1Char('-'))) {
 		bare.remove(0, 1);
 	}
+	if (!connection.isEmpty()) {
+		bare += QLatin1Char(':') + connection;
+	}
 	return with_dash ? QLatin1Char('-') + bare : bare;
+}
+
+/**
+	@brief IecStructure::toContextTag
+	@param context
+	@return the parts @a context does not already say
+*/
+QString IecStructure::toContextTag(const IecStructure &context) const
+{
+	QString tag;
+	if (!plant.isEmpty() && plant != context.plant) {
+		tag += QLatin1Char('=') + plant;
+	}
+	if (!location.isEmpty() && location != context.location) {
+		tag += QLatin1Char('+') + location;
+	}
+
+		//The product part is dropped only when the context is the product
+		//itself - the terminal strip whose head says `-X10` once, seen from
+		//its own graphic. Everywhere else the product is what identifies the
+		//thing, and a drawing that omits it says nothing at all.
+	const bool said_by_context = !connection.isEmpty()
+				     && !context.product.isEmpty()
+				     && product == context.product;
+	if (!product.isEmpty() && !said_by_context)
+	{
+		tag += product.startsWith(QLatin1Char('-'))
+		       ? product
+		       : QLatin1Char('-') + product;
+	}
+	if (!connection.isEmpty())
+	{
+			//A leading colon says nothing: inside the strip the terminal is
+			//`7`, not `:7`. The separator exists to join, so it is written
+			//only when there is something on its left.
+		if (!tag.isEmpty()) {
+			tag += QLatin1Char(':');
+		}
+		tag += connection;
+	}
+	return tag;
+}
+
+/**
+	@brief IecStructure::isDesignation
+	@param text
+	@return true when @a text has the shape of a designation of the norm
+*/
+bool IecStructure::isDesignation(const QString &text)
+{
+		//A designation opens with the letter code of the norm - K, Q, X, PS -
+		//so anything opening with a digit, a parenthesis or a space is not one.
+	if (text.isEmpty() || !text.at(0).isLetter()) {
+		return false;
+	}
+
+	bool has_digit = false;
+	for (const QChar &character : text)
+	{
+		if (character.isDigit()) {
+			has_digit = true;
+			continue;
+		}
+			//A dash, a dot and an underscore inside are part of the tag -
+			//"K3-1" is the second contactor of a pair, "Q1.1" a sub number.
+			//A space, a slash, a parenthesis are not: they are what free text
+			//is made of.
+		if (!character.isLetter()
+		    && character != QLatin1Char('.')
+		    && character != QLatin1Char('_')
+		    && character != QLatin1Char('-')) {
+			return false;
+		}
+	}
+
+		//A letter code with no number is not a designation either: "Reserva",
+		//"Terra", "PE" name something, they do not identify it.
+	return has_digit;
 }
 
 /**
@@ -158,9 +272,15 @@ IecStructure IecStructure::fromTag(const QString &tag)
 	// any other way would lose the tag of every existing project.
 	if (!trimmed.contains(QLatin1Char('='))
 	    && !trimmed.contains(QLatin1Char('+'))
+	    && !trimmed.contains(QLatin1Char(':'))
 	    && !trimmed.startsWith(QLatin1Char('-')))
 	{
-		structure.product = trimmed;
+			//A number alone is a connection and not a product - see below.
+		if (isNumber(trimmed)) {
+			structure.connection = trimmed;
+		} else {
+			structure.product = trimmed;
+		}
 		return structure;
 	}
 
@@ -172,6 +292,9 @@ IecStructure IecStructure::fromTag(const QString &tag)
 			current = &structure.plant;
 		} else if (character == QLatin1Char('+')) {
 			current = &structure.location;
+		} else if (character == QLatin1Char(':')) {
+			// `:` is the connection: `-X10:7` is terminal 7 of strip X10.
+			current = &structure.connection;
 		} else if (character == QLatin1Char('-') && index == 0) {
 			current = &structure.product;
 		} else if (character == QLatin1Char('-') && current != &structure.product) {
@@ -187,6 +310,16 @@ IecStructure IecStructure::fromTag(const QString &tag)
 		}
 	}
 
+		//The `-` of the norm marks a product, and a number is not one: it is a
+		//connection, the `:` part. A terminal labelled "7" - 173 of them in the
+		//14 folio project - is terminal 7 of the strip it sits in, and writing
+		//"-7" beside it claims the number is a product, which is a claim the
+		//norm does not make. Which strip is the terminal plan's job, and T33's.
+	if (structure.connection.isEmpty() && isNumber(structure.product)) {
+		structure.connection = structure.product;
+		structure.product.clear();
+	}
+
 	return structure;
 }
 
@@ -197,14 +330,22 @@ IecStructure IecStructure::fromTag(const QString &tag)
 	@return the structure the component describes
 */
 IecStructure IecStructure::fromElementInformation(const QString &label,
-						  const DiagramContext &info)
+						  const DiagramContext &info,
+						  bool location_from_field)
 {
 		//A tag typed with the separators already in it is read apart rather
 		//than escaped, so a project where somebody wrote "=CT1+A1-K3" by hand
 		//does not end up saying it twice.
+		//The location field only becomes the `+` of the norm when the project
+		//says it is one. It is older than the norm here and holds free text:
+		//in the project of ACME it holds the terminal strip the wiring of
+		//the component lands on, and reading that as a place wrote `+X1-` on
+		//23 components - information nobody put there.
 	return inherit(fromTag(label),
 		       IecStructure(info.value(plantKey()).toString(),
-				    info.value(locationKey()).toString(),
+				    location_from_field
+					    ? info.value(locationKey()).toString()
+					    : QString(),
 				    QString()));
 }
 
@@ -272,8 +413,15 @@ QString IecStructureSettings::xmlTagName()
 
 QString IecStructureSettings::displayToString(IecTagDisplay display)
 {
-	return display == IecTagDisplay::Full ? QStringLiteral("full")
-					      : QStringLiteral("short");
+	switch (display) {
+		case IecTagDisplay::Full:
+			return QStringLiteral("full");
+		case IecTagDisplay::Context:
+			return QStringLiteral("context");
+		case IecTagDisplay::Short:
+			break;
+	}
+	return QStringLiteral("short");
 }
 
 IecTagDisplay IecStructureSettings::displayFromString(const QString &string)
@@ -281,8 +429,13 @@ IecTagDisplay IecStructureSettings::displayFromString(const QString &string)
 		//Anything unknown reads as the short form: a project written by a
 		//later version that invents a third display still opens, and opens
 		//showing the tag the shop floor is used to.
-	return string == QLatin1String("full") ? IecTagDisplay::Full
-					       : IecTagDisplay::Short;
+	if (string == QLatin1String("full")) {
+		return IecTagDisplay::Full;
+	}
+	if (string == QLatin1String("context")) {
+		return IecTagDisplay::Context;
+	}
+	return IecTagDisplay::Short;
 }
 
 QString IecStructureSettings::translatedDisplay(IecTagDisplay display)
@@ -291,6 +444,9 @@ QString IecStructureSettings::translatedDisplay(IecTagDisplay display)
 		case IecTagDisplay::Short:
 			return QCoreApplication::translate("IecStructureSettings",
 				"Courte : -K3");
+		case IecTagDisplay::Context:
+			return QCoreApplication::translate("IecStructureSettings",
+				"Selon le contexte : -K3, +QCM2-K3 pour ce qui diffère");
 		case IecTagDisplay::Full:
 			return QCoreApplication::translate("IecStructureSettings",
 				"Complète : =CT1+A1-K3");
@@ -303,30 +459,58 @@ QString IecStructureSettings::displayedTag(const IecStructure &folio,
 {
 	if (!enabled) {
 			//Not "almost the same": the same. This return is what makes a
-			//delivered project safe to open.
-		return element.product;
+			//delivered project safe to open. `toShortTag(false)` composes
+			//nothing - it puts the parts of the label back together, which for
+			//a numbered terminal is its number. Element returns earlier than
+			//this; the branch is what the preview of the dialog shows.
+		return element.toShortTag(false);
 	}
 
 		//An element that carries no designation shows none. Composing
 		//anyway draws "=CT1+A1" on its own - the plant and the location
 		//of something that was never named - and that reads on the
 		//drawing like a real designation. Measured on the 14 folio
-		//project: 99 texts of that kind. The short display never had
-		//the problem, because toShortTag() is empty without a product;
-		//the guard sits here, and not in toFullTag(), because a folio
-		//tag legitimately has no product part.
-	if (element.product.isEmpty()) {
+		//project: 99 texts of that kind. What is asked here is product
+		//**and** connection, because a terminal labelled "7" has only the
+		//second one and it is a designation all the same. The guard sits
+		//here, and not in toFullTag(), because a folio tag legitimately
+		//has no product part.
+	if (element.product.isEmpty() && element.connection.isEmpty()) {
 		return QString();
 	}
 
+		//Free text is not a designation, and the `-` of the norm marks a
+		//product. Somebody typed "Nota 1" or "10A / 3P / F" in the field the
+		//tag lives in - 12 of them in the 14 folio project - and "-Nota 1" is
+		//not the norm, it is decoration. Shown as typed, which is also what
+		//the drawing showed before the structure was turned on. A component
+		//that carries separators of its own said what it wanted explicitly,
+		//and that is composed as asked.
+	if (element.plant.isEmpty()
+	    && element.location.isEmpty()
+	    && element.connection.isEmpty()
+	    && !IecStructure::isDesignation(element.product)) {
+		return element.product;
+	}
+
 	const IecStructure full = IecStructure::inherit(folio, element);
-	return display == IecTagDisplay::Full ? full.toFullTag()
-					      : full.toShortTag();
+	switch (display) {
+		case IecTagDisplay::Full:
+			return full.toFullTag();
+		case IecTagDisplay::Context:
+				//The folio is the context: what it already says is not
+				//said again beside every symbol.
+			return full.toContextTag(folio);
+		case IecTagDisplay::Short:
+			break;
+	}
+	return full.toShortTag();
 }
 
 bool IecStructureSettings::operator==(const IecStructureSettings &other) const
 {
-	return enabled == other.enabled && display == other.display;
+	return enabled == other.enabled && display == other.display
+	       && location_from_element == other.location_from_element;
 }
 
 bool IecStructureSettings::operator!=(const IecStructureSettings &other) const
@@ -341,6 +525,9 @@ QDomElement IecStructureSettings::toXml(QDomDocument &document) const
 			     enabled ? QStringLiteral("true")
 				     : QStringLiteral("false"));
 	element.setAttribute(QStringLiteral("display"), displayToString(display));
+	element.setAttribute(QStringLiteral("location_from_element"),
+			     location_from_element ? QStringLiteral("true")
+						  : QStringLiteral("false"));
 	return element;
 }
 
@@ -354,4 +541,9 @@ void IecStructureSettings::fromXml(const QDomElement &element)
 	enabled = element.attribute(QStringLiteral("enabled")) ==
 			QLatin1String("true");
 	display = displayFromString(element.attribute(QStringLiteral("display")));
+		//Silence means off here too: a project saved before this attribute
+		//existed must not gain 23 places on its drawing by being opened.
+	location_from_element =
+			element.attribute(QStringLiteral("location_from_element")) ==
+				QLatin1String("true");
 }

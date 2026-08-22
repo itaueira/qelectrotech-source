@@ -71,13 +71,30 @@ void IecStructureDialog::setUpWidget()
 
 	QFormLayout *form = new QFormLayout();
 	m_display = new QComboBox(this);
-	for (IecTagDisplay display : {IecTagDisplay::Short, IecTagDisplay::Full}) {
+	for (IecTagDisplay display : {IecTagDisplay::Short, IecTagDisplay::Context,
+				      IecTagDisplay::Full}) {
 		m_display->addItem(IecStructureSettings::translatedDisplay(display),
 				   int(display));
 	}
 	m_display->setCurrentIndex(m_display->findData(int(m_settings.display)));
 	form->addRow(tr("Sur le dessin, écrire :"), m_display);
 	layout->addLayout(form);
+
+	m_element_location = new QCheckBox(
+				tr("La localisation du composant est une localisation "
+				   "de la norme (+)"),
+				this);
+	m_element_location->setChecked(m_settings.location_from_element);
+	layout->addWidget(m_element_location);
+
+	QLabel *location_note = new QLabel(
+		tr("Le champ « Localisation » d'un composant est antérieur à la norme "
+		   "et contient du texte libre : beaucoup de projets y écrivent le "
+		   "bornier où arrive le câblage, pas le lieu. À cocher seulement si, "
+		   "dans ce projet, ce champ est bien la localisation (+) — sinon le "
+		   "dessin annonce des localisations que personne n'y a mises."), this);
+	location_note->setWordWrap(true);
+	layout->addWidget(location_note);
 
 	m_folio_note = new QLabel(this);
 	m_folio_note->setWordWrap(true);
@@ -99,6 +116,8 @@ void IecStructureDialog::setUpWidget()
 		this, &IecStructureDialog::refreshPreview);
 	connect(m_display, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &IecStructureDialog::refreshPreview);
+	connect(m_element_location, &QCheckBox::toggled,
+		this, &IecStructureDialog::refreshPreview);
 	connect(box, &QDialogButtonBox::accepted,
 		this, &IecStructureDialog::apply);
 	connect(box, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -108,7 +127,9 @@ void IecStructureDialog::refreshPreview()
 {
 	m_settings.enabled = m_enabled->isChecked();
 	m_settings.display = IecTagDisplay(m_display->currentData().toInt());
+	m_settings.location_from_element = m_element_location->isChecked();
 	m_display->setEnabled(m_settings.enabled);
+	m_element_location->setEnabled(m_settings.enabled);
 
 	if (!m_project) {
 		m_preview->clear();
@@ -173,7 +194,8 @@ void IecStructureDialog::refreshPreview()
 			.value(IecStructure::productKey()).toString();
 
 	const IecStructure element_structure = IecStructure::fromElementInformation(
-				stored, sample->elementInformations());
+				stored, sample->elementInformations(),
+				m_settings.location_from_element);
 
 	IecStructureSettings off;
 	off.enabled = false;

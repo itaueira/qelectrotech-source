@@ -40,6 +40,7 @@ class DiagramContext;
 	| `=` function | `plant` | `plant` |
 	| `+` location | `location` | `locmach` |
 	| `-` product | `label` — the tag itself | — |
+	| `:` connection | inside `label`, as `X10:7` | — |
 
 	The specification said `-` was the `designation` field. It is not:
 	`designation` is what QElectroTech labels "Numéro d'article", a commercial
@@ -56,7 +57,8 @@ class IecStructure
 {
 	public:
 		IecStructure();
-		IecStructure(const QString &plant, const QString &location, const QString &product);
+		IecStructure(const QString &plant, const QString &location, const QString &product,
+			     const QString &connection = QString());
 
 		bool isEmpty() const;
 		bool operator==(const IecStructure &other) const;
@@ -73,10 +75,55 @@ class IecStructure
 		*/
 		static IecStructure inherit(const IecStructure &parent, const IecStructure &child);
 
-		/// =CT1+A1-K3
+		/// =CT1+A1-K3, or =CT1+A1-X10:7 for a connection
 		QString toFullTag() const;
-		/// -K3, or K3 when the product part carries no dash
+		/// -K3, or K3 when the product part carries no dash. A terminal with
+		/// no product - label "7" - is its number, with no dash: the dash of
+		/// the norm marks a product, and a number is a connection.
 		QString toShortTag(bool with_dash = true) const;
+
+		/**
+			@param text
+			@return true when @a text has the shape of a designation of the
+			norm: a letter code and a number, "K3", "X10", "Q1.1", "K3-1".
+
+			What this is for: the `-` of the norm marks a product, so it is
+			written in front of something that is one. The same field holds
+			whatever anybody typed, and a schematic is full of text that is
+			not a designation at all - "Nota 1", "10A / 3P / F", "Tomada
+			Industrial". Measured on the 14 folio project of ACME on
+			21/08/2026: of 230 composed labels, 45 were designations, 12 were
+			free text and 173 were bare terminal numbers. Gluing a dash to the
+			185 that are not designations is decoration, not the norm.
+
+			A number alone is deliberately **not** a designation: it is a
+			connection, the `:` part, and `fromTag` reads it as one.
+		*/
+		static bool isDesignation(const QString &text);
+
+		/**
+			@param context : what the drawing already says around this - the
+			folio, or the terminal strip the terminal sits in
+			@return the parts of this structure that @a context does **not**
+			already say.
+
+			One rule, and the norm's own: a prefix obvious from the context
+			is omitted, the full designation being carried by the bill of
+			material and the terminal plan. On a folio that says plant and
+			location, a component reads `-K3`; the one that sits in another
+			cabinet reads `+QCM2-K3`, the part that differs and only it.
+
+			The same rule addresses a terminal. Inside the strip, whose head
+			says `-X10` once, terminal 7 reads `7`. Anywhere else it reads
+			`-X10:7`, with the colon the norm keeps for connections.
+
+			Measured on the 14 folio project of ACME on 21/08/2026: the
+			full form on every symbol is +19% of drawn characters, illegible
+			on the terminal folios, and ambiguous - two different terminals
+			numbered 7 both became `=CT1+QCM-7`. This is the answer to
+			that, and the reason the display has a third mode.
+		*/
+		QString toContextTag(const IecStructure &context) const;
 
 		/**
 			@param tag
@@ -101,9 +148,22 @@ class IecStructure
 			written again: what the component sets itself goes on top of what
 			its tag already said, which is the same rule the norm uses from
 			project to folio to component.
+
+			@param location_from_field : whether the `location` field of the
+			component is the `+` of the norm. **Off by default**, and the
+			reason is data, not taste: that field is older than the norm in
+			QElectroTech and holds free text. In the 14 folio project of
+			ACME it holds the terminal strip the wiring of that component
+			lands on - X1, X5, X10 - and reading it as a place put `+X1-` on
+			23 components, which is 23 wrong statements on a drawing. A
+			project where the field really is a place says so, once, in the
+			settings. A place typed into the tag itself - `+QCM2-K3` - is
+			read whatever this says, because there it is explicit.
 		*/
-		static IecStructure fromElementInformation(const QString &label,
-							   const DiagramContext &info);
+		static IecStructure fromElementInformation(
+				const QString &label,
+				const DiagramContext &info,
+				bool location_from_field = false);
 
 		/**
 			@param info : the folio information
@@ -126,6 +186,7 @@ class IecStructure
 		QString plant;     ///< `=` function
 		QString location;  ///< `+` location
 		QString product;   ///< `-` product, i.e. the tag
+		QString connection;///< `:` connection, the terminal inside the product
 };
 
 /**
@@ -137,11 +198,18 @@ class IecStructure
 	schematic normally carries, with the function and the location said once,
 	in the title block. Both are the norm; which one belongs on the drawing
 	is a decision of the person drawing it.
+
+	Between them is the one the norm actually describes, and the one a real
+	IEC drawing uses: write what the context does not already say. Same
+	folio, same cabinet - `-K3`. The component moved to another cabinet -
+	`+QCM2-K3`. Nothing repeated, nothing lost, and the full designation
+	still on the bill of material and the terminal plan.
 */
 enum class IecTagDisplay
 {
-	Short,  ///< -K3
-	Full    ///< =CT1+A1-K3
+	Short,   ///< -K3
+	Context, ///< -K3 here, +QCM2-K3 for what differs from the folio
+	Full     ///< =CT1+A1-K3
 };
 
 /**
@@ -164,6 +232,19 @@ class IecStructureSettings
 
 		bool enabled = false;
 		IecTagDisplay display = IecTagDisplay::Short;
+
+		/**
+			@brief Whether the `location` field of a component is the `+` of
+			the norm.
+
+			Off by default. The field is older than the norm here and holds
+			free text: projects write in it the terminal strip the wiring
+			lands on, the panel, a note. Turning the structure on must not
+			turn all of that into places of the norm behind the drawer's
+			back - it belongs to the project, next to the switch itself,
+			and the preview of the dialog shows what it does.
+		*/
+		bool location_from_element = false;
 
 		/**
 			@brief The tag to write next to a component.

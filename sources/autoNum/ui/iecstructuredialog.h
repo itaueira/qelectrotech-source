@@ -30,9 +30,10 @@ class QLabel;
 /**
 	@brief Turns the IEC 81346 identification structure on for one project.
 
-	Two controls and a preview, because there are only two decisions: whether
-	the norm applies to this project at all, and whether the drawing carries
-	the short tag or the full one.
+	Three controls and a preview, because there are only three decisions:
+	whether the norm applies to this project at all, how much of the tag the
+	drawing carries, and whether the `location` field of the components is
+	the `+` of the norm or the free text it has always been.
 
 	The preview is the point of the dialog. It shows a real component of the
 	open project - its tag before, its tag after - so the answer to "what
@@ -62,6 +63,7 @@ class IecStructureDialog : public QDialog
 		IecStructureSettings m_settings;
 
 		QCheckBox *m_enabled = nullptr;
+		QCheckBox *m_element_location = nullptr;
 		QComboBox *m_display = nullptr;
 		QLabel *m_preview = nullptr;
 		QLabel *m_folio_note = nullptr;

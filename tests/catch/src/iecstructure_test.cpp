@@ -42,8 +42,15 @@ TEST_CASE("CU-10.1 — désactivée, la structure ne touche à rien", "[iec]")
 	CHECK(dashed.plant.isEmpty());
 	CHECK(dashed.location.isEmpty());
 
-	// And a tag that is only a number, or empty, does not become something else.
-	CHECK(IecStructure::fromTag(QStringLiteral("1")).product == QStringLiteral("1"));
+	// A tag that is only a number is a connection and not a product: the `-` of
+	// the norm marks a product, and terminal 1 is a connection. What the drawing
+	// shows does not change - and that is what is checked here. CU-10.10 has the
+	// whole case, and the measurement that led to it.
+	const IecStructure number = IecStructure::fromTag(QStringLiteral("1"));
+	CHECK(number.product.isEmpty());
+	CHECK(number.connection == QStringLiteral("1"));
+	CHECK(number.toShortTag(false) == QStringLiteral("1"));
+	CHECK(number.toShortTag() == QStringLiteral("1"));
 	CHECK(IecStructure::fromTag(QString()).isEmpty());
 }
 
@@ -265,9 +272,11 @@ TEST_CASE("o interruptor da estrutura viaja no .qet", "[iec]")
 		CHECK(read.display == IecTagDisplay::Short);
 	}
 
-	SECTION("as duas exibições têm nome traduzido")
+	SECTION("as três exibições têm nome traduzido")
 	{
-		for (IecTagDisplay display : {IecTagDisplay::Short, IecTagDisplay::Full}) {
+		for (IecTagDisplay display : {IecTagDisplay::Short,
+					      IecTagDisplay::Context,
+					      IecTagDisplay::Full}) {
 			CHECK_FALSE(IecStructureSettings::translatedDisplay(display).isEmpty());
 			CHECK(IecStructureSettings::displayFromString(
 				      IecStructureSettings::displayToString(display)) == display);
@@ -292,7 +301,9 @@ TEST_CASE("compor duas vezes dá o mesmo que compor uma", "[iec]")
 				 QStringLiteral("A1"),
 				 QString());
 
-	for (IecTagDisplay display : {IecTagDisplay::Short, IecTagDisplay::Full})
+	for (IecTagDisplay display : {IecTagDisplay::Short,
+				      IecTagDisplay::Context,
+				      IecTagDisplay::Full})
 	{
 		settings.display = display;
 		const IecStructure element(QString(), QString(), QStringLiteral("Q1"));
@@ -367,8 +378,11 @@ TEST_CASE("a leitura da estrutura mora num lugar só", "[iec]")
 		DiagramContext elemento;
 		elemento.addValue(QStringLiteral("location"), QStringLiteral("A2"));
 
-		const IecStructure lido =
-				IecStructure::fromElementInformation(QStringLiteral("=CT1+A1-K3"), elemento);
+			//O `true` é o CU-10.12: este trecho fala do campo Localização
+			//vencendo a tag, e para isso o projeto tem de ter dito que aquele
+			//campo é o `+` da norma.
+		const IecStructure lido = IecStructure::fromElementInformation(
+					QStringLiteral("=CT1+A1-K3"), elemento, true);
 		// O + do componente vence...
 		CHECK(lido.location == QStringLiteral("A2"));
 		// ...e o = que ele não declarou continua sendo o que a tag dizia.
@@ -464,5 +478,469 @@ TEST_CASE("CU-10.7 — elemento sem tag não ganha uma feita de prefixo", "[iec]
 		// toFullTag(), o carimbo perderia isso junto.
 		CHECK(do_folio.toFullTag() == QStringLiteral("=CT1+QCM"));
 		CHECK(do_folio.product.isEmpty());
+	}
+}
+TEST_CASE("CU-10.8 — a folha já disse a planta e o local", "[iec]")
+{
+		//Em 21/08/2026 o Renan abriu o projeto convertido e disse que o esquema
+		//tinha ficado poluído. A medição deu razão a ele: no modo completo o
+		//projeto inteiro passou de 14295 para 17055 caracteres desenhados, +19,3%,
+		//e a folha 05 — "Componentes - X1 a X4" — de 1105 para 1589, +44%. O modo por contexto
+		//escreve o que o contexto ainda não disse — é a regra da própria
+		//IEC 81346, que manda omitir prefixo óbvio pelo contexto e carregar a
+		//designação completa na lista de material e no plano de bornes, que é
+		//onde o QET já a tem.
+	IecStructureSettings por_contexto;
+	por_contexto.enabled = true;
+	por_contexto.display = IecTagDisplay::Context;
+
+	DiagramContext info_folio;
+	info_folio.addValue(QStringLiteral("plant"),   QStringLiteral("CT1"));
+	info_folio.addValue(QStringLiteral("locmach"), QStringLiteral("QCM"));
+	const IecStructure folio = IecStructure::fromFolioInformation(info_folio);
+
+	SECTION("quem herda a folha mostra só o produto")
+	{
+		const IecStructure herda = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), DiagramContext());
+		CHECK(por_contexto.displayedTag(folio, herda)
+		      == QStringLiteral("-K3"));
+	}
+
+	SECTION("quem está em outro armário mostra o local, e só ele")
+	{
+			//O `true` é o CU-10.12: neste projeto o campo Localização é lido
+			//como o `+` da norma porque o projeto pediu.
+		DiagramContext info;
+		info.addValue(QStringLiteral("location"), QStringLiteral("QCM2"));
+		const IecStructure outro = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info, true);
+		CHECK(por_contexto.displayedTag(folio, outro)
+		      == QStringLiteral("+QCM2-K3"));
+	}
+
+	SECTION("outra planta, mesmo local: aparece o = e não aparece o +")
+	{
+		DiagramContext info;
+		info.addValue(QStringLiteral("plant"),    QStringLiteral("OUTRA"));
+		info.addValue(QStringLiteral("location"), QStringLiteral("QCM"));
+		const IecStructure fora = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info, true);
+		CHECK(por_contexto.displayedTag(folio, fora)
+		      == QStringLiteral("=OUTRA-K3"));
+	}
+
+	SECTION("folha que não diz onde está não esconde nada")
+	{
+			//Contexto vazio não é permissão para omitir: se a folha não tem
+			//planta nem local, o desenho é o único lugar onde a designação
+			//existe, e ela sai inteira.
+		const IecStructure elemento = IecStructure::fromElementInformation(
+					QStringLiteral("=CT1+QCM-K3"),
+					DiagramContext());
+		CHECK(por_contexto.displayedTag(IecStructure(), elemento)
+		      == QStringLiteral("=CT1+QCM-K3"));
+	}
+
+	SECTION("o modo completo continua completo")
+	{
+			//O modo novo não é substituição: quem quiser conferir a designação
+			//inteira no desenho continua podendo.
+		IecStructureSettings completo;
+		completo.enabled = true;
+		completo.display = IecTagDisplay::Full;
+		const IecStructure herda = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), DiagramContext());
+		CHECK(completo.displayedTag(folio, herda)
+		      == QStringLiteral("=CT1+QCM-K3"));
+	}
+
+	SECTION("o modo atravessa o arquivo do projeto")
+	{
+		QDomDocument document;
+		const QDomElement written = por_contexto.toXml(document);
+		IecStructureSettings read;
+		read.fromXml(written);
+		CHECK(read.display == IecTagDisplay::Context);
+		CHECK(read == por_contexto);
+	}
+}
+
+TEST_CASE("CU-10.9 — borne se endereça pela régua, com dois-pontos", "[iec]")
+{
+		//O projeto real de 14 folhas tem doze réguas desenhadas e 47 notas
+		//digitadas à mão dizendo qual borne pertence a qual régua. No modo
+		//completo, dois bornes numerados 7 — um na X10, outro na X12 — mostravam
+		//os dois o mesmo "=CT1+QCM-7". Isso não é poluição, é designação
+		//ambígua: informação errada. A norma reserva o ':' para conexão, e a
+		//forma dela para esse borne é "-X10:7".
+	SECTION("a tag digitada com dois-pontos é lida em duas partes")
+	{
+		const IecStructure borne = IecStructure::fromTag(
+					QStringLiteral("-X10:10"));
+		CHECK(borne.product    == QStringLiteral("X10"));
+		CHECK(borne.connection == QStringLiteral("10"));
+		CHECK(borne.toFullTag() == QStringLiteral("-X10:10"));
+	}
+
+	SECTION("dentro da régua, onde a cabeça já disse -X10, o borne é só o número")
+	{
+		const IecStructure regua(QString(), QString(), QStringLiteral("X10"));
+		const IecStructure borne = IecStructure::fromTag(
+					QStringLiteral("-X10:7"));
+		CHECK(borne.toContextTag(regua) == QStringLiteral("7"));
+	}
+
+	SECTION("fora da régua, o borne diz de qual régua é")
+	{
+		DiagramContext info_folio;
+		info_folio.addValue(QStringLiteral("plant"),   QStringLiteral("CT1"));
+		info_folio.addValue(QStringLiteral("locmach"), QStringLiteral("QCM"));
+		const IecStructure folio =
+				IecStructure::fromFolioInformation(info_folio);
+		const IecStructure borne = IecStructure::fromElementInformation(
+					QStringLiteral("-X10:7"), DiagramContext());
+
+		IecStructureSettings por_contexto;
+		por_contexto.enabled = true;
+		por_contexto.display = IecTagDisplay::Context;
+		CHECK(por_contexto.displayedTag(folio, borne)
+		      == QStringLiteral("-X10:7"));
+	}
+
+	SECTION("os dois bornes 7 da folha 13 deixam de ter o mesmo nome")
+	{
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		const IecStructure na_x10 = IecStructure::fromTag(
+					QStringLiteral("-X10:7"));
+		const IecStructure na_x12 = IecStructure::fromTag(
+					QStringLiteral("-X12:7"));
+
+		CHECK_FALSE(na_x10 == na_x12);
+		CHECK(na_x10.toContextTag(folio) == QStringLiteral("-X10:7"));
+		CHECK(na_x12.toContextTag(folio) == QStringLiteral("-X12:7"));
+		CHECK(na_x10.toContextTag(folio) != na_x12.toContextTag(folio));
+	}
+
+	SECTION("a lista de material carrega a designação inteira")
+	{
+			//É a outra metade da regra da norma: o desenho omite o que o
+			//contexto diz, e a lista não omite nada.
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		const IecStructure borne = IecStructure::fromTag(
+					QStringLiteral("-X10:10"));
+		CHECK(IecStructure::inherit(folio, borne).toFullTag()
+		      == QStringLiteral("=CT1+QCM-X10:10"));
+	}
+
+	SECTION("borne sem régua ainda mostra o número")
+	{
+			//A guarda do CU-10.7 pergunta se o elemento tem produto. Um borne
+			//avulso não tem, e não pode desaparecer por causa dela.
+		IecStructure avulso;
+		avulso.connection = QStringLiteral("7");
+
+		IecStructureSettings por_contexto;
+		por_contexto.enabled = true;
+		por_contexto.display = IecTagDisplay::Context;
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		CHECK(por_contexto.displayedTag(folio, avulso)
+		      == QStringLiteral("7"));
+	}
+}
+TEST_CASE("CU-10.10 — número puro é conexão, não produto", "[iec]")
+{
+		//Medido no projeto de 14 folhas em 21/08/2026, no modo por contexto: dos
+		//230 rótulos compostos, 173 eram bornes cujo rótulo é só um número. O
+		//programa colava um traço em cada um — "-7" — e o traço da norma marca um
+		//produto. Um número é conexão, o ':' da norma. Eram 173 traços a mais que
+		//continuavam ambíguos: o borne 7 da X10 e o borne 7 da X12 leem igual.
+	SECTION("o número vai para a conexão, e o produto fica vazio")
+	{
+		for (const QString &tag : { QStringLiteral("7"), QStringLiteral("-7"),
+					    QStringLiteral("10"), QStringLiteral("1") })
+		{
+			const IecStructure borne = IecStructure::fromTag(tag);
+			CHECK(borne.product.isEmpty());
+			CHECK(borne.connection == QString(tag).remove(QLatin1Char('-')));
+		}
+	}
+
+	SECTION("uma designação de verdade continua sendo produto")
+	{
+			//A régua se chama X10 e é um produto: o traço dela está certo, e é
+			//o que a IEC 61082 desenha.
+		for (const QString &tag : { QStringLiteral("X10"), QStringLiteral("DJ0"),
+					    QStringLiteral("RL2"), QStringLiteral("K3") })
+		{
+			const IecStructure produto = IecStructure::fromTag(tag);
+			CHECK(produto.product == tag);
+			CHECK(produto.connection.isEmpty());
+		}
+	}
+
+	SECTION("no desenho, o borne numerado continua sendo o número")
+	{
+			//Os dois modos curtos: nenhum deles põe traço em número. É a
+			//diferença entre 173 rótulos com um traço a mais e o desenho que o
+			//Renan tinha antes da conversão.
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		const IecStructure borne = IecStructure::fromElementInformation(
+					QStringLiteral("7"), DiagramContext());
+
+		IecStructureSettings settings;
+		settings.enabled = true;
+		for (IecTagDisplay display : {IecTagDisplay::Short,
+					      IecTagDisplay::Context})
+		{
+			settings.display = display;
+			CHECK(settings.displayedTag(folio, borne) == QStringLiteral("7"));
+		}
+	}
+
+	SECTION("o modo completo diz o que sabe, e não inventa produto")
+	{
+			//Quem pede a designação inteira recebe a inteira, e o que se sabe
+			//deste borne é a planta, o local e a conexão. A régua dele vem da
+			//T33; até lá o desenho não mente dizendo que 7 é um produto.
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		const IecStructure borne = IecStructure::fromTag(QStringLiteral("7"));
+
+		IecStructureSettings completo;
+		completo.enabled = true;
+		completo.display = IecTagDisplay::Full;
+		CHECK(completo.displayedTag(folio, borne)
+		      == QStringLiteral("=CT1+QCM:7"));
+	}
+
+	SECTION("o borne numerado não desaparece")
+	{
+			//A guarda do CU-10.7 pergunta se há produto. Um borne numerado não
+			//tem, e não pode sumir do desenho por causa dela.
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Short;
+		CHECK_FALSE(settings.displayedTag(
+				    IecStructure(),
+				    IecStructure::fromTag(QStringLiteral("7"))).isEmpty());
+	}
+}
+
+TEST_CASE("CU-10.11 — texto livre não recebe prefixo", "[iec]")
+{
+		//Dos 230 rótulos compostos, 12 eram texto que alguém digitou no campo do
+		//rótulo e não é designação nenhuma: "Nota 1", "10A / 3P / F", "1 (PE)",
+		//"PCI1 - UCM". O programa escrevia "-Nota 1". Não é norma, é enfeite.
+	SECTION("o que é designação e o que não é")
+	{
+			//Designação da norma é código de letra e número, sem espaço.
+		for (const QString &designacao : { QStringLiteral("K3"),
+						   QStringLiteral("X10"),
+						   QStringLiteral("DJ0"),
+						   QStringLiteral("RL2"),
+						   QStringLiteral("PS2"),
+						   QStringLiteral("Q1.1"),
+						   QStringLiteral("K3-1") })
+		{
+			CHECK(IecStructure::isDesignation(designacao));
+		}
+
+		for (const QString &livre : { QStringLiteral("Nota 1"),
+					      QStringLiteral("10A / 3P / F"),
+					      QStringLiteral("1 (PE)"),
+					      QStringLiteral("PCI1 - UCM"),
+					      QStringLiteral("Tomada Industrial"),
+					      QStringLiteral("7"),
+					      QStringLiteral("Reserva"),
+					      QString() })
+		{
+			CHECK_FALSE(IecStructure::isDesignation(livre));
+		}
+	}
+
+	SECTION("no desenho, texto livre sai como foi digitado")
+	{
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		IecStructureSettings settings;
+		settings.enabled = true;
+
+		for (IecTagDisplay display : {IecTagDisplay::Short,
+					      IecTagDisplay::Context,
+					      IecTagDisplay::Full})
+		{
+			settings.display = display;
+			for (const QString &livre : { QStringLiteral("Nota 1"),
+						      QStringLiteral("10A / 3P / F"),
+						      QStringLiteral("Tomada Industrial") })
+			{
+				const IecStructure elemento =
+						IecStructure::fromElementInformation(
+							livre, DiagramContext());
+				CHECK(settings.displayedTag(folio, elemento) == livre);
+			}
+		}
+	}
+
+	SECTION("e a designação de verdade recebe o traço")
+	{
+			//45 dos 230 eram designação real. Nessas o traço está certo, é o que
+			//a IEC 61082 desenha, e é a única coisa que o modo por contexto
+			//passa a acrescentar ao desenho deste projeto.
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		IecStructureSettings por_contexto;
+		por_contexto.enabled = true;
+		por_contexto.display = IecTagDisplay::Context;
+
+		for (const QString &designacao : { QStringLiteral("DJ0"),
+						   QStringLiteral("RL2"),
+						   QStringLiteral("X10") })
+		{
+			const IecStructure elemento =
+					IecStructure::fromElementInformation(
+						designacao, DiagramContext());
+			CHECK(por_contexto.displayedTag(folio, elemento)
+			      == QLatin1Char('-') + designacao);
+		}
+	}
+
+	SECTION("quem digitou a estrutura à mão continua sendo obedecido")
+	{
+			//Texto livre é o que ninguém estruturou. Se a pessoa escreveu os
+			//separadores, ela sabe o que quer, e o programa não apaga.
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		IecStructureSettings por_contexto;
+		por_contexto.enabled = true;
+		por_contexto.display = IecTagDisplay::Context;
+		const IecStructure mao = IecStructure::fromElementInformation(
+					QStringLiteral("+QCM2-Nota 1"), DiagramContext());
+		CHECK(por_contexto.displayedTag(folio, mao)
+		      == QStringLiteral("+QCM2-Nota 1"));
+	}
+}
+
+TEST_CASE("CU-10.12 — o campo Localização só é local IEC se o projeto disser",
+	  "[iec]")
+{
+		//O Renan preenche o campo Localização dos componentes com a régua de
+		//bornes onde a fiação daquele componente chega: X1, X5, X10. As folhas
+		//05, 07, 11 e 13 se chamam "Componentes - X1 a X4", "X5 e X6", "X7 e X8",
+		//"X10 a X12". Não é local da IEC 81346, e o programa lia como se fosse:
+		//23 componentes ganharam "+X1-" no desenho, 92 caracteres de informação
+		//errada. O campo é anterior à norma e guarda texto livre; ler como local
+		//é decisão do projeto, e por isso é uma caixa de seleção.
+	SECTION("desligado é o padrão, e desligado o campo não vai para o desenho")
+	{
+		IecStructureSettings settings;
+		CHECK_FALSE(settings.location_from_element);
+
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Context;
+
+		DiagramContext info;
+		info.addValue(QStringLiteral("location"), QStringLiteral("X1"));
+		const IecStructure elemento = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info,
+					settings.location_from_element);
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		CHECK(settings.displayedTag(folio, elemento) == QStringLiteral("-K3"));
+	}
+
+	SECTION("ligado, o campo é o + da norma")
+	{
+			//Quem usa o campo como local de verdade — outro armário, outra sala
+			//— marca a caixa e passa a ver o local no desenho.
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Context;
+		settings.location_from_element = true;
+
+		DiagramContext info;
+		info.addValue(QStringLiteral("location"), QStringLiteral("QCM2"));
+		const IecStructure elemento = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info,
+					settings.location_from_element);
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		CHECK(settings.displayedTag(folio, elemento)
+		      == QStringLiteral("+QCM2-K3"));
+	}
+
+	SECTION("com a caixa desmarcada, o local escrito no rótulo continua valendo")
+	{
+			//A caixa fala do campo, não da norma: quem escreveu "+QCM2-K3" no
+			//rótulo disse o local explicitamente, e isso não depende de caixa.
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Context;
+
+		const IecStructure elemento = IecStructure::fromElementInformation(
+					QStringLiteral("+QCM2-K3"), DiagramContext(),
+					settings.location_from_element);
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+		CHECK(settings.displayedTag(folio, elemento)
+		      == QStringLiteral("+QCM2-K3"));
+	}
+
+	SECTION("a escolha atravessa o arquivo do projeto")
+	{
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Context;
+		settings.location_from_element = true;
+
+		QDomDocument document;
+		IecStructureSettings lida;
+		lida.fromXml(settings.toXml(document));
+		CHECK(lida.location_from_element);
+		CHECK(lida == settings);
+	}
+
+	SECTION("projeto antigo, sem o atributo, lê desligado")
+	{
+			//O silêncio de um arquivo escrito antes desta caixa não pode
+			//significar "ligado": seria pôr 23 informações erradas no desenho
+			//de quem só abriu o projeto.
+		QDomDocument document;
+		QDomElement antigo = document.createElement(
+					IecStructureSettings::xmlTagName());
+		antigo.setAttribute(QStringLiteral("enabled"), QStringLiteral("true"));
+		antigo.setAttribute(QStringLiteral("display"), QStringLiteral("context"));
+
+		IecStructureSettings lida;
+		lida.fromXml(antigo);
+		CHECK(lida.enabled);
+		CHECK(lida.display == IecTagDisplay::Context);
+		CHECK_FALSE(lida.location_from_element);
+	}
+
+	SECTION("a caixa é do projeto: mudar uma não iguala à outra")
+	{
+		IecStructureSettings com;
+		com.enabled = true;
+		com.location_from_element = true;
+		IecStructureSettings sem;
+		sem.enabled = true;
+		CHECK(com != sem);
 	}
 }
