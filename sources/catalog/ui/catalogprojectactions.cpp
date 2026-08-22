@@ -122,7 +122,9 @@ QList<Element *> CatalogProjectActions::componentsWithoutPart(QETProject *projec
 	@brief CatalogProjectActions::partFromElements
 	@param catalog
 	@param elements
-	@return a part carrying the pins of @a elements
+	@return the part the components already point to, corrected with what they
+	carry and with the terminals they draw; a new Component part when they point
+	at nothing yet
 */
 CatalogPart CatalogProjectActions::partFromElements(const Catalog &catalog,
 						    const QList<Element *> &elements)
@@ -132,24 +134,15 @@ CatalogPart CatalogProjectActions::partFromElements(const Catalog &catalog,
 		return part;
 	}
 
-	// The class: whatever the components already say, otherwise Component.
-	const CatalogClass component_class = catalog.classByKey(QStringLiteral("component"));
-	part.class_id = component_class.isNull() ? 0 : component_class.id;
+	// The values the components already carry - the draughtsman typed the
+	// manufacturer and the description while drawing, and retyping them in the
+	// part dialog is exactly the waste this flow removes. They also say which
+	// part this is: registering from a component that already has one means
+	// correcting that part, not replacing it with a bare generic one. Why that
+	// matters is written on CatalogAssignment::partFromValues.
+	part = CatalogAssignment::partFromValues(catalog, informationOf(elements.first()));
 
-	// Take the values the components already carry - the draughtsman typed
-	// the manufacturer and the description while drawing, and retyping them
-	// in the part dialog is exactly the waste this flow removes.
-	const QHash<QString, QString> first_values = informationOf(elements.first());
-	const QList<CatalogProperty> properties = catalog.effectiveProperties(part.class_id);
-	for (const CatalogProperty &property : properties)
-	{
-		const QString value = first_values.value(property.key);
-		if (!value.isEmpty()) {
-			part.setValue(property.key, value);
-		}
-	}
-	part.code = first_values.value(CatalogAssignment::partCodeKey());
-
+	QList<CatalogPin> drawn;
 	int order = 1;
 	for (Element *element : elements)
 	{
@@ -179,11 +172,16 @@ CatalogPart CatalogProjectActions::partFromElements(const Catalog &catalog,
 
 			pin.group = group;
 			pin.order_index = order++;
-			part.pins.append(pin);
+			drawn.append(pin);
 		}
 	}
 
-	part.origin = QStringLiteral("project");
+	// The pin map of a part that already exists was made once, by hand or by
+	// a package, and it says more than terminals the symbols never named.
+	// Only a part with no pins at all takes what the drawing can give.
+	if (part.pins.isEmpty()) {
+		part.pins = drawn;
+	}
 	return part;
 }
 

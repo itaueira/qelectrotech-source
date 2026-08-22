@@ -354,6 +354,110 @@ TEST_CASE("CU-13.8 — le rapport de fin de projet compte une seule chose")
 	CHECK(CatalogAssignment::isWithoutPart(blank_code));
 }
 
+TEST_CASE("CU-13.10 — registrar peça a partir do componente corrige a peça, não a rebaixa",
+	  "[catalog]")
+{
+	Catalog catalog;
+	QString error;
+	REQUIRE(catalog.openInMemory(&error));
+
+	const int component_id = catalog.classByKey(QStringLiteral("component")).id;
+	REQUIRE(component_id > 0);
+
+	// A class of the office, with a field the generic class does not have.
+	CatalogClass monitoring(QStringLiteral("monitoring_relay"),
+				QStringLiteral("Relé de monitoramento"));
+	monitoring.parent_id = component_id;
+	const int monitoring_id = catalog.addClass(monitoring, &error);
+	REQUIRE(monitoring_id > 0);
+
+	CatalogProperty supply(QString(), QStringLiteral("Tensão de alimentação"),
+			       CatalogPropertyType::Text);
+	supply.class_id = monitoring_id;
+	REQUIRE(catalog.addProperty(supply, &error) > 0);
+	const QString supply_key = QStringLiteral("tensao_alimentacao");
+
+	// The part as the office typed it once: the class, the typed field, and an
+	// origin that says it came from a package rather than from a drawing.
+	CatalogPart stored(QStringLiteral("RPW-PTCE05"), monitoring_id);
+	stored.setValue(QStringLiteral("designation"), QStringLiteral("Relé PTC"));
+	stored.setValue(supply_key, QStringLiteral("24 Vcc"));
+	stored.origin = QStringLiteral("package");
+	REQUIRE(catalog.savePart(stored, &error));
+	REQUIRE(stored.id > 0);
+
+	// What the component carries on the folio: the code of that part, plus a
+	// description the draughtsman has just corrected while drawing.
+	QHash<QString, QString> information;
+	information.insert(CatalogAssignment::partCodeKey(), QStringLiteral("RPW-PTCE05"));
+	information.insert(QStringLiteral("designation"),
+			   QStringLiteral("Relé PTC, rearme manual"));
+
+	const CatalogPart proposed = CatalogAssignment::partFromValues(catalog, information);
+
+	// It is the part that exists, in its own class: the dialog opens on Relé de
+	// monitoramento with the typed field filled, not on Componente empty.
+	CHECK(proposed.id == stored.id);
+	CHECK(proposed.class_id == monitoring_id);
+	CHECK(proposed.value(supply_key) == QStringLiteral("24 Vcc"));
+	CHECK(proposed.origin == QStringLiteral("package"));
+
+	// And the correction from the drawing did travel.
+	CHECK(proposed.value(QStringLiteral("designation"))
+	      == QStringLiteral("Relé PTC, rearme manual"));
+
+	// Saving it back is the moment the old behaviour lost the data: a bare part
+	// with the same code took the id, so the class became Componente and the
+	// rewrite of the value rows deleted the typed field.
+	CatalogPart to_save = proposed;
+	REQUIRE(catalog.savePart(to_save, &error));
+
+	const CatalogPart reread = catalog.partByCode(QStringLiteral("RPW-PTCE05"));
+	CHECK(reread.class_id == monitoring_id);
+	CHECK(reread.value(supply_key) == QStringLiteral("24 Vcc"));
+	CHECK(reread.value(QStringLiteral("designation"))
+	      == QStringLiteral("Relé PTC, rearme manual"));
+	CHECK(reread.origin == QStringLiteral("package"));
+}
+
+TEST_CASE("CU-13.10 — um componente que não aponta peça nenhuma nasce em Componente",
+	  "[catalog]")
+{
+	Catalog catalog;
+	QString error;
+	REQUIRE(catalog.openInMemory(&error));
+
+	const int component_id = catalog.classByKey(QStringLiteral("component")).id;
+	REQUIRE(component_id > 0);
+
+	// The other half of the use case, and the reason the generic class still
+	// exists: a component drawn with a manufacturer typed on it and no code.
+	QHash<QString, QString> information;
+	information.insert(QStringLiteral("manufacturer"), QStringLiteral("Fornecedor A"));
+	information.insert(QStringLiteral("nowhere"), QStringLiteral("nada"));
+
+	const CatalogPart part = CatalogAssignment::partFromValues(catalog, information);
+
+	CHECK(part.id == 0);
+	CHECK(part.class_id == component_id);
+	CHECK(part.code.isEmpty());
+	CHECK(part.origin == QStringLiteral("project"));
+	CHECK(part.value(QStringLiteral("manufacturer")) == QStringLiteral("Fornecedor A"));
+
+	// A key no class declares is not stored: writing the value rows does not
+	// filter by class, so a value nobody can see would be a value nobody can
+	// correct.
+	CHECK(part.value(QStringLiteral("nowhere")).isEmpty());
+
+	// A code that names no part is kept, because it is what the draughtsman
+	// wants to register under.
+	information.insert(CatalogAssignment::partCodeKey(), QStringLiteral("SEM-CADASTRO-1"));
+	const CatalogPart named = CatalogAssignment::partFromValues(catalog, information);
+	CHECK(named.id == 0);
+	CHECK(named.class_id == component_id);
+	CHECK(named.code == QStringLiteral("SEM-CADASTRO-1"));
+}
+
 TEST_CASE("CU-13.2 — la pièce par défaut d'un symbole est une pièce comme les autres")
 {
 	AssignmentFixture fixture;

@@ -89,6 +89,23 @@ class CatalogAssignment
 								const QHash<QString, QString> &current);
 
 		/**
+			@param catalog
+			@param values : the information a component carries
+			@return the part those values point to, brought up to date with
+			what they say. A part in the Component class when they point to
+			nothing.
+
+			The inverse of valuesForElement, and it exists because of loss: a
+			component that already has a part is corrected, never replaced by a
+			bare one. Saving a part rewrites its value rows, so a bare part
+			carrying the same code moves the stored part to Component and
+			deletes every typed value it had - and silently, because a dialog
+			only ever shows the class it was handed. (CU-13.10)
+		*/
+		static CatalogPart partFromValues(const Catalog &catalog,
+						  const QHash<QString, QString> &values);
+
+		/**
 			@param part
 			@param group : which sub symbol of the part is being assigned,
 			empty for a part drawn as one symbol

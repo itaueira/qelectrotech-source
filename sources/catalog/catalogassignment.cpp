@@ -200,6 +200,49 @@ QStringList CatalogAssignment::terminalNames(const CatalogPart &part,
 }
 
 /**
+	@brief CatalogAssignment::partFromValues
+	@param catalog
+	@param values
+	@return the part @a values point to, brought up to date with what they say
+*/
+CatalogPart CatalogAssignment::partFromValues(const Catalog &catalog,
+					      const QHash<QString, QString> &values)
+{
+	const QString code = values.value(partCodeKey()).trimmed();
+
+	// The class is whatever the component already says, and what it says is
+	// the part it points to. Component is for a component that points at
+	// nothing yet.
+	CatalogPart part = code.isEmpty() ? CatalogPart() : catalog.partByCode(code);
+	if (part.isNull())
+	{
+		part = CatalogPart();
+		const CatalogClass component_class =
+				catalog.classByKey(QStringLiteral("component"));
+		part.class_id = component_class.isNull() ? 0 : component_class.id;
+		part.code = code;
+
+		// Where it came from, said once: a part that already exists came from
+		// somewhere else - a package, a price list - and keeps saying so.
+		part.origin = QStringLiteral("project");
+	}
+
+	// What the draughtsman typed while drawing goes back into the part, but
+	// only into fields the class of the part actually has. An empty field says
+	// nothing, so it clears nothing: the same rule as assignment, the other
+	// way round.
+	const QList<CatalogProperty> properties = catalog.effectiveProperties(part.class_id);
+	for (const CatalogProperty &property : properties)
+	{
+		const QString value = values.value(property.key).trimmed();
+		if (!value.isEmpty()) {
+			part.setValue(property.key, value);
+		}
+	}
+	return part;
+}
+
+/**
 	@brief CatalogAssignment::isWithoutPart
 	@param values
 	@return true when no catalog part is assigned
