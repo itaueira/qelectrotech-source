@@ -18,6 +18,7 @@
 #ifndef CATALOGPACKAGE_H
 #define CATALOGPACKAGE_H
 
+#include "catalogclasspackage.h"
 #include "catalogpart.h"
 
 #include <QString>
@@ -41,6 +42,15 @@ class Catalog;
 
 	Price and commercial terms are left out too, and for a different reason:
 	a price belongs to a company and to a date, not to a part.
+
+	What it does carry is the **declaration of its class**: type, unit, initial
+	value, controlled list and numbering format, with the ancestry so that the
+	receiver can put the class back where it belongs. Before this a package
+	named its class and nothing more, so importing into a catalog that lacked
+	the class produced an empty node under Composant and the values landed
+	there as loose text. Same serialization and same identity rule as
+	CatalogClassPackage: the **key** identifies, the `uuid` only traces where
+	the class came from.
 */
 class CatalogPackage
 {
@@ -77,6 +87,40 @@ class CatalogPackage
 
 		/// The class key the package names, whether or not it exists here
 		static QString classKeyOf(const QString &file_path);
+
+		/**
+			@param file_path
+			@param catalog
+			@param report : filled in when not null
+			@param error : set only when the file cannot be read at all
+			@return true when the package carries the declaration of its
+			class. false with no error means a package written before this
+			existed: it names its class and nothing more, and an empty node
+			is all anyone can make of it.
+
+			Nothing is written to @a catalog. This is what applyClass() would
+			do, so that whoever imports reads it before saying yes.
+		*/
+		static bool classPlan(const QString &file_path,
+				      const Catalog &catalog,
+				      CatalogClassPackage::Report *report = nullptr,
+				      QString *error = nullptr);
+
+		/**
+			@param file_path
+			@param catalog
+			@param report : filled in when not null
+			@param error
+			@return true when the declaration was applied.
+
+			Creates in @a catalog what the package declares and is missing
+			here, and modifies nothing that is already here - importing the
+			same package twice changes nothing the second time.
+		*/
+		static bool applyClass(const QString &file_path,
+				       Catalog &catalog,
+				       CatalogClassPackage::Report *report = nullptr,
+				       QString *error = nullptr);
 };
 
 #endif // CATALOGPACKAGE_H

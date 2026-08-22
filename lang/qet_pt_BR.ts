@@ -1372,12 +1372,12 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
         <translation>Classes de catálogo QElectroTech (*.qetclasses)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogclasspackage.cpp" line="737"/>
+        <location filename="../sources/catalog/catalogclasspackage.cpp" line="743"/>
         <source>Il n&apos;y a pas de classe à exporter.</source>
         <translation>Não há classe para exportar.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogclasspackage.cpp" line="750"/>
+        <location filename="../sources/catalog/catalogclasspackage.cpp" line="756"/>
         <source>Impossible d&apos;écrire %1.</source>
         <translation>Não foi possível gravar %1.</translation>
     </message>
@@ -2149,35 +2149,43 @@ O que já existe aqui não é alterado. Continuar?</translation>
 <context>
     <name>CatalogPackage</name>
     <message>
-        <location filename="../sources/catalog/catalogpackage.cpp" line="46"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="47"/>
         <source>Pièce de catalogue QElectroTech (*.qetpart)</source>
         <translation>Peça de catálogo do QElectroTech (*.qetpart)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogpackage.cpp" line="108"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="155"/>
         <source>Il n&apos;y a pas de pièce à exporter.</source>
         <translation>Não há peça para exportar.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogpackage.cpp" line="174"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="237"/>
         <source>Impossible d&apos;écrire %1.</source>
         <translation>Não foi possível gravar %1.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogpackage.cpp" line="227"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="290"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="389"/>
         <source>Impossible de lire %1.</source>
         <translation>Não foi possível ler %1.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogpackage.cpp" line="237"/>
-        <location filename="../sources/catalog/catalogpackage.cpp" line="247"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="300"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="310"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="398"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="408"/>
         <source>%1 n&apos;est pas un paquet de pièce.</source>
         <translation>%1 não é um pacote de peça.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogpackage.cpp" line="266"/>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="329"/>
         <source>La classe « %1 » n&apos;existe pas dans ce catalogue.</source>
         <translation>A classe « %1 » não existe neste catálogo.</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogpackage.cpp" line="460"/>
+        <source>Ce paquet ne déclare pas sa classe.</source>
+        <translation>Este pacote não declara a classe dele.</translation>
     </message>
 </context>
 <context>
@@ -2750,106 +2758,106 @@ As tags não mudam; os números de bornes passam a ser os da peça nova.</numeru
 <context>
     <name>CatalogRepositoryDialog</name>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="49"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="50"/>
         <source>Répertoire de pièces partagé</source>
         <translation>Repositório de peças compartilhado</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="62"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="63"/>
         <source>Changer de dossier…</source>
         <translation>Trocar de pasta…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="65"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="66"/>
         <source>Répertoire</source>
         <translation>Repositório</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="70"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="71"/>
         <source>Référence, désignation, fabricant, classe…</source>
         <translation>Código, designação, fabricante, classe…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="74"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="75"/>
         <source>Effacer les filtres</source>
         <translation>Limpar os filtros</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="77"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="78"/>
         <source>Rechercher</source>
         <translation>Procurar</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="79"/>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="87"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="80"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="88"/>
         <source>Classe</source>
         <translation>Classe</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="81"/>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="88"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="82"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="89"/>
         <source>Fabricant</source>
         <translation>Fabricante</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="87"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="88"/>
         <source>Référence</source>
         <translation>Código</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="88"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="89"/>
         <source>Désignation</source>
         <translation>Designação</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="98"/>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="279"/>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="353"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="99"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="280"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="354"/>
         <source>(pas d&apos;image)</source>
         <translation>(sem imagem)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="114"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="115"/>
         <source>Un paquet porte des &lt;b&gt;données&lt;/b&gt;, pas un dessin : propriétés, brochage, vue physique, image de référence et accessoires. Le symbole de schéma n&apos;y est pas, et c&apos;est voulu — il est généré ici, dans l&apos;orientation et le découpage qui conviennent à la maison. Le prix n&apos;y est pas non plus : un prix appartient à une entreprise et à une date, pas à une pièce.</source>
         <translation>Um pacote leva &lt;b&gt;dados&lt;/b&gt;, não desenho: propriedades, pinagem, vista física, imagem de referência e acessórios. O símbolo de esquema não vai, e é de propósito — ele é gerado aqui, na orientação e na divisão que convêm à casa. O preço também não vai: preço é da empresa e da data, não da peça.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="125"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="126"/>
         <source>Télécharger et importer</source>
         <translation>Baixar e importar</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="127"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="128"/>
         <source>Contribuer une pièce…</source>
         <translation>Contribuir com uma peça…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="128"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="129"/>
         <source>Écrit une pièce du catalogue local dans le répertoire. Rien ne sort d&apos;ici sans cette action : le catalogue porte des décisions d&apos;achat et d&apos;ingénierie de l&apos;entreprise.</source>
         <translation>Grava uma peça do catálogo local no repositório. Nada sai daqui sem esta ação: o catálogo carrega decisões de compra e de engenharia da empresa.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="178"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="179"/>
         <source>Le répertoire %1 est vide. Il se remplit par la contribution explicite de qui veut partager une pièce.</source>
         <translation>O repositório %1 está vazio. Ele se enche pela contribuição explícita de quem quiser compartilhar uma peça.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="180"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="181"/>
         <source>Le dossier %1 n&apos;existe pas encore. Il sera créé à la première contribution.</source>
         <translation>A pasta %1 ainda não existe. Ela é criada na primeira contribuição.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="191"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="192"/>
         <source>Toutes</source>
         <translation>Todas</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="203"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="204"/>
         <source>Tous</source>
         <translation>Todos</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="237"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="238"/>
         <source>%n pièce(s) trouvée(s) sur %1 dans le répertoire.</source>
         <translation>
             <numerusform>%n peça encontrada de %1 no repositório.</numerusform>
@@ -2857,92 +2865,123 @@ As tags não mudam; os números de bornes passam a ser os da peça nova.</numeru
         </translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="327"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="328"/>
         <source>Brochage</source>
         <translation>Pinagem</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="340"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="341"/>
         <source>Accessoires</source>
         <translation>Acessórios</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="376"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="377"/>
         <source>Paquet non lu</source>
         <translation>Pacote não lido</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="388"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="400"/>
+        <source>La classe « %1 » n&apos;existe pas dans ce catalogue.
+
+Le paquet la déclare. Ceci va créer :
+
+%2
+
+Ce qui existe déjà ici n&apos;est pas modifié. Continuer ?</source>
+        <translation>A classe « %1 » não existe neste catálogo.
+
+O pacote traz a declaração dela. Isto vai criar:
+
+%2
+
+O que já existe aqui não é alterado. Continuar?</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="404"/>
+        <source>La classe « %1 » n&apos;existe pas dans ce catalogue.
+
+Ce paquet ne la déclare pas : elle serait créée vide sous « Composant », et les valeurs de la pièce y arriveraient comme du texte libre. Continuer ?</source>
+        <translation>A classe « %1 » não existe neste catálogo.
+
+Este pacote não traz a declaração dela: ela nasceria vazia sob « Componente », e os valores da peça chegariam nela como texto livre. Continuar?</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="409"/>
         <source>Classe absente</source>
         <translation>Classe ausente</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="389"/>
         <source>La classe « %1 » n&apos;existe pas dans ce catalogue.
 
 La créer maintenant, sous « Composant » ?</source>
-        <translation>A classe « %1 » não existe neste catálogo.
+        <translation type="vanished">A classe « %1 » não existe neste catálogo.
 
 Criar agora, sob « Componente »?</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="404"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="421"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="445"/>
         <source>Classe non créée</source>
         <translation>Classe não criada</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="416"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="431"/>
+        <source>Classe créée en partie</source>
+        <translation>Classe criada em parte</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="458"/>
         <source>La pièce existe déjà</source>
         <translation>A peça já existe</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="417"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="459"/>
         <source>« %1 » est déjà dans le catalogue local.</source>
         <translation>« %1 » já está no catálogo local.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="418"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="460"/>
         <source>Que faire du paquet ?</source>
         <translation>O que fazer com o pacote?</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="419"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="461"/>
         <source>Ignorer</source>
         <translation>Ignorar</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="420"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="462"/>
         <source>Mettre à jour</source>
         <translation>Atualizar</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="421"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="463"/>
         <source>Nouvelle révision</source>
         <translation>Nova revisão</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="433"/>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="448"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="475"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="490"/>
         <source>Pièce non importée</source>
         <translation>Peça não importada</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="437"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="479"/>
         <source>« %1 » importée comme révision %2.</source>
         <translation>« %1 » importada como revisão %2.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="453"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="495"/>
         <source>« %1 » importée dans le catalogue local.</source>
         <translation>« %1 » importada para o catálogo local.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="467"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="509"/>
         <source>Contribuer une pièce</source>
         <translation>Contribuir com uma peça</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="468"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="510"/>
         <source>Écrire « %1 » dans le répertoire partagé ?
 
 Les données de la pièce y seront lisibles par qui a accès au dossier. Le prix et les conditions commerciales ne partent pas.</source>
@@ -2951,22 +2990,22 @@ Les données de la pièce y seront lisibles par qui a accès au dossier. Le prix
 Os dados da peça ficam legíveis para quem tem acesso à pasta. O preço e as condições comerciais não vão.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="480"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="522"/>
         <source>Pièce non contribuée</source>
         <translation>Peça não contribuída</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="485"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="527"/>
         <source>« %1 » écrite dans le répertoire.</source>
         <translation>« %1 » gravada no repositório.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="494"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="536"/>
         <source>Choisir le dossier du répertoire de pièces</source>
         <translation>Escolher a pasta do repositório de peças</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="502"/>
+        <location filename="../sources/catalog/ui/catalogrepositorydialog.cpp" line="544"/>
         <source>Dossier inchangé</source>
         <translation>Pasta inalterada</translation>
     </message>
@@ -12837,8 +12876,8 @@ O que você deseja fazer?</translation>
         <translation>Terminal</translation>
     </message>
     <message>
-        <location filename="../sources/editor/esevent/eseventaddtext.cpp" line="65"/>
         <location filename="../sources/qetinformation.cpp" line="322"/>
+        <location filename="../sources/editor/esevent/eseventaddtext.cpp" line="65"/>
         <source>Texte</source>
         <translation>Texto</translation>
     </message>
@@ -13604,11 +13643,11 @@ Deseja substituí-lo?</translation>
         <translation>Endereço</translation>
     </message>
     <message>
+        <location filename="../sources/qetinformation.cpp" line="305"/>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="212"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1274"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1378"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="1918"/>
-        <location filename="../sources/qetinformation.cpp" line="305"/>
         <source>Commentaire</source>
         <translation>Comentário</translation>
     </message>
@@ -13621,12 +13660,12 @@ Deseja substituí-lo?</translation>
         <translation>Ref. cruzada</translation>
     </message>
     <message>
+        <location filename="../sources/qetinformation.cpp" line="306"/>
+        <location filename="../sources/qetinformation.cpp" line="318"/>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="211"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1273"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1377"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="1917"/>
-        <location filename="../sources/qetinformation.cpp" line="306"/>
-        <location filename="../sources/qetinformation.cpp" line="318"/>
         <source>Fonction</source>
         <translation>Função</translation>
     </message>
@@ -13967,9 +14006,9 @@ Deseja substituí-lo?</translation>
     </message>
     <message>
         <location filename="../sources/conductorproperties.cpp" line="819"/>
+        <location filename="../sources/qetapp.cpp" line="2638"/>
         <location filename="../sources/ElementsCollection/elementslocation.cpp" line="401"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="627"/>
-        <location filename="../sources/qetapp.cpp" line="2638"/>
         <location filename="../sources/SearchAndReplace/searchandreplaceworker.cpp" line="351"/>
         <location filename="../sources/SearchAndReplace/searchandreplaceworker.cpp" line="474"/>
         <location filename="../sources/SearchAndReplace/searchandreplaceworker.cpp" line="509"/>

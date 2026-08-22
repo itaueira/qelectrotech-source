@@ -88,6 +88,9 @@ class CatalogClassPackage
 			@param document : the document the element will belong to
 			@param catalog
 			@param class_id : the class to export, with everything below it
+			@param include_descendants : false to carry the class and its
+			ancestry only. A part package needs the class of its part, not
+			the subclasses of it the sender happens to have.
 			@return the block that describes the branch, to write on its own
 			or to embed in another package.
 
@@ -97,7 +100,8 @@ class CatalogClassPackage
 		*/
 		static QDomElement toXml(QDomDocument &document,
 					 const Catalog &catalog,
-					 int class_id);
+					 int class_id,
+					 bool include_descendants = true);
 
 		/**
 			@param element : a block written by toXml()

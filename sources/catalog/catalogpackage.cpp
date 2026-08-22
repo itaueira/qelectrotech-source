@@ -18,6 +18,7 @@
 #include "catalogpackage.h"
 
 #include "catalog.h"
+#include "catalogclasspackage.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -90,6 +91,52 @@ QStringList CatalogPackage::excludedKeys()
 }
 
 /**
+	@brief stripExcludedProperties
+	Removes from a class block the fields a package must not carry, and the
+	controlled lists nothing references once they are gone. Same list as the
+	values: a package that refuses to send a price has no business creating the
+	field that holds one - it would arrive empty and stay empty, and the
+	commercial columns of one company are not a gift to another.
+	@param block : the class block, modified in place
+*/
+static void stripExcludedProperties(QDomElement &block)
+{
+	const QStringList excluded = CatalogPackage::excludedKeys();
+	QStringList used;
+	for (QDomElement element = block.firstChildElement(QStringLiteral("class")) ;
+	     !element.isNull() ;
+	     element = element.nextSiblingElement(QStringLiteral("class")))
+	{
+		QDomElement property = element.firstChildElement(QStringLiteral("property"));
+		while (!property.isNull())
+		{
+			QDomElement next = property.nextSiblingElement(QStringLiteral("property"));
+			if (excluded.contains(property.attribute(QStringLiteral("key")))) {
+				element.removeChild(property);
+			}
+			else
+			{
+				const QString list_name = property.attribute(QStringLiteral("list-name"));
+				if (!list_name.isEmpty() && !used.contains(list_name)) {
+					used.append(list_name);
+				}
+			}
+			property = next;
+		}
+	}
+
+	QDomElement list = block.firstChildElement(QStringLiteral("list"));
+	while (!list.isNull())
+	{
+		QDomElement next = list.nextSiblingElement(QStringLiteral("list"));
+		if (!used.contains(list.attribute(QStringLiteral("name")))) {
+			block.removeChild(list);
+		}
+		list = next;
+	}
+}
+
+/**
 	@brief CatalogPackage::write
 	@param file_path
 	@param catalog
@@ -120,6 +167,22 @@ bool CatalogPackage::write(const QString &file_path,
 	root.setAttribute(QStringLiteral("class-name"), catalog.classById(part.class_id).name);
 	root.setAttribute(QStringLiteral("exported-at"),
 			  QDateTime::currentDateTime().toString(Qt::ISODate));
+
+	// The class comes along declared, not merely named: the receiver needs the
+	// type, the unit, the list and the numbering format to put the values into
+	// typed fields instead of an empty node. The ancestry travels so that the
+	// class lands in the right place in the tree; the subclasses the sender
+	// happens to have below it do not, because a part package carries one
+	// class - the one of its part. What it does not declare is the commercial
+	// field: the same keys the values leave behind.
+	if (part.class_id != 0)
+	{
+		QDomElement classes = CatalogClassPackage::toXml(document, catalog,
+								part.class_id, false);
+			//The same rule as the values, applied to the fields.
+		stripExcludedProperties(classes);
+		root.appendChild(classes);
+	}
 
 	// The values, minus what a package must not carry. Written from the
 	// effective values so that a field the part never had filled travels with
@@ -302,4 +365,102 @@ CatalogPart CatalogPackage::read(const QString &file_path,
 	}
 
 	return part;
+}
+
+/**
+	@brief The class block of a part package, or a null element when there is
+	none.
+	@param file_path
+	@param document : must outlive the element it returns
+	@param error : set when the file is not a package at all
+	Apart because classPlan() and applyClass() both need it, and because a
+	package written before CU-14.11 has no such block: telling "no declaration"
+	from "a declaration that changes nothing" is what lets the caller say the
+	right thing instead of the same thing twice.
+*/
+static QDomElement classBlockOf(const QString &file_path,
+				QDomDocument &document,
+				QString *error)
+{
+	QFile file(file_path);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		if (error) {
+			*error = QCoreApplication::translate("CatalogPackage",
+							     "Impossible de lire %1.").arg(file_path);
+		}
+		return QDomElement();
+	}
+
+	if (!document.setContent(&file))
+	{
+		if (error) {
+			*error = QCoreApplication::translate("CatalogPackage",
+							     "%1 n'est pas un paquet de pièce.").arg(file_path);
+		}
+		return QDomElement();
+	}
+
+	const QDomElement root = document.documentElement();
+	if (root.tagName() != QStringLiteral("qet-catalog-part"))
+	{
+		if (error) {
+			*error = QCoreApplication::translate("CatalogPackage",
+							     "%1 n'est pas un paquet de pièce.").arg(file_path);
+		}
+		return QDomElement();
+	}
+
+	return root.firstChildElement(CatalogClassPackage::blockTagName());
+}
+
+/**
+	@brief CatalogPackage::classPlan
+	@param file_path
+	@param catalog
+	@param report
+	@param error
+	@return true when the package declares its class
+*/
+bool CatalogPackage::classPlan(const QString &file_path,
+			       const Catalog &catalog,
+			       CatalogClassPackage::Report *report,
+			       QString *error)
+{
+	QDomDocument document;
+	const QDomElement block = classBlockOf(file_path, document, error);
+	if (block.isNull()) {
+		return false;
+	}
+	if (report) {
+		*report = CatalogClassPackage::plan(block, catalog);
+	}
+	return true;
+}
+
+/**
+	@brief CatalogPackage::applyClass
+	@param file_path
+	@param catalog
+	@param report
+	@param error
+	@return true when the declaration was applied
+*/
+bool CatalogPackage::applyClass(const QString &file_path,
+				Catalog &catalog,
+				CatalogClassPackage::Report *report,
+				QString *error)
+{
+	QDomDocument document;
+	const QDomElement block = classBlockOf(file_path, document, error);
+	if (block.isNull())
+	{
+		if (error && error->isEmpty())
+		{
+			*error = QCoreApplication::translate("CatalogPackage",
+							     "Ce paquet ne déclare pas sa classe.");
+		}
+		return false;
+	}
+	return CatalogClassPackage::applyXml(block, catalog, report, error);
 }

@@ -18,6 +18,7 @@
 #include "catalogrepositorydialog.h"
 
 #include "../catalog.h"
+#include "../catalogclasspackage.h"
 #include "../catalogpackage.h"
 #include "catalogbrowserdialog.h"
 
@@ -379,32 +380,73 @@ void CatalogRepositoryDialog::importSelected()
 
 	if (part.class_id == 0)
 	{
-		// The class of the package does not exist here. Offering to create it
-		// beats refusing the part, and beats guessing which class it should go
-		// into.
+		// The class of the package does not exist here. What can be offered
+		// depends on what the package carries: one written with the class
+		// declared puts it back with its typed properties, in the right place
+		// in the tree; one that only names its class leaves nothing to make but
+		// an empty node under Composant, and the question says so.
 		const QString class_key = m_selected.class_key.isEmpty()
 					  ? m_selected.class_name
 					  : m_selected.class_key;
-		if (QMessageBox::question(this, tr("Classe absente"),
-					  tr("La classe « %1 » n'existe pas dans ce catalogue.\n\n"
-					     "La créer maintenant, sous « Composant » ?")
-						  .arg(class_key))
+		CatalogClassPackage::Report plan;
+		const bool declared = CatalogPackage::classPlan(m_selected.file_path,
+							       *m_catalog, &plan);
+
+		// What is going to be created is said before the question and not after:
+		// a dialog that announces one class and creates three is worse than no
+		// dialog at all.
+		const QString question =
+			declared
+			? tr("La classe « %1 » n'existe pas dans ce catalogue.\n\n"
+			     "Le paquet la déclare. Ceci va créer :\n\n%2\n\n"
+			     "Ce qui existe déjà ici n'est pas modifié. Continuer ?")
+			  .arg(class_key, plan.toText())
+			: tr("La classe « %1 » n'existe pas dans ce catalogue.\n\n"
+			     "Ce paquet ne la déclare pas : elle serait créée vide sous "
+			     "« Composant », et les valeurs de la pièce y arriveraient "
+			     "comme du texte libre. Continuer ?")
+			  .arg(class_key);
+		if (QMessageBox::question(this, tr("Classe absente"), question)
 		    != QMessageBox::Yes)
 		{
 			return;
 		}
 
-		CatalogClass created(m_selected.class_key,
-				     m_selected.class_name.isEmpty() ? m_selected.class_key
-								     : m_selected.class_name);
-		created.parent_id = m_catalog->classByKey(QStringLiteral("component")).id;
-		const int class_id = m_catalog->addClass(created, &error);
-		if (class_id == 0)
+		if (declared)
 		{
-			QMessageBox::warning(this, tr("Classe non créée"), error);
-			return;
+			CatalogClassPackage::Report done;
+			if (!CatalogPackage::applyClass(m_selected.file_path, *m_catalog,
+							&done, &error))
+			{
+				QMessageBox::warning(this, tr("Classe non créée"), error);
+				return;
+			}
+			part.class_id = m_catalog->classByKey(
+						CatalogPackage::classKeyOf(m_selected.file_path)).id;
+			if (!done.refused.isEmpty())
+			{
+					//What the file asked for and did not get. It has to be
+					//seen: a property kept with the type it already had here
+					//reinterprets every value that arrives in it.
+				QMessageBox::information(this, tr("Classe créée en partie"),
+							 done.toText());
+			}
 		}
-		part.class_id = class_id;
+
+		if (part.class_id == 0)
+		{
+			CatalogClass created(m_selected.class_key,
+					     m_selected.class_name.isEmpty() ? m_selected.class_key
+									     : m_selected.class_name);
+			created.parent_id = m_catalog->classByKey(QStringLiteral("component")).id;
+			const int class_id = m_catalog->addClass(created, &error);
+			if (class_id == 0)
+			{
+				QMessageBox::warning(this, tr("Classe non créée"), error);
+				return;
+			}
+			part.class_id = class_id;
+		}
 	}
 
 	// A part already here is not silently replaced: same three answers as the

@@ -68,6 +68,8 @@ set(QET_RES_FILES
   ${QET_DIR}/sources/NameList/ui/namelistwidget.ui
   ${QET_DIR}/sources/print/projectprintwindow.ui
   ${QET_DIR}/sources/PropertiesEditor/propertieseditordockwidget.ui
+  ${QET_DIR}/sources/qetgraphicsitem/ViewItem/ui/graphicstablepropertieseditor.ui
+  ${QET_DIR}/sources/qetgraphicsitem/ViewItem/ui/projectdbmodelpropertieswidget.ui
   ${QET_DIR}/sources/richtext/addlinkdialog.ui
   ${QET_DIR}/sources/SearchAndReplace/ui/replaceadvanceddialog.ui
   ${QET_DIR}/sources/SearchAndReplace/ui/replaceconductordialog.ui
@@ -101,6 +103,7 @@ set(QET_RES_FILES
   ${QET_DIR}/sources/ui/imagepropertieswidget.ui
   ${QET_DIR}/sources/ui/importelementdialog.ui
   ${QET_DIR}/sources/ui/importelementtextpatterndialog.ui
+  ${QET_DIR}/sources/ui/inditextpropertieswidget.ui
   ${QET_DIR}/sources/ui/linksingleelementwidget.ui
   ${QET_DIR}/sources/ui/marginseditdialog.ui
   ${QET_DIR}/sources/ui/masterpropertieswidget.ui

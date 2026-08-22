@@ -483,6 +483,172 @@ TEST_CASE("CU-14.5 — un paquet dont la classe manque ici est lu, pas jeté")
 	CHECK_FALSE(error.isEmpty());
 }
 
+TEST_CASE("CU-14.11 — o pacote leva a classe declarada, e ela nasce tipada do outro lado",
+	  "[catalog]")
+{
+	ImportFixture fixture;
+	QTemporaryDir directory;
+	REQUIRE(directory.isValid());
+	QString error;
+
+	// A breaker class declared the way the office declares one: a measure with
+	// its unit, a mandatory controlled list, and a count.
+	REQUIRE(fixture.catalog.setListValues(QStringLiteral("curva_disjuntor"),
+					      QStringList({ QStringLiteral("B"),
+							    QStringLiteral("C"),
+							    QStringLiteral("D") }), &error));
+
+	CatalogProperty current(QStringLiteral("corrente"), QStringLiteral("Corrente"),
+				CatalogPropertyType::Measure);
+	current.class_id = fixture.breaker_id;
+	current.unit = QStringLiteral("A");
+	current.default_value = QStringLiteral("0");
+	REQUIRE(fixture.catalog.addProperty(current, &error) > 0);
+
+	CatalogProperty curve(QStringLiteral("curva"), QStringLiteral("Curva"),
+			      CatalogPropertyType::Text);
+	curve.class_id = fixture.breaker_id;
+	curve.list_name = QStringLiteral("curva_disjuntor");
+	curve.list_behaviour = CatalogListBehaviour::Mandatory;
+	REQUIRE(fixture.catalog.addProperty(curve, &error) > 0);
+
+	CatalogProperty poles(QStringLiteral("polos"), QStringLiteral("Polos"),
+			      CatalogPropertyType::Integer);
+	poles.class_id = fixture.breaker_id;
+	REQUIRE(fixture.catalog.addProperty(poles, &error) > 0);
+
+	// A subclass the sender happens to have below the class. It must not
+	// travel: a package carries the class of its part, not the tree of
+	// whoever exported it.
+	CatalogClass motor(QStringLiteral("breaker_motor"), QStringLiteral("Disjuntor motor"));
+	motor.parent_id = fixture.breaker_id;
+	REQUIRE(fixture.catalog.addClass(motor, &error) > 0);
+
+	CatalogPart part(QStringLiteral("DISJ-3P-25A"), fixture.breaker_id);
+	part.setValue(QStringLiteral("designation"), QStringLiteral("Disjuntor 25 A"));
+	part.setValue(QStringLiteral("corrente"), QStringLiteral("25"));
+	part.setValue(QStringLiteral("curva"), QStringLiteral("C"));
+	part.setValue(QStringLiteral("polos"), QStringLiteral("3"));
+	REQUIRE(fixture.catalog.savePart(part, &error));
+
+	const QString file = directory.filePath(QStringLiteral("disjuntor.qetpart"));
+	REQUIRE(CatalogPackage::write(file, fixture.catalog, part, &error));
+
+	QFile written(file);
+	REQUIRE(written.open(QIODevice::ReadOnly | QIODevice::Text));
+	const QString content = QString::fromUtf8(written.readAll());
+	written.close();
+
+	// What is in the file: the declaration of the class, its ancestry, and
+	// neither the subclass nor the commercial field. The price does not
+	// travel, and neither does the column that would hold one.
+	CHECK(content.contains(QStringLiteral("<qet-catalog-classes")));
+	CHECK(content.contains(QStringLiteral("key=\"breaker\"")));
+	CHECK(content.contains(QStringLiteral("unit=\"A\"")));
+	CHECK_FALSE(content.contains(QStringLiteral("breaker_motor")));
+	CHECK_FALSE(content.contains(QStringLiteral("preco")));
+	CHECK_FALSE(content.contains(QStringLiteral("Preço")));
+
+	// The receiver: the same tree with the breaker class taken out, so that
+	// the class really is missing and not merely named otherwise.
+	const QString class_name = fixture.catalog.classById(fixture.breaker_id).name;
+	Catalog target;
+	REQUIRE(target.openInMemory(&error));
+	REQUIRE(target.removeClass(target.classByKey(QStringLiteral("breaker")).id, &error));
+	REQUIRE(target.classByKey(QStringLiteral("breaker")).isNull());
+
+	// Reading the package still creates nothing by itself, and still says
+	// which class is missing.
+	CatalogPart arrived = CatalogPackage::read(file, target, &error);
+	REQUIRE_FALSE(arrived.isNull());
+	CHECK(arrived.class_id == 0);
+	CHECK(error.contains(QStringLiteral("breaker")));
+	CHECK(target.classByKey(QStringLiteral("breaker")).isNull());
+
+	// What the dialog says before asking, said without writing anything.
+	CatalogClassPackage::Report plan;
+	error.clear();
+	REQUIRE(CatalogPackage::classPlan(file, target, &plan, &error));
+	CHECK(plan.classes_created == 1);
+	CHECK(plan.classes_found == 2);
+	CHECK(plan.properties_created == 3);
+	CHECK(plan.lists_created == 1);
+	CHECK(plan.missing_classes == QStringList({ class_name }));
+	CHECK(target.classByKey(QStringLiteral("breaker")).isNull());
+
+	// The "yes": what was declared is created, where it belongs.
+	CatalogClassPackage::Report done;
+	REQUIRE(CatalogPackage::applyClass(file, target, &done, &error));
+	CHECK(done.refused.isEmpty());
+	CHECK(done.classes_created == 1);
+
+	const CatalogClass created = target.classByKey(QStringLiteral("breaker"));
+	REQUIRE_FALSE(created.isNull());
+	CHECK(created.parent_id == target.classByKey(QStringLiteral("component")).id);
+	CHECK(created.root == QStringLiteral("Q"));
+	CHECK(created.name == class_name);
+	CHECK(target.classByKey(QStringLiteral("breaker_motor")).isNull());
+
+	// Typed fields, not an empty class: the unit, the list and the count are
+	// the difference between a value and a piece of loose text.
+	const CatalogProperty typed = target.effectiveProperty(created.id,
+							       QStringLiteral("corrente"));
+	REQUIRE_FALSE(typed.isNull());
+	CHECK(typed.type == CatalogPropertyType::Measure);
+	CHECK(typed.unit == QStringLiteral("A"));
+	CHECK(typed.default_value == QStringLiteral("0"));
+
+	const CatalogProperty listed = target.effectiveProperty(created.id,
+							       QStringLiteral("curva"));
+	REQUIRE_FALSE(listed.isNull());
+	CHECK(listed.list_name == QStringLiteral("curva_disjuntor"));
+	CHECK(listed.list_behaviour == CatalogListBehaviour::Mandatory);
+	CHECK(target.listValues(QStringLiteral("curva_disjuntor"))
+	      == QStringList({ QStringLiteral("B"), QStringLiteral("C"),
+			       QStringLiteral("D") }));
+
+	CHECK(target.effectiveProperty(created.id, QStringLiteral("polos")).type
+	      == CatalogPropertyType::Integer);
+
+	// And the commercial field of the sender did not come along with the class.
+	CHECK(target.effectiveProperty(created.id, QStringLiteral("preco")).isNull());
+
+	// Now the same file resolves, and the values of the part land in those
+	// fields instead of under an empty node.
+	error.clear();
+	arrived = CatalogPackage::read(file, target, &error);
+	CHECK(error.isEmpty());
+	REQUIRE(arrived.class_id == created.id);
+	REQUIRE(target.savePart(arrived, &error));
+
+	const CatalogPart saved = target.partByCode(QStringLiteral("DISJ-3P-25A"));
+	REQUIRE_FALSE(saved.isNull());
+	CHECK(saved.class_id == created.id);
+	CHECK(saved.value(QStringLiteral("corrente")) == QStringLiteral("25"));
+	CHECK(saved.value(QStringLiteral("curva")) == QStringLiteral("C"));
+	CHECK(saved.value(QStringLiteral("polos")) == QStringLiteral("3"));
+
+	// Importing the same package twice changes nothing the second time.
+	CatalogClassPackage::Report again;
+	REQUIRE(CatalogPackage::classPlan(file, target, &again, &error));
+	CHECK(again.changesNothing());
+
+	// A package written before this existed names its class and declares
+	// nothing. That is not an error: it is the answer the dialog needs to
+	// offer the empty class instead of promising a declaration.
+	const QString old_package = directory.filePath(QStringLiteral("antigo.qetpart"));
+	writeText(old_package, QStringLiteral(
+			  "<qet-catalog-part version=\"1\" code=\"XYZ-2\" "
+			  "class-key=\"classe_que_nao_existe\" class-name=\"Coisa\">\n"
+			  " <property key=\"designation\">Peça antiga</property>\n"
+			  "</qet-catalog-part>\n"));
+	error.clear();
+	CHECK_FALSE(CatalogPackage::classPlan(old_package, target, nullptr, &error));
+	CHECK(error.isEmpty());
+	CHECK_FALSE(CatalogPackage::applyClass(old_package, target, nullptr, &error));
+	CHECK_FALSE(error.isEmpty());
+}
+
 TEST_CASE("CU-14.1 — le catalogue ressort en planilha, et le rond-point se referme")
 {
 	ImportFixture fixture;

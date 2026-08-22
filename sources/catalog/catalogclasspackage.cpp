@@ -589,7 +589,8 @@ QString CatalogClassPackage::suggestedFileName(const QString &class_name)
 */
 QDomElement CatalogClassPackage::toXml(QDomDocument &document,
 				       const Catalog &catalog,
-				       int class_id)
+				       int class_id,
+				       bool include_descendants)
 {
 	QDomElement root = document.createElement(blockTagName());
 	root.setAttribute(QStringLiteral("version"), QStringLiteral("1"));
@@ -603,14 +604,19 @@ QDomElement CatalogClassPackage::toXml(QDomDocument &document,
 			  QDateTime::currentDateTime().toString(Qt::ISODate));
 
 		//The ancestry first, so that the branch can be put back where it
-		//was, then the branch itself. descendantClassIds() walks breadth
-		//first, which is what keeps a parent ahead of its children.
+		//was, then the branch itself. classAncestry() ends on the class that
+		//was asked for, which is why that one is written even when nothing
+		//below it is. descendantClassIds() walks breadth first, which is what
+		//keeps a parent ahead of its children.
 	QList<int> ids = catalog.classAncestry(class_id);
-	const QList<int> below = catalog.descendantClassIds(class_id);
-	for (const int id : below)
+	if (include_descendants)
 	{
-		if (!ids.contains(id)) {
-			ids.append(id);
+		const QList<int> below = catalog.descendantClassIds(class_id);
+		for (const int id : below)
+		{
+			if (!ids.contains(id)) {
+				ids.append(id);
+			}
 		}
 	}
 
