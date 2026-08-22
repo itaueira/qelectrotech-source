@@ -28,6 +28,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QGuiApplication>
+#include <QHash>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QInputDialog>
@@ -35,6 +36,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSet>
 #include <QSplitter>
 #include <QTableWidget>
 #include <QTextBrowser>
@@ -220,10 +222,13 @@ void CatalogImportDialog::buildWidgets()
 	connect(m_class, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &CatalogImportDialog::classChanged);
 	connect(m_guess, &QPushButton::clicked, this, &CatalogImportDialog::guessMapping);
-	// Changing which column carries the code or the class changes what is left
-	// over, so the answer has to follow the hand that is moving.
+	// Changing which column carries the class changes which properties may be
+	// mapped at all - not just what is left over - because the sheet then
+	// declares classes of its own. (CU-14.14)
 	connect(m_class_column, QOverload<int>::of(&QComboBox::currentIndexChanged),
-		this, [this]() { reloadLeftoverColumns(); });
+		this, [this]() { reloadMappingTable(); });
+	// The code column only changes what is left over, so the answer has to
+	// follow the hand that is moving.
 	connect(m_code_column, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, [this]() { reloadLeftoverColumns(); });
 	connect(m_save_profile, &QPushButton::clicked, this, &CatalogImportDialog::saveProfile);
@@ -316,34 +321,82 @@ void CatalogImportDialog::reloadPreview()
 
 /**
 	@brief CatalogImportDialog::reloadMappingTable
-	One row per property of the destination class, so that what can be mapped
-	is what the class actually declares - and adding a property to a class
-	makes it appear here without anybody touching this file.
+	One row per property that may be mapped, so that what can be mapped is
+	what some class actually declares - and adding a property to a class makes
+	it appear here without anybody touching this file.
+
+	Which classes those are depends on the class column: when the sheet carries
+	its own class, a property of any class the sheet names may be mapped, since
+	the rows that get it are the rows of that class. Without that the technical
+	columns of every class but the destination one have nowhere to go - measured
+	on the real project, 12 of its 14 typed columns. (CU-14.14)
 */
 void CatalogImportDialog::reloadMappingTable()
 {
+	// What was already chosen, by property key, so that rebuilding the table
+	// does not quietly undo a mapping somebody typed by hand.
+	QHash<QString, QString> chosen;
+	for (int row = 0 ; row < m_mapping->rowCount() ; ++row)
+	{
+		const QTableWidgetItem *name = m_mapping->item(row, 0);
+		auto *column = qobject_cast<QComboBox *>(m_mapping->cellWidget(row, 1));
+		if (name && column && !column->currentData().toString().isEmpty()) {
+			chosen.insert(name->data(PROPERTY_KEY_ROLE).toString(),
+				      column->currentData().toString());
+		}
+	}
+
 	m_mapping->setRowCount(0);
 	if (!m_catalog) {
 		return;
 	}
 
 	const CatalogClass destination = m_catalog->classByKey(m_class->currentData().toString());
+	const QString class_column = m_class_column->currentData().toString();
 	const QList<CatalogProperty> properties =
-		m_catalog->effectiveProperties(destination.id);
+		CatalogImportProfile::mappableProperties(*m_catalog, destination.id,
+							m_table, class_column);
+
+	// The keys the destination class itself answers for. A property outside
+	// that set only applies to part of the file, and the person mapping it has
+	// to be told so - naming the class in the row is the cheapest way, and it
+	// keeps the ordinary single class import as plain as it was.
+	QSet<QString> own_keys;
+	const QList<CatalogProperty> own = m_catalog->effectiveProperties(destination.id);
+	for (const CatalogProperty &property : own) {
+		own_keys.insert(property.key);
+	}
+
 	m_mapping->setRowCount(properties.size());
 
 	for (int row = 0 ; row < properties.size() ; ++row)
 	{
 		const CatalogProperty &property = properties.at(row);
-		QTableWidgetItem *name = new QTableWidgetItem(property.name);
+		const bool foreign = !own_keys.contains(property.key);
+		const QString declaring = foreign
+					  ? m_catalog->classById(property.class_id).name
+					  : QString();
+
+		QTableWidgetItem *name = new QTableWidgetItem(
+			foreign ? tr("%1 (%2)", "property name, then the class declaring it")
+				  .arg(property.name, declaring)
+				: property.name);
 		name->setData(PROPERTY_KEY_ROLE, property.key);
-		name->setToolTip(property.key);
+		name->setToolTip(foreign
+				 ? tr("%1 — déclarée par la classe « %2 », donc appliquée aux "
+				      "seules lignes de cette classe")
+				   .arg(property.key, declaring)
+				 : property.key);
 		m_mapping->setItem(row, 0, name);
 
 		QComboBox *column = new QComboBox(m_mapping);
 		column->addItem(tr("(ne pas importer)"), QString());
 		for (const QString &header : m_table.headers) {
 			column->addItem(header, header);
+		}
+		const int previous = column->findData(chosen.value(property.key));
+		if (previous >= 0) {
+			column->setCurrentIndex(previous);
 		}
 		connect(column, QOverload<int>::of(&QComboBox::currentIndexChanged),
 			this, [this]() { reloadLeftoverColumns(); });

@@ -19,6 +19,7 @@
 #define CATALOGIMPORT_H
 
 #include "catalogtable.h"
+#include "catalogproperty.h"
 
 #include <QHash>
 #include <QList>
@@ -83,6 +84,42 @@ class CatalogImportProfile
 		static CatalogImportProfile guess(const Catalog &catalog,
 						  int class_id,
 						  const CatalogTable &table);
+
+		/**
+			@param catalog
+			@param table
+			@return the header of the column of @a table that carries a
+			class name, empty when no column does.
+
+			Content decides, not the header: a column is taken for the
+			class column only when every one of its cells names a class
+			the catalog has. So guessing can never turn a row into a
+			rejection - the reason the test for it is worth having.
+			(CU-14.14)
+		*/
+		static QString guessClassColumn(const Catalog &catalog,
+						const CatalogTable &table);
+
+		/**
+			@param catalog
+			@param class_id : the destination class
+			@param table
+			@param class_column : the header carrying the class, if any
+			@return the properties a mapping may target, deduped by key,
+			the destination class first and then each class the column
+			names, in the order the file names them.
+
+			The destination class alone is not the answer when the sheet
+			carries its own class: a property declared on a subclass is
+			not inherited upwards, so mapping only what the destination
+			declares leaves the technical columns of every sibling class
+			with nowhere to go. Measured on the real project: 12 of the 14
+			typed columns. (CU-14.14)
+		*/
+		static QList<CatalogProperty> mappableProperties(const Catalog &catalog,
+								 int class_id,
+								 const CatalogTable &table,
+								 const QString &class_column);
 
 		/**
 			@param table

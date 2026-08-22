@@ -27,6 +27,39 @@
 #include <QDomElement>
 #include <QSet>
 
+/**
+	@brief resolveClassNamed
+	@param catalog
+	@param name : what a cell of the class column says
+	@return the class of that name, null when the catalog has none
+
+	By stable key first, then by visible name, case insensitively: a sheet
+	written by hand carries the name a person reads, one exported from here
+	carries the key. Shared by the guess and by the import so that the two
+	can never disagree about what a class name means - if they could, the
+	dialog would offer a mapping the import then refuses. (CU-14.14)
+*/
+static CatalogClass resolveClassNamed(const Catalog &catalog, const QString &name)
+{
+	if (name.trimmed().isEmpty()) {
+		return CatalogClass();
+	}
+
+	const CatalogClass by_key = catalog.classByKey(name);
+	if (!by_key.isNull()) {
+		return by_key;
+	}
+
+	const QList<CatalogClass> classes = catalog.classes();
+	for (const CatalogClass &candidate : classes)
+	{
+		if (candidate.name.compare(name, Qt::CaseInsensitive) == 0) {
+			return candidate;
+		}
+	}
+	return CatalogClass();
+}
+
 // -----------------------------------------------------------------------------
 // CatalogImportProfile
 // -----------------------------------------------------------------------------
@@ -182,6 +215,96 @@ CatalogImportProfile CatalogImportProfile::fromXml(const QString &xml)
 }
 
 /**
+	@brief CatalogImportProfile::guessClassColumn
+	@param catalog
+	@param table
+	@return the header of the column carrying a class name, empty when none
+*/
+QString CatalogImportProfile::guessClassColumn(const Catalog &catalog,
+					       const CatalogTable &table)
+{
+	for (int column = 0 ; column < table.headers.size() ; ++column)
+	{
+		const QString header = table.headers.at(column);
+		if (header.trimmed().isEmpty()) {
+			continue;
+		}
+
+		// Every cell has to name a class. Anything less and the guess would
+		// be proposing rejections, which is worse than proposing nothing: the
+		// person asked for help filling a form, not for rows to be thrown
+		// away.
+		bool all_resolve = table.rowCount() > 0;
+		for (int row = 0 ; row < table.rowCount() ; ++row)
+		{
+			// An empty cell is refused by the import just like an unknown
+			// name is, so an empty cell disqualifies the column too.
+			if (resolveClassNamed(catalog, table.value(row, header)).isNull())
+			{
+				all_resolve = false;
+				break;
+			}
+		}
+
+		if (all_resolve) {
+			return header;
+		}
+	}
+	return QString();
+}
+
+/**
+	@brief CatalogImportProfile::mappableProperties
+	@param catalog
+	@param class_id
+	@param table
+	@param class_column
+	@return the properties a mapping may target, deduped by key
+*/
+QList<CatalogProperty> CatalogImportProfile::mappableProperties(const Catalog &catalog,
+								int class_id,
+								const CatalogTable &table,
+								const QString &class_column)
+{
+	QList<CatalogProperty> properties = catalog.effectiveProperties(class_id);
+	if (class_column.trimmed().isEmpty()) {
+		return properties;
+	}
+
+	QSet<QString> keys;
+	for (const CatalogProperty &property : std::as_const(properties)) {
+		keys.insert(property.key);
+	}
+
+	// The order is the order of the file, so that reading the mapping table
+	// next to the spreadsheet is reading the same thing twice.
+	QSet<int> seen_classes;
+	for (int row = 0 ; row < table.rowCount() ; ++row)
+	{
+		const CatalogClass declared =
+			resolveClassNamed(catalog, table.value(row, class_column));
+		if (declared.isNull() || seen_classes.contains(declared.id)) {
+			continue;
+		}
+		seen_classes.insert(declared.id);
+
+		const QList<CatalogProperty> declared_properties =
+			catalog.effectiveProperties(declared.id);
+		for (const CatalogProperty &property : declared_properties)
+		{
+			// Same key on two sibling classes is the same field: the file
+			// has one column for it, so the table gets one row for it.
+			if (keys.contains(property.key)) {
+				continue;
+			}
+			keys.insert(property.key);
+			properties << property;
+		}
+	}
+	return properties;
+}
+
+/**
 	@brief CatalogImportProfile::guess
 	@param catalog
 	@param class_id
@@ -195,7 +318,12 @@ CatalogImportProfile CatalogImportProfile::guess(const Catalog &catalog,
 	CatalogImportProfile profile;
 	profile.class_key = catalog.classById(class_id).key;
 
-	const QList<CatalogProperty> properties = catalog.effectiveProperties(class_id);
+	// Found before the properties are, because it is what decides which
+	// properties may be mapped at all. (CU-14.14)
+	profile.class_column = guessClassColumn(catalog, table);
+
+	const QList<CatalogProperty> properties =
+		mappableProperties(catalog, class_id, table, profile.class_column);
 	for (const CatalogProperty &property : properties)
 	{
 		// The header may be the user visible name or the technical key: a
@@ -205,7 +333,7 @@ CatalogImportProfile CatalogImportProfile::guess(const Catalog &catalog,
 		if (column < 0) {
 			column = table.columnIndex(property.key);
 		}
-		if (column >= 0) {
+		if (column >= 0 && table.headers.at(column) != profile.class_column) {
 			profile.value_columns.insert(property.key, table.headers.at(column));
 		}
 	}
@@ -482,20 +610,7 @@ CatalogImportReport CatalogImporter::import(Catalog &catalog,
 		if (!profile.class_column.isEmpty())
 		{
 			const QString class_name = table.value(row, profile.class_column);
-			CatalogClass found = catalog.classByKey(class_name);
-			if (found.isNull())
-			{
-				// The column may carry the visible name rather than the key.
-				const QList<CatalogClass> classes = catalog.classes();
-				for (const CatalogClass &candidate : classes)
-				{
-					if (candidate.name.compare(class_name, Qt::CaseInsensitive) == 0)
-					{
-						found = candidate;
-						break;
-					}
-				}
-			}
+			const CatalogClass found = resolveClassNamed(catalog, class_name);
 			if (found.isNull())
 			{
 				CatalogImportReport::Rejection rejection;

@@ -25,6 +25,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QSet>
 #include <QTemporaryDir>
 #include <QTextStream>
 
@@ -1247,5 +1248,188 @@ TEST_CASE("CU-14.1 — as peças do projeto real entram, e o arquivo entregue é
 		CHECK(again.created == 0);
 		CHECK(again.updated == 11);
 		CHECK(catalog.parts(0).size() == 11);
+	}
+}
+
+TEST_CASE("CU-14.14 — a planilha do projeto real é inteiramente mapeável pelo diálogo",
+	  "[catalog][dados-reais]")
+{
+	// The CU-14.1 test proves the eleven parts import with their typed values,
+	// but it builds the mapping in code: nineteen columns assigned by hand. This
+	// one asks the question the person in front of the dialog asks - can the
+	// program itself get there - and it asks it of the file that ships.
+	//
+	// Measured on 22/08/2026, the answer was no: the mapping table offered one
+	// row per property of the destination class, and twelve of the fourteen
+	// typed columns are declared on sibling classes, which are not inherited
+	// upwards. Naming them as leftovers (CU-14.12) is honest, but naming a
+	// column is not importing it.
+	const QString path = QStringLiteral(QET_TEST_DATA_DIR) +
+			     QStringLiteral("/pecas-do-projeto.csv");
+	QFile file(path);
+	REQUIRE(file.open(QIODevice::ReadOnly));
+	const CatalogTable table =
+		CatalogTableReader::parseCsv(QString::fromUtf8(file.readAll()));
+	file.close();
+	REQUIRE(table.headers.size() == 19);
+	REQUIRE(table.rowCount() == 11);
+
+	Catalog catalog;
+	QString error;
+	REQUIRE(catalog.openInMemory(&error));
+	REQUIRE(CatalogClassPackage::read(QStringLiteral(QET_TEST_DATA_DIR) +
+					 QStringLiteral("/classes-acme.qetclasses"),
+					 catalog, nullptr, &error));
+
+	const int component_id = catalog.classByKey(QStringLiteral("component")).id;
+	REQUIRE(component_id > 0);
+
+	SECTION("a coluna de classe é reconhecida pelo que tem dentro")
+	{
+		CHECK(CatalogImportProfile::guessClassColumn(catalog, table)
+		      == QStringLiteral("classe"));
+	}
+
+	SECTION("uma coluna que não nomeia classe nenhuma não é adotada")
+	{
+			//The promise is that guessing never creates a rejection, so a
+			//column has to resolve entirely to be taken for the class - and a
+			//column of part codes resolves to nothing at all.
+		CatalogTable other;
+		other.headers << QStringLiteral("codigo") << QStringLiteral("classe");
+		other.rows << (QStringList() << QStringLiteral("3RT-1016")
+					     << QStringLiteral("linha de montagem"));
+		CHECK(CatalogImportProfile::guessClassColumn(catalog, other).isEmpty());
+
+			//Nor is a column adopted when only some of it resolves: the empty
+			//cell would be refused row by row at import time.
+		CatalogTable half;
+		half.headers << QStringLiteral("codigo") << QStringLiteral("classe");
+		half.rows << (QStringList() << QStringLiteral("3RT-1016")
+					    << QStringLiteral("contactor"));
+		half.rows << (QStringList() << QStringLiteral("750-670") << QString());
+		CHECK(CatalogImportProfile::guessClassColumn(catalog, half).isEmpty());
+	}
+
+	SECTION("sem coluna de classe nada muda: a classe de destino é a resposta")
+	{
+			//The single class import is the common case and it has to stay
+			//exactly as plain as it was.
+		const QList<CatalogProperty> without =
+			CatalogImportProfile::mappableProperties(catalog, component_id,
+								 table, QString());
+		CHECK(without.size() == catalog.effectiveProperties(component_id).size());
+	}
+
+	SECTION("com coluna de classe, as catorze chaves técnicas podem ser mapeadas")
+	{
+		const QList<CatalogProperty> mappable =
+			CatalogImportProfile::mappableProperties(catalog, component_id, table,
+								 QStringLiteral("classe"));
+		QStringList keys;
+		for (const CatalogProperty &property : mappable) {
+			keys << property.key;
+		}
+
+			//The same fourteen the CU-14.1 profile assigns by hand. Listed one
+			//by one on purpose: a count would pass while the wrong fourteen
+			//were offered.
+		const QStringList typed = { QStringLiteral("tensao_entrada"),
+					    QStringLiteral("tensao_saida"),
+					    QStringLiteral("corrente_saida"),
+					    QStringLiteral("tensao_alimentacao"),
+					    QStringLiteral("fases"),
+					    QStringLiteral("frenagem"),
+					    QStringLiteral("filtro_emc"),
+					    QStringLiteral("grandeza_monitorada"),
+					    QStringLiteral("tipo_sensor"),
+					    QStringLiteral("interface"),
+					    QStringLiteral("acionamento"),
+					    QStringLiteral("contatos_na"),
+					    QStringLiteral("contatos_nf"),
+					    QStringLiteral("trava") };
+		for (const QString &key : typed)
+		{
+			INFO("chave técnica: " << key.toStdString());
+			CHECK(keys.contains(key));
+		}
+
+			//"interface" is declared on the PLC class, which the file never
+			//names - it names the module. Ancestry is what carries it, and
+			//that is the half of the rule this asserts.
+		CHECK(catalog.classById(
+			      catalog.effectiveProperty(
+				      catalog.classByKey(QStringLiteral("plc_module")).id,
+				      QStringLiteral("interface")).class_id).key
+		      == QStringLiteral("plc"));
+
+			//One row per key and no more: the same key declared on two sibling
+			//classes is one column in the file, so it is one row on screen.
+		QSet<QString> unique;
+		for (const QString &key : std::as_const(keys)) {
+			unique.insert(key);
+		}
+		CHECK(unique.size() == keys.size());
+	}
+
+	SECTION("o palpite lê a planilha inteira, e o que ele monta importa")
+	{
+		const CatalogImportProfile guessed =
+			CatalogImportProfile::guess(catalog, component_id, table);
+		CHECK(guessed.class_column == QStringLiteral("classe"));
+		CHECK(guessed.code_column == QStringLiteral("codigo"));
+
+			//Nothing left over. Nineteen columns: the code, the class, and the
+			//seventeen the classes declare. This is the assertion the whole
+			//use case is about - what the dialog offers is now the whole file.
+		const QStringList leftover = guessed.unmappedColumns(table);
+		for (const QString &header : leftover) {
+			WARN(QString("coluna sem destino: %1").arg(header).toStdString());
+		}
+		CHECK(leftover.isEmpty());
+
+			//And the class column is not also read as a value: it says which
+			//class, it is not a field of the part.
+		CHECK_FALSE(guessed.value_columns.values().contains(QStringLiteral("classe")));
+
+			//The profile the program guessed, imported as it stands. No hand
+			//written mapping anywhere in this section.
+		const CatalogImportReport report = CatalogImporter::import(
+					catalog, table, guessed,
+					QStringLiteral("projeto CT1-QCM"));
+		for (const CatalogImportReport::Rejection &rejection : report.rejections) {
+			WARN(QString("linha %1 (%2): %3").arg(rejection.row)
+			     .arg(rejection.code, rejection.reason).toStdString());
+		}
+		CHECK(report.rejected() == 0);
+		CHECK(report.created == 11);
+
+			//The values that were captions in the project are typed fields
+			//here, reached through the guess and not through a profile written
+			//for the occasion.
+		const CatalogPart relay = catalog.partByCode(QStringLiteral("RPW-PTCE05"));
+		REQUIRE_FALSE(relay.isNull());
+		CHECK(relay.class_id == catalog.classByKey(QStringLiteral("monitoring_relay")).id);
+		CHECK(relay.values.value(QStringLiteral("tensao_alimentacao"))
+		      == QStringLiteral("220"));
+		CHECK(relay.values.value(QStringLiteral("tipo_sensor"))
+		      == QStringLiteral("Termistor PTC"));
+
+		const CatalogPart inverter =
+			catalog.partByCode(QStringLiteral("CFW500B06P2T4DB20C2"));
+		REQUIRE_FALSE(inverter.isNull());
+		CHECK(inverter.values.value(QStringLiteral("corrente_saida"))
+		      == QStringLiteral("6.2"));
+		CHECK(inverter.values.value(QStringLiteral("filtro_emc"))
+		      == QStringLiteral("C3"));
+
+			//No value landed outside the class of its part, which is the other
+			//half of the same coin: a mapping that can reach every column is a
+			//mapping that does not have to write anything where nobody sees it.
+		for (const CatalogImportReport::UndeclaredValue &value : report.undeclared_values) {
+			WARN(QString("valor fora da classe: %1 em %2")
+			     .arg(value.key, value.code).toStdString());
+		}
+		CHECK(report.undeclared_values.isEmpty());
 	}
 }
