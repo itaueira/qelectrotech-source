@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../../../sources/catalog/catalog.h"
+#include "../../../sources/catalog/catalogclasspackage.h"
 #include "../../../sources/catalog/catalogimport.h"
 #include "../../../sources/catalog/catalogpackage.h"
 #include "../../../sources/catalog/catalogproperty.h"
@@ -583,6 +584,12 @@ TEST_CASE("CU-14.1 — as peças do projeto real entram, e o arquivo entregue é
 	// already filled in it. So this test answers a question no invented fixture
 	// can: does the real list, with its accents, its uppercase, its decimal
 	// commas and its plus signs inside a code, import without a single rejection.
+	//
+	// One asymmetry is deliberate: the description keeps the comma the office
+	// typed ("6,2A"), while the typed columns write the point ("6.2"). The
+	// catalog converts a Decimal with toDouble(), which is not locale aware, so
+	// a comma in a typed column stores without complaint and reads back as
+	// nothing. Do not "fix" the sheet to commas.
 	const QString path = QStringLiteral(QET_TEST_DATA_DIR) +
 			     QStringLiteral("/pecas-do-projeto.csv");
 	QFile file(path);
@@ -591,12 +598,25 @@ TEST_CASE("CU-14.1 — as peças do projeto real entram, e o arquivo entregue é
 	file.close();
 
 	const CatalogTable table = CatalogTableReader::parseCsv(text);
-	REQUIRE(table.headers.size() == 5);
+		//Nineteen columns for eleven parts, and most cells empty: a power
+		//supply has no tripping curve and a limit switch has no output
+		//current. The sheet is the union of what the classes declare, which
+		//is what a purchasing list looks like once it stops being one class.
+	REQUIRE(table.headers.size() == 19);
 	REQUIRE(table.rowCount() == 11);
 
 	Catalog catalog;
 	QString error;
 	REQUIRE(catalog.openInMemory(&error));
+
+		//The classes come first, from the file that ships next to this one.
+		//The order is the real one: a part cannot be typed before the class
+		//that declares the type exists. Importing the parts into a bare
+		//seeded catalog would put every value in as loose text, which is
+		//exactly the state the project is being taken out of.
+	REQUIRE(CatalogClassPackage::read(QStringLiteral(QET_TEST_DATA_DIR) +
+					 QStringLiteral("/classes-acme.qetclasses"),
+					 catalog, nullptr, &error));
 
 	CatalogImportProfile profile;
 	// The class comes from a column, and the column carries the stable key and
@@ -611,6 +631,27 @@ TEST_CASE("CU-14.1 — as peças do projeto real entram, e o arquivo entregue é
 				     QStringLiteral("designation"));
 	profile.value_columns.insert(QStringLiteral("description"),
 				     QStringLiteral("description"));
+
+		//The typed columns are named after the property key they fill, so
+		//one loop is the whole mapping. A supplier sheet needs the mapping
+		//dialog; the sheet the office writes itself does not.
+	const QStringList typed_columns = { QStringLiteral("tensao_entrada"),
+					    QStringLiteral("tensao_saida"),
+					    QStringLiteral("corrente_saida"),
+					    QStringLiteral("tensao_alimentacao"),
+					    QStringLiteral("fases"),
+					    QStringLiteral("frenagem"),
+					    QStringLiteral("filtro_emc"),
+					    QStringLiteral("grandeza_monitorada"),
+					    QStringLiteral("tipo_sensor"),
+					    QStringLiteral("interface"),
+					    QStringLiteral("acionamento"),
+					    QStringLiteral("contatos_na"),
+					    QStringLiteral("contatos_nf"),
+					    QStringLiteral("trava") };
+	for (const QString &key : typed_columns) {
+		profile.value_columns.insert(key, key);
+	}
 
 	const CatalogImportReport report = CatalogImporter::import(
 				catalog, table, profile,
@@ -627,17 +668,90 @@ TEST_CASE("CU-14.1 — as peças do projeto real entram, e o arquivo entregue é
 
 	SECTION("a classe de cada peça é a que o arquivo diz")
 	{
-		const int plc_id = catalog.classByKey(QStringLiteral("plc")).id;
+			//Every part now lands on the class that actually describes it, and
+			//four of these classes did not exist before the branch was read.
+			//"component" as a class was the honest answer while the tree was
+			//flat; it is the wrong answer now that there is a tree.
+		const int module_id = catalog.classByKey(QStringLiteral("plc_module")).id;
 		const int button_id = catalog.classByKey(QStringLiteral("push_button")).id;
-		const int component_id = catalog.classByKey(QStringLiteral("component")).id;
-		REQUIRE(plc_id > 0);
+		const int limit_id = catalog.classByKey(QStringLiteral("limit_switch")).id;
+		const int relay_id = catalog.classByKey(QStringLiteral("monitoring_relay")).id;
+		const int supply_id = catalog.classByKey(QStringLiteral("power_supply")).id;
+		REQUIRE(module_id > 0);
+		REQUIRE(limit_id > 0);
 
-		CHECK(catalog.partByCode(QStringLiteral("750-670")).class_id == plc_id);
+		CHECK(catalog.partByCode(QStringLiteral("750-670")).class_id == module_id);
 		CHECK(catalog.partByCode(
 			      QStringLiteral("CSW-CWC3F45 WH + AF3F + BC10F-CSW"))
 		      .class_id == button_id);
 		CHECK(catalog.partByCode(QStringLiteral("LSW-PF14ALP11")).class_id
-		      == component_id);
+		      == limit_id);
+		CHECK(catalog.partByCode(QStringLiteral("RPW-PTCE05")).class_id == relay_id);
+		CHECK(catalog.partByCode(QStringLiteral("787-1200")).class_id == supply_id);
+
+			//A module is a kind of PLC, so it answers to the PLC class too:
+			//asking the catalog for automates has to keep finding it.
+		CHECK(catalog.classById(module_id).parent_id
+		      == catalog.classByKey(QStringLiteral("plc")).id);
+	}
+
+	SECTION("o que era frase virou valor com tipo, unidade e lista")
+	{
+			//This is the whole point of the exercise. The project carried
+			//"RELÉ MONITORAMENTO TERMISTOR MOTOR" in a description and 220V in
+			//a comment; nothing could be searched, summed or checked. Here the
+			//same three facts are three typed fields.
+		const CatalogPart relay = catalog.partByCode(QStringLiteral("RPW-PTCE05"));
+		REQUIRE_FALSE(relay.isNull());
+		CHECK(relay.values.value(QStringLiteral("grandeza_monitorada"))
+		      == QStringLiteral("Temperatura do motor"));
+		CHECK(relay.values.value(QStringLiteral("tipo_sensor"))
+		      == QStringLiteral("Termistor PTC"));
+		CHECK(relay.values.value(QStringLiteral("tensao_alimentacao"))
+		      == QStringLiteral("220"));
+
+			//And it reads back as a number, which is the difference between a
+			//field and a caption. The separator is a point on purpose: the
+			//catalog converts with toDouble(), which is not locale aware, so a
+			//comma here would store fine and read back as nothing.
+		const int inverter_id =
+				catalog.classByKey(QStringLiteral("frequency_inverter")).id;
+		const CatalogProperty output_current =
+				catalog.effectiveProperty(inverter_id,
+							  QStringLiteral("corrente_saida"));
+		REQUIRE(output_current.id > 0);
+		CHECK(output_current.unit == QStringLiteral("A"));
+
+		const CatalogPart inverter =
+				catalog.partByCode(QStringLiteral("CFW500B06P2T4DB20C2"));
+		REQUIRE_FALSE(inverter.isNull());
+		CHECK(output_current.toVariant(
+			      inverter.values.value(QStringLiteral("corrente_saida")))
+		      .toDouble() == Approx(6.2));
+		CHECK(inverter.values.value(QStringLiteral("frenagem")) == QStringLiteral("1"));
+		CHECK(inverter.values.value(QStringLiteral("filtro_emc")) == QStringLiteral("C3"));
+
+			//A mandatory list refused nothing, because every value written in
+			//the sheet is one of the offered ones. That is what the import
+			//would have caught: a typo in a controlled field is a rejection,
+			//not a silently odd value.
+		const CatalogPart single_phase =
+				catalog.partByCode(QStringLiteral("CFW500A02P6B2NB20"));
+		REQUIRE_FALSE(single_phase.isNull());
+		CHECK(single_phase.values.value(QStringLiteral("fases"))
+		      == QStringLiteral("Monofásico ou trifásico"));
+		const CatalogProperty phases =
+				catalog.effectiveProperty(inverter_id, QStringLiteral("fases"));
+		CHECK(phases.list_behaviour == CatalogListBehaviour::Mandatory);
+		CHECK_FALSE(phases.isOutsideList(
+				single_phase.values.value(QStringLiteral("fases"))));
+
+			//An empty cell is not a value: the limit switch has no actuation
+			//written in the project, and a mandatory list tolerates that. A
+			//guessed "Rolete" would look like measured data forever.
+		const CatalogPart limit = catalog.partByCode(QStringLiteral("LSW-PF14ALP11"));
+		REQUIRE_FALSE(limit.isNull());
+		CHECK_FALSE(limit.values.contains(QStringLiteral("acionamento")));
 	}
 
 	SECTION("o texto atravessa inteiro: acento, maiúscula e vírgula decimal")

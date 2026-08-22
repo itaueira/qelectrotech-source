@@ -70,6 +70,25 @@ class CatalogAssignment
 								const CatalogPart &part);
 
 		/**
+			@param catalog
+			@param part
+			@param current : the information the component carries today
+			@return the values to write, given what is already there.
+
+			Same as the overload above, except about erasing. A part whose
+			`comment` is empty says nothing about the comment; it does not say
+			the comment is empty. So an empty value only overwrites what the
+			part the component carried before had put in that field - which is
+			the difference between clearing the manufacturer of a product it no
+			longer is, and deleting the sentence somebody typed while looking
+			at the panel. Assigning to a whole selection at once makes that
+			difference matter twelve times over.
+		*/
+		static QHash<QString, QString> valuesForElement(const Catalog &catalog,
+								const CatalogPart &part,
+								const QHash<QString, QString> &current);
+
+		/**
 			@param part
 			@param group : which sub symbol of the part is being assigned,
 			empty for a part drawn as one symbol

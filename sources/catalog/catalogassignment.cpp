@@ -98,6 +98,62 @@ QHash<QString, QString> CatalogAssignment::valuesForElement(const Catalog &catal
 }
 
 /**
+	@brief CatalogAssignment::valuesForElement
+	@param catalog
+	@param part
+	@param current : the information of the component as it stands
+	@return the values the assignment writes, keeping what a person typed
+*/
+QHash<QString, QString> CatalogAssignment::valuesForElement(const Catalog &catalog,
+							    const CatalogPart &part,
+							    const QHash<QString, QString> &current)
+{
+	QHash<QString, QString> values = valuesForElement(catalog, part);
+	if (values.isEmpty()) {
+		return values;
+	}
+
+		//What the part the component carries today had written there. Only
+		//that may be cleared; the rest of the information was typed by
+		//somebody, and a part with an empty field is not an instruction to
+		//delete it.
+	QHash<QString, QString> previous;
+	const QString previous_code = current.value(partCodeKey());
+	if (!previous_code.isEmpty())
+	{
+		const int revision = current.value(partRevisionKey()).toInt();
+		const CatalogPart previous_part =
+				revision > 0 ? catalog.partByCode(previous_code, revision)
+					     : catalog.partByCode(previous_code);
+		if (!previous_part.isNull()) {
+			previous = valuesForElement(catalog, previous_part);
+		}
+	}
+
+	const QStringList keys = values.keys();
+	for (const QString &key : keys)
+	{
+		if (!values.value(key).isEmpty()) {
+				//The part has something to say about this field.
+			continue;
+		}
+		const QString existing = current.value(key);
+		if (existing.isEmpty()) {
+				//Nothing to lose.
+			continue;
+		}
+		if (previous.value(key) == existing) {
+				//The previous part put it there: clearing it is the point.
+			continue;
+		}
+			//Somebody typed it. Not ours to delete.
+		values.remove(key);
+	}
+
+	return values;
+}
+
+/**
 	@brief CatalogAssignment::terminalNames
 	@param part
 	@param group

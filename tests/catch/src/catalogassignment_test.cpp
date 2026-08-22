@@ -18,8 +18,12 @@
 #include "../../../sources/catalog/catalog.h"
 #include "../../../sources/catalog/catalogassignment.h"
 #include "../../../sources/catalog/catalogclass.h"
+#include "../../../sources/catalog/catalogclasspackage.h"
+#include "../../../sources/catalog/catalogimport.h"
+#include "../../../sources/catalog/catalogtablereader.h"
 #include "qt_catch_tostring.h"
 
+#include <QFile>
 #include <QTemporaryDir>
 
 namespace
@@ -198,6 +202,113 @@ TEST_CASE("CU-13.7 — remplacer une pièce efface ce que l'ancienne avait mis")
 	CHECK(values.value(QStringLiteral("width")).isEmpty());
 }
 
+TEST_CASE("CU-13.9 — atribuir peça não apaga o que o projetista escreveu", "[catalog]")
+{
+	AssignmentFixture fixture;
+	QString error;
+
+		//The real case of the project: a phase monitor drawn with a function
+		//and a comment somebody typed while looking at the panel, and a
+		//catalog part that knows the manufacturer but says nothing about
+		//either field.
+	CatalogPart monitor(QStringLiteral("RPW-PTCE05"), fixture.contactor_id);
+	monitor.setValue(QStringLiteral("manufacturer"), QStringLiteral("Fornecedor A"));
+	monitor.setValue(QStringLiteral("designation"), QStringLiteral("RPW-PTCE05"));
+	REQUIRE(fixture.catalog.savePart(monitor, &error));
+
+	QHash<QString, QString> drawn;
+	drawn.insert(QStringLiteral("label"), QStringLiteral("RL2"));
+	drawn.insert(QStringLiteral("function"), QStringLiteral("Monitor Fase Entrada"));
+	drawn.insert(QStringLiteral("comment"), QStringLiteral("220V"));
+
+	SECTION("a primeira atribuição preenche e não apaga")
+	{
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(fixture.catalog, monitor, drawn);
+
+			//What the part knows arrives.
+		CHECK(values.value(QStringLiteral("part_code")) == QStringLiteral("RPW-PTCE05"));
+		CHECK(values.value(QStringLiteral("manufacturer")) == QStringLiteral("Fornecedor A"));
+
+			//What a person typed is not touched: the key is absent, so the
+			//undo command has nothing to write over it.
+		CHECK_FALSE(values.contains(QStringLiteral("function")));
+		CHECK_FALSE(values.contains(QStringLiteral("comment")));
+
+			//And a field nobody filled is still cleared, because there is
+			//nothing to lose there.
+		CHECK(values.contains(QStringLiteral("supplier")));
+		CHECK(values.value(QStringLiteral("supplier")).isEmpty());
+	}
+
+	SECTION("trocar de peça apaga o que a peça anterior tinha posto")
+	{
+			//The component already carries the monitor: manufacturer and
+			//designation on it came from the part, not from a person.
+		QHash<QString, QString> current = drawn;
+		const QHash<QString, QString> first =
+			CatalogAssignment::valuesForElement(fixture.catalog, monitor, drawn);
+		const QStringList first_keys = first.keys();
+		for (const QString &key : first_keys) {
+			current.insert(key, first.value(key));
+		}
+		CHECK(current.value(QStringLiteral("manufacturer")) == QStringLiteral("Fornecedor A"));
+		CHECK(current.value(QStringLiteral("comment")) == QStringLiteral("220V"));
+
+			//The replacement says nothing about the manufacturer.
+		CatalogPart replacement(QStringLiteral("OUTRO-MONITOR"), fixture.contactor_id);
+		replacement.setValue(QStringLiteral("designation"), QStringLiteral("Outro monitor"));
+		REQUIRE(fixture.catalog.savePart(replacement, &error));
+
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(fixture.catalog, replacement, current);
+
+			//It is cleared anyway: the component is no longer that product.
+			//This is CU-13.7, and it has to keep working now that empties are
+			//no longer written blindly.
+		CHECK(values.contains(QStringLiteral("manufacturer")));
+		CHECK(values.value(QStringLiteral("manufacturer")).isEmpty());
+		CHECK(values.value(QStringLiteral("part_code")) == QStringLiteral("OUTRO-MONITOR"));
+
+			//The comment the person typed survives the swap too.
+		CHECK_FALSE(values.contains(QStringLiteral("comment")));
+	}
+
+	SECTION("uma peça anterior que o catálogo perdeu não autoriza apagar nada")
+	{
+			//A project made on another machine can carry a code this catalog
+			//does not have. Without the previous part there is no way to tell
+			//product data from typed text, and the safe answer is to keep
+			//what is there.
+		QHash<QString, QString> current = drawn;
+		current.insert(CatalogAssignment::partCodeKey(), QStringLiteral("NAO-EXISTE"));
+		current.insert(CatalogAssignment::partRevisionKey(), QStringLiteral("1"));
+		current.insert(QStringLiteral("manufacturer"), QStringLiteral("Fornecedor Desconhecido"));
+
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(fixture.catalog, monitor, current);
+
+			//The new part has a manufacturer, so it overwrites - that is not
+			//erasing, that is assigning.
+		CHECK(values.value(QStringLiteral("manufacturer")) == QStringLiteral("Fornecedor A"));
+		CHECK_FALSE(values.contains(QStringLiteral("comment")));
+		CHECK_FALSE(values.contains(QStringLiteral("function")));
+	}
+
+	SECTION("componente sem nada escrito se comporta como antes")
+	{
+			//A blank component: every empty is written, exactly as the
+			//two-argument overload does. The new rule must not change the
+			//case it was not made for.
+		const QHash<QString, QString> plain =
+			CatalogAssignment::valuesForElement(fixture.catalog, monitor);
+		const QHash<QString, QString> guarded =
+			CatalogAssignment::valuesForElement(fixture.catalog, monitor,
+							    QHash<QString, QString>());
+		CHECK(plain == guarded);
+	}
+}
+
 TEST_CASE("CU-13.6 — un accessoire enregistré avec la pièce revient avec elle")
 {
 	AssignmentFixture fixture;
@@ -327,4 +438,131 @@ TEST_CASE("a ancestralidade de classe responde por descendência, não por igual
 		CHECK_FALSE(catalog.isDescendantOf(999999,
 						   QStringLiteral("accessory")));
 	}
+}
+
+TEST_CASE("CU-13.1 — a peça real do projeto escreve o que o .qet vai levar",
+	  "[catalog][dados-reais]")
+{
+	// The component is RL2, folio 4 of the ACME project of 14 folios: the
+	// only one of its 434 placed components that already carried a part code
+	// and a manufacturer, and therefore the only one the conversion could
+	// assign without asking anybody. The other ten codes of the project live
+	// in symbol definitions no folio uses, and they are worksheet lines in
+	// todo/exemplos/atribuicao-pecas.csv until the drawing office signs them.
+	//
+	// What this case pins down is the arithmetic of that write, because the
+	// conversion put it into the copy under tmp/convertido by hand, and a hand
+	// has to be checked against the rule the program itself follows: nine
+	// fields have something to say, six of them are new to the component, and
+	// the two the office typed that the part knows nothing about are left
+	// alone. If any of these numbers moves, the converted file is stale and
+	// this is where it says so.
+	Catalog catalog;
+	QString error;
+	REQUIRE(catalog.openInMemory(&error));
+	REQUIRE(CatalogClassPackage::read(QStringLiteral(QET_TEST_DATA_DIR) +
+					 QStringLiteral("/classes-acme.qetclasses"),
+					 catalog, nullptr, &error));
+
+	QFile file(QStringLiteral(QET_TEST_DATA_DIR) +
+		   QStringLiteral("/pecas-do-projeto.csv"));
+	REQUIRE(file.open(QIODevice::ReadOnly));
+	const CatalogTable table =
+			CatalogTableReader::parseCsv(QString::fromUtf8(file.readAll()));
+	file.close();
+
+	CatalogImportProfile profile;
+	profile.class_column = QStringLiteral("classe");
+	profile.code_column = QStringLiteral("codigo");
+	const QStringList mapped = { QStringLiteral("manufacturer"),
+				     QStringLiteral("designation"),
+				     QStringLiteral("description"),
+				     QStringLiteral("tensao_entrada"),
+				     QStringLiteral("tensao_saida"),
+				     QStringLiteral("corrente_saida"),
+				     QStringLiteral("tensao_alimentacao"),
+				     QStringLiteral("fases"),
+				     QStringLiteral("frenagem"),
+				     QStringLiteral("filtro_emc"),
+				     QStringLiteral("grandeza_monitorada"),
+				     QStringLiteral("tipo_sensor"),
+				     QStringLiteral("interface"),
+				     QStringLiteral("acionamento"),
+				     QStringLiteral("contatos_na"),
+				     QStringLiteral("contatos_nf"),
+				     QStringLiteral("trava") };
+	for (const QString &key : mapped) {
+		profile.value_columns.insert(key, key);
+	}
+	const CatalogImportReport report = CatalogImporter::import(
+				catalog, table, profile, QStringLiteral("projeto CT1-QCM"));
+	REQUIRE(report.rejected() == 0);
+
+	const CatalogPart part = catalog.partByCode(QStringLiteral("RPW-PTCE05"));
+	REQUIRE_FALSE(part.isNull());
+
+		//The seven fields RL2 carried before the assignment, as the file had
+		//them. Two of them - the comment and the function - are what somebody
+		//in the office typed, and the part has nothing to say about either.
+	QHash<QString, QString> current;
+	current.insert(QStringLiteral("label"), QStringLiteral("RL2"));
+	current.insert(QStringLiteral("designation"), QStringLiteral("RPW-PTCE05"));
+	current.insert(QStringLiteral("manufacturer"), QStringLiteral("WEG"));
+	current.insert(QStringLiteral("description"),
+		       QString::fromUtf8("RELÉ MONITORAMENTO TERMISTOR MOTOR"));
+	current.insert(QStringLiteral("comment"), QStringLiteral("220V"));
+	current.insert(QStringLiteral("function"), QStringLiteral("Monitor Fase Entrada"));
+	current.insert(QStringLiteral("location"), QStringLiteral("X1"));
+
+	const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(catalog, part, current);
+
+		//The part code and its revision are the two the assignment adds by
+		//itself: they are how the component finds its way back to the
+		//catalog when somebody opens the project in two years.
+	CHECK(values.value(CatalogAssignment::partCodeKey()) == QStringLiteral("RPW-PTCE05"));
+	CHECK(values.value(CatalogAssignment::partRevisionKey()) == QStringLiteral("1"));
+
+		//What was free text in the drawing is now a value under a key. The
+		//tension came from the comment of the drawn component, the other two
+		//from the class the part belongs to.
+	CHECK(values.value(QStringLiteral("tensao_alimentacao")) == QStringLiteral("220"));
+	CHECK(values.value(QStringLiteral("grandeza_monitorada"))
+	      == QStringLiteral("Temperatura do motor"));
+	CHECK(values.value(QStringLiteral("tipo_sensor")) == QStringLiteral("Termistor PTC"));
+		//Nobody filled the reset mode: it arrives from the default the class
+		//declares, which is the whole reason a default exists.
+	CHECK(values.value(QStringLiteral("rearme")) == QStringLiteral("Manual"));
+
+		//The label and the location are protected: the assignment never
+		//writes them, so a part cannot renumber a component or move it to
+		//another cabinet.
+	CHECK_FALSE(values.contains(QStringLiteral("label")));
+	CHECK_FALSE(values.contains(QStringLiteral("location")));
+
+		//And the two the office typed are not even offered for writing. An
+		//empty field in a part is not an instruction to delete what a person
+		//put there.
+	CHECK_FALSE(values.contains(QStringLiteral("comment")));
+	CHECK_FALSE(values.contains(QStringLiteral("function")));
+
+		//The arithmetic of the file. Of everything the assignment offers,
+		//nine fields have a value; DiagramContext::toXml drops the empty
+		//ones, so nine is what a saved .qet can show. Three of the nine were
+		//already there with the same text, so six nodes are new - and six is
+		//what the converted copy gained.
+	int filled = 0;
+	int different_from_current = 0;
+	for (auto it = values.cbegin() ; it != values.cend() ; ++it)
+	{
+		if (it.value().isEmpty()) {
+			continue;
+		}
+		++filled;
+		if (current.value(it.key()) != it.value()) {
+			++different_from_current;
+		}
+	}
+	CHECK(filled == 9);
+	CHECK(different_from_current == 6);
 }

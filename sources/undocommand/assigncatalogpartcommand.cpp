@@ -41,9 +41,6 @@ AssignCatalogPartCommand::AssignCatalogPartCommand(const QList<Element *> &eleme
 						   QUndoCommand *parent) :
 	QUndoCommand(parent)
 {
-	const QHash<QString, QString> values =
-		CatalogAssignment::valuesForElement(catalog, part);
-
 	for (Element *element : elements)
 	{
 		if (!element) {
@@ -53,6 +50,16 @@ AssignCatalogPartCommand::AssignCatalogPartCommand(const QList<Element *> &eleme
 		Assignment assignment;
 		assignment.element = QPointer<Element>(element);
 		assignment.old_information = element->elementInformations();
+
+			//Worked out per component, not once for the selection: what may
+			//be cleared depends on what each one already carries.
+		QHash<QString, QString> current;
+		const QStringList current_keys = assignment.old_information.keys();
+		for (const QString &key : current_keys) {
+			current.insert(key, assignment.old_information[key].toString());
+		}
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(catalog, part, current);
 
 		DiagramContext information = assignment.old_information;
 		const QStringList keys = values.keys();
