@@ -19,12 +19,15 @@
 
 #include "../catalog.h"
 #include "../../autoNum/numberingformat.h"
+#include "../catalogclasspackage.h"
 #include "../catalogschema.h"
 #include "catalogpropertydialog.h"
 
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
+#include <QDir>
+#include <QFileDialog>
 #include <QFont>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -79,17 +82,31 @@ void CatalogManagerDialog::buildWidgets()
 	m_add_root_class = new QPushButton(tr("Nouvelle classe"), this);
 	m_add_subclass   = new QPushButton(tr("Nouvelle sous-classe"), this);
 	m_remove_class   = new QPushButton(tr("Supprimer"), this);
+	m_export_class   = new QPushButton(tr("Exporter la branche…"), this);
+	m_import_class   = new QPushButton(tr("Importer une branche…"), this);
+	m_export_class->setToolTip(tr("Écrire la classe sélectionnée, ce qui est sous elle "
+				      "et les propriétés déclarées dans un fichier."));
+	m_import_class->setToolTip(tr("Lire un fichier de classes. Ce qui existe déjà ici "
+				      "n'est pas modifié."));
 
 	QHBoxLayout *class_buttons = new QHBoxLayout();
 	class_buttons->addWidget(m_add_root_class);
 	class_buttons->addWidget(m_add_subclass);
 	class_buttons->addWidget(m_remove_class);
 
+		//Second row on purpose: carrying a branch from one catalogue to
+		//another is not the same kind of gesture as editing the tree here.
+	QHBoxLayout *branch_buttons = new QHBoxLayout();
+	branch_buttons->addWidget(m_export_class);
+	branch_buttons->addWidget(m_import_class);
+	branch_buttons->addStretch();
+
 	QWidget *left = new QWidget(this);
 	QVBoxLayout *left_layout = new QVBoxLayout(left);
 	left_layout->setContentsMargins(0, 0, 0, 0);
 	left_layout->addWidget(m_class_tree);
 	left_layout->addLayout(class_buttons);
+	left_layout->addLayout(branch_buttons);
 
 	// --- the class tab --------------------------------------------------
 	m_class_name        = new QLineEdit(this);
@@ -232,6 +249,8 @@ void CatalogManagerDialog::buildWidgets()
 	connect(m_add_root_class, &QPushButton::clicked, this, &CatalogManagerDialog::addRootClass);
 	connect(m_add_subclass, &QPushButton::clicked, this, &CatalogManagerDialog::addSubclass);
 	connect(m_remove_class, &QPushButton::clicked, this, &CatalogManagerDialog::removeSelectedClass);
+	connect(m_export_class, &QPushButton::clicked, this, &CatalogManagerDialog::exportClassBranch);
+	connect(m_import_class, &QPushButton::clicked, this, &CatalogManagerDialog::importClassBranch);
 	connect(m_apply_class, &QPushButton::clicked, this, &CatalogManagerDialog::applyClassChanges);
 
 	connect(m_add_property, &QPushButton::clicked, this, &CatalogManagerDialog::addProperty);
@@ -454,6 +473,9 @@ void CatalogManagerDialog::updateEnabledState()
 	m_add_root_class->setEnabled(writable);
 	m_add_subclass->setEnabled(writable && has_class);
 	m_remove_class->setEnabled(writable && has_class);
+		//Exporting only reads: a read-only catalogue exports fine.
+	m_export_class->setEnabled(has_class);
+	m_import_class->setEnabled(writable);
 	m_apply_class->setEnabled(writable && has_class);
 
 	m_add_property->setEnabled(writable && has_class);
@@ -590,6 +612,99 @@ void CatalogManagerDialog::applyClassChanges()
 		return;
 	}
 	reloadClassTree();
+}
+
+/**
+	@brief CatalogManagerDialog::exportClassBranch
+	Writes the selected class, what is under it and the declared
+	properties to a file, so that the branch does not have to be typed
+	again on the next workstation.
+*/
+void CatalogManagerDialog::exportClassBranch()
+{
+	const int class_id = selectedClassId();
+	if (class_id <= 0) {
+		return;
+	}
+
+	const CatalogClass catalog_class = m_catalog->classById(class_id);
+	const QString suggested =
+			CatalogClassPackage::suggestedFileName(catalog_class.name);
+	const QString file_path = QFileDialog::getSaveFileName(
+				this, tr("Exporter la branche de classes"), suggested,
+				CatalogClassPackage::fileFilter());
+	if (file_path.isEmpty()) {
+		return;
+	}
+
+	QString error;
+	if (!CatalogClassPackage::write(file_path, *m_catalog, class_id, &error))
+	{
+		QMessageBox::warning(this, tr("Branche non exportée"), error);
+		return;
+	}
+	m_status->setText(tr("Branche « %1 » écrite dans %2.")
+			  .arg(catalog_class.name, QDir::toNativeSeparators(file_path)));
+}
+
+/**
+	@brief CatalogManagerDialog::importClassBranch
+	Reads a branch of classes into this catalogue. What the file asks for
+	is shown before anything is written, and the same code path answers
+	both questions: a dialog that announces two classes and then creates
+	something else is worse than no dialog at all.
+*/
+void CatalogManagerDialog::importClassBranch()
+{
+	const QString file_path = QFileDialog::getOpenFileName(
+				this, tr("Importer une branche de classes"), QString(),
+				CatalogClassPackage::fileFilter());
+	if (file_path.isEmpty()) {
+		return;
+	}
+
+	QString error;
+	const CatalogClassPackage::Report plan =
+			CatalogClassPackage::summary(file_path, *m_catalog, &error);
+	if (!error.isEmpty())
+	{
+		QMessageBox::warning(this, tr("Fichier non lu"), error);
+		return;
+	}
+
+	if (plan.changesNothing())
+	{
+		QMessageBox::information(this, tr("Rien à créer"),
+					 tr("Tout ce que ce fichier décrit existe déjà "
+					    "dans ce catalogue.\n\n%1").arg(plan.toText()));
+		return;
+	}
+
+	if (QMessageBox::question(this, tr("Importer une branche de classes"),
+				  tr("Ce fichier va créer :\n\n%1\n\nCe qui existe déjà "
+				     "ici n'est pas modifié. Continuer ?").arg(plan.toText()))
+	    != QMessageBox::Yes)
+	{
+		return;
+	}
+
+	CatalogClassPackage::Report done;
+	if (!CatalogClassPackage::read(file_path, *m_catalog, &done, &error))
+	{
+		QMessageBox::warning(this, tr("Branche non importée"), error);
+		return;
+	}
+
+	reloadClassTree();
+	reloadLists();
+	classSelected();
+	m_status->setText(done.toText());
+	if (!done.refused.isEmpty())
+	{
+			//Refusals are the part the user has to see: they are what the
+			//file asked for and did not get.
+		QMessageBox::information(this, tr("Branche importée en partie"), done.toText());
+	}
 }
 
 /**

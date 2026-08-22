@@ -310,6 +310,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/catalog/catalogassignment.h
   ${QET_DIR}/sources/catalog/catalogclass.cpp
   ${QET_DIR}/sources/catalog/catalogclass.h
+  ${QET_DIR}/sources/catalog/catalogclasspackage.cpp
+  ${QET_DIR}/sources/catalog/catalogclasspackage.h
   ${QET_DIR}/sources/catalog/catalogimport.cpp
   ${QET_DIR}/sources/catalog/catalogimport.h
   ${QET_DIR}/sources/catalog/catalogpackage.cpp

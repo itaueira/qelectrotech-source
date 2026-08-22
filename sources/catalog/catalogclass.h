@@ -65,7 +65,9 @@ class CatalogClass
 		QString root_iec;        ///< tag letter, IEC 81346
 		bool has_symbol = true;  ///< false when objects of this class never have a symbol
 		int order_index = 0;     ///< position among the siblings
-		QString uuid;            ///< stable identity across catalogs, for part packages
+		QString uuid;            ///< drawn by this catalog, and by this catalog only:
+		                         ///< it traces where a branch came from. Identity across
+		                         ///< catalogs is the key - see CatalogClassPackage.
 		/**
 			The numbering format of this class, as the XML a NumberingFormat
 			serialises itself to. Empty means "whatever the renumbering offers as

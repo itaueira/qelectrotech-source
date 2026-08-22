@@ -54,6 +54,8 @@ class CatalogManagerDialog : public QDialog
 		void addSubclass();
 		void removeSelectedClass();
 		void applyClassChanges();
+		void exportClassBranch();
+		void importClassBranch();
 
 		void addProperty();
 		void editSelectedProperty();
@@ -84,6 +86,8 @@ class CatalogManagerDialog : public QDialog
 		QPushButton *m_add_root_class = nullptr;
 		QPushButton *m_add_subclass = nullptr;
 		QPushButton *m_remove_class = nullptr;
+		QPushButton *m_export_class = nullptr;
+		QPushButton *m_import_class = nullptr;
 
 		QLineEdit *m_class_name = nullptr;
 		QLineEdit *m_class_key = nullptr;
