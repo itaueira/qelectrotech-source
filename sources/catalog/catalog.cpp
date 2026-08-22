@@ -497,9 +497,10 @@ int Catalog::addClass(const CatalogClass &catalog_class, QString *error)
 	QSqlQuery query(m_database);
 	query.prepare(QStringLiteral("INSERT INTO catalog_class "
 				     "(parent_id, key, name, description, root, root_iec, "
-				     "has_symbol, order_index, uuid) "
+				     "has_symbol, order_index, uuid, numbering_format) "
 				     "VALUES (:parent_id, :key, :name, :description, :root, "
-				     ":root_iec, :has_symbol, :order_index, :uuid)"));
+				     ":root_iec, :has_symbol, :order_index, :uuid, "
+				     ":numbering_format)"));
 	query.bindValue(QStringLiteral(":parent_id"),
 			to_save.parent_id > 0 ? QVariant(to_save.parent_id) : QVariant());
 	query.bindValue(QStringLiteral(":key"), to_save.key);
@@ -510,6 +511,7 @@ int Catalog::addClass(const CatalogClass &catalog_class, QString *error)
 	query.bindValue(QStringLiteral(":has_symbol"), to_save.has_symbol ? 1 : 0);
 	query.bindValue(QStringLiteral(":order_index"), to_save.order_index);
 	query.bindValue(QStringLiteral(":uuid"), to_save.uuid);
+	query.bindValue(QStringLiteral(":numbering_format"), to_save.numbering_format);
 
 	if (!query.exec())
 	{
