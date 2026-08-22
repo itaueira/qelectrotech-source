@@ -1,0 +1,403 @@
+name: Package and upload
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+  pull_request:
+  push:
+    branches: [master]
+    tags: ['v*']
+
+
+jobs:
+  verify-version:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.release_type.outputs.prerelease }}
+      tag_name: ${{ steps.release_type.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify tag matches VERSION and VERSION_TYPE
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          FILE_VERSION="$(tr -d '[:space:]' < QET_VERSION)"
+          FILE_TYPE="$(tr -d '[:space:]' < QET_RELEASE)"
+
+          if [[ "$TAG" == *-* ]]; then
+            TAG_VERSION="${TAG%%-*}"
+            TAG_TYPE="${TAG#*-}"
+          else
+            TAG_VERSION="$TAG"
+            TAG_TYPE="stable"
+          fi
+
+          if [ "$TAG_VERSION" != "$FILE_VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) does not match QET_VERSION file ($FILE_VERSION)"
+            exit 1
+          fi
+          if [ "$TAG_TYPE" != "$FILE_TYPE" ]; then
+            echo "::error::Tag type ($TAG_TYPE) does not match QET_RELEASE file ($FILE_TYPE)"
+            exit 1
+          fi
+          if [ "$FILE_TYPE" = "dev" ]; then
+            echo "::error::VERSION_TYPE is still 'dev' -- bump it before tagging a release"
+            exit 1
+          fi
+      - name: Determine prerelease status
+        id: release_type
+        run: |
+          set -euo pipefail
+          TYPE="$(tr -d '[:space:]' < QET_RELEASE)"
+          echo "prerelease=$([ "$TYPE" != "stable" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "tag_name=v$(tr -d '[:space:]' < QET_VERSION)$([ "$TYPE" != "stable" ] && echo "-$TYPE")" >> "$GITHUB_OUTPUT"
+          
+  build-macos:
+    needs: verify-version
+    if: always() && (needs.verify-version.result == 'success' || needs.verify-version.result == 'skipped')  
+    name: Build MacOS DMG
+    uses: ./.github/workflows/macos-package-dmg.yml
+    secrets: inherit
+
+  build-appimage:
+    needs: verify-version
+    if: always() && (needs.verify-version.result == 'success' || needs.verify-version.result == 'skipped')  
+    name: Build Linux AppImage
+    uses: ./.github/workflows/linux-package-appimage.yml
+    secrets: inherit
+    
+  build-windows-exe:
+    needs: verify-version
+    if: always() && (needs.verify-version.result == 'success' || needs.verify-version.result == 'skipped')  
+    name: Build Windows Exe/Portable
+    uses: ./.github/workflows/windows-package-exe.yml
+    secrets: inherit
+    
+  build-windows-msi:
+    needs: build-windows-exe
+    if: always() && (needs.verify-version.result == 'success' || needs.verify-version.result == 'skipped')
+    name: Build Windows MSI
+    uses: ./.github/workflows/windows-package-msi.yml
+    secrets: inherit
+
+  build-source-package:
+    needs: verify-version
+    if: always() && (needs.verify-version.result == 'success' || needs.verify-version.result == 'skipped')
+    name: Build Source Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Determine source package name
+        id: srcver
+        run: |
+          set -euo pipefail
+          VERSION="$(tr -d '[:space:]' < QET_VERSION)"
+          RELEASE="$(tr -d '[:space:]' < QET_RELEASE)"
+          GITCOMMIT="$(git rev-parse --short HEAD)"
+          case "$RELEASE" in
+            dev)                   SUFFIX="-dev-${GITCOMMIT}" ;;
+            alpha1|alpha2|alpha3)  SUFFIX="-${RELEASE}" ;;
+            stable)                SUFFIX="" ;;
+            *)
+              echo "::error::Unrecognized QET_RELEASE value '$RELEASE'"
+              exit 1
+              ;;
+          esac
+          echo "name=qelectrotech-${VERSION}${SUFFIX}-src" >> "$GITHUB_OUTPUT"
+
+      # Plain `git archive` doesn't pull in submodule content, and QET has
+      # submodules -- so instead we tar the already-checked-out working tree
+      # (with submodules populated) and just strip VCS metadata.
+      - name: Build source tarball
+        run: |
+          set -euo pipefail
+          NAME="${{ steps.srcver.outputs.name }}"
+          mkdir -p "${{ runner.temp }}/dist"
+          tar --exclude-vcs -czf "${{ runner.temp }}/dist/${NAME}.tar.gz" --transform "s,^\.,${NAME}," .
+
+      - name: Upload source package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: qelectrotech-source-package
+          path: ${{ runner.temp }}/dist/*.tar.gz
+          retention-days: 40
+          if-no-files-found: error
+
+  publish-release:
+    name: Upload all builds to github page and update HTML
+    needs: [verify-version, build-macos, build-appimage, build-windows-exe, build-windows-msi, build-source-package]
+    if: |
+      always() &&
+      (needs.verify-version.result == 'success' || needs.verify-version.result == 'skipped') &&
+      needs.build-macos.result == 'success' &&
+      needs.build-appimage.result == 'success' &&
+      needs.build-windows-exe.result == 'success' &&
+      needs.build-windows-msi.result == 'success' &&
+      needs.build-source-package.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - name: Determine release target (tag vs nightly)
+        id: target
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "is_tag=true" >> "$GITHUB_OUTPUT"
+            echo "tag_name=${{ needs.verify-version.outputs.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "release_name=QElectroTech ${{ needs.verify-version.outputs.tag_name }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=${{ needs.verify-version.outputs.prerelease }}" >> "$GITHUB_OUTPUT"
+          else
+            # A unique tag per run (never reused) so GitHub's auto-generated
+            # "Source code" archive can never be served stale from codeload's
+            # per-tag cache -- a fresh tag has never been cached before.
+            # generate-page.py's stable download page is what users actually
+            # bookmark, so a rotating tag name underneath it is invisible to them.
+            NIGHTLY_TAG="nightly-$(date -u +%Y%m%d-%H%M)-${{ github.run_number }}"
+            NIGHTLY_NAME="Nightly release - $(date -u '+%Y-%m-%d %H:%M')"
+            echo "is_tag=false" >> "$GITHUB_OUTPUT"
+            echo "tag_name=$NIGHTLY_TAG" >> "$GITHUB_OUTPUT"
+            echo "release_name=$NIGHTLY_NAME" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Only the artifacts actually meant to be released end up in artifacts/.
+      # A plain, unfiltered `download-artifact` here would also sweep up
+      # internal/intermediate artifacts that other jobs produce purely to pass
+      # data between themselves within the same run -- namely the raw
+      # `nsis_root/files/` tree (qelectrotech-windows-portable[-qt6], an
+      # uncompressed folder used only as input to the MSI job) and the
+      # pre-signing `qelectrotech-windows-msi-unsigned-*` artifact. Both would
+      # otherwise show up as hundreds of loose files on the release.
+      - name: Download macOS DMG artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: qelectrotech-macos-*
+          merge-multiple: true
+
+      - name: Download Linux AppImage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: qelectrotech-appimage-*
+          merge-multiple: true
+
+      - name: Download Windows installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: qelectrotech-windows-installer*
+          merge-multiple: true
+
+      - name: Download Windows portable zip artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: qelectrotech-*-readytouse
+          merge-multiple: true
+
+      - name: Download Windows MSI artifacts (signed only)
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: qelectrotech-windows-msi-qt*
+          merge-multiple: true
+
+      - name: Download source package artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: qelectrotech-source-package
+          merge-multiple: true
+
+      - name: Delete previous nightly releases
+        if: steps.target.outputs.is_tag == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          gh release list --repo "$REPO" --limit 100 --json tagName \
+            --jq '.[] | select(.tagName == "nightly" or (.tagName | startswith("nightly-"))) | .tagName' \
+          | while IFS= read -r OLD_TAG; do
+              echo "Deleting old nightly release: $OLD_TAG"
+              gh release delete "$OLD_TAG" --repo "$REPO" --yes --cleanup-tag || true
+            done
+
+      - name: Build release body
+        id: body
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.target.outputs.is_tag }}" = "true" ]; then
+            BODY="$(cat <<'EOF'
+          ## QElectroTech ${{ steps.target.outputs.tag_name }}
+
+          | | |
+          |---|---|
+          | **Commit** | ${{ github.sha }} |
+          | **Run** | https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} |
+
+          > 🧪 **Qt6 builds are experimental.** Files not tagged explicitly `-qt5-` are built against Qt6 and are not yet
+          > as tested as the Qt5 track. Expect rough edges; report issues clearly labelled "Qt6".
+          EOF
+          )"
+          else
+            BODY="$(cat <<'EOF'
+          🔧 **Automated nightly build** — may be unstable.
+
+          | | |
+          |---|---|
+          | **Commit** | ${{ github.sha }} |
+          | **Run** | https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} |
+          | **Date** | ${{ github.event.head_commit.timestamp }} |
+
+          > ⚠️ This is a development version; it introduces new features you want, but may cause bugs that have not yet been identified yet.
+          > For stable releases, see the [Releases page](https://github.com/${{ github.repository }}/releases).
+
+          > 🧪 **Qt6 builds are experimental.** Files not tagged explicitly `-qt5-` are built against Qt6 and are not yet
+          > as tested as the Qt5 track. Expect rough edges; report issues clearly labelled "Qt6".
+          EOF
+          )"
+          fi
+          {
+            echo "text<<RELEASE_BODY_EOF"
+            echo "$BODY"
+            echo "RELEASE_BODY_EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.target.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.target.outputs.release_name }}
+          prerelease: ${{ steps.target.outputs.prerelease }}
+          files: artifacts/*
+          body: ${{ env.text }}
+
+      - name: Checkout code (for generate-page.py)
+        if: steps.target.outputs.is_tag == 'false'
+        uses: actions/checkout@v7
+        with:
+          path: source
+          sparse-checkout: build-aux/generate-page.py
+          sparse-checkout-cone-mode: false
+
+      - name: Generate download page (index.html)
+        if: steps.target.outputs.is_tag == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+
+          ASSETS=$(gh release view "${{ steps.target.outputs.tag_name }}" --repo "$REPO" --json assets --jq '.assets[].name')
+
+          EXE_NAME=$(echo "$ASSETS" | grep -v 'qt6' | grep '\.exe$' | head -1)
+          ZIP_NAME=$(echo "$ASSETS" | grep -v 'qt6' | grep '\.zip$' | head -1)
+          MSI_NAME=$(echo "$ASSETS" | grep -v 'qt6' | grep '\.msi$' | head -1 || echo "")
+
+          EXE_QT6_NAME=$(echo "$ASSETS" | grep 'qt6' | grep '\.exe$' | head -1 || echo "")
+          ZIP_QT6_NAME=$(echo "$ASSETS" | grep 'qt6' | grep '\.zip$' | head -1 || echo "")
+          MSI_QT6_NAME=$(echo "$ASSETS" | grep 'qt6' | grep '\.msi$' | head -1 || echo "")
+
+          BASE="https://github.com/$REPO/releases/download/${{ steps.target.outputs.tag_name }}"
+          INSTALLER_URL="$BASE/$EXE_NAME"
+          PORTABLE_URL="$BASE/$ZIP_NAME"
+          MSI_URL=""
+          [ -n "$MSI_NAME" ] && MSI_URL="$BASE/$MSI_NAME"
+
+          INSTALLER_QT6_URL=""
+          PORTABLE_QT6_URL=""
+          MSI_QT6_URL=""
+          DMG_ARM64_NAME=$(echo "$ASSETS" | grep -v 'qt6' | grep 'arm64' | grep '\.dmg$' | head -1 || echo "")
+          DMG_X8664_NAME=$(echo "$ASSETS" | grep -v 'qt6' | grep 'x86_64' | grep '\.dmg$' | head -1 || echo "")
+          DMG_ARM64_QT6_NAME=$(echo "$ASSETS" | grep 'qt6' | grep 'arm64' | grep '\.dmg$' | head -1 || echo "")
+          DMG_X8664_QT6_NAME=$(echo "$ASSETS" | grep 'qt6' | grep 'x86_64' | grep '\.dmg$' | head -1 || echo "")
+
+          APPIMAGE_X8664_NAME=$(echo "$ASSETS" | grep -v 'aarch64' | grep '\.AppImage$' | head -1 || echo "")
+          APPIMAGE_AARCH64_NAME=$(echo "$ASSETS" | grep 'aarch64' | grep '\.AppImage$' | head -1 || echo "")
+
+          DMG_ARM64_URL=""
+          DMG_X8664_URL=""
+          DMG_ARM64_QT6_URL=""
+          DMG_X8664_QT6_URL=""
+          APPIMAGE_X8664_QT6_URL=""
+          APPIMAGE_AARCH64_QT6_URL=""
+          [ -n "$DMG_ARM64_NAME" ] && DMG_ARM64_URL="$BASE/$DMG_ARM64_NAME"
+          [ -n "$DMG_X8664_NAME" ] && DMG_X8664_URL="$BASE/$DMG_X8664_NAME"
+          [ -n "$DMG_ARM64_QT6_NAME" ] && DMG_ARM64_QT6_URL="$BASE/$DMG_ARM64_QT6_NAME"
+          [ -n "$DMG_X8664_QT6_NAME" ] && DMG_X8664_QT6_URL="$BASE/$DMG_X8664_QT6_NAME"
+          [ -n "$APPIMAGE_X8664_NAME" ] && APPIMAGE_X8664_QT6_URL="$BASE/$APPIMAGE_X8664_NAME"
+          [ -n "$APPIMAGE_AARCH64_NAME" ] && APPIMAGE_AARCH64_QT6_URL="$BASE/$APPIMAGE_AARCH64_NAME"
+
+          export DMG_ARM64_URL DMG_X8664_URL DMG_ARM64_QT6_URL DMG_X8664_QT6_URL
+          export APPIMAGE_X8664_QT6_URL APPIMAGE_AARCH64_QT6_URL
+                    
+          [ -n "$EXE_QT6_NAME" ] && INSTALLER_QT6_URL="$BASE/$EXE_QT6_NAME"
+          [ -n "$ZIP_QT6_NAME" ] && PORTABLE_QT6_URL="$BASE/$ZIP_QT6_NAME"
+          [ -n "$MSI_QT6_NAME" ] && MSI_QT6_URL="$BASE/$MSI_QT6_NAME"
+
+          SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          SHORT="${SHA:0:7}"
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          RUN_URL="https://github.com/$REPO/actions/runs/${{ github.run_id }}"
+          RUN_NUMBER="${{ github.run_number }}"
+          RELEASE_TAG="${{ steps.target.outputs.tag_name }}"
+
+          export DATE SHORT REPO SHA RUN_URL RUN_NUMBER RELEASE_TAG
+          export INSTALLER_URL PORTABLE_URL MSI_URL
+          export INSTALLER_QT6_URL PORTABLE_QT6_URL MSI_QT6_URL
+
+          python3 source/build-aux/generate-page.py
+
+      - name: Add .nojekyll
+        if: steps.target.outputs.is_tag == 'false'
+        shell: bash
+        run: touch gh-pages/.nojekyll
+
+      - name: Upload GitHub Pages artifact
+        if: steps.target.outputs.is_tag == 'false'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: gh-pages/
+
+      - name: Deploy to GitHub Pages
+        if: steps.target.outputs.is_tag == 'false'
+        uses: actions/deploy-pages@v5
+  reset-version-type:
+    needs: [verify-version, publish-release]   # after the release actually succeeded
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+
+      - name: Reset VERSION_TYPE to dev
+        run: |
+          set -euo pipefail
+          CURRENT="$(tr -d '[:space:]' < QET_RELEASE)"
+          if [ "$CURRENT" = "dev" ]; then
+            echo "Already dev, nothing to do."
+            exit 0
+          fi
+          echo "dev" > QET_RELEASE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add QET_RELEASE
+          git commit -m "Reset QET_RELEASE to dev after ${{ github.ref_name }} release"
+          git push origin master
