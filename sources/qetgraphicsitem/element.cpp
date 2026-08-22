@@ -1828,7 +1828,8 @@ QString Element::composedLabel(const QString &label)
 		//a preview of this very composition, and a second copy of the reading
 		//is a preview free to stop matching the drawing.
 	const IecStructure element_structure =
-			IecStructure::fromElementInformation(label, m_data.m_informations);
+			IecStructure::fromElementInformation(label, m_data.m_informations,
+							     settings.location_from_element);
 	const IecStructure folio_structure =
 			IecStructure::fromFolioInformation(
 				diagram_->border_and_titleblock.titleblockInformation());
