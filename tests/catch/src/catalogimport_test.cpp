@@ -649,6 +649,295 @@ TEST_CASE("CU-14.11 — o pacote leva a classe declarada, e ela nasce tipada do 
 	CHECK_FALSE(error.isEmpty());
 }
 
+TEST_CASE("CU-14.12 — coluna que a classe de destino não recebe é nomeada, não desaparece",
+	  "[catalog]")
+{
+	ImportFixture fixture;
+
+	// A supplier's sheet: the columns the profile reads, and three it does not.
+	CatalogTable table;
+	table.headers << QStringLiteral("codigo")
+		      << QStringLiteral("descricao")
+		      << QStringLiteral("fabricante")
+		      << QStringLiteral("preco")
+		      << QStringLiteral("ncm")
+		      << QStringLiteral("peso")
+		      << QStringLiteral("embalagem");
+	table.rows << (QStringList() << QStringLiteral("3RT-1016")
+				    << QStringLiteral("Contator 9 A")
+				    << QStringLiteral("Fornecedor A")
+				    << QStringLiteral("123,45")
+				    << QStringLiteral("8536.41.00")
+				    << QStringLiteral("0,25 kg")
+				    << QStringLiteral("caixa de 10"));
+
+	const CatalogImportProfile profile = fixture.profileFor(table);
+
+	// Before importing: the profile itself says which columns it reads nothing
+	// from, and that is what the dialog puts on screen.
+	const QStringList leftover = profile.unmappedColumns(table);
+	CHECK(leftover.size() == 3);
+	CHECK(leftover.contains(QStringLiteral("ncm")));
+	CHECK(leftover.contains(QStringLiteral("peso")));
+	CHECK(leftover.contains(QStringLiteral("embalagem")));
+
+	// The code column is read, so it is not left over, and neither is a column
+	// a property points at.
+	CHECK_FALSE(leftover.contains(QStringLiteral("codigo")));
+	CHECK_FALSE(leftover.contains(QStringLiteral("preco")));
+
+	// And after importing the report says it again, because whoever reads the
+	// report a month later never saw the dialog.
+	const CatalogImportReport report =
+		CatalogImporter::import(fixture.catalog, table, profile,
+					QStringLiteral("teste"));
+	REQUIRE(report.created == 1);
+	CHECK(report.unmapped_columns == leftover);
+
+	const QString text = report.toText();
+	CHECK(text.contains(QStringLiteral("ncm")));
+	CHECK(text.contains(QStringLiteral("peso")));
+	CHECK(text.contains(QStringLiteral("embalagem")));
+}
+
+TEST_CASE("CU-14.12 — planilha inteiramente lida não deixa coluna sobrando", "[catalog]")
+{
+	CatalogTable table;
+	table.headers << QStringLiteral("codigo")
+		      << QStringLiteral("classe")
+		      << QStringLiteral("descricao")
+		      << QStringLiteral(" ");
+	table.rows << (QStringList() << QStringLiteral("3RT-1016")
+				    << QStringLiteral("contactor")
+				    << QStringLiteral("Contator 9 A")
+				    << QString());
+
+	CatalogImportProfile profile;
+	profile.code_column = QStringLiteral("codigo");
+	profile.class_column = QStringLiteral("classe");
+	profile.value_columns.insert(QStringLiteral("designation"),
+				     QStringLiteral("descricao"));
+
+	// The class column counts as read, and a nameless column - the trailing
+	// delimiter every spreadsheet export leaves behind - is not worth warning
+	// about.
+	CHECK(profile.unmappedColumns(table).isEmpty());
+}
+
+TEST_CASE("CU-14.13 — reimportar move a peça para a classe que a planilha declara, e diz que moveu",
+	  "[catalog]")
+{
+	ImportFixture fixture;
+
+	// First run: everything lands in the generic class, which is exactly what
+	// happened to the real catalog while the class tree was not there yet.
+	CatalogTable first;
+	first.headers << QStringLiteral("codigo") << QStringLiteral("descricao");
+	first.rows << (QStringList() << QStringLiteral("3RT-1016")
+				    << QStringLiteral("Contator 9 A"));
+	first.rows << (QStringList() << QStringLiteral("5SY-4110")
+				    << QStringLiteral("Disjuntor 10 A"));
+
+	CatalogImportProfile generic;
+	generic.class_key = QStringLiteral("component");
+	generic.code_column = QStringLiteral("codigo");
+	generic.value_columns.insert(QStringLiteral("designation"),
+				     QStringLiteral("descricao"));
+
+	const int component_id = fixture.catalog.classByKey(QStringLiteral("component")).id;
+	CatalogImportReport report =
+		CatalogImporter::import(fixture.catalog, first, generic,
+					QStringLiteral("primeira"));
+	REQUIRE(report.created == 2);
+	CHECK(report.class_moves.isEmpty());
+	REQUIRE(fixture.catalog.partByCode(QStringLiteral("3RT-1016")).class_id == component_id);
+
+	// Second run, the sheet now carrying the class of each part, policy Update.
+	CatalogTable second;
+	second.headers << QStringLiteral("codigo")
+		       << QStringLiteral("classe")
+		       << QStringLiteral("descricao");
+	second.rows << (QStringList() << QStringLiteral("3RT-1016")
+				     << QStringLiteral("contactor")
+				     << QStringLiteral("Contator 9 A"));
+	second.rows << (QStringList() << QStringLiteral("5SY-4110")
+				     << QStringLiteral("breaker")
+				     << QStringLiteral("Disjuntor 10 A"));
+
+	CatalogImportProfile classified;
+	classified.code_column = QStringLiteral("codigo");
+	classified.class_column = QStringLiteral("classe");
+	classified.policy = CatalogDuplicatePolicy::Update;
+	classified.value_columns.insert(QStringLiteral("designation"),
+					QStringLiteral("descricao"));
+
+	report = CatalogImporter::import(fixture.catalog, second, classified,
+					 QStringLiteral("segunda"));
+
+	// The parts moved, and it was not silent: two updates counted and two moves
+	// named. "atualizadas: 2" on its own reads as if nothing had moved.
+	CHECK(report.updated == 2);
+	CHECK(report.created == 0);
+	REQUIRE(report.class_moves.size() == 2);
+
+	CHECK(fixture.catalog.partByCode(QStringLiteral("3RT-1016")).class_id
+	      == fixture.contactor_id);
+	CHECK(fixture.catalog.partByCode(QStringLiteral("5SY-4110")).class_id
+	      == fixture.breaker_id);
+
+	const QString generic_name = fixture.catalog.classById(component_id).name;
+	const QString contactor_name = fixture.catalog.classById(fixture.contactor_id).name;
+	bool named = false;
+	for (const CatalogImportReport::ClassMove &move : report.class_moves)
+	{
+		if (move.code == QStringLiteral("3RT-1016"))
+		{
+			named = true;
+			CHECK(move.from == generic_name);
+			CHECK(move.to == contactor_name);
+		}
+	}
+	CHECK(named);
+
+	const QString text = report.toText();
+	CHECK(text.contains(QStringLiteral("3RT-1016")));
+	CHECK(text.contains(contactor_name));
+
+	// Moving down the tree loses nothing: the class it came from is the parent
+	// of the class it went to, so every value it carried is still declared and
+	// still visible.
+	CHECK(report.undeclared_values.isEmpty());
+	CHECK(fixture.catalog.partByCode(QStringLiteral("3RT-1016"))
+	      .value(QStringLiteral("designation")) == QStringLiteral("Contator 9 A"));
+}
+
+TEST_CASE("CU-14.13 — valor que a classe de destino não declara é recusado e nomeado",
+	  "[catalog]")
+{
+	ImportFixture fixture;
+	QString error;
+
+	// A field only the contactor class has, so that the breaker class next door
+	// does not declare it.
+	CatalogProperty poles(QString(), QStringLiteral("Polos do contator"),
+			      CatalogPropertyType::Integer);
+	poles.class_id = fixture.contactor_id;
+	REQUIRE(fixture.catalog.addProperty(poles, &error) > 0);
+	const QString poles_key = QStringLiteral("polos_do_contator");
+
+	CatalogTable table;
+	table.headers << QStringLiteral("codigo")
+		      << QStringLiteral("descricao")
+		      << QStringLiteral("polos");
+	table.rows << (QStringList() << QStringLiteral("3RT-1016")
+				    << QStringLiteral("Contator 9 A")
+				    << QStringLiteral("3"));
+
+	CatalogImportProfile profile;
+	profile.class_key = QStringLiteral("contactor");
+	profile.code_column = QStringLiteral("codigo");
+	profile.value_columns.insert(QStringLiteral("designation"),
+				     QStringLiteral("descricao"));
+	profile.value_columns.insert(poles_key, QStringLiteral("polos"));
+
+	CatalogImportReport report =
+		CatalogImporter::import(fixture.catalog, table, profile,
+					QStringLiteral("primeira"));
+	REQUIRE(report.created == 1);
+	CHECK(report.undeclared_values.isEmpty());
+	REQUIRE(fixture.catalog.partByCode(QStringLiteral("3RT-1016")).value(poles_key)
+		== QStringLiteral("3"));
+
+	// The same sheet aimed at the class next door, which has no such field.
+	profile.class_key = QStringLiteral("breaker");
+	profile.policy = CatalogDuplicatePolicy::Update;
+	report = CatalogImporter::import(fixture.catalog, table, profile,
+					 QStringLiteral("segunda"));
+
+	CHECK(report.updated == 1);
+	REQUIRE(report.class_moves.size() == 1);
+
+	// The cell was refused, by name, with the class that has no field for it -
+	// and refused rather than stored, because a value the part dialog cannot
+	// show is a value nobody can correct.
+	REQUIRE(report.undeclared_values.size() == 1);
+	const CatalogImportReport::UndeclaredValue &undeclared = report.undeclared_values.first();
+	CHECK(undeclared.key == poles_key);
+	CHECK(undeclared.code == QStringLiteral("3RT-1016"));
+	CHECK(undeclared.row == 2);
+	CHECK(undeclared.from_sheet);
+	CHECK(undeclared.class_name
+	      == fixture.catalog.classById(fixture.breaker_id).name);
+
+	// Named once, not twice: the same key is the refused cell and the value the
+	// part already carried, and one line about it is the honest count.
+	const QString text = report.toText();
+	CHECK(text.contains(poles_key));
+	CHECK(text.count(poles_key) == 1);
+
+	// The part moved, what the new class declares came through, and the value
+	// the part already had was left alone: refusing a cell is not an order to
+	// delete what is stored.
+	const CatalogPart moved = fixture.catalog.partByCode(QStringLiteral("3RT-1016"));
+	CHECK(moved.class_id == fixture.breaker_id);
+	CHECK(moved.value(QStringLiteral("designation")) == QStringLiteral("Contator 9 A"));
+	CHECK(moved.value(poles_key) == QStringLiteral("3"));
+}
+
+TEST_CASE("CU-14.13 — valor que a peça já tinha e a classe nova não declara é nomeado, não apagado",
+	  "[catalog]")
+{
+	ImportFixture fixture;
+	QString error;
+
+	CatalogProperty poles(QString(), QStringLiteral("Polos do contator"),
+			      CatalogPropertyType::Integer);
+	poles.class_id = fixture.contactor_id;
+	REQUIRE(fixture.catalog.addProperty(poles, &error) > 0);
+	const QString poles_key = QStringLiteral("polos_do_contator");
+
+	// A part typed by hand in the contactor class, with the field that class
+	// has.
+	CatalogPart stored(QStringLiteral("3RT-1016"), fixture.contactor_id);
+	stored.setValue(QStringLiteral("designation"), QStringLiteral("Contator 9 A"));
+	stored.setValue(poles_key, QStringLiteral("3"));
+	REQUIRE(fixture.catalog.savePart(stored, &error));
+
+	// A sheet that moves it to the class next door and says nothing about that
+	// field: the sheet is not what makes the value disappear, the move is.
+	CatalogTable table;
+	table.headers << QStringLiteral("codigo") << QStringLiteral("descricao");
+	table.rows << (QStringList() << QStringLiteral("3RT-1016")
+				    << QStringLiteral("Disjuntor, corrigido"));
+
+	CatalogImportProfile profile;
+	profile.class_key = QStringLiteral("breaker");
+	profile.code_column = QStringLiteral("codigo");
+	profile.policy = CatalogDuplicatePolicy::Update;
+	profile.value_columns.insert(QStringLiteral("designation"),
+				     QStringLiteral("descricao"));
+
+	const CatalogImportReport report =
+		CatalogImporter::import(fixture.catalog, table, profile,
+					QStringLiteral("segunda"));
+	CHECK(report.updated == 1);
+	REQUIRE(report.class_moves.size() == 1);
+
+	// Named, and named as the other kind: not a cell that was refused, but a
+	// value the part carries which nobody will see again until somebody adds
+	// the field to the new class.
+	REQUIRE(report.undeclared_values.size() == 1);
+	CHECK(report.undeclared_values.first().key == poles_key);
+	CHECK_FALSE(report.undeclared_values.first().from_sheet);
+
+	// Kept, though: a class move is not an order to delete data.
+	const CatalogPart moved = fixture.catalog.partByCode(QStringLiteral("3RT-1016"));
+	CHECK(moved.class_id == fixture.breaker_id);
+	CHECK(moved.value(poles_key) == QStringLiteral("3"));
+	CHECK(moved.value(QStringLiteral("designation"))
+	      == QStringLiteral("Disjuntor, corrigido"));
+}
+
 TEST_CASE("CU-14.1 — le catalogue ressort en planilha, et le rond-point se referme")
 {
 	ImportFixture fixture;

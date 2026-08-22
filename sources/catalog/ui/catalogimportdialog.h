@@ -64,6 +64,13 @@ class CatalogImportDialog : public QDialog
 		void reloadFile();
 		void reloadPreview();
 		void reloadMappingTable();
+		/**
+			Say which columns of the file nothing will read, by name and
+			before anything is written. The mapping table has one row per
+			property of the class, so a column the class has no field for
+			has nowhere else to appear. (CU-14.12)
+		*/
+		void reloadLeftoverColumns();
 		void reloadProfileList();
 		CatalogImportProfile currentProfile() const;
 		void applyProfile(const CatalogImportProfile &profile);
@@ -89,6 +96,7 @@ class CatalogImportDialog : public QDialog
 		QPushButton *m_guess = nullptr;
 		QPushButton *m_import = nullptr;
 		QPushButton *m_export = nullptr;
+		QLabel *m_leftover = nullptr;
 		QTextBrowser *m_report = nullptr;
 		QLabel *m_status = nullptr;
 };

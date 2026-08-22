@@ -24,6 +24,7 @@
 #include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFont>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QGuiApplication>
@@ -163,10 +164,22 @@ void CatalogImportDialog::buildWidgets()
 
 	m_guess = new QPushButton(tr("Deviner la correspondance"), this);
 
+	// The columns nothing will read, right under the table that cannot show
+	// them: it has one row per property of the class, so a column the class
+	// has no field for would otherwise vanish without a word. Bold and
+	// wrapped, no colour of its own - a colour picked here is a colour that
+	// disappears under somebody's theme.
+	m_leftover = new QLabel(this);
+	m_leftover->setWordWrap(true);
+	QFont leftover_font = m_leftover->font();
+	leftover_font.setBold(true);
+	m_leftover->setFont(leftover_font);
+
 	QWidget *mapping_page = new QWidget(this);
 	QVBoxLayout *mapping_layout = new QVBoxLayout(mapping_page);
 	mapping_layout->setContentsMargins(0, 0, 0, 0);
 	mapping_layout->addWidget(m_mapping);
+	mapping_layout->addWidget(m_leftover);
 	mapping_layout->addWidget(m_guess);
 
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
@@ -207,6 +220,12 @@ void CatalogImportDialog::buildWidgets()
 	connect(m_class, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &CatalogImportDialog::classChanged);
 	connect(m_guess, &QPushButton::clicked, this, &CatalogImportDialog::guessMapping);
+	// Changing which column carries the code or the class changes what is left
+	// over, so the answer has to follow the hand that is moving.
+	connect(m_class_column, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this, [this]() { reloadLeftoverColumns(); });
+	connect(m_code_column, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this, [this]() { reloadLeftoverColumns(); });
 	connect(m_save_profile, &QPushButton::clicked, this, &CatalogImportDialog::saveProfile);
 	connect(m_load_profile, &QPushButton::clicked, this, &CatalogImportDialog::loadProfile);
 	connect(m_remove_profile, &QPushButton::clicked, this, &CatalogImportDialog::removeProfile);
@@ -326,9 +345,12 @@ void CatalogImportDialog::reloadMappingTable()
 		for (const QString &header : m_table.headers) {
 			column->addItem(header, header);
 		}
+		connect(column, QOverload<int>::of(&QComboBox::currentIndexChanged),
+			this, [this]() { reloadLeftoverColumns(); });
 		m_mapping->setCellWidget(row, 1, column);
 	}
 	m_mapping->resizeColumnsToContents();
+	reloadLeftoverColumns();
 }
 
 /**
@@ -397,6 +419,7 @@ void CatalogImportDialog::applyProfile(const CatalogImportProfile &profile)
 		const int index = column->findData(profile.value_columns.value(key));
 		column->setCurrentIndex(index >= 0 ? index : 0);
 	}
+	reloadLeftoverColumns();
 }
 
 /**
@@ -425,6 +448,32 @@ CatalogImportProfile CatalogImportDialog::currentProfile() const
 		}
 	}
 	return profile;
+}
+
+/**
+	@brief CatalogImportDialog::reloadLeftoverColumns
+	Which columns of the file nothing reads, named before anything is written.
+*/
+void CatalogImportDialog::reloadLeftoverColumns()
+{
+	if (!m_leftover) {
+		return;
+	}
+	if (m_table.isEmpty())
+	{
+		m_leftover->clear();
+		return;
+	}
+
+	const QStringList leftover = currentProfile().unmappedColumns(m_table);
+	if (leftover.isEmpty())
+	{
+		m_leftover->setText(tr("Toutes les colonnes du fichier sont lues."));
+		return;
+	}
+	m_leftover->setText(tr("%n colonne(s) ne seront pas importées : %1", "",
+			       leftover.size())
+			    .arg(leftover.join(QStringLiteral(", "))));
 }
 
 /**
@@ -607,4 +656,5 @@ void CatalogImportDialog::updateEnabledState()
 	m_load_profile->setEnabled(has_profile);
 	m_remove_profile->setEnabled(writable && has_profile);
 	m_export->setEnabled(m_catalog && m_catalog->isOpen());
+	reloadLeftoverColumns();
 }

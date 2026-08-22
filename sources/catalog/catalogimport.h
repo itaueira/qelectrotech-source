@@ -83,6 +83,19 @@ class CatalogImportProfile
 		static CatalogImportProfile guess(const Catalog &catalog,
 						  int class_id,
 						  const CatalogTable &table);
+
+		/**
+			@param table
+			@return the headers of @a table this profile reads nothing from:
+			neither the code nor the class, and mapped to no property.
+
+			A column nobody reads is loss, and it is silent loss: the
+			mapping table has one row per property of the destination class,
+			so a column with no property has nowhere to appear. Naming them
+			is the rule of a refused row applied to the column instead.
+			(CU-14.12)
+		*/
+		QStringList unmappedColumns(const CatalogTable &table) const;
 };
 
 /**
@@ -104,11 +117,50 @@ class CatalogImportReport
 				QString reason;
 		};
 
+		/**
+			@brief A part the sheet moved to another class.
+			Counted apart from an update because it is not the same event:
+			a moved part answers differently to every question asked of the
+			class tree afterwards, and "11 updated" reads as if nothing had
+			moved at all. (CU-14.13)
+		*/
+		class ClassMove
+		{
+			public:
+				QString code;
+				QString from;   ///< the class it was in, by name
+				QString to;     ///< the class the sheet declared, by name
+		};
+
+		/**
+			@brief A value the destination class does not declare.
+			Values are stored without being filtered by class, but a part
+			dialog only ever shows the class it was handed - so a value
+			outside the class is a value nobody sees and nobody can
+			correct. Both halves are named: the cell that was refused, and
+			the value the part already carried. (CU-14.12, CU-14.13)
+		*/
+		class UndeclaredValue
+		{
+			public:
+				int row = 0;          ///< the row that brought it about
+				QString code;
+				QString key;
+				QString class_name;   ///< the class that does not declare it
+				/// true for a cell of the sheet, refused; false for a value
+				/// the part already carried, kept and now out of sight
+				bool from_sheet = true;
+		};
+
 		int created = 0;
 		int updated = 0;
 		int revised = 0;
 		int ignored = 0;
 		QList<Rejection> rejections;
+		QList<ClassMove> class_moves;
+		QList<UndeclaredValue> undeclared_values;
+		/// Headers of the file the profile read nothing from (CU-14.12)
+		QStringList unmapped_columns;
 		QStringList notes;
 
 		int rejected() const;

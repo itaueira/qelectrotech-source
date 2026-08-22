@@ -1385,222 +1385,235 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
 <context>
     <name>CatalogImportDialog</name>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="59"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="60"/>
         <source>Importer des pièces depuis une feuille de calcul</source>
         <translation>Importar peças de uma planilha</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="74"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="75"/>
         <source>Aucun fichier choisi</source>
         <translation>Nenhum arquivo escolhido</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="75"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="76"/>
         <source>Choisir un fichier…</source>
         <translation>Escolher um arquivo…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="78"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="79"/>
         <source>Fichier</source>
         <translation>Arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="84"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="85"/>
         <source>Classeur xlsx ou fichier CSV. Pour un CSV, le séparateur est deviné : point-virgule, virgule, tabulation ou barre verticale. D&apos;un classeur, la première feuille est lue.</source>
         <translation>Pasta de trabalho xlsx ou arquivo CSV. Num CSV o separador é adivinhado: ponto e vírgula, vírgula, tabulação ou barra vertical. De uma pasta de trabalho, é lida a primeira planilha.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="87"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="88"/>
         <source>Fichier CSV, tel qu&apos;un tableur l&apos;exporte. Le séparateur est deviné : point-virgule, virgule, tabulation ou barre verticale. Cette version ne lit pas les classeurs xlsx : les exporter en CSV depuis le tableur.</source>
         <translation>Arquivo CSV, como uma planilha o exporta. O separador é adivinhado: ponto e vírgula, vírgula, tabulação ou barra vertical. Esta versão não lê pastas de trabalho xlsx: exporte-as em CSV pela planilha.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="110"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="111"/>
         <source>À utiliser quand la feuille porte elle-même la classe de chaque ligne. Elle prend alors le pas sur la classe choisie au-dessus.</source>
         <translation>Use quando a própria planilha traz a classe de cada linha. Ela então tem precedência sobre a classe escolhida acima.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="127"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="128"/>
         <source>Classe de destination</source>
         <translation>Classe de destino</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="128"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="129"/>
         <source>Colonne de la classe</source>
         <translation>Coluna da classe</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="129"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="130"/>
         <source>Colonne de la référence</source>
         <translation>Coluna do código</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="130"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="131"/>
         <source>Pièce déjà au catalogue</source>
         <translation>Peça já no catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="134"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="135"/>
         <source>Charger</source>
         <translation>Carregar</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="135"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="136"/>
         <source>Enregistrer sous…</source>
         <translation>Salvar como…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="136"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="137"/>
         <source>Supprimer</source>
         <translation>Apagar</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="139"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="140"/>
         <source>Profil</source>
         <translation>Perfil</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="146"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="147"/>
         <source>Chaque fournisseur envoie une disposition différente : le profil garde la correspondance des colonnes pour le mois suivant. Les profils vivent dans le catalogue, donc dans l&apos;environnement partagé — la disposition de la liste d&apos;un fournisseur n&apos;est pas une affaire de poste de travail.</source>
         <translation>Cada fornecedor manda um layout diferente: o perfil guarda a correspondência das colunas para o mês seguinte. Os perfis moram no catálogo, e portanto no ambiente compartilhado — o layout da lista de um fornecedor não é assunto de posto de trabalho.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="159"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="160"/>
         <source>Propriété</source>
         <translation>Propriedade</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="159"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="160"/>
         <source>Colonne du fichier</source>
         <translation>Coluna do arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="164"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="165"/>
         <source>Deviner la correspondance</source>
         <translation>Adivinhar a correspondência</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="180"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="193"/>
         <source>Le rapport d&apos;importation apparaît ici : accepté, mis à jour, ignoré, refusé — et pourquoi, ligne par ligne.</source>
         <translation>O relatório da importação aparece aqui: aceito, atualizado, ignorado, recusado — e por quê, linha por linha.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="186"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="199"/>
         <source>Importer</source>
         <translation>Importar</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="188"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="201"/>
         <source>Exporter le catalogue en CSV…</source>
         <translation>Exportar o catálogo em CSV…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="224"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="243"/>
         <source>Feuilles de calcul (*.xlsx *.csv *.txt);;Tous les fichiers (*)</source>
         <translation>Planilhas (*.xlsx *.csv *.txt);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="225"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="244"/>
         <source>Feuilles de calcul (*.csv *.txt);;Tous les fichiers (*)</source>
         <translation>Planilhas (*.csv *.txt);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="227"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="246"/>
         <source>Choisir la feuille de calcul</source>
         <translation>Escolher a planilha</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="246"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="265"/>
         <source>Fichier non lu</source>
         <translation>Arquivo não lido</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="252"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="271"/>
         <source>Le fichier ne contient aucune ligne lisible.</source>
         <translation>O arquivo não tem nenhuma linha legível.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="256"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="275"/>
         <source>%1 colonne(s) et %2 ligne(s) lues. Rien n&apos;est encore écrit dans le catalogue.</source>
         <translation>%1 coluna(s) e %2 linha(s) lidas. Nada foi gravado no catálogo ainda.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="263"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="282"/>
         <source>(la classe choisie ci-dessus)</source>
         <translation>(a classe escolhida acima)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="325"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="344"/>
         <source>(ne pas importer)</source>
         <translation>(não importar)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="450"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="471"/>
+        <source>Toutes les colonnes du fichier sont lues.</source>
+        <translation>Todas as colunas do arquivo são lidas.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="474"/>
+        <source>%n colonne(s) ne seront pas importées : %1</source>
+        <translation>
+            <numerusform>%n coluna não será importada: %1</numerusform>
+            <numerusform>%n colunas não serão importadas: %1</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="499"/>
         <source>Enregistrer le profil</source>
         <translation>Salvar o perfil</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="451"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="500"/>
         <source>Nom du profil — celui du fournisseur, en général</source>
         <translation>Nome do perfil — em geral o do fornecedor</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="463"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="512"/>
         <source>Profil incomplet</source>
         <translation>Perfil incompleto</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="468"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="517"/>
         <source>Profil non enregistré</source>
         <translation>Perfil não salvo</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="477"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="526"/>
         <source>Profil « %1 » enregistré dans le catalogue.</source>
         <translation>Perfil « %1 » salvo no catálogo.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="492"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="541"/>
         <source>Le profil « %1 » est vide.</source>
         <translation>O perfil « %1 » está vazio.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="499"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="548"/>
         <source>Profil « %1 » chargé. Aucun remappage à faire.</source>
         <translation>Perfil « %1 » carregado. Nenhum remapeamento a fazer.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="511"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="560"/>
         <source>Supprimer le profil</source>
         <translation>Apagar o perfil</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="512"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="561"/>
         <source>Supprimer le profil « %1 » ?</source>
         <translation>Apagar o perfil « %1 »?</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="521"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="570"/>
         <source>Profil conservé</source>
         <translation>Perfil mantido</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="540"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="589"/>
         <source>Importation impossible</source>
         <translation>Importação impossível</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="552"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="601"/>
         <source>%1 créée(s), %2 mise(s) à jour, %3 révision(s), %4 ignorée(s), %5 refusée(s).</source>
         <translation>%1 criada(s), %2 atualizada(s), %3 revisão(ões), %4 ignorada(s), %5 recusada(s).</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="561"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="610"/>
         <source>Importation terminée avec des refus</source>
         <translation>Importação concluída com recusas</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="562"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="611"/>
         <source>%n ligne(s) ont été refusée(s). Le rapport en bas de la fenêtre dit laquelle et pourquoi.</source>
         <translation>
             <numerusform>%n linha foi recusada. O relatório no rodapé da janela diz qual e por quê.</numerusform>
@@ -1608,22 +1621,22 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
         </translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="577"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="626"/>
         <source>Exporter le catalogue</source>
         <translation>Exportar o catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="578"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="627"/>
         <source>Feuilles de calcul (*.csv)</source>
         <translation>Planilhas (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="589"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="638"/>
         <source>Export non effectué</source>
         <translation>Exportação não feita</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="592"/>
+        <location filename="../sources/catalog/ui/catalogimportdialog.cpp" line="641"/>
         <source>%n pièce(s) exportée(s) vers %1.</source>
         <translation>
             <numerusform>%n peça exportada para %1.</numerusform>
@@ -1634,27 +1647,27 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
 <context>
     <name>CatalogImportProfile</name>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="43"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="44"/>
         <source>Il faut dire quelle colonne porte la référence de la pièce.</source>
         <translation>É preciso dizer qual coluna traz o código da peça.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="51"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="52"/>
         <source>Il faut choisir une classe de destination, ou dire quelle colonne la porte.</source>
         <translation>É preciso escolher uma classe de destino, ou dizer qual coluna a traz.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="102"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="103"/>
         <source>Ignorer : garder ce que le catalogue a</source>
         <translation>Ignorar: manter o que o catálogo tem</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="105"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="106"/>
         <source>Mettre à jour : écraser les champs apportés</source>
         <translation>Atualizar: sobrescrever os campos trazidos</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="108"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="109"/>
         <source>Nouvelle révision : garder l&apos;ancienne donnée</source>
         <translation>Nova revisão: guardar o dado antigo</translation>
     </message>
@@ -1662,55 +1675,85 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
 <context>
     <name>CatalogImportReport</name>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="280"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="318"/>
         <source>%1 ligne(s) lue(s).</source>
         <translation>%1 linha(s) lida(s).</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="282"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="320"/>
         <source>%1 créée(s), %2 mise(s) à jour, %3 nouvelle(s) révision(s), %4 ignorée(s), %5 refusée(s).</source>
         <translation>%1 criada(s), %2 atualizada(s), %3 nova(s) revisão(ões), %4 ignorada(s), %5 recusada(s).</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="290"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="328"/>
         <source>Lignes refusées :</source>
         <translation>Linhas recusadas:</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="293"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="331"/>
         <source>  ligne %1 (%2) : %3</source>
         <translation>  linha %1 (%2): %3</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="297"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="335"/>
         <source>sans référence</source>
         <translation>sem código</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogimport.cpp" line="344"/>
+        <source>%1 pièce(s) changée(s) de classe :</source>
+        <translation>%1 peça(s) com classe alterada:</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogimport.cpp" line="349"/>
+        <source>  %1 : de %2 vers %3</source>
+        <translation>  %1: de %2 para %3</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogimport.cpp" line="358"/>
+        <source>Valeurs hors de la classe :</source>
+        <translation>Valores fora da classe:</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogimport.cpp" line="363"/>
+        <source>  ligne %1 (%2) : « %3 » refusée, la classe « %4 » ne la déclare pas</source>
+        <translation>  linha %1 (%2): « %3 » recusado, a classe « %4 » não o declara</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogimport.cpp" line="367"/>
+        <source>  ligne %1 (%2) : « %3 » gardée mais invisible, la classe « %4 » ne la déclare pas</source>
+        <translation>  linha %1 (%2): « %3 » mantido, mas invisível: a classe « %4 » não o declara</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogimport.cpp" line="379"/>
+        <source>Colonnes que rien ne lit (%1) : %2</source>
+        <translation>Colunas que nada lê (%1): %2</translation>
     </message>
 </context>
 <context>
     <name>CatalogImporter</name>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="339"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="421"/>
         <source>Le catalogue n&apos;est pas ouvert.</source>
         <translation>O catálogo não está aberto.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="345"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="427"/>
         <source>Le catalogue est en lecture seule.</source>
         <translation>O catálogo está em modo somente leitura.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="355"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="437"/>
         <source>La classe de destination « %1 » n&apos;existe pas.</source>
         <translation>A classe de destino « %1 » não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="374"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="473"/>
         <source>pas de référence dans la colonne « %1 »</source>
         <translation>sem código na coluna « %1 »</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/catalogimport.cpp" line="405"/>
+        <location filename="../sources/catalog/catalogimport.cpp" line="504"/>
         <source>classe « %1 » inconnue</source>
         <translation>classe « %1 » desconhecida</translation>
     </message>
@@ -14362,12 +14405,12 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>Apagar um folio</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="240"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="238"/>
         <source>Composants sans pièce</source>
         <translation>Componentes sem peça</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="247"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="245"/>
         <source>Les %n composant(s) du projet ont une pièce attribuée. La nomenclature est complète.</source>
         <translation>
             <numerusform>O componente do projeto tem peça atribuída. A lista de material está completa.</numerusform>
@@ -14375,70 +14418,70 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="252"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="250"/>
         <source>%1 composant(s) sur %2 n&apos;ont pas de pièce attribuée. Double-cliquez une ligne pour aller au composant.</source>
         <translation>%1 de %2 componentes não têm peça atribuída. Dê duplo clique numa linha para ir ao componente.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="259"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="257"/>
         <source>Repère</source>
         <translation>Tag</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="260"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="258"/>
         <source>Folio</source>
         <translation>Folha</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="261"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="259"/>
         <source>Symbole</source>
         <translation>Símbolo</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="282"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="472"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="280"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="470"/>
         <source>(sans repère)</source>
         <translation>(sem tag)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="315"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="313"/>
         <source>Attribuer une pièce…</source>
         <translation>Atribuir uma peça…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="316"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="314"/>
         <source>Attribue une pièce du catalogue aux composants sélectionnés dans cette liste, sans avoir à les retrouver un par un sur les folios.</source>
         <translation>Atribui uma peça do catálogo aos componentes selecionados nesta lista, sem ter de achar cada um deles nos folios.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="375"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="373"/>
         <source>%1 composant(s) sur %2 n&apos;ont plus de pièce à attribuer. Double-cliquez une ligne pour aller au composant.</source>
         <translation>%1 componente(s) de %2 ainda não têm peça atribuída. Duplo clique numa linha para ir ao componente.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="447"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="460"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="495"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="445"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="458"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="493"/>
         <source>Lier un accessoire</source>
         <translation>Vincular um acessório</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="448"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="446"/>
         <source>« %1 » n&apos;est pas de la classe Accessoire, mais de « %2 ». Le lier quand même ?</source>
         <translation>« %1 » não é da classe Acessório, e sim de « %2 ». Vincular assim mesmo?</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="461"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="459"/>
         <source>Ce projet n&apos;a aucun composant auquel rattacher l&apos;accessoire.</source>
         <translation>Este projeto não tem nenhum componente ao qual vincular o acessório.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="476"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="474"/>
         <source>folio %1</source>
         <translation>folio %1</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="496"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="494"/>
         <source>À quel composant « %1 » appartient-il ?</source>
         <translation>A qual componente « %1 » pertence?</translation>
     </message>

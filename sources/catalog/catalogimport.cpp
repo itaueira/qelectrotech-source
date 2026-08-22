@@ -25,6 +25,7 @@
 #include <QDateTime>
 #include <QDomDocument>
 #include <QDomElement>
+#include <QSet>
 
 // -----------------------------------------------------------------------------
 // CatalogImportProfile
@@ -239,6 +240,43 @@ CatalogImportProfile CatalogImportProfile::guess(const Catalog &catalog,
 	return profile;
 }
 
+/**
+	@brief CatalogImportProfile::unmappedColumns
+	@param table
+	@return the headers of @a table this profile reads nothing from
+*/
+QStringList CatalogImportProfile::unmappedColumns(const CatalogTable &table) const
+{
+	QSet<int> used;
+	const auto use = [&used, &table](const QString &header)
+	{
+		const int column = table.columnIndex(header);
+		if (column >= 0) {
+			used.insert(column);
+		}
+	};
+
+	use(code_column);
+	use(class_column);
+	const QStringList mapped = value_columns.values();
+	for (const QString &header : mapped) {
+		use(header);
+	}
+
+	QStringList leftover;
+	for (int column = 0 ; column < table.headers.size() ; ++column)
+	{
+		// The header spelled as the file spells it, because that is what the
+		// person has to find again in their spreadsheet. A nameless column -
+		// a trailing delimiter - is not worth naming.
+		const QString header = table.headers.at(column);
+		if (!used.contains(column) && !header.trimmed().isEmpty()) {
+			leftover << header;
+		}
+	}
+	return leftover;
+}
+
 // -----------------------------------------------------------------------------
 // CatalogImportReport
 // -----------------------------------------------------------------------------
@@ -300,6 +338,50 @@ QString CatalogImportReport::toText() const
 		}
 	}
 
+	if (!class_moves.isEmpty())
+	{
+		lines << QString();
+		lines << QCoreApplication::translate("CatalogImportReport",
+						     "%1 pièce(s) changée(s) de classe :")
+			 .arg(class_moves.size());
+		for (const ClassMove &move : class_moves)
+		{
+			lines << QCoreApplication::translate("CatalogImportReport",
+							     "  %1 : de %2 vers %3")
+				 .arg(move.code, move.from, move.to);
+		}
+	}
+
+	if (!undeclared_values.isEmpty())
+	{
+		lines << QString();
+		lines << QCoreApplication::translate("CatalogImportReport",
+						     "Valeurs hors de la classe :");
+		for (const UndeclaredValue &undeclared : undeclared_values)
+		{
+			lines << (undeclared.from_sheet
+				  ? QCoreApplication::translate(
+					    "CatalogImportReport",
+					    "  ligne %1 (%2) : « %3 » refusée, la classe "
+					    "« %4 » ne la déclare pas")
+				  : QCoreApplication::translate(
+					    "CatalogImportReport",
+					    "  ligne %1 (%2) : « %3 » gardée mais invisible, la "
+					    "classe « %4 » ne la déclare pas"))
+				 .arg(undeclared.row)
+				 .arg(undeclared.code, undeclared.key, undeclared.class_name);
+		}
+	}
+
+	if (!unmapped_columns.isEmpty())
+	{
+		lines << QString();
+		lines << QCoreApplication::translate("CatalogImportReport",
+						     "Colonnes que rien ne lit (%1) : %2")
+			 .arg(unmapped_columns.size())
+			 .arg(unmapped_columns.join(QStringLiteral(", ")));
+	}
+
 	if (!notes.isEmpty())
 	{
 		lines << QString();
@@ -359,6 +441,23 @@ CatalogImportReport CatalogImporter::import(Catalog &catalog,
 	}
 
 	const QString stamp = QDateTime::currentDateTime().toString(Qt::ISODate);
+
+	// Which columns nothing reads, worked out before a single row is written.
+	// The mapping table has one row per property, so a column with no property
+	// has nowhere to appear on screen: this is the only place the person ever
+	// hears of it. (CU-14.12)
+	report.unmapped_columns = profile.unmappedColumns(table);
+
+	// Class names for the report, each looked up once. A person reads names,
+	// not identifiers, and a report is read by a person.
+	QHash<int, QString> class_names;
+	const auto name_of_class = [&catalog, &class_names](int id) -> QString
+	{
+		if (!class_names.contains(id)) {
+			class_names.insert(id, catalog.classById(id).name);
+		}
+		return class_names.value(id);
+	};
 
 	for (int row = 0 ; row < table.rowCount() ; ++row)
 	{
@@ -425,9 +524,21 @@ CatalogImportReport CatalogImporter::import(Catalog &catalog,
 		// columns does not blank the pins, the physical view and the
 		// accessories the part already carried.
 		CatalogPart part = already_there ? existing : CatalogPart(code, class_id);
-		if (!already_there) {
-			part.class_id = class_id;
+
+		// The class the sheet declares wins, on an update as much as on a new
+		// part: running a list again precisely to classify what a first run
+		// brought in generic is the ordinary reason to import twice. Keeping
+		// the stored class let the report say "11 updated" while nothing had
+		// moved, which is the one thing a report must never do. (CU-14.13)
+		if (already_there && part.class_id != class_id)
+		{
+			CatalogImportReport::ClassMove move;
+			move.code = code;
+			move.from = name_of_class(part.class_id);
+			move.to = name_of_class(class_id);
+			report.class_moves.append(move);
 		}
+		part.class_id = class_id;
 		part.origin = origin;
 		part.origin_date = stamp;
 
@@ -441,7 +552,11 @@ CatalogImportReport CatalogImporter::import(Catalog &catalog,
 			property_by_key.insert(property.key, property);
 		}
 
-		const QStringList property_keys = profile.value_columns.keys();
+		// Sorted, so that two runs of the same file report the same way: a
+		// hash hands its keys back in whatever order it pleases.
+		QStringList property_keys = profile.value_columns.keys();
+		property_keys.sort();
+		QSet<QString> refused_keys;
 		for (const QString &key : property_keys)
 		{
 			const QString header = profile.value_columns.value(key);
@@ -458,9 +573,48 @@ CatalogImportReport CatalogImporter::import(Catalog &catalog,
 			// An empty cell leaves what was there: a supplier's list rarely
 			// fills every column, and treating a gap as "erase this" is how
 			// an import destroys a catalog.
-			if (!value.isEmpty()) {
-				part.setValue(key, value);
+			if (value.isEmpty()) {
+				continue;
 			}
+			// A cell the destination class has no field for is refused, and
+			// said out loud. Storing it would work - the value rows are not
+			// filtered by class - and that is exactly the trap: the part
+			// dialog only shows the class, so the value would sit there
+			// invisible, impossible to correct, and counted as imported.
+			// (CU-14.13)
+			if (!property_by_key.contains(key))
+			{
+				CatalogImportReport::UndeclaredValue undeclared;
+				undeclared.row = reported_row;
+				undeclared.code = code;
+				undeclared.key = key;
+				undeclared.class_name = name_of_class(class_id);
+				report.undeclared_values.append(undeclared);
+				refused_keys.insert(key);
+				continue;
+			}
+			part.setValue(key, value);
+		}
+
+		// And what the part already carried that its class does not declare.
+		// It is kept - moving a part between classes is no reason to delete
+		// data, and the right fix is often to add the field to the class -
+		// but it is named, because until somebody does that nobody can see it.
+		QStringList stored_keys = part.values.keys();
+		stored_keys.sort();
+		for (const QString &key : stored_keys)
+		{
+			if (property_by_key.contains(key) || refused_keys.contains(key)
+			    || part.values.value(key).isEmpty()) {
+				continue;
+			}
+			CatalogImportReport::UndeclaredValue undeclared;
+			undeclared.row = reported_row;
+			undeclared.code = code;
+			undeclared.key = key;
+			undeclared.class_name = name_of_class(class_id);
+			undeclared.from_sheet = false;
+			report.undeclared_values.append(undeclared);
 		}
 
 		bool saved = false;
