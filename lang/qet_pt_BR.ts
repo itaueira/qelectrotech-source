@@ -1362,6 +1362,11 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
         <translation>A criar: %1</translation>
     </message>
     <message>
+        <location filename="../sources/catalog/catalogclasspackage.cpp" line="527"/>
+        <source>Créées : %1</source>
+        <translation>Criadas: %1</translation>
+    </message>
+    <message>
         <location filename="../sources/catalog/catalogclasspackage.cpp" line="528"/>
         <source>Non appliqué :</source>
         <translation>Não aplicado:</translation>

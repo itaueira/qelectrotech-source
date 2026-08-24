@@ -214,6 +214,7 @@ namespace
 		}
 
 		CatalogClassPackage::Report local;
+		local.applied = (writable != nullptr);
 
 			//The controlled lists first: a mandatory list that arrives
 			//after the property that reads from it is a field nobody can
@@ -520,7 +521,12 @@ QString CatalogClassPackage::Report::toText() const
 	}
 	if (!missing_classes.isEmpty())
 	{
-		lines << QCoreApplication::translate("CatalogClassPackage", "À créer : %1")
+			//The same list answers two different questions, and a label for one
+			//of them is a lie in the other: a status line that still says "to
+			//create" after creating reads as an import that stopped halfway.
+		lines << (applied
+			  ? QCoreApplication::translate("CatalogClassPackage", "Créées : %1")
+			  : QCoreApplication::translate("CatalogClassPackage", "À créer : %1"))
 			 .arg(missing_classes.join(QStringLiteral(", ")));
 	}
 	if (!refused.isEmpty())

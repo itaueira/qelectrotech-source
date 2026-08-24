@@ -21,6 +21,7 @@
 #include "../../../sources/catalog/catalogproperty.h"
 #include "qt_catch_tostring.h"
 
+#include <QCoreApplication>
 #include <QDomDocument>
 #include <QFileInfo>
 #include <QTemporaryDir>
@@ -289,6 +290,29 @@ TEST_CASE("CU-12.10 — a árvore de classes é um arquivo", "[catalog]")
 		CHECK(done.lists_created == plan.lists_created);
 		CHECK(done.missing_classes == plan.missing_classes);
 		CHECK(done.refused == plan.refused);
+
+			//CU-14.15: the same list of names answers two different questions,
+			//and the label has to say which one. A status line that still reads
+			//"to create" after creating is read as an import that stopped.
+		CHECK_FALSE(plan.applied);
+		CHECK(done.applied);
+
+		const QString asked = plan.toText();
+		const QString said = done.toText();
+		CHECK(asked != said);
+		for (const QString &name : plan.missing_classes)
+		{
+			INFO("classe: " << name.toStdString());
+			CHECK(asked.contains(name));
+			CHECK(said.contains(name));
+		}
+
+		const QString to_create =
+				QCoreApplication::translate("CatalogClassPackage",
+							   "À créer : %1")
+				.arg(plan.missing_classes.join(QStringLiteral(", ")));
+		CHECK(asked.contains(to_create));
+		CHECK_FALSE(said.contains(to_create));
 	}
 
 	SECTION("classe sem lugar é recusada e o resto do ramo entra")

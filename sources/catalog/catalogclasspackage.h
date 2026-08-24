@@ -72,6 +72,8 @@ class CatalogClassPackage
 				QStringList missing_classes;
 				/// What was not applied, and why, in one line each
 				QStringList refused;
+				/// true when this is what was done, false when it is what would be
+				bool applied = false;
 
 				/// true when the target catalog already has all of it
 				bool changesNothing() const;

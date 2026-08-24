@@ -95,6 +95,7 @@ add_executable(
     src/catalogassignment_test.cpp
     src/catalogclasspackage_test.cpp
     src/catalogimport_test.cpp
+    src/bancada_conversao_test.cpp
     src/titleblockvariables_test.cpp
     src/environment_test.cpp
     src/symbol_test.cpp
