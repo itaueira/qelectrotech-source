@@ -144,9 +144,13 @@ void AssignCatalogPartCommand::apply(bool forward)
 		const QList<Terminal *> terminals = element->terminals();
 		for (int index = 0 ; index < terminals.size() && index < names.size() ; ++index)
 		{
-			// An empty name means the symbol keeps the label it came with,
-			// which is also how undo puts a component back to a state that
-			// never had a part assigned.
+			// An empty name means the part says nothing about this pin, and
+			// the label the symbol was drawn with stays. Undo is the other
+			// way round: it puts back exactly what was there, empty
+			// included, so a name the assignment had cleared comes back.
+			if (forward && names.at(index).isEmpty()) {
+				continue;
+			}
 			terminals.at(index)->setInstanceName(names.at(index));
 		}
 		element->update();
