@@ -53,10 +53,20 @@ class CatalogBrowserDialog : public QDialog
 		CatalogPart selectedPart() const;
 
 		/**
+			Seed « New part » with @a part instead of an empty one. Whoever
+			opens the browser to solve a concrete component already knows what
+			that component draws and carries; the browser does not, and a
+			dialog that arrives empty asks for it all again.
+		*/
+		void setPartTemplate(const CatalogPart &part);
+
+		/**
 			Open the browser and return the part the user picked, a null part
 			when the dialog was cancelled.
 		*/
-		static CatalogPart choosePart(Catalog *catalog, QWidget *parent = nullptr);
+		static CatalogPart choosePart(Catalog *catalog,
+					      QWidget *parent = nullptr,
+					      const CatalogPart &part_template = CatalogPart());
 
 	private slots:
 		void search();
@@ -79,6 +89,8 @@ class CatalogBrowserDialog : public QDialog
 		Catalog *m_catalog = nullptr;
 		QList<CatalogPart> m_results;
 		CatalogPart m_selected;
+		CatalogPart m_template;
+		bool m_has_template = false;
 
 		QLineEdit *m_text = nullptr;
 		QComboBox *m_class_filter = nullptr;

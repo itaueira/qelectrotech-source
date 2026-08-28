@@ -148,6 +148,7 @@ class DynamicElementTextItem : public DiagramTextItem
 		void setPotentialConductor();
 		void conductorPropertiesChanged();
 		QString reportReplacedCompositeText() const;
+		bool isReportLabel() const;
 		void zoomToLinkedElement();
 		void parentElementRotationChanged();
 		void thisRotationChanged();

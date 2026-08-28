@@ -415,8 +415,19 @@ void CatalogBrowserDialog::searchRepository()
 */
 void CatalogBrowserDialog::createPart()
 {
-	CatalogPart part;
-	part.class_id = m_class_filter->currentData().toInt();
+		//Vindo dos «Componentes sem peça», quem chamou já sabe qual componente
+		//está sendo resolvido: o fabricante que o projetista digitou ao
+		//desenhar, e um pino por borne do símbolo. Redigitar isso é justamente
+		//o desperdício que este caminho existe para tirar.
+	CatalogPart part = m_has_template ? m_template : CatalogPart();
+
+		//O botão é «Nova peça»: mesmo que o molde aponte para uma peça que já
+		//existe, o que sai daqui é peça nova.
+	part.id = 0;
+
+	if (part.class_id == 0) {
+		part.class_id = m_class_filter->currentData().toInt();
+	}
 	if (part.class_id == 0)
 	{
 		const CatalogClass component = m_catalog->classByKey(QStringLiteral("component"));
@@ -526,14 +537,31 @@ CatalogPart CatalogBrowserDialog::selectedPart() const
 }
 
 /**
+	@brief CatalogBrowserDialog::setPartTemplate
+	@param part : what « New part » starts from
+*/
+void CatalogBrowserDialog::setPartTemplate(const CatalogPart &part)
+{
+		//Uma peça de molde não tem código nem identificador, então isNull()
+		//diria «vazia» para um molde perfeitamente útil. Quem chamou é quem sabe.
+	m_template = part;
+	m_has_template = true;
+}
+
+/**
 	@brief CatalogBrowserDialog::choosePart
 	@param catalog
 	@param parent
+	@param part_template : what « New part » starts from, an empty part to
+	start from nothing
 	@return the part the user picked, a null part when cancelled
 */
-CatalogPart CatalogBrowserDialog::choosePart(Catalog *catalog, QWidget *parent)
+CatalogPart CatalogBrowserDialog::choosePart(Catalog *catalog,
+					     QWidget *parent,
+					     const CatalogPart &part_template)
 {
 	CatalogBrowserDialog dialog(catalog, parent);
+	dialog.setPartTemplate(part_template);
 	if (dialog.exec() != QDialog::Accepted) {
 		return CatalogPart();
 	}

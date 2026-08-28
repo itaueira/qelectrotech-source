@@ -76,6 +76,7 @@ const QHash<QString, QString> &exportFlags()
 		{"--check-elements", "check"},
 		{"--resave", "resave"},
 		{"--set-titleblock", "settb"},
+		{"--set-iec", "setiec"},
 	};
 	return flags;
 }
@@ -754,6 +755,57 @@ int setTitleBlock(QETProject &project, const QString &output,
 	return 0;
 }
 
+/// Turn the IEC 81346 identification structure on or off from the command
+/// line, then write the project back out.  It is the same call the settings
+/// dialog makes - QETProject::setIecSettings() -, so it exercises the refresh
+/// of every label that pressing OK triggers.  And because a dynamic text
+/// serialises the text it is currently showing, the output file is a snapshot
+/// of what the drawing reads after that refresh: greppable, no window open.
+int setIecStructure(QETProject &project, const QString &output,
+					const QStringList &rest)
+{
+	if (rest.isEmpty()) {
+		err << "No mode given (expected off, short, context or full).\n";
+		return 2;
+	}
+	IecStructureSettings settings = project.iecSettings();
+	const QString mode = rest.at(0).toLower();
+	if (mode == "off")
+		settings.enabled = false;
+	else if (mode == "short" || mode == "context" || mode == "full") {
+		settings.enabled = true;
+		settings.display = IecStructureSettings::displayFromString(mode);
+	}
+	else {
+		err << "Bad mode '" << rest.at(0)
+			<< "' (expected off, short, context or full).\n";
+		return 2;
+	}
+	for (const QString &a : rest.mid(1)) {
+		if (a == "element-location=on")
+			settings.location_from_element = true;
+		else if (a == "element-location=off")
+			settings.location_from_element = false;
+		else {
+			err << "Bad option '" << a
+				<< "' (expected element-location=on|off).\n";
+			return 2;
+		}
+	}
+	project.setIecSettings(settings);
+	const QDomDocument doc = project.toXml();
+	QFile file(output);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		err << "Cannot open '" << output << "' for writing.\n";
+		return 1;
+	}
+	QTextStream fout(&file);
+	fout << doc.toString(4);
+	file.close();
+	out << "IEC structure set to " << mode << " -> " << output << "\n";
+	return 0;
+}
+
 } // anonymous namespace
 
 namespace CLIExport {
@@ -831,6 +883,8 @@ int run(const QStringList &args)
 		return resaveProject(project, output);
 	if (format == "settb")
 		return setTitleBlock(project, output, rest.mid(2));
+	if (format == "setiec")
+		return setIecStructure(project, output, rest.mid(2));
 	return exportImages(project, format, output);
 }
 

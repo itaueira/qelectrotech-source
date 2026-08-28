@@ -482,6 +482,48 @@ TEST_CASE("CU-12.9 — le modèle tient une charge initiale hétérogène")
 	CHECK(catalog.searchParts(QString()).size() == 50);
 }
 
+TEST_CASE("Catalog - la recherche trouve une pièce par le nom de sa classe")
+{
+				// The results table shows the class name in its second column, so somebody
+				// types what is on screen. Matching the code and the values only made the
+				// list shorten to nothing while the sought part was right there.
+		OpenCatalog fixture;
+		Catalog &catalog = fixture.catalog;
+		QString error;
+
+		CatalogClass computer(QStringLiteral("industrial_computer"),
+						      QStringLiteral("Computador industrial"));
+		computer.parent_id = classId(catalog, "component");
+		const int computer_id = catalog.addClass(computer, &error);
+		INFO("addClass: " << error.toStdString());
+		REQUIRE(computer_id > 0);
+
+				// Neither the code nor any value carries the sought word: the name of the
+				// class is the only place it appears.
+		CatalogPart unit(QStringLiteral("SC1642"), computer_id);
+		unit.setValue(QStringLiteral("designation"), QStringLiteral("Unidade de controle"));
+		REQUIRE(catalog.savePart(unit, &error));
+
+		CatalogPart other(QStringLiteral("K-101"), classId(catalog, "contactor"));
+		REQUIRE(catalog.savePart(other, &error));
+
+		const QList<CatalogPart> found = catalog.searchParts(QStringLiteral("Computador"));
+		REQUIRE(found.size() == 1);
+		CHECK(found.first().code == QStringLiteral("SC1642"));
+
+				// A fragment is enough, and the case does not matter: the list shortens
+				// while a word is being typed.
+		CHECK(catalog.searchParts(QStringLiteral("computador ind")).size() == 1);
+
+				// The class filter still narrows. The name matches, the class does not.
+		CHECK(catalog.searchParts(QStringLiteral("Computador"),
+								  classId(catalog, "contactor")).isEmpty());
+
+				// And the two older ways of matching keep working.
+		CHECK(catalog.searchParts(QStringLiteral("SC16")).size() == 1);
+		CHECK(catalog.searchParts(QStringLiteral("Unidade")).size() == 1);
+}
+
 TEST_CASE("Catalog - une propriété ajoutée peut imposer sa valeur initiale")
 {
 	OpenCatalog fixture;

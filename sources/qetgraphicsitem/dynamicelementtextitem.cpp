@@ -823,8 +823,42 @@ bool DynamicElementTextItem::sceneEventFilter(QGraphicsItem *watched, QEvent *ev
 	return false;
 }
 
+/**
+	@brief DynamicElementTextItem::isReportLabel
+	True when this text belongs to a folio report (or to a conductor
+	definition) and shows the label - either directly, or through a composite
+	text that uses %{label}.
+
+	Such a text is not the identification of the arrow it sits on: the arrow
+	has none.  It is the cross reference to the other end of the link, and it
+	is updateReportText() that builds it.  Every entry point that can rewrite a
+	label has to send this case there instead of asking the element for its own
+	label, which is empty - see setInfoName(), setCompositeText() and
+	refreshLabelConnection(), which already do.
+*/
+bool DynamicElementTextItem::isReportLabel() const
+{
+	Element *element = m_parent_element.data();
+	if (!element)
+		return false;
+	if (!(element->linkType() & Element::AllReport)
+		&& element->linkType() != Element::ConductorDefinition)
+		return false;
+	return (m_text_from == ElementInfo && m_info_name == "label")
+		|| m_text_from == CompositeText;
+}
+
 void DynamicElementTextItem::elementInfoChanged()
 {
+		//A report shows the cross reference to the other end, not a label of
+		//its own.  Without this the arrow would be asked for its own label and
+		//the cross reference would be erased from the drawing.
+	if (isReportLabel())
+	{
+		updateReportText();
+		return;
+	}
+	
 	DiagramContext dc;
 	Element *element = elementUseForInfo();
 	if(element) {
@@ -1104,6 +1138,16 @@ void DynamicElementTextItem::updateReportText()
 */
 void DynamicElementTextItem::updateLabel()
 {
+		//Same reason as in elementInfoChanged(): the label of a report is
+		//its cross reference, and only updateReportText() knows how to
+		//build it.  This slot is wired to folio and position changes, so a
+		//connection made before the link existed can still land here.
+	if (isReportLabel())
+	{
+		updateReportText();
+		return;
+	}
+	
 	if ((m_text_from == ElementInfo && m_info_name == "label") ||
 		(m_text_from == CompositeText && m_composite_text.contains("%{label}")))
 	{

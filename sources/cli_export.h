@@ -54,6 +54,7 @@ namespace CLIExport {
 		  qelectrotech --check-elements <element.elmt | directory>
 		  qelectrotech --resave         <project.qet> <output.qet>
 		  qelectrotech --set-titleblock <project.qet> <output.qet> key=value...
+		  qelectrotech --set-iec        <project.qet> <output.qet> <mode> [opts]
 
 		PDF: one multi-page document (one diagram per page).
 		PNG/SVG: one file per diagram, named <output_dir>/<NN>_<title>.<ext>.
@@ -71,6 +72,11 @@ namespace CLIExport {
 		      Keys: title, author, date (or date=today), plant, location,
 		      revision, version, filename; any other key becomes a custom
 		      field.  E.g. --set-titleblock in.qet out.qet revision=B date=today
+		set-iec: switch the IEC 81346 identification structure, then save.
+		      Modes: off, short, context, full.  Option:
+		      element-location=on|off.  Takes the same code path as the
+		      settings dialog, so the saved file shows the labels exactly as
+		      the drawing does after the change.
 	*/
 	int run(const QStringList &args);
 

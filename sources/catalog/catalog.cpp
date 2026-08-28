@@ -1850,7 +1850,8 @@ bool Catalog::removePart(int part_id, QString *error)
 
 /**
 	@brief Catalog::searchParts
-	@param text : matched against the code and against every value
+	@param text : matched against the code, against every value and against
+	the name of the class the part belongs to
 	@param class_id : 0 for every class, subclasses included otherwise
 	@param manufacturer : exact match on the manufacturer value
 	@return the parts that match every given criterion
@@ -1866,10 +1867,15 @@ QList<CatalogPart> Catalog::searchParts(const QString &text,
 
 	if (!text.isEmpty())
 	{
+		// The class name is the second column of the results table, so it is
+		// on screen while somebody types: a search box that ignores what it
+		// is showing shortens the list to nothing and looks broken.
 		clauses.append(QStringLiteral("(code LIKE ? OR id IN "
-					      "(SELECT part_id FROM catalog_part_value WHERE value LIKE ?))"));
+					      "(SELECT part_id FROM catalog_part_value WHERE value LIKE ?) "
+					      "OR class_id IN "
+					      "(SELECT id FROM catalog_class WHERE name LIKE ?))"));
 		const QString pattern = QStringLiteral("%") + text + QStringLiteral("%");
-		bindings << pattern << pattern;
+		bindings << pattern << pattern << pattern;
 	}
 
 	if (class_id > 0)

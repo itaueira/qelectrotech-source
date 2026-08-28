@@ -286,8 +286,11 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 	}
 	table->resizeColumnsToContents();
 
+		//O duplo clique era meio caminho: levava a folha até o componente e
+		//deixava a janela modal em cima dele. Quem clicou queria ver o
+		//componente, então a janela sai da frente.
 	QObject::connect(table, &QTableWidget::doubleClicked, table,
-			 [table, missing](const QModelIndex &index)
+			 [table, missing, &dialog](const QModelIndex &index)
 	{
 		const int row = index.row();
 		if (row < 0 || row >= missing.size()) {
@@ -301,6 +304,7 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 		element->diagram()->clearSelection();
 		element->setSelected(true);
 		element->ensureVisible();
+		dialog.accept();
 	});
 
 	QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Close, &dialog);
@@ -344,8 +348,12 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 			return;
 		}
 
-		const CatalogPart part =
-				CatalogBrowserDialog::choosePart(catalog, &dialog);
+			//O navegador não sabe de folha: aberto daqui, «Nova peça» tem de
+			//nascer com um pino por borne do símbolo e com o que o projetista
+			//já digitou, como nasce quando se cadastra a peça a partir da folha.
+		const CatalogPart part = CatalogBrowserDialog::choosePart(
+					catalog, &dialog,
+					partFromElements(*catalog, chosen));
 		if (part.isNull()) {
 			return;
 		}
