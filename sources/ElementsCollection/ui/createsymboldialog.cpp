@@ -182,9 +182,9 @@ void CreateSymbolDialog::setUpWidget()
 	m_terminals->setSelectionBehavior(QAbstractItemView::SelectRows);
 	table_and_preview->addWidget(m_terminals, 3);
 
-		//O desenho ao lado da tabela. A tabela diz o que o ponto é; o desenho
-		//diz qual ponto é. Sem o segundo, declarar contato é adivinhação — foi
-		//exatamente o que o teste E.3 mostrou.
+		//The drawing next to the table. The table says what the point is; the
+		//drawing says which point it is. Without the second one, declaring a
+		//terminal is guesswork - which is exactly what the E.3 test showed.
 	m_preview = new SymbolPreview(terminals_box);
 	table_and_preview->addWidget(m_preview, 2);
 	terminals_layout->addLayout(table_and_preview);

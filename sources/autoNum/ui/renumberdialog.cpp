@@ -105,8 +105,8 @@ void RenumberDialog::buildWidgets()
 		m_orientation->setCurrentIndex(columns_first ? 1 : 0);
 	}
 
-		//"Deveria ter a opção de indexar por 0": DJ0, DJ1, DJ2. O formato já
-		//guardava o número de partida; faltava um lugar para dizê-lo.
+		//The request was to be able to index from 0: DJ0, DJ1, DJ2. The format
+		//already stored the starting number; what was missing was a place to say it.
 	m_start = new QSpinBox(this);
 	m_start->setRange(0, 9999);
 	m_start->setValue(1);
@@ -115,10 +115,10 @@ void RenumberDialog::buildWidgets()
 			   "DJ1, DJ2. S'applique au format par défaut, pas à celui "
 			   "qu'une classe déclare."));
 
-		//O caso dele: símbolos de borne autorizados como "simple", que o
-		//programa não tem como distinguir de um componente. O campo que ele
-		//usa para decidir é o type declarado no .elmt, e ali diz "simple".
-		//Enquanto a biblioteca não declarar, excluir por prefixo resolve.
+		//The case at hand: terminal symbols authored as "simple", which the
+		//program has no way to tell apart from a component. The field it decides
+		//on is the type declared in the .elmt, and there it reads "simple".
+		//Until the library declares them, skipping by prefix is the way out.
 	m_skip_prefixes = new QLineEdit(this);
 	m_skip_prefixes->setPlaceholderText(tr("X, XB, TB"));
 	m_skip_prefixes->setToolTip(tr(
@@ -212,8 +212,8 @@ void RenumberDialog::recompute()
 	format.start = m_start->value();
 	const bool columns_first = m_orientation->currentData().toBool();
 
-		//Os prefixos a poupar, lidos uma vez. Vazio não poupa nada, que é o
-		//comportamento de antes.
+		//The prefixes to spare, read once. Empty spares nothing, which is the
+		//previous behaviour.
 	QStringList skip;
 	const QStringList typed = m_skip_prefixes->text().split(QLatin1Char(','));
 	for (const QString &prefix : typed) {
@@ -230,9 +230,9 @@ void RenumberDialog::recompute()
 		m_catalog ? ProjectRenumberer::inputsFor(*m_catalog, m_scope, format)
 			  : QList<RenumberInput>();
 
-		//Poupar é marcar como congelado, e não tirar da lista: assim o objeto
-		//continua aparecendo na pré-visualização, marcado como pulado. Sumir
-		//da tabela deixaria a dúvida de se ele foi renumerado sem aparecer.
+		//Sparing means marking as frozen, not dropping from the list: the object
+		//keeps showing in the preview, flagged as skipped. Vanishing from the
+		//table would leave the doubt of whether it was renumbered unseen.
 	if (!skip.isEmpty())
 	{
 		for (RenumberInput &input : inputs)

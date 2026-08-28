@@ -415,14 +415,14 @@ void CatalogBrowserDialog::searchRepository()
 */
 void CatalogBrowserDialog::createPart()
 {
-		//Vindo dos «Componentes sem peça», quem chamou já sabe qual componente
-		//está sendo resolvido: o fabricante que o projetista digitou ao
-		//desenhar, e um pino por borne do símbolo. Redigitar isso é justamente
-		//o desperdício que este caminho existe para tirar.
+		//Coming from "Components without a part", the caller already knows which
+		//component is being settled: the manufacturer the draughtsman typed while
+		//drawing, and one pin per terminal of the symbol. Typing that again is
+		//exactly the waste this path exists to remove.
 	CatalogPart part = m_has_template ? m_template : CatalogPart();
 
-		//O botão é «Nova peça»: mesmo que o molde aponte para uma peça que já
-		//existe, o que sai daqui é peça nova.
+		//The button is "New part": even when the template points at a part that
+		//already exists, what comes out of here is a new part.
 	part.id = 0;
 
 	if (part.class_id == 0) {
@@ -542,8 +542,8 @@ CatalogPart CatalogBrowserDialog::selectedPart() const
 */
 void CatalogBrowserDialog::setPartTemplate(const CatalogPart &part)
 {
-		//Uma peça de molde não tem código nem identificador, então isNull()
-		//diria «vazia» para um molde perfeitamente útil. Quem chamou é quem sabe.
+		//A template part has neither code nor id, so isNull() would call a
+		//perfectly useful template "empty". The caller is the one who knows.
 	m_template = part;
 	m_has_template = true;
 }

@@ -1663,9 +1663,9 @@ void QETDiagramEditor::setUpMenu()
 	windows_menu = new QMenu(tr("Fe&nêtres"), this);
 
 	insertMenu(settings_menu_, menu_fichier);
-		//Rótulo curto no menu, texto inteiro na dica. Sem isto o Qt não
-		//mostra dica em item de menu, e encurtar o rótulo esconderia a
-		//informação em vez de mudá-la de lugar.
+		//Short label in the menu, full text in the tooltip. Without this Qt shows
+		//no tooltip on a menu item, and shortening the label alone would hide the
+		//information instead of moving it elsewhere.
 	for (QMenu *menu : {menu_fichier, menu_edition, menu_project,
 			    menu_catalogue, menu_affichage}) {
 		menu->setToolTipsVisible(true);
