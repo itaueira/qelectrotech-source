@@ -19,6 +19,8 @@
 
 #include "catalog.h"
 
+#include <QObject>
+
 /**
 	@brief CatalogAssignment::partCodeKey
 	@return the element information key holding the part code
@@ -151,6 +153,21 @@ QHash<QString, QString> CatalogAssignment::valuesForElement(const Catalog &catal
 	}
 
 	return values;
+}
+
+/**
+	@brief CatalogAssignment::commandLabel
+	@param part
+	@param tag : the component tag, as the drawing shows it
+	@param symbol_name : the name of the symbol it was drawn with
+	@return the sentence the undo list shows for a single assignment
+*/
+QString CatalogAssignment::commandLabel(const CatalogPart &part,
+					const QString &tag,
+					const QString &symbol_name)
+{
+	const QString who = tag.isEmpty() ? symbol_name : tag;
+	return QObject::tr("Attribuer la pièce %1 à %2").arg(part.code, who);
 }
 
 /**

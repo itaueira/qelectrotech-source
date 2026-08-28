@@ -240,17 +240,26 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 
 	QLabel *summary = new QLabel(&dialog);
 	summary->setWordWrap(true);
-	if (missing.isEmpty())
+
+		//The status line states one single fact - how many components are still
+		//without a part - and it must read the same before and after an assignment.
+		//Two strings would mean two translations and a wording that changes under
+		//the user's eyes while nothing but the count did.
+	auto setSummary = [summary, all](int remaining)
 	{
-		summary->setText(QObject::tr("Les %n composant(s) du projet ont une pièce attribuée. "
-					     "La nomenclature est complète.", "", all.size()));
-	}
-	else
-	{
-		summary->setText(QObject::tr("%1 composant(s) sur %2 n'ont pas de pièce attribuée. "
-					     "Double-cliquez une ligne pour aller au composant.")
-				 .arg(missing.size()).arg(all.size()));
-	}
+		if (!remaining)
+		{
+			summary->setText(QObject::tr("Les %n composant(s) du projet ont une pièce attribuée. "
+						     "La nomenclature est complète.", "", all.size()));
+		}
+		else
+		{
+			summary->setText(QObject::tr("%1 composant(s) sur %2 n'ont pas de pièce attribuée. "
+						     "Double-cliquez une ligne pour aller au composant.")
+					 .arg(remaining).arg(all.size()));
+		}
+	};
+	setSummary(missing.size());
 
 	QTableWidget *table = new QTableWidget(&dialog);
 	table->setColumnCount(3);
@@ -286,9 +295,9 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 	}
 	table->resizeColumnsToContents();
 
-		//O duplo clique era meio caminho: levava a folha até o componente e
-		//deixava a janela modal em cima dele. Quem clicou queria ver o
-		//componente, então a janela sai da frente.
+		//The double click was half the way: it took the sheet to the component and
+		//left the modal window on top of it. Whoever clicked wanted to see the
+		//component, so the window steps out of the way.
 	QObject::connect(table, &QTableWidget::doubleClicked, table,
 			 [table, missing, &dialog](const QModelIndex &index)
 	{
@@ -310,9 +319,9 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 	QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Close, &dialog);
 	QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::accept);
 
-		//O relatório era um beco sem saída: dizia quem falta e não deixava
-		//resolver. Agora o caminho fecha aqui — escolhe as linhas, escolhe a
-		//peça, atribui, e a lista encurta na hora.
+		//The report was a dead end: it said what was missing and offered no way to
+		//settle it. The path now closes here - pick the rows, pick the part, assign,
+		//and the list shortens on the spot.
 	QPushButton *assign = new QPushButton(
 				QObject::tr("Attribuer une pièce…"), &dialog);
 	assign->setToolTip(QObject::tr(
@@ -328,7 +337,7 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 	});
 
 	QObject::connect(assign, &QPushButton::clicked, &dialog,
-			 [&dialog, table, summary, missing, all]()
+			 [&dialog, table, missing, setSummary]()
 	{
 		Catalog *catalog = QETApp::catalog();
 		if (!catalog) {
@@ -348,9 +357,10 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 			return;
 		}
 
-			//O navegador não sabe de folha: aberto daqui, «Nova peça» tem de
-			//nascer com um pino por borne do símbolo e com o que o projetista
-			//já digitou, como nasce quando se cadastra a peça a partir da folha.
+			//The browser knows nothing about the sheet: opened from here, "New part"
+			//has to be born with one pin per terminal of the symbol and with what the
+			//draughtsman already typed, the way it is born when the part is created
+			//from the sheet.
 		const CatalogPart part = CatalogBrowserDialog::choosePart(
 					catalog, &dialog,
 					partFromElements(*catalog, chosen));
@@ -363,9 +373,9 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 			return;
 		}
 
-			//As linhas atribuídas somem da lista, porque a lista é "quem
-			//falta" e eles não faltam mais. Uma lista que não encurta ao ser
-			//trabalhada não diz se o trabalho está acabando.
+			//The assigned rows leave the list, because the list is "what is missing"
+			//and they are not missing any more. A list that does not shorten as it is
+			//worked through says nothing about how close the work is to done.
 		QList<int> rows;
 		for (Element *element : chosen) {
 			const int row = missing.indexOf(element);
@@ -378,10 +388,7 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 			table->removeRow(row);
 		}
 
-		summary->setText(QObject::tr(
-			"%1 composant(s) sur %2 n'ont plus de pièce à attribuer. "
-			"Double-cliquez une ligne pour aller au composant.")
-				.arg(table->rowCount()).arg(all.size()));
+		setSummary(table->rowCount());
 	});
 
 	QVBoxLayout *layout = new QVBoxLayout(&dialog);

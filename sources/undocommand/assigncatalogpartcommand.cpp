@@ -88,8 +88,11 @@ AssignCatalogPartCommand::AssignCatalogPartCommand(const QList<Element *> &eleme
 
 	if (m_assignments.size() == 1)
 	{
-		setText(QObject::tr("Attribuer la pièce %1 à %2")
-			.arg(part.code, m_assignments.first().element->name()));
+		setText(CatalogAssignment::commandLabel(
+				part,
+				m_assignments.first().old_information
+					.value(QStringLiteral("label")).toString(),
+				m_assignments.first().element->name()));
 	}
 	else
 	{

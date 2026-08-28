@@ -119,6 +119,20 @@ class CatalogAssignment
 						 int terminal_count);
 
 		/**
+			@param part
+			@param tag : the component tag, as the drawing shows it
+			@param symbol_name : the name of the symbol it was drawn with
+			@return the sentence the undo list shows for a single assignment.
+			It names the tag, never the symbol: the symbol name is shared by
+			every instance of that symbol, so an undo list built on it cannot
+			say which of them was touched. The symbol name is the fallback for
+			a component with no tag yet.
+		*/
+		static QString commandLabel(const CatalogPart &part,
+					    const QString &tag,
+					    const QString &symbol_name);
+
+		/**
 			@param values : the information of a component
 			@return true when the component has no catalog part assigned.
 			This is what the end of project report counts, and the reason it

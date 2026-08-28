@@ -497,6 +497,45 @@ TEST_CASE("CU-13.5 — o acessório diz de quem ele é", "[catalog]")
 	}
 }
 
+TEST_CASE("CU-13.11 — o rótulo de desfazer nomeia a tag, nunca o símbolo", "[catalog]")
+{
+	CatalogPart part(QStringLiteral("PSS24-W/5"), 1);
+
+	SECTION("com tag, é a tag que aparece")
+	{
+			//Achado dirigindo o programa em 28/08: a lista de desfazer dizia
+			//"Atribuir a peça PSS24-W/5 a Fonte chaveada AC/DC 68V" — o nome do
+			//símbolo. Num projeto de 236 componentes, vários compartilham o mesmo
+			//símbolo, e a entrada não dizia qual deles tinha sido tocado.
+		const QString label = CatalogAssignment::commandLabel(
+			part,
+			QStringLiteral("PS4 - Switch"),
+			QStringLiteral("Fonte chaveada AC/DC 68V"));
+
+		CHECK(label.contains(QStringLiteral("PS4 - Switch")));
+		CHECK_FALSE(label.contains(QStringLiteral("Fonte chaveada AC/DC 68V")));
+		CHECK(label.contains(QStringLiteral("PSS24-W/5")));
+	}
+
+	SECTION("sem tag, cai no nome do símbolo em vez de ficar em branco")
+	{
+			//Um componente recém posto na folha ainda não tem tag. Melhor um
+			//rótulo impreciso que um rótulo vazio.
+		const QString label = CatalogAssignment::commandLabel(
+			part, QString(), QStringLiteral("Fonte chaveada AC/DC 68V"));
+
+		CHECK(label.contains(QStringLiteral("Fonte chaveada AC/DC 68V")));
+	}
+
+	SECTION("sem tag e sem nome de símbolo, o código da peça ainda aparece")
+	{
+		const QString label =
+			CatalogAssignment::commandLabel(part, QString(), QString());
+
+		CHECK(label.contains(QStringLiteral("PSS24-W/5")));
+	}
+}
+
 TEST_CASE("a ancestralidade de classe responde por descendência, não por igualdade", "[catalog]")
 {
 	QTemporaryDir dir;
