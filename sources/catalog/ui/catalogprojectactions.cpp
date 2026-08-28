@@ -298,7 +298,9 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 		//The double click was half the way: it took the sheet to the component and
 		//left the modal window on top of it. Whoever clicked wanted to see the
 		//component, so the window steps out of the way.
-	QObject::connect(table, &QTableWidget::doubleClicked, table,
+		//activated, not doubleClicked: it also fires on Enter, so the table
+		//can be used without a mouse, and it follows the platform convention.
+	QObject::connect(table, &QTableWidget::activated, table,
 			 [table, missing, &dialog](const QModelIndex &index)
 	{
 		const int row = index.row();

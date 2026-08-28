@@ -154,7 +154,9 @@ void CatalogRepositoryDialog::buildWidgets()
 		this, &CatalogRepositoryDialog::clearFilters);
 	connect(m_results_table, &QTableWidget::itemSelectionChanged,
 		this, &CatalogRepositoryDialog::selectionChanged);
-	connect(m_results_table, &QTableWidget::doubleClicked,
+		//activated, not doubleClicked: it also fires on Enter, so the table
+		//can be used without a mouse, and it follows the platform convention.
+	connect(m_results_table, &QTableWidget::activated,
 		this, &CatalogRepositoryDialog::importSelected);
 	connect(m_import, &QPushButton::clicked, this, &CatalogRepositoryDialog::importSelected);
 	connect(m_contribute, &QPushButton::clicked, this, &CatalogRepositoryDialog::contribute);

@@ -255,7 +255,9 @@ void CatalogManagerDialog::buildWidgets()
 
 	connect(m_add_property, &QPushButton::clicked, this, &CatalogManagerDialog::addProperty);
 	connect(m_edit_property, &QPushButton::clicked, this, &CatalogManagerDialog::editSelectedProperty);
-	connect(m_property_table, &QTableWidget::doubleClicked,
+		//activated, not doubleClicked: it also fires on Enter, so the table
+		//can be used without a mouse, and it follows the platform convention.
+	connect(m_property_table, &QTableWidget::activated,
 		this, &CatalogManagerDialog::editSelectedProperty);
 	connect(m_remove_property, &QPushButton::clicked, this, &CatalogManagerDialog::removeSelectedProperty);
 	connect(m_move_property_up, &QPushButton::clicked, this, &CatalogManagerDialog::movePropertyUp);
