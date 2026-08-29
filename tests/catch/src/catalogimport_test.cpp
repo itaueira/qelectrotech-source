@@ -1372,6 +1372,64 @@ TEST_CASE("CU-14.14 — a planilha do projeto real é inteiramente mapeável pel
 		CHECK(unique.size() == keys.size());
 	}
 
+	SECTION("a tabela do diálogo se decompõe em próprias e estrangeiras, sem sobra")
+	{
+			//What the dialog shows is one row per mappable property, and the
+			//rows that carry a class between parentheses are exactly the ones
+			//the destination class does not answer for. The bench script asks
+			//the person to count those three numbers by hand; this asserts the
+			//rule that produces them, so the hand count can be checked instead
+			//of trusted.
+		const QList<CatalogProperty> mappable =
+			CatalogImportProfile::mappableProperties(catalog, component_id, table,
+								 QStringLiteral("classe"));
+		QSet<QString> own_keys;
+		const QList<CatalogProperty> own = catalog.effectiveProperties(component_id);
+		for (const CatalogProperty &property : own) {
+			own_keys.insert(property.key);
+		}
+
+		int plain = 0;
+		int foreign = 0;
+		for (const CatalogProperty &property : mappable)
+		{
+			if (own_keys.contains(property.key))
+			{
+				++plain;
+				continue;
+			}
+			++foreign;
+				//A foreign row names the class declaring it, so that class has
+				//to be findable: an empty name would print "Tensão de entrada
+				//()" on screen and say nothing.
+			INFO("propriedade estrangeira: " << property.key.toStdString());
+			CHECK_FALSE(catalog.classById(property.class_id).name.isEmpty());
+			CHECK(property.class_id != component_id);
+		}
+
+			//Nothing counted twice and nothing lost: the destination class
+			//comes first and whole, and the two halves are the whole table.
+		CHECK(plain == own.size());
+		CHECK(mappable.size() == plain + foreign);
+
+			//The numbers of the versioned package, which is on purpose the
+			//catalogue the bench script departs from and not a mirror of the
+			//one in use: 42 = 20 + 22. On the reader's screen the same table
+			//shows 43 = 21 + 22, and the single row of difference is
+			//"nivel_montagem", declared on Componente on 27/08, after this
+			//package was exported. Asserting both halves here is what keeps
+			//that gap from being read as a defect by whoever runs the two.
+		CHECK(own.size() == 20);
+		CHECK(foreign == 22);
+		CHECK(mappable.size() == 42);
+
+			//And the reason the package must stay behind: C.4 rests on it
+			//being the before picture. If someone brings it up to date, this
+			//says so here rather than letting the C.4 case quietly lose its
+			//subject.
+		CHECK_FALSE(own_keys.contains(QStringLiteral("nivel_montagem")));
+	}
+
 	SECTION("o palpite lê a planilha inteira, e o que ele monta importa")
 	{
 		const CatalogImportProfile guessed =
