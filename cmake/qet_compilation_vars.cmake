@@ -366,6 +366,13 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/environment/ui/environmentdialog.cpp
   ${QET_DIR}/sources/environment/ui/environmentdialog.h
 
+  ${QET_DIR}/sources/macro/macroparameter.cpp
+  ${QET_DIR}/sources/macro/macroparameter.h
+  ${QET_DIR}/sources/macro/macroparameterset.cpp
+  ${QET_DIR}/sources/macro/macroparameterset.h
+  ${QET_DIR}/sources/macro/macrosubstitution.cpp
+  ${QET_DIR}/sources/macro/macrosubstitution.h
+
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
   ${QET_DIR}/sources/dataBase/projectdatabase.h
 

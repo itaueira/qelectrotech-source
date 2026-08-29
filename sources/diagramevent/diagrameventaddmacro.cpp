@@ -12,9 +12,11 @@
 #include "../NameList/nameslist.h"
 #include "../diagramcommands.h"
 #include "../diagramcontent.h"
+#include "../macro/macrosubstitution.h"
 #include <QFile>
 #include <QDebug>
 #include <QGraphicsSceneMouseEvent>
+#include <QMessageBox>
 #include <QStatusBar>
 #include <QPainter>
 
@@ -139,7 +141,16 @@ void DiagramEventAddMacro::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 			emit finish();
 		}
 		else if (event->button() == Qt::LeftButton) {
-			addMacro(Diagram::snapToGrid(event->scenePos()));
+			if (!addMacro(Diagram::snapToGrid(event->scenePos()))) {
+					//Nothing was inserted, and the user has been told why.
+					//Staying would only repeat the same refusal at every
+					//click, since nothing here can change the values.
+				m_diagram->removeItem(m_preview_item);
+				delete m_preview_item;
+				m_preview_item = nullptr;
+				m_running = false;
+				emit finish();
+			}
 		}
 	}
 	event->setAccepted(true);
@@ -183,6 +194,13 @@ bool DiagramEventAddMacro::loadMacro()
 
 	QDomElement root = m_macro_doc.documentElement();
 	if (root.tagName() != "qet_macro") return false;
+
+		//A macro written before this existed carries no <parameters>, and
+		//reading none is not an error: that is every macro made so far.
+	m_parameters.fromXml(root);
+		//Until the dialogue of T06 asks the user, the values are the ones
+		//the macro itself declares as default.
+	m_values = m_parameters.defaults();
 
 	QDomElement collection_node = root.firstChildElement("collection");
 	if (!collection_node.isNull()) {
@@ -229,21 +247,83 @@ bool DiagramEventAddMacro::loadMacro()
 	return true;
 }
 
-void DiagramEventAddMacro::addMacro(QPointF final_pos)
+/**
+	@brief Insert the macro at @a final_pos, once its variables resolve.
+	@param final_pos
+	@return false when nothing was inserted, the user having been told why.
+	Half a circuit is worse than none, because half a circuit looks finished.
+*/
+bool DiagramEventAddMacro::addMacro(QPointF final_pos)
 {
 	QDomElement root = m_macro_doc.documentElement();
 	QDomElement diagram_node = root.firstChildElement("diagram_content").firstChildElement("diagram");
 
-	if (!diagram_node.isNull()) {
-		QDomElement cloned_node = diagram_node.cloneNode(true).toElement();
-
-		QPointF target_pos = final_pos;
-
-		DiagramContent pasted_content;
-
-		m_diagram->fromXml(cloned_node, target_pos, false, &pasted_content);
-		m_diagram->refreshContents();
-
-		m_diagram->undoStack().push(new PasteDiagramCommand(m_diagram, pasted_content));
+	if (diagram_node.isNull()) {
+		return false;
 	}
+
+	QDomElement cloned_node = diagram_node.cloneNode(true).toElement();
+
+		//A macro that declares nothing is left strictly alone: not scanned,
+		//not audited, not touched. That is what keeps every macro made before
+		//this existed inserting exactly the drawing it inserted yesterday.
+	if (!m_parameters.isEmpty()) {
+		const QStringList missing = m_parameters.missingRequired(m_values);
+		if (!missing.isEmpty()) {
+			QStringList shown;
+			shown.reserve(missing.size());
+			for (const QString &name : missing) {
+				const MacroParameter parameter = m_parameters.parameter(name);
+				shown << (parameter.label.isEmpty() ? name : parameter.label);
+			}
+			reportRefusal(shown.size() == 1
+				      ? tr("La variable %1 est obligatoire et n'a pas de valeur.")
+						.arg(shown.first())
+				      : tr("Ces variables sont obligatoires et n'ont pas de valeur : %1.")
+						.arg(shown.join(QStringLiteral(", "))));
+			return false;
+		}
+
+			//The substitution happens on the clone, between it and fromXml:
+			//the document kept in memory stays the macro as it was read, so
+			//a second insertion starts from the markers and not from the
+			//values the first one wrote.
+		const MacroSubstitution::Result result = MacroSubstitution::apply(cloned_node, m_values);
+		if (!result.ok) {
+			reportRefusal(result.errorText());
+			return false;
+		}
+	}
+
+	QPointF target_pos = final_pos;
+
+	DiagramContent pasted_content;
+
+	m_diagram->fromXml(cloned_node, target_pos, false, &pasted_content);
+	m_diagram->refreshContents();
+
+	m_diagram->undoStack().push(new PasteDiagramCommand(m_diagram, pasted_content));
+	return true;
+}
+
+/**
+	@brief Say out loud why nothing was inserted.
+	@param text
+	The status bar alone would not do: the next mouse move writes the
+	coordinates over it, and a refusal nobody sees reads as "nothing
+	happened" - the same complaint as a circuit inserted half done.
+*/
+void DiagramEventAddMacro::reportRefusal(const QString &text)
+{
+	if (text.isEmpty()) {
+		return;
+	}
+
+	if (m_status_bar) {
+		m_status_bar->showMessage(text);
+	}
+
+	QWidget *parent_widget = m_diagram->views().isEmpty() ? nullptr
+							      : m_diagram->views().first();
+	QMessageBox::warning(parent_widget, tr("Insertion impossible"), text);
 }

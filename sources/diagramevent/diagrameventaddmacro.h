@@ -6,10 +6,12 @@
 #define DIAGRAMEVENTADDMACRO_H
 
 #include "../ElementsCollection/elementslocation.h"
+#include "../macro/macroparameterset.h"
 #include "diagrameventinterface.h"
 
 #include <QDomDocument>
 #include <QGraphicsPixmapItem>
+#include <QHash>
 
 class QStatusBar;
 
@@ -33,11 +35,14 @@ public:
 
 private:
 	bool loadMacro();
-	void addMacro(QPointF final_pos);
+	bool addMacro(QPointF final_pos);
+	void reportRefusal(const QString &text);
 
 private:
 	ElementsLocation m_location;
 	QDomDocument m_macro_doc;
+	MacroParameterSet m_parameters;
+	QHash<QString, QString> m_values;
 	QGraphicsPixmapItem *m_preview_item;
 	QPointer<QStatusBar> m_status_bar;
 };
