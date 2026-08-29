@@ -240,7 +240,12 @@ void CatalogManagerDialog::buildWidgets()
 	QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
 
 	QVBoxLayout *layout = new QVBoxLayout(this);
-	layout->addWidget(splitter);
+		//A horizontal QSplitter carries a vertical size policy of Preferred, not
+		//Expanding, so it does not claim the height a taller window offers: the
+		//table stayed seven rows deep with a third of the dialog left blank
+		//below it.  The stretch is what makes room; the two other catalogue
+		//dialogs already pass it.
+	layout->addWidget(splitter, 1);
 	layout->addWidget(m_status);
 	layout->addWidget(buttons);
 
