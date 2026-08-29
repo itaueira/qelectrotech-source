@@ -193,10 +193,14 @@ void ProjectView::changeLastTab()
 }
 
 /**
-	@return last folio of current project
+	@return last folio of current project, or nullptr if the project
+	has no diagram.
 */
 DiagramView *ProjectView::lastDiagram()
 {
+	if (m_diagram_ids.isEmpty()) {
+		return(nullptr);
+	}
 	return(m_diagram_ids.last());
 }
 
