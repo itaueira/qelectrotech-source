@@ -162,6 +162,10 @@ else()
     )
 endif()
 
+if(APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE TRUE)
+endif()
+
 # The default build only compiles the tracked .ts files to .qm (lrelease).
 # Refreshing the .ts from the sources (lupdate) is a developer action behind
 # the explicit "update_translations" target below: running lupdate on every
@@ -330,7 +334,9 @@ if(NOT BUILD_WITH_KF)
     )
 endif()
 
-install(TARGETS ${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME}
+    BUNDLE DESTINATION .
+)
 
 if (NOT MINGW)
     install(DIRECTORY ico/breeze-icons/16x16   DESTINATION ${QET_ICONS_PATH})
