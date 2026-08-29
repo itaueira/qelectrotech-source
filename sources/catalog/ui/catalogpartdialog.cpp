@@ -105,8 +105,9 @@ void CatalogPartDialog::buildWidgets()
 
 	// --- pins -----------------------------------------------------------
 	m_pins = new QTableWidget(this);
-	m_pins->setColumnCount(4);
-	m_pins->setHorizontalHeaderLabels({ tr("Borne"), tr("Rôle"), tr("Paire"), tr("Symbole") });
+	m_pins->setColumnCount(7);
+	m_pins->setHorizontalHeaderLabels({ tr("Borne"), tr("Rôle"), tr("Paire"), tr("Symbole"),
+					    tr("Étiquette"), tr("Canal"), tr("Connecteur") });
 	m_pins->horizontalHeader()->setStretchLastSection(true);
 	m_pins->verticalHeader()->setVisible(false);
 	m_pins->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -126,7 +127,10 @@ void CatalogPartDialog::buildWidgets()
 	QLabel *pin_hint = new QLabel(tr("L'ordre des bornes est celui des bornes du symbole : c'est "
 					 "lui qui décide quel numéro remplace quelle étiquette "
 					 "provisoire. La colonne « Symbole » sert aux pièces dessinées "
-					 "en plusieurs symboles, comme une bobine et ses contacts."),
+					 "en plusieurs symboles, comme une bobine et ses contacts. "
+					 "La colonne « Canal » groupe les bornes d'un même point "
+					 "d'entrée ou de sortie : une entrée à deux fils est un canal "
+					 "de deux bornes, son entrée et son commun de retour."),
 				      this);
 	pin_hint->setWordWrap(true);
 
@@ -401,6 +405,9 @@ void CatalogPartDialog::fillPinTable()
 
 		m_pins->setItem(row, 2, new QTableWidgetItem(pin.pair));
 		m_pins->setItem(row, 3, new QTableWidgetItem(pin.group));
+		m_pins->setItem(row, 4, new QTableWidgetItem(pin.secondary_label));
+		m_pins->setItem(row, 5, new QTableWidgetItem(pin.channel));
+		m_pins->setItem(row, 6, new QTableWidgetItem(pin.connector));
 	}
 	m_pins->resizeColumnsToContents();
 }
@@ -440,6 +447,9 @@ void CatalogPartDialog::addPin()
 
 	m_pins->setItem(row, 2, new QTableWidgetItem(QString()));
 	m_pins->setItem(row, 3, new QTableWidgetItem(QString()));
+	m_pins->setItem(row, 4, new QTableWidgetItem(QString()));
+	m_pins->setItem(row, 5, new QTableWidgetItem(QString()));
+	m_pins->setItem(row, 6, new QTableWidgetItem(QString()));
 	m_pins->setCurrentCell(row, 0);
 }
 
@@ -588,6 +598,12 @@ bool CatalogPartDialog::collect(CatalogPart &part)
 		pin.pair = pair ? pair->text().trimmed() : QString();
 		const QTableWidgetItem *group = m_pins->item(row, 3);
 		pin.group = group ? group->text().trimmed() : QString();
+		const QTableWidgetItem *secondary = m_pins->item(row, 4);
+		pin.secondary_label = secondary ? secondary->text().trimmed() : QString();
+		const QTableWidgetItem *channel = m_pins->item(row, 5);
+		pin.channel = channel ? channel->text().trimmed() : QString();
+		const QTableWidgetItem *connector = m_pins->item(row, 6);
+		pin.connector = connector ? connector->text().trimmed() : QString();
 		pin.order_index = part.pins.size() + 1;
 		part.pins.append(pin);
 	}

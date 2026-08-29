@@ -16,9 +16,11 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../../../sources/catalog/catalog.h"
+#include "../../../sources/catalog/catalogpackage.h"
 #include "../../../sources/catalog/catalogschema.h"
 #include "qt_catch_tostring.h"
 
+#include <QFile>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QTemporaryDir>
@@ -703,4 +705,148 @@ TEST_CASE("Catalog - retirer une pièce promeut la révision qui reste")
 	REQUIRE_FALSE(current.isNull());
 	CHECK(current.revision == 1);
 	CHECK(current.is_current);
+}
+
+/*
+	T30 — the pinout a generated block is built from. What is proved here is
+	the data: the roles a card of a controller needs, the channel that groups
+	the pins of one point of the field, and the fact that all of it survives
+	the catalog and the package. The block itself is drawn in step 3.
+*/
+TEST_CASE("CU-30.4 — un point à deux fils est un canal, et le canal se garde")
+{
+	OpenCatalog fixture;
+	Catalog &catalog = fixture.catalog;
+	QString error;
+
+	const int plc_id = classId(catalog, "plc");
+
+		//A two wire digital input: one point of the field, two pins, and the
+		//two pins do not share a role. That is what the pair cannot say, and
+		//why the channel is a field of its own.
+	CatalogPart card(QStringLiteral("CLP-DI16"), plc_id);
+	CatalogPin input(QStringLiteral("I0.0"), CatalogPinRole::Input);
+	input.channel = QStringLiteral("DI0");
+	input.secondary_label = QStringLiteral("STOP");
+	input.connector = QStringLiteral("X1");
+	CatalogPin common(QStringLiteral("1M"), CatalogPinRole::ReturnCommon);
+	common.channel = QStringLiteral("DI0");
+	common.secondary_label = QStringLiteral("COM");
+	common.connector = QStringLiteral("X1");
+	CatalogPin analog(QStringLiteral("AI0+"), CatalogPinRole::InputAnalog);
+	analog.channel = QStringLiteral("AI0");
+	analog.connector = QStringLiteral("X2");
+	CatalogPin supply(QStringLiteral("L+"), CatalogPinRole::SupplyCommon);
+	card.pins.append(input);
+	card.pins.append(common);
+	card.pins.append(analog);
+	card.pins.append(supply);
+
+	SECTION("um ponto de dois fios é um canal com dois pinos de papéis diferentes")
+	{
+		CHECK(card.channelKeys() == QStringList({ QStringLiteral("DI0"),
+							  QStringLiteral("AI0") }));
+
+		const QList<CatalogPin> point = card.pinsInChannel(QStringLiteral("DI0"));
+		REQUIRE(point.size() == 2);
+		CHECK(point.at(0).role == CatalogPinRole::Input);
+		CHECK(point.at(1).role == CatalogPinRole::ReturnCommon);
+
+			//The pair stayed empty on purpose. Grouping by pair would ask
+			//the symbol generator for two terminals of one role, and this
+			//point has two roles: the block would not be saveable.
+		CHECK(point.at(0).pair.isEmpty());
+		CHECK(point.at(1).pair.isEmpty());
+
+		CHECK(CatalogPin::isIoRole(CatalogPinRole::Input));
+		CHECK(CatalogPin::isIoRole(CatalogPinRole::OutputRelay));
+		CHECK_FALSE(CatalogPin::isIoRole(CatalogPinRole::ReturnCommon));
+		CHECK_FALSE(CatalogPin::isIoRole(CatalogPinRole::CommPort));
+
+			//A pin with no channel is not a point of the field.
+		CHECK(card.pinsInChannel(QString()).isEmpty());
+		CHECK(card.pinsInChannel(QStringLiteral("DI9")).isEmpty());
+		CHECK(card.channelKeys().size() == 2);
+	}
+
+	SECTION("os tipos novos vão e voltam pelo nome, nunca pelo número")
+	{
+		const QList<CatalogPinRole> roles = CatalogPin::allRoles();
+		for (const CatalogPinRole role : roles)
+		{
+			CHECK(CatalogPin::roleFromString(CatalogPin::roleToString(role)) == role);
+			CHECK_FALSE(CatalogPin::translatedRoleName(role).isEmpty());
+		}
+		CHECK(roles.size() == 14);
+		CHECK(CatalogPin::roleToString(CatalogPinRole::ReturnCommon)
+		      == QStringLiteral("return_common"));
+		CHECK(CatalogPin::roleToString(CatalogPinRole::OutputRelay)
+		      == QStringLiteral("output_relay"));
+
+			//The eight roles that existed before still read the same, which
+			//is what lets an old catalog be opened by this build.
+		CHECK(CatalogPin::roleFromString(QStringLiteral("coil")) == CatalogPinRole::Coil);
+		CHECK(CatalogPin::roleFromString(QStringLiteral("input")) == CatalogPinRole::Input);
+		CHECK(CatalogPin::roleFromString(QStringLiteral("nada")) == CatalogPinRole::Unknown);
+	}
+
+	SECTION("o catálogo guarda rótulo, canal e conector")
+	{
+		REQUIRE(catalog.savePart(card, &error));
+		REQUIRE(error.isEmpty());
+
+		const CatalogPart reread = catalog.partByCode(QStringLiteral("CLP-DI16"));
+		REQUIRE_FALSE(reread.isNull());
+		REQUIRE(reread.pins.size() == 4);
+		CHECK(reread.channelKeys() == QStringList({ QStringLiteral("DI0"),
+							    QStringLiteral("AI0") }));
+
+		const QList<CatalogPin> point = reread.pinsInChannel(QStringLiteral("DI0"));
+		REQUIRE(point.size() == 2);
+		CHECK(point.at(0).label == QStringLiteral("I0.0"));
+		CHECK(point.at(0).secondary_label == QStringLiteral("STOP"));
+		CHECK(point.at(0).connector == QStringLiteral("X1"));
+		CHECK(point.at(1).secondary_label == QStringLiteral("COM"));
+		CHECK(point.at(1).role == CatalogPinRole::ReturnCommon);
+		CHECK(reread.pinsWithRole(CatalogPinRole::InputAnalog).size() == 1);
+		CHECK(reread.pinsWithRole(CatalogPinRole::SupplyCommon).size() == 1);
+
+			//The pin that has nothing to say keeps saying nothing.
+		CHECK(reread.pinsWithRole(CatalogPinRole::SupplyCommon)
+		      .first().channel.isEmpty());
+	}
+
+	SECTION("o pacote da peça leva a pinagem para outra máquina")
+	{
+		QTemporaryDir directory;
+		REQUIRE(directory.isValid());
+		const QString path = directory.filePath(CatalogPackage::suggestedFileName(card));
+		REQUIRE(CatalogPackage::write(path, catalog, card, &error));
+		REQUIRE(error.isEmpty());
+
+		const CatalogPart returned = CatalogPackage::read(path, catalog, &error);
+		REQUIRE(error.isEmpty());
+		REQUIRE(returned.pins.size() == 4);
+
+		const QList<CatalogPin> point = returned.pinsInChannel(QStringLiteral("DI0"));
+		REQUIRE(point.size() == 2);
+		CHECK(point.at(0).secondary_label == QStringLiteral("STOP"));
+		CHECK(point.at(0).connector == QStringLiteral("X1"));
+		CHECK(point.at(1).role == CatalogPinRole::ReturnCommon);
+		CHECK(returned.pinsWithRole(CatalogPinRole::InputAnalog).size() == 1);
+
+			//Nothing is written for a pin that has nothing to say, so a part
+			//with no pinout keeps exactly the file it had. That is why the
+			//format version does not move: an older build reads these files
+			//and ignores the three attributes it does not know.
+		QFile file(path);
+		REQUIRE(file.open(QIODevice::ReadOnly | QIODevice::Text));
+		const QString written = QString::fromUtf8(file.readAll());
+		file.close();
+		CHECK(written.contains(QStringLiteral("version=\"1\"")));
+		CHECK(written.contains(QStringLiteral("channel=\"DI0\"")));
+		CHECK(written.contains(QStringLiteral("connector=\"X2\"")));
+		CHECK_FALSE(written.contains(QStringLiteral("channel=\"\"")));
+		CHECK_FALSE(written.contains(QStringLiteral("secondary-label=\"\"")));
+	}
 }

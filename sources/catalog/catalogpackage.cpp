@@ -216,6 +216,19 @@ bool CatalogPackage::write(const QString &file_path,
 		if (!pin.group.isEmpty()) {
 			element.setAttribute(QStringLiteral("group"), pin.group);
 		}
+			//Written only when there is something to say, so a part with
+			//no pinout keeps the file it had. An older build reading them
+			//ignores what it does not know, which is why the format
+			//version does not move.
+		if (!pin.secondary_label.isEmpty()) {
+			element.setAttribute(QStringLiteral("secondary-label"), pin.secondary_label);
+		}
+		if (!pin.channel.isEmpty()) {
+			element.setAttribute(QStringLiteral("channel"), pin.channel);
+		}
+		if (!pin.connector.isEmpty()) {
+			element.setAttribute(QStringLiteral("connector"), pin.connector);
+		}
 		element.setAttribute(QStringLiteral("order"), QString::number(pin.order_index));
 		root.appendChild(element);
 	}
@@ -349,6 +362,9 @@ CatalogPart CatalogPackage::read(const QString &file_path,
 				       CatalogPin::roleFromString(child.attribute(QStringLiteral("role"))));
 			pin.pair = child.attribute(QStringLiteral("pair"));
 			pin.group = child.attribute(QStringLiteral("group"));
+			pin.secondary_label = child.attribute(QStringLiteral("secondary-label"));
+			pin.channel = child.attribute(QStringLiteral("channel"));
+			pin.connector = child.attribute(QStringLiteral("connector"));
 			pin.order_index = child.attribute(QStringLiteral("order")).toInt();
 			part.pins.append(pin);
 		}

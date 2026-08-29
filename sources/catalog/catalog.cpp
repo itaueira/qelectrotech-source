@@ -328,7 +328,8 @@ void Catalog::reloadClasses()
 
 	QSqlQuery query(m_database);
 	if (!query.exec(QStringLiteral("SELECT id, parent_id, key, name, description, root, "
-				       "root_iec, has_symbol, order_index, uuid, numbering_format "
+				       "root_iec, has_symbol, order_index, uuid, numbering_format, "
+				       "block_template "
 				       "FROM catalog_class ORDER BY order_index, name")))
 	{
 		m_last_error = query.lastError().text();
@@ -349,6 +350,7 @@ void Catalog::reloadClasses()
 		catalog_class.order_index = query.value(8).toInt();
 		catalog_class.uuid        = query.value(9).toString();
 		catalog_class.numbering_format = query.value(10).toString();
+		catalog_class.block_template   = query.value(11).toString();
 		m_classes.append(catalog_class);
 	}
 }
@@ -497,10 +499,10 @@ int Catalog::addClass(const CatalogClass &catalog_class, QString *error)
 	QSqlQuery query(m_database);
 	query.prepare(QStringLiteral("INSERT INTO catalog_class "
 				     "(parent_id, key, name, description, root, root_iec, "
-				     "has_symbol, order_index, uuid, numbering_format) "
+				     "has_symbol, order_index, uuid, numbering_format, block_template) "
 				     "VALUES (:parent_id, :key, :name, :description, :root, "
 				     ":root_iec, :has_symbol, :order_index, :uuid, "
-				     ":numbering_format)"));
+				     ":numbering_format, :block_template)"));
 	query.bindValue(QStringLiteral(":parent_id"),
 			to_save.parent_id > 0 ? QVariant(to_save.parent_id) : QVariant());
 	query.bindValue(QStringLiteral(":key"), to_save.key);
@@ -512,6 +514,7 @@ int Catalog::addClass(const CatalogClass &catalog_class, QString *error)
 	query.bindValue(QStringLiteral(":order_index"), to_save.order_index);
 	query.bindValue(QStringLiteral(":uuid"), to_save.uuid);
 	query.bindValue(QStringLiteral(":numbering_format"), to_save.numbering_format);
+	query.bindValue(QStringLiteral(":block_template"), to_save.block_template);
 
 	if (!query.exec())
 	{
@@ -566,7 +569,8 @@ bool Catalog::updateClass(const CatalogClass &catalog_class, QString *error)
 				     "key = :key, name = :name, description = :description, "
 				     "root = :root, root_iec = :root_iec, "
 				     "has_symbol = :has_symbol, order_index = :order_index, "
-				     "numbering_format = :numbering_format "
+				     "numbering_format = :numbering_format, "
+				     "block_template = :block_template "
 				     "WHERE id = :id"));
 	query.bindValue(QStringLiteral(":parent_id"),
 			catalog_class.parent_id > 0 ? QVariant(catalog_class.parent_id) : QVariant());
@@ -578,6 +582,7 @@ bool Catalog::updateClass(const CatalogClass &catalog_class, QString *error)
 	query.bindValue(QStringLiteral(":has_symbol"), catalog_class.has_symbol ? 1 : 0);
 	query.bindValue(QStringLiteral(":order_index"), catalog_class.order_index);
 	query.bindValue(QStringLiteral(":numbering_format"), catalog_class.numbering_format);
+	query.bindValue(QStringLiteral(":block_template"), catalog_class.block_template);
 	query.bindValue(QStringLiteral(":id"), catalog_class.id);
 
 	if (!query.exec())
@@ -1362,7 +1367,8 @@ CatalogPart Catalog::readPart(int part_id) const
 	}
 
 	QSqlQuery pins(database);
-	pins.prepare(QStringLiteral("SELECT label, role, pair, group_name, order_index "
+	pins.prepare(QStringLiteral("SELECT label, role, pair, group_name, order_index, "
+				    "secondary_label, channel, connector "
 				    "FROM catalog_part_pin WHERE part_id = :id "
 				    "ORDER BY order_index, id"));
 	pins.bindValue(QStringLiteral(":id"), part_id);
@@ -1376,6 +1382,9 @@ CatalogPart Catalog::readPart(int part_id) const
 			pin.pair        = pins.value(2).toString();
 			pin.group       = pins.value(3).toString();
 			pin.order_index = pins.value(4).toInt();
+			pin.secondary_label = pins.value(5).toString();
+			pin.channel     = pins.value(6).toString();
+			pin.connector   = pins.value(7).toString();
 			part.pins.append(pin);
 		}
 	}
@@ -1585,8 +1594,10 @@ bool Catalog::writePartRows(const CatalogPart &part, QString *error)
 	{
 		QSqlQuery insert(m_database);
 		insert.prepare(QStringLiteral("INSERT INTO catalog_part_pin "
-					      "(part_id, label, role, pair, group_name, order_index) "
-					      "VALUES (:id, :label, :role, :pair, :group_name, :order_index)"));
+					      "(part_id, label, role, pair, group_name, order_index, "
+					      "secondary_label, channel, connector) "
+					      "VALUES (:id, :label, :role, :pair, :group_name, :order_index, "
+					      ":secondary_label, :channel, :connector)"));
 		insert.bindValue(QStringLiteral(":id"), part.id);
 		insert.bindValue(QStringLiteral(":label"), pin.label);
 		insert.bindValue(QStringLiteral(":role"), CatalogPin::roleToString(pin.role));
@@ -1594,6 +1605,9 @@ bool Catalog::writePartRows(const CatalogPart &part, QString *error)
 		insert.bindValue(QStringLiteral(":group_name"), pin.group);
 		insert.bindValue(QStringLiteral(":order_index"),
 				 pin.order_index > 0 ? pin.order_index : pin_order);
+		insert.bindValue(QStringLiteral(":secondary_label"), pin.secondary_label);
+		insert.bindValue(QStringLiteral(":channel"), pin.channel);
+		insert.bindValue(QStringLiteral(":connector"), pin.connector);
 		if (!insert.exec())
 		{
 			setError(error, insert.lastError().text());

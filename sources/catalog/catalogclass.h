@@ -78,6 +78,16 @@ class CatalogClass
 			object of that class, and a rule that lives in a dialog cannot.
 		*/
 		QString numbering_format;
+		/**
+			How a block of this class is laid out, as the XML a block
+			template serialises itself to. Empty means the convention of
+			the environment, unchanged.
+
+			On the class for the same reason numbering_format is: changing
+			the spacing of "PLC card" has to hold for the next card of any
+			project, not only for the one that happens to be open.
+		*/
+		QString block_template;
 };
 
 #endif // CATALOGCLASS_H

@@ -39,6 +39,7 @@ namespace
 	const QLatin1String LIST_TAG("list");
 	const QLatin1String VALUE_TAG("value");
 	const QLatin1String FORMAT_TAG("numbering-format");
+	const QLatin1String TEMPLATE_TAG("block-template");
 
 	/**
 		@brief One class of the file, resolved against the target catalog.
@@ -150,6 +151,10 @@ namespace
 		const QDomElement format = element.firstChildElement(FORMAT_TAG);
 		if (!format.isNull()) {
 			catalog_class.numbering_format = format.text();
+		}
+		const QDomElement block = element.firstChildElement(TEMPLATE_TAG);
+		if (!block.isNull()) {
+			catalog_class.block_template = block.text();
 		}
 		if (catalog_class.name.isEmpty()) {
 			catalog_class.name = catalog_class.key;
@@ -688,6 +693,13 @@ QDomElement CatalogClassPackage::toXml(QDomDocument &document,
 			QDomElement format = document.createElement(FORMAT_TAG);
 			format.appendChild(document.createTextNode(catalog_class.numbering_format));
 			element.appendChild(format);
+		}
+		if (!catalog_class.block_template.isEmpty())
+		{
+				//Its own node too, and for the same reason.
+			QDomElement block = document.createElement(TEMPLATE_TAG);
+			block.appendChild(document.createTextNode(catalog_class.block_template));
+			element.appendChild(block);
 		}
 
 		const QList<CatalogProperty> own = catalog.ownProperties(id);

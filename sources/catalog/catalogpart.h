@@ -29,6 +29,11 @@
 	project uses more contacts than the part has, and tell power apart from
 	control. A symbol declares the same thing on its terminal pairs (T35),
 	the part carries the real numbers of the manufacturer.
+
+	Serialised by name and never by number, so a new value never
+	reinterprets an old catalog. New values still go at the end: allRoles()
+	is what fills the combo box of the part editor, and its order is what
+	the user sees.
 */
 enum class CatalogPinRole
 {
@@ -39,7 +44,13 @@ enum class CatalogPinRole
 	ContactNc,      ///< normally closed control contact
 	PowerContactNo, ///< normally open power pole
 	Input,          ///< input of a PLC, drive or controller
-	Output          ///< output of a PLC, drive or controller
+	Output,         ///< output of a PLC, drive or controller
+	InputAnalog,    ///< analog input, a value read from the field
+	OutputAnalog,   ///< analog output, a value driven to the field
+	OutputRelay,    ///< output through a dry relay contact
+	CommPort,       ///< a communication port, serial or field bus
+	SupplyCommon,   ///< the common of the supply of a group of points
+	ReturnCommon    ///< the common the field wiring returns to
 };
 
 /**
@@ -59,12 +70,33 @@ class CatalogPin
 		CatalogPinRole role = CatalogPinRole::Unknown;
 		QString pair;       ///< pins sharing a non empty pair form one contact
 		QString group;      ///< which sub symbol of the part the pin belongs to
+		QString secondary_label; ///< what is printed beside the number, "STOP", "COM"
+		/**
+			The input or output point this pin belongs to. Pins sharing a
+			non empty channel are one point of the field: a two wire input
+			is one channel with two pins, its Input and its ReturnCommon.
+
+			A field of its own and not a second use of pair, because a pair
+			is two pins of the same role and a channel is neither limited to
+			two nor to one role. What is typed here is the key the
+			manufacturer sheet uses; the number of the channel is not typed,
+			it comes from the order of the points in the part.
+		*/
+		QString channel;
+		QString connector;  ///< the connector the pin sits on, "X1", "CN2"
 		int order_index = 0;
 
 		static QString roleToString(CatalogPinRole role);
 		static CatalogPinRole roleFromString(const QString &string);
 		static QString translatedRoleName(CatalogPinRole role);
 		static QList<CatalogPinRole> allRoles();
+		/**
+			@param role
+			@return true when @a role is a point of the field, that is what
+			a channel groups: the four input and output roles and the relay
+			output. A coil, a contact or a communication port is not.
+		*/
+		static bool isIoRole(CatalogPinRole role);
 };
 
 /**
@@ -113,6 +145,17 @@ class CatalogPart
 
 		QList<CatalogPin> pinsWithRole(CatalogPinRole role) const;
 		QStringList pinLabels() const;
+		/**
+			@return the channel of every point of the part, once each and in
+			pin order. This is the list a generated block walks: one entry
+			is one input or output, however many pins it takes.
+		*/
+		QStringList channelKeys() const;
+		/**
+			@param channel
+			@return every pin of @a channel, in pin order
+		*/
+		QList<CatalogPin> pinsInChannel(const QString &channel) const;
 		/**
 			@return how many contacts of @a role the part has. A contact
 			is a pair of pins, so two pins sharing a pair name count as

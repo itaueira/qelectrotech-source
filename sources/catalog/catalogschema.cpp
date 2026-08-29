@@ -27,7 +27,7 @@
 namespace
 {
 	/// Highest schema version this build writes and understands.
-	const int CATALOG_SCHEMA_VERSION = 4;
+	const int CATALOG_SCHEMA_VERSION = 5;
 
 	/// Run one statement, filling @a error with the driver message on failure.
 	bool exec(QSqlDatabase &db, const QString &statement, QString *error)
@@ -150,6 +150,7 @@ bool CatalogSchema::applyStep(QSqlDatabase &db, int version, QString *error)
 		case 2:  ok = createVersion2(db, error); break;
 		case 3:  ok = createVersion3(db, error); break;
 		case 4:  ok = createVersion4(db, error); break;
+		case 5:  ok = createVersion5(db, error); break;
 		default:
 			if (error)
 			{
@@ -350,6 +351,45 @@ bool CatalogSchema::createVersion4(QSqlDatabase &db, QString *error)
 {
 	return exec(db, QStringLiteral("ALTER TABLE catalog_class "
 				       "ADD COLUMN numbering_format TEXT"), error);
+}
+
+/**
+	@brief CatalogSchema::createVersion5
+	The pinout of a part and the block template of a class (T30).
+
+	Three columns on the pin, one on the class. The pin gains what a
+	manufacturer sheet prints and the catalog had nowhere to keep: the label
+	written beside the number, the connector the pin sits on, and the
+	channel, which is the input or output point the pin belongs to.
+
+	The channel is a column of its own and not a second use of pair, and the
+	symbol generator is what decides that: it refuses a pair that is not
+	exactly two pins of one role, and a two wire input point is one input
+	and one return common. Reusing pair would build blocks that cannot be
+	saved, and the message would say "invalid symbol" without naming the
+	channel.
+
+	The class gains the block template, as the XML the template serialises
+	itself to. Same shape and same reason as numbering_format: how a class
+	is drawn has to change every card of that class, and a rule that lives
+	in a dialog cannot.
+*/
+bool CatalogSchema::createVersion5(QSqlDatabase &db, QString *error)
+{
+	const QStringList statements = {
+		QStringLiteral("ALTER TABLE catalog_part_pin ADD COLUMN secondary_label TEXT"),
+		QStringLiteral("ALTER TABLE catalog_part_pin ADD COLUMN channel TEXT"),
+		QStringLiteral("ALTER TABLE catalog_part_pin ADD COLUMN connector TEXT"),
+		QStringLiteral("ALTER TABLE catalog_class ADD COLUMN block_template TEXT")
+	};
+
+	for (const QString &statement : statements)
+	{
+		if (!exec(db, statement, error)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /**

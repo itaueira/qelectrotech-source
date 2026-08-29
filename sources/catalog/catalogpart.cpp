@@ -37,6 +37,12 @@ QString CatalogPin::roleToString(CatalogPinRole role)
 		case CatalogPinRole::PowerContactNo: return QStringLiteral("power_contact_no");
 		case CatalogPinRole::Input:          return QStringLiteral("input");
 		case CatalogPinRole::Output:         return QStringLiteral("output");
+		case CatalogPinRole::InputAnalog:    return QStringLiteral("input_analog");
+		case CatalogPinRole::OutputAnalog:   return QStringLiteral("output_analog");
+		case CatalogPinRole::OutputRelay:    return QStringLiteral("output_relay");
+		case CatalogPinRole::CommPort:       return QStringLiteral("comm_port");
+		case CatalogPinRole::SupplyCommon:   return QStringLiteral("supply_common");
+		case CatalogPinRole::ReturnCommon:   return QStringLiteral("return_common");
 	}
 	return QStringLiteral("unknown");
 }
@@ -83,6 +89,18 @@ QString CatalogPin::translatedRoleName(CatalogPinRole role)
 			return QCoreApplication::translate("CatalogPin", "Entrée");
 		case CatalogPinRole::Output:
 			return QCoreApplication::translate("CatalogPin", "Sortie");
+		case CatalogPinRole::InputAnalog:
+			return QCoreApplication::translate("CatalogPin", "Entrée analogique");
+		case CatalogPinRole::OutputAnalog:
+			return QCoreApplication::translate("CatalogPin", "Sortie analogique");
+		case CatalogPinRole::OutputRelay:
+			return QCoreApplication::translate("CatalogPin", "Sortie relais");
+		case CatalogPinRole::CommPort:
+			return QCoreApplication::translate("CatalogPin", "Port de communication");
+		case CatalogPinRole::SupplyCommon:
+			return QCoreApplication::translate("CatalogPin", "Commun d'alimentation");
+		case CatalogPinRole::ReturnCommon:
+			return QCoreApplication::translate("CatalogPin", "Commun de retour");
 	}
 	return QString();
 }
@@ -100,7 +118,33 @@ QList<CatalogPinRole> CatalogPin::allRoles()
 		 CatalogPinRole::ContactNc,
 		 CatalogPinRole::PowerContactNo,
 		 CatalogPinRole::Input,
-		 CatalogPinRole::Output };
+		 CatalogPinRole::Output,
+		 CatalogPinRole::InputAnalog,
+		 CatalogPinRole::OutputAnalog,
+		 CatalogPinRole::OutputRelay,
+		 CatalogPinRole::CommPort,
+		 CatalogPinRole::SupplyCommon,
+		 CatalogPinRole::ReturnCommon };
+}
+
+/**
+	@brief CatalogPin::isIoRole
+	@param role
+	@return true when @a role is a point of the field
+*/
+bool CatalogPin::isIoRole(CatalogPinRole role)
+{
+	switch (role)
+	{
+		case CatalogPinRole::Input:
+		case CatalogPinRole::Output:
+		case CatalogPinRole::InputAnalog:
+		case CatalogPinRole::OutputAnalog:
+		case CatalogPinRole::OutputRelay:
+			return true;
+		default:
+			return false;
+	}
 }
 
 /**
@@ -239,6 +283,44 @@ QStringList CatalogPart::pinLabels() const
 		labels.append(pin.label);
 	}
 	return labels;
+}
+
+/**
+	@brief CatalogPart::channelKeys
+	@return the channel of every point of the part, once each, in pin order
+*/
+QStringList CatalogPart::channelKeys() const
+{
+	QStringList keys;
+	for (const CatalogPin &pin : pins)
+	{
+		if (pin.channel.isEmpty() || keys.contains(pin.channel)) {
+			continue;
+		}
+		keys.append(pin.channel);
+	}
+	return keys;
+}
+
+/**
+	@brief CatalogPart::pinsInChannel
+	@param channel
+	@return every pin of @a channel, in pin order. An empty @a channel
+	matches nothing: a pin with no channel is not a point.
+*/
+QList<CatalogPin> CatalogPart::pinsInChannel(const QString &channel) const
+{
+	QList<CatalogPin> found;
+	if (channel.isEmpty()) {
+		return found;
+	}
+	for (const CatalogPin &pin : pins)
+	{
+		if (pin.channel == channel) {
+			found.append(pin);
+		}
+	}
+	return found;
 }
 
 /**

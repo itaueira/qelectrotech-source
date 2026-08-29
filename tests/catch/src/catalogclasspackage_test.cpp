@@ -473,3 +473,54 @@ TEST_CASE("CU-12.10 — a árvore de classes é um arquivo", "[catalog]")
 		CHECK(again.changesNothing());
 	}
 }
+
+/*
+	T30 — the block template of a class. On the class, and not in the dialog
+	that generates the block, for the reason the numbering format is already
+	there: changing how a class is drawn has to hold for the next card of any
+	project, not only for the one that happens to be open.
+*/
+TEST_CASE("CU-30.5 — le modèle de bloc voyage avec la classe", "[catalog]")
+{
+	BranchFixture fixture;
+	QString error;
+
+	CatalogClass supply = fixture.source.classById(fixture.supply_id);
+	REQUIRE_FALSE(supply.isNull());
+	supply.block_template =
+		QStringLiteral("<block-template pitch=\"10\" side=\"left\"/>");
+	REQUIRE(fixture.source.updateClass(supply, &error));
+	REQUIRE(error.isEmpty());
+
+	SECTION("o catálogo guarda o modelo de bloco na classe")
+	{
+		const CatalogClass reread = fixture.source.classById(fixture.supply_id);
+		REQUIRE_FALSE(reread.isNull());
+		CHECK(reread.block_template == supply.block_template);
+
+			//A class that never declared one keeps saying nothing, which is
+			//what "the convention of the environment, unchanged" means.
+		const CatalogClass child = fixture.source.classById(fixture.supply_dc_id);
+		CHECK(child.block_template.isEmpty());
+	}
+
+	SECTION("o pacote de classes leva o modelo junto")
+	{
+		const QString path =
+			fixture.directory.filePath(QStringLiteral("modelo.qetclasses"));
+		REQUIRE(CatalogClassPackage::write(path, fixture.source,
+						   fixture.supply_id, &error));
+		REQUIRE(error.isEmpty());
+
+		Catalog target;
+		REQUIRE(target.openInMemory(&error));
+		REQUIRE(CatalogClassPackage::read(path, target, nullptr, &error));
+		REQUIRE(error.isEmpty());
+
+		const CatalogClass arrived = target.classByKey(QStringLiteral("power_supply"));
+		REQUIRE_FALSE(arrived.isNull());
+		CHECK(arrived.block_template == supply.block_template);
+			//And what already travelled still does.
+		CHECK(arrived.numbering_format == supply.numbering_format);
+	}
+}
