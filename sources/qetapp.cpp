@@ -229,7 +229,17 @@ void QETApp::setLanguage(const QString &desired_language) {
 	const QStringList qt_candidates = qt_base_language == desired_language
 			? QStringList{desired_language}
 			: QStringList{desired_language, qt_base_language};
-	const QStringList qt_folders{qt_l10n_path, languages_path};
+	/* Neither windeployqt nor the macOS bundler copies the Qt catalogues into
+	 * share/qt6/translations: they merge qtbase_XX, qtdeclarative_XX and the
+	 * rest into a single qt_XX.qm placed in a "translations" folder beside the
+	 * binary. Without that folder in the list a deployed build finds nothing -
+	 * QLibraryInfo names a share/qt6/translations that only exists where Qt
+	 * itself was installed - and every standard button falls back to English.
+	 */
+	const QStringList qt_folders{qt_l10n_path,
+			QCoreApplication::applicationDirPath()
+					+ QStringLiteral("/translations"),
+			languages_path};
 
 	auto load_qt_catalog = [&](QTranslator &translator, const QString &prefix) -> bool
 	{
@@ -243,7 +253,9 @@ void QETApp::setLanguage(const QString &desired_language) {
 		return false;
 	};
 
-	if (!load_qt_catalog(qtTranslator, QStringLiteral("qt_"))) {
+	const bool qt_catalog_loaded =
+			load_qt_catalog(qtTranslator, QStringLiteral("qt_"));
+	if (!qt_catalog_loaded) {
 		qWarning() << "failed to load qt_" << desired_language
 				   << "in" << qt_folders << "(" << __FILE__ << __LINE__
 				   << __FUNCTION__ << ")";
@@ -258,7 +270,13 @@ void QETApp::setLanguage(const QString &desired_language) {
 	 * where the two overlap, the more specific catalogue wins: Qt asks the
 	 * translators in reverse order of installation.
 	 */
-	if (!load_qt_catalog(qtBaseTranslator, QStringLiteral("qtbase_"))) {
+	/* A missing qtbase_XX.qm is only a problem when qt_XX.qm is missing too:
+	 * where qt_XX.qm loaded, it either carries the strings itself (merged by
+	 * windeployqt) or pulled qtbase_XX in as a dependency. Warning in that
+	 * case would name a symptom the user is not seeing.
+	 */
+	if (!load_qt_catalog(qtBaseTranslator, QStringLiteral("qtbase_"))
+			&& !qt_catalog_loaded) {
 		qWarning() << "failed to load qtbase_" << desired_language
 				   << "in" << qt_folders
 				   << "- the standard dialog buttons will stay in English ("
