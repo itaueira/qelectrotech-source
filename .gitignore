@@ -18,3 +18,7 @@ build-*/
 # Projetos reais da ACME usados para teste. Nunca entram no repositório: ele é público,
 # e arquivo de projeto carrega nome de fornecedor e código de peça (regras 3 e 4 do CLAUDE.md).
 /tmp/
+
+# Cache do interpretador Python — os geradores em todo/exemplos/*/gerador/ deixam isto para tras
+__pycache__/
+*.pyc

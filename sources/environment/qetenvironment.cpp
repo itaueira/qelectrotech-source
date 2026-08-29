@@ -259,6 +259,16 @@ QString QETEnvironment::companyTitleBlocksDir()
 	return subDir(QStringLiteral("titleblocks-company"));
 }
 
+/**
+	@brief QETEnvironment::macrosDir
+	@return where the parametric macros are filed
+	The panel does not call this one: it roots its macro tree on
+	QETApp::userMacrosDir(), which resolves to the very same folder but
+	can be overridden by the elements-collections/macros-path setting,
+	the way each collection can. Both spellings must keep pointing at the
+	same place; this one is what the rest of the environment code and the
+	test suite use, since QETApp is too heavy to link into the tests.
+*/
 QString QETEnvironment::macrosDir()
 {
 	return subDir(QStringLiteral("macros"));
