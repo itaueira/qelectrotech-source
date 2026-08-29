@@ -1213,7 +1213,17 @@ void QETDiagramEditor::assignCatalogPart()
 	}
 
 	Catalog *catalog = QETApp::catalog();
-	const CatalogPart part = CatalogBrowserDialog::choosePart(catalog, this);
+	if (!catalog) {
+		return;
+	}
+
+		//The selection is right here, so « New part » inside the browser can be
+		//born with one pin per terminal of the symbol and with what the
+		//draughtsman already typed while drawing. Opening it empty asks for all
+		//of that a second time, from someone who has the component on screen.
+	const CatalogPart part = CatalogBrowserDialog::choosePart(
+				catalog, this,
+				CatalogProjectActions::partFromElements(*catalog, selected));
 	if (part.isNull()) {
 		return;
 	}
