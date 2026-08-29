@@ -23,12 +23,14 @@
 #include <QRectF>
 #include <QSettings>
 #include <QString>
+#include <QStringList>
 
 #include "qt_catch_tostring.h"
 
 #include "../../../sources/catalog/catalogassignment.h"
 #include "../../../sources/ElementsCollection/pinoutblocktemplate.h"
 #include "../../../sources/ElementsCollection/pinoutgenerator.h"
+#include "../../../sources/ElementsCollection/pinoutusage.h"
 
 namespace
 {
@@ -772,5 +774,210 @@ TEST_CASE("CU-30.4 — la liste compte un point, la feuille montre deux bornes",
 			//classe pede seis: o corpo é o que a classe pede.
 		CHECK(body.width() == Approx(60.0));
 		CHECK(body.height() == Approx(60.0));
+	}
+}
+TEST_CASE("CU-30.3 — une même borne ne se dessine pas deux fois", "[pinout]")
+{
+	PinoutGenerator generator = standardGenerator();
+
+		//Onde o primeiro bloco foi parar. É o que a recusa vai ter de
+		//dizer de volta: não basta recusar, tem de apontar o original.
+	PinoutUsageEntry place;
+	place.component = QStringLiteral("-U1");
+	place.part_code = QStringLiteral("PCI-32E");
+	place.sheet = QStringLiteral("Commande");
+	place.sheet_number = 3;
+
+	SECTION("as bornas do primeiro bloco ficam com dono, uma a uma")
+	{
+		const QList<SymbolDefinition> blocks =
+				generator.generate(inputCard(4));
+		REQUIRE(blocks.size() == 1);
+
+		PinoutUsage usage;
+		CHECK(usage.addSymbol(place, blocks.first()) == 6);
+		CHECK(usage.count() == 6);
+		CHECK(usage.holds(QStringLiteral("-U1"), QStringLiteral("I0")));
+		CHECK(usage.holds(QStringLiteral("-U1"), QStringLiteral("C1")));
+		CHECK_FALSE(usage.holds(QStringLiteral("-U1"),
+				QStringLiteral("I9")));
+		CHECK(usage.components().size() == 1);
+		CHECK(usage.entriesOf(QStringLiteral("-U1")).size() == 6);
+		CHECK(usage.entryOf(QStringLiteral("-U1"),
+				QStringLiteral("I0")).sheet_number == 3);
+	}
+
+	SECTION("o mesmo bloco desenhado de novo é recusado, e diz onde está o original")
+	{
+		const QList<SymbolDefinition> blocks =
+				generator.generate(inputCard(4));
+		REQUIRE(blocks.size() == 1);
+		const SymbolDefinition block = blocks.first();
+
+		PinoutUsage usage;
+		usage.addSymbol(place, block);
+
+		const QList<PinoutUsageConflict> found =
+				usage.conflicts(QStringLiteral("-U1"), block);
+		REQUIRE(found.size() == 6);
+
+		QStringList named;
+		for (const PinoutUsageConflict &conflict : found) {
+			named << conflict.terminal;
+		}
+		CHECK(named.contains(QStringLiteral("I0")));
+		CHECK(named.contains(QStringLiteral("C1")));
+
+			//A frase tem de nomear as três coisas que a pessoa precisa
+			//para resolver: qual borna, de qual componente, e em que
+			//folha está a que já existe.
+		const PinoutUsageConflict conflict = found.first();
+		CHECK(conflict.existing.component == QStringLiteral("-U1"));
+		CHECK(conflict.existing.whereItIs()
+				== QStringLiteral("folio 3 (Commande)"));
+		CHECK(conflict.message() == QStringLiteral("La borne %1 de -U1 "
+				"est deja dessinee sur le folio 3 (Commande).")
+				.arg(conflict.terminal));
+
+		CHECK_FALSE(usage.refusal(QStringLiteral("-U1"), block).isEmpty());
+			//E nada entrou: quem chega depois não desenha metade.
+		CHECK(usage.count() == 6);
+	}
+
+	SECTION("o acionamento partido em dois blocos entra inteiro, porque as bornas são outras")
+	{
+		generator.block_template.max_terminals = 20;
+		const QList<SymbolDefinition> blocks =
+				generator.generate(inputCard(32));
+		REQUIRE(blocks.size() == 2);
+
+		PinoutUsage usage;
+		QList<PinoutUsageConflict> conflicts;
+		int added = 0;
+		for (const SymbolDefinition &block : blocks) {
+			added += usage.addSymbol(place, block, &conflicts);
+		}
+			//As duas metades são um componente só, e é a etiqueta que
+			//diz isso. O que não pode é a borna se repetir entre elas.
+		CHECK(added == 34);
+		CHECK(conflicts.isEmpty());
+		CHECK(usage.count() == 34);
+		CHECK(usage.components().size() == 1);
+	}
+
+	SECTION("a mesma borna em outro componente não é conflito nenhum")
+	{
+		const QList<SymbolDefinition> blocks =
+				generator.generate(inputCard(4));
+		REQUIRE(blocks.size() == 1);
+		const SymbolDefinition block = blocks.first();
+
+		PinoutUsage usage;
+		usage.addSymbol(place, block);
+
+			//-U1 e -U2 são dois acionamentos, e cada um tem a borna I0
+			//dele sem nada de errado nisso.
+		PinoutUsageEntry other = place;
+		other.component = QStringLiteral("-U2");
+		other.sheet = QStringLiteral("Puissance");
+		other.sheet_number = 4;
+
+		CHECK(usage.refusal(QStringLiteral("-U2"), block).isEmpty());
+
+		QList<PinoutUsageConflict> conflicts;
+		CHECK(usage.addSymbol(other, block, &conflicts) == 6);
+		CHECK(conflicts.isEmpty());
+		CHECK(usage.count() == 12);
+		CHECK(usage.components().size() == 2);
+	}
+
+	SECTION("bloco sem etiqueta não é verificado")
+	{
+		const QList<SymbolDefinition> blocks =
+				generator.generate(inputCard(4));
+		REQUIRE(blocks.size() == 1);
+		const SymbolDefinition block = blocks.first();
+
+		PinoutUsage usage;
+		usage.addSymbol(place, block);
+
+		PinoutUsageEntry unnamed = place;
+		unnamed.component.clear();
+
+			//Nada entra e nada é recusado: bloco que ainda não foi
+			//nomeado não é atribuível a componente nenhum, e recusar
+			//por isso recusaria a maioria dos desenhos pela metade.
+		QList<PinoutUsageConflict> conflicts;
+		CHECK(usage.addSymbol(unnamed, block, &conflicts) == 0);
+		CHECK(conflicts.isEmpty());
+		CHECK(usage.count() == 6);
+		CHECK(usage.refusal(QString(), block).isEmpty());
+	}
+
+	SECTION("borna sem nome não conta, que é o caso das placas do projeto real")
+	{
+		SymbolDefinition drawn;
+		drawn.name = QStringLiteral("placa_ucm");
+		for (int index = 0 ; index < 8 ; ++index) {
+			drawn.terminals << SymbolTerminal(
+					QPointF(index * 10.0, 0.0), Qet::North);
+		}
+
+			//As três placas do projeto real levam 197 bornas assim, e
+			//verificá-las faria cada placa desenhada à mão colidir com
+			//todas as outras.
+		CHECK(drawn.terminals.size() == 8);
+		CHECK(PinoutUsage::terminalsOf(drawn).isEmpty());
+
+		PinoutUsage usage;
+		CHECK(usage.addSymbol(place, drawn) == 0);
+		CHECK(usage.isEmpty());
+		CHECK(usage.refusal(QStringLiteral("-U1"), drawn).isEmpty());
+	}
+
+	SECTION("o bloco que repete uma borna dentro de si é recusado sem projeto nenhum")
+	{
+		SymbolDefinition drawn;
+		drawn.name = QStringLiteral("bloco-a-mao");
+		SymbolTerminal first(QPointF(0.0, 0.0), Qet::North);
+		first.label = QStringLiteral("13");
+		SymbolTerminal second(QPointF(10.0, 0.0), Qet::North);
+		second.label = QStringLiteral("13");
+		drawn.terminals << first << second;
+
+		const QList<PinoutUsageConflict> found =
+				PinoutUsage::selfConflicts(drawn);
+		REQUIRE(found.size() == 1);
+		CHECK(found.first().terminal == QStringLiteral("13"));
+			//Sem componente e sem folha: o erro é do desenho, e está
+			//errado em qualquer lugar que ele seja posto.
+		CHECK(found.first().existing.component.isEmpty());
+		CHECK(found.first().message() == QStringLiteral("La borne 13 est "
+				"dessinee deux fois dans ce bloc."));
+
+		const PinoutUsage usage;
+		CHECK_FALSE(usage.refusal(QStringLiteral("-U9"), drawn).isEmpty());
+	}
+
+	SECTION("a mensagem para de contar em cinco, e diz quantas sobraram")
+	{
+		const QList<SymbolDefinition> blocks =
+				generator.generate(inputCard(32));
+		REQUIRE(blocks.size() == 1);
+		const SymbolDefinition block = blocks.first();
+
+		PinoutUsage usage;
+		usage.addSymbol(place, block);
+
+		const QString message =
+				usage.refusal(QStringLiteral("-U1"), block);
+		const QStringList lines = message.split(QStringLiteral("\n"));
+			//Cinco frases e a conta do que sobrou. Trinta e quatro
+			//frases iguais dizem menos que cinco.
+		REQUIRE(lines.size() == 6);
+		CHECK(lines.last()
+				== QStringLiteral("... et 29 autre(s) borne(s)."));
+		CHECK(PinoutUsage::messageFor(
+				QList<PinoutUsageConflict>()).isEmpty());
 	}
 }

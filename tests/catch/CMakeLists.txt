@@ -202,6 +202,12 @@ add_executable(
     # gerado pode ser conferido borne a borne.
     ${QET_DIR}/sources/ElementsCollection/pinoutgenerator.cpp
     ${QET_DIR}/sources/ElementsCollection/pinoutgenerator.h
+    # E a regra do terminal repetido, que é comparação de nome: qual borne já
+    # está desenhado em qual componente, e a frase que se diz a quem tentou
+    # desenhá-lo de novo. O PinoutUsageScanner, que lê isso de um projeto
+    # aberto, fica de fora de propósito — mesma razão do SheetSymbolExtractor.
+    ${QET_DIR}/sources/ElementsCollection/pinoutusage.cpp
+    ${QET_DIR}/sources/ElementsCollection/pinoutusage.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string
