@@ -717,6 +717,33 @@ TEST_CASE("CU-06.6 — o radical e o número saem do próprio valor", "[macro]")
 		CHECK(width == 1);
 	}
 
+	SECTION("etiqueta com descrição depois numera na primeira palavra")
+	{
+			//"PS1 - NO BREAK" é etiqueta, não frase: o contador está em PS1
+			//e a segunda inserção tem de propor PS2 - NO BREAK. Anexar no fim
+			//daria PS1 - NO BREAK2, que não é etiqueta que alguém escreva.
+			//A biblioteca da T09 declara nove valores dessa forma.
+		QString tail;
+		CHECK(MacroSequence::stemOf(QStringLiteral("PS1 - NO BREAK"),
+					    &number, &width, &tail)
+		      == QStringLiteral("PS"));
+		CHECK(number == 1);
+		CHECK(width == 1);
+		CHECK(tail == QStringLiteral(" - NO BREAK"));
+	}
+
+	SECTION("dígito depois do primeiro espaço é quantidade, não contador")
+	{
+			//O texto livre do macro da entrada monofásica diz a bitola do
+			//cabo. Propor o próximo desenharia um cabo que ninguém vende.
+		QString tail;
+		const QString cabo = QStringLiteral("PP 3x2,5mm");
+		CHECK(MacroSequence::stemOf(cabo, &number, &width, &tail) == cabo);
+		CHECK(number == 1);
+		CHECK(width == 0);
+		CHECK(tail.isEmpty());
+	}
+
 	SECTION("número grande demais para um inteiro é tratado como texto")
 	{
 			//Não é contador, é número de série que alguém colou. Lido como
@@ -786,6 +813,18 @@ TEST_CASE("CU-06.6 — duas inserções seguidas pegam os próximos números", "
 		taken << QStringLiteral("X2");
 		CHECK(MacroSequence::nextFree(QStringLiteral("X"), taken)
 		      == QStringLiteral("X3"));
+	}
+
+	SECTION("a descrição fica onde estava enquanto o número anda")
+	{
+		QSet<QString> taken;
+		taken << QStringLiteral("PS1 - NO BREAK");
+		CHECK(MacroSequence::nextFree(QStringLiteral("PS1 - NO BREAK"), taken)
+		      == QStringLiteral("PS2 - NO BREAK"));
+
+		taken << QStringLiteral("PS2 - NO BREAK");
+		CHECK(MacroSequence::nextFree(QStringLiteral("PS1 - NO BREAK"), taken)
+		      == QStringLiteral("PS3 - NO BREAK"));
 	}
 }
 

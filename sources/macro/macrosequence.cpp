@@ -30,16 +30,36 @@
 	@param value
 	@param number
 	@param width
-	@return the part of @a value before its trailing digits
+	@param tail
+	@return the part of @a value before the digits that count it
 */
-QString MacroSequence::stemOf(const QString &value, int *number, int *width)
+QString MacroSequence::stemOf(const QString &value, int *number, int *width, QString *tail)
 {
-	int first_digit = value.length();
+	if (tail) { *tail = QString(); }
+
+		//Where the counting digits end. Normally at the end of the value,
+		//but a tag written as "PS1 - NO BREAK" carries its number inside
+		//the first word and its meaning after it, and appending there
+		//would answer PS1 - NO BREAK2, which is not a tag anybody writes.
+		//The search stops at the first space on purpose: past it the
+		//digits are quantities, and proposing the next one would invent
+		//engineering.
+	int last_digit = value.length();
+	if (last_digit == 0 || !value.at(last_digit - 1).isDigit())
+	{
+		const int space = value.indexOf(QLatin1Char(' '));
+		last_digit = (space < 0) ? 0 : space;
+		if (last_digit > 0 && !value.at(last_digit - 1).isDigit()) {
+			last_digit = 0;
+		}
+	}
+
+	int first_digit = last_digit;
 	while (first_digit > 0 && value.at(first_digit - 1).isDigit()) {
 		--first_digit;
 	}
 
-	const QString digits = value.mid(first_digit);
+	const QString digits = value.mid(first_digit, last_digit - first_digit);
 	bool ok = false;
 	const int spelled = digits.toInt(&ok);
 
@@ -56,6 +76,7 @@ QString MacroSequence::stemOf(const QString &value, int *number, int *width)
 
 	if (number) { *number = spelled; }
 	if (width) { *width = digits.length(); }
+	if (tail) { *tail = value.mid(last_digit); }
 	return value.left(first_digit);
 }
 
@@ -74,7 +95,8 @@ QString MacroSequence::nextFree(const QString &proposal, const QSet<QString> &ta
 
 	int number = 1;
 	int width = 0;
-	const QString stem = MacroSequence::stemOf(proposal, &number, &width);
+	QString tail;
+	const QString stem = MacroSequence::stemOf(proposal, &number, &width, &tail);
 
 		//A value carrying no number of its own starts at two, not at one:
 		//the value without a number is the first of its kind, and calling
@@ -88,7 +110,7 @@ QString MacroSequence::nextFree(const QString &proposal, const QSet<QString> &ta
 	{
 		++number;
 		const QString candidate = stem + QString::number(number)
-					  .rightJustified(width, QLatin1Char('0'));
+					  .rightJustified(width, QLatin1Char('0')) + tail;
 		if (!taken.contains(candidate)) {
 			return candidate;
 		}

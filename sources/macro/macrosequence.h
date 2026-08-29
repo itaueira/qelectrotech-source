@@ -43,15 +43,26 @@ class MacroParameterSet;
 namespace MacroSequence
 {
 		/**
-			Split @a value into the part before its trailing digits and the
-			number those digits spell.
+			Split @a value around the run of digits that counts it, and read
+			the number those digits spell.
+
+			That run is the one at the end of the value, and when the value
+			does not end in digits, the one at the end of its first word:
+			the tag of "PS1 - NO BREAK" is PS1, and the next one is
+			PS2 - NO BREAK and not PS1 - NO BREAK2. Only the first word,
+			because a digit further in is a quantity and not a counter -
+			"PP 3x2,5mm" names a cable, and answering 3x2,6mm
+			would draw a cable nobody sells.
 			@param value
 			@param number : receives the number, 1 when there are no digits
 			@param width : receives how many digits were written, 0 when
 			there are none, so that -Q03 answers 2 and keeps its padding
+			@param tail : receives what follows the digits, empty when they
+			end the value
 			@return the part before the digits
 		*/
-	QString stemOf(const QString &value, int *number = nullptr, int *width = nullptr);
+	QString stemOf(const QString &value, int *number = nullptr, int *width = nullptr,
+		       QString *tail = nullptr);
 
 		/**
 			@param proposal
