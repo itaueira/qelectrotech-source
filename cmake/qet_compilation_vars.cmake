@@ -370,8 +370,12 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/macro/macroparameter.h
   ${QET_DIR}/sources/macro/macroparameterset.cpp
   ${QET_DIR}/sources/macro/macroparameterset.h
+  ${QET_DIR}/sources/macro/macrosequence.cpp
+  ${QET_DIR}/sources/macro/macrosequence.h
   ${QET_DIR}/sources/macro/macrosubstitution.cpp
   ${QET_DIR}/sources/macro/macrosubstitution.h
+  ${QET_DIR}/sources/macro/ui/macroparametersdialog.cpp
+  ${QET_DIR}/sources/macro/ui/macroparametersdialog.h
 
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
   ${QET_DIR}/sources/dataBase/projectdatabase.h

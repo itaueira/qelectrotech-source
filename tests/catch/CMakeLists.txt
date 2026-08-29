@@ -147,6 +147,8 @@ add_executable(
     ${QET_DIR}/sources/macro/macroparameter.h
     ${QET_DIR}/sources/macro/macroparameterset.cpp
     ${QET_DIR}/sources/macro/macroparameterset.h
+    ${QET_DIR}/sources/macro/macrosequence.cpp
+    ${QET_DIR}/sources/macro/macrosequence.h
     ${QET_DIR}/sources/macro/macrosubstitution.cpp
     ${QET_DIR}/sources/macro/macrosubstitution.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,

@@ -17,6 +17,7 @@
 */
 #include "../../../sources/macro/macroparameter.h"
 #include "../../../sources/macro/macroparameterset.h"
+#include "../../../sources/macro/macrosequence.h"
 #include "../../../sources/macro/macrosubstitution.h"
 #include "qt_catch_tostring.h"
 
@@ -668,5 +669,248 @@ TEST_CASE("CU-05.6 — marcador órfão é nomeado, e nada é inserido", "[macro
 			MacroSubstitution::apply(nothing, QHash<QString, QString>());
 		CHECK_FALSE(result.ok);
 		CHECK_FALSE(result.errorText().isEmpty());
+	}
+}
+
+TEST_CASE("CU-06.6 — o radical e o número saem do próprio valor", "[macro]")
+{
+	int number = 0;
+	int width = 0;
+
+	SECTION("dígitos no fim viram número, e o que vem antes é o radical")
+	{
+		CHECK(MacroSequence::stemOf(QStringLiteral("-Q3"), &number, &width)
+		      == QStringLiteral("-Q"));
+		CHECK(number == 3);
+		CHECK(width == 1);
+
+			//O zero à esquerda é largura, não valor: -Q03 é 3 escrito em
+			//duas casas, e a próxima inserção tem de sair -Q04 e não -Q4.
+		CHECK(MacroSequence::stemOf(QStringLiteral("-Q03"), &number, &width)
+		      == QStringLiteral("-Q"));
+		CHECK(number == 3);
+		CHECK(width == 2);
+
+		CHECK(MacroSequence::stemOf(QStringLiteral("007"), &number, &width)
+		      == QString());
+		CHECK(number == 7);
+		CHECK(width == 3);
+	}
+
+	SECTION("valor sem dígito nenhum é o próprio radical")
+	{
+		CHECK(MacroSequence::stemOf(QStringLiteral("X"), &number, &width)
+		      == QStringLiteral("X"));
+		CHECK(number == 1);
+		CHECK(width == 0);
+
+		CHECK(MacroSequence::stemOf(QString(), &number, &width) == QString());
+		CHECK(number == 1);
+		CHECK(width == 0);
+	}
+
+	SECTION("dígito no meio não conta, só o do fim")
+	{
+		CHECK(MacroSequence::stemOf(QStringLiteral("-2Q1"), &number, &width)
+		      == QStringLiteral("-2Q"));
+		CHECK(number == 1);
+		CHECK(width == 1);
+	}
+
+	SECTION("número grande demais para um inteiro é tratado como texto")
+	{
+			//Não é contador, é número de série que alguém colou. Lido como
+			//dígito voltaria zero, e a inserção seguinte proporia um valor
+			//menor que o de onde saiu — que se lê como perda de dado.
+		const QString serial = QStringLiteral("SN99999999999999999999");
+		CHECK(MacroSequence::stemOf(serial, &number, &width) == serial);
+		CHECK(number == 1);
+		CHECK(width == 0);
+	}
+}
+
+TEST_CASE("CU-06.6 — duas inserções seguidas pegam os próximos números", "[macro]")
+{
+	SECTION("valor que ninguém tomou volta como está")
+	{
+		QSet<QString> taken;
+		taken << QStringLiteral("-Q3");
+
+		CHECK(MacroSequence::nextFree(QStringLiteral("-K1"), taken)
+		      == QStringLiteral("-K1"));
+		CHECK(MacroSequence::nextFree(QString(), taken) == QString());
+		CHECK(MacroSequence::nextFree(QStringLiteral("-Q3"), QSet<QString>())
+		      == QStringLiteral("-Q3"));
+	}
+
+	SECTION("valor tomado anda até o primeiro livre")
+	{
+		QSet<QString> taken;
+		taken << QStringLiteral("-Q3");
+		CHECK(MacroSequence::nextFree(QStringLiteral("-Q3"), taken)
+		      == QStringLiteral("-Q4"));
+
+			//A terceira inserção do mesmo macro: -Q3 e -Q4 já estão na
+			//folha, e é -Q5 que a caixa tem de mostrar.
+		taken << QStringLiteral("-Q4");
+		CHECK(MacroSequence::nextFree(QStringLiteral("-Q3"), taken)
+		      == QStringLiteral("-Q5"));
+
+			//Buraco no meio é ocupado: o primeiro livre é o primeiro livre.
+		taken << QStringLiteral("-Q6");
+		CHECK(MacroSequence::nextFree(QStringLiteral("-Q3"), taken)
+		      == QStringLiteral("-Q5"));
+	}
+
+	SECTION("a largura escrita é preservada")
+	{
+		QSet<QString> taken;
+		taken << QStringLiteral("007");
+		CHECK(MacroSequence::nextFree(QStringLiteral("007"), taken)
+		      == QStringLiteral("008"));
+
+		taken << QStringLiteral("-Q09");
+		CHECK(MacroSequence::nextFree(QStringLiteral("-Q09"), taken)
+		      == QStringLiteral("-Q10"));
+	}
+
+	SECTION("valor sem número começa em dois")
+	{
+			//X sem número é o primeiro X. Chamar o seguinte de X1 se leria
+			//como se ele viesse antes.
+		QSet<QString> taken;
+		taken << QStringLiteral("X");
+		CHECK(MacroSequence::nextFree(QStringLiteral("X"), taken)
+		      == QStringLiteral("X2"));
+
+		taken << QStringLiteral("X2");
+		CHECK(MacroSequence::nextFree(QStringLiteral("X"), taken)
+		      == QStringLiteral("X3"));
+	}
+}
+
+TEST_CASE("CU-06.6 — só o texto anda, e a ordem é a da declaração", "[macro]")
+{
+	MacroParameterSet set;
+
+	MacroParameter marcacao(QStringLiteral("MARCACAO"),
+				QStringLiteral("Marquage"),
+				MacroParameterType::Text);
+	marcacao.default_value = QStringLiteral("-Q3");
+
+	MacroParameter reserva(QStringLiteral("RESERVA"),
+			       QStringLiteral("Réserve"),
+			       MacroParameterType::Text);
+	reserva.default_value = QStringLiteral("-Q3");
+
+	MacroParameter fabricante(QStringLiteral("FABRICANTE"),
+				  QStringLiteral("Fabricant"),
+				  MacroParameterType::Text);
+	fabricante.default_value = QString::fromUtf8("ACME");
+
+	MacroParameter outro(QStringLiteral("OUTRO_FABRICANTE"),
+			     QStringLiteral("Autre fabricant"),
+			     MacroParameterType::Text);
+	outro.default_value = QString::fromUtf8("ACME");
+
+	MacroParameter potencia(QStringLiteral("POTENCIA"),
+				QStringLiteral("Puissance"),
+				MacroParameterType::Number);
+	potencia.default_value = QStringLiteral("7,5");
+	potencia.unit = QStringLiteral("cv");
+
+	MacroParameter secao(QStringLiteral("SECAO"),
+			     QStringLiteral("Section"),
+			     MacroParameterType::List);
+	secao.choices << QString::fromUtf8("1,5mm²") << QString::fromUtf8("2,5mm²");
+	secao.default_value = QString::fromUtf8("2,5mm²");
+
+	MacroParameter codigo(QStringLiteral("CODIGO"),
+			      QStringLiteral("Code article"),
+			      MacroParameterType::Part);
+	codigo.default_value = QStringLiteral("MTR-75-4P");
+
+	REQUIRE(set.append(marcacao));
+	REQUIRE(set.append(reserva));
+	REQUIRE(set.append(fabricante));
+	REQUIRE(set.append(outro));
+	REQUIRE(set.append(potencia));
+	REQUIRE(set.append(secao));
+	REQUIRE(set.append(codigo));
+
+	const QHash<QString, QString> defaults = set.defaults();
+
+	SECTION("nada tomado: os padrões passam inteiros")
+	{
+		CHECK(MacroSequence::proposeFree(set, defaults, QSet<QString>()) == defaults);
+	}
+
+	SECTION("nenhuma colisão: os padrões passam inteiros do mesmo jeito")
+	{
+		QSet<QString> taken;
+		taken << QStringLiteral("-K1") << QStringLiteral("-F2");
+		CHECK(MacroSequence::proposeFree(set, defaults, taken) == defaults);
+	}
+
+	SECTION("dois parâmetros com o mesmo padrão livre continuam com ele")
+	{
+			//Um macro que nomeia o fabricante em dois campos quer o
+			//fabricante duas vezes. Mover o segundo desenharia uma empresa
+			//que não existe.
+		QSet<QString> taken;
+		taken << QStringLiteral("-K1");
+		const QHash<QString, QString> proposed =
+			MacroSequence::proposeFree(set, defaults, taken);
+		CHECK(proposed.value(QStringLiteral("FABRICANTE"))
+		      == QString::fromUtf8("ACME"));
+		CHECK(proposed.value(QStringLiteral("OUTRO_FABRICANTE"))
+		      == QString::fromUtf8("ACME"));
+	}
+
+	SECTION("a marcação tomada anda, e a segunda não cai em cima da primeira")
+	{
+		QSet<QString> taken;
+		taken << QStringLiteral("-Q3");
+		const QHash<QString, QString> proposed =
+			MacroSequence::proposeFree(set, defaults, taken);
+
+		CHECK(proposed.value(QStringLiteral("MARCACAO")) == QStringLiteral("-Q4"));
+		CHECK(proposed.value(QStringLiteral("RESERVA")) == QStringLiteral("-Q5"));
+	}
+
+	SECTION("número, lista e código de peça não andam")
+	{
+			//7,5 cv é um valor, não um nome: propor 8,5 porque alguém já
+			//desenhou um de 7,5 seria inventar engenharia. Uma lista só
+			//aceita o que declara, e um código nomeia a peça no catálogo.
+		QSet<QString> taken;
+		taken << QStringLiteral("7,5")
+		      << QString::fromUtf8("2,5mm²")
+		      << QStringLiteral("MTR-75-4P");
+
+		const QHash<QString, QString> proposed =
+			MacroSequence::proposeFree(set, defaults, taken);
+
+		CHECK(proposed.value(QStringLiteral("POTENCIA")) == QStringLiteral("7,5"));
+		CHECK(proposed.value(QStringLiteral("SECAO")) == QString::fromUtf8("2,5mm²"));
+		CHECK(proposed.value(QStringLiteral("CODIGO")) == QStringLiteral("MTR-75-4P"));
+	}
+
+	SECTION("valor em branco não vira número")
+	{
+			//Obrigatória em branco é assunto do CU-06.8, e a caixa cobra
+			//por ele. Propor "2" para um campo vazio seria preencher no
+			//lugar do usuário.
+		MacroParameterSet blank_set;
+		MacroParameter vazia(QStringLiteral("VAZIA"),
+				     QStringLiteral("Vide"),
+				     MacroParameterType::Text);
+		REQUIRE(blank_set.append(vazia));
+
+		QSet<QString> taken;
+		taken << QString();
+		const QHash<QString, QString> proposed =
+			MacroSequence::proposeFree(blank_set, blank_set.defaults(), taken);
+		CHECK(proposed.value(QStringLiteral("VAZIA")) == QString());
 	}
 }

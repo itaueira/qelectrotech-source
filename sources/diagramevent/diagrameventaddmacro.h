@@ -12,8 +12,11 @@
 #include <QDomDocument>
 #include <QGraphicsPixmapItem>
 #include <QHash>
+#include <QSet>
+#include <QString>
 
 class QStatusBar;
+class XmlElementCollection;
 
 /**
  * @brief The DiagramEventAddMacro class
@@ -35,8 +38,14 @@ public:
 
 private:
 	bool loadMacro();
+	void importCollection(XmlElementCollection *collection) const;
+	QSet<QString> labelsInUse() const;
+	bool askForValues();
+	void buildPreview(QPointF pos);
 	bool addMacro(QPointF final_pos);
 	void reportRefusal(const QString &text);
+	QWidget *parentWidget() const;
+	void finishLater();
 
 private:
 	ElementsLocation m_location;
