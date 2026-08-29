@@ -196,6 +196,12 @@ add_executable(
     # abre janela, então cada conta pode ser conferida por número.
     ${QET_DIR}/sources/ElementsCollection/pinoutblocktemplate.cpp
     ${QET_DIR}/sources/ElementsCollection/pinoutblocktemplate.h
+    # E o gerador, que e a aritmetica dos dois aplicada a uma pinagem: onde
+    # cada borne cai, quantos blocos a peca ocupa e o que o simbolo produzido
+    # tem escrito. Nao abre janela nem toca no repositorio, entao cada bloco
+    # gerado pode ser conferido borne a borne.
+    ${QET_DIR}/sources/ElementsCollection/pinoutgenerator.cpp
+    ${QET_DIR}/sources/ElementsCollection/pinoutgenerator.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string

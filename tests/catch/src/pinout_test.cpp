@@ -17,14 +17,18 @@
 */
 #include <catch2/catch.hpp>
 
+#include <QDomDocument>
 #include <QList>
 #include <QPointF>
+#include <QRectF>
 #include <QSettings>
 #include <QString>
 
 #include "qt_catch_tostring.h"
 
+#include "../../../sources/catalog/catalogassignment.h"
 #include "../../../sources/ElementsCollection/pinoutblocktemplate.h"
+#include "../../../sources/ElementsCollection/pinoutgenerator.h"
 
 namespace
 {
@@ -61,6 +65,78 @@ namespace
 		private:
 			QString m_previous;
 	};
+	/**
+		The pin the cases below build one at a time: a label, a role, and
+		the place it holds in the list the manufacturer printed.
+	*/
+	CatalogPin pinAt(const QString &label, CatalogPinRole role, int order)
+	{
+		CatalogPin pin(label, role);
+		pin.order_index = order;
+		return pin;
+	}
+
+	/**
+		A card of @a inputs points and the two commons that return them.
+
+		Nothing else is filled in on purpose: a label, a role and an
+		order is all T14 imports out of a manufacturer's table, and a
+		generator that needed more than that would be a generator no
+		imported part could be drawn with.
+	*/
+	CatalogPart inputCard(int inputs)
+	{
+		CatalogPart part;
+		part.id = 1;
+		part.class_id = 1;
+		part.code = QStringLiteral("PCI-32E");
+		part.revision = 3;
+		for (int index = 0 ; index < inputs ; ++index) {
+			part.pins << pinAt(QStringLiteral("I%1").arg(index),
+					CatalogPinRole::Input, index);
+		}
+		for (int index = 0 ; index < 2 ; ++index) {
+			part.pins << pinAt(QStringLiteral("C%1").arg(index),
+					CatalogPinRole::ReturnCommon,
+					inputs + index);
+		}
+		return part;
+	}
+
+	/**
+		A card of @a channels analogue points, each one an input and the
+		common that returns it, tied together by a channel.
+	*/
+	CatalogPart analogCard(int channels)
+	{
+		CatalogPart part;
+		part.id = 2;
+		part.class_id = 1;
+		part.code = QStringLiteral("PCI-4AI");
+		part.revision = 1;
+		for (int index = 0 ; index < channels ; ++index)
+		{
+			const QString channel = QStringLiteral("CH%1").arg(index + 1);
+			CatalogPin input = pinAt(QStringLiteral("AI%1").arg(index),
+					CatalogPinRole::InputAnalog, index * 2);
+			input.channel = channel;
+			CatalogPin common = pinAt(QStringLiteral("AC%1").arg(index),
+					CatalogPinRole::ReturnCommon,
+					index * 2 + 1);
+			common.channel = channel;
+			part.pins << input << common;
+		}
+		return part;
+	}
+
+		/// the generator of a workshop that changed nothing: the standard
+		/// template, the standard convention and the standard grid
+	PinoutGenerator standardGenerator()
+	{
+		return PinoutGenerator(PinoutBlockTemplate(),
+				PinoutConvention::iec(), SymbolGrid(),
+				QStringLiteral("cartao-entrada"));
+	}
 }
 
 /*
@@ -383,5 +459,318 @@ TEST_CASE("CU-30.5 — la convention de côtés appartient à l'atelier")
 		PinoutConvention::clearCurrent();
 		CHECK_FALSE(PinoutConvention::isConfigured());
 		CHECK(PinoutConvention::current().key == QStringLiteral("iec"));
+	}
+}
+
+TEST_CASE("CU-30.1 — le bloc sort de la liste des bornes", "[pinout]")
+{
+	const SymbolGrid grid;
+	const PinoutGenerator generator = standardGenerator();
+	const CatalogPart part = inputCard(32);
+
+	const QList<SymbolDefinition> blocks = generator.generate(part);
+	REQUIRE(blocks.size() == 1);
+	const SymbolDefinition block = blocks.first();
+
+	SECTION("um bloco só, com uma borna para cada pino da lista")
+	{
+		CHECK(block.terminals.size() == 34);
+		CHECK(block.name == QStringLiteral("PCI-32E"));
+		CHECK(block.class_key == QStringLiteral("cartao-entrada"));
+	}
+
+	SECTION("o corpo mede o lado mais longo, e a largura da classe é o mínimo")
+	{
+		REQUIRE(block.shapes.size() == 1);
+		const QRectF body = block.shapes.first().bounds();
+			//Trinta e duas bornas espaçadas de um passo, mais a
+			//margem dos dois lados: 2x10 + 31x10.
+		CHECK(body.width() == Approx(330.0));
+			//Nada nas laterais, então a altura é a largura que a
+			//classe pede — seis passos.
+		CHECK(body.height() == Approx(60.0));
+	}
+
+	SECTION("a entrada vai para cima e o comum de retorno para baixo")
+	{
+		CHECK(block.terminals.at(0).orientation == Qet::North);
+		CHECK(block.terminals.at(31).orientation == Qet::North);
+		CHECK(block.terminals.at(32).orientation == Qet::South);
+		CHECK(block.terminals.at(33).orientation == Qet::South);
+
+		CHECK(block.terminals.at(0).position == QPointF(10.0, 0.0));
+		CHECK(block.terminals.at(31).position == QPointF(320.0, 0.0));
+		CHECK(block.terminals.at(32).position == QPointF(10.0, 60.0));
+		CHECK(block.terminals.at(33).position == QPointF(20.0, 60.0));
+
+		CHECK(block.terminals.at(0).label == QStringLiteral("I0"));
+		CHECK(block.terminals.at(32).label == QStringLiteral("C0"));
+	}
+
+	SECTION("cada borna leva o seu próprio número, e não há texto solto")
+	{
+		for (const SymbolTerminal &terminal : block.terminals)
+		{
+			CHECK(terminal.show_name);
+			CHECK_FALSE(terminal.label.isEmpty());
+		}
+			//Um texto, e é a etiqueta do bloco. É esta a promessa
+			//da T30: as placas do projeto real levam 248 textos
+			//soltos em volta de 197 bornas chamadas "".
+		REQUIRE(block.texts.size() == 1);
+		CHECK(block.texts.first().info_key == QStringLiteral("label"));
+		CHECK(block.texts.first().position == QPointF(165.0, -5.0));
+		CHECK(block.texts.first().alignment ==
+				Qt::Alignment(Qt::AlignHCenter | Qt::AlignBottom));
+	}
+
+	SECTION("o número fica ao lado da borna, fora da grade de propósito")
+	{
+		CHECK(block.terminals.at(0).label_pos == QPointF(0.0, 2.0));
+		CHECK(block.terminals.at(32).label_pos == QPointF(0.0, -2.0));
+	}
+
+	SECTION("o ponto de inserção é a primeira borna, e o bloco pode ser gravado")
+	{
+		CHECK(block.hotspot == QPointF(10.0, 0.0));
+		CHECK(block.problems(grid).isEmpty());
+		CHECK(block.canBeSaved(grid));
+	}
+
+	SECTION("o código da peça viaja como informação, senão o vínculo some ao gravar")
+	{
+		CHECK(block.default_part_code == QStringLiteral("PCI-32E"));
+		CHECK(block.default_part_values.size() == 2);
+		CHECK(block.default_part_values.value(
+				CatalogAssignment::partCodeKey()) ==
+				QStringLiteral("PCI-32E"));
+		CHECK(block.default_part_values.value(
+				CatalogAssignment::partRevisionKey()) ==
+				QStringLiteral("3"));
+	}
+
+	SECTION("ida e volta pelo arquivo guarda o vínculo, o número e o espaçamento")
+	{
+		const QDomDocument document = block.toXml();
+		const SymbolDefinition read =
+				SymbolDefinition::fromXml(document.documentElement());
+
+		CHECK(read.name == QStringLiteral("PCI-32E"));
+		CHECK(read.class_key == QStringLiteral("cartao-entrada"));
+		CHECK(read.default_part_code == QStringLiteral("PCI-32E"));
+		CHECK(read.default_part_values.value(
+				CatalogAssignment::partRevisionKey()) ==
+				QStringLiteral("3"));
+
+		REQUIRE(read.terminals.size() == 34);
+		CHECK(read.terminals.at(0).show_name);
+		CHECK(read.terminals.at(0).label == QStringLiteral("I0"));
+		CHECK(read.terminals.at(0).orientation == Qet::North);
+		CHECK(read.terminals.at(0).label_pos == QPointF(0.0, 2.0));
+
+			//O arquivo não guarda onde na folha o desenho estava,
+			//então o que tem de voltar é a distância entre dois
+			//pontos de ligação, e não o lugar deles.
+		const QPointF step = read.terminals.at(1).position
+				- read.terminals.at(0).position;
+		CHECK(step.x() == Approx(10.0));
+		CHECK(step.y() == Approx(0.0));
+
+		REQUIRE(read.texts.size() == 1);
+		CHECK(read.texts.first().info_key == QStringLiteral("label"));
+		CHECK(read.texts.first().alignment ==
+				Qt::Alignment(Qt::AlignHCenter | Qt::AlignBottom));
+	}
+
+	SECTION("sem classe, sem grade ou sem peça não sai desenho nenhum")
+	{
+		QString error;
+
+		PinoutGenerator without_class = standardGenerator();
+		without_class.class_key.clear();
+		CHECK_FALSE(without_class.isValid(&error));
+		CHECK_FALSE(error.isEmpty());
+		CHECK(without_class.generate(part).isEmpty());
+
+		PinoutGenerator without_grid = standardGenerator();
+		without_grid.grid = SymbolGrid(0.0, 1.0);
+		CHECK_FALSE(without_grid.isValid());
+		CHECK(without_grid.generate(part).isEmpty());
+
+		PinoutGenerator narrow = standardGenerator();
+		narrow.block_template.width_steps = 1;
+		CHECK_FALSE(narrow.isValid());
+		CHECK(narrow.generate(part).isEmpty());
+
+		PinoutGenerator nameless = standardGenerator();
+		nameless.convention.key.clear();
+		CHECK_FALSE(nameless.isValid());
+		CHECK(nameless.generate(part).isEmpty());
+
+			//E uma peça que não existe não vira símbolo, mesmo com
+			//tudo o mais em ordem.
+		CHECK(generator.isValid());
+		CHECK(generator.generate(CatalogPart()).isEmpty());
+	}
+}
+
+TEST_CASE("CU-30.2 — une pinoute trop longue se coupe en blocs", "[pinout]")
+{
+	const SymbolGrid grid;
+	PinoutGenerator generator = standardGenerator();
+
+	SECTION("onze pinos soltos com teto de seis saem em dois blocos numerados")
+	{
+		generator.block_template.max_terminals = 6;
+
+		CatalogPart part;
+		part.id = 3;
+		part.code = QStringLiteral("INV-7K5");
+		part.revision = 1;
+		for (int index = 0 ; index < 11 ; ++index) {
+			part.pins << pinAt(QStringLiteral("X%1").arg(index),
+					CatalogPinRole::Input, index);
+		}
+
+		const QList<SymbolDefinition> blocks = generator.generate(part);
+		REQUIRE(blocks.size() == 2);
+		CHECK(blocks.at(0).terminals.size() == 6);
+		CHECK(blocks.at(1).terminals.size() == 5);
+			//O número do bloco só aparece quando há um segundo: o
+			//número de uma coisa única é ruído.
+		CHECK(blocks.at(0).name == QStringLiteral("INV-7K5 1/2"));
+		CHECK(blocks.at(1).name == QStringLiteral("INV-7K5 2/2"));
+		CHECK(PinoutGenerator::blockName(part, 0, 1) ==
+				QStringLiteral("INV-7K5"));
+	}
+
+	SECTION("um canal não se parte: quatro canais com teto de três dão quatro blocos")
+	{
+		generator.block_template.max_terminals = 3;
+
+		const QList<SymbolDefinition> blocks =
+				generator.generate(analogCard(4));
+		REQUIRE(blocks.size() == 4);
+		for (const SymbolDefinition &block : blocks)
+		{
+				//Dois, e não três: a entrada e o comum que a
+				//devolve são um ponto do campo, e um ponto
+				//partido em dois blocos é um ponto que nenhuma
+				//lista junta de volta.
+			CHECK(block.terminals.size() == 2);
+		}
+	}
+
+	SECTION("um par não se parte: metade de um contato é um símbolo que não grava")
+	{
+		generator.block_template.max_terminals = 3;
+
+		CatalogPart part;
+		part.id = 4;
+		part.code = QStringLiteral("CT-3NA");
+		part.revision = 1;
+		for (int index = 0 ; index < 3 ; ++index)
+		{
+			const QString pair = QStringLiteral("%1").arg(index + 1);
+				//13/14, 23/24, 33/34 — a numeração que a norma
+				//dá a um contato aberto.
+			CatalogPin in = pinAt(
+					QString::number((index + 1) * 10 + 3),
+					CatalogPinRole::ContactNo, index * 2);
+			in.pair = pair;
+			CatalogPin out = pinAt(
+					QString::number((index + 1) * 10 + 4),
+					CatalogPinRole::ContactNo,
+					index * 2 + 1);
+			out.pair = pair;
+			part.pins << in << out;
+		}
+
+		const QList<SymbolDefinition> blocks = generator.generate(part);
+		REQUIRE(blocks.size() == 3);
+		for (const SymbolDefinition &block : blocks)
+		{
+			CHECK(block.terminals.size() == 2);
+			CHECK(block.problems(grid).isEmpty());
+			CHECK(block.canBeSaved(grid));
+		}
+	}
+
+	SECTION("uma unidade maior que o teto ganha um bloco só para ela")
+	{
+		generator.block_template.max_terminals = 3;
+
+		CatalogPart part;
+		part.id = 5;
+		part.code = QStringLiteral("PCI-1AI");
+		part.revision = 1;
+		for (int index = 0 ; index < 4 ; ++index)
+		{
+			CatalogPin pin = pinAt(QStringLiteral("A%1").arg(index),
+					CatalogPinRole::InputAnalog, index);
+			pin.channel = QStringLiteral("CH1");
+			part.pins << pin;
+		}
+		part.pins << pinAt(QStringLiteral("V+"),
+				CatalogPinRole::Terminal, 4);
+		part.pins << pinAt(QStringLiteral("V-"),
+				CatalogPinRole::Terminal, 5);
+
+		const QList<SymbolDefinition> blocks = generator.generate(part);
+		REQUIRE(blocks.size() == 2);
+			//O teto é uma preferência, e a unidade é um fato.
+		CHECK(blocks.at(0).terminals.size() == 4);
+		CHECK(blocks.at(1).terminals.size() == 2);
+	}
+
+	SECTION("sem teto o cartão inteiro sai num bloco só")
+	{
+		CHECK(generator.block_template.max_terminals == 0);
+		const QList<SymbolDefinition> blocks =
+				generator.generate(inputCard(32));
+		REQUIRE(blocks.size() == 1);
+		CHECK(blocks.first().terminals.size() == 34);
+	}
+}
+
+TEST_CASE("CU-30.4 — la liste compte un point, la feuille montre deux bornes",
+	  "[pinout]")
+{
+	const PinoutGenerator generator = standardGenerator();
+	const CatalogPart part = analogCard(4);
+
+	SECTION("a lista conta quatro canais, e cada um vale dois pinos")
+	{
+		CHECK(part.channelKeys().size() == 4);
+		CHECK(part.pinsInChannel(QStringLiteral("CH1")).size() == 2);
+		CHECK(part.pins.size() == 8);
+	}
+
+	SECTION("a folha mostra as oito bornas, e o canal decide o lado de cada uma")
+	{
+		const QList<SymbolDefinition> blocks = generator.generate(part);
+		REQUIRE(blocks.size() == 1);
+		const SymbolDefinition block = blocks.first();
+
+		CHECK(block.terminals.size() == 8);
+
+		int north = 0, south = 0;
+		for (const SymbolTerminal &terminal : block.terminals)
+		{
+			if (terminal.orientation == Qet::North) {
+				north++;
+			} else if (terminal.orientation == Qet::South) {
+				south++;
+			}
+		}
+		CHECK(north == 4);
+		CHECK(south == 4);
+
+		REQUIRE(block.shapes.size() == 1);
+		const QRectF body = block.shapes.first().bounds();
+			//Quatro bornas de cada lado cabem em cinco passos, e a
+			//classe pede seis: o corpo é o que a classe pede.
+		CHECK(body.width() == Approx(60.0));
+		CHECK(body.height() == Approx(60.0));
 	}
 }

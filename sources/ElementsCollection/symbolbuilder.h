@@ -168,6 +168,25 @@ class SymbolTerminal
 		QUuid uuid;
 
 		/**
+			@brief Whether the connection point draws its own name.
+
+			False on a symbol drawn by hand, so that a symbol which
+			says nothing keeps producing the line it always produced.
+			True on a generated block, and that is the whole of the
+			first decision of the pinout blocks: the pin number
+			belongs to the terminal, not to a text placed beside it.
+
+			A name carried by the terminal moves when the terminal
+			moves, goes away when it goes away, and can be asked for
+			by the wiring list. A text placed beside it does none of
+			the three, which is why the boards of the real project
+			carry 248 of them around 197 terminals all named "".
+		*/
+		bool show_name = false;
+		/// where that name is drawn, relative to the connection point
+		QPointF label_pos;
+
+		/**
 			@brief The letter the element definition writes for @a orientation.
 
 			The same four letters Qet::orientationToString produces, written
@@ -185,6 +204,24 @@ class SymbolTerminal
 		static Qet::Orientation orientationFromString(const QString &string);
 		static QString translatedOrientation(Qet::Orientation orientation);
 		static QList<Qet::Orientation> allOrientations();
+
+		/**
+			@brief Where the name of a terminal sits, @a distance
+			away from the connection point itself.
+
+			A terminal points outwards, so its name goes the other
+			way: the number of a terminal on the top edge is drawn
+			below it, inside the body of the block. Reading a number
+			then never means reading across the conductor plugged
+			into it, which is the one thing that makes a block of
+			thirty two points readable once it is wired.
+		*/
+		static QPointF suggestedLabelPos(Qet::Orientation orientation,
+						 qreal distance);
+		/// how that name is aligned around its position, horizontally
+		static Qt::Alignment labelHAlignment(Qet::Orientation orientation);
+		/// and vertically
+		static Qt::Alignment labelVAlignment(Qet::Orientation orientation);
 };
 
 /**
@@ -207,6 +244,21 @@ class SymbolText
 		QString text;
 		qreal rotation = 0.0;
 		int font_size = 8;
+
+		/**
+			@brief How the text sits around @a position.
+
+			Top left is what the element editor has always written,
+			and what a definition carrying neither attribute means,
+			so top left is the default here too.
+
+			A generated block asks for centred text instead: a row
+			of labels under a row of terminals only reads as a row
+			when the labels share an axis, and sharing a left edge
+			is not sharing an axis as soon as two labels have a
+			different number of letters.
+		*/
+		Qt::Alignment alignment = Qt::AlignTop | Qt::AlignLeft;
 
 		/// the field every symbol gets: the tag of the component
 		static SymbolText tagField(const QPointF &position);

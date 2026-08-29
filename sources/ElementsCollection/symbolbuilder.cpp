@@ -23,6 +23,7 @@
 #include <QHash>
 #include <QLineF>
 #include <QMap>
+#include <QMetaEnum>
 #include <QSet>
 #include <QtMath>
 
@@ -38,6 +39,56 @@ namespace
 
 	/// half a unit of slack, so a coordinate written as 9.999999 is on grid
 	const qreal GRID_TOLERANCE = 0.001;
+
+	/// the size a terminal name is written in, one step under the
+	/// text fields, because thirty two of them share one block
+	const int TERMINAL_LABEL_FONT_SIZE = 6;
+
+	/// the two attributes a text alignment is written as, in the key
+	/// names the dynamic text fields have always used
+	void writeAlignment(QDomElement &element, Qt::Alignment alignment)
+	{
+		const QMetaEnum meta = QMetaEnum::fromType<Qt::Alignment>();
+		Qt::AlignmentFlag horizontal = Qt::AlignLeft;
+		if (alignment & Qt::AlignRight) {
+			horizontal = Qt::AlignRight;
+		} else if (alignment & Qt::AlignHCenter) {
+			horizontal = Qt::AlignHCenter;
+		}
+		Qt::AlignmentFlag vertical = Qt::AlignTop;
+		if (alignment & Qt::AlignBottom) {
+			vertical = Qt::AlignBottom;
+		} else if (alignment & Qt::AlignVCenter) {
+			vertical = Qt::AlignVCenter;
+		}
+		element.setAttribute(QStringLiteral("Halignment"),
+				     QString::fromLatin1(meta.valueToKey(horizontal)));
+		element.setAttribute(QStringLiteral("Valignment"),
+				     QString::fromLatin1(meta.valueToKey(vertical)));
+	}
+
+	/// the alignment of a plain text, absent meaning the top left the
+	/// element editor has written since before the attribute existed
+	Qt::Alignment alignmentFromXml(const QDomElement &element)
+	{
+		const QMetaEnum meta = QMetaEnum::fromType<Qt::Alignment>();
+		Qt::Alignment alignment;
+		if (element.hasAttribute(QStringLiteral("Halignment"))) {
+			alignment |= Qt::Alignment(meta.keyToValue(
+					element.attribute(QStringLiteral("Halignment"))
+							.toLatin1().constData()));
+		} else {
+			alignment |= Qt::AlignLeft;
+		}
+		if (element.hasAttribute(QStringLiteral("Valignment"))) {
+			alignment |= Qt::Alignment(meta.keyToValue(
+					element.attribute(QStringLiteral("Valignment"))
+							.toLatin1().constData()));
+		} else {
+			alignment |= Qt::AlignTop;
+		}
+		return alignment;
+	}
 
 	/// the font the element editor writes on a text field
 	QString fontString(int size)
@@ -379,6 +430,46 @@ QString SymbolTerminal::translatedOrientation(Qet::Orientation orientation)
 QList<Qet::Orientation> SymbolTerminal::allOrientations()
 {
 	return {Qet::North, Qet::East, Qet::South, Qet::West};
+}
+
+QPointF SymbolTerminal::suggestedLabelPos(Qet::Orientation orientation,
+						  qreal distance)
+{
+		//Away from where the conductor comes from, which is the
+		//opposite of where the terminal points.
+	switch (orientation) {
+		case Qet::North: return QPointF(0.0, distance);
+		case Qet::South: return QPointF(0.0, -distance);
+		case Qet::West:  return QPointF(distance, 0.0);
+		case Qet::East:  return QPointF(-distance, 0.0);
+	}
+	return QPointF(0.0, distance);
+}
+
+Qt::Alignment SymbolTerminal::labelHAlignment(Qet::Orientation orientation)
+{
+		//The name grows away from the terminal on the two sides where
+		//it runs sideways, and stays centred on the two where it does
+		//not. Centring a column of numbers is what lets the eye read
+		//the column instead of each number.
+	switch (orientation) {
+		case Qet::North:
+		case Qet::South: return Qt::AlignHCenter;
+		case Qet::West:  return Qt::AlignLeft;
+		case Qet::East:  return Qt::AlignRight;
+	}
+	return Qt::AlignHCenter;
+}
+
+Qt::Alignment SymbolTerminal::labelVAlignment(Qet::Orientation orientation)
+{
+	switch (orientation) {
+		case Qet::North: return Qt::AlignTop;
+		case Qet::South: return Qt::AlignBottom;
+		case Qet::West:
+		case Qet::East:  return Qt::AlignVCenter;
+	}
+	return Qt::AlignTop;
 }
 
 /*
@@ -988,6 +1079,34 @@ QDomElement SymbolDefinition::terminalToXml(QDomDocument &document,
 	if (!terminal.pair.isEmpty()) {
 		element.setAttribute(QStringLiteral("pair"), terminal.pair);
 	}
+
+		//The name of the terminal, drawn by the terminal. Written only
+		//when asked for, for the same reason as the two attributes
+		//above: a symbol with nothing to say has to keep producing the
+		//line it always produced. The alignment is not stored on the
+		//terminal and is derived here, so that the side a terminal
+		//points to and the way its name is laid out can never
+		//disagree.
+	if (terminal.show_name) {
+		element.setAttribute(QStringLiteral("show_name"),
+					 QStringLiteral("true"));
+		element.setAttribute(QStringLiteral("label_x"),
+					 num(terminal.label_pos.x()));
+		element.setAttribute(QStringLiteral("label_y"),
+					 num(terminal.label_pos.y()));
+		element.setAttribute(QStringLiteral("label_font"),
+					 fontString(TERMINAL_LABEL_FONT_SIZE));
+		element.setAttribute(QStringLiteral("label_rotation"),
+					 QStringLiteral("0"));
+		element.setAttribute(QStringLiteral("label_halign"),
+					 QString::number(static_cast<int>(
+						 SymbolTerminal::labelHAlignment(
+							 terminal.orientation))));
+		element.setAttribute(QStringLiteral("label_valign"),
+					 QString::number(static_cast<int>(
+						 SymbolTerminal::labelVAlignment(
+							 terminal.orientation))));
+	}
 	return element;
 }
 
@@ -1009,6 +1128,14 @@ QDomElement SymbolDefinition::textToXml(QDomDocument &document,
 				     fontString(text.font_size));
 		element.setAttribute(QStringLiteral("color"),
 				     QStringLiteral("#000000"));
+
+			//The alignment, written only when it is not the
+			//historical top left, and under the names PartText
+			//reads: a text nobody aligned keeps producing the
+			//line it always produced, byte for byte.
+		if (text.alignment != (Qt::AlignTop | Qt::AlignLeft)) {
+			writeAlignment(element, text.alignment);
+		}
 		return element;
 	}
 
@@ -1018,10 +1145,11 @@ QDomElement SymbolDefinition::textToXml(QDomDocument &document,
 	element.setAttribute(QStringLiteral("y"), num(position.y()));
 	element.setAttribute(QStringLiteral("z"), QString::number(z));
 	element.setAttribute(QStringLiteral("text_width"), QStringLiteral("-1"));
-	element.setAttribute(QStringLiteral("Halignment"),
-			     QStringLiteral("AlignLeft"));
-	element.setAttribute(QStringLiteral("Valignment"),
-			     QStringLiteral("AlignTop"));
+		//The same two attributes, and the same default: a field nobody
+		//aligned is the left aligned field this has always written. A
+		//tag centred over a block of thirty two points is the reason
+		//the field is asked at all instead of assumed.
+	writeAlignment(element, text.alignment);
 	element.setAttribute(QStringLiteral("frame"), QStringLiteral("false"));
 	element.setAttribute(QStringLiteral("rotation"), num(text.rotation));
 	element.setAttribute(QStringLiteral("keep_visual_rotation"),
@@ -1131,6 +1259,16 @@ SymbolDefinition SymbolDefinition::fromXml(const QDomElement &definition)
 			terminal.role = CatalogPin::roleFromString(
 					child.attribute(QStringLiteral("role")));
 			terminal.pair = child.attribute(QStringLiteral("pair"));
+			terminal.show_name =
+					child.attribute(QStringLiteral("show_name"))
+						== QLatin1String("true");
+			if (terminal.show_name) {
+				terminal.label_pos = QPointF(
+						child.attribute(
+							QStringLiteral("label_x")).toDouble(),
+						child.attribute(
+							QStringLiteral("label_y")).toDouble());
+			}
 			symbol.terminals << terminal;
 		} else if (tag == QLatin1String("line")) {
 			SymbolShape shape;
@@ -1196,6 +1334,7 @@ SymbolDefinition SymbolDefinition::fromXml(const QDomElement &definition)
 						QStringLiteral("info_name")).text();
 			text.text = child.firstChildElement(
 						QStringLiteral("text")).text();
+			text.alignment = alignmentFromXml(child);
 			symbol.texts << text;
 		} else if (tag == QLatin1String("text")) {
 			SymbolText text;
@@ -1205,6 +1344,7 @@ SymbolDefinition SymbolDefinition::fromXml(const QDomElement &definition)
 			text.rotation =
 					child.attribute(QStringLiteral("rotation")).toDouble();
 			text.text = child.attribute(QStringLiteral("text"));
+			text.alignment = alignmentFromXml(child);
 			symbol.texts << text;
 		}
 		child = child.nextSiblingElement();
