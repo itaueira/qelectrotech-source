@@ -511,6 +511,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ElementsCollection/elementstreeview.h
   ${QET_DIR}/sources/ElementsCollection/fileelementcollectionitem.cpp
   ${QET_DIR}/sources/ElementsCollection/fileelementcollectionitem.h
+  ${QET_DIR}/sources/ElementsCollection/pinoutblocktemplate.cpp
+  ${QET_DIR}/sources/ElementsCollection/pinoutblocktemplate.h
   ${QET_DIR}/sources/ElementsCollection/sheetsymbolextractor.cpp
   ${QET_DIR}/sources/ElementsCollection/sheetsymbolextractor.h
   ${QET_DIR}/sources/ElementsCollection/symbolbuilder.cpp

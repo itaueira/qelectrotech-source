@@ -99,6 +99,7 @@ add_executable(
     src/titleblockvariables_test.cpp
     src/environment_test.cpp
     src/symbol_test.cpp
+    src/pinout_test.cpp
     src/symbolpreview_test.cpp
     src/iecstructure_test.cpp
     src/renumber_test.cpp
@@ -190,6 +191,11 @@ add_executable(
     ${QET_DIR}/sources/ElementsCollection/symbolbuilder.h
     ${QET_DIR}/sources/ElementsCollection/symbolgroup.cpp
     ${QET_DIR}/sources/ElementsCollection/symbolgroup.h
+    # O modelo de bloco e a convenção de lados são dado e aritmética de
+    # grade: onde cada borne cai, quantos blocos a pinagem ocupa. Nada disso
+    # abre janela, então cada conta pode ser conferida por número.
+    ${QET_DIR}/sources/ElementsCollection/pinoutblocktemplate.cpp
+    ${QET_DIR}/sources/ElementsCollection/pinoutblocktemplate.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string
