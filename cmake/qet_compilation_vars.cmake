@@ -366,6 +366,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/environment/ui/environmentdialog.cpp
   ${QET_DIR}/sources/environment/ui/environmentdialog.h
 
+  ${QET_DIR}/sources/macro/circuitclipboard.cpp
+  ${QET_DIR}/sources/macro/circuitclipboard.h
   ${QET_DIR}/sources/macro/circuittable.cpp
   ${QET_DIR}/sources/macro/circuittable.h
   ${QET_DIR}/sources/macro/macroparameter.cpp

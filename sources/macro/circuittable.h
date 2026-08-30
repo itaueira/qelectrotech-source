@@ -101,6 +101,62 @@ class CircuitTable
 			QString text() const;
 		};
 
+		/**
+			@brief One cell a paste could not write, and why.
+
+			A refusal is not fatal: the other nineteen rows are pasted, and
+			the person is told which cell was left alone. Refusing the whole
+			paste because one cell holds a typo is how a person loses twenty
+			minutes of typing.
+		*/
+		struct Refusal
+		{
+				/// index in the table, zero based; text() says row + 1
+			int row = -1;
+				/// the parameter the cell belongs to
+			QString column;
+				/// what the spreadsheet held, kept so the message can quote it
+			QString value;
+				/// the refusal, already translated
+			QString reason;
+
+			QString text() const;
+		};
+
+		/**
+			@brief What one paste did, and what it did not do.
+
+			ok is false only when *nothing* was applied - the table is then
+			exactly as it was, and error says why. When ok is true the paste
+			happened, and refused holds the cells that stayed as they were.
+		*/
+		struct PasteReport
+		{
+				/// false when nothing at all was applied; error says why
+			bool ok = false;
+				/// data lines read, a header line not counted
+			int rows_read = 0;
+				/// rows the table grew by to hold them
+			int rows_added = 0;
+				/// rows that took at least one value, new ones included
+			int rows_changed = 0;
+				/// cells that took a value
+			int cells_written = 0;
+				/// whether the first line was read as a header
+			bool header_used = false;
+				/// where each column of the text landed, in text order; an
+				/// empty string is a column that landed nowhere
+			QStringList landed;
+				/// header names no macro of the table declares
+			QStringList unmatched;
+				/// cells that kept their old value, one message each
+			QList<Refusal> refused;
+				/// why nothing was applied, when ok is false
+			QString error;
+
+			QString text() const;
+		};
+
 		CircuitTable();
 
 			//the macros in use, and their parameters
@@ -131,6 +187,10 @@ class CircuitTable
 		MacroParameter parameterFor(int index, const QString &column) const;
 		bool isInert(int index, const QString &column) const;
 
+			//where a paste would land
+		QStringList landingColumns(
+				const QString &macro_for_new_rows = QString()) const;
+
 			//cells
 		QString value(int index, const QString &column) const;
 		QHash<QString, QString> values(int index) const;
@@ -138,6 +198,34 @@ class CircuitTable
 			      const QString &column,
 			      const QString &value,
 			      QString *error = nullptr);
+
+			//the spreadsheet, in and out
+		PasteReport pasteTsv(const QString &text,
+				     int start_row = -1,
+				     const QString &start_column = QString(),
+				     const QString &macro_for_new_rows = QString());
+		QString copyTsv(int top_row = -1,
+				int bottom_row = -1,
+				const QStringList &column_names = QStringList(),
+				bool with_header = true) const;
+
+			//filling a column the way a spreadsheet does
+		bool canFillDown(int top_row,
+				 int bottom_row,
+				 const QString &column,
+				 QString *error = nullptr) const;
+		int fillDown(int top_row,
+			     int bottom_row,
+			     const QString &column,
+			     QString *error = nullptr);
+		bool canFillSeries(int top_row,
+				   int bottom_row,
+				   const QString &column,
+				   QString *error = nullptr) const;
+		int fillSeries(int top_row,
+			       int bottom_row,
+			       const QString &column,
+			       QString *error = nullptr);
 
 			//what the generator has to refuse
 		QList<Problem> problems() const;
@@ -150,6 +238,9 @@ class CircuitTable
 		static QString newId();
 
 	private:
+		QString columnNamed(const QString &text,
+				    const QStringList &among) const;
+
 		QList<CircuitRow> m_rows;
 		QHash<QString, MacroParameterSet> m_parameters;
 };

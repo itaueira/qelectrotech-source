@@ -145,6 +145,8 @@ add_executable(
     # do nucleo do catalogo: QDomDocument e QString, nada de Diagram nem
     # de QETApp. A parte que precisa de um projeto aberto e o
     # DiagramEventAddMacro, e ele esta deliberadamente fora daqui.
+    ${QET_DIR}/sources/macro/circuitclipboard.cpp
+    ${QET_DIR}/sources/macro/circuitclipboard.h
     ${QET_DIR}/sources/macro/circuittable.cpp
     ${QET_DIR}/sources/macro/circuittable.h
     ${QET_DIR}/sources/macro/macroparameter.cpp

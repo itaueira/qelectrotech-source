@@ -15,6 +15,7 @@
 	You should have received a copy of the GNU General Public License
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "../../../sources/macro/circuitclipboard.h"
 #include "../../../sources/macro/circuittable.h"
 #include "../../../sources/macro/macroparameter.h"
 #include "../../../sources/macro/macroparameterset.h"
@@ -751,5 +752,472 @@ TEST_CASE("CircuitTable — as operações de linha e o que elas recusam", "[cir
 	{
 		table.setParameters(QString(), directStarter());
 		CHECK_FALSE(table.hasParameters(QString()));
+	}
+}
+
+TEST_CASE("CircuitClipboard — a grade que a planilha realmente escreveu", "[circuit]")
+{
+	SECTION("uma faixa comum vira uma linha por linha e uma célula por tabulação")
+	{
+		const QList<QStringList> grid =
+				CircuitClipboard::parse(QStringLiteral("-M1\tW\t5\n-M2\tW\t7,5\n"));
+		REQUIRE(grid.count() == 2);
+		CHECK(grid.at(0) == QStringList{QStringLiteral("-M1"),
+						QStringLiteral("W"),
+						QStringLiteral("5")});
+		CHECK(grid.at(1) == QStringList{QStringLiteral("-M2"),
+						QStringLiteral("W"),
+						QString::fromUtf8("7,5")});
+	}
+
+	SECTION("a quebra de linha do fim fecha a última linha, não abre uma vazia")
+	{
+			//Sem isso, colar três linhas acrescentaria quatro circuitos, e o
+			//quarto viria em branco - o defeito seria visto na folha, não aqui.
+		CHECK(CircuitClipboard::parse(QStringLiteral("a\nb\n")).count() == 2);
+		CHECK(CircuitClipboard::parse(QStringLiteral("a\nb")).count() == 2);
+	}
+
+	SECTION("Windows, Mac e Linux escrevem o fim de linha diferente e dão a mesma grade")
+	{
+		const QList<QStringList> windows = CircuitClipboard::parse(QStringLiteral("a\tb\r\nc\td\r\n"));
+		const QList<QStringList> mac = CircuitClipboard::parse(QStringLiteral("a\tb\rc\td\r"));
+		const QList<QStringList> linux = CircuitClipboard::parse(QStringLiteral("a\tb\nc\td\n"));
+		CHECK(windows == linux);
+		CHECK(mac == linux);
+	}
+
+	SECTION("a célula entre aspas guarda tabulação, quebra de linha e aspas dobradas")
+	{
+			//É o caso da lista de componentes da ACME: descrição com
+			//quebra de linha dentro. A divisão ingênua faria dela duas linhas
+			//e deslocaria todas as colunas seguintes em uma.
+		const QList<QStringList> grid = CircuitClipboard::parse(
+				QStringLiteral("-M1\t\"Cabo 3x2,5\nazul\"\tW\n-M2\t\"a\tb\"\tW\n"));
+		REQUIRE(grid.count() == 2);
+		REQUIRE(grid.at(0).count() == 3);
+		CHECK(grid.at(0).at(1) == QString::fromUtf8("Cabo 3x2,5\nazul"));
+		REQUIRE(grid.at(1).count() == 3);
+		CHECK(grid.at(1).at(1) == QStringLiteral("a\tb"));
+
+		const QList<QStringList> doubled =
+				CircuitClipboard::parse(QStringLiteral("\"disse \"\"ok\"\"\"\tb\n"));
+		REQUIRE(doubled.count() == 1);
+		CHECK(doubled.at(0).at(0) == QString::fromUtf8("disse \"ok\""));
+	}
+
+	SECTION("aspas no meio da célula é polegada, não abertura")
+	{
+		const QList<QStringList> grid = CircuitClipboard::parse(QStringLiteral("3\" x 2\tb\n"));
+		REQUIRE(grid.count() == 1);
+		CHECK(grid.at(0).at(0) == QStringLiteral("3\" x 2"));
+		CHECK(grid.at(0).at(1) == QStringLiteral("b"));
+	}
+
+	SECTION("escrever e ler de volta devolve o que se tinha")
+	{
+		QList<QStringList> grid;
+		grid << QStringList{QStringLiteral("TAG"), QStringLiteral("DESCRICAO")};
+		grid << QStringList{QStringLiteral("-M1"), QString::fromUtf8("Cabo 3x2,5\nazul")};
+		grid << QStringList{QStringLiteral("-M2"), QStringLiteral("a\tb")};
+		grid << QStringList{QStringLiteral("-M3"), QString::fromUtf8("disse \"ok\"")};
+
+		const QString text = CircuitClipboard::compose(grid);
+		CHECK(CircuitClipboard::parse(text) == grid);
+	}
+}
+
+TEST_CASE("CU-08.2 — colar uma faixa da planilha na tabela", "[circuit]")
+{
+	CircuitTable table;
+	table.setParameters(kDirect, directStarter());
+	table.setParameters(kReversing, reversingStarter());
+
+	SECTION("vinte linhas caem numa tabela vazia e viram vinte circuitos")
+	{
+		QString text = QStringLiteral("TAG\tPREFIXO_FIO\tPOTENCIA\n");
+		for (int i = 1 ; i <= 20 ; ++ i)
+		{
+			text += QStringLiteral("-M%1\tW%1\t%2\n")
+					.arg(QString::number(i), QString::number(i + 4));
+		}
+
+		const CircuitTable::PasteReport report = table.pasteTsv(text, -1, QString(), kDirect);
+		CHECK(report.ok);
+		CHECK(report.header_used);
+		CHECK(report.rows_read == 20);
+		CHECK(report.rows_added == 20);
+		CHECK(report.cells_written == 60);
+		CHECK(report.refused.isEmpty());
+		CHECK(report.unmatched.isEmpty());
+
+		REQUIRE(table.rowCount() == 20);
+		CHECK(table.macroPath(0) == kDirect);
+		CHECK(table.macroPath(19) == kDirect);
+		CHECK(table.value(0, QStringLiteral("TAG")) == QStringLiteral("-M1"));
+		CHECK(table.value(19, QStringLiteral("TAG")) == QStringLiteral("-M20"));
+		CHECK(table.value(19, QStringLiteral("POTENCIA")) == QStringLiteral("24"));
+			//Vinte circuitos, e nenhum problema a relatar: é o CU-08.1 pelo
+			//caminho da planilha.
+		CHECK(table.problems().isEmpty());
+	}
+
+	SECTION("o cabeçalho manda nas colunas, fora de ordem e pelo rótulo traduzido")
+	{
+		const QString text = QString::fromUtf8(
+				"Potência (cv)\tTag do motor\n"
+				"7,5\t-M9\n");
+		const CircuitTable::PasteReport report = table.pasteTsv(text, -1, QString(), kDirect);
+		REQUIRE(report.ok);
+		CHECK(report.header_used);
+		REQUIRE(table.rowCount() == 1);
+		CHECK(table.value(0, QStringLiteral("TAG")) == QStringLiteral("-M9"));
+		CHECK(table.value(0, QStringLiteral("POTENCIA")) == QString::fromUtf8("7,5"));
+			//A coluna que o cabeçalho não citou fica com o padrão do macro.
+		CHECK(table.value(0, QStringLiteral("PREFIXO_FIO")) == QStringLiteral("W"));
+	}
+
+	SECTION("a coluna que macro nenhum declara é dita, e o resto entra assim mesmo")
+	{
+		const QString text = QStringLiteral("TAG\tObs\tPOTENCIA\n-M4\tconferir\t5\n");
+		const CircuitTable::PasteReport report = table.pasteTsv(text, -1, QString(), kDirect);
+		REQUIRE(report.ok);
+		CHECK(report.header_used);
+		CHECK(report.unmatched == QStringList{QStringLiteral("Obs")});
+		CHECK(report.landed == QStringList{QStringLiteral("TAG"),
+						   QString(),
+						   QStringLiteral("POTENCIA")});
+		CHECK(table.value(0, QStringLiteral("TAG")) == QStringLiteral("-M4"));
+		CHECK(table.value(0, QStringLiteral("POTENCIA")) == QStringLiteral("5"));
+	}
+
+	SECTION("sem cabeçalho as células caem lado a lado a partir do cursor")
+	{
+		table.appendRow(kDirect);
+		table.appendRow(kDirect);
+
+		const CircuitTable::PasteReport report =
+				table.pasteTsv(QStringLiteral("15\n22\n"), 0, QStringLiteral("POTENCIA"));
+		REQUIRE(report.ok);
+		CHECK_FALSE(report.header_used);
+		CHECK(report.rows_added == 0);
+		CHECK(report.rows_changed == 2);
+		CHECK(table.value(0, QStringLiteral("POTENCIA")) == QStringLiteral("15"));
+		CHECK(table.value(1, QStringLiteral("POTENCIA")) == QStringLiteral("22"));
+			//A coluna à esquerda do cursor não foi tocada.
+		CHECK(table.value(0, QStringLiteral("TAG")) == QStringLiteral("-M1"));
+	}
+
+	SECTION("mais colunas do que sobram é recusado inteiro, e nada muda")
+	{
+		table.appendRow(kDirect);
+		const QString before = table.value(0, QStringLiteral("TAG"));
+
+		const CircuitTable::PasteReport report =
+				table.pasteTsv(QStringLiteral("a\tb\tc\td\n"), 0, QStringLiteral("POTENCIA"));
+		CHECK_FALSE(report.ok);
+		CHECK_FALSE(report.error.isEmpty());
+		CHECK(report.cells_written == 0);
+		CHECK(report.text() == report.error);
+		CHECK(table.rowCount() == 1);
+		CHECK(table.value(0, QStringLiteral("TAG")) == before);
+		CHECK(table.value(0, QStringLiteral("POTENCIA")).isEmpty());
+	}
+
+	SECTION("colar mais linhas do que a tabela tem faz a tabela crescer")
+	{
+			//É o contrário de recusar: a tabela cresce, e a linha nova herda
+			//o macro da de cima, que é o caso comum de vinte alimentadores
+			//iguais.
+		table.appendRow(kReversing);
+		const CircuitTable::PasteReport report =
+				table.pasteTsv(QStringLiteral("-M1\n-M2\n-M3\n"), 0, QStringLiteral("TAG"));
+		REQUIRE(report.ok);
+		CHECK(report.rows_added == 2);
+		REQUIRE(table.rowCount() == 3);
+		CHECK(table.macroPath(1) == kReversing);
+		CHECK(table.macroPath(2) == kReversing);
+		CHECK(table.value(2, QStringLiteral("TAG")) == QStringLiteral("-M3"));
+			//E as colunas que só a reversora tem vieram com o padrão dela.
+		CHECK(table.value(2, QString::fromUtf8("TRAVAMENTO")) == QString::fromUtf8("Elétrico"));
+	}
+
+	SECTION("o valor que o tipo recusa é apontado com linha e coluna, e as outras entram")
+	{
+		table.appendRow(kReversing);
+		table.appendRow(kReversing);
+
+		const QString text = QString::fromUtf8(
+				"TRAVAMENTO\n"
+				"Elétrico e mecânico\n"
+				"Pneumático\n");
+		const CircuitTable::PasteReport report = table.pasteTsv(text, 0);
+		REQUIRE(report.ok);
+		CHECK(report.rows_read == 2);
+		CHECK(report.cells_written == 1);
+		REQUIRE(report.refused.count() == 1);
+		CHECK(report.refused.at(0).row == 1);
+		CHECK(report.refused.at(0).column == QStringLiteral("TRAVAMENTO"));
+		CHECK(report.refused.at(0).value == QString::fromUtf8("Pneumático"));
+		CHECK(report.refused.at(0).text().contains(QStringLiteral("2")));
+		CHECK(report.refused.at(0).text().contains(QStringLiteral("TRAVAMENTO")));
+			//A boa entrou; a recusada ficou como estava.
+		CHECK(table.value(0, QStringLiteral("TRAVAMENTO")) == QString::fromUtf8("Elétrico e mecânico"));
+		CHECK(table.value(1, QStringLiteral("TRAVAMENTO")) == QString::fromUtf8("Elétrico"));
+	}
+
+	SECTION("célula vazia caindo em célula inerte não vira recusa")
+	{
+			//Numa tabela que mistura partida direta e reversora, a coluna da
+			//reversora está vazia nas linhas diretas. Reclamar de cada uma
+			//soterraria a única célula que de fato foi recusada.
+		table.appendRow(kDirect);
+		table.appendRow(kReversing);
+
+		const QString text = QString::fromUtf8(
+				"TAG\tTRAVAMENTO\n"
+				"-M1\t\n"
+				"-M2\tElétrico e mecânico\n");
+		const CircuitTable::PasteReport report = table.pasteTsv(text, 0);
+		REQUIRE(report.ok);
+		CHECK(report.refused.isEmpty());
+		CHECK(table.value(0, QStringLiteral("TAG")) == QStringLiteral("-M1"));
+		CHECK(table.value(1, QStringLiteral("TRAVAMENTO")) == QString::fromUtf8("Elétrico e mecânico"));
+	}
+
+	SECTION("área de transferência vazia não mexe na tabela")
+	{
+		table.appendRow(kDirect);
+		for (const QString &text : QStringList{QString(),
+						       QStringLiteral("   "),
+						       QStringLiteral("\t\n\t\n")})
+		{
+			const CircuitTable::PasteReport report = table.pasteTsv(text, 0);
+			CHECK_FALSE(report.ok);
+			CHECK_FALSE(report.error.isEmpty());
+		}
+		CHECK(table.rowCount() == 1);
+	}
+
+	SECTION("copiar da tabela e colar de volta é ida e volta")
+	{
+		table.appendRow(kDirect);
+		table.appendRow(kDirect);
+		table.setValue(0, QStringLiteral("TAG"), QStringLiteral("-M7"));
+		table.setValue(0, QStringLiteral("POTENCIA"), QString::fromUtf8("7,5"));
+		table.setValue(1, QStringLiteral("TAG"), QStringLiteral("-M8"));
+		table.setValue(1, QStringLiteral("POTENCIA"), QStringLiteral("15"));
+
+		const QString text = table.copyTsv();
+		CHECK(text.startsWith(QStringLiteral("TAG\tPREFIXO_FIO\tPOTENCIA\n")));
+
+		CircuitTable other;
+		other.setParameters(kDirect, directStarter());
+		const CircuitTable::PasteReport report = other.pasteTsv(text, -1, QString(), kDirect);
+		REQUIRE(report.ok);
+		CHECK(report.header_used);
+		REQUIRE(other.rowCount() == 2);
+		CHECK(other.value(0, QStringLiteral("TAG")) == QStringLiteral("-M7"));
+		CHECK(other.value(0, QStringLiteral("POTENCIA")) == QString::fromUtf8("7,5"));
+		CHECK(other.value(1, QStringLiteral("TAG")) == QStringLiteral("-M8"));
+		CHECK(other.value(1, QStringLiteral("PREFIXO_FIO")) == QStringLiteral("W"));
+	}
+
+	SECTION("a linha de partida tem de existir")
+	{
+		table.appendRow(kDirect);
+		const CircuitTable::PasteReport report = table.pasteTsv(QStringLiteral("-M2\n"), 5);
+		CHECK_FALSE(report.ok);
+		CHECK(table.rowCount() == 1);
+	}
+}
+
+TEST_CASE("CU-08.3 — preenchimento em série e cópia para baixo", "[circuit]")
+{
+	CircuitTable table;
+	table.setParameters(kDirect, directStarter());
+	table.setParameters(kReversing, reversingStarter());
+
+	SECTION("a série avança como numa planilha, inclusive em texto com número no fim")
+	{
+		for (int i = 0 ; i < 4 ; ++ i) {
+			table.appendRow(kDirect);
+		}
+		REQUIRE(table.value(0, QStringLiteral("TAG")) == QStringLiteral("-M1"));
+
+		QString error;
+		REQUIRE(table.canFillSeries(0, 3, QStringLiteral("TAG"), &error));
+		CHECK(error.isEmpty());
+		CHECK(table.fillSeries(0, 3, QStringLiteral("TAG")) == 3);
+		CHECK(table.value(1, QStringLiteral("TAG")) == QStringLiteral("-M2"));
+		CHECK(table.value(2, QStringLiteral("TAG")) == QStringLiteral("-M3"));
+		CHECK(table.value(3, QStringLiteral("TAG")) == QStringLiteral("-M4"));
+	}
+
+	SECTION("o zero à esquerda é largura e não enfeite")
+	{
+		for (int i = 0 ; i < 3 ; ++ i) {
+			table.appendRow(kDirect);
+		}
+		table.setValue(0, QStringLiteral("TAG"), QStringLiteral("-M08"));
+		CHECK(table.fillSeries(0, 2, QStringLiteral("TAG")) == 2);
+		CHECK(table.value(1, QStringLiteral("TAG")) == QStringLiteral("-M09"));
+		CHECK(table.value(2, QStringLiteral("TAG")) == QStringLiteral("-M10"));
+	}
+
+	SECTION("o número não precisa estar no fim do valor")
+	{
+		for (int i = 0 ; i < 3 ; ++ i) {
+			table.appendRow(kDirect);
+		}
+		table.setValue(0, QStringLiteral("TAG"), QStringLiteral("PS1 - NO BREAK"));
+		CHECK(table.fillSeries(0, 2, QStringLiteral("TAG")) == 2);
+		CHECK(table.value(1, QStringLiteral("TAG")) == QStringLiteral("PS2 - NO BREAK"));
+		CHECK(table.value(2, QStringLiteral("TAG")) == QStringLiteral("PS3 - NO BREAK"));
+	}
+
+	SECTION("valor sem número nenhum começa em dois")
+	{
+		for (int i = 0 ; i < 3 ; ++ i) {
+			table.appendRow(kDirect);
+		}
+		table.setValue(0, QStringLiteral("TAG"), QStringLiteral("BOMBA"));
+		CHECK(table.fillSeries(0, 2, QStringLiteral("TAG")) == 2);
+		CHECK(table.value(1, QStringLiteral("TAG")) == QStringLiteral("BOMBA2"));
+		CHECK(table.value(2, QStringLiteral("TAG")) == QStringLiteral("BOMBA3"));
+	}
+
+	SECTION("a série pula o que a coluna já gasta")
+	{
+			//Tag repetida num quadro é defeito; buraco na numeração não é.
+		for (int i = 0 ; i < 4 ; ++ i) {
+			table.appendRow(kDirect);
+		}
+		table.setValue(0, QStringLiteral("TAG"), QStringLiteral("-M1"));
+		table.setValue(1, QStringLiteral("TAG"), QString());
+		table.setValue(2, QStringLiteral("TAG"), QString());
+		table.setValue(3, QStringLiteral("TAG"), QStringLiteral("-M3"));
+
+		CHECK(table.fillSeries(0, 2, QStringLiteral("TAG")) == 2);
+		CHECK(table.value(1, QStringLiteral("TAG")) == QStringLiteral("-M2"));
+		CHECK(table.value(2, QStringLiteral("TAG")) == QStringLiteral("-M4"));
+		CHECK(table.value(3, QStringLiteral("TAG")) == QStringLiteral("-M3"));
+	}
+
+	SECTION("a linha inerte no meio da faixa é pulada e não gasta número")
+	{
+		table.appendRow(kReversing);
+		table.appendRow(kDirect);
+		table.appendRow(kReversing);
+		table.appendRow(kReversing);
+		table.setValue(0, QStringLiteral("TAG_REVERSAO"), QStringLiteral("-KM1"));
+
+		CHECK(table.fillSeries(0, 3, QStringLiteral("TAG_REVERSAO")) == 2);
+		CHECK(table.value(1, QStringLiteral("TAG_REVERSAO")).isEmpty());
+		CHECK(table.value(2, QStringLiteral("TAG_REVERSAO")) == QStringLiteral("-KM2"));
+		CHECK(table.value(3, QStringLiteral("TAG_REVERSAO")) == QStringLiteral("-KM3"));
+	}
+
+	SECTION("lista, número e peça recusam a série, e a mensagem diz o que fazer")
+	{
+		table.appendRow(kReversing);
+		table.appendRow(kReversing);
+		table.appendRow(kReversing);
+
+		QString error;
+		CHECK_FALSE(table.canFillSeries(0, 2, QStringLiteral("TRAVAMENTO"), &error));
+		CHECK(error.contains(QStringLiteral("TRAVAMENTO")));
+		CHECK(error.contains(MacroParameter::translatedTypeName(MacroParameterType::List)));
+		CHECK(table.fillSeries(0, 2, QStringLiteral("TRAVAMENTO")) == 0);
+
+			//Recusar a série é o motivo de a cópia para baixo existir: numa
+			//lista, é ela que quer dizer alguma coisa.
+		CHECK(table.canFillDown(0, 2, QStringLiteral("TRAVAMENTO")));
+		table.setValue(0, QStringLiteral("TRAVAMENTO"), QString::fromUtf8("Elétrico e mecânico"));
+		CHECK(table.fillDown(0, 2, QStringLiteral("TRAVAMENTO")) == 2);
+		CHECK(table.value(2, QStringLiteral("TRAVAMENTO")) == QString::fromUtf8("Elétrico e mecânico"));
+	}
+
+	SECTION("o número é grandeza e não contador: 7,5 cv não tem próximo")
+	{
+			//O que a série faria aqui seria uma decisão de engenharia tomada
+			//por um arrasto de mouse.
+		const QString measured = QStringLiteral("common://itr/medida.qetmak");
+		MacroParameterSet set;
+		MacroParameter power(QStringLiteral("POTENCIA_KW"),
+				     QString::fromUtf8("Potência (kW)"),
+				     MacroParameterType::Number);
+		power.default_value = QString::fromUtf8("7,5");
+		set.append(power);
+		MacroParameter part(QStringLiteral("PECA"),
+				    QStringLiteral("Peca"),
+				    MacroParameterType::Part);
+		set.append(part);
+		table.setParameters(measured, set);
+		table.appendRow(measured);
+		table.appendRow(measured);
+
+		QString error;
+		CHECK_FALSE(table.canFillSeries(0, 1, QStringLiteral("POTENCIA_KW"), &error));
+		CHECK(error.contains(QStringLiteral("POTENCIA_KW")));
+		CHECK(error.contains(MacroParameter::translatedTypeName(MacroParameterType::Number)));
+
+		table.setValue(0, QStringLiteral("PECA"), QStringLiteral("PCI-UCM"));
+		CHECK_FALSE(table.canFillSeries(0, 1, QStringLiteral("PECA"), &error));
+		CHECK(error.contains(MacroParameter::translatedTypeName(MacroParameterType::Part)));
+
+			//E a cópia para baixo, que é a operação que quer dizer alguma
+			//coisa nos dois, funciona.
+		CHECK(table.fillDown(0, 1, QStringLiteral("POTENCIA_KW")) == 1);
+		CHECK(table.value(1, QStringLiteral("POTENCIA_KW")) == QString::fromUtf8("7,5"));
+		CHECK(table.fillDown(0, 1, QStringLiteral("PECA")) == 1);
+		CHECK(table.value(1, QStringLiteral("PECA")) == QStringLiteral("PCI-UCM"));
+	}
+
+	SECTION("a cópia para baixo copia, e não inventa")
+	{
+		for (int i = 0 ; i < 4 ; ++ i) {
+			table.appendRow(kDirect);
+		}
+		table.setValue(0, QStringLiteral("POTENCIA"), QString::fromUtf8("7,5"));
+		CHECK(table.fillDown(0, 3, QStringLiteral("POTENCIA")) == 3);
+		for (int i = 0 ; i < 4 ; ++ i) {
+			CHECK(table.value(i, QStringLiteral("POTENCIA")) == QString::fromUtf8("7,5"));
+		}
+	}
+
+	SECTION("a linha inerte da faixa é pulada também na cópia para baixo")
+	{
+		table.appendRow(kReversing);
+		table.appendRow(kDirect);
+		table.appendRow(kReversing);
+		table.setValue(0, QStringLiteral("TRAVAMENTO"), QString::fromUtf8("Elétrico e mecânico"));
+
+		CHECK(table.fillDown(0, 2, QStringLiteral("TRAVAMENTO")) == 1);
+		CHECK(table.value(1, QStringLiteral("TRAVAMENTO")).isEmpty());
+		CHECK(table.value(2, QStringLiteral("TRAVAMENTO")) == QString::fromUtf8("Elétrico e mecânico"));
+	}
+
+	SECTION("o que as duas recusam antes de tocar em qualquer célula")
+	{
+		table.appendRow(kDirect);
+		table.appendRow(kReversing);
+
+		QString error;
+			//Faixa de uma linha só não tem para onde descer.
+		CHECK_FALSE(table.canFillDown(0, 0, QStringLiteral("TAG"), &error));
+		CHECK_FALSE(error.isEmpty());
+			//Faixa que passa do fim da tabela.
+		CHECK_FALSE(table.canFillDown(0, 9, QStringLiteral("TAG"), &error));
+			//Coluna que a tabela não tem.
+		CHECK_FALSE(table.canFillDown(0, 1, QStringLiteral("INEXISTENTE"), &error));
+		CHECK(error.contains(QStringLiteral("INEXISTENTE")));
+			//Célula de origem inerte: o valor viria de onde não há valor.
+		CHECK_FALSE(table.canFillDown(0, 1, QStringLiteral("TRAVAMENTO"), &error));
+		CHECK(error.contains(QStringLiteral("TRAVAMENTO")));
+			//Série sem valor de partida.
+		table.setValue(0, QStringLiteral("POTENCIA"), QString());
+		CHECK_FALSE(table.canFillSeries(0, 1, QStringLiteral("POTENCIA"), &error));
+		CHECK_FALSE(error.isEmpty());
 	}
 }
