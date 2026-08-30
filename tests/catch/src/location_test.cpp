@@ -531,3 +531,102 @@ TEST_CASE("a chave que o componente carrega", "[localizacao]")
 					.toString() == "QCM1/PORTA");
 	}
 }
+
+TEST_CASE("CU-32.1 — o componente segue a árvore por consulta direta, e o vizinho de nome parecido fica onde está",
+	  "[localizacao]")
+{
+	LocationTree arvore;
+	const QString armario = arvore.append(local("QCM1", "Quadro"));
+	const QString vizinho = arvore.append(local("QCM10", "Quadro dez"));
+
+	ProjectLocation porta = local("PORTA");
+	porta.parent_uuid = armario;
+	const QString folha_de_porta = arvore.append(porta);
+
+	ProjectLocation trilho = local("TR1");
+	trilho.parent_uuid = folha_de_porta;
+	arvore.append(trilho);
+
+	SECTION("caminho que ninguém mexeu volta como estava")
+	{
+		QMap<QString, QString> movidas;
+		movidas.insert(QString("QCM1"), QString("QCP1"));
+
+		CHECK(LocationTree::rewrittenPath(QString("QCM10"), movidas)
+					== QString("QCM10"));
+	}
+
+	SECTION("caminho vazio continua vazio")
+	{
+		// Vazio é o "não atribuído" da decisão F, e não uma chave a
+		// procurar no mapa.
+		QMap<QString, QString> movidas;
+		movidas.insert(QString(), QString("QCP1"));
+
+		CHECK(LocationTree::rewrittenPath(QString(), movidas).isEmpty());
+	}
+
+	SECTION("renomear o armário arrasta o que está três níveis abaixo")
+	{
+		ProjectLocation nova = arvore.location(armario);
+		nova.code = QString("QCP1");
+
+		QMap<QString, QString> movidas;
+		REQUIRE(arvore.update(nova, &movidas));
+
+		// O ramo inteiro vem no mapa, e é por isso que uma consulta
+		// direta basta: nada aqui precisa casar prefixo.
+		CHECK(LocationTree::rewrittenPath(QString("QCM1/PORTA/TR1"), movidas)
+					== QString("QCP1/PORTA/TR1"));
+		CHECK(LocationTree::rewrittenPath(QString("QCM1/PORTA"), movidas)
+					== QString("QCP1/PORTA"));
+		CHECK(LocationTree::rewrittenPath(QString("QCM1"), movidas)
+					== QString("QCP1"));
+
+		// E o vizinho não é tocado. Casar prefixo o reescreveria como
+		// QCP10, que é o defeito que este teste existe para impedir.
+		CHECK(LocationTree::rewrittenPath(QString("QCM10"), movidas)
+					== QString("QCM10"));
+		CHECK(arvore.path(vizinho) == QString("QCM10"));
+	}
+
+	SECTION("mover o armário para dentro de outro arrasta a mesma filharada")
+	{
+		QMap<QString, QString> movidas;
+		REQUIRE(arvore.move(armario, vizinho, &movidas));
+
+		CHECK(LocationTree::rewrittenPath(QString("QCM1/PORTA/TR1"), movidas)
+					== QString("QCM10/QCM1/PORTA/TR1"));
+		CHECK(LocationTree::rewrittenPath(QString("QCM10"), movidas)
+					== QString("QCM10"));
+	}
+
+	SECTION("o que foi apagado volta como não atribuído")
+	{
+		QStringList apagadas;
+		REQUIRE(arvore.remove(armario, &apagadas));
+
+		const QMap<QString, QString> perdidas =
+					LocationTree::lostPaths(apagadas);
+		CHECK(perdidas.size() == apagadas.size());
+
+		// Uma localização que deixou de existir não é substituída por
+		// outra: o componente fica sem localização, e nada se perde
+		// além dela.
+		CHECK(LocationTree::rewrittenPath(QString("QCM1/PORTA/TR1"), perdidas)
+					.isEmpty());
+		CHECK(LocationTree::rewrittenPath(QString("QCM1"), perdidas)
+					.isEmpty());
+		CHECK(LocationTree::rewrittenPath(QString("QCM10"), perdidas)
+					== QString("QCM10"));
+	}
+
+	SECTION("lista vazia de apagadas não reescreve nada")
+	{
+		const QMap<QString, QString> perdidas =
+					LocationTree::lostPaths(QStringList());
+		CHECK(perdidas.isEmpty());
+		CHECK(LocationTree::rewrittenPath(QString("QCM1"), perdidas)
+					== QString("QCM1"));
+	}
+}

@@ -270,7 +270,10 @@ void CatalogBrowserDialog::search()
 void CatalogBrowserDialog::clearFilters()
 {
 	m_text->clear();
-	m_class_filter->setCurrentIndex(0);
+		//the class the caller pinned is not a filter the user typed,
+		//so clearing gives it back instead of dropping it.
+	const int forced = m_class_filter->findData(m_forced_class);
+	m_class_filter->setCurrentIndex(forced >= 0 ? forced : 0);
 	m_manufacturer_filter->setCurrentIndex(0);
 	search();
 }
@@ -556,6 +559,27 @@ void CatalogBrowserDialog::setPartTemplate(const CatalogPart &part)
 }
 
 /**
+	@brief CatalogBrowserDialog::setClassFilter
+	@param class_id : the only class the browser offers, 0 for all
+
+	The restriction belongs to whoever opened the browser, not to the
+	search, so « Effacer les filtres » comes back to it rather than to
+	« Toutes ».
+*/
+void CatalogBrowserDialog::setClassFilter(int class_id)
+{
+	m_forced_class = class_id;
+
+	const int index = m_class_filter->findData(class_id);
+	if (index < 0) {
+		return;
+	}
+
+	m_class_filter->setCurrentIndex(index);
+	search();
+}
+
+/**
 	@brief CatalogBrowserDialog::choosePart
 	@param catalog
 	@param parent
@@ -565,10 +589,14 @@ void CatalogBrowserDialog::setPartTemplate(const CatalogPart &part)
 */
 CatalogPart CatalogBrowserDialog::choosePart(Catalog *catalog,
 					     QWidget *parent,
-					     const CatalogPart &part_template)
+					     const CatalogPart &part_template,
+					     int class_filter)
 {
 	CatalogBrowserDialog dialog(catalog, parent);
 	dialog.setPartTemplate(part_template);
+	if (class_filter > 0) {
+		dialog.setClassFilter(class_filter);
+	}
 	if (dialog.exec() != QDialog::Accepted) {
 		return CatalogPart();
 	}

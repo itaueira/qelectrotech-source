@@ -168,6 +168,7 @@ class QETDiagramEditor : public QETMainWindow
 		void importIoSheet();
 		void assignIoPoints();
 		void showIoList();
+		void showLocationManager();
 		void markIoBus();
 		void wireIoCommons();
 		void saveSelectionAsGroup();
@@ -246,6 +247,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_save_group = nullptr,        ///< Action to file the selection as a graphic grouping
 		*m_insert_group = nullptr,      ///< Action to insert a graphic grouping
 		*m_iec_structure = nullptr,     ///< Action to turn the IEC 81346 structure on for this project
+	*m_location_manager = nullptr,  ///< Action to manage the enclosures of the project
 		*m_explode_element = nullptr,   ///< Action to turn a placed symbol back into drawing
 		*m_replace_part = nullptr,      ///< Action to swap a catalog part across the project
 		*m_show_fine_grid = nullptr,    ///< Action to draw the finer grid

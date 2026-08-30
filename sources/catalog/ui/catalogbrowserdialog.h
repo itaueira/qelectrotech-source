@@ -64,9 +64,18 @@ class CatalogBrowserDialog : public QDialog
 			Open the browser and return the part the user picked, a null part
 			when the dialog was cancelled.
 		*/
+		/**
+			Restrict the browser to @a class_id, 0 for no restriction.
+			Opened to answer a question only one class can answer - which
+			enclosure this location was bought as - the browser has no
+			business offering a frequency inverter.
+		*/
+		void setClassFilter(int class_id);
+
 		static CatalogPart choosePart(Catalog *catalog,
 					      QWidget *parent = nullptr,
-					      const CatalogPart &part_template = CatalogPart());
+					      const CatalogPart &part_template = CatalogPart(),
+					      int class_filter = 0);
 
 	private slots:
 		void search();
@@ -91,6 +100,7 @@ class CatalogBrowserDialog : public QDialog
 		CatalogPart m_selected;
 		CatalogPart m_template;
 		bool m_has_template = false;
+		int m_forced_class = 0;
 
 		QLineEdit *m_text = nullptr;
 		QComboBox *m_class_filter = nullptr;

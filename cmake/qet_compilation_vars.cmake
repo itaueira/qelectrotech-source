@@ -366,10 +366,13 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/environment/ui/environmentdialog.cpp
   ${QET_DIR}/sources/environment/ui/environmentdialog.h
 
+  ${QET_DIR}/sources/location/locatableelement.h
   ${QET_DIR}/sources/location/locationtree.cpp
   ${QET_DIR}/sources/location/locationtree.h
   ${QET_DIR}/sources/location/projectlocation.cpp
   ${QET_DIR}/sources/location/projectlocation.h
+  ${QET_DIR}/sources/location/ui/locationmanagerdialog.cpp
+  ${QET_DIR}/sources/location/ui/locationmanagerdialog.h
 
   ${QET_DIR}/sources/macro/circuitclipboard.cpp
   ${QET_DIR}/sources/macro/circuitclipboard.h
@@ -916,6 +919,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.h
   ${QET_DIR}/sources/undocommand/assigniopointscommand.cpp
   ${QET_DIR}/sources/undocommand/assigniopointscommand.h
+  ${QET_DIR}/sources/undocommand/assignlocationcommand.cpp
+  ${QET_DIR}/sources/undocommand/assignlocationcommand.h
   ${QET_DIR}/sources/undocommand/renumbercommand.cpp
   ${QET_DIR}/sources/undocommand/renumbercommand.h
   ${QET_DIR}/sources/undocommand/addgraphicsobjectcommand.cpp
@@ -932,6 +937,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/deleteqgraphicsitemcommand.h
   ${QET_DIR}/sources/undocommand/editiopointcommand.cpp
   ${QET_DIR}/sources/undocommand/editiopointcommand.h
+  ${QET_DIR}/sources/undocommand/editlocationtreecommand.cpp
+  ${QET_DIR}/sources/undocommand/editlocationtreecommand.h
   ${QET_DIR}/sources/undocommand/explodeelementcommand.cpp
   ${QET_DIR}/sources/undocommand/explodeelementcommand.h
   ${QET_DIR}/sources/undocommand/importiopointscommand.cpp

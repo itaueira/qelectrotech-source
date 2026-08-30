@@ -170,6 +170,32 @@ class LocationTree
 		static QString joinPath(const QStringList &codes);
 
 		/**
+			@brief LocationTree::rewrittenPath
+			The path a component should carry after the tree moved under
+			it.
+			@param path the path the component carries today
+			@param changed old path to new path, the way update and move
+			report it
+			@return the path to write, empty when the location stopped
+			existing
+
+			update and move fill their map with one entry per path that
+			really changed, for the whole branch and not only for the
+			location the caller named - see pathsOf. A component sitting
+			three levels down is therefore found by a plain lookup, and no
+			prefix matching is needed nor wanted: renaming QCM1 must not
+			rewrite a component of QCM10.
+
+			remove reports a list instead of a map, because nothing
+			replaces what is gone. lostPaths turns that list into the same
+			shape, mapping every path to an empty one - and empty is what
+			not assigned means here.
+		*/
+		static QString rewrittenPath(const QString &path,
+					     const QMap<QString, QString> &changed);
+		static QMap<QString, QString> lostPaths(const QStringList &removed);
+
+		/**
 			@brief What the locations themselves cost.
 			@return one line per part, quantities added up
 

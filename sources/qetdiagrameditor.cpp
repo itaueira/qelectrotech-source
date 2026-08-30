@@ -50,6 +50,7 @@
 #include "diagramview.h"
 #include "elementspanelwidget.h"
 #include "factory/qetgraphicstablefactory.h"
+#include "location/ui/locationmanagerdialog.h"
 #include "macro/ui/circuittabledialog.h"
 #include "plc/ui/ioassigndialog.h"
 #include "plc/ui/ioimportdialog.h"
@@ -908,6 +909,16 @@ void QETDiagramEditor::setUpActions()
 		}
 	});
 
+	m_location_manager = new QAction(
+				tr("Armoires et localisations…"), this);
+	m_location_manager->setToolTip(tr(
+				   "Fait les armoires du projet, les emboîte, et met la "
+				   "sélection dans l'une d'elles en un geste."));
+	m_location_manager->setStatusTip(m_location_manager->toolTip());
+	connect(m_location_manager, &QAction::triggered,
+		this, &QETDiagramEditor::showLocationManager);
+
+
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
 	connect(m_project_terminalBloc, &QAction::triggered, this, &QETDiagramEditor::generateTerminalBlock);
@@ -1593,6 +1604,41 @@ void QETDiagramEditor::showIoList()
 }
 
 /**
+	@brief QETDiagramEditor::showLocationManager
+	Open the window where the enclosures of the project are made, named,
+	nested and taken apart, and where a handful of components is put into
+	one of them in a single gesture.
+*/
+void QETDiagramEditor::showLocationManager()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+		//Not modal, and for the same reason the I/O list is not: what is
+		//being assigned is the selection on the folio behind, so a window
+		//that has to be closed to see what it points at would be a report
+		//instead of a manager. One window per project is enough, so an
+		//already open one is brought back rather than doubled.
+	const QList<LocationManagerDialog *> opened =
+			findChildren<LocationManagerDialog *>();
+	for (LocationManagerDialog *opened_dialog : opened) {
+		if (opened_dialog->project() != project) {
+			continue;
+		}
+		opened_dialog->show();
+		opened_dialog->raise();
+		opened_dialog->activateWindow();
+		return;
+	}
+
+	LocationManagerDialog *dialog = new LocationManagerDialog(project, this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+/**
 	@brief QETDiagramEditor::markIoBus
 	Say that the selected elements are the supply bar or the return bar of
 	their folio, which is what the batch wiring of the communs aims at.
@@ -2167,6 +2213,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addAction(m_terminal_numbering);
 	menu_project -> addAction(m_renumber_components);
 	menu_project -> addAction(m_iec_structure);
+	menu_project -> addAction(m_location_manager);
 	menu_project -> addAction(m_replace_part);
 #ifdef QET_EXPORT_PROJECT_DB
 	menu_project -> addSeparator();
@@ -3058,6 +3105,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_terminal_numbering          -> setEnabled(editable_project);
 	m_renumber_components         -> setEnabled(editable_project);
 	m_iec_structure               -> setEnabled(editable_project);
+	m_location_manager            -> setEnabled(editable_project);
 	m_create_symbol               -> setEnabled(editable_project);
 	m_generate_pinout             -> setEnabled(editable_project);
 	m_generate_circuits           -> setEnabled(editable_project);

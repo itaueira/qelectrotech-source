@@ -567,6 +567,36 @@ QString LocationTree::joinPath(const QStringList &codes)
 }
 
 /**
+	@brief LocationTree::rewrittenPath
+	@param path the path the component carries today
+	@param changed old path to new path, as update and move report it
+	@return the path to write, empty when the location stopped existing
+*/
+QString LocationTree::rewrittenPath(const QString &path,
+				    const QMap<QString, QString> &changed)
+{
+	if (path.isEmpty()) {
+		return path;
+	}
+	return changed.value(path, path);
+}
+
+/**
+	@brief LocationTree::lostPaths
+	@param removed the paths remove said had stopped existing
+	@return the same thing in the shape rewrittenPath reads
+*/
+QMap<QString, QString> LocationTree::lostPaths(const QStringList &removed)
+{
+	QMap<QString, QString> lost;
+	for (const QString &path : removed)
+	{
+		lost.insert(path, QString());
+	}
+	return lost;
+}
+
+/**
 	@brief LocationTree::bomLines
 	@return one line per part the locations themselves were bought as
 */
