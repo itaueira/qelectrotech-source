@@ -147,6 +147,8 @@ add_executable(
     # DiagramEventAddMacro, e ele esta deliberadamente fora daqui.
     ${QET_DIR}/sources/macro/circuitclipboard.cpp
     ${QET_DIR}/sources/macro/circuitclipboard.h
+    ${QET_DIR}/sources/macro/circuitlayout.cpp
+    ${QET_DIR}/sources/macro/circuitlayout.h
     ${QET_DIR}/sources/macro/circuittable.cpp
     ${QET_DIR}/sources/macro/circuittable.h
     ${QET_DIR}/sources/macro/macroparameter.cpp

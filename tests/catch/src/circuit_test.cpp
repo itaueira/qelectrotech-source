@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../../../sources/macro/circuitclipboard.h"
+#include "../../../sources/macro/circuitlayout.h"
 #include "../../../sources/macro/circuittable.h"
 #include "../../../sources/macro/macroparameter.h"
 #include "../../../sources/macro/macroparameterset.h"
@@ -24,6 +25,8 @@
 
 #include <QDomDocument>
 #include <QDomElement>
+#include <QList>
+#include <QPointF>
 
 namespace
 {
@@ -1219,5 +1222,155 @@ TEST_CASE("CU-08.3 — preenchimento em série e cópia para baixo", "[circuit]"
 		table.setValue(0, QStringLiteral("POTENCIA"), QString());
 		CHECK_FALSE(table.canFillSeries(0, 1, QStringLiteral("POTENCIA"), &error));
 		CHECK_FALSE(error.isEmpty());
+	}
+}
+
+TEST_CASE("CU-08.1 — os circuitos gerados caem em coluna de folio, e a folio troca sozinha",
+	  "[circuit]")
+{
+		//Um cadre de dez colunas de sessenta unidades, com o canto de dentro
+		//do quadro em (10, 15) — que é onde a coluna zero começa.
+	CircuitLayout::Sheet sheet;
+	sheet.columns_count = 10;
+	sheet.columns_width = 60.0;
+	sheet.origin = QPointF(10.0, 15.0);
+
+	SECTION("vinte partidas de duas colunas dão cinco por folio, em quatro folios")
+	{
+		QList<int> widths;
+		for (int i = 0 ; i < 20 ; ++i) {
+			widths << 2;
+		}
+
+		const QList<CircuitLayout::Placement> placements =
+				CircuitLayout::place(widths, sheet);
+
+		REQUIRE(placements.count() == 20);
+		CHECK(CircuitLayout::sheetsUsed(placements) == 4);
+
+			//A primeira folio recebe as colunas 0, 2, 4, 6 e 8; a sexta
+			//partida não cabe nas duas colunas que sobraram, e é ela que
+			//abre a folio seguinte.
+		CHECK(placements.at(0).sheet == 0);
+		CHECK(placements.at(0).column == 0);
+		CHECK(placements.at(4).sheet == 0);
+		CHECK(placements.at(4).column == 8);
+		CHECK(placements.at(5).sheet == 1);
+		CHECK(placements.at(5).column == 0);
+		CHECK(placements.at(19).sheet == 3);
+		CHECK(placements.at(19).column == 8);
+	}
+
+	SECTION("a posição sai da coluna, e cada folio recomeça do mesmo canto")
+	{
+		const QList<CircuitLayout::Placement> placements =
+				CircuitLayout::place(QList<int>() << 2 << 2 << 2 << 2 << 2 << 2, sheet);
+
+		REQUIRE(placements.count() == 6);
+		CHECK(placements.at(0).pos.x() == Approx(10.0));
+		CHECK(placements.at(0).pos.y() == Approx(15.0));
+		CHECK(placements.at(1).pos.x() == Approx(130.0));
+		CHECK(placements.at(4).pos.x() == Approx(490.0));
+
+			//A sexta é a primeira da folio 1, e volta para o canto: um
+			//circuito que herdasse o x do anterior sairia fora do quadro.
+		CHECK(placements.at(5).sheet == 1);
+		CHECK(placements.at(5).pos.x() == Approx(10.0));
+		CHECK(placements.at(5).pos.y() == Approx(15.0));
+	}
+
+	SECTION("a quebra que a pessoa pediu manda mais que a largura que caberia")
+	{
+		QList<int> widths;
+		for (int i = 0 ; i < 8 ; ++i) {
+			widths << 1;
+		}
+
+			//Oito circuitos de uma coluna cabem todos numa folio de dez; a
+			//pessoa que revisa três de cada vez pede três.
+		const QList<CircuitLayout::Placement> placements =
+				CircuitLayout::place(widths, sheet, 3);
+
+		REQUIRE(placements.count() == 8);
+		CHECK(CircuitLayout::sheetsUsed(placements) == 3);
+		CHECK(placements.at(2).sheet == 0);
+		CHECK(placements.at(3).sheet == 1);
+		CHECK(placements.at(3).column == 0);
+		CHECK(placements.at(6).sheet == 2);
+	}
+
+	SECTION("a coluna que sobra não recebe circuito que não cabe nela")
+	{
+		const QList<CircuitLayout::Placement> placements =
+				CircuitLayout::place(QList<int>() << 3 << 3 << 3 << 3, sheet);
+
+		REQUIRE(placements.count() == 4);
+		CHECK(placements.at(0).column == 0);
+		CHECK(placements.at(1).column == 3);
+		CHECK(placements.at(2).column == 6);
+
+			//Sobra uma coluna, e o quarto circuito quer três: vai inteiro
+			//para a folio seguinte em vez de ser cortado pelo quadro.
+		CHECK(placements.at(3).sheet == 1);
+		CHECK(placements.at(3).column == 0);
+		CHECK(CircuitLayout::sheetsUsed(placements) == 2);
+	}
+
+	SECTION("o circuito mais largo que a folio é desenhado sozinho, e assinalado")
+	{
+		const QList<CircuitLayout::Placement> placements =
+				CircuitLayout::place(QList<int>() << 2 << 14 << 2, sheet);
+
+		REQUIRE(placements.count() == 3);
+		CHECK_FALSE(placements.at(0).oversized);
+		CHECK(placements.at(1).oversized);
+
+			//Sozinho na folio dele: nem divide com quem veio antes, nem
+			//deixa o seguinte encostar no que transbordou.
+		CHECK(placements.at(1).sheet == 1);
+		CHECK(placements.at(1).column == 0);
+		CHECK_FALSE(placements.at(2).oversized);
+		CHECK(placements.at(2).sheet == 2);
+		CHECK(placements.at(2).column == 0);
+		CHECK(CircuitLayout::sheetsUsed(placements) == 3);
+	}
+
+	SECTION("a largura medida vira coluna arredondando para cima")
+	{
+			//Meia coluna que sobra ainda é uma coluna que outro circuito
+			//não pode ter.
+		CHECK(CircuitLayout::columnsFor(1.0, sheet) == 1);
+		CHECK(CircuitLayout::columnsFor(60.0, sheet) == 1);
+		CHECK(CircuitLayout::columnsFor(60.5, sheet) == 2);
+		CHECK(CircuitLayout::columnsFor(120.0, sheet) == 2);
+		CHECK(CircuitLayout::columnsFor(121.0, sheet) == 3);
+
+			//Uma largura medida não sai redonda: 120,00000005 é o mesmo
+			//desenho de duas colunas, e cobrar três dele desperdiçaria uma
+			//coluna em cada circuito de cada folio.
+		CHECK(CircuitLayout::columnsFor(120.00000005, sheet) == 2);
+
+			//Nada medido ainda ocupa uma coluna: um circuito sem largura
+			//empilhado com os outros seria vinte desenhos no mesmo ponto.
+		CHECK(CircuitLayout::columnsFor(0.0, sheet) == 1);
+		CHECK(CircuitLayout::columnsFor(-5.0, sheet) == 1);
+	}
+
+	SECTION("sem folio que se possa medir, ou sem circuito, não se inventa posição")
+	{
+		CHECK(CircuitLayout::place(QList<int>(), sheet).isEmpty());
+		CHECK(CircuitLayout::sheetsUsed(QList<CircuitLayout::Placement>()) == 0);
+
+			//Um cadre que não desenha coluna nenhuma ainda se desenha à
+			//mão, mas não se mede em coluna.
+		CircuitLayout::Sheet unmeasurable;
+		CHECK_FALSE(unmeasurable.isValid());
+		CHECK(CircuitLayout::place(QList<int>() << 1 << 1, unmeasurable).isEmpty());
+		CHECK(CircuitLayout::columnsFor(500.0, unmeasurable) == 1);
+
+		CircuitLayout::Sheet no_width;
+		no_width.columns_count = 10;
+		CHECK_FALSE(no_width.isValid());
+		CHECK(CircuitLayout::place(QList<int>() << 1, no_width).isEmpty());
 	}
 }

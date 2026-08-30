@@ -6,17 +6,16 @@
 #define DIAGRAMEVENTADDMACRO_H
 
 #include "../ElementsCollection/elementslocation.h"
+#include "../macro/macrofile.h"
 #include "../macro/macroparameterset.h"
 #include "diagrameventinterface.h"
 
-#include <QDomDocument>
 #include <QGraphicsPixmapItem>
 #include <QHash>
 #include <QSet>
 #include <QString>
 
 class QStatusBar;
-class XmlElementCollection;
 
 /**
  * @brief The DiagramEventAddMacro class
@@ -38,7 +37,6 @@ public:
 
 private:
 	bool loadMacro();
-	void importCollection(XmlElementCollection *collection) const;
 	QSet<QString> labelsInUse() const;
 	bool askForValues();
 	void buildPreview(QPointF pos);
@@ -49,7 +47,7 @@ private:
 
 private:
 	ElementsLocation m_location;
-	QDomDocument m_macro_doc;
+	MacroFile m_macro_file;
 	MacroParameterSet m_parameters;
 	QHash<QString, QString> m_values;
 	QGraphicsPixmapItem *m_preview_item;

@@ -9,15 +9,13 @@
 #include "../qetdiagrameditor.h"
 #include "../qetinformation.h"
 #include "../qetproject.h"
-#include "../ElementsCollection/xmlelementcollection.h"
-#include "../NameList/nameslist.h"
 #include "../diagramcommands.h"
 #include "../diagramcontent.h"
 #include "../macro/macrosequence.h"
+#include "../macro/macrouuid.h"
 #include "../macro/macrosubstitution.h"
 #include "../macro/ui/macroparametersdialog.h"
 #include "../qetgraphicsitem/element.h"
-#include <QFile>
 #include <QDebug>
 #include <QGraphicsSceneMouseEvent>
 #include <QMessageBox>
@@ -64,7 +62,7 @@ m_preview_item(nullptr)
 		return;
 	}
 
-	importCollection(m_diagram->project()->embeddedElementCollection());
+	m_macro_file.importCollection(m_diagram->project()->embeddedElementCollection());
 	buildPreview(pos);
 	init();
 }
@@ -171,88 +169,17 @@ void DiagramEventAddMacro::init()
 */
 bool DiagramEventAddMacro::loadMacro()
 {
-	QFile file(m_location.fileSystemPath());
-	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		qDebug() << "Error: Macro file could not be read:" << m_location.fileSystemPath();
+	if (!m_macro_file.load(m_location.fileSystemPath())) {
 		return false;
 	}
-
-	if (!m_macro_doc.setContent(&file)) {
-		qDebug() << "Error: Invalid XML in macro.";
-		return false;
-	}
-
-	QDomElement root = m_macro_doc.documentElement();
-	if (root.tagName() != "qet_macro") return false;
 
 		//A macro written before this existed carries no <parameters>, and
 		//reading none is not an error: that is every macro made so far.
-	m_parameters.fromXml(root);
+	m_parameters = m_macro_file.parameters();
 		//Where the dialogue starts from, when there is one to open.
 	m_values = m_parameters.defaults();
 
-	QDomElement diagram_node = root.firstChildElement("diagram_content").firstChildElement("diagram");
-	if (!diagram_node.isNull()) {
-		QDomNodeList instances = diagram_node.elementsByTagName("element");
-		for (int i = 0; i < instances.count(); ++i) {
-			QDomElement inst = instances.at(i).toElement();
-			QString type = inst.attribute("type");
-			if (type.startsWith("macro://")) {
-				inst.setAttribute("type", type.replace("macro://", "embed://"));
-			}
-		}
-	}
-
 	return true;
-}
-
-/**
-	@brief Copy the symbols the macro carries into @a collection.
-	@param collection : the embedded collection of a project
-
-	Called twice with two different projects: the throwaway one the ghost is
-	drawn in, and the real one, only once the user has confirmed. Same code
-	both times, because a preview that imported differently from the
-	insertion would be showing something else than what is about to happen.
-*/
-void DiagramEventAddMacro::importCollection(XmlElementCollection *collection) const
-{
-	if (!collection) {
-		return;
-	}
-
-	QDomElement root = m_macro_doc.documentElement();
-	QDomElement collection_node = root.firstChildElement("collection");
-	if (collection_node.isNull()) {
-		return;
-	}
-
-	QDomNodeList elements = collection_node.elementsByTagName("element");
-	for (int i = 0; i < elements.count(); ++i) {
-		QDomElement elmt_node = elements.at(i).toElement();
-		QString path = elmt_node.attribute("path");
-		QDomElement definition = elmt_node.firstChildElement("definition");
-
-		if (!path.isEmpty() && !definition.isNull()) {
-			int last_slash = path.lastIndexOf('/');
-			QString dir_path = (last_slash != -1) ? path.left(last_slash) : "";
-			QString file_name = (last_slash != -1) ? path.mid(last_slash + 1) : path;
-
-			if (!dir_path.isEmpty()) {
-				QStringList parts = dir_path.split('/', Qt::SkipEmptyParts);
-				QString current_path = "";
-				for (const QString &part : parts) {
-					QString parent_path = current_path;
-					if (!current_path.isEmpty()) current_path += "/";
-					current_path += part;
-					if (current_path == "import") continue;
-					NamesList empty_names;
-					collection->createDir(parent_path, part, empty_names);
-				}
-			}
-			collection->addElementDefinition(dir_path, file_name, definition);
-		}
-	}
 }
 
 /**
@@ -328,11 +255,10 @@ bool DiagramEventAddMacro::askForValues()
 void DiagramEventAddMacro::buildPreview(QPointF pos)
 {
 	QScopedPointer<QETProject> dummy_project(new QETProject());
-	importCollection(dummy_project->embeddedElementCollection());
+	m_macro_file.importCollection(dummy_project->embeddedElementCollection());
 
 	Diagram *dummy_diagram = dummy_project->addNewDiagram();
-	QDomElement root = m_macro_doc.documentElement();
-	QDomElement diagram_node = root.firstChildElement("diagram_content").firstChildElement("diagram");
+	QDomElement diagram_node = m_macro_file.diagramNode();
 
 	if (!diagram_node.isNull()) {
 		QDomElement preview_node = diagram_node.cloneNode(true).toElement();
@@ -376,14 +302,11 @@ void DiagramEventAddMacro::buildPreview(QPointF pos)
 */
 bool DiagramEventAddMacro::addMacro(QPointF final_pos)
 {
-	QDomElement root = m_macro_doc.documentElement();
-	QDomElement diagram_node = root.firstChildElement("diagram_content").firstChildElement("diagram");
+	QDomElement cloned_node = m_macro_file.clonedDiagramNode();
 
-	if (diagram_node.isNull()) {
+	if (cloned_node.isNull()) {
 		return false;
 	}
-
-	QDomElement cloned_node = diagram_node.cloneNode(true).toElement();
 
 		//A macro that declares nothing is left strictly alone: not scanned,
 		//not audited, not touched. That is what keeps every macro made before
@@ -415,6 +338,14 @@ bool DiagramEventAddMacro::addMacro(QPointF final_pos)
 			return false;
 		}
 	}
+
+		//Pasting keeps whatever uuid the XML carries, so the same macro
+		//inserted twice would give two drawings sharing one identity each:
+		//the conductors of the second one linked to the elements of the
+		//first, and its cross references pointing at the wrong circuit.
+		//Reissued on the clone, so the macro in memory keeps the uuids it
+		//was written with and the next insertion starts from them again.
+	MacroUuid::renew(cloned_node);
 
 	QPointF target_pos = final_pos;
 
