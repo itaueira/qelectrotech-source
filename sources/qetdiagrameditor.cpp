@@ -51,6 +51,7 @@
 #include "elementspanelwidget.h"
 #include "factory/qetgraphicstablefactory.h"
 #include "macro/ui/circuittabledialog.h"
+#include "plc/ui/ioimportdialog.h"
 #include "print/projectprintwindow.h"
 #include "project/projectpropertieshandler.h"
 #include "projectview.h"
@@ -633,6 +634,20 @@ void QETDiagramEditor::setUpActions()
 	m_generate_circuits->setStatusTip(m_generate_circuits->toolTip());
 	connect(m_generate_circuits, &QAction::triggered,
 		this, &QETDiagramEditor::generateCircuits);
+
+		//The list of points comes from the automation department and comes
+		//again, revised, several times over a project. So this sits in the
+		//menu next to the generators and not inside a wizard: it is opened
+		//as often as a folio is.
+	m_import_io_sheet = new QAction(QET::Icons::DocumentImport,
+					tr("Importer une liste d'E/S…"),
+					this);
+	m_import_io_sheet->setToolTip(tr(
+					"Lit une feuille de calcul d'entrées / sorties et la fond avec "
+					"celle du projet, sans rien effacer de ce qui est déjà placé."));
+	m_import_io_sheet->setStatusTip(m_import_io_sheet->toolTip());
+	connect(m_import_io_sheet, &QAction::triggered,
+		this, &QETDiagramEditor::importIoSheet);
 
 	m_save_group = new QAction(tr("Enregistrer un groupement…"),
 				   this);
@@ -1448,6 +1463,30 @@ void QETDiagramEditor::generateCircuits()
 }
 
 /**
+	@brief QETDiagramEditor::importIoSheet
+	Bring a sheet of I/O points into the project: the points exist before
+	any of them is on a folio, which is the state this program did not have.
+*/
+void QETDiagramEditor::importIoSheet()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+	IoImportDialog dialog(project, this);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+		//The dialogue pushed its own command on the project stack. Nothing is
+		//drawn yet, so there is no folio to refresh - only the count of what
+		//moved, which is what tells the person the second import did what they
+		//read in the summary.
+	statusBar()->showMessage(dialog.report().text(), 8000);
+}
+
+/**
 	@brief QETDiagramEditor::saveSelectionAsGroup
 	File the selected piece of schematic in the library, catalog parts and all.
 */
@@ -1804,6 +1843,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addAction(m_create_symbol);
 	menu_edition -> addAction(m_generate_pinout);
 	menu_edition -> addAction(m_generate_circuits);
+	menu_edition -> addAction(m_import_io_sheet);
 	menu_edition -> addAction(m_explode_element);
 	menu_edition -> addAction(m_save_group);
 	menu_edition -> addAction(m_insert_group);
@@ -2723,6 +2763,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_create_symbol               -> setEnabled(editable_project);
 	m_generate_pinout             -> setEnabled(editable_project);
 	m_generate_circuits           -> setEnabled(editable_project);
+	m_import_io_sheet             -> setEnabled(editable_project);
 	m_explode_element             -> setEnabled(editable_project);
 	m_show_conductor_text         -> setEnabled(editable_project);
 	m_hide_conductor_text         -> setEnabled(editable_project);
