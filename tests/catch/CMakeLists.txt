@@ -105,6 +105,7 @@ add_executable(
     src/renumber_test.cpp
     src/macro_test.cpp
     src/circuit_test.cpp
+    src/ioassignment_test.cpp
     src/io_test.cpp
     src/iosheet_test.cpp
     main.cpp
@@ -168,6 +169,8 @@ add_executable(
     # O `elementdata.h` entra só como cabeçalho, pelo enum PlcIOType — o `.cpp`
     # dele arrastaria `qetxml`, `nameslist` e o QETApp inteiro atrás, e é
     # justamente isso que a serialização própria do IoPoint evita.
+    ${QET_DIR}/sources/plc/ioassignment.cpp
+    ${QET_DIR}/sources/plc/ioassignment.h
     ${QET_DIR}/sources/plc/iolist.cpp
     ${QET_DIR}/sources/plc/iolist.h
     ${QET_DIR}/sources/plc/iopoint.cpp

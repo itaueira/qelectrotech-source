@@ -391,12 +391,16 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.cpp
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.h
 
+  ${QET_DIR}/sources/plc/ioassignment.cpp
+  ${QET_DIR}/sources/plc/ioassignment.h
   ${QET_DIR}/sources/plc/iolist.cpp
   ${QET_DIR}/sources/plc/iolist.h
   ${QET_DIR}/sources/plc/iopoint.cpp
   ${QET_DIR}/sources/plc/iopoint.h
   ${QET_DIR}/sources/plc/iosheet.cpp
   ${QET_DIR}/sources/plc/iosheet.h
+  ${QET_DIR}/sources/plc/ui/ioassigndialog.cpp
+  ${QET_DIR}/sources/plc/ui/ioassigndialog.h
   ${QET_DIR}/sources/plc/ui/ioimportdialog.cpp
   ${QET_DIR}/sources/plc/ui/ioimportdialog.h
 
@@ -893,6 +897,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/adddiagramcontentcommand.h
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.cpp
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.h
+  ${QET_DIR}/sources/undocommand/assigniopointscommand.cpp
+  ${QET_DIR}/sources/undocommand/assigniopointscommand.h
   ${QET_DIR}/sources/undocommand/renumbercommand.cpp
   ${QET_DIR}/sources/undocommand/renumbercommand.h
   ${QET_DIR}/sources/undocommand/addgraphicsobjectcommand.cpp

@@ -51,6 +51,7 @@
 #include "elementspanelwidget.h"
 #include "factory/qetgraphicstablefactory.h"
 #include "macro/ui/circuittabledialog.h"
+#include "plc/ui/ioassigndialog.h"
 #include "plc/ui/ioimportdialog.h"
 #include "print/projectprintwindow.h"
 #include "project/projectpropertieshandler.h"
@@ -648,6 +649,17 @@ void QETDiagramEditor::setUpActions()
 	m_import_io_sheet->setStatusTip(m_import_io_sheet->toolTip());
 	connect(m_import_io_sheet, &QAction::triggered,
 		this, &QETDiagramEditor::importIoSheet);
+
+		//Taking them out of the list and into a card is the step right
+		//after the import, so it sits right after it in the menu.
+	m_assign_io_points = new QAction(tr("Affecter des E/S à une carte…"),
+									this);
+	m_assign_io_points->setToolTip(tr(
+									"Place les points d'entrées / sorties déjà importés dans "
+									"les voies libres d'une carte d'automate, et les en retire."));
+	m_assign_io_points->setStatusTip(m_assign_io_points->toolTip());
+	connect(m_assign_io_points, &QAction::triggered,
+		this, &QETDiagramEditor::assignIoPoints);
 
 	m_save_group = new QAction(tr("Enregistrer un groupement…"),
 				   this);
@@ -1487,6 +1499,30 @@ void QETDiagramEditor::importIoSheet()
 }
 
 /**
+	@brief QETDiagramEditor::assignIoPoints
+	Put the I/O points already in the project into the channels of a PLC
+	card, or take them back out.
+*/
+void QETDiagramEditor::assignIoPoints()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+		//The window stays open across several cards, so it closes on Close
+		//and never on Accepted: what it did is read from the report and
+		//not from the result code.
+	IoAssignDialog dialog(project, this);
+	dialog.exec();
+
+	const QString report = dialog.report();
+	if (!report.isEmpty()) {
+		statusBar()->showMessage(report, 8000);
+	}
+}
+
+/**
 	@brief QETDiagramEditor::saveSelectionAsGroup
 	File the selected piece of schematic in the library, catalog parts and all.
 */
@@ -1844,6 +1880,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addAction(m_generate_pinout);
 	menu_edition -> addAction(m_generate_circuits);
 	menu_edition -> addAction(m_import_io_sheet);
+	menu_edition -> addAction(m_assign_io_points);
 	menu_edition -> addAction(m_explode_element);
 	menu_edition -> addAction(m_save_group);
 	menu_edition -> addAction(m_insert_group);
@@ -2764,6 +2801,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_generate_pinout             -> setEnabled(editable_project);
 	m_generate_circuits           -> setEnabled(editable_project);
 	m_import_io_sheet             -> setEnabled(editable_project);
+	m_assign_io_points            -> setEnabled(editable_project);
 	m_explode_element             -> setEnabled(editable_project);
 	m_show_conductor_text         -> setEnabled(editable_project);
 	m_hide_conductor_text         -> setEnabled(editable_project);
