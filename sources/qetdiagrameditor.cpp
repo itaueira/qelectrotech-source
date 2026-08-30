@@ -50,7 +50,9 @@
 #include "diagramview.h"
 #include "elementspanelwidget.h"
 #include "factory/qetgraphicstablefactory.h"
+#include "location/ui/locationbomdialog.h"
 #include "location/ui/locationmanagerdialog.h"
+#include "location/ui/locationreportdialog.h"
 #include "macro/ui/circuittabledialog.h"
 #include "plc/ui/ioassigndialog.h"
 #include "plc/ui/ioimportdialog.h"
@@ -62,6 +64,7 @@
 #include "qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
 #include "qetgraphicsitem/conductortextitem.h"
 #include "qetgraphicsitem/dynamicelementtextitem.h"
+#include "qetgraphicsitem/element.h"
 #include "qeticons.h"
 #include "qetmessagebox.h"
 #include "recentfiles.h"
@@ -918,6 +921,25 @@ void QETDiagramEditor::setUpActions()
 	connect(m_location_manager, &QAction::triggered,
 		this, &QETDiagramEditor::showLocationManager);
 
+	m_location_report = new QAction(
+				tr("Composants sans localisation…"), this);
+	m_location_report->setToolTip(tr(
+				  "Liste ce qui n'est encore dans aucune armoire, folio "
+				  "par folio, et permet de les y mettre."));
+	m_location_report->setStatusTip(m_location_report->toolTip());
+	connect(m_location_report, &QAction::triggered,
+		this, &QETDiagramEditor::showLocationReport);
+
+	m_location_bom = new QAction(
+				tr("Liste de matériel par localisation…"), this);
+	m_location_bom->setToolTip(tr(
+			       "Ce qu'il faut sortir du magasin pour une armoire, "
+			       "sous-localisations comprises. S'exporte, et se pose "
+			       "sur le folio."));
+	m_location_bom->setStatusTip(m_location_bom->toolTip());
+	connect(m_location_bom, &QAction::triggered,
+		this, &QETDiagramEditor::showLocationBom);
+
 
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
@@ -1639,6 +1661,121 @@ void QETDiagramEditor::showLocationManager()
 }
 
 /**
+	@brief QETDiagramEditor::showLocationReport
+	Open the worklist of the components that say they are nowhere.
+*/
+void QETDiagramEditor::showLocationReport()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+		//Not modal, and here it matters more than anywhere else: the whole
+		//point of the window is that a double click sends the person to a
+		//component on its folio, and a modal report could not let them look.
+	const QList<LocationReportDialog *> opened =
+			findChildren<LocationReportDialog *>();
+	for (LocationReportDialog *opened_dialog : opened) {
+		if (opened_dialog->project() != project) {
+			continue;
+		}
+		opened_dialog->show();
+		opened_dialog->raise();
+		opened_dialog->activateWindow();
+		return;
+	}
+
+	LocationReportDialog *dialog = new LocationReportDialog(project, this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	connect(dialog, &LocationReportDialog::goToElement,
+		this, &QETDiagramEditor::goToElement);
+	dialog->show();
+}
+
+/**
+	@brief QETDiagramEditor::showLocationBom
+	Open the list of what has to be picked in the storeroom for one
+	enclosure.
+*/
+void QETDiagramEditor::showLocationBom()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+	const QList<LocationBomDialog *> opened =
+			findChildren<LocationBomDialog *>();
+	for (LocationBomDialog *opened_dialog : opened) {
+		if (opened_dialog->project() != project) {
+			continue;
+		}
+		opened_dialog->show();
+		opened_dialog->raise();
+		opened_dialog->activateWindow();
+		return;
+	}
+
+	LocationBomDialog *dialog = new LocationBomDialog(project, this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	connect(dialog, &LocationBomDialog::insertTable,
+		this, &QETDiagramEditor::insertNomenclature);
+	dialog->show();
+}
+
+/**
+	@brief QETDiagramEditor::goToElement
+	@param element
+	Bring forward the folio the component is drawn on, then select it and
+	scroll to it. Three windows away from where the person clicked, so it is
+	the editor that does it: a report that knew how to switch folios would
+	be a report that knows what a project view is.
+*/
+void QETDiagramEditor::goToElement(Element *element)
+{
+	if (!element) {
+		return;
+	}
+
+	Diagram *diagram = element->diagram();
+	if (!diagram) {
+		return;
+	}
+
+	ProjectView *project_view = findProject(diagram);
+	if (!project_view) {
+		return;
+	}
+
+	activateProject(project_view);
+	project_view->showDiagram(diagram);
+
+	diagram->clearSelection();
+	element->setSelected(true);
+	element->ensureVisible();
+}
+
+/**
+	@brief QETDiagramEditor::insertNomenclature
+	@param query the nomenclature query to start the dialog from
+	Pose a nomenclature table on the folio in front of the person, opened on
+	a query somebody else has already narrowed down. It is the ordinary
+	dialog, so what lands on the folio is an ordinary table: it follows the
+	project, it prints, and it can still be edited afterwards.
+*/
+void QETDiagramEditor::insertNomenclature(const QString &query)
+{
+	DiagramView *diagram_view = currentDiagramView();
+	if (!diagram_view || !diagram_view->diagram()) {
+		return;
+	}
+
+	QetGraphicsTableFactory::createAndAddNomenclature(diagram_view->diagram(),
+							  query);
+}
+
+/**
 	@brief QETDiagramEditor::markIoBus
 	Say that the selected elements are the supply bar or the return bar of
 	their folio, which is what the batch wiring of the communs aims at.
@@ -2214,6 +2351,8 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addAction(m_renumber_components);
 	menu_project -> addAction(m_iec_structure);
 	menu_project -> addAction(m_location_manager);
+	menu_project -> addAction(m_location_report);
+	menu_project -> addAction(m_location_bom);
 	menu_project -> addAction(m_replace_part);
 #ifdef QET_EXPORT_PROJECT_DB
 	menu_project -> addSeparator();
@@ -3106,6 +3245,8 @@ void QETDiagramEditor::slot_updateActions()
 	m_renumber_components         -> setEnabled(editable_project);
 	m_iec_structure               -> setEnabled(editable_project);
 	m_location_manager            -> setEnabled(editable_project);
+	m_location_report             -> setEnabled(editable_project);
+	m_location_bom                -> setEnabled(opened_project);
 	m_create_symbol               -> setEnabled(editable_project);
 	m_generate_pinout             -> setEnabled(editable_project);
 	m_generate_circuits           -> setEnabled(editable_project);

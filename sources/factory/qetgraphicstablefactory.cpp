@@ -38,12 +38,24 @@ QetGraphicsTableFactory::QetGraphicsTableFactory()
 	Open a dialog for ask user the config of the table,
 	create a nomenclature table and add it to diagram
 	@param diagram
+	@param initial_query a query to start the dialog from, empty for the
+	default one. Whoever hands one over is asking for a table restricted to
+	something the person has already chosen elsewhere - one location, for
+	instance - and the dialog opens on it rather than on everything. It stays
+	an ordinary nomenclature: the person can still see what was asked for and
+	change it before the table is posed.
 */
-void QetGraphicsTableFactory::createAndAddNomenclature(Diagram *diagram)
+void QetGraphicsTableFactory::createAndAddNomenclature(Diagram *diagram,
+						       const QString &initial_query)
 {
+	ElementQueryWidget *query_widget = new ElementQueryWidget();
+	if (!initial_query.isEmpty()) {
+		query_widget->setQuery(initial_query);
+	}
+
 	QScopedPointer<AddTableDialog> d(
 				new AddTableDialog(
-					new ElementQueryWidget(),
+					query_widget,
 					diagram->views().first()));
 	d->setWindowTitle(QObject::tr("Ajouter une nomenclature"));
 

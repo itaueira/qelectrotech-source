@@ -371,8 +371,12 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/locationtree.h
   ${QET_DIR}/sources/location/projectlocation.cpp
   ${QET_DIR}/sources/location/projectlocation.h
+  ${QET_DIR}/sources/location/ui/locationbomdialog.cpp
+  ${QET_DIR}/sources/location/ui/locationbomdialog.h
   ${QET_DIR}/sources/location/ui/locationmanagerdialog.cpp
   ${QET_DIR}/sources/location/ui/locationmanagerdialog.h
+  ${QET_DIR}/sources/location/ui/locationreportdialog.cpp
+  ${QET_DIR}/sources/location/ui/locationreportdialog.h
 
   ${QET_DIR}/sources/macro/circuitclipboard.cpp
   ${QET_DIR}/sources/macro/circuitclipboard.h

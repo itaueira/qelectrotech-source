@@ -18,6 +18,8 @@
 #ifndef QETGRAPHICSTABLEFACTORY_H
 #define QETGRAPHICSTABLEFACTORY_H
 
+#include <QString>
+
 class Diagram;
 class QetGraphicsTableItem;
 class AddTableDialog;
@@ -30,7 +32,8 @@ class QetGraphicsTableFactory
 	public:
 		QetGraphicsTableFactory();
 
-		static void createAndAddNomenclature(Diagram *diagram);
+		static void createAndAddNomenclature(Diagram *diagram,
+						     const QString &initial_query = QString());
 		static void createAndAddSummary(Diagram *diagram);
 	private:
 		static void create(Diagram *diagram, AddTableDialog *dialog);
