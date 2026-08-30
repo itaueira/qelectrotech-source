@@ -50,6 +50,7 @@
 #include "diagramview.h"
 #include "elementspanelwidget.h"
 #include "factory/qetgraphicstablefactory.h"
+#include "macro/ui/circuittabledialog.h"
 #include "print/projectprintwindow.h"
 #include "project/projectpropertieshandler.h"
 #include "projectview.h"
@@ -618,6 +619,20 @@ void QETDiagramEditor::setUpActions()
 	m_generate_pinout->setStatusTip(m_generate_pinout->toolTip());
 	connect(m_generate_pinout, &QAction::triggered,
 		this, &QETDiagramEditor::generatePinoutBlocks);
+
+		//Twenty starters typed in twenty times is where one tag ends up
+		//repeated and one rating ends up wrong. Written once as a table,
+		//they are drawn once - and the table is what gets read at the
+		//review, instead of twenty drawings.
+	m_generate_circuits = new QAction(QET::Icons::DocumentSpreadsheet,
+					  tr("Générer des circuits par table…"),
+					  this);
+	m_generate_circuits->setToolTip(tr(
+					"Dessine d'un coup les circuits d'une table : "
+					"une ligne par circuit, un macro et ses valeurs."));
+	m_generate_circuits->setStatusTip(m_generate_circuits->toolTip());
+	connect(m_generate_circuits, &QAction::triggered,
+		this, &QETDiagramEditor::generateCircuits);
 
 	m_save_group = new QAction(tr("Enregistrer un groupement…"),
 				   this);
@@ -1410,6 +1425,29 @@ void QETDiagramEditor::generatePinoutBlocks()
 }
 
 /**
+	@brief QETDiagramEditor::generateCircuits
+	Draw a whole table of circuits at once: one row per circuit, a
+	parameterised macro and its answers.
+*/
+void QETDiagramEditor::generateCircuits()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+	CircuitTableDialog dialog(project, this);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+		//The generator pushed its own undo macro on the project stack, and
+		//the folios it made are already open: nothing to refresh here, only
+		//the count to say out loud.
+	statusBar()->showMessage(dialog.report().text(), 8000);
+}
+
+/**
 	@brief QETDiagramEditor::saveSelectionAsGroup
 	File the selected piece of schematic in the library, catalog parts and all.
 */
@@ -1765,6 +1803,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_create_symbol);
 	menu_edition -> addAction(m_generate_pinout);
+	menu_edition -> addAction(m_generate_circuits);
 	menu_edition -> addAction(m_explode_element);
 	menu_edition -> addAction(m_save_group);
 	menu_edition -> addAction(m_insert_group);
@@ -2683,6 +2722,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_iec_structure               -> setEnabled(editable_project);
 	m_create_symbol               -> setEnabled(editable_project);
 	m_generate_pinout             -> setEnabled(editable_project);
+	m_generate_circuits           -> setEnabled(editable_project);
 	m_explode_element             -> setEnabled(editable_project);
 	m_show_conductor_text         -> setEnabled(editable_project);
 	m_hide_conductor_text         -> setEnabled(editable_project);

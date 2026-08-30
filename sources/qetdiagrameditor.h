@@ -164,6 +164,7 @@ class QETDiagramEditor : public QETMainWindow
 		void renumberComponents();
 		void createSymbolFromSelection();
 		void generatePinoutBlocks();
+		void generateCircuits();
 		void saveSelectionAsGroup();
 		void insertGroup();
 		void explodeSelection();
@@ -231,6 +232,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_renumber_components = nullptr,///< Action to renumber the components, with a preview
 		*m_create_symbol = nullptr,     ///< Action to turn the selected drawing into a symbol
 		*m_generate_pinout = nullptr,  ///< Action to draw the blocks of a part from its pinout
+		*m_generate_circuits = nullptr, ///< Action to draw a whole table of circuits in one go
 		*m_save_group = nullptr,        ///< Action to file the selection as a graphic grouping
 		*m_insert_group = nullptr,      ///< Action to insert a graphic grouping
 		*m_iec_structure = nullptr,     ///< Action to turn the IEC 81346 structure on for this project

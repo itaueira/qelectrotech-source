@@ -386,6 +386,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/macro/macrosubstitution.h
   ${QET_DIR}/sources/macro/macrouuid.cpp
   ${QET_DIR}/sources/macro/macrouuid.h
+  ${QET_DIR}/sources/macro/ui/circuittabledialog.cpp
+  ${QET_DIR}/sources/macro/ui/circuittabledialog.h
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.cpp
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.h
 
