@@ -80,9 +80,14 @@
 #include "TerminalStrip/ui/addterminalstripitemdialog.h"
 #include "wiringlistexport.h"
 #include "ui/terminalnumberingdialog.h"
+#include "elementprovider.h"
+#include "plc/iowiring.h"
+#include "qetinformation.h"
+#include "undocommand/changeelementinformationcommand.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QInputDialog>
 #ifdef BUILD_WITHOUT_KF
 #	include "ui/nokde/kautosavefile.h"
 #else
@@ -672,6 +677,26 @@ void QETDiagramEditor::setUpActions()
 	m_io_list->setStatusTip(m_io_list->toolTip());
 	connect(m_io_list, &QAction::triggered,
 		this, &QETDiagramEditor::showIoList);
+
+		//Marking a bar and wiring the communs are one gesture in two
+		//halves, so they close the run of I/O actions together.
+	m_mark_io_bus = new QAction(tr("Marquer comme barre par défaut…"),
+									this);
+	m_mark_io_bus->setToolTip(tr(
+									"Dit que les éléments sélectionnés servent de barre "
+									"d'alimentation ou de retour pour les communs."));
+	m_mark_io_bus->setStatusTip(m_mark_io_bus->toolTip());
+	connect(m_mark_io_bus, &QAction::triggered,
+		this, &QETDiagramEditor::markIoBus);
+
+	m_wire_io_commons = new QAction(tr("Raccorder les communs…"),
+									this);
+	m_wire_io_commons->setToolTip(tr(
+									"Tire d'un coup les fils entre les communs des cartes et "
+									"les barres marquées de leur folio."));
+	m_wire_io_commons->setStatusTip(m_wire_io_commons->toolTip());
+	connect(m_wire_io_commons, &QAction::triggered,
+		this, &QETDiagramEditor::wireIoCommons);
 
 	m_save_group = new QAction(tr("Enregistrer un groupement…"),
 				   this);
@@ -1568,6 +1593,194 @@ void QETDiagramEditor::showIoList()
 }
 
 /**
+	@brief QETDiagramEditor::markIoBus
+	Say that the selected elements are the supply bar or the return bar of
+	their folio, which is what the batch wiring of the communs aims at.
+*/
+void QETDiagramEditor::markIoBus()
+{
+	DiagramView *diagram_view = currentDiagramView();
+	if (!diagram_view || !diagram_view->diagram()) {
+		return;
+	}
+
+	QList<Element *> selected;
+	const QList<QGraphicsItem *> items = diagram_view->diagram()->selectedItems();
+	for (QGraphicsItem *item : items)
+	{
+		if (Element *element = qgraphicsitem_cast<Element *>(item)) {
+			selected.append(element);
+		}
+	}
+
+	if (selected.isEmpty())
+	{
+		QET::QetMessageBox::information(this, tr("Aucun élément sélectionné"),
+						tr("Sélectionnez le ou les éléments qui font "
+						   "office de barre sur leur folio."));
+		return;
+	}
+
+	QStringList choices;
+	choices << IoCommon::busName(IoCommon::SupplyBus)
+		<< IoCommon::busName(IoCommon::ReturnBus)
+		<< tr("Aucune");
+
+		//A folio drawn to IEC repeats the same rail from folio to folio,
+		//so the mark is put folio by folio, and taking it back off has to
+		//be as easy as putting it on : that is the third choice.
+	int start = 2;
+	const IoCommon::BusKind already = IoWiring::busOf(selected.first());
+	if (already == IoCommon::SupplyBus) {
+		start = 0;
+	} else if (already == IoCommon::ReturnBus) {
+		start = 1;
+	}
+
+	bool chosen = false;
+	const QString picked = QInputDialog::getItem(this,
+			tr("Barre par défaut"),
+			tr("Ces éléments servent de barre pour :"),
+			choices, start, false, &chosen);
+	if (!chosen) {
+		return;
+	}
+
+	IoCommon::BusKind kind = IoCommon::NoBus;
+	if (picked == choices.at(0)) {
+		kind = IoCommon::SupplyBus;
+	} else if (picked == choices.at(1)) {
+		kind = IoCommon::ReturnBus;
+	}
+
+		//One command for the whole selection : marking the two rails of a
+		//folio is one gesture on the draughtsman's side, so it has to be
+		//one step on the stack too.
+	QMap<QPointer<Element>, QPair<DiagramContext, DiagramContext>> changes;
+	for (Element *element : selected)
+	{
+		const DiagramContext before = element->elementInformations();
+		DiagramContext after = before;
+		if (kind == IoCommon::NoBus) {
+			after.remove(QETInformation::ELMT_PLC_BUS);
+		} else {
+			after.addValue(QETInformation::ELMT_PLC_BUS,
+				       IoCommon::busToString(kind));
+		}
+		if (after != before) {
+			changes.insert(element, qMakePair(before, after));
+		}
+	}
+
+	if (changes.isEmpty())
+	{
+		statusBar()->showMessage(
+					tr("Ces éléments portaient déjà cette marque."), 8000);
+		return;
+	}
+
+	diagram_view->diagram()->undoStack().push(
+				new ChangeElementInformationCommand(changes));
+
+	const QString said = (kind == IoCommon::NoBus)
+			? tr("%1 élément(s) ne servent plus de barre.")
+					.arg(int(changes.count()))
+			: tr("%1 élément(s) marqués comme barre « %2 ».")
+					.arg(int(changes.count()))
+					.arg(IoCommon::busName(kind));
+	statusBar()->showMessage(said, 8000);
+}
+
+/**
+	@brief QETDiagramEditor::wireIoCommons
+	Draw in one go the wires between the communs of the cards and the bars
+	marked on their folio (CU-11.8).
+*/
+void QETDiagramEditor::wireIoCommons()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+		//What was pointed at is what was meant. Nothing pointed at means
+		//the whole project, and there « a card » has to mean something :
+		//the same set the assignment window offers, so that what could
+		//not be done stays a short list about cards.
+	QList<Element *> cards;
+	DiagramView *diagram_view = currentDiagramView();
+	if (diagram_view && diagram_view->diagram())
+	{
+		const QList<QGraphicsItem *> items =
+				diagram_view->diagram()->selectedItems();
+		for (QGraphicsItem *item : items)
+		{
+			if (Element *element = qgraphicsitem_cast<Element *>(item)) {
+				cards.append(element);
+			}
+		}
+	}
+
+	if (cards.isEmpty())
+	{
+		ElementProvider provider(project);
+		const QVector<QPointer<Element>> masters =
+				provider.find(ElementData::Master);
+		for (Element *element : masters)
+		{
+			if (!element) {
+				continue;
+			}
+			if (element->elementData().m_master_type != ElementData::PLC) {
+				continue;
+			}
+			if (element->elementData().plcMasterData().ios.isEmpty()) {
+				continue;
+			}
+			cards.append(element);
+		}
+	}
+
+	if (cards.isEmpty())
+	{
+		QET::QetMessageBox::information(this, tr("Aucune carte"),
+						tr("Ce projet ne contient aucune carte d'automate. "
+						   "Sélectionnez les éléments dont les communs sont "
+						   "à raccorder."));
+		return;
+	}
+
+	IoWiring wiring(project);
+	QStringList problems;
+	const IoCommon::Plan plan = wiring.plan(cards, &problems);
+
+	QString said = plan.text();
+	if (!problems.isEmpty()) {
+		said += QLatin1Char('\n') + problems.join(QLatin1Char('\n'));
+	}
+
+		//Nothing to draw is not a failure, and the reasons are the whole
+		//answer : they are shown, rather than a silent no.
+	if (plan.isEmpty())
+	{
+		QET::QetMessageBox::information(this, tr("Raccorder les communs"),
+						said);
+		return;
+	}
+
+	if (QET::QetMessageBox::question(this, tr("Raccorder les communs"), said,
+					 QMessageBox::Ok | QMessageBox::Cancel,
+					 QMessageBox::Ok) != QMessageBox::Ok) {
+		return;
+	}
+
+	const IoWiring::Report report = wiring.wire(plan);
+	QString done = report.text();
+	done.replace(QLatin1Char('\n'), QStringLiteral(" "));
+	statusBar()->showMessage(done, 8000);
+}
+
+/**
 	@brief QETDiagramEditor::saveSelectionAsGroup
 	File the selected piece of schematic in the library, catalog parts and all.
 */
@@ -1927,6 +2140,8 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addAction(m_import_io_sheet);
 	menu_edition -> addAction(m_assign_io_points);
 	menu_edition -> addAction(m_io_list);
+	menu_edition -> addAction(m_mark_io_bus);
+	menu_edition -> addAction(m_wire_io_commons);
 	menu_edition -> addAction(m_explode_element);
 	menu_edition -> addAction(m_save_group);
 	menu_edition -> addAction(m_insert_group);
@@ -2849,6 +3064,8 @@ void QETDiagramEditor::slot_updateActions()
 	m_import_io_sheet             -> setEnabled(editable_project);
 	m_assign_io_points            -> setEnabled(editable_project);
 	m_io_list                     -> setEnabled(editable_project);
+	m_mark_io_bus                 -> setEnabled(editable_project);
+	m_wire_io_commons             -> setEnabled(editable_project);
 	m_explode_element             -> setEnabled(editable_project);
 	m_show_conductor_text         -> setEnabled(editable_project);
 	m_hide_conductor_text         -> setEnabled(editable_project);

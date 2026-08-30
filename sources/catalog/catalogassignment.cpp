@@ -171,19 +171,19 @@ QString CatalogAssignment::commandLabel(const CatalogPart &part,
 }
 
 /**
-	@brief CatalogAssignment::terminalNames
+	@brief CatalogAssignment::terminalPins
 	@param part
 	@param group
 	@param terminal_count
-	@return one name per terminal, empty where the symbol keeps its own label
+	@return one pin per terminal, default built where the part is silent
 */
-QStringList CatalogAssignment::terminalNames(const CatalogPart &part,
-					     const QString &group,
-					     int terminal_count)
+QList<CatalogPin> CatalogAssignment::terminalPins(const CatalogPart &part,
+						 const QString &group,
+						 int terminal_count)
 {
-	QStringList names;
+	QList<CatalogPin> matched;
 	if (terminal_count <= 0) {
-		return names;
+		return matched;
 	}
 
 	// Pins of the asked group, in pin order. A part registered from a project
@@ -211,7 +211,26 @@ QStringList CatalogAssignment::terminalNames(const CatalogPart &part,
 
 	for (int index = 0 ; index < terminal_count ; ++index)
 	{
-		names.append(index < pins.size() ? pins.at(index).label : QString());
+		matched.append(index < pins.size() ? pins.at(index) : CatalogPin());
+	}
+	return matched;
+}
+
+/**
+	@brief CatalogAssignment::terminalNames
+	@param part
+	@param group
+	@param terminal_count
+	@return one name per terminal, empty where the symbol keeps its own label
+*/
+QStringList CatalogAssignment::terminalNames(const CatalogPart &part,
+					     const QString &group,
+					     int terminal_count)
+{
+	QStringList names;
+	const QList<CatalogPin> pins = terminalPins(part, group, terminal_count);
+	for (const CatalogPin &pin : pins) {
+		names.append(pin.label);
 	}
 	return names;
 }

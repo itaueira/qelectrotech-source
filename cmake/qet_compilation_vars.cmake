@@ -395,6 +395,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/plc/ioassignment.h
   ${QET_DIR}/sources/plc/iocircuit.cpp
   ${QET_DIR}/sources/plc/iocircuit.h
+  ${QET_DIR}/sources/plc/iocommon.cpp
+  ${QET_DIR}/sources/plc/iocommon.h
   ${QET_DIR}/sources/plc/iodrawing.cpp
   ${QET_DIR}/sources/plc/iodrawing.h
   ${QET_DIR}/sources/plc/iolist.cpp
@@ -405,6 +407,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/plc/iosheet.h
   ${QET_DIR}/sources/plc/iotree.cpp
   ${QET_DIR}/sources/plc/iotree.h
+  ${QET_DIR}/sources/plc/iowiring.cpp
+  ${QET_DIR}/sources/plc/iowiring.h
   ${QET_DIR}/sources/plc/ui/ioassigndialog.cpp
   ${QET_DIR}/sources/plc/ui/ioassigndialog.h
   ${QET_DIR}/sources/plc/ui/ioimportdialog.cpp

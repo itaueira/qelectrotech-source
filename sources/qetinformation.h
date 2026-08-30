@@ -131,6 +131,9 @@ namespace QETInformation
 	static QString ELMT_PLC_COMMENT     = "plc_comment";
 	static QString ELMT_PLC_CROSSREF    = "plc_crossref";
 	static QString ELMT_PLC_UNIT        = "plc_unit";
+	/** Which default bus an element is, for the batch wiring of card commons
+	 * (T11). Two values only: "supply" and "return". */
+	static QString ELMT_PLC_BUS         = "plc_bus";
 	static QString ELMT_PLC_TC          = "plc_tc";
 	static QString ELMT_PLC_T1          = "plc_t1";
 	static QString ELMT_PLC_T2          = "plc_t2";

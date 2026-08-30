@@ -107,6 +107,7 @@ add_executable(
     src/circuit_test.cpp
     src/ioassignment_test.cpp
     src/iocircuit_test.cpp
+    src/iocommon_test.cpp
     src/io_test.cpp
     src/iosheet_test.cpp
     src/iotree_test.cpp
@@ -175,6 +176,8 @@ add_executable(
     ${QET_DIR}/sources/plc/ioassignment.h
     ${QET_DIR}/sources/plc/iocircuit.cpp
     ${QET_DIR}/sources/plc/iocircuit.h
+    ${QET_DIR}/sources/plc/iocommon.cpp
+    ${QET_DIR}/sources/plc/iocommon.h
     ${QET_DIR}/sources/plc/iolist.cpp
     ${QET_DIR}/sources/plc/iolist.h
     ${QET_DIR}/sources/plc/iopoint.cpp

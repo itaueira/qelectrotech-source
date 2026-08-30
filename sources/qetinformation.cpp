@@ -238,6 +238,7 @@ QStringList QETInformation::elementInfoKeys()
 						 ELMT_PLC_COMMENT,
 						 ELMT_PLC_CROSSREF,
 						 ELMT_PLC_UNIT,
+						 ELMT_PLC_BUS,
 						 "exclude_from_bom",
 						 ELMT_PART_CODE,
 						 ELMT_PART_REVISION };
@@ -364,6 +365,7 @@ QString QETInformation::translatedInfoKey(const QString &info)
 	else if (info == ELMT_PLC_COMMENT)                       return QObject::tr("Commentaire PLC");
 	else if (info == ELMT_PLC_CROSSREF)                      return QObject::tr("Réf. croisée PLC");
 	else if (info == ELMT_PLC_UNIT)                          return QObject::tr("Automate");
+	else if (info == ELMT_PLC_BUS)                           return QObject::tr("Barre PLC");
 	else return QString();
 }
 

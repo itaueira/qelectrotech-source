@@ -110,6 +110,20 @@ class CatalogAssignment
 			@param group : which sub symbol of the part is being assigned,
 			empty for a part drawn as one symbol
 			@param terminal_count : how many terminals the symbol has
+			@return one pin per terminal, in terminal order, so that pin and
+			terminal are matched the same way everywhere in the program. A
+			default built CatalogPin means the part says nothing about that
+			terminal.
+		*/
+		static QList<CatalogPin> terminalPins(const CatalogPart &part,
+						     const QString &group,
+						     int terminal_count);
+
+		/**
+			@param part
+			@param group : which sub symbol of the part is being assigned,
+			empty for a part drawn as one symbol
+			@param terminal_count : how many terminals the symbol has
 			@return one name per terminal, in terminal order. An empty string
 			means "keep the label the symbol already had": a part sheet that
 			only lists the coil must not blank the contacts.
