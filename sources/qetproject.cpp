@@ -1063,6 +1063,13 @@ QDomDocument QETProject::toXml()
 		project_root.appendChild(m_circuit_table.toXml(xml_doc));
 	}
 
+		//The list of I/O points, by the same rule and for the same
+		//reason: a project that never imported a sheet writes no
+		//such element at all.
+	if (!m_io_list.isEmpty()) {
+		project_root.appendChild(m_io_list.toXml(xml_doc));
+	}
+
 	// titleblock templates, if any
 	if (m_titleblocks_collection.templates().count()) {
 		QDomElement titleblocktemplates_elmt = xml_doc.createElement("titleblocktemplates");
@@ -1662,6 +1669,12 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 	m_circuit_table.fromXml(xml_project.documentElement().firstChildElement(
 					CircuitTable::tagName()));
 
+		//The list of I/O points. Tolerant the same way: no element
+		//means an empty list, which is what the import dialogue
+		//starts from.
+	m_io_list.fromXml(xml_project.documentElement().firstChildElement(
+				  IoList::tagName()));
+
 		//Load the project-wide properties
 	readProjectPropertiesXml(xml_project);
 
@@ -2215,6 +2228,32 @@ void QETProject::setCircuitTable(const CircuitTable &table)
 		return;
 	}
 	m_circuit_table = table;
+	setModified(true);
+}
+
+/**
+	@brief QETProject::ioList
+	@return every I/O point of this project, assigned or not
+*/
+IoList QETProject::ioList() const
+{
+	return m_io_list;
+}
+
+/**
+	@brief QETProject::setIoList
+	@param list
+
+	Guarded on equality for the reason setCircuitTable is: an import
+	dialogue that was opened and closed without importing anything
+	must not leave the project asking to be saved.
+*/
+void QETProject::setIoList(const IoList &list)
+{
+	if (m_io_list == list) {
+		return;
+	}
+	m_io_list = list;
 	setModified(true);
 }
 

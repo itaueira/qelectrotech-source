@@ -391,6 +391,13 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.cpp
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.h
 
+  ${QET_DIR}/sources/plc/iolist.cpp
+  ${QET_DIR}/sources/plc/iolist.h
+  ${QET_DIR}/sources/plc/iopoint.cpp
+  ${QET_DIR}/sources/plc/iopoint.h
+  ${QET_DIR}/sources/plc/iosheet.cpp
+  ${QET_DIR}/sources/plc/iosheet.h
+
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
   ${QET_DIR}/sources/dataBase/projectdatabase.h
 

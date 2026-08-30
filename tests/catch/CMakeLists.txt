@@ -105,6 +105,8 @@ add_executable(
     src/renumber_test.cpp
     src/macro_test.cpp
     src/circuit_test.cpp
+    src/io_test.cpp
+    src/iosheet_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -161,6 +163,17 @@ add_executable(
     ${QET_DIR}/sources/macro/macrosubstitution.h
     ${QET_DIR}/sources/macro/macrouuid.cpp
     ${QET_DIR}/sources/macro/macrouuid.h
+    # A lista de E/S tem a mesma propriedade do núcleo do catálogo e do
+    # modelo de macro: QDomDocument e QString, nada de Diagram nem de QETApp.
+    # O `elementdata.h` entra só como cabeçalho, pelo enum PlcIOType — o `.cpp`
+    # dele arrastaria `qetxml`, `nameslist` e o QETApp inteiro atrás, e é
+    # justamente isso que a serialização própria do IoPoint evita.
+    ${QET_DIR}/sources/plc/iolist.cpp
+    ${QET_DIR}/sources/plc/iolist.h
+    ${QET_DIR}/sources/plc/iopoint.cpp
+    ${QET_DIR}/sources/plc/iopoint.h
+    ${QET_DIR}/sources/plc/iosheet.cpp
+    ${QET_DIR}/sources/plc/iosheet.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:

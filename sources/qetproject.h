@@ -26,6 +26,7 @@
 #include "conductorproperties.h"
 #include "dataBase/projectdatabase.h"
 #include "macro/circuittable.h"
+#include "plc/iolist.h"
 #include "properties/reportproperties.h"
 #include "properties/xrefproperties.h"
 #include "titleblock/templatescollection.h"
@@ -260,6 +261,19 @@ class QETProject : public QObject
 		CircuitTable circuitTable() const;
 		void setCircuitTable(const CircuitTable &table);
 		/**
+			@brief Every I/O point of this project, drawn or not.
+
+			The sheet a person imports is a list of points that are on
+			no folio yet, and it has to survive between the import and
+			the day each point is assigned to a card. That is a life the
+			size of a project and not the size of a dialogue, so the
+			list lives here. Written to the .qet only when it holds a
+			point, so a project that never imported a sheet keeps
+			opening in an unmodified QElectroTech.
+		*/
+		IoList ioList() const;
+		void setIoList(const IoList &list);
+		/**
 			@brief Make every component say the text of its tag again.
 			The composed tag is built when the text is drawn, so a change of the
 			setting leaves nothing in the model for a text to notice.
@@ -389,6 +403,7 @@ class QETProject : public QObject
 		bool m_freeze_new_elements = false;
 		IecStructureSettings m_iec_settings;
 		CircuitTable m_circuit_table;
+		IoList m_io_list;
 		bool m_freeze_new_conductors = false;
 		QTimer m_save_backup_timer,
 			   m_autosave_timer;
