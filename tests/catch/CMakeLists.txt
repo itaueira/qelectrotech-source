@@ -106,6 +106,7 @@ add_executable(
     src/macro_test.cpp
     src/circuit_test.cpp
     src/ioassignment_test.cpp
+    src/iocircuit_test.cpp
     src/io_test.cpp
     src/iosheet_test.cpp
     main.cpp
@@ -171,6 +172,8 @@ add_executable(
     # justamente isso que a serialização própria do IoPoint evita.
     ${QET_DIR}/sources/plc/ioassignment.cpp
     ${QET_DIR}/sources/plc/ioassignment.h
+    ${QET_DIR}/sources/plc/iocircuit.cpp
+    ${QET_DIR}/sources/plc/iocircuit.h
     ${QET_DIR}/sources/plc/iolist.cpp
     ${QET_DIR}/sources/plc/iolist.h
     ${QET_DIR}/sources/plc/iopoint.cpp

@@ -23,10 +23,13 @@
 #include "../../qetproject.h"
 #include "../../undocommand/assigniopointscommand.h"
 #include "../ioassignment.h"
+#include "../iocircuit.h"
+#include "../iodrawing.h"
 #include "../iolist.h"
 #include "../iopoint.h"
 
 #include <QBrush>
+#include <QCheckBox>
 #include <QColor>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -43,6 +46,7 @@
 #include <QUuid>
 #include <QVBoxLayout>
 #include <QVariant>
+#include <QVector>
 
 namespace
 {
@@ -50,6 +54,45 @@ namespace
 	const int ID_ROLE = Qt::UserRole + 1;
 	/// Role holding the row of the card table a row of the right table is about.
 	const int INDEX_ROLE = Qt::UserRole + 2;
+
+	/// @return how the card names itself on the folio
+	QString cardLabel(Element *master)
+	{
+		if (!master) {
+			return QString();
+		}
+
+		const QString label = master->actualLabel();
+		return label.isEmpty() ? master->name() : label;
+	}
+
+	/**
+		@param list the list as it stands once the points are in
+		@param ids the points that went in
+		@return those of them that name a macro to draw
+
+		A point whose Connecter a column is empty is not a refusal
+		and is not worth a line of the paragraph: most points of
+		most projects have nothing to draw, and a line per point
+		would bury the ones that do.
+	*/
+	QStringList drawablePoints(const IoList &list, const QStringList &ids)
+	{
+		QStringList drawable;
+
+		for (const QString &id : ids)
+		{
+			const int index = list.indexOfId(id);
+			if (index < 0) {
+				continue;
+			}
+			if (IoCircuit::isMacroPath(list.at(index).connect_to)) {
+				drawable << id;
+			}
+		}
+
+		return drawable;
+	}
 }
 
 /**
@@ -149,6 +192,16 @@ void IoAssignDialog::buildWidgets()
 				 "dans la liste."));
 	connect(m_release, &QPushButton::clicked, this, &IoAssignDialog::release);
 
+	m_draw = new QCheckBox(tr("Dessiner aussi les circuits demandés "
+					   "par la colonne Connecter à"), this);
+	m_draw->setChecked(true);
+	m_draw->setToolTip(tr("Génère le schéma que chaque point demande, "
+				      "le lie à sa voie, et met ses bornes de champ "
+				      "dans un groupe de bornes. Un point dont la "
+				      "colonne Connecter à est vide ne dessine rien."));
+	connect(m_draw, &QCheckBox::toggled,
+		this, &IoAssignDialog::selectionChanged);
+
 		//ActionRole and not AcceptRole: the window stays open, because
 		//placing the points of a project means going through several cards
 		//one after the other, and closing after each one would make that
@@ -162,6 +215,7 @@ void IoAssignDialog::buildWidgets()
 	layout->addLayout(card_line);
 	layout->addLayout(tables, 1);
 	layout->addWidget(m_summary);
+	layout->addWidget(m_draw);
 	layout->addWidget(m_status);
 	layout->addWidget(buttons);
 
@@ -389,7 +443,33 @@ void IoAssignDialog::reloadSummary()
 
 	const IoAssignment::Plan plan = IoAssignment::plan(m_project->ioList(), ids,
 							   plc.ios, uuid, wired);
-	m_summary->setText(plan.text());
+
+	QString text = plan.text();
+
+	if (m_draw && m_draw->isChecked() && !plan.pairs.isEmpty())
+	{
+			//What a circuit is going to say depends on the channel the
+			//point is about to get, so the affectation is carried out
+			//here as well - on a copy, which is then dropped.
+		IoList copy = m_project->ioList();
+		QVector<ElementData::PlcIO> ios = plc.ios;
+		IoAssignment::apply(plan, copy, ios, uuid);
+
+		QStringList going_in;
+		for (const IoAssignment::Pair &pair : plan.pairs) {
+			going_in << pair.point_id;
+		}
+
+		const QStringList drawable = drawablePoints(copy, going_in);
+		if (!drawable.isEmpty())
+		{
+			text += QLatin1Char('\n')
+				+ IoCircuit::plan(copy, drawable,
+							  cardLabel(master)).text();
+		}
+	}
+
+	m_summary->setText(text);
 }
 
 /**
@@ -579,12 +659,57 @@ void IoAssignDialog::assign()
 
 	data.setPlcMasterData(plc);
 
-	if (QUndoStack *stack = m_project->undoStack()) {
-		stack->push(new AssignIoPointsCommand(m_project, master,
-						      list, data, done));
+	QUndoStack *stack = m_project->undoStack();
+	if (!stack)
+	{
+		say(tr("Ce projet n'a pas de pile d'annulation."), true);
+		return;
 	}
 
+	QStringList going_in;
+	for (const IoAssignment::Pair &pair : plan.pairs) {
+		going_in << pair.point_id;
+	}
+
+		//Which points draw is decided before anything is pushed:
+		//affecting a point does not touch its Connecter a column, and
+		//an undo entry called "and draw" that drew nothing would be
+		//a lie in the list of what was done.
+	QStringList drawable;
+	if (m_draw && m_draw->isChecked()) {
+		drawable = drawablePoints(m_project->ioList(), going_in);
+	}
+	const bool drawing = !drawable.isEmpty();
+
+		//Affecting and drawing is one thing a person did, so it is
+		//one entry of the stack: twelve circuits somebody does not
+		//like is one Ctrl+Z, and the points come back out of the
+		//card along with them.
+	if (drawing) {
+		stack->beginMacro(tr("affecter et dessiner %n point(s) d'E/S",
+				     "undo caption", done));
+	}
+
+	stack->push(new AssignIoPointsCommand(m_project, master,
+					      list, data, done));
+
 	m_report = plan.text();
+
+	if (drawing)
+	{
+			//The list is asked again rather than reused: the command has
+			//run by now, and what the points know about their channel is
+			//what the circuits are going to say.
+		IoDrawing drawer(m_project);
+		const IoDrawing::Report drawn = drawer.draw(
+				IoCircuit::plan(m_project->ioList(), drawable,
+						cardLabel(master)), master);
+
+		m_report += QLatin1Char('\n') + drawn.text();
+
+		stack->endMacro();
+	}
+
 	cardChanged();
 	say(m_report, !plan.isClean());
 }

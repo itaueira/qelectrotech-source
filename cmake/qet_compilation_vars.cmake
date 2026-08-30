@@ -393,6 +393,10 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/plc/ioassignment.cpp
   ${QET_DIR}/sources/plc/ioassignment.h
+  ${QET_DIR}/sources/plc/iocircuit.cpp
+  ${QET_DIR}/sources/plc/iocircuit.h
+  ${QET_DIR}/sources/plc/iodrawing.cpp
+  ${QET_DIR}/sources/plc/iodrawing.h
   ${QET_DIR}/sources/plc/iolist.cpp
   ${QET_DIR}/sources/plc/iolist.h
   ${QET_DIR}/sources/plc/iopoint.cpp

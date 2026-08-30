@@ -25,6 +25,7 @@
 #include <QVector>
 
 class Element;
+class QCheckBox;
 class QComboBox;
 class QETProject;
 class QLabel;
@@ -107,6 +108,7 @@ class IoAssignDialog : public QDialog
 		QLabel *m_status = nullptr;
 		QPushButton *m_assign = nullptr;
 		QPushButton *m_release = nullptr;
+		QCheckBox *m_draw = nullptr;
 };
 
 #endif // IOASSIGNDIALOG_H
