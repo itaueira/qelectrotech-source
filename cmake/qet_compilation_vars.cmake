@@ -366,6 +366,11 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/environment/ui/environmentdialog.cpp
   ${QET_DIR}/sources/environment/ui/environmentdialog.h
 
+  ${QET_DIR}/sources/location/locationtree.cpp
+  ${QET_DIR}/sources/location/locationtree.h
+  ${QET_DIR}/sources/location/projectlocation.cpp
+  ${QET_DIR}/sources/location/projectlocation.h
+
   ${QET_DIR}/sources/macro/circuitclipboard.cpp
   ${QET_DIR}/sources/macro/circuitclipboard.h
   ${QET_DIR}/sources/macro/circuitgenerator.cpp
