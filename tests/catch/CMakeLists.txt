@@ -104,6 +104,7 @@ add_executable(
     src/iecstructure_test.cpp
     src/renumber_test.cpp
     src/macro_test.cpp
+    src/circuit_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -144,6 +145,8 @@ add_executable(
     # do nucleo do catalogo: QDomDocument e QString, nada de Diagram nem
     # de QETApp. A parte que precisa de um projeto aberto e o
     # DiagramEventAddMacro, e ele esta deliberadamente fora daqui.
+    ${QET_DIR}/sources/macro/circuittable.cpp
+    ${QET_DIR}/sources/macro/circuittable.h
     ${QET_DIR}/sources/macro/macroparameter.cpp
     ${QET_DIR}/sources/macro/macroparameter.h
     ${QET_DIR}/sources/macro/macroparameterset.cpp
@@ -152,6 +155,8 @@ add_executable(
     ${QET_DIR}/sources/macro/macrosequence.h
     ${QET_DIR}/sources/macro/macrosubstitution.cpp
     ${QET_DIR}/sources/macro/macrosubstitution.h
+    ${QET_DIR}/sources/macro/macrouuid.cpp
+    ${QET_DIR}/sources/macro/macrouuid.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:

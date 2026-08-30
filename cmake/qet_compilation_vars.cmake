@@ -366,6 +366,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/environment/ui/environmentdialog.cpp
   ${QET_DIR}/sources/environment/ui/environmentdialog.h
 
+  ${QET_DIR}/sources/macro/circuittable.cpp
+  ${QET_DIR}/sources/macro/circuittable.h
   ${QET_DIR}/sources/macro/macroparameter.cpp
   ${QET_DIR}/sources/macro/macroparameter.h
   ${QET_DIR}/sources/macro/macroparameterset.cpp
@@ -374,6 +376,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/macro/macrosequence.h
   ${QET_DIR}/sources/macro/macrosubstitution.cpp
   ${QET_DIR}/sources/macro/macrosubstitution.h
+  ${QET_DIR}/sources/macro/macrouuid.cpp
+  ${QET_DIR}/sources/macro/macrouuid.h
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.cpp
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.h
 
