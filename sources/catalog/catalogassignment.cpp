@@ -61,7 +61,8 @@ QStringList CatalogAssignment::protectedElementKeys()
 		 QStringLiteral("potential_isolating"),
 		 QStringLiteral("exclude_from_bom"),
 		 QStringLiteral("plant"),
-		 QStringLiteral("location") };
+		 QStringLiteral("location"),
+		 QStringLiteral("location_path") };
 }
 
 /**

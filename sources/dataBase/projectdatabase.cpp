@@ -519,6 +519,7 @@ void projectDataBase::createElementNomenclatureView()
 						 "ei.label AS label,"
 						 "ei.plant AS plant,"
 						 "ei.location AS location,"
+						 "ei.location_path AS location_path,"
 						 "ei.comment AS comment,"
 						 "ei.function AS function,"
 						 "ei.description AS description,"

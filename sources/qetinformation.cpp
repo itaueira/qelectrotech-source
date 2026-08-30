@@ -186,6 +186,7 @@ QStringList QETInformation::elementInfoKeys()
 						 ELMT_LABEL,
 						 ELMT_PLANT,
 						 ELMT_LOCATION,
+						 ELMT_LOCATION_PATH,
 						 ELMT_COMMENT,
 						 ELMT_FUNCTION,
 						 ELMT_DESCRIPTION,
@@ -317,6 +318,7 @@ QString QETInformation::translatedInfoKey(const QString &info)
 	else if (info == ELMT_PART_CODE)                   return QObject::tr("Référence de la pièce");
 	else if (info == ELMT_PART_REVISION)               return QObject::tr("Révision de la pièce");
 	else if (info == ELMT_LOCATION)                    return QObject::tr("Localisation (+)");
+	else if (info == ELMT_LOCATION_PATH)               return QObject::tr("Chemin de localisation");
 	else if (info == COND_FUNCTION)                    return QObject::tr("Fonction");
 	else if (info == COND_TENSION_PROTOCOL)            return QObject::tr("Tension / Protocole");
 	else if (info == COND_COLOR)                       return QObject::tr("Couleur du fil");

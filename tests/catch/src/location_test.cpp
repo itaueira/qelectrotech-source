@@ -18,6 +18,9 @@
 #include "../../../sources/location/locationtree.h"
 #include "../../../sources/location/projectlocation.h"
 #include "qt_catch_tostring.h"
+#include "../../../sources/qetinformation.h"
+#include "../../../sources/diagramcontext.h"
+#include "../../../sources/catalog/catalogassignment.h"
 
 #include <QDomDocument>
 #include <QDomElement>
@@ -480,5 +483,51 @@ TEST_CASE("CU-32.1 — o arquivo pode guardar o que a árvore não aceita, e a l
 		REQUIRE(arvore.fromXml(documento.documentElement()));
 		CHECK(arvore.count() == 2);
 		CHECK(arvore.at(0).uuid != arvore.at(1).uuid);
+	}
+}
+
+TEST_CASE("a chave que o componente carrega", "[localizacao]")
+{
+	SECTION("location_path é uma informação de elemento como as outras")
+	{
+		CHECK(QETInformation::elementInfoKeys().contains(
+					  QETInformation::ELMT_LOCATION_PATH));
+		CHECK(QETInformation::ELMT_LOCATION_PATH == "location_path");
+	}
+
+	SECTION("location não deixou de existir")
+	{
+		// O projeto real usa location para a régua de bornes em 23
+		// componentes. A T32 acrescenta uma chave, não substitui a que
+		// já está preenchida.
+		CHECK(QETInformation::elementInfoKeys().contains(
+					  QETInformation::ELMT_LOCATION));
+	}
+
+	SECTION("a chave tem nome de gente")
+	{
+		CHECK_FALSE(QETInformation::translatedInfoKey(
+					    QETInformation::ELMT_LOCATION_PATH).isEmpty());
+	}
+
+	SECTION("atribuir peça não apaga o caminho")
+	{
+		CHECK(CatalogAssignment::protectedElementKeys().contains(
+					      QETInformation::ELMT_LOCATION_PATH));
+	}
+
+	SECTION("o QET de origem guarda a chave sem entendê-la")
+	{
+		// É o preço combinado da decisão C: o componente guarda o caminho
+		// como informação comum, e por isso um projeto nosso aberto no
+		// QElectroTech de origem não perde a localização.
+		DiagramContext contexto;
+		// addValue e quem cobra o formato de chave: recusa a que o
+		// QET nao saberia reler.
+		CHECK_FALSE(contexto.addValue("Chave Invalida", "x"));
+		CHECK(contexto.addValue(QETInformation::ELMT_LOCATION_PATH,
+					"QCM1/PORTA"));
+		CHECK(contexto.value(QETInformation::ELMT_LOCATION_PATH)
+					.toString() == "QCM1/PORTA");
 	}
 }

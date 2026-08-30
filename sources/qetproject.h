@@ -27,6 +27,7 @@
 #include "dataBase/projectdatabase.h"
 #include "macro/circuittable.h"
 #include "plc/iolist.h"
+#include "location/locationtree.h"
 #include "properties/reportproperties.h"
 #include "properties/xrefproperties.h"
 #include "titleblock/templatescollection.h"
@@ -273,6 +274,15 @@ class QETProject : public QObject
 		*/
 		IoList ioList() const;
 		void setIoList(const IoList &list);
+
+		/**
+			@brief Where this project mounts things, and what is
+			inside what. Written to the .qet only when it holds a
+			location, so a project that never opened the manager
+			keeps opening in an unmodified QElectroTech.
+		*/
+		LocationTree locationTree() const;
+		void setLocationTree(const LocationTree &tree);
 		/**
 			@brief Make every component say the text of its tag again.
 			The composed tag is built when the text is drawn, so a change of the
@@ -404,6 +414,7 @@ class QETProject : public QObject
 		IecStructureSettings m_iec_settings;
 		CircuitTable m_circuit_table;
 		IoList m_io_list;
+		LocationTree m_location_tree;
 		bool m_freeze_new_conductors = false;
 		QTimer m_save_backup_timer,
 			   m_autosave_timer;

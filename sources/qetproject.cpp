@@ -1070,6 +1070,12 @@ QDomDocument QETProject::toXml()
 		project_root.appendChild(m_io_list.toXml(xml_doc));
 	}
 
+		//The tree of locations, by the same rule: a project that
+		//named no enclosure writes no such element at all.
+	if (!m_location_tree.isEmpty()) {
+		project_root.appendChild(m_location_tree.toXml(xml_doc));
+	}
+
 	// titleblock templates, if any
 	if (m_titleblocks_collection.templates().count()) {
 		QDomElement titleblocktemplates_elmt = xml_doc.createElement("titleblocktemplates");
@@ -1675,6 +1681,12 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 	m_io_list.fromXml(xml_project.documentElement().firstChildElement(
 				  IoList::tagName()));
 
+		//The tree of locations. Tolerant the same way: no element
+		//means no location, and every component keeps the path it
+		//carries even when the tree that explained it is gone.
+	m_location_tree.fromXml(xml_project.documentElement().firstChildElement(
+					LocationTree::tagName()));
+
 		//Load the project-wide properties
 	readProjectPropertiesXml(xml_project);
 
@@ -2254,6 +2266,32 @@ void QETProject::setIoList(const IoList &list)
 		return;
 	}
 	m_io_list = list;
+	setModified(true);
+}
+
+/**
+	@brief QETProject::locationTree
+	@return every location of this project, empty when none
+*/
+LocationTree QETProject::locationTree() const
+{
+	return m_location_tree;
+}
+
+/**
+	@brief QETProject::setLocationTree
+	@param tree
+
+	Guarded on equality for the reason setIoList is: a manager
+	opened and closed without a change must not leave the project
+	asking to be saved.
+*/
+void QETProject::setLocationTree(const LocationTree &tree)
+{
+	if (m_location_tree == tree) {
+		return;
+	}
+	m_location_tree = tree;
 	setModified(true);
 }
 

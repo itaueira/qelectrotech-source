@@ -47,6 +47,7 @@ namespace QETInformation
 	static QString ELMT_UNITY                        = "unity";
 	static QString ELMT_PLANT                        = "plant";
 	static QString ELMT_LOCATION                     = "location";
+	static QString ELMT_LOCATION_PATH                = "location_path";
 	static QString ELMT_AUX1                         = "auxiliary1";
 	static QString ELMT_DESCRIPTION_AUX1                 = "description_auxiliary1";
 	static QString ELMT_DESIGNATION_AUX1                  = "designation_auxiliary1";
