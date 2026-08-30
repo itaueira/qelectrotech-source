@@ -981,3 +981,84 @@ TEST_CASE("CU-30.3 — une même borne ne se dessine pas deux fois", "[pinout]")
 				QList<PinoutUsageConflict>()).isEmpty());
 	}
 }
+
+TEST_CASE("Le type du bloc — un seul genre de point, ou aucun", "[pinout]")
+{
+	PinoutGenerator generator = standardGenerator();
+
+	SECTION("um cartão de entradas digitais tem um tipo só")
+	{
+		const QList<SymbolDefinition> blocks =
+				generator.generate(inputCard(32));
+		REQUIRE(blocks.size() == 1);
+
+			//As duas bornas de comum de retorno estão lá e não
+			//contam: comum de retorno há em todo cartão, e contá-lo
+			//faria todo cartão ser misto.
+		CHECK(inputCard(32).pins.size() == 34);
+		CHECK(PinoutGenerator::ioRoleOf(inputCard(32).pins)
+				== CatalogPinRole::Input);
+	}
+
+	SECTION("entradas e saídas no mesmo bloco não têm tipo nenhum")
+	{
+		CatalogPart mixed = inputCard(4);
+		CatalogPin relay(QStringLiteral("Q0"),
+				CatalogPinRole::OutputRelay);
+		relay.order_index = 90;
+		mixed.pins << relay;
+
+			//Meia verdade sobre um bloco que tem os dois é pior que
+			//o bloco não dizer nada de si.
+		CHECK(PinoutGenerator::ioRoleOf(mixed.pins)
+				== CatalogPinRole::Unknown);
+	}
+
+	SECTION("bloco sem ponto de campo nenhum não tem tipo")
+	{
+		CatalogPart supply;
+		supply.id = 9;
+		supply.code = QStringLiteral("PS-24");
+		supply.pins << CatalogPin(QStringLiteral("L+"),
+				CatalogPinRole::SupplyCommon)
+				<< CatalogPin(QStringLiteral("M"),
+				CatalogPinRole::ReturnCommon);
+
+		CHECK(PinoutGenerator::ioRoleOf(supply.pins)
+				== CatalogPinRole::Unknown);
+		CHECK(PinoutGenerator::ioRoleOf(QList<CatalogPin>())
+				== CatalogPinRole::Unknown);
+	}
+
+	SECTION("o cartão analógico responde pelo ponto, não pelo comum")
+	{
+		CHECK(PinoutGenerator::ioRoleOf(analogCard(4).pins)
+				== CatalogPinRole::InputAnalog);
+	}
+
+	SECTION("cada bloco parcial responde por si, e não pela peça inteira")
+	{
+		CatalogPart mixed = inputCard(4);
+		for (int index = 0 ; index < 4 ; ++index)
+		{
+			CatalogPin relay(QStringLiteral("Q%1").arg(index),
+					CatalogPinRole::OutputRelay);
+			relay.order_index = 90 + index;
+			mixed.pins << relay;
+		}
+
+			//A peça inteira é mista; recortada em só as entradas,
+			//o bloco volta a ter um tipo. É por bloco que a
+			//pergunta se faz, porque é o bloco que vira componente.
+		CHECK(PinoutGenerator::ioRoleOf(mixed.pins)
+				== CatalogPinRole::Unknown);
+
+		const QList<CatalogPin> only_inputs = generator.selectedPins(
+				mixed, QStringList()
+				<< QStringLiteral("I0")
+				<< QStringLiteral("I1"));
+		REQUIRE(only_inputs.size() == 2);
+		CHECK(PinoutGenerator::ioRoleOf(only_inputs)
+				== CatalogPinRole::Input);
+	}
+}

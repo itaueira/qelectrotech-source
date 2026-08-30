@@ -363,3 +363,27 @@ QString PinoutGenerator::blockName(const CatalogPart &part,
 	return QStringLiteral("%1 %2/%3").arg(part.code)
 			.arg(index + 1).arg(total);
 }
+
+CatalogPinRole PinoutGenerator::ioRoleOf(const QList<CatalogPin> &pins)
+{
+	CatalogPinRole found = CatalogPinRole::Unknown;
+	for (const CatalogPin &pin : pins)
+	{
+			//Everything that is not a point of the field is passed
+			//over rather than counted as a second kind: the supply
+			//and the common of a card are on every card there is,
+			//and counting them would make every card mixed.
+		if (!CatalogPin::isIoRole(pin.role)) {
+			continue;
+		}
+		if (found == CatalogPinRole::Unknown)
+		{
+			found = pin.role;
+			continue;
+		}
+		if (found != pin.role) {
+			return CatalogPinRole::Unknown;
+		}
+	}
+	return found;
+}

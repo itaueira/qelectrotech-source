@@ -19,6 +19,7 @@
 
 #include "ElementsCollection/sheetsymbolextractor.h"
 #include "ElementsCollection/ui/createsymboldialog.h"
+#include "ElementsCollection/ui/pinoutgeneratordialog.h"
 #include "ElementsCollection/ui/symbolgroupdialog.h"
 
 #include "autoNum/ui/iecstructuredialog.h"
@@ -604,6 +605,19 @@ void QETDiagramEditor::setUpActions()
 	m_create_symbol->setStatusTip(m_create_symbol->toolTip());
 	connect(m_create_symbol, &QAction::triggered,
 		this, &QETDiagramEditor::createSymbolFromSelection);
+
+		//The other way round: the drawing of a card is already written down
+		//in the catalogue, pin by pin, and drawing it again by hand is how a
+		//card of thirty two points ends up with thirty one on the folio.
+	m_generate_pinout = new QAction(QET::Icons::Terminal,
+					tr("Générer des blocs de brochage…"),
+					this);
+	m_generate_pinout->setToolTip(tr(
+				   "Dessine le symbole d'une pièce à partir du brochage "
+				   "que le catalogue connaît, en un bloc ou en plusieurs."));
+	m_generate_pinout->setStatusTip(m_generate_pinout->toolTip());
+	connect(m_generate_pinout, &QAction::triggered,
+		this, &QETDiagramEditor::generatePinoutBlocks);
 
 	m_save_group = new QAction(tr("Enregistrer un groupement…"),
 				   this);
@@ -1369,6 +1383,33 @@ void QETDiagramEditor::createSymbolFromSelection()
 }
 
 /**
+	@brief Draw the symbol of a part from the pinout the catalogue holds.
+
+	No selection is needed and no sheet either: what is drawn comes from the
+	catalogue. The open project is passed all the same, because a terminal
+	already drawn somewhere in it is a terminal this block may not draw a
+	second time, and that is checked before the block exists.
+*/
+void QETDiagramEditor::generatePinoutBlocks()
+{
+	PinoutGeneratorDialog dialog(QETApp::catalog(), currentProject(), this);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+		//The collection is reloaded so the new blocks are in the panel at
+		//once: making a symbol and then not finding it is the same as not
+		//having made it.
+	if (m_element_collection_widget) {
+		m_element_collection_widget->reload();
+	}
+	statusBar()->showMessage(
+				tr("%n bloc(s) enregistré(s) dans la bibliothèque.",
+				   "", dialog.savedPaths().size()),
+				8000);
+}
+
+/**
 	@brief QETDiagramEditor::saveSelectionAsGroup
 	File the selected piece of schematic in the library, catalog parts and all.
 */
@@ -1723,6 +1764,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addActions(m_depth_action_group->actions());
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_create_symbol);
+	menu_edition -> addAction(m_generate_pinout);
 	menu_edition -> addAction(m_explode_element);
 	menu_edition -> addAction(m_save_group);
 	menu_edition -> addAction(m_insert_group);
@@ -2640,6 +2682,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_renumber_components         -> setEnabled(editable_project);
 	m_iec_structure               -> setEnabled(editable_project);
 	m_create_symbol               -> setEnabled(editable_project);
+	m_generate_pinout             -> setEnabled(editable_project);
 	m_explode_element             -> setEnabled(editable_project);
 	m_show_conductor_text         -> setEnabled(editable_project);
 	m_hide_conductor_text         -> setEnabled(editable_project);

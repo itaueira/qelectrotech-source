@@ -112,6 +112,23 @@ class PinoutGenerator
 					     int index, int total) const;
 
 		/**
+			@brief Which single kind of field point @a pins are.
+
+			A card of thirty two digital inputs is a card whose
+			points are all of one kind, and that kind is what the
+			component inserted from the block will carry as its
+			type. A block that has inputs and relay outputs both
+			has no one type, and answering Unknown is what keeps a
+			wrong word out of the list of points: half a truth
+			about such a block is worse than it saying nothing
+			about itself.
+
+			@return Unknown when @a pins hold more than one kind of
+			field point, or none at all.
+		*/
+		static CatalogPinRole ioRoleOf(const QList<CatalogPin> &pins);
+
+		/**
 			@brief What a block is called: the code of the part, and
 			which of how many blocks it is when there is more than
 			one.

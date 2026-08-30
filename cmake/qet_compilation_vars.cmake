@@ -532,6 +532,8 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/ElementsCollection/ui/createsymboldialog.cpp
   ${QET_DIR}/sources/ElementsCollection/ui/createsymboldialog.h
+  ${QET_DIR}/sources/ElementsCollection/ui/pinoutgeneratordialog.cpp
+  ${QET_DIR}/sources/ElementsCollection/ui/pinoutgeneratordialog.h
   ${QET_DIR}/sources/ElementsCollection/ui/renamedialog.cpp
   ${QET_DIR}/sources/ElementsCollection/ui/renamedialog.h
   ${QET_DIR}/sources/ElementsCollection/ui/symbolgroupdialog.cpp
