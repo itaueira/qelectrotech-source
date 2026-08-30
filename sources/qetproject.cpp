@@ -1057,6 +1057,12 @@ QDomDocument QETProject::toXml()
 		project_root.appendChild(m_iec_settings.toXml(xml_doc));
 	}
 
+		//The table of circuits, written only when it holds a row - the same
+		//rule as the block above, for the same reason.
+	if (!m_circuit_table.isEmpty()) {
+		project_root.appendChild(m_circuit_table.toXml(xml_doc));
+	}
+
 	// titleblock templates, if any
 	if (m_titleblocks_collection.templates().count()) {
 		QDomElement titleblocktemplates_elmt = xml_doc.createElement("titleblocktemplates");
@@ -1650,6 +1656,12 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 	m_iec_settings.fromXml(xml_project.documentElement().firstChildElement(
 				       IecStructureSettings::xmlTagName()));
 
+		//The table of circuits. Absent from every project that never used the
+		//generator, and absent means an empty table - which is what the
+		//dialogue opens on the first time.
+	m_circuit_table.fromXml(xml_project.documentElement().firstChildElement(
+					CircuitTable::tagName()));
+
 		//Load the project-wide properties
 	readProjectPropertiesXml(xml_project);
 
@@ -2177,6 +2189,33 @@ void QETProject::setIecSettings(const IecStructureSettings &settings)
 	m_iec_settings = settings;
 	setModified(true);
 	refreshElementLabels();
+}
+
+/**
+	@brief QETProject::circuitTable
+	@return the table of circuits this project was generated from
+*/
+CircuitTable QETProject::circuitTable() const
+{
+	return m_circuit_table;
+}
+
+/**
+	@brief QETProject::setCircuitTable
+	@param table
+
+	Guarded on equality on purpose: the dialogue hands its table back whether
+	or not anything was typed into it, and a project marked modified by a
+	window that changed nothing is a project that asks to be saved for no
+	reason.
+*/
+void QETProject::setCircuitTable(const CircuitTable &table)
+{
+	if (m_circuit_table == table) {
+		return;
+	}
+	m_circuit_table = table;
+	setModified(true);
 }
 
 /**

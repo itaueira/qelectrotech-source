@@ -9,8 +9,8 @@
 #include "../qetdiagrameditor.h"
 #include "../qetinformation.h"
 #include "../qetproject.h"
-#include "../diagramcommands.h"
 #include "../diagramcontent.h"
+#include "../undocommand/adddiagramcontentcommand.h"
 #include "../macro/macrosequence.h"
 #include "../macro/macrouuid.h"
 #include "../macro/macrosubstitution.h"
@@ -354,7 +354,12 @@ bool DiagramEventAddMacro::addMacro(QPointF final_pos)
 	m_diagram->fromXml(cloned_node, target_pos, false, &pasted_content);
 	m_diagram->refreshContents();
 
-	m_diagram->undoStack().push(new PasteDiagramCommand(m_diagram, pasted_content));
+		//Not PasteDiagramCommand: its first redo reissues every uuid and,
+		//by default, erases the label, the comment and the conductor text -
+		//which is exactly what MacroSubstitution has just written into them.
+	m_diagram->undoStack().push(new AddDiagramContentCommand(
+		m_diagram, pasted_content,
+		tr("insérer un macro", "undo caption")));
 	return true;
 }
 

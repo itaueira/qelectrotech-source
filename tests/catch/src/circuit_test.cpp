@@ -1374,3 +1374,116 @@ TEST_CASE("CU-08.1 — os circuitos gerados caem em coluna de folio, e a folio t
 		CHECK(CircuitLayout::place(QList<int>() << 1, no_width).isEmpty());
 	}
 }
+
+TEST_CASE("CU-08.5 — o que cada linha desenhou volta do arquivo", "[circuit]")
+{
+	CircuitTable table;
+	table.setParameters(kDirect, directStarter());
+
+	const int first = table.appendRow(kDirect);
+	REQUIRE(table.setValue(first, QStringLiteral("TAG"), QStringLiteral("-M1")));
+	const int second = table.appendRow(kDirect);
+	REQUIRE(table.setValue(second, QStringLiteral("TAG"), QStringLiteral("-M2")));
+
+	QStringList drawn;
+	drawn << QStringLiteral("{11111111-1111-1111-1111-111111111111}")
+	      << QStringLiteral("{22222222-2222-2222-2222-222222222222}");
+
+	SECTION("linha nunca gerada não guarda nada")
+	{
+		CHECK_FALSE(table.wasGenerated(first));
+		CHECK(table.issued(first).isEmpty());
+		CHECK(table.position(first) == QPointF());
+	}
+
+	SECTION("os uuid e a posição sobrevivem a salvar e reabrir")
+	{
+		REQUIRE(table.setGenerated(first, drawn, QPointF(140.0, 260.0)));
+		REQUIRE(table.wasGenerated(first));
+
+		QDomDocument document;
+		document.appendChild(table.toXml(document));
+
+		CircuitTable read;
+		read.setParameters(kDirect, directStarter());
+		REQUIRE(read.fromXml(document.documentElement()));
+		REQUIRE(read.rowCount() == 2);
+
+		CHECK(read.issued(0) == drawn);
+		CHECK(read.position(0) == QPointF(140.0, 260.0));
+
+			//E a segunda linha, que ninguém desenhou, continua sem nada: se
+			//ela voltasse com uuid, regerar tudo mandaria apagar um circuito
+			//que não existe.
+		CHECK_FALSE(read.wasGenerated(1));
+		CHECK(read.issued(1).isEmpty());
+	}
+
+	SECTION("apagar o circuito na mão devolve a linha ao estado de nunca gerada")
+	{
+		REQUIRE(table.setGenerated(first, drawn, QPointF(140.0, 260.0)));
+		REQUIRE(table.clearGenerated(first));
+		CHECK_FALSE(table.wasGenerated(first));
+		CHECK(table.issued(first).isEmpty());
+		CHECK(table.position(first) == QPointF());
+	}
+
+	SECTION("linha que não existe recusa, e não inventa linha nenhuma")
+	{
+		CHECK_FALSE(table.setGenerated(-1, drawn, QPointF()));
+		CHECK_FALSE(table.setGenerated(9, drawn, QPointF()));
+		CHECK_FALSE(table.clearGenerated(9));
+		CHECK(table.rowCount() == 2);
+	}
+}
+
+TEST_CASE("CircuitTable — o que faz uma tabela ser outra tabela", "[circuit]")
+{
+		//A comparação existe para o projeto se marcar como alterado só quando
+		//alguma coisa mudou: a janela devolve a tabela toda vez que fecha, e
+		//uma janela aberta e fechada sem digitar nada não pode pedir que se
+		//salve o projeto.
+	CircuitTable table;
+	table.setParameters(kDirect, directStarter());
+	const int row = table.appendRow(kDirect);
+	REQUIRE(table.setValue(row, QStringLiteral("TAG"), QStringLiteral("-M1")));
+
+	CircuitTable copy = table;
+
+	SECTION("cópia intocada é a mesma tabela")
+	{
+		CHECK(copy == table);
+		CHECK_FALSE(copy != table);
+	}
+
+	SECTION("um valor trocado torna a tabela outra")
+	{
+		REQUIRE(copy.setValue(row, QStringLiteral("TAG"), QStringLiteral("-M2")));
+		CHECK(copy != table);
+	}
+
+	SECTION("uma linha a mais torna a tabela outra")
+	{
+		copy.appendRow(kDirect);
+		CHECK(copy != table);
+	}
+
+	SECTION("a mesma linha desenhada em outro lugar também")
+	{
+			//O caso que fez a comparação existir: regerar não mexe em valor
+			//nenhum, e mesmo assim o projeto tem de saber que mudou.
+		QStringList drawn;
+		drawn << QStringLiteral("{33333333-3333-3333-3333-333333333333}");
+		REQUIRE(copy.setGenerated(row, drawn, QPointF(20.0, 30.0)));
+		CHECK(copy != table);
+	}
+
+	SECTION("o que os macros declaram não conta, porque não é gravado")
+	{
+			//O cache vem do disco a cada abertura da tabela e nunca vai para o
+			//arquivo; compará-lo acusaria alteração sempre que alguém editasse
+			//um .qetmak, que não é alteração da tabela.
+		copy.setParameters(kReversing, reversingStarter());
+		CHECK(copy == table);
+	}
+}

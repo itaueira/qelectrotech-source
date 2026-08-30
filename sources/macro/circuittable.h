@@ -22,6 +22,7 @@
 
 #include <QHash>
 #include <QList>
+#include <QPointF>
 #include <QString>
 #include <QStringList>
 
@@ -50,6 +51,17 @@ class CircuitRow
 
 		static QString tagName();
 		static QString valueTagName();
+		static QString uuidTagName();
+
+			/**
+				@brief Whether two rows say exactly the same thing.
+
+				Compares the five members and nothing else, the drawing among
+				them: a row that was regenerated somewhere else on the folio is
+				not the row it was, and the project has to know it changed.
+			*/
+		bool operator==(const CircuitRow &other) const;
+		bool operator!=(const CircuitRow &other) const;
 
 	public:
 			/// stable between sessions: what a regenerated row is found by
@@ -59,6 +71,12 @@ class CircuitRow
 			/// parameter name to value, including values a change of macro
 			/// has made inert - see CircuitTable::isInert()
 		QHash<QString, QString> values;
+			/// the uuids the last generation gave this row's circuit; empty
+			/// until it has been drawn once, and what regeneration finds it by
+		QStringList issued;
+			/// where that circuit landed, measured the way Diagram::fromXml
+			/// measures it; only meaningful when issued is not empty
+		QPointF position;
 };
 
 /**
@@ -227,6 +245,15 @@ class CircuitTable
 			       const QString &column,
 			       QString *error = nullptr);
 
+			//what the last generation drew, and where
+		QStringList issued(int index) const;
+		QPointF position(int index) const;
+		bool wasGenerated(int index) const;
+		bool setGenerated(int index,
+				  const QStringList &issued,
+				  const QPointF &position);
+		bool clearGenerated(int index);
+
 			//what the generator has to refuse
 		QList<Problem> problems() const;
 
@@ -236,6 +263,17 @@ class CircuitTable
 
 		static QString tagName();
 		static QString newId();
+
+			/**
+				@brief Whether two tables would be written the same way.
+
+				The rows and only the rows, because toXml() writes the rows and
+				only the rows: what a macro declares is read back from disk and
+				not from the file, so two tables that differ by it are the same
+				table as far as the project is concerned.
+			*/
+		bool operator==(const CircuitTable &other) const;
+		bool operator!=(const CircuitTable &other) const;
 
 	private:
 		QString columnNamed(const QString &text,

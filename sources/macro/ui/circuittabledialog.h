@@ -114,6 +114,16 @@ class CircuitTableDialog : public QDialog
 		/// @return what the last generation did, empty when none ran
 		CircuitGenerator::Report report() const;
 
+		/**
+			@param result
+
+			Overridden so that every way out of the window keeps the table:
+			the Close button, Esc, the cross of the title bar and the
+			accept() the generation ends on all come through here. Close is
+			not Cancel, and twenty rows typed into a table are project data.
+		*/
+		void done(int result) override;
+
 	private slots:
 		void addRow();
 		void removeRows();
@@ -127,12 +137,17 @@ class CircuitTableDialog : public QDialog
 		void fillDown();
 		void fillSeries();
 		void generate();
+		void regenerate();
 
 	private:
 		void buildWidgets();
 		void reload();
 		void updateButtons();
 		void say(const QString &message, bool problem = false);
+			/// writes back into the table what the last report learnt
+		void recordReport();
+			/// hands the table to the project, which is where it belongs
+		void storeTable();
 
 			/// @return the parameter name the view column carries
 		QString columnAt(int view_column) const;
@@ -158,6 +173,7 @@ class CircuitTableDialog : public QDialog
 		QPushButton *m_fill_down = nullptr;
 		QPushButton *m_fill_series = nullptr;
 		QPushButton *m_generate = nullptr;
+		QPushButton *m_regenerate = nullptr;
 		QSpinBox *m_per_sheet = nullptr;
 		QLineEdit *m_sheet_title = nullptr;
 		QLabel *m_status = nullptr;

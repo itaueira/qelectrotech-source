@@ -256,7 +256,15 @@ CircuitTableDialog::CircuitTableDialog(QETProject *project, QWidget *parent) :
 {
 	setWindowTitle(tr("Générer des circuits à partir d'une table"));
 	buildWidgets();
-	reload();
+
+		//Opened on the table this project was drawn from, when it has one:
+		//setTable() is also what reloads from disk what each macro declares,
+		//so the columns come back alive rather than as inert text.
+	if (m_project) {
+		setTable(m_project->circuitTable());
+	} else {
+		reload();
+	}
 }
 
 /**
@@ -412,8 +420,15 @@ void CircuitTableDialog::buildWidgets()
 	m_generate = new QPushButton(tr("Générer"), this);
 	connect(m_generate, &QPushButton::clicked, this, &CircuitTableDialog::generate);
 
+	m_regenerate = new QPushButton(tr("Régénérer"), this);
+	m_regenerate->setToolTip(tr("Efface et redessine les circuits choisis, "
+				    "sans toucher aux autres"));
+	connect(m_regenerate, &QPushButton::clicked,
+		this, &CircuitTableDialog::regenerate);
+
 	QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
 	buttons->addButton(m_generate, QDialogButtonBox::ActionRole);
+	buttons->addButton(m_regenerate, QDialogButtonBox::ActionRole);
 	connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
 	QVBoxLayout *root = new QVBoxLayout(this);
@@ -527,6 +542,16 @@ void CircuitTableDialog::updateButtons()
 	m_generate->setEnabled(has_rows
 			       && m_project != nullptr
 			       && !m_project->isReadOnly());
+
+		//Only when something was drawn: regenerating redoes a drawing that
+		//exists, and drawing it the first time is the button above.
+	bool any_generated = false;
+	for (int i = 0 ; i < m_table.rowCount() && !any_generated ; ++ i) {
+		any_generated = m_table.wasGenerated(i);
+	}
+	m_regenerate->setEnabled(any_generated
+				 && m_project != nullptr
+				 && !m_project->isReadOnly());
 }
 
 /**
@@ -1141,6 +1166,7 @@ void CircuitTableDialog::generate()
 
 	CircuitGenerator generator(m_project);
 	m_report = generator.generate(m_table, options);
+	recordReport();
 
 	if (m_report.generated == 0)
 	{
@@ -1151,4 +1177,153 @@ void CircuitTableDialog::generate()
 
 	QMessageBox::information(this, tr("Générer les circuits"), m_report.text());
 	accept();
+}
+
+/**
+	@brief CircuitTableDialog::regenerate
+
+	Redraws circuits that already exist, where they already are. What it is
+	for is the correction that arrives after the folios were drawn: the
+	eleventh feeder says 16 A where it should say 10, the line is fixed in
+	the table, and only that line is redrawn - the other nineteen keep
+	their labels, their wire numbers and their position (CU-08.5).
+
+	The rows are the selected ones, and no selection means every row that
+	was drawn. Confirmed either way, because what is on those folios now is
+	thrown away: a person who moved a symbol or corrected a label by hand
+	loses that work, and nothing lets the generator tell such an edit from
+	the drawing it made itself.
+*/
+void CircuitTableDialog::regenerate()
+{
+	if (!m_project)
+	{
+		say(tr("Aucun projet ouvert."), true);
+		return;
+	}
+
+	const QList<int> selected = selectedRowsOf(m_view);
+
+		//A row that was never drawn is left to the generation, whether it was
+		//selected or not: there is nothing of it on the folios to replace.
+	QList<int> rows;
+	if (selected.isEmpty())
+	{
+		for (int i = 0 ; i < m_table.rowCount() ; ++ i) {
+			if (m_table.wasGenerated(i)) {
+				rows << i;
+			}
+		}
+	}
+	else
+	{
+		for (const int row : selected) {
+			if (m_table.wasGenerated(row)) {
+				rows << row;
+			}
+		}
+	}
+
+	if (rows.isEmpty())
+	{
+		say(tr("Aucune des lignes choisies n'a déjà été générée ; "
+		       "utilisez « Générer »."), true);
+		return;
+	}
+
+	const QMessageBox::StandardButton answer = QMessageBox::question(
+				this,
+				tr("Régénérer les circuits"),
+				tr("%1 circuit(s) vont être effacés puis redessinés. "
+				   "Les retouches faites à la main sur ces circuits "
+				   "seront perdues.\n\nContinuer ?")
+				.arg(rows.count()),
+				QMessageBox::Yes | QMessageBox::No,
+				QMessageBox::No);
+	if (answer != QMessageBox::Yes) {
+		return;
+	}
+
+	CircuitGenerator generator(m_project);
+	m_report = generator.regenerate(m_table, rows);
+	recordReport();
+
+		//Composed here rather than taken from Report::text(), which counts the
+		//folios it made: a regeneration makes none, it draws again on folios
+		//that were already there.
+	QStringList lines;
+	lines << (m_report.generated > 0
+		  ? tr("%1 circuit(s) redessiné(s).").arg(m_report.generated)
+		  : tr("Aucun circuit n'a été redessiné."));
+	lines << m_report.problems;
+	const QString message = lines.join(QLatin1Char('\n'));
+
+	if (m_report.generated == 0) {
+		QMessageBox::warning(this, tr("Régénérer les circuits"), message);
+	} else {
+		QMessageBox::information(this, tr("Régénérer les circuits"), message);
+	}
+	say(message, m_report.generated == 0 || !m_report.problems.isEmpty());
+}
+
+/**
+	@brief CircuitTableDialog::recordReport
+
+	Writes back into the table what the drawing just taught it: which items
+	each row put on the folio, and where they landed. Without this a row can
+	be drawn but never redrawn, because the list of uuids the drawing issued
+	is the only handle a row has on its own circuit.
+
+	Deliberately does not reload the view: the selection is what a second
+	press of the same button acts on, and a reload would throw it away
+	between the two presses.
+*/
+void CircuitTableDialog::recordReport()
+{
+	if (m_report.issued.isEmpty()) {
+		return;
+	}
+
+	const QStringList ids = m_report.issued.keys();
+	for (const QString &id : ids)
+	{
+		const int row = m_table.indexOfId(id);
+		if (row < 0) {
+			continue;
+		}
+		m_table.setGenerated(row, m_report.issued.value(id),
+				     m_report.positions.value(id));
+	}
+
+	storeTable();
+	updateButtons();
+}
+
+/**
+	@brief CircuitTableDialog::storeTable
+
+	Hands the table to the project, which is where it belongs: the twenty
+	answers that drew twenty feeders are part of what this switchboard is,
+	and regenerating one of them next month needs them to still be there.
+
+	QETProject::setCircuitTable is guarded on equality, so a window opened
+	and closed without a keystroke leaves the project unmodified.
+*/
+void CircuitTableDialog::storeTable()
+{
+	if (!m_project || m_project->isReadOnly()) {
+		return;
+	}
+
+	m_project->setCircuitTable(m_table);
+}
+
+/**
+	@brief CircuitTableDialog::done
+	@param result
+*/
+void CircuitTableDialog::done(int result)
+{
+	storeTable();
+	QDialog::done(result);
 }

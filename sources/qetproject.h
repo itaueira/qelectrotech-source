@@ -25,6 +25,7 @@
 #include "borderproperties.h"
 #include "conductorproperties.h"
 #include "dataBase/projectdatabase.h"
+#include "macro/circuittable.h"
 #include "properties/reportproperties.h"
 #include "properties/xrefproperties.h"
 #include "titleblock/templatescollection.h"
@@ -245,6 +246,19 @@ class QETProject : public QObject
 		*/
 		IecStructureSettings iecSettings() const;
 		void setIecSettings(const IecStructureSettings &settings);
+
+		/**
+			@brief The table of circuits the generator draws this project from.
+
+			Kept with the project and not with the application, because the
+			table is what says how this switchboard is made: regenerating one
+			feeder next month needs the twenty answers that drew it to still
+			be there. Written to the .qet only when it holds a row, so a
+			project that never used the generator keeps opening in an
+			unmodified QElectroTech.
+		*/
+		CircuitTable circuitTable() const;
+		void setCircuitTable(const CircuitTable &table);
 		/**
 			@brief Make every component say the text of its tag again.
 			The composed tag is built when the text is drawn, so a change of the
@@ -374,6 +388,7 @@ class QETProject : public QObject
 		XmlElementCollection *m_elements_collection = nullptr;
 		bool m_freeze_new_elements = false;
 		IecStructureSettings m_iec_settings;
+		CircuitTable m_circuit_table;
 		bool m_freeze_new_conductors = false;
 		QTimer m_save_backup_timer,
 			   m_autosave_timer;

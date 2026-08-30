@@ -880,6 +880,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/addelementtextcommand.h
   ${QET_DIR}/sources/undocommand/adddiagramcommand.cpp
   ${QET_DIR}/sources/undocommand/adddiagramcommand.h
+  ${QET_DIR}/sources/undocommand/adddiagramcontentcommand.cpp
+  ${QET_DIR}/sources/undocommand/adddiagramcontentcommand.h
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.cpp
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.h
   ${QET_DIR}/sources/undocommand/renumbercommand.cpp

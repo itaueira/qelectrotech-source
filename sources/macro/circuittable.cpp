@@ -25,6 +25,7 @@
 #include <QDomDocument>
 #include <QDomElement>
 #include <QLatin1Char>
+#include <QPointF>
 #include <QSet>
 #include <QStringList>
 #include <QUuid>
@@ -78,6 +79,22 @@ QDomElement CircuitRow::toXml(QDomDocument &document) const
 		value_element.appendChild(document.createTextNode(values.value(name)));
 		element.appendChild(value_element);
 	}
+
+		//What the last generation drew. Written only when there is something
+		//to write, so that a table never generated leaves no trace in the file
+		//- and so that a row emptied by clearGenerated() stops claiming a
+		//circuit that is no longer on any folio.
+	if (!issued.isEmpty())
+	{
+		element.setAttribute(QStringLiteral("x"), QString::number(position.x()));
+		element.setAttribute(QStringLiteral("y"), QString::number(position.y()));
+		for (const QString &uuid : issued)
+		{
+			QDomElement uuid_element = document.createElement(uuidTagName());
+			uuid_element.appendChild(document.createTextNode(uuid));
+			element.appendChild(uuid_element);
+		}
+	}
 	return element;
 }
 
@@ -105,6 +122,24 @@ bool CircuitRow::fromXml(const QDomElement &element)
 		}
 		values.insert(name, child.text());
 	}
+
+	issued.clear();
+	for (QDomElement child = element.firstChildElement(uuidTagName()) ;
+	     !child.isNull() ;
+	     child = child.nextSiblingElement(uuidTagName()))
+	{
+		const QString uuid = child.text().trimmed();
+		if (!uuid.isEmpty()) {
+			issued << uuid;
+		}
+	}
+
+		//A row written by a version that did not know about the place keeps
+		//the default, and regeneration falls back on measuring the circuit
+		//where it actually is - which is what it does anyway when the person
+		//has moved it.
+	position = QPointF(element.attribute(QStringLiteral("x")).toDouble(),
+			   element.attribute(QStringLiteral("y")).toDouble());
 	return true;
 }
 
@@ -124,6 +159,39 @@ QString CircuitRow::tagName()
 QString CircuitRow::valueTagName()
 {
 	return QStringLiteral("value");
+}
+
+/**
+	@brief CircuitRow::uuidTagName
+	@return "uuid"
+*/
+QString CircuitRow::uuidTagName()
+{
+	return QStringLiteral("uuid");
+}
+
+/**
+	@brief CircuitRow::operator==
+	@param other
+	@return true when the two rows say exactly the same thing
+*/
+bool CircuitRow::operator==(const CircuitRow &other) const
+{
+	return id == other.id
+		&& macro_path == other.macro_path
+		&& values == other.values
+		&& issued == other.issued
+		&& position == other.position;
+}
+
+/**
+	@brief CircuitRow::operator!=
+	@param other
+	@return the opposite of operator==
+*/
+bool CircuitRow::operator!=(const CircuitRow &other) const
+{
+	return !(*this == other);
 }
 
 /**
@@ -585,6 +653,90 @@ bool CircuitTable::setValue(int index,
 	}
 
 	m_rows[index].values.insert(column, value);
+	return true;
+}
+
+/**
+	@brief CircuitTable::issued
+	@param index
+	@return the uuids the last generation gave this row's circuit
+
+	Empty for a row that has never been drawn, and empty is the answer to give:
+	regenerating something that was never generated would draw a second circuit
+	next to nothing.
+*/
+QStringList CircuitTable::issued(int index) const
+{
+	if (index < 0 || index >= m_rows.count()) {
+		return QStringList();
+	}
+	return m_rows.at(index).issued;
+}
+
+/**
+	@brief CircuitTable::position
+	@param index
+	@return where the last generation put this row's circuit
+*/
+QPointF CircuitTable::position(int index) const
+{
+	if (index < 0 || index >= m_rows.count()) {
+		return QPointF();
+	}
+	return m_rows.at(index).position;
+}
+
+/**
+	@brief CircuitTable::wasGenerated
+	@param index
+	@return true when this row has a circuit on a folio somewhere
+*/
+bool CircuitTable::wasGenerated(int index) const
+{
+	if (index < 0 || index >= m_rows.count()) {
+		return false;
+	}
+	return !m_rows.at(index).issued.isEmpty();
+}
+
+/**
+	@brief CircuitTable::setGenerated
+	@param index
+	@param issued the uuids the drawing just made
+	@param position where it landed
+	@return true when the row was written
+
+	Called by whoever pushed the drawing, with what CircuitGenerator::Report
+	carries. The table does not draw and does not ask: it records.
+*/
+bool CircuitTable::setGenerated(int index,
+				const QStringList &issued,
+				const QPointF &position)
+{
+	if (index < 0 || index >= m_rows.count()) {
+		return false;
+	}
+	m_rows[index].issued = issued;
+	m_rows[index].position = position;
+	return true;
+}
+
+/**
+	@brief CircuitTable::clearGenerated
+	@param index
+	@return true when the row was written
+
+	For the row whose circuit is gone - deleted by hand on the folio, or on a
+	folio that was removed. Forgetting is better than pointing at nothing: the
+	next generation draws it again instead of refusing.
+*/
+bool CircuitTable::clearGenerated(int index)
+{
+	if (index < 0 || index >= m_rows.count()) {
+		return false;
+	}
+	m_rows[index].issued.clear();
+	m_rows[index].position = QPointF();
 	return true;
 }
 
@@ -1310,4 +1462,29 @@ QString CircuitTable::tagName()
 QString CircuitTable::newId()
 {
 	return QUuid::createUuid().toString();
+}
+
+/**
+	@brief CircuitTable::operator==
+	@param other
+	@return true when the two tables would be written the same way
+
+	The cache of what each macro declares is deliberately left out: it is
+	filled from the files on disk every time the table is opened, it is
+	never written to the project, and comparing it would report a change
+	whenever a macro was edited - which is not a change of the table.
+*/
+bool CircuitTable::operator==(const CircuitTable &other) const
+{
+	return m_rows == other.m_rows;
+}
+
+/**
+	@brief CircuitTable::operator!=
+	@param other
+	@return the opposite of operator==
+*/
+bool CircuitTable::operator!=(const CircuitTable &other) const
+{
+	return !(*this == other);
 }

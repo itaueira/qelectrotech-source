@@ -22,11 +22,17 @@
 
 #include <QCoreApplication>
 #include <QHash>
+#include <QList>
+#include <QPointF>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 
 class CircuitTable;
 class Diagram;
+class DiagramContent;
+class QDomElement;
+class QGraphicsItem;
 class MacroFile;
 class QETProject;
 
@@ -89,6 +95,14 @@ class CircuitGenerator
 				touching the other nineteen, which is CU-08.5.
 			*/
 		QHash<QString, QStringList> issued;
+			/**
+				Row id to where its circuit actually landed, measured the way
+				Diagram::fromXml measures it and not the way it was asked for:
+				fromXml snaps the move to the grid, so the point handed in and
+				the point arrived at differ by up to one grid step. Recording
+				the arrival is what makes regenerating twice a fixed point.
+			*/
+		QHash<QString, QPointF> positions;
 
 			/// @return the whole thing in one paragraph, ready to be shown
 		QString text() const;
@@ -104,6 +118,17 @@ class CircuitGenerator
 		*/
 	Report generate(const CircuitTable &table, const Options &options);
 
+		/**
+			Draw @a rows again, each where its circuit already is, deleting the
+			old one first. The rows not named are not touched - not their labels,
+			not their wire numbers, not their position. That is CU-08.5.
+			@param table the table, with the uuids of the last generation
+			@param rows indexes into it; empty for every row already drawn
+			@return what was redrawn, and what was refused
+		*/
+	Report regenerate(const CircuitTable &table,
+			  const QList<int> &rows = QList<int>());
+
 	private:
 		/// @return the capacity of the folios this generation will make
 	CircuitLayout::Sheet sheetFromProject() const;
@@ -111,6 +136,15 @@ class CircuitGenerator
 	qreal measure(MacroFile &file, const QHash<QString, QString> &values) const;
 		/// @return a folio added to the project, titled as @a options asks
 	Diagram *addSheet(const Options &options);
+		/// @return the items of @a diagram whose own uuid is in @a uuids
+	static QList<QGraphicsItem *> itemsOf(Diagram *diagram,
+					      const QSet<QString> &uuids);
+		/// @return the corner Diagram::fromXml would have measured, for @a items
+	static QPointF anchorOf(const QList<QGraphicsItem *> &items);
+		/// @return the same corner, for what fromXml has just added
+	static QPointF anchorOf(const DiagramContent &content);
+		/// @return the categories of @a node MacroUuid cannot give an identity to
+	static QStringList unrenewable(const QDomElement &node);
 
 	QETProject *m_project = nullptr;
 };
