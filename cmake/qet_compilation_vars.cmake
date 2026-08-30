@@ -403,10 +403,14 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/plc/iopoint.h
   ${QET_DIR}/sources/plc/iosheet.cpp
   ${QET_DIR}/sources/plc/iosheet.h
+  ${QET_DIR}/sources/plc/iotree.cpp
+  ${QET_DIR}/sources/plc/iotree.h
   ${QET_DIR}/sources/plc/ui/ioassigndialog.cpp
   ${QET_DIR}/sources/plc/ui/ioassigndialog.h
   ${QET_DIR}/sources/plc/ui/ioimportdialog.cpp
   ${QET_DIR}/sources/plc/ui/ioimportdialog.h
+  ${QET_DIR}/sources/plc/ui/iolistdialog.cpp
+  ${QET_DIR}/sources/plc/ui/iolistdialog.h
 
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
   ${QET_DIR}/sources/dataBase/projectdatabase.h
@@ -917,6 +921,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/conductortextcommand.h
   ${QET_DIR}/sources/undocommand/deleteqgraphicsitemcommand.cpp
   ${QET_DIR}/sources/undocommand/deleteqgraphicsitemcommand.h
+  ${QET_DIR}/sources/undocommand/editiopointcommand.cpp
+  ${QET_DIR}/sources/undocommand/editiopointcommand.h
   ${QET_DIR}/sources/undocommand/explodeelementcommand.cpp
   ${QET_DIR}/sources/undocommand/explodeelementcommand.h
   ${QET_DIR}/sources/undocommand/importiopointscommand.cpp

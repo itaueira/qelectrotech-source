@@ -53,6 +53,7 @@
 #include "macro/ui/circuittabledialog.h"
 #include "plc/ui/ioassigndialog.h"
 #include "plc/ui/ioimportdialog.h"
+#include "plc/ui/iolistdialog.h"
 #include "print/projectprintwindow.h"
 #include "project/projectpropertieshandler.h"
 #include "projectview.h"
@@ -660,6 +661,17 @@ void QETDiagramEditor::setUpActions()
 	m_assign_io_points->setStatusTip(m_assign_io_points->toolTip());
 	connect(m_assign_io_points, &QAction::triggered,
 		this, &QETDiagramEditor::assignIoPoints);
+
+		//Reading what was placed is the step after placing it, so it
+		//closes the run of I/O actions.
+	m_io_list = new QAction(tr("Liste des E/S…"),
+									this);
+	m_io_list->setToolTip(tr(
+									"Montre les entrées / sorties du projet, les automates et "
+									"leurs cartes au-dessus, et laisse les corriger sur place."));
+	m_io_list->setStatusTip(m_io_list->toolTip());
+	connect(m_io_list, &QAction::triggered,
+		this, &QETDiagramEditor::showIoList);
 
 	m_save_group = new QAction(tr("Enregistrer un groupement…"),
 				   this);
@@ -1523,6 +1535,39 @@ void QETDiagramEditor::assignIoPoints()
 }
 
 /**
+	@brief QETDiagramEditor::showIoList
+	Read the entries and exits of the project, the automates and their
+	cards above them, and correct them on the spot.
+*/
+void QETDiagramEditor::showIoList()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+		//The window is not modal, and that is the whole point of it: the
+		//jump it offers opens a folio behind it, and a list that has to
+		//be closed to see what it points at is a report, not a list. One
+		//window per project is enough, so an already open one is brought
+		//back rather than doubled.
+	const QList<IoListDialog *> opened = findChildren<IoListDialog *>();
+	for (IoListDialog *opened_dialog : opened) {
+		if (opened_dialog->project() != project) {
+			continue;
+		}
+		opened_dialog->show();
+		opened_dialog->raise();
+		opened_dialog->activateWindow();
+		return;
+	}
+
+	IoListDialog *dialog = new IoListDialog(project, this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+/**
 	@brief QETDiagramEditor::saveSelectionAsGroup
 	File the selected piece of schematic in the library, catalog parts and all.
 */
@@ -1881,6 +1926,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addAction(m_generate_circuits);
 	menu_edition -> addAction(m_import_io_sheet);
 	menu_edition -> addAction(m_assign_io_points);
+	menu_edition -> addAction(m_io_list);
 	menu_edition -> addAction(m_explode_element);
 	menu_edition -> addAction(m_save_group);
 	menu_edition -> addAction(m_insert_group);
@@ -2802,6 +2848,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_generate_circuits           -> setEnabled(editable_project);
 	m_import_io_sheet             -> setEnabled(editable_project);
 	m_assign_io_points            -> setEnabled(editable_project);
+	m_io_list                     -> setEnabled(editable_project);
 	m_explode_element             -> setEnabled(editable_project);
 	m_show_conductor_text         -> setEnabled(editable_project);
 	m_hide_conductor_text         -> setEnabled(editable_project);

@@ -109,6 +109,7 @@ add_executable(
     src/iocircuit_test.cpp
     src/io_test.cpp
     src/iosheet_test.cpp
+    src/iotree_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -180,6 +181,8 @@ add_executable(
     ${QET_DIR}/sources/plc/iopoint.h
     ${QET_DIR}/sources/plc/iosheet.cpp
     ${QET_DIR}/sources/plc/iosheet.h
+    ${QET_DIR}/sources/plc/iotree.cpp
+    ${QET_DIR}/sources/plc/iotree.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
