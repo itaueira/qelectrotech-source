@@ -49,8 +49,7 @@ enum class MacroParameterType
 	%{NAME}: %{...} is already QElectroTech's own variable syntax for title
 	blocks and dynamic texts, and QETInformation::stripUnresolvedVariables()
 	deletes any %{...} left standing. A macro parameter written that way
-	would not be refused, it would be silently erased. See
-	todo/tarefas/T05-macro-parametrizada-modelo.md.
+	would not be refused, it would be silently erased.
 
 	Part behaves as Text here: this class stores the code and validates its
 	shape, and resolving the code against the catalog belongs to the dialog

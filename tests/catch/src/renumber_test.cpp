@@ -337,7 +337,7 @@ TEST_CASE("NumberingFormat — le motif, le pas, le remplissage et ce qui est re
 	CHECK_FALSE(error.isEmpty());
 
 	// And it survives being written down and read back.
-	NumberingFormat original(QStringLiteral("ACME"), QStringLiteral("%{root}%{folio}%{n}"));
+	NumberingFormat original(QStringLiteral("Original"), QStringLiteral("%{root}%{folio}%{n}"));
 	original.start = 5;
 	original.step = 5;
 	original.digits = 2;

@@ -107,7 +107,7 @@ TEST_CASE("CU-12.1 — champ nouveau sans programmeur")
 
 	// Add the field on the mother class, with no code change and no migration.
 	CatalogProperty internal_code(QString(),
-				      QStringLiteral("Código interno ACME"),
+				      QStringLiteral("Código interno da peça"),
 				      CatalogPropertyType::Text);
 	internal_code.class_id = component_id;
 	const int property_id = catalog.addProperty(internal_code, &error);
@@ -115,9 +115,9 @@ TEST_CASE("CU-12.1 — champ nouveau sans programmeur")
 	REQUIRE(error.isEmpty());
 
 	// The key is derived from the name, accents folded.
-	CHECK(CatalogProperty::keyFromName(QStringLiteral("Código interno ACME"))
-	      == QStringLiteral("codigo_interno_acme"));
-	const QString key = QStringLiteral("codigo_interno_acme");
+	CHECK(CatalogProperty::keyFromName(QStringLiteral("Código interno da peça"))
+	      == QStringLiteral("codigo_interno_da_peca"));
+	const QString key = QStringLiteral("codigo_interno_da_peca");
 
 	// It shows up on every subclass...
 	CHECK(hasProperty(catalog.effectiveProperties(component_id), key));
@@ -438,8 +438,8 @@ TEST_CASE("CU-12.9 — le modèle tient une charge initiale hétérogène")
 	}
 
 	// Fifty parts spread over the component subclasses, each with pins and
-	// values. The real load uses real ACME parts and is run outside the
-	// repository, because manufacturer references may not be committed here.
+	// values. The same load against a real part library runs outside this
+	// repository, on a private bench, over this same code path.
 	const QList<int> target_classes = { classId(catalog, "contactor"),
 					    classId(catalog, "breaker"),
 					    classId(catalog, "motor"),

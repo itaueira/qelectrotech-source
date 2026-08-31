@@ -286,7 +286,7 @@ TEST_CASE("o interruptor da estrutura viaja no .qet", "[iec]")
 
 TEST_CASE("compor duas vezes dá o mesmo que compor uma", "[iec]")
 {
-		//Isto não é curiosidade matemática: em 21/08/2026 o Renan encontrou a
+		//Isto não é curiosidade matemática: em 21/08/2026 encontrou-se a
 		//composição sendo GRAVADA no campo da tag, porque ela morava dentro do
 		//actualLabel() e seis lugares do element.cpp escrevem o resultado dele
 		//de volta no dado. A composição ser idempotente é o que impediu a
@@ -482,7 +482,7 @@ TEST_CASE("CU-10.7 — elemento sem tag não ganha uma feita de prefixo", "[iec]
 }
 TEST_CASE("CU-10.8 — a folha já disse a planta e o local", "[iec]")
 {
-		//Em 21/08/2026 o Renan abriu o projeto convertido e disse que o esquema
+		//Em 21/08/2026 o projetista abriu o projeto convertido e disse que o esquema
 		//tinha ficado poluído. A medição deu razão a ele: no modo completo o
 		//projeto inteiro passou de 14295 para 17055 caracteres desenhados, +19,3%,
 		//e a folha 05 — "Componentes - X1 a X4" — de 1105 para 1589, +44%. O modo por contexto
@@ -689,7 +689,7 @@ TEST_CASE("CU-10.10 — número puro é conexão, não produto", "[iec]")
 	{
 			//Os dois modos curtos: nenhum deles põe traço em número. É a
 			//diferença entre 173 rótulos com um traço a mais e o desenho que o
-			//Renan tinha antes da conversão.
+			//projetista tinha antes da conversão.
 		const IecStructure folio(QStringLiteral("CT1"),
 					 QStringLiteral("QCM"),
 					 QString());
@@ -837,7 +837,7 @@ TEST_CASE("CU-10.11 — texto livre não recebe prefixo", "[iec]")
 TEST_CASE("CU-10.12 — o campo Localização só é local IEC se o projeto disser",
 	  "[iec]")
 {
-		//O Renan preenche o campo Localização dos componentes com a régua de
+		//O projetista preenche o campo Localização dos componentes com a régua de
 		//bornes onde a fiação daquele componente chega: X1, X5, X10. As folhas
 		//05, 07, 11 e 13 se chamam "Componentes - X1 a X4", "X5 e X6", "X7 e X8",
 		//"X10 a X12". Não é local da IEC 81346, e o programa lia como se fosse:

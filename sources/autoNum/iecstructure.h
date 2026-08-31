@@ -91,7 +91,7 @@ class IecStructure
 			written in front of something that is one. The same field holds
 			whatever anybody typed, and a schematic is full of text that is
 			not a designation at all - "Nota 1", "10A / 3P / F", "Tomada
-			Industrial". Measured on the 14 folio project of ACME on
+			Industrial". Measured on a real 14 folio panel project on
 			21/08/2026: of 230 composed labels, 45 were designations, 12 were
 			free text and 173 were bare terminal numbers. Gluing a dash to the
 			185 that are not designations is decoration, not the norm.
@@ -117,7 +117,7 @@ class IecStructure
 			says `-X10` once, terminal 7 reads `7`. Anywhere else it reads
 			`-X10:7`, with the colon the norm keeps for connections.
 
-			Measured on the 14 folio project of ACME on 21/08/2026: the
+			Measured on a real 14 folio panel project on 21/08/2026: the
 			full form on every symbol is +19% of drawn characters, illegible
 			on the terminal folios, and ambiguous - two different terminals
 			numbered 7 both became `=CT1+QCM-7`. This is the answer to
@@ -152,8 +152,8 @@ class IecStructure
 			@param location_from_field : whether the `location` field of the
 			component is the `+` of the norm. **Off by default**, and the
 			reason is data, not taste: that field is older than the norm in
-			QElectroTech and holds free text. In the 14 folio project of
-			ACME it holds the terminal strip the wiring of that component
+			QElectroTech and holds free text. In the 14 folio panel project
+			measured it holds the terminal strip the wiring of that component
 			lands on - X1, X5, X10 - and reading it as a place put `+X1-` on
 			23 components, which is 23 wrong statements on a drawing. A
 			project where the field really is a place says so, once, in the

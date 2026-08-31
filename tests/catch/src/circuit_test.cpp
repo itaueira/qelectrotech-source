@@ -792,7 +792,7 @@ TEST_CASE("CircuitClipboard — a grade que a planilha realmente escreveu", "[ci
 
 	SECTION("a célula entre aspas guarda tabulação, quebra de linha e aspas dobradas")
 	{
-			//É o caso da lista de componentes da ACME: descrição com
+			//É o caso de uma lista de componentes real: descrição com
 			//quebra de linha dentro. A divisão ingênua faria dela duas linhas
 			//e deslocaria todas as colunas seguintes em uma.
 		const QList<QStringList> grid = CircuitClipboard::parse(

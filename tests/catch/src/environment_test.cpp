@@ -92,7 +92,7 @@ TEST_CASE("CU-38.1 — pointer le programme sur un dossier suffit")
 	QTemporaryDir share;
 	REQUIRE(share.isValid());
 
-	const QString wanted = share.filePath(QStringLiteral("ambiente-acme"));
+	const QString wanted = share.filePath(QStringLiteral("ambiente-da-empresa"));
 	CHECK_FALSE(QETEnvironment::looksLikeEnvironment(wanted));
 
 	QString error;
@@ -291,9 +291,9 @@ TEST_CASE("CU-38.6 — la copie de sauvegarde emporte tout, et refuse d'être à
 	// backup is what protects these, not only the projects.
 	writeFile(QETEnvironment::elementsDir() + QStringLiteral("/contator.elmt"),
 		  QStringLiteral("<definition/>"));
-	writeFile(QETEnvironment::companyElementsDir() + QStringLiteral("/acme.elmt"),
+	writeFile(QETEnvironment::companyElementsDir() + QStringLiteral("/simbolo-da-empresa.elmt"),
 		  QStringLiteral("<definition/>"));
-	writeFile(QETEnvironment::titleBlocksDir() + QStringLiteral("/acme.titleblock"),
+	writeFile(QETEnvironment::titleBlocksDir() + QStringLiteral("/carimbo-da-empresa.titleblock"),
 		  QStringLiteral("<titleblock/>"));
 	writeFile(QETEnvironment::projectsDir() + QStringLiteral("/quadro.qet"),
 		  QStringLiteral("<project/>"));

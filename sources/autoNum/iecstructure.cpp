@@ -338,7 +338,7 @@ IecStructure IecStructure::fromElementInformation(const QString &label,
 		//does not end up saying it twice.
 		//The location field only becomes the `+` of the norm when the project
 		//says it is one. It is older than the norm here and holds free text:
-		//in the project of ACME it holds the terminal strip the wiring of
+		//in the project measured it holds the terminal strip the wiring of
 		//the component lands on, and reading that as a place wrote `+X1-` on
 		//23 components - information nobody put there.
 	return inherit(fromTag(label),

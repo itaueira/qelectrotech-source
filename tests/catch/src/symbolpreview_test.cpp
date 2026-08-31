@@ -27,11 +27,11 @@
 /*
 	O primeiro teste de widget deste projeto.
 
-	Ele existe para responder uma pergunta do Renan — "dá para um script
+	Ele existe para responder uma pergunta do projetista — "dá para um script
 	interagir com o programa e fazer os testes mais massantes?" — com um exemplo
-	em vez de uma opinião. E ele testa exatamente a coisa que o teste E.3 dele
-	não conseguiu testar: se dá para saber qual linha da tabela é qual ponto do
-	desenho.
+	em vez de uma opinião. E ele testa exatamente a coisa que o teste E.3 da
+	bancada guiada não conseguiu testar: se dá para saber qual linha da tabela
+	é qual ponto do desenho.
 
 	Nada aparece na tela: o `main.cpp` da suíte força QT_QPA_PLATFORM=offscreen,
 	e o QTest::mouseClick entrega o evento ao widget, não à área de trabalho.
@@ -74,7 +74,7 @@ TEST_CASE("CU-35.3 — o desenho diz qual ponto é qual", "[widget][symbol]")
 
 	SECTION("cada ponto tem um lugar no widget, e são lugares diferentes")
 	{
-			//É o que o teste E.3 do Renan não conseguiu exercitar: sem
+			//É o que o teste E.3 da bancada guiada não conseguiu exercitar: sem
 			//correspondência entre linha e ponto, declarar contato é
 			//adivinhação.
 		const QPointF primeiro = preview.widgetPositionOf(0);

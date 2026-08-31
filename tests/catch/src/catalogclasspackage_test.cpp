@@ -29,9 +29,9 @@
 namespace
 {
 	/**
-		@brief A catalog holding the branch the ACME needs and no other
-		catalog has: a power supply class, a DC subclass under it, typed
-		properties and one controlled list.
+		@brief A catalog holding a branch no stock catalog has: a power
+		supply class, a DC subclass under it, typed properties and one
+		controlled list.
 
 		Built on a class the seeded tree does not have on purpose - a class
 		that every catalog already carries would never prove that the file
@@ -361,116 +361,6 @@ TEST_CASE("CU-12.10 — a árvore de classes é um arquivo", "[catalog]")
 		CHECK_FALSE(CatalogClassPackage::applyXml(root, target, nullptr, &error));
 		CHECK_FALSE(error.isEmpty());
 		CHECK(target.classes().size() == before);
-	}
-
-	SECTION("a árvore da ACME entregue entra num catálogo semeado")
-	{
-			//This reads the file that actually ships,
-			//todo/exemplos/classes-acme.qetclasses, and not a copy of it
-			//written here. A copy would keep passing after the shipped file
-			//broke, which is the failure mode that makes a green suite
-			//worthless.
-			//
-			//The branch is the one the ACME project of 14 folios needs:
-			//nine classes no seeded tree has, and typed properties in place
-			//of the free text that carries the ratings today.
-		const QString path = QStringLiteral(QET_TEST_DATA_DIR) +
-				     QStringLiteral("/classes-acme.qetclasses");
-		REQUIRE(QFileInfo::exists(path));
-
-		Catalog target;
-		QString error;
-		REQUIRE(target.openInMemory(&error));
-
-		const CatalogClassPackage::Report plan =
-				CatalogClassPackage::summary(path, target, &error);
-		REQUIRE(error.isEmpty());
-		CHECK(plan.classes_created == 9);
-			//The five anchors travel with the file so that it also works on
-			//a catalog that is not the ACME one; here they are
-			//recognised by key instead of duplicated.
-		CHECK(plan.classes_found == 5);
-		CHECK(plan.properties_created == 42);
-		CHECK(plan.properties_found == 0);
-		CHECK(plan.lists_created == 11);
-		CHECK(plan.lists_found == 0);
-		CHECK(plan.refused.isEmpty());
-
-		CatalogClassPackage::Report done;
-		REQUIRE(CatalogClassPackage::read(path, target, &done, &error));
-			//What was announced is what got written.
-		CHECK(done.classes_created == plan.classes_created);
-		CHECK(done.classes_found == plan.classes_found);
-		CHECK(done.properties_created == plan.properties_created);
-		CHECK(done.lists_created == plan.lists_created);
-		CHECK(done.refused.isEmpty());
-
-			//The house tag and the IEC letter are the point of the branch:
-			//the drawing says PS2, the parts list and the standard say T.
-		const CatalogClass supply = target.classByKey(QStringLiteral("power_supply"));
-		REQUIRE_FALSE(supply.isNull());
-		CHECK(supply.root == QStringLiteral("PS"));
-		CHECK(supply.root_iec == QStringLiteral("T"));
-		CHECK(supply.parent_id == target.classByKey(QStringLiteral("component")).id);
-
-			//Two classes, same house tag, different IEC letter: an auxiliary
-			//relay processes a signal (K) and a monitoring relay protects
-			//(F). The project draws both as RL and that is why the letter
-			//has to live on the class.
-		const CatalogClass control = target.classByKey(QStringLiteral("control_relay"));
-		const CatalogClass monitoring = target.classByKey(QStringLiteral("monitoring_relay"));
-		REQUIRE_FALSE(control.isNull());
-		REQUIRE_FALSE(monitoring.isNull());
-		CHECK(control.root == monitoring.root);
-		CHECK(control.root_iec == QStringLiteral("K"));
-		CHECK(monitoring.root_iec == QStringLiteral("F"));
-
-			//A rating is a number with a unit. The project keeps "20A / 480W"
-			//in one comment today; here it is two Decimal properties, and
-			//Decimal and not Measure because Measure means a length in
-			//millimetre.
-		const CatalogProperty current =
-				target.effectiveProperty(supply.id, QStringLiteral("corrente_saida"));
-		REQUIRE(current.id > 0);
-		CHECK(current.type == CatalogPropertyType::Decimal);
-		CHECK(current.unit == QStringLiteral("A"));
-		const CatalogProperty power =
-				target.effectiveProperty(supply.id, QStringLiteral("potencia"));
-		REQUIRE(power.id > 0);
-		CHECK(power.type == CatalogPropertyType::Decimal);
-		CHECK(power.unit == QStringLiteral("W"));
-
-			//A property declared on a class the catalog already had: the
-			//file adds to Disjoncteur without touching its name or prefix.
-		const CatalogClass breaker = target.classByKey(QStringLiteral("breaker"));
-		REQUIRE_FALSE(breaker.isNull());
-		CHECK(breaker.root_iec == QStringLiteral("Q"));
-		const CatalogProperty curve =
-				target.effectiveProperty(breaker.id, QStringLiteral("curva"));
-		REQUIRE(curve.id > 0);
-		CHECK(curve.list_behaviour == CatalogListBehaviour::Mandatory);
-		CHECK(curve.list_name == QStringLiteral("Curva de disjuntor"));
-			//The list arrived before the property that reads it, so the
-			//values are already in the field and not an empty mandatory box.
-		CHECK(curve.options == QStringList({ QStringLiteral("B"),
-						     QStringLiteral("C"),
-						     QStringLiteral("D"),
-						     QStringLiteral("K"),
-						     QStringLiteral("Z") }));
-
-			//And the inherited one, because a breaker has a rated current
-			//like every other component: declared once on Composant.
-		const CatalogProperty rated =
-				target.effectiveProperty(breaker.id, QStringLiteral("corrente_nominal"));
-		REQUIRE(rated.id > 0);
-		CHECK(rated.class_id == target.classByKey(QStringLiteral("component")).id);
-		CHECK(rated.unit == QStringLiteral("A"));
-
-			//Loading the office tree twice is a thing that happens on a
-			//shared catalog. The second time has to be a no-op.
-		CatalogClassPackage::Report again;
-		REQUIRE(CatalogClassPackage::read(path, target, &again, &error));
-		CHECK(again.changesNothing());
 	}
 }
 

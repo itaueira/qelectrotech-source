@@ -1,0 +1,278 @@
+# Build, suíte de testes e smoke test a cada push nas branches de trabalho deste fork.
+#
+# Arquivo NOVO de propósito: os workflows herdados do upstream (windows-build.yml, windows-msi.yml,
+# auto-doxygen.yml) não são tocados, e nenhum deles dispara nas branches em que se trabalha aqui.
+# Isso mantém a superfície de conflito do sync em zero.
+#
+# Não roda em master, que aqui é espelho intocado do upstream e não tem o que provar.
+
+name: Build and tests
+
+on:
+  push:
+    branches-ignore:
+      - master
+  pull_request:
+    branches-ignore:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # O .qet de teste é versionado no repositório, e o número de folhas é conferido.
+  QET_SMOKE_PROJECT: examples/tableau_domestique.qet
+  QET_SMOKE_PAGES: 5
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Linux — matriz Qt5 e Qt6
+  # ---------------------------------------------------------------------------
+  linux:
+    name: Linux Qt${{ matrix.qt }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        qt: [5, 6]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Dependencias Qt5
+        if: matrix.qt == 5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qtbase5-dev qtbase5-private-dev qttools5-dev qttools5-dev-tools \
+            libqt5svg5-dev libqt5sql5-sqlite qttranslations5-l10n \
+            libsqlite3-dev cmake ninja-build ccache pkg-config g++
+
+      - name: Dependencias Qt6
+        if: matrix.qt == 6
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qt6-base-dev qt6-base-private-dev qt6-tools-dev qt6-tools-dev-tools \
+            qt6-l10n-tools libqt6svg6-dev libqt6sql6-sqlite \
+            libsqlite3-dev cmake ninja-build ccache pkg-config g++
+
+      # BUILD_WITH_KF: ligado no Qt6, desligado no Qt5. Com QT_VERSION_MAJOR=5 o
+      # cmake/fetch_kdeaddons.cmake:30 busca KDE Frameworks v5.77.0, de 2020, que nao acompanha
+      # compilador atual — e o mesmo motivo pelo qual o workflow de onde esta receita saiu passa
+      # BUILD_WITH_KF=OFF. O QET tem caminho alternativo para isso (sources/ui/nokde/), entao a
+      # configuracao e suportada; o que o job Qt5 prova e que o codigo do QET compila com Qt5.
+      - name: Configurar
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DQT_VERSION_MAJOR=${{ matrix.qt }} \
+            -DBUILD_WITH_KF=${{ matrix.qt == 6 && 'ON' || 'OFF' }} \
+            -DPACKAGE_TESTS=ON \
+            -DQET_EXPORT_PROJECT_DB=ON \
+            -DCMAKE_POLICY_DEFAULT_CMP0077=NEW \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Compilar
+        run: cmake --build build -j"$(nproc)"
+
+      # O CMakeLists chama enable_testing() mas nao registra caso nenhum no ctest (nao ha
+      # add_test nem catch_discover_tests). O binario do Catch2 roda todos os casos e devolve codigo
+      # diferente de zero quando algum falha, que e o que barra o build.
+      - name: Suite Catch2
+        run: |
+          set -euo pipefail
+          EXE=$(find build -type f -name 'C_unittests' -perm -u+x | head -1)
+          if [ -z "$EXE" ]; then echo "::error::binario da suite nao foi gerado"; exit 1; fi
+          QT_QPA_PLATFORM=offscreen "$EXE"
+
+      # Smoke test sem interface. sources/main.cpp:125 instancia QApplication mesmo na
+      # exportacao por linha de comando, entao sem tela e preciso o plugin offscreen.
+      - name: Smoke test exportar PDF
+        run: |
+          set -euo pipefail
+          EXE=$(find build -maxdepth 3 -type f -name 'qelectrotech' -perm -u+x | head -1)
+          if [ -z "$EXE" ]; then echo "::error::binario do QET nao foi gerado"; exit 1; fi
+          SAIDA=$(QT_QPA_PLATFORM=offscreen "$EXE" --export-pdf "$QET_SMOKE_PROJECT" saida.pdf)
+          echo "$SAIDA"
+          test -s saida.pdf || { echo "::error::PDF veio vazio"; exit 1; }
+          head -c 4 saida.pdf | grep -q '%PDF' || { echo "::error::o arquivo nao e um PDF"; exit 1; }
+          # Nao adianta contar '/Type /Page' dentro do arquivo: o Qt grava o PDF com fluxos de
+          # objetos comprimidos e o marcador nao aparece como texto. Quem sabe o numero certo e o
+          # proprio programa, em sources/cli_export.cpp:212.
+          PAGINAS=$(printf '%s' "$SAIDA" | sed -n 's/^Exported \([0-9]\{1,\}\) page(s).*/\1/p')
+          echo "paginas exportadas: ${PAGINAS:-nenhuma} (esperado $QET_SMOKE_PAGES)"
+          if [ "$PAGINAS" != "$QET_SMOKE_PAGES" ]; then
+            echo "::error::o projeto de teste tem $QET_SMOKE_PAGES folhas e sairam '$PAGINAS'"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qet-linux-qt${{ matrix.qt }}
+          path: |
+            build/qelectrotech
+            saida.pdf
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Windows — a mesma receita da maquina de desenvolvimento (MSYS2/UCRT64)
+  # ---------------------------------------------------------------------------
+  windows:
+    name: Windows Qt${{ matrix.qt }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        qt: [5, 6]
+    steps:
+      - name: Permitir ligacoes simbolicas antes do checkout
+        shell: pwsh
+        run: git config --global core.symlinks true
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          cache: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-ccache
+            mingw-w64-ucrt-x86_64-pkg-config
+            mingw-w64-ucrt-x86_64-sqlite3
+            mingw-w64-ucrt-x86_64-extra-cmake-modules
+            mingw-w64-ucrt-x86_64-kcoreaddons
+            mingw-w64-ucrt-x86_64-kwidgetsaddons
+            mingw-w64-ucrt-x86_64-qt${{ matrix.qt }}-base
+            mingw-w64-ucrt-x86_64-qt${{ matrix.qt }}-svg
+            mingw-w64-ucrt-x86_64-qt${{ matrix.qt }}-tools
+            mingw-w64-ucrt-x86_64-qt${{ matrix.qt }}-translations
+            mingw-w64-ucrt-x86_64-qt${{ matrix.qt }}-pdf
+
+      # 6 arquivos de licenses/ sao ligacoes simbolicas e o qelectrotech.qrc os embute no
+      # binario. Se o checkout nao conseguiu cria-las, sobra um arquivinho com o caminho de destino,
+      # e o binario sai com o caminho no lugar do texto da licenca. Aqui isso e consertado sem
+      # depender de privilegio: quando o arquivo e pequeno e seu conteudo aponta para outro que
+      # existe, troca-se pelo conteudo apontado.
+      - name: Materializar os arquivos de licenca
+        run: |
+          set -euo pipefail
+          cd licenses
+          for f in *.LICENSE *.NOTICE; do
+            if [ -L "$f" ]; then continue; fi
+            if [ "$(wc -c < "$f")" -ge 200 ]; then continue; fi
+            alvo=$(tr -d '\r\n' < "$f")
+            case "$alvo" in ../*) ;; *) continue ;; esac
+            if [ -f "$alvo" ]; then cp -f "$alvo" "$f"; echo "materializado: $f -> $alvo"; fi
+          done
+
+      - name: Configurar
+        run: |
+          set -euo pipefail
+          EXTRA=""
+          if [ "${{ matrix.qt }}" = "5" ]; then
+            # o CMakeLists encontra o Qt6 sozinho mesmo com QT_VERSION_MAJOR=5
+            EXTRA="-DCMAKE_DISABLE_FIND_PACKAGE_Qt6=ON"
+            rm -rf /ucrt64/lib/cmake/Qt6
+          fi
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DQT_VERSION_MAJOR=${{ matrix.qt }} \
+            -DBUILD_WITH_KF=${{ matrix.qt == 6 && 'ON' || 'OFF' }} \
+            -DCMAKE_PREFIX_PATH=/ucrt64 \
+            -DPACKAGE_TESTS=ON \
+            -DQET_EXPORT_PROJECT_DB=ON \
+            -DCMAKE_POLICY_DEFAULT_CMP0077=NEW \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DCMAKE_C_COMPILER_LAUNCHER=/ucrt64/bin/ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=/ucrt64/bin/ccache \
+            -DSQLite3_INCLUDE_DIR=/ucrt64/include \
+            -DSQLite3_LIBRARY=/ucrt64/lib/libsqlite3.dll.a \
+            $EXTRA
+
+      - name: Compilar
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Suite Catch2
+        run: |
+          set -euo pipefail
+          EXE=$(find build -type f -iname 'C_unittests.exe' | head -1)
+          if [ -z "$EXE" ]; then echo "::error::binario da suite nao foi gerado"; exit 1; fi
+          "$EXE"
+
+      - name: Empacotar com windeployqt
+        run: |
+          set -euo pipefail
+          EXE=$(find build -maxdepth 3 -iname 'qelectrotech.exe' | head -1)
+          if [ -z "$EXE" ]; then echo "::error::binario do QET nao foi gerado"; exit 1; fi
+          # O MSYS2 nao usa um nome so: no Qt5 e windeployqt-qt5.exe, no Qt6 e windeployqt6.exe.
+          # Sondar em vez de montar o nome, para nao quebrar quando a nomenclatura mudar de novo.
+          WDQ=""
+          for c in windeployqt-qt${{ matrix.qt }} windeployqt${{ matrix.qt }} windeployqt; do
+            if [ -x "/ucrt64/bin/$c.exe" ]; then WDQ="/ucrt64/bin/$c.exe"; break; fi
+          done
+          if [ -z "$WDQ" ]; then
+            echo "::error::nenhum windeployqt encontrado em /ucrt64/bin"
+            ls /ucrt64/bin/windeployqt* || true
+            exit 1
+          fi
+          echo "usando $WDQ"
+          mkdir -p dist
+          cp "$EXE" dist/QElectroTech.exe
+          cd dist
+          "$WDQ" --release --no-compiler-runtime ./QElectroTech.exe
+          for pass in 1 2 3; do
+            for bin in *.dll *.exe platforms/*.dll sqldrivers/*.dll imageformats/*.dll; do
+              [ -f "$bin" ] || continue
+              ldd "$bin" 2>/dev/null | awk '/\/ucrt64\/bin\//{print $3}' | while read -r dll; do
+                [ -f "$dll" ] || continue
+                if [ ! -f "$(basename "$dll")" ]; then cp "$dll" .; fi
+              done
+            done
+          done
+          test -f QElectroTech.exe
+          echo "DLLs empacotadas: $(find . -name '*.dll' | wc -l)"
+
+      - name: Smoke test exportar PDF
+        run: |
+          set -euo pipefail
+          SAIDA=$(cd dist && ./QElectroTech.exe --export-pdf "../$QET_SMOKE_PROJECT" ../saida.pdf)
+          echo "$SAIDA"
+          test -s saida.pdf || { echo "::error::PDF veio vazio"; exit 1; }
+          head -c 4 saida.pdf | grep -q '%PDF' || { echo "::error::o arquivo nao e um PDF"; exit 1; }
+          # Ver o comentario do mesmo passo no job de Linux: a contagem vem do programa, nao do
+          # conteudo do PDF, que sai comprimido.
+          PAGINAS=$(printf '%s' "$SAIDA" | sed -n 's/^Exported \([0-9]\{1,\}\) page(s).*/\1/p')
+          echo "paginas exportadas: ${PAGINAS:-nenhuma} (esperado $QET_SMOKE_PAGES)"
+          if [ "$PAGINAS" != "$QET_SMOKE_PAGES" ]; then
+            echo "::error::o projeto de teste tem $QET_SMOKE_PAGES folhas e sairam '$PAGINAS'"
+            exit 1
+          fi
+
+      # E este artefato que dispensa compilar na maquina de desenvolvimento a cada entrega.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qet-windows-qt${{ matrix.qt }}
+          path: |
+            dist/**
+            saida.pdf
+          if-no-files-found: error

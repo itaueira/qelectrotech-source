@@ -94,7 +94,7 @@ TEST_CASE("carimbo — variável que ninguém preencheu não vira texto na folha
 
 	SECTION("texto sem por cento nenhum volta idêntico, e sem trabalho")
 	{
-		const QString plain = QStringLiteral("ACME Industries Ltd.");
+		const QString plain = QStringLiteral("Indústria Elétrica S.A.");
 		CHECK(QETInformation::stripUnresolvedVariables(plain) == plain);
 		CHECK(QETInformation::stripUnresolvedVariables(QString()).isEmpty());
 	}

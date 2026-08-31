@@ -95,7 +95,6 @@ add_executable(
     src/catalogassignment_test.cpp
     src/catalogclasspackage_test.cpp
     src/catalogimport_test.cpp
-    src/bancada_conversao_test.cpp
     src/titleblockvariables_test.cpp
     src/environment_test.cpp
     src/symbol_test.cpp
@@ -286,7 +285,7 @@ endif()
 # Isto escolhe de proposito o cabecalho do submodulo (1.16) e nao o da copia que
 # o FetchContent baixa (1.15), porque e assim que o programa compila. Teste que
 # compila diferente do programa testa outra coisa. A diferenca de versao entre
-# cabecalho e biblioteca vem do upstream e esta registrada em todo/BUILD.md.
+# cabecalho e biblioteca vem do upstream, e e assim de proposito.
 target_include_directories(
     ${PROJECT_NAME}
     PRIVATE
@@ -302,15 +301,6 @@ target_link_libraries(
     pugixml::pugixml
     Qt::Test)
 
-# Onde estão os arquivos de exemplo que o teste importa de verdade. Existe para que
-# o teste prove o arquivo QUE É ENTREGUE, e não uma cópia dele escrita no próprio
-# teste: uma cópia continuaria passando depois de o arquivo entregue quebrar.
-get_filename_component(QET_ABS_DIR "${QET_DIR}" ABSOLUTE)
-target_compile_definitions(
-    ${PROJECT_NAME}
-    PRIVATE
-    QET_TEST_DATA_DIR="${QET_ABS_DIR}/todo/exemplos")
-
 if (DEFINED ENV{CATCH_INCLUDE_DIR})
     set(CATCH_INCLUDE_DIR $ENV{CATCH_INCLUDE_DIR})
 else ()
@@ -321,4 +311,11 @@ if (CATCH_INCLUDE_DIR STREQUAL "")
       "assuming Catch2 can be found automatically in your system")
 elseif (EXISTS ${CATCH_INCLUDE_DIR})
     include_directories(${CATCH_INCLUDE_DIR})
+endif ()
+
+# Optional hook for test sources that live outside this repository. A fork can drop its own
+# tests.cmake into tests/catch/local/ to add sources and definitions to the target above.
+# Nothing here requires it: when the file is absent, the target builds exactly as before.
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/local/tests.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/local/tests.cmake)
 endif ()

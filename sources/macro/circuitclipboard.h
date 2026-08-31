@@ -34,7 +34,7 @@
 	"Cabo 3x2,5\nazul" is one cell of two lines, and a naive split turns it into
 	two rows, shifting every column after it by one.
 
-	The ACME component list has exactly that: descriptions with a line break
+	Real component lists have exactly that: descriptions with a line break
 	in them. This is why the paste of CU-08.2 does not split on the two
 	characters.
 
