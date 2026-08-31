@@ -723,7 +723,7 @@ void PinoutGeneratorDialog::save()
 	{
 			//The question of T12, asked once for the whole set: a
 			//symbol already used is either changed everywhere or left
-			//alone and superseded. Guessing on the projectist's
+			//alone and superseded. Guessing on the designer's
 			//behalf is how a delivered project quietly changes
 			//drawing.
 		QMessageBox question(this);

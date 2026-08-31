@@ -160,7 +160,7 @@ namespace
 		generous for an ellipse: a point in the corner of an ellipse's box is
 		outside the ellipse and counted as inside anyway. Generous is the
 		right way to be wrong here - a suggestion too few is a row the
-		projectist adds, a suggestion too many is a terminal that ships.
+		designer adds, a suggestion too many is a terminal that ships.
 	*/
 	bool onBody(const QPointF &point, const QList<SymbolShape> &shapes)
 	{
@@ -521,7 +521,7 @@ QPointF SymbolDefinition::suggestedHotspot(const SymbolGrid &grid) const
 		return QPointF();
 	}
 		//The first connection point is the better guess when there is one:
-		//that is where the projectist expects the cursor to hold the symbol,
+		//that is where the designer expects the cursor to hold the symbol,
 		//and it is already on the grid.
 	if (!terminals.isEmpty()) {
 		QPointF best = terminals.first().position;

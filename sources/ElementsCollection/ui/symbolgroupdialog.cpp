@@ -159,7 +159,7 @@ void SymbolGroupDialog::selectionChanged()
 	}
 
 		//In Save mode with nothing picked in the list, what is described is
-		//the selection about to be filed - that is the thing the projectist
+		//the selection about to be filed - that is the thing the designer
 		//is looking at. Otherwise it is the grouping picked in the list.
 	const SymbolGroup shown = (m_mode == Save && !has_selection)
 			? SymbolGroup::fromFragment(QString(), m_fragment)

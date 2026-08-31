@@ -387,7 +387,7 @@ TEST_CASE("CU-13.10 — registrar peça a partir do componente corrige a peça, 
 	REQUIRE(stored.id > 0);
 
 	// What the component carries on the folio: the code of that part, plus a
-	// description the draughtsman has just corrected while drawing.
+	// description the designer has just corrected while drawing.
 	QHash<QString, QString> information;
 	information.insert(CatalogAssignment::partCodeKey(), QStringLiteral("RPW-PTCE05"));
 	information.insert(QStringLiteral("designation"),
@@ -449,7 +449,7 @@ TEST_CASE("CU-13.10 — um componente que não aponta peça nenhuma nasce em Com
 	// correct.
 	CHECK(part.value(QStringLiteral("nowhere")).isEmpty());
 
-	// A code that names no part is kept, because it is what the draughtsman
+	// A code that names no part is kept, because it is what the designer
 	// wants to register under.
 	information.insert(CatalogAssignment::partCodeKey(), QStringLiteral("SEM-CADASTRO-1"));
 	const CatalogPart named = CatalogAssignment::partFromValues(catalog, information);

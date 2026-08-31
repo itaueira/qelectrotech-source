@@ -134,7 +134,7 @@ CatalogPart CatalogProjectActions::partFromElements(const Catalog &catalog,
 		return part;
 	}
 
-	// The values the components already carry - the draughtsman typed the
+	// The values the components already carry - the designer typed the
 	// manufacturer and the description while drawing, and retyping them in the
 	// part dialog is exactly the waste this flow removes. They also say which
 	// part this is: registering from a component that already has one means
@@ -361,7 +361,7 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 
 			//The browser knows nothing about the sheet: opened from here, "New part"
 			//has to be born with one pin per terminal of the symbol and with what the
-			//draughtsman already typed, the way it is born when the part is created
+			//designer already typed, the way it is born when the part is created
 			//from the sheet.
 		const CatalogPart part = CatalogBrowserDialog::choosePart(
 					catalog, &dialog,
@@ -479,7 +479,7 @@ bool CatalogProjectActions::linkAccessory(Element *accessory, QWidget *parent)
 	}
 
 		//Named by tag and folio, because a tag alone repeats across folios and
-		//the projectist is choosing between things they can see.
+		//the designer is choosing between things they can see.
 	QStringList labels;
 	for (Element *owner : owners)
 	{

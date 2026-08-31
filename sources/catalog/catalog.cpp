@@ -236,7 +236,7 @@ bool Catalog::isWritable() const
 /**
 	@brief Catalog::setWritable
 	@param writable
-	Not every draughtsman creates parts. Turning this off makes the catalog
+	Not every designer creates parts. Turning this off makes the catalog
 	read only for this session, whatever the file permissions say.
 */
 void Catalog::setWritable(bool writable)

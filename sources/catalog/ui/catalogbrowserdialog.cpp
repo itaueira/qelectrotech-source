@@ -426,7 +426,7 @@ void CatalogBrowserDialog::searchRepository()
 void CatalogBrowserDialog::createPart()
 {
 		//Coming from "Components without a part", the caller already knows which
-		//component is being settled: the manufacturer the draughtsman typed while
+		//component is being settled: the manufacturer the designer typed while
 		//drawing, and one pin per terminal of the symbol. Typing that again is
 		//exactly the waste this path exists to remove.
 	CatalogPart part = m_has_template ? m_template : CatalogPart();
@@ -470,13 +470,13 @@ void CatalogBrowserDialog::editSelectedPart()
 
 /**
 	@brief CatalogBrowserDialog::duplicateSelectedPart
-	Abre uma peça nova com os valores desta e o código vazio.
+	Opens a new part with this one's values and an empty code.
 
-	Cadastrar uma família de peças — o mesmo produto com uma faixa, uma tensão
-	ou um calibre diferente — era retypar tudo por causa de um campo. O que
-	**não** é copiado é o que identifica o produto: o código, e a revisão. O
-	resto vem, inclusive pinos e acessórios, porque numa família é justamente o
-	resto que se repete.
+	Registering a family of parts — the same product with a different range,
+	voltage or rating — meant retyping everything because of one field. What
+	is **not** copied is what identifies the product: the code, and the
+	revision. Everything else comes along, pins and accessories included,
+	because in a family it is precisely the rest that repeats.
 */
 void CatalogBrowserDialog::duplicateSelectedPart()
 {

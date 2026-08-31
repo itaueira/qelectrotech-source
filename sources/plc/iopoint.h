@@ -58,7 +58,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(IoFields)
 	holds one, and PlcMasterData holds the ones a card carries. What it
 	does not have is a place to keep a point that has not been drawn yet -
 	and that is the whole of the sheet a person imports, ninety-six lines
-	of them, sitting in the project while the draughtsman decides which
+	of them, sitting in the project while the designer decides which
 	card each one goes into. IoPoint is that place.
 
 	The type is the program's own PlcIOType and not a new enumeration, so

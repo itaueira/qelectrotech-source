@@ -26,11 +26,11 @@
 	@brief The drawing being turned into a symbol, with one connection point
 	called out.
 
-	This exists because of one sentence of test feedback: *"ao selecionar uma
-	[linha da tabela] ele não evidencia qual ela é no desenho selecionado,
-	assim não consigo atribuir o ponto à linha"*. Without knowing which row is
-	which point, declaring a contact is guesswork, and declaring contacts is
-	the whole reason the table has a role column.
+	This exists because of one sentence of test feedback: selecting a row in
+	the table did not show which point it was in the drawing, so there was no
+	way to tell one from the other when assigning a point to a row. Without
+	knowing which row is which point, declaring a contact is guesswork, and
+	declaring contacts is the whole reason the table has a role column.
 
 	Drawn here, inside the dialog, rather than highlighted on the folio: the
 	dialog is modal and sits over the drawing, so a highlight underneath it is
@@ -40,7 +40,7 @@
 
 	Read only. Clicking a point selects it, because a picture you can point at
 	is worth more than a picture you can only look at, and because going from
-	the drawing to the row is the direction the projectist actually needs.
+	the drawing to the row is the direction the designer actually needs.
 */
 class SymbolPreview : public QWidget
 {
@@ -57,11 +57,12 @@ class SymbolPreview : public QWidget
 		QSize sizeHint() const override;
 
 		/**
-			@brief Onde, no widget, o ponto de ligação @a index é desenhado.
-			Existe para o teste poder clicar exatamente nele em vez de adivinhar
-			coordenada — e, de passagem, para quem lê o código saber que a
-			correspondência desenho↔tabela é calculada e não aproximada.
-			@return posição no widget, ou um ponto nulo se @a index não existe
+			@brief Where, in the widget, connection point @a index is drawn.
+			It exists so a test can click exactly on it instead of guessing a
+			coordinate — and, along the way, so a reader knows the drawing to
+			table correspondence is computed and not approximated.
+			@return position in the widget, or a null point when @a index does
+			not exist
 		*/
 		QPointF widgetPositionOf(int index) const;
 

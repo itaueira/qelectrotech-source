@@ -377,7 +377,7 @@ TEST_CASE("CU-12.7 — deux postes sur le même catalogue")
 	REQUIRE_FALSE(seen.isNull());
 	CHECK(seen.value(QStringLiteral("designation")) == QStringLiteral("Cadastrado no posto 1"));
 
-	// Not every draughtsman creates parts.
+	// Not every designer creates parts.
 	second_station.setWritable(false);
 	CatalogPart refused(QStringLiteral("CONT-REDE-2"), contactor_id);
 	error.clear();

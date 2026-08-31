@@ -138,7 +138,7 @@ void IecStructureDialog::refreshPreview()
 	}
 
 		//A real component of the open project, not an invented example: what
-		//the projectist needs to know is what happens to their drawing.
+		//the designer needs to know is what happens to their drawing.
 	Element *sample = nullptr;
 	Diagram *sample_diagram = nullptr;
 	const QList<Diagram *> diagram_list = m_project->diagrams();

@@ -264,7 +264,7 @@ CatalogPart CatalogAssignment::partFromValues(const Catalog &catalog,
 		part.origin = QStringLiteral("project");
 	}
 
-	// What the draughtsman typed while drawing goes back into the part, but
+	// What the designer typed while drawing goes back into the part, but
 	// only into fields the class of the part actually has. An empty field says
 	// nothing, so it clears nothing: the same rule as assignment, the other
 	// way round.

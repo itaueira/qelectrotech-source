@@ -58,7 +58,7 @@ class SymbolGroup
 		int conductorCount() const;
 		/**
 			@return the part codes carried by the components inside, each one
-			once. Shown before inserting so the projectist knows the grouping
+			once. Shown before inserting so the designer knows the grouping
 			brings parts with it, and shown before saving so they can see the
 			work they are about to file away.
 		*/

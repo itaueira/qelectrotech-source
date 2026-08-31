@@ -1823,7 +1823,7 @@ QString TitleBlockTemplate::interpreteVariables(
 		//What the context never carried is dropped instead of printed. The
 		//loop above only touches the keys the context has, so a variable it
 		//does not have used to reach the folio as its own source code - which
-		//is what a projectist saw as "%{saveddate}" in a footer field they
+		//is what a designer saw as "%{saveddate}" in a footer field they
 		//expected to be blank. Six of the project variables only enter the
 		//context when the project is saved, so a project just opened showed
 		//them.

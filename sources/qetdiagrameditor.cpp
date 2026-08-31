@@ -1345,7 +1345,7 @@ void QETDiagramEditor::assignCatalogPart()
 
 		//The selection is right here, so « New part » inside the browser can be
 		//born with one pin per terminal of the symbol and with what the
-		//draughtsman already typed while drawing. Opening it empty asks for all
+		//designer already typed while drawing. Opening it empty asks for all
 		//of that a second time, from someone who has the component on screen.
 	const CatalogPart part = CatalogBrowserDialog::choosePart(
 				catalog, this,
@@ -1837,7 +1837,7 @@ void QETDiagramEditor::markIoBus()
 	}
 
 		//One command for the whole selection : marking the two rails of a
-		//folio is one gesture on the draughtsman's side, so it has to be
+		//folio is one gesture on the designer's side, so it has to be
 		//one step on the stack too.
 	QMap<QPointer<Element>, QPair<DiagramContext, DiagramContext>> changes;
 	for (Element *element : selected)
@@ -2021,7 +2021,7 @@ void QETDiagramEditor::insertGroup()
 		//an insertion has to be one Ctrl+Z, not thirty.
 	Diagram *diagram = view->diagram();
 	DiagramContent inserted;
-		//Where the projectist is looking, not at the corner of the sheet: a
+		//Where the designer is looking, not at the corner of the sheet: a
 		//grouping that lands off screen reads as one that did not arrive.
 	const QPointF where =
 			view->mapToScene(view->viewport()->rect().center());
@@ -2213,7 +2213,7 @@ void QETDiagramEditor::alignConductorTexts()
 	const bool wires_are_horizontal = horizontal * 2 >= conductors.size();
 
 		//The axis is the average of where the texts already are, so the
-		//alignment moves everything the least it can: the projectist who put
+		//alignment moves everything the least it can: the designer who put
 		//three of them roughly right does not see all three jump.
 	qreal sum = 0.0;
 	for (Conductor *conductor : conductors)

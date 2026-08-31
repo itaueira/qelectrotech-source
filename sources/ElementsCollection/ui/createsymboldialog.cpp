@@ -70,7 +70,7 @@ CreateSymbolDialog::CreateSymbolDialog(const SymbolDefinition &symbol,
 	setUpWidget();
 
 		//Push what the drawing gave onto the grid before showing it, and say
-		//so: the projectist sees the numbers that will be saved, not the ones
+		//so: the designer sees the numbers that will be saved, not the ones
 		//they drew and would have to guess about.
 	const SymbolSnapReport report = m_symbol.snapToGrid(m_grid);
 	if (!report.isEmpty()) {
@@ -450,7 +450,7 @@ void CreateSymbolDialog::refreshProblems()
 
 /**
 	@brief CreateSymbolDialog::terminalRowChanged
-	A linha escolhida na tabela passa a ser o ponto destacado no desenho.
+	The row picked in the table becomes the point called out in the drawing.
 */
 void CreateSymbolDialog::terminalRowChanged()
 {
@@ -462,9 +462,9 @@ void CreateSymbolDialog::terminalRowChanged()
 /**
 	@brief CreateSymbolDialog::terminalPickedInPreview
 	@param index
-	O caminho de volta: clicar o ponto no desenho seleciona a linha dele.
-	É a direção que o projetista precisa mais — ele está olhando o desenho e
-	quer dizer o que aquele ponto é.
+	The way back: clicking the point in the drawing selects its row. That is
+	the direction the designer needs most — they are looking at the drawing
+	and want to say what that point is.
 */
 void CreateSymbolDialog::terminalPickedInPreview(int index)
 {
@@ -705,7 +705,7 @@ void CreateSymbolDialog::save()
 	if (QFile::exists(path)) {
 			//The question of T12, asked in the same words: a symbol already
 			//used is either changed everywhere or left alone and superseded.
-			//Guessing on the projectist's behalf is how a delivered project
+			//Guessing on the designer's behalf is how a delivered project
 			//quietly changes drawing.
 		QMessageBox question(this);
 		question.setWindowTitle(tr("Le symbole existe déjà"));

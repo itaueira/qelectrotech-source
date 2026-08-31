@@ -133,7 +133,7 @@ class CatalogProperty
 
 		/**
 			Turn a user visible name into a stable machine key:
-			"Código interno da peça" becomes "codigo_interno_da_peca".
+			"Reference du fabricant" becomes "reference_du_fabricant".
 			The key is what the project file and the lists use, so it must
 			not change when the user renames the property.
 		*/

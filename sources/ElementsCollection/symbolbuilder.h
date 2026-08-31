@@ -411,7 +411,7 @@ class SymbolDefinition
 		SymbolSnapReport snapToGrid(const SymbolGrid &grid);
 
 		QList<SymbolProblem> problems(const SymbolGrid &grid) const;
-		/// the same, said in a sentence a projectist can act on
+		/// the same, said in a sentence a designer can act on
 		QStringList problemMessages(const SymbolGrid &grid) const;
 		/// whether problems() holds anything that must stop a save
 		bool canBeSaved(const SymbolGrid &grid) const;
