@@ -109,6 +109,15 @@ void TerminalStripItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
 	QetGraphicsItem::hoverLeaveEvent(event);
 	m_drawer.setMouseHoverPos(QPointF{});
+
+		//The pointer leaving is a change like any other, and needUpdate
+		//says so - it compares against the position the drawer held.
+		//Without this repaint the blue of a hovered cross reference, and
+		//the frame a hovered item draws, stay on the folio after the
+		//pointer is gone: the base class only updates its members.
+	if (m_drawer.needUpdate()) {
+		update();
+	}
 }
 
 void TerminalStripItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
