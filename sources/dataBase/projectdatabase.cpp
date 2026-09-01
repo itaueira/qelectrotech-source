@@ -573,11 +573,19 @@ void projectDataBase::createElementNomenclatureView()
 					 "ei.part_code AS part_code,"
 					 "ei.part_revision AS part_revision,"
 					 
+					 //Every key of QETInformation::elementInfoKeys() becomes a
+					 //column of element_info on its own, but this view is written
+					 //by hand: a key added to the list and forgotten here makes
+					 //the column selector offer a name the query cannot select,
+					 //and a table asking for it comes back with no row and no
+					 //column at all - empty on the folio, and silent.
 					 "ei.plc_type AS plc_type,"
 					 "ei.plc_address AS plc_address,"
 					 "ei.plc_function AS plc_function,"
 					 "ei.plc_comment AS plc_comment,"
 					 "ei.plc_crossref AS plc_crossref,"
+					 "ei.plc_unit AS plc_unit,"
+					 "ei.plc_bus AS plc_bus,"
 					
 					 "d.pos AS diagram_position,"
 						 "e.type AS element_type,"
