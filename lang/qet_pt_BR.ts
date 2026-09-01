@@ -8233,6 +8233,615 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     </message>
 </context>
 <context>
+    <name>LocationBomDialog</name>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="164"/>
+        <source>Liste de matériel par localisation</source>
+        <translation>Lista de material por localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="169"/>
+        <source>Localisation :</source>
+        <translation>Localização:</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="172"/>
+        <source>Ce qu'il faut sortir du magasin pour cette localisation, sous-localisations comprises.</source>
+        <translation>O que é preciso retirar do estoque para esta localização, sublocalizações incluídas.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="181"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="613"/>
+        <source>Qté</source>
+        <translation>Qtd.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="182"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="614"/>
+        <source>Pièce</source>
+        <translation>Peça</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="183"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="615"/>
+        <source>Désignation</source>
+        <translation>Designação</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="184"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="616"/>
+        <source>Fabricant</source>
+        <translation>Fabricante</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="185"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="617"/>
+        <source>Référence</source>
+        <translation>Código</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="186"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="618"/>
+        <source>Localisation</source>
+        <translation>Localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="205"/>
+        <source>Copier</source>
+        <translation>Copiar</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="206"/>
+        <source>Copier la liste dans le presse-papiers, colonnes séparées par une tabulation.</source>
+        <translation>Copiar a lista para a área de transferência, colunas separadas por tabulação.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="208"/>
+        <source>Exporter en CSV…</source>
+        <translation>Exportar em CSV…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="209"/>
+        <source>Insérer dans le folio…</source>
+        <translation>Inserir na folha…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="210"/>
+        <source>Poser sur le folio courant un tableau de nomenclature limité à cette localisation. Le tableau suit le projet : il se met à jour tout seul.</source>
+        <translation>Colocar na folha atual uma tabela de nomenclatura limitada a esta localização. A tabela acompanha o projeto: ela se atualiza sozinha.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="251"/>
+        <source>(toutes les localisations)</source>
+        <translation>(todas as localizações)</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="275"/>
+        <source>Hors localisation (chantier)</source>
+        <translation>Fora de localização (campo)</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="348"/>
+        <source>Rien à sortir du magasin pour cette localisation.</source>
+        <translation>Nada a retirar do estoque para esta localização.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="353"/>
+        <source>%n article(s) à sortir du magasin.</source>
+        <translation>
+            <numerusform>%n item a retirar do estoque.</numerusform>
+            <numerusform>%n itens a retirar do estoque.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="449"/>
+        <source>Armoires et supports</source>
+        <translation>Armários e suportes</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="549"/>
+        <source>La liste des composants n'a pas pu être établie : %1</source>
+        <translation>A lista de componentes não pôde ser montada: %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="570"/>
+        <source>Composants</source>
+        <translation>Componentes</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="587"/>
+        <source>Chantier</source>
+        <translation>Campo</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="612"/>
+        <source>Groupe</source>
+        <translation>Grupo</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="645"/>
+        <source>Liste copiée dans le presse-papiers.</source>
+        <translation>Lista copiada para a área de transferência.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="655"/>
+        <source>Exporter la liste de matériel</source>
+        <translation>Exportar a lista de material</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="657"/>
+        <source>Fichier CSV (*.csv)</source>
+        <translation>Arquivo CSV (*.csv)</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="665"/>
+        <source>Le fichier « %1 » n'a pas pu être écrit.</source>
+        <translation>O arquivo « %1 » não pôde ser escrito.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="677"/>
+        <source>Liste exportée dans « %1 ».</source>
+        <translation>Lista exportada para « %1 ».</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="743"/>
+        <source>Tableau proposé pour le folio courant.</source>
+        <translation>Tabela proposta para a folha atual.</translation>
+    </message>
+</context>
+<context>
+    <name>LocationManagerDialog</name>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="143"/>
+        <source>Localisations du projet</source>
+        <translation>Localizações do projeto</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="148"/>
+        <source>Code</source>
+        <translation>Código</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="149"/>
+        <source>Nom</source>
+        <translation>Nome</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="150"/>
+        <source>Désignation</source>
+        <translation>Designação</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="151"/>
+        <source>Pièce</source>
+        <translation>Peça</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="152"/>
+        <source>Hors nomenclature</source>
+        <translation>Fora da lista de material</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="153"/>
+        <source>Composants</source>
+        <translation>Componentes</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="167"/>
+        <source>Ajouter</source>
+        <translation>Adicionar</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="168"/>
+        <source>Ajouter dedans</source>
+        <translation>Adicionar dentro</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="169"/>
+        <source>Supprimer</source>
+        <translation>Excluir</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="170"/>
+        <source>Déplacer vers…</source>
+        <translation>Mover para…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="171"/>
+        <source>Lier une pièce…</source>
+        <translation>Vincular uma peça…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="172"/>
+        <source>Affecter la sélection</source>
+        <translation>Atribuir a seleção</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="173"/>
+        <source>Retirer la sélection</source>
+        <translation>Retirar a seleção</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="175"/>
+        <source>Créer une localisation au premier niveau.</source>
+        <translation>Criar uma localização no primeiro nível.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="176"/>
+        <source>Créer une localisation dans celle qui est sélectionnée.</source>
+        <translation>Criar uma localização dentro da que está selecionada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="178"/>
+        <source>Supprimer la localisation sélectionnée et ce qu'elle contient. Les composants concernés redeviennent non localisés.</source>
+        <translation>Excluir a localização selecionada e o que ela contém. Os componentes envolvidos voltam a ficar sem localização.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="181"/>
+        <source>Déplacer la localisation sélectionnée, et ce qu'elle contient, dans une autre. Les composants suivent.</source>
+        <translation>Mover a localização selecionada, e o que ela contém, para dentro de outra. Os componentes acompanham.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="184"/>
+        <source>Choisir dans le catalogue la pièce que cette localisation a été achetée comme.</source>
+        <translation>Escolher no catálogo a peça que foi comprada como esta localização.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="187"/>
+        <source>Placer ce qui est sélectionné sur le folio dans la localisation sélectionnée ici.</source>
+        <translation>Colocar o que está selecionado na folha dentro da localização selecionada aqui.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="190"/>
+        <source>Retirer de leur localisation les composants sélectionnés sur le folio.</source>
+        <translation>Retirar de sua localização os componentes selecionados na folha.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="269"/>
+        <source>%1 localisation(s) · %2 composant(s) localisé(s) · %3 non localisé(s)</source>
+        <translation>Localizações: %1 · Componentes localizados: %2 · Sem localização: %3</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="280"/>
+        <source>%n composant(s) sur une localisation absente</source>
+        <translation>
+            <numerusform>%n componente em localização inexistente</numerusform>
+            <numerusform>%n componentes em localização inexistente</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="389"/>
+        <source>Renommer « %1 » en « %2 »</source>
+        <translation>Renomear « %1 » para « %2 »</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="397"/>
+        <source>Renommer la localisation « %1 »</source>
+        <translation>Renomear a localização « %1 »</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="408"/>
+        <source>Retirer « %1 » de la nomenclature</source>
+        <translation>Retirar « %1 » da lista de material</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="409"/>
+        <source>Compter « %1 » dans la nomenclature</source>
+        <translation>Contar « %1 » na lista de material</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="421"/>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="681"/>
+        <source>Modification refusée.</source>
+        <translation>Alteração recusada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="480"/>
+        <source>Code de la nouvelle localisation :</source>
+        <translation>Código da nova localização:</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="481"/>
+        <source>Code de la localisation à créer dans « %1 » :</source>
+        <translation>Código da localização a criar dentro de « %1 »:</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="484"/>
+        <source>Nouvelle localisation</source>
+        <translation>Nova localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="497"/>
+        <source>Localisation refusée.</source>
+        <translation>Localização recusada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="504"/>
+        <source>Créer la localisation « %1 »</source>
+        <translation>Criar a localização « %1 »</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="528"/>
+        <source>Cette localisation n'existe plus.</source>
+        <translation>Esta localização não existe mais.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="544"/>
+        <source>« %1 » et ce qu'elle contient font %n localisation(s).</source>
+        <translation>
+            <numerusform>« %1 » e o que ela contém somam %n localização.</numerusform>
+            <numerusform>« %1 » e o que ela contém somam %n localizações.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="549"/>
+        <source>%n composant(s) redeviendront non localisé(s).</source>
+        <translation>
+            <numerusform>%n componente voltará a ficar sem localização.</numerusform>
+            <numerusform>%n componentes voltarão a ficar sem localização.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="553"/>
+        <source>Supprimer la localisation</source>
+        <translation>Excluir a localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="563"/>
+        <source>Supprimer la localisation « %1 »</source>
+        <translation>Excluir a localização « %1 »</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="588"/>
+        <source>(premier niveau)</source>
+        <translation>(primeiro nível)</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="612"/>
+        <source>Déplacer la localisation</source>
+        <translation>Mover a localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="613"/>
+        <source>Placer « %1 » dans :</source>
+        <translation>Colocar « %1 » em:</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="625"/>
+        <source>Déplacement refusé.</source>
+        <translation>Movimentação recusada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="630"/>
+        <source>Déplacer la localisation « %1 »</source>
+        <translation>Mover a localização « %1 »</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="653"/>
+        <source>Le catalogue n'est pas disponible.</source>
+        <translation>O catálogo não está disponível.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="686"/>
+        <source>Lier « %1 » à la pièce %2</source>
+        <translation>Vincular « %1 » à peça %2</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="730"/>
+        <source>Rien n'est sélectionné sur le folio.</source>
+        <translation>Nada está selecionado na folha.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="737"/>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="784"/>
+        <source>Ce projet n'a pas de pile d'annulation.</source>
+        <translation>Este projeto não tem pilha de desfazer.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="751"/>
+        <source>Ces composants n'ont déjà aucune localisation.</source>
+        <translation>Estes componentes já não têm nenhuma localização.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="752"/>
+        <source>Ces composants sont déjà dans « %1 ».</source>
+        <translation>Estes componentes já estão em « %1 ».</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="761"/>
+        <source>%n composant(s) retiré(s) de leur localisation.</source>
+        <translation>
+            <numerusform>%n componente retirado de sua localização.</numerusform>
+            <numerusform>%n componentes retirados de sua localização.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="762"/>
+        <source>%n composant(s) affecté(s) à « %1 ».</source>
+        <translation>
+            <numerusform>%n componente atribuído a « %1 ».</numerusform>
+            <numerusform>%n componentes atribuídos a « %1 ».</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationmanagerdialog.cpp" line="799"/>
+        <source>%n composant(s) ont suivi.</source>
+        <translation>
+            <numerusform>%n componente acompanhou.</numerusform>
+            <numerusform>%n componentes acompanharam.</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>LocationReportDialog</name>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="156"/>
+        <source>Composants non localisés</source>
+        <translation>Componentes sem localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="160"/>
+        <source>Filtrer par étiquette, désignation ou pièce…</source>
+        <translation>Filtrar por etiqueta, designação ou peça…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="168"/>
+        <source>Folio / composant</source>
+        <translation>Folha / componente</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="169"/>
+        <source>Position</source>
+        <translation>Posição</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="170"/>
+        <source>Désignation</source>
+        <translation>Designação</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="171"/>
+        <source>Type</source>
+        <translation>Tipo</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="172"/>
+        <source>Pièce</source>
+        <translation>Peça</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="185"/>
+        <source>Affecter à…</source>
+        <translation>Atribuir a…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="186"/>
+        <source>Sélectionner sur le folio</source>
+        <translation>Selecionar na folha</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="188"/>
+        <source>Mettre les composants choisis ici dans une localisation du projet. Un folio choisi vaut pour tout ce qu'il contient.</source>
+        <translation>Colocar os componentes escolhidos aqui em uma localização do projeto. Uma folha escolhida vale por tudo o que ela contém.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="191"/>
+        <source>Sélectionner sur les folios les composants choisis ici, pour les voir avant d'en décider.</source>
+        <translation>Selecionar nas folhas os componentes escolhidos aqui, para vê-los antes de decidir.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="201"/>
+        <source>Filtre :</source>
+        <translation>Filtro:</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="279"/>
+        <source>Folio %1</source>
+        <translation>Folha %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="280"/>
+        <source>Folio %1 — %2</source>
+        <translation>Folha %1 — %2</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="324"/>
+        <source>Tous les composants du projet sont localisés.</source>
+        <translation>Todos os componentes do projeto estão localizados.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="329"/>
+        <source>%n composant(s) non localisé(s)</source>
+        <translation>
+            <numerusform>%n componente sem localização</numerusform>
+            <numerusform>%n componentes sem localização</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="458"/>
+        <source>%n composant(s) choisi(s).</source>
+        <translation>
+            <numerusform>%n componente escolhido.</numerusform>
+            <numerusform>%n componentes escolhidos.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="566"/>
+        <source>%n composant(s) sélectionné(s) sur les folios.</source>
+        <translation>
+            <numerusform>%n componente selecionado nas folhas.</numerusform>
+            <numerusform>%n componentes selecionados nas folhas.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="589"/>
+        <source>Le projet n'a encore aucune localisation. Elles se font dans « Armoires et localisations… ».</source>
+        <translation>O projeto ainda não tem nenhuma localização. Elas se fazem em « Armários e localizações… ».</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="611"/>
+        <source>Affecter une localisation</source>
+        <translation>Atribuir uma localização</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="612"/>
+        <source>Mettre %n composant(s) dans :</source>
+        <translation>
+            <numerusform>Colocar %n componente em:</numerusform>
+            <numerusform>Colocar %n componentes em:</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="626"/>
+        <source>Ce projet n'a pas de pile d'annulation.</source>
+        <translation>Este projeto não tem pilha de desfazer.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="639"/>
+        <source>Rien à affecter.</source>
+        <translation>Nada a atribuir.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="644"/>
+        <source>%n composant(s) affecté(s) à « %1 ».</source>
+        <translation>
+            <numerusform>%n componente atribuído a « %1 ».</numerusform>
+            <numerusform>%n componentes atribuídos a « %1 ».</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>LocationTree</name>
+    <message>
+        <location filename="../sources/location/locationtree.cpp" line="180"/>
+        <location filename="../sources/location/locationtree.cpp" line="252"/>
+        <source>La localisation parente n'existe plus.</source>
+        <translation>A localização-mãe não existe mais.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/locationtree.cpp" line="188"/>
+        <location filename="../sources/location/locationtree.cpp" line="271"/>
+        <source>Une localisation de même niveau porte déjà le code « %1 ».</source>
+        <translation>Uma localização do mesmo nível já tem o código « %1 ».</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/locationtree.cpp" line="228"/>
+        <location filename="../sources/location/locationtree.cpp" line="323"/>
+        <source>Cette localisation n'est plus dans le projet.</source>
+        <translation>Esta localização não está mais no projeto.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/locationtree.cpp" line="244"/>
+        <source>Une localisation ne peut pas être placée dans elle-même.</source>
+        <translation>Uma localização não pode ser colocada dentro de si mesma.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/locationtree.cpp" line="259"/>
+        <source>Une localisation ne peut pas être placée dans une localisation qu'elle contient.</source>
+        <translation>Uma localização não pode ser colocada dentro de uma localização que ela contém.</translation>
+    </message>
+</context>
+<context>
     <name>MarginsEditDialog</name>
     <message>
         <location filename="../sources/ui/marginseditdialog.ui" line="14"/>
@@ -9326,6 +9935,19 @@ As seguintes variáveis ​​são incompatíveis:
         <location filename="../sources/qetgraphicsitem/ViewItem/ui/projectdbmodelpropertieswidget.ui" line="31"/>
         <source>Recharger</source>
         <translation>Recarregar</translation>
+    </message>
+</context>
+<context>
+    <name>ProjectLocation</name>
+    <message>
+        <location filename="../sources/location/projectlocation.cpp" line="164"/>
+        <source>Le code d'une localisation ne peut pas être vide.</source>
+        <translation>O código de uma localização não pode ficar vazio.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/projectlocation.cpp" line="179"/>
+        <source>Le code d'une localisation ne peut pas contenir « %1 ».</source>
+        <translation>O código de uma localização não pode conter « %1 ».</translation>
     </message>
 </context>
 <context>
@@ -11539,6 +12161,36 @@ Ouvrir en lecture seule est le choix sûr : vous verrez le dessin, sans risque d
 
 Abrir em modo somente leitura é a escolha segura: você vê o desenho, sem risco de apagar o trabalho dele. Forçar a abertura em escrita só faz sentido se você sabe que aquela sessão não existe mais.</translation>
     </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="917"/>
+        <source>Armoires et localisations…</source>
+        <translation>Armários e localizações…</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="918"/>
+        <source>Fait les armoires du projet, les emboîte, et met la sélection dans l'une d'elles en un geste.</source>
+        <translation>Faz os armários do projeto, encaixa um dentro do outro, e põe a seleção em um deles num só gesto.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="926"/>
+        <source>Composants sans localisation…</source>
+        <translation>Componentes sem localização…</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="927"/>
+        <source>Liste ce qui n'est encore dans aucune armoire, folio par folio, et permet de les y mettre.</source>
+        <translation>Lista o que ainda não está em nenhum armário, folha por folha, e permite colocá-los em um armário.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="935"/>
+        <source>Liste de matériel par localisation…</source>
+        <translation>Lista de material por localização…</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="936"/>
+        <source>Ce qu'il faut sortir du magasin pour une armoire, sous-localisations comprises. S'exporte, et se pose sur le folio.</source>
+        <translation>O que é preciso retirar do estoque para um armário, sublocalizações incluídas. A lista se exporta, e se põe na folha.</translation>
+    </message>
 </context>
 <context>
     <name>QETElementEditor</name>
@@ -13135,6 +13787,7 @@ O que você deseja fazer?</translation>
     <message>
         <location filename="../sources/editor/esevent/eseventaddterminal.cpp" line="65"/>
         <location filename="../sources/editor/graphicspart/partterminal.h" line="108"/>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="75"/>
         <source>Borne</source>
         <translation>Terminal</translation>
     </message>
@@ -14766,6 +15419,21 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
             <numerusform>Renumerar %n componente</numerusform>
             <numerusform>Renumerar %n componentes</numerusform>
         </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="77"/>
+        <source>Maître</source>
+        <translation>Mestre</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="79"/>
+        <source>Esclave</source>
+        <translation>Escravo</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/locationreportdialog.cpp" line="81"/>
+        <source>Composant</source>
+        <translation>Componente</translation>
     </message>
 </context>
 <context>
