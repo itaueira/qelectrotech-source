@@ -366,6 +366,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/environment/ui/environmentdialog.cpp
   ${QET_DIR}/sources/environment/ui/environmentdialog.h
 
+  ${QET_DIR}/sources/location/enclosuretransfer.cpp
+  ${QET_DIR}/sources/location/enclosuretransfer.h
   ${QET_DIR}/sources/location/locatableelement.h
   ${QET_DIR}/sources/location/locationcontainment.cpp
   ${QET_DIR}/sources/location/locationcontainment.h

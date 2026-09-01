@@ -112,6 +112,7 @@ add_executable(
     src/iotree_test.cpp
     src/location_test.cpp
     src/locationcontainment_test.cpp
+    src/enclosuretransfer_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -202,6 +203,14 @@ add_executable(
     # and sources/undocommand.
     ${QET_DIR}/sources/location/locationcontainment.cpp
     ${QET_DIR}/sources/location/locationcontainment.h
+    # The enclosure transfer rule is arithmetic over rectangles: it says
+    # which mounted positions survive a change of enclosure and names the
+    # ones that do not. No scene, no project, no database - so the half of
+    # the acceptance criterion that matters (nothing is dropped silently)
+    # is proved here, and only the moving of items on screen waits for the
+    # mounting plate editor.
+    ${QET_DIR}/sources/location/enclosuretransfer.cpp
+    ${QET_DIR}/sources/location/enclosuretransfer.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
