@@ -3954,6 +3954,19 @@ Gravar uma revisão deixa esses projetos como estão e serve só para os próxim
     </message>
 </context>
 <context>
+    <name>DiagramEventAddLocationArea</name>
+    <message>
+        <location filename="../sources/diagramevent/diagrameventaddlocationarea.cpp" line="361"/>
+        <source>Ajouter une zone de localisation</source>
+        <translation>Adicionar uma zona de localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/diagramevent/diagrameventaddlocationarea.cpp" line="376"/>
+        <source>Affecter les composants d&apos;une zone</source>
+        <translation>Atribuir os componentes de uma zona</translation>
+    </message>
+</context>
+<context>
     <name>DiagramImageItem</name>
     <message>
         <location filename="../sources/qetgraphicsitem/diagramimageitem.cpp" line="127"/>
@@ -6090,6 +6103,48 @@ Ao importar este arquivo, você confirma que:
     </message>
 </context>
 <context>
+    <name>EnclosureTransferPlan</name>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="505"/>
+        <source>Le coffret de remplacement n&apos;a pas de surface de montage utilisable : rien ne peut y être reporté.</source>
+        <translation>O armário de substituição não tem superfície de montagem utilizável: nada pode ser transferido para ele.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="510"/>
+        <source>La surface de montage du coffret de remplacement est de %1 x %2 mm ; celle du coffret actuel n&apos;est pas connue.</source>
+        <translation>A superfície de montagem do armário de substituição é de %1 x %2 mm; a do armário atual não é conhecida.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="518"/>
+        <source>La surface de montage passe de %1 x %2 mm à %3 x %4 mm.</source>
+        <translation>A superfície de montagem passa de %1 x %2 mm para %3 x %4 mm.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/enclosuretransfer.cpp" line="529"/>
+        <source>%n élément(s) ne suivent pas le remplacement :</source>
+        <translation>
+            <numerusform>%n elemento não acompanha a substituição:</numerusform>
+            <numerusform>%n elementos não acompanham a substituição:</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/enclosuretransfer.cpp" line="548"/>
+        <source>... et %n autre(s) élément(s).</source>
+        <translation>
+            <numerusform>... e %n outro elemento.</numerusform>
+            <numerusform>... e %n outros elementos.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/enclosuretransfer.cpp" line="556"/>
+        <source>%n élément(s) ont été reportés sans que leurs dimensions soient connues.</source>
+        <translation>
+            <numerusform>%n elemento foi transferido sem que suas dimensões fossem conhecidas.</numerusform>
+            <numerusform>%n elementos foram transferidos sem que suas dimensões fossem conhecidas.</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>EnvironmentDialog</name>
     <message>
         <location filename="../sources/environment/ui/environmentdialog.cpp" line="46"/>
@@ -8132,6 +8187,52 @@ Por favor, use o editor avançado para isso.</translation>
     </message>
 </context>
 <context>
+    <name>LocationAreaItem</name>
+    <message>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="174"/>
+        <source>une zone de localisation</source>
+        <translation>uma zona de localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="219"/>
+        <source>Modifier la localisation d&apos;une zone</source>
+        <translation>Alterar a localização de uma zona</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="232"/>
+        <source>Affecter les composants d&apos;une zone</source>
+        <translation>Atribuir os componentes de uma zona</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="491"/>
+        <source>Aucune localisation</source>
+        <translation>Nenhuma localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="492"/>
+        <source>Ce projet n&apos;a encore aucune localisation.
+Definissez-en une dans le gestionnaire de localisations avant de dessiner une zone.</source>
+        <translation>Este projeto ainda não tem nenhuma localização.
+Defina uma no gerenciador de localizações antes de desenhar uma zona.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="501"/>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="675"/>
+        <source>(sans localisation)</source>
+        <translation>(sem localização)</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="528"/>
+        <source>Zone de localisation</source>
+        <translation>Zona de localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/locationareaitem.cpp" line="529"/>
+        <source>Localisation de cette zone :</source>
+        <translation>Localização desta zona:</translation>
+    </message>
+</context>
+<context>
     <name>MarginsEditDialog</name>
     <message>
         <location filename="../sources/ui/marginseditdialog.ui" line="14"/>
@@ -8288,6 +8389,14 @@ Por favor, use o editor avançado para isso.</translation>
         <location filename="../sources/ui/masterpropertieswidget.h" line="67"/>
         <source>Référence croisée (maître)</source>
         <translation>Referência cruzada (mestre)</translation>
+    </message>
+</context>
+<context>
+    <name>MountedItem</name>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="258"/>
+        <source>un élément sans repère</source>
+        <translation>um elemento sem referência</translation>
     </message>
 </context>
 <context>
@@ -10554,6 +10663,11 @@ Opções disponíveis:
         <translation>Adicionar uma linha poligonal</translation>
     </message>
     <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1180"/>
+        <source>Ajouter une zone de localisation</source>
+        <translation>Adicionar uma zona de localização</translation>
+    </message>
+    <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="280"/>
         <source>Exporte le folio courant dans un autre format</source>
         <comment>status bar tip</comment>
@@ -10680,6 +10794,11 @@ Opções disponíveis:
         <location filename="../sources/qetdiagrameditor.cpp" line="739"/>
         <source>Ajoute une polyligne sur le folio actuel</source>
         <translation>Adiciona uma polilinha na página atual</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1192"/>
+        <source>Dessine sur le folio actuel une zone qui affecte les composants qu&apos;elle contient</source>
+        <translation>Desenha na folha atual uma zona que atribui a localização aos componentes que ela contém</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="740"/>
@@ -10873,6 +10992,11 @@ Opções disponíveis:
         <location filename="../sources/qetdiagrameditor.cpp" line="1568"/>
         <source>Double-click pour terminer la forme, Click droit pour annuler le dernier point</source>
         <translation>Clique duas vezes para completar a forma, clique com o botão direito para cancelar o último ponto</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3088"/>
+        <source>Cliquez-glissez, ou cliquez les deux coins, pour dessiner la zone. Click droit pour annuler</source>
+        <translation>Clique e arraste, ou clique nos dois cantos, para desenhar a zona. Clique com o botão direito para cancelar</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1635"/>
@@ -13522,6 +13646,12 @@ O que você deseja fazer?</translation>
             <numerusform>Adicionar %n condutor</numerusform>
             <numerusform>Adicionar %n condutores</numerusform>
         </translation>
+    </message>
+    <message>
+        <location filename="../sources/elementsmover.cpp" line="269"/>
+        <location filename="../sources/elementsmover.cpp" line="272"/>
+        <source>Affecter les composants d&apos;une zone</source>
+        <translation>Atribuir os componentes de uma zona</translation>
     </message>
     <message>
         <location filename="../sources/editor/esevent/eseventadddynamictextfield.cpp" line="68"/>
@@ -19939,6 +20069,34 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <source>Cartouches du projet &quot;%1&quot;</source>
         <comment>collection title when the project has a suitable title -- %1 is the project title</comment>
         <translation>Blocos de legenda do projeto &quot;%1&quot;</translation>
+    </message>
+</context>
+<context>
+    <name>TransferredItem</name>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="285"/>
+        <source>%1 : dimensions inconnues, position conservée sans vérification.</source>
+        <translation>%1: dimensões desconhecidas, posição mantida sem verificação.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="293"/>
+        <source>%1 : déjà hors de la surface de montage avant le remplacement.</source>
+        <translation>%1: já estava fora da superfície de montagem antes da substituição.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="297"/>
+        <source>%1 : ne tient plus à cette position, mais tient ailleurs sur la surface de montage.</source>
+        <translation>%1: não cabe mais nesta posição, mas cabe em outro lugar da superfície de montagem.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="302"/>
+        <source>%1 : trop grand pour la surface de montage, il mesure %2 x %3 mm.</source>
+        <translation>%1: grande demais para a superfície de montagem, mede %2 x %3 mm.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/enclosuretransfer.cpp" line="309"/>
+        <source>%1 : le coffret de remplacement n&apos;a aucune surface de montage utilisable.</source>
+        <translation>%1: o armário de substituição não tem nenhuma superfície de montagem utilizável.</translation>
     </message>
 </context>
 <context>
