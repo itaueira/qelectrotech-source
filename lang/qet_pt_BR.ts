@@ -13691,6 +13691,11 @@ Deseja substituí-lo?</translation>
         <translation>Localização (+)</translation>
     </message>
     <message>
+        <location filename="../sources/qetinformation.cpp" line="324"/>
+        <source>Chemin de localisation</source>
+        <translation>Caminho de localização</translation>
+    </message>
+    <message>
         <location filename="../sources/qetinformation.cpp" line="242"/>
         <source>Indice de révision</source>
         <translation>Índice de revisão</translation>

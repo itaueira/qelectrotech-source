@@ -16,10 +16,13 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <QDate>
+#include <QLocale>
 #include <QObject>
 #include <QHash>
 #include <QRegularExpression>
 #include <algorithm>
+#include "location/locationtree.h"
 #include "qetinformation.h"
 
 /**
@@ -369,6 +372,35 @@ QString QETInformation::translatedInfoKey(const QString &info)
 	else if (info == ELMT_PLC_UNIT)                          return QObject::tr("Automate");
 	else if (info == ELMT_PLC_BUS)                           return QObject::tr("Barre PLC");
 	else return QString();
+}
+
+/**
+	@brief QETInformation::displayedInfoValue
+	@param info
+	@param value
+	@return @a value written the way a person has to read it
+*/
+QString QETInformation::displayedInfoValue(const QString &info, const QVariant &value)
+{
+	if (info == ELMT_LOCATION_PATH)
+	{
+			//The stored path is the tree's own writing, and the conversion
+			//lives with the tree so that the drawing and the location
+			//dialogues cannot disagree about what the norm writes. A
+			//component nobody placed carries no path and converts to
+			//nothing, which is the empty cell a reader expects.
+		return LocationTree::iecTag(value.toString());
+	}
+
+		//The rule the drawn table and the exported list each carried on
+		//their own: a value the variant reads as a date is written in the
+		//locale of the machine, anything else is written as it stands.
+	const QDate date = value.toDate();
+	if (!date.isNull()) {
+		return QLocale::system().toString(date, QLocale::ShortFormat);
+	}
+
+	return value.toString();
 }
 
 QStringList QETInformation::elementEditorElementInfoKeys()

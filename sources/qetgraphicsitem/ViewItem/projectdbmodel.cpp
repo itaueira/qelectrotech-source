@@ -369,18 +369,21 @@ void ProjectDBModel::fillValue()
 		qDebug() << "Query error : " << query_.lastError();
 	}
 	
+		//Which information each column holds, and not only the value it
+		//holds: a stored form and a drawn form are not always the same
+		//string, and the column name is what tells them apart. Taken once,
+		//outside the row loop: the query is fixed for the whole pass, only
+		//the row moves.
+	const auto fields_ = query_.record();
+
 	while (query_.next())
 	{
 		QStringList record_;
 		auto i=0;
 		while (query_.value(i).isValid())
 		{
-			auto date = query_.value(i).toDate();
-			if (!date.isNull()) {
-				record_ << QLocale::system().toString(query_.value(i).toDate(), QLocale::ShortFormat);
-			} else {
-				record_ << query_.value(i).toString();
-			}
+			record_ << QETInformation::displayedInfoValue(fields_.fieldName(i),
+								     query_.value(i));
 			++i;
 		}
 		m_record << record_;

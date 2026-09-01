@@ -20,6 +20,7 @@
 
 #include <QStringList>
 #include <QHash>
+#include <QVariant>
 
 /**
  * Inside this namespace you will find all information used in QElectrotech for
@@ -189,6 +190,28 @@ namespace QETInformation
 
 	QString infoToVar(const QString &info);
 	QString translatedInfoKey(const QString &info);
+
+	/**
+		@brief The text a person has to be shown for one stored value.
+		@param info the information key the value was read under
+		@param value the value as the project database holds it
+		@return the value written the way a document carries it
+
+		Some information is held in one form and read in another, and the
+		key is what says which. A location path is held the way the
+		location tree writes it, QCM1/PORTE, because that is the form a
+		query filters and sorts on and the form that survives a file round
+		trip; what a document has to carry is the designation of
+		IEC 81346, +QCM1+PORTE. A date is held as a date and read in the
+		locale of the machine.
+
+		Every consumer that turns a database row into text for a person
+		goes through here, so that one row cannot read two ways depending
+		on which consumer produced it - the defect this replaces was a
+		table on a folio showing the stored form while every dialogue of
+		the project showed the designation.
+	*/
+	QString displayedInfoValue(const QString &info, const QVariant &value);
 }
 
 #endif // QETINFORMATION_H

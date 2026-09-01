@@ -101,14 +101,20 @@ QString BOMExportDialog::getBom()
 	}
 	else
 	{
+			//Which information each column holds. The header needs it to
+			//name the column, and the rows need it because a stored form
+			//and a written form are not always the same string - a
+			//location path is stored as the location tree writes it and
+			//read as the norm writes it.
+		const auto fields_ = query_.record();
+
 			//HEADERS
 		if (ui->m_include_headers)
 		{
-			auto record_ = query_.record();
 			QStringList header_name;
-			for (auto i=0 ; i<record_.count() ; ++i)
+			for (auto i=0 ; i<fields_.count() ; ++i)
 			{
-				auto field_name = record_.fieldName(i);
+				auto field_name = fields_.fieldName(i);
 
 				qDebug() << "field name = " << field_name;
 				if (field_name == "position") {
@@ -135,12 +141,8 @@ QString BOMExportDialog::getBom()
 			QStringList values;
 			while (query_.value(i).isValid())
 			{
-				auto date = query_.value(i).toDate();
-				if (!date.isNull()) {
-					values << QLocale::system().toString(query_.value(i).toDate(), QLocale::ShortFormat);
-				} else {
-					values << query_.value(i).toString();
-				}
+				values << QETInformation::displayedInfoValue(fields_.fieldName(i),
+									    query_.value(i));
 				++i;
 			}
 
