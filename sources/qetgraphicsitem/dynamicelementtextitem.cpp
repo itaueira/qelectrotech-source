@@ -32,6 +32,39 @@
 #include <QDomElement>
 #include <QGraphicsSceneMouseEvent>
 
+namespace
+{
+	/**
+		@brief The value of one element information, written the way a person
+		has to read it on the folio.
+		@param dc the informations of the element this text takes its value from
+		@param info the information key this text is bound to
+		@return the value to paint
+
+		The conversion lives on the painting side and nowhere else. What the
+		project file carries for `location_path` is the path down the location
+		tree written with the tree's own separator - "QCM1/PORTE" - and that
+		stays the single stored answer: it is what a location is renamed and
+		moved by, and a display form stored beside it would be a second answer
+		to the same question, one that goes stale the first time somebody
+		renames a level. So the path is converted as late as possible, when
+		the text is handed to setPlainText(), and the caller keeps holding the
+		stored form.
+
+		QETInformation::displayedInfoValue() is the same function the
+		nomenclature table drawn on the folio and the exported bill of
+		material already call - see projectdbmodel.cpp and
+		bomexportdialog.cpp. Routing this reader through it is the whole
+		point: before, a dynamic text printed "QCM1/PORTE" beside the symbol
+		while the table on that same folio printed "+QCM1+PORTE" for the very
+		same component, and it was the drawing that went to the printer.
+	*/
+	QString paintedInfoValue(const DiagramContext &dc, const QString &info)
+	{
+		return QETInformation::displayedInfoValue(info, dc.value(info));
+	}
+}
+
 /**
 	@brief DynamicElementTextItem::DynamicElementTextItem
 	Constructor
@@ -384,8 +417,8 @@ void DynamicElementTextItem::setTextFrom(DynamicElementTextItem::TextFrom text_f
 			updateLabel();
 		}
 		else
-			setPlainText(elementUseForInfo()->elementInformations().value(m_info_name).toString());
-		
+			setPlainText(paintedInfoValue(elementUseForInfo()->elementInformations(), m_info_name));
+
 		if(old_text_from == UserText)
 			connect(elementUseForInfo(), &Element::elementInfoChange, this, &DynamicElementTextItem::elementInfoChanged);
 	}
@@ -473,7 +506,7 @@ void DynamicElementTextItem::setInfoName(const QString &info_name)
 		updateXref();
 	}
 	else if(elementUseForInfo() && m_text_from == DynamicElementTextItem::ElementInfo) {
-		setPlainText(elementUseForInfo()->elementInformations().value(info_name).toString());
+		setPlainText(paintedInfoValue(elementUseForInfo()->elementInformations(), info_name));
 	}
 	
 	emit infoNameChanged(info_name);
@@ -904,7 +937,7 @@ void DynamicElementTextItem::elementInfoChanged()
 			}
 		}
 		else {
-			final_text = dc.value(m_info_name).toString();
+			final_text = paintedInfoValue(dc, m_info_name);
 		}
 	}
 	else if (m_text_from == CompositeText)

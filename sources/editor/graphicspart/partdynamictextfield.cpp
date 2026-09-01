@@ -19,6 +19,7 @@
 
 #include "../../QPropertyUndoCommand/qpropertyundocommand.h"
 #include "../../qetapp.h"
+#include "../../qetinformation.h"
 #include "../elementscene.h"
 #include "../../utils/qetutils.h"
 #include <QApplication>
@@ -367,8 +368,16 @@ void PartDynamicTextField::setText(const QString &text) {
 
 void PartDynamicTextField::setInfoName(const QString &info_name) {
 	m_info_name = info_name;
+		//The library editor previews the same field the folio will paint, so
+		//it converts the value the same way - see
+		//QETInformation::displayedInfoValue(). The stakes are lower here than
+		//on a folio, since a template rarely carries a location, but a
+		//preview that spells a value differently from the drawing is a
+		//preview that teaches the wrong thing.
 	if(m_text_from == DynamicElementTextItem::ElementInfo && elementScene())
-		setPlainText(elementScene()->elementData().m_informations.value(m_info_name).toString());
+		setPlainText(QETInformation::displayedInfoValue(
+				     m_info_name,
+				     elementScene()->elementData().m_informations.value(m_info_name)));
 	emit infoNameChanged(m_info_name);
 }
 
@@ -633,7 +642,9 @@ void PartDynamicTextField::elementInfoChanged()
 		return;
 
 	if(m_text_from == DynamicElementTextItem::ElementInfo)
-		setPlainText(elementScene()->elementData().m_informations.value(m_info_name).toString());
+		setPlainText(QETInformation::displayedInfoValue(
+				     m_info_name,
+				     elementScene()->elementData().m_informations.value(m_info_name)));
 	else if (m_text_from == DynamicElementTextItem::CompositeText && elementScene())
 		setPlainText(autonum::AssignVariables::replaceVariable(
 			m_composite_text, elementScene()->elementData().m_informations));

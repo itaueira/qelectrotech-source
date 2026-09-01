@@ -1341,7 +1341,14 @@ void DynamicElementTextModel::itemDataChanged(QStandardItem *qsi)
 			{
 				enableSourceText(deti, DynamicElementTextItem::ElementInfo);
 				QString info = text_qsi->child(info_txt_row,1)->data(Qt::UserRole+2).toString();
-				text_qsi->setData(dc.value(info), Qt::DisplayRole);
+					//This column previews what the folio will paint, so it has
+					//to go through the same conversion the folio does - see
+					//QETInformation::displayedInfoValue(). Reading the stored
+					//value straight would show the designer "QCM1/PORTE" in
+					//the panel while the symbol behind the panel says
+					//"+QCM1+PORTE", and a preview that disagrees with the
+					//drawing is worse than no preview.
+				text_qsi->setData(QETInformation::displayedInfoValue(info, dc.value(info)), Qt::DisplayRole);
 			}
 			else
 			{
@@ -1360,7 +1367,7 @@ void DynamicElementTextModel::itemDataChanged(QStandardItem *qsi)
 		else if (qsi->data().toInt() == infoText && deti->elementUseForInfo())
 		{
 			QString info = qsi->data(Qt::UserRole+2).toString();
-			text_qsi->setData(dc.value(info), Qt::DisplayRole);
+			text_qsi->setData(QETInformation::displayedInfoValue(info, dc.value(info)), Qt::DisplayRole);
 		}
 		else if (qsi->data().toInt() == compositeText && deti->elementUseForInfo())
 		{

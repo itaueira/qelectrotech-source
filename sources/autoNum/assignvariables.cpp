@@ -22,6 +22,7 @@
 #include "../qetapp.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qetinformation.h"
 #include "../qetxml.h"
 #include "../qetproject.h"
 #include <QStringList>
@@ -294,6 +295,40 @@ namespace autonum
 		str.replace("%{machine_manufacturer_reference}", dc.value("machine_manufacturer_reference").toString());
 
 		str.replace("%{location}", dc.value("location").toString());
+
+			//`location_path` is the one variable here whose stored form is not
+			//what a person reads. The file carries the path down the location
+			//tree written with the tree's own separator - "QCM1/PORTE" - and
+			//the norm writes that same place "+QCM1+PORTE". The conversion is
+			//done here, at substitution time, and never on the stored value,
+			//because the path is what a location is renamed and moved by: a
+			//converted value written into the project file would be a second
+			//answer to the same question, and it would go stale in silence
+			//the first time somebody renames a level of the tree.
+			//
+			//QETInformation::displayedInfoValue() is the same function the
+			//nomenclature table drawn on the folio and the exported bill of
+			//material already call, so the three readers of a component can no
+			//longer disagree about where it is mounted.
+			//
+			//Known, and deliberately not handled here: displayedInfoValue()
+			//hands back the designation with its leading `+` already on it, so
+			//a composite text typed as "+%{location_path}" paints
+			//"++QCM1+PORTE". Nothing on this path removes the extra sign.
+			//Guessing at the intention - swallowing a `+` because the text
+			//happened to end with one - would sometimes eat a separator that
+			//was meant, and would hand back a wrong designation wearing the
+			//face of a right one. A doubled sign is visible on the folio and
+			//the designer deletes the character on the spot; a silently eaten
+			//one is never noticed. Worth knowing that
+			//IecStructure::fromTag() already reads "++QCM1+PORTE" back as the
+			//place "QCM1+PORTE", so the doubling is a display defect and does
+			//not corrupt the structure anything downstream parses.
+		str.replace("%{location_path}",
+				QETInformation::displayedInfoValue(
+					QETInformation::ELMT_LOCATION_PATH,
+					dc.value(QETInformation::ELMT_LOCATION_PATH)));
+
 		str.replace("%{function}", dc.value("function").toString());
 		str.replace("%{tension_protocol}", dc.value("tension_protocol").toString());
 		str.replace("%{conductor_section}", dc.value("conductor_section").toString());
