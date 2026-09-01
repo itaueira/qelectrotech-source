@@ -19,6 +19,8 @@
 
 #include "../../../sources/autoNum/iecstructure.h"
 #include "../../../sources/diagramcontext.h"
+#include "../../../sources/location/locationtree.h"
+#include "../../../sources/qetinformation.h"
 #include "qt_catch_tostring.h"
 
 TEST_CASE("CU-10.1 — désactivée, la structure ne touche à rien", "[iec]")
@@ -942,5 +944,285 @@ TEST_CASE("CU-10.12 — o campo Localização só é local IEC se o projeto diss
 		IecStructureSettings sem;
 		sem.enabled = true;
 		CHECK(com != sem);
+	}
+}
+
+TEST_CASE("the assigned location, and not the free text, is the plus part",
+	  "[iec]")
+{
+		//The `+` used to come from one field only, and from it only when the
+		//project opted in. That opt in exists to protect the drawing from
+		//what people put in that field - the terminal strip the wiring lands
+		//on, a note, a panel name - because it is free text older than the
+		//norm here. A path down the location tree of the project is not free
+		//text: it names a place the project has, it was assigned from a list,
+		//and its designation is the conversion of the path rather than
+		//anybody's typing. So it is read first, and it is read whether or not
+		//the project opted in to the field. The switch is then what it should
+		//always have been: the answer of a project that keeps no locations.
+	const IecStructure folio(QStringLiteral("CT1"),
+				 QStringLiteral("QCM"),
+				 QString());
+
+	SECTION("one level: the plus sign is written once, by the composition")
+	{
+		DiagramContext info;
+		info.addValue(IecStructure::locationPathKey(),
+			      QStringLiteral("QCP1"));
+
+		const IecStructure element = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info);
+
+			//The member holds the middle of the designation and not the
+			//designation: the leading `+` is written by toFullTag(), so
+			//storing it here as well would draw `++QCP1`.
+		CHECK(element.location == QStringLiteral("QCP1"));
+		CHECK(element.product  == QStringLiteral("K3"));
+		CHECK(element.toFullTag() == QStringLiteral("+QCP1-K3"));
+		CHECK_FALSE(element.toFullTag().contains(QStringLiteral("++")));
+	}
+
+	SECTION("several levels: the prefix repeats, and no separator is lost")
+	{
+		DiagramContext info;
+		info.addValue(IecStructure::locationPathKey(),
+			      QStringLiteral("PORTA/QCP1"));
+
+		const IecStructure element = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info);
+
+			//The norm writes a lower level by repeating the prefix, so
+			//the separator between two levels has to survive the trip
+			//into the structure. Gluing them - "PORTAQCP1" - would name a
+			//place no project has.
+		CHECK(element.location == QStringLiteral("PORTA+QCP1"));
+		CHECK(element.toFullTag() == QStringLiteral("+PORTA+QCP1-K3"));
+		CHECK_FALSE(element.toFullTag().contains(QStringLiteral("++")));
+	}
+
+	SECTION("a deep path keeps exactly one separator per level")
+	{
+			//Counting instead of comparing one literal: this is the case
+			//that fails if the conversion ever drops or doubles a
+			//separator halfway down.
+		const QString path = QStringLiteral("QCM1/PLACA/PORTA");
+		DiagramContext info;
+		info.addValue(IecStructure::locationPathKey(), path);
+
+		const IecStructure element = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info);
+
+		CHECK(element.location == QStringLiteral("QCM1+PLACA+PORTA"));
+		CHECK(element.location.count(QLatin1Char('+')) == 2);
+		CHECK(element.toFullTag().count(QLatin1Char('+')) == 3);
+	}
+
+	SECTION("the composed tag is what the tree itself writes for that path")
+	{
+			//The strongest form of the previous two checks, and the one
+			//that cannot rot: the drawing must carry the designation the
+			//location manager shows for the same path, plus the product.
+			//Written against the conversion and not against a literal, so
+			//that a change to either side is caught here.
+		const QString path = QStringLiteral("QCM1/PLACA/PORTA");
+		DiagramContext info;
+		info.addValue(IecStructure::locationPathKey(), path);
+
+		const IecStructure element = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info);
+
+		CHECK(element.toFullTag()
+		      == LocationTree::iecTag(path) + QStringLiteral("-K3"));
+	}
+
+	SECTION("with the free text switch off, the assigned place still shows")
+	{
+			//This is the case the change is for. The switch is off by
+			//default, and it stays off by default: what it guards is the
+			//free text field, which has nothing to do with a place the
+			//project assigned. Before, an assigned location produced no
+			//`+` at all unless the project had also opted in to a field
+			//it may well not use - the location was correct in the data
+			//and absent from the drawing.
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Context;
+		CHECK_FALSE(settings.location_from_element);
+
+		DiagramContext info;
+		info.addValue(IecStructure::locationPathKey(),
+			      QStringLiteral("PORTA/QCP1"));
+
+		const IecStructure element = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info,
+					settings.location_from_element);
+
+		CHECK(element.location == QStringLiteral("PORTA+QCP1"));
+		CHECK(settings.displayedTag(folio, element)
+		      == QStringLiteral("+PORTA+QCP1-K3"));
+			//And explicitly: not the tag of a component whose place the
+			//drawing does not say.
+		CHECK(settings.displayedTag(folio, element)
+		      != QStringLiteral("-K3"));
+
+		settings.display = IecTagDisplay::Full;
+		CHECK(settings.displayedTag(folio, element)
+		      == QStringLiteral("=CT1+PORTA+QCP1-K3"));
+	}
+
+	SECTION("the path wins over the field, switch on or off")
+	{
+			//Both filled, and they disagree - which is the normal state of
+			//a project that used the field for something else before the
+			//locations existed. The place that was assigned is the answer
+			//in both settings; the field is a fallback and never an
+			//override.
+		DiagramContext info;
+		info.addValue(IecStructure::locationPathKey(),
+			      QStringLiteral("PORTA/QCP1"));
+		info.addValue(IecStructure::locationKey(), QStringLiteral("X1"));
+
+		const IecStructure with_switch = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info, true);
+		CHECK(with_switch.location == QStringLiteral("PORTA+QCP1"));
+
+		const IecStructure without = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info, false);
+		CHECK(without.location == QStringLiteral("PORTA+QCP1"));
+	}
+
+	SECTION("no path, switch on: the field is the plus part, as before")
+	{
+			//The old behaviour, unchanged. A project that keeps no
+			//locations and did opt in to the field reads exactly as it
+			//read before.
+		DiagramContext info;
+		info.addValue(IecStructure::locationKey(), QStringLiteral("QCM2"));
+
+		const IecStructure element = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info, true);
+
+		CHECK(element.location == QStringLiteral("QCM2"));
+
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Context;
+		settings.location_from_element = true;
+		CHECK(settings.displayedTag(folio, element)
+		      == QStringLiteral("+QCM2-K3"));
+	}
+
+	SECTION("no path, switch off: no plus part at all, as before")
+	{
+			//The other half of the old behaviour, and the one that
+			//protects a delivered drawing: the field holding a terminal
+			//strip does not become a place because the norm was turned
+			//on.
+		DiagramContext info;
+		info.addValue(IecStructure::locationKey(), QStringLiteral("X1"));
+
+		const IecStructure element = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info, false);
+
+		CHECK(element.location.isEmpty());
+
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Context;
+		CHECK(settings.displayedTag(folio, element)
+		      == QStringLiteral("-K3"));
+	}
+
+	SECTION("a path naming no code at all falls back to the old rule")
+	{
+			//A path of separators and spaces names nothing, so it is not
+			//an assigned place and must not silence the field. Reading it
+			//as an empty `+` would take the fallback away from a project
+			//that asked for it.
+		DiagramContext info;
+		info.addValue(IecStructure::locationPathKey(), QStringLiteral("/"));
+		info.addValue(IecStructure::locationKey(), QStringLiteral("QCM2"));
+
+		CHECK(IecStructure::fromElementInformation(
+			      QStringLiteral("K3"), info, true).location
+		      == QStringLiteral("QCM2"));
+		CHECK(IecStructure::fromElementInformation(
+			      QStringLiteral("K3"), info, false)
+		      .location.isEmpty());
+	}
+
+	SECTION("the key is the one the element information vocabulary uses")
+	{
+			//The literal is written twice - once in the vocabulary of
+			//element information, once here, so that this class keeps
+			//depending on Qt alone. This is what the second copy costs:
+			//a check that the two never drift, because a drifted key
+			//would read every component as having no location.
+		CHECK(IecStructure::locationPathKey()
+		      == QStringLiteral("location_path"));
+		CHECK(IecStructure::locationPathKey()
+		      == QETInformation::ELMT_LOCATION_PATH);
+		CHECK(IecStructure::locationPathKey()
+		      != IecStructure::locationKey());
+	}
+}
+
+TEST_CASE("a repeated prefix is one location, read back as it was written",
+	  "[iec]")
+{
+		//The composition can now put a `+` inside the location part, because
+		//that is how the norm writes a lower level inside a higher one. The
+		//function that reads a tag has to agree, or the module would be able
+		//to write a designation it cannot read - and the reading is what the
+		//tag typed by hand goes through.
+	SECTION("two levels typed by hand name one place")
+	{
+		const IecStructure typed =
+				IecStructure::fromTag(QStringLiteral("+QCM1+PORTA-K3"));
+		CHECK(typed.location == QStringLiteral("QCM1+PORTA"));
+		CHECK(typed.product  == QStringLiteral("K3"));
+		CHECK(typed.toFullTag() == QStringLiteral("+QCM1+PORTA-K3"));
+	}
+
+	SECTION("a separator with nothing after it separates nothing")
+	{
+		CHECK(IecStructure::fromTag(QStringLiteral("+A1+")).location
+		      == QStringLiteral("A1"));
+		CHECK(IecStructure::fromTag(QStringLiteral("++A1")).location
+		      == QStringLiteral("A1"));
+	}
+
+	SECTION("composing twice gives the same as composing once")
+	{
+			//The property the whole file already guards for a single level,
+			//and the reason the reading above had to be fixed with the
+			//change: a location of two levels fed back through the reading
+			//used to come out glued, so a second pass drew a different
+			//tag from the first.
+		DiagramContext info;
+		info.addValue(IecStructure::locationPathKey(),
+			      QStringLiteral("PORTA/QCP1"));
+		const IecStructure element = IecStructure::fromElementInformation(
+					QStringLiteral("K3"), info);
+		const IecStructure folio(QStringLiteral("CT1"),
+					 QStringLiteral("QCM"),
+					 QString());
+
+		IecStructureSettings settings;
+		settings.enabled = true;
+
+		for (IecTagDisplay display : {IecTagDisplay::Short,
+					      IecTagDisplay::Context,
+					      IecTagDisplay::Full})
+		{
+			settings.display = display;
+			const QString once = settings.displayedTag(folio, element);
+			const QString twice = settings.displayedTag(
+						folio, IecStructure::fromTag(once));
+			const QString third = settings.displayedTag(
+						folio, IecStructure::fromTag(twice));
+			CHECK(twice == once);
+			CHECK(third == once);
+		}
 	}
 }

@@ -38,9 +38,17 @@ class DiagramContext;
 	| Part | Element information | Folio information |
 	|---|---|---|
 	| `=` function | `plant` | `plant` |
-	| `+` location | `location` | `locmach` |
+	| `+` location | `location_path`, else `location` | `locmach` |
 	| `-` product | `label` — the tag itself | — |
 	| `:` connection | inside `label`, as `X10:7` | — |
+
+	Two keys for the `+` because there are two kinds of answer, not two
+	spellings of one. `location_path` is the path down the location tree of
+	the project: a place that exists, that somebody picked from a list, and
+	whose designation is produced by converting that path. `location` is a
+	free text field older than the norm here, which holds whatever anybody
+	typed. The first is preferred wherever it is filled - see
+	fromElementInformation.
 
 	The specification said `-` was the `designation` field. It is not:
 	`designation` is what QElectroTech labels "Numéro d'article", a commercial
@@ -149,16 +157,28 @@ class IecStructure
 			its tag already said, which is the same rule the norm uses from
 			project to folio to component.
 
-			@param location_from_field : whether the `location` field of the
-			component is the `+` of the norm. **Off by default**, and the
-			reason is data, not taste: that field is older than the norm in
+			The preferred source of the `+` is the path down the location tree
+			of the project - see locationPathKey. A component that carries one
+			has been assigned a place that exists in the project, and the
+			designation is the conversion of that path rather than anybody's
+			typing, so it is right by construction. It is therefore read
+			whatever @a location_from_field says.
+
+			@param location_from_field : whether the free text `location`
+			field of the component is the `+` of the norm. Consulted only for
+			a component with no path. **Off by default**, and the reason is
+			data, not taste: that field is older than the norm in
 			QElectroTech and holds free text. In the 14 folio panel project
 			measured it holds the terminal strip the wiring of that component
 			lands on - X1, X5, X10 - and reading it as a place put `+X1-` on
 			23 components, which is 23 wrong statements on a drawing. A
 			project where the field really is a place says so, once, in the
-			settings. A place typed into the tag itself - `+QCM2-K3` - is
-			read whatever this says, because there it is explicit.
+			settings.
+
+			So this parameter guards the free text and nothing else. A place
+			typed into the tag itself - `+QCM2-K3` - is read whatever it says,
+			because there it is explicit; and a place assigned from the tree
+			is read whatever it says, because there it is not text at all.
 		*/
 		static IecStructure fromElementInformation(
 				const QString &label,
@@ -179,6 +199,19 @@ class IecStructure
 		static QString plantKey();
 		static QString locationKey();
 		static QString productKey();
+
+		/**
+			@return the element information key of the path down the location
+			tree of the project
+
+			A key of its own, and not a better spelling of locationKey(): a
+			component can carry both, and they do not mean the same thing.
+			The path names a place the project has; the other field names
+			whatever somebody wrote. Which of the two becomes the `+` is
+			decided in one place, fromElementInformation.
+		*/
+		static QString locationPathKey();
+
 		/// The folio information key of the location part
 		static QString folioLocationKey();
 

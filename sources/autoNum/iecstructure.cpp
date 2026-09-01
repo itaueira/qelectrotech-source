@@ -18,6 +18,7 @@
 #include "iecstructure.h"
 
 #include "../diagramcontext.h"
+#include "../location/locationtree.h"
 
 #include <QCoreApplication>
 
@@ -36,6 +37,30 @@ static bool isNumber(const QString &text)
 		}
 	}
 	return true;
+}
+
+/**
+	@param path : a path of codes down the location tree, "QCM1/PORTE"
+	@return the `+` part as this class stores it - "QCM1+PORTE" - empty when
+	the path names no place at all
+
+	The tree already knows how to write a path the way the norm does, with
+	its separators in place: `+QCM1+PORTE`, the prefix repeated once per
+	level rather than the levels nested. The location member here holds the
+	middle of that instead, because the leading `+` is written by toFullTag()
+	and by toContextTag() - `tag += '+' + location`. The two forms differ by
+	exactly that one character, so it is dropped here and the repeated prefix
+	form is not spelled out a second time. One conversion means a path of one
+	level and a path of five go through the same code, which is what keeps a
+	deep path from losing a separator on the way in.
+*/
+static QString locationFromPath(const QString &path)
+{
+	QString designation = LocationTree::iecTag(path);
+	if (designation.startsWith(QLatin1Char('+'))) {
+		designation.remove(0, 1);
+	}
+	return designation;
 }
 
 /**
@@ -290,7 +315,19 @@ IecStructure IecStructure::fromTag(const QString &tag)
 		const QChar character = trimmed.at(index);
 		if (character == QLatin1Char('=')) {
 			current = &structure.plant;
-		} else if (character == QLatin1Char('+')) {
+		} else if (character == QLatin1Char('+'))
+		{
+			// The norm writes one level inside another by repeating the
+			// prefix: `+QCM1+PORTE` is the door of cabinet QCM1, one
+			// place and not two. So a second plus sign continues the
+			// location part instead of restarting it - restarting it
+			// would read those two levels back as "QCM1PORTE", a place
+			// no project has, and would make this the one function that
+			// cannot read what toFullTag() writes.
+			if (current == &structure.location
+			    && !structure.location.isEmpty()) {
+				structure.location.append(QLatin1Char('+'));
+			}
 			current = &structure.location;
 		} else if (character == QLatin1Char(':')) {
 			// `:` is the connection: `-X10:7` is terminal 7 of strip X10.
@@ -320,6 +357,13 @@ IecStructure IecStructure::fromTag(const QString &tag)
 		structure.product.clear();
 	}
 
+		//A separator with nothing after it separates nothing: somebody typed
+		//`+A1+` and meant one place. Kept out of the loop above because there
+		//the character has not been read yet.
+	while (structure.location.endsWith(QLatin1Char('+'))) {
+		structure.location.chop(1);
+	}
+
 	return structure;
 }
 
@@ -333,19 +377,34 @@ IecStructure IecStructure::fromElementInformation(const QString &label,
 						  const DiagramContext &info,
 						  bool location_from_field)
 {
+		//The path down the location tree of the project comes first, and it
+		//comes first whatever the project said about the field below. The two
+		//are not two spellings of one value: this one is a place that exists
+		//in the project, that was assigned rather than typed, and whose
+		//designation is the conversion of the path. There is nothing here for
+		//a project to opt into - with a location assigned the `+` is right by
+		//construction, and asking for a second confirmation would only be a
+		//way of getting it wrong.
+	QString location =
+			locationFromPath(info.value(locationPathKey()).toString());
+
+		//The free text field is the fallback, and it only becomes the `+` of
+		//the norm when the project says it is one. It is older than the norm
+		//here: in the project measured it holds the terminal strip the wiring
+		//of the component lands on, and reading that as a place wrote `+X1-`
+		//on 23 components - information nobody put there. That is what the
+		//switch protects against, which is also why it has no business
+		//guarding the path above.
+	if (location.isEmpty() && location_from_field) {
+		location = info.value(locationKey()).toString();
+	}
+
 		//A tag typed with the separators already in it is read apart rather
 		//than escaped, so a project where somebody wrote "=CT1+A1-K3" by hand
 		//does not end up saying it twice.
-		//The location field only becomes the `+` of the norm when the project
-		//says it is one. It is older than the norm here and holds free text:
-		//in the project measured it holds the terminal strip the wiring of
-		//the component lands on, and reading that as a place wrote `+X1-` on
-		//23 components - information nobody put there.
 	return inherit(fromTag(label),
 		       IecStructure(info.value(plantKey()).toString(),
-				    location_from_field
-					    ? info.value(locationKey()).toString()
-					    : QString(),
+				    location,
 				    QString()));
 }
 
@@ -387,6 +446,20 @@ QString IecStructure::locationKey()
 QString IecStructure::productKey()
 {
 	return QStringLiteral("label");
+}
+
+/**
+	@brief IecStructure::locationPathKey
+	@return the element information key of the path down the location tree
+
+	The literal is repeated here rather than taken from the vocabulary of
+	element information, exactly as the three keys above do, so that this
+	file keeps depending on Qt alone and stays testable on a bench. The test
+	asserts the two spellings agree, which is what the repetition costs.
+*/
+QString IecStructure::locationPathKey()
+{
+	return QStringLiteral("location_path");
 }
 
 /**
