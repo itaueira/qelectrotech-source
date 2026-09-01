@@ -30,6 +30,7 @@
 #include "undocommand/addgraphicsobjectcommand.h"
 #include "qetapp.h"
 #include "qetdiagrameditor.h"
+#include "qetgraphicsitem/locationareaitem.h"
 #include "undocommand/movegraphicsitemcommand.h"
 
 /**
@@ -241,6 +242,34 @@ void ElementsMover::endMovement()
 					ConductorAutoNumerotation can  (conductor, m_diagram, undo_object);
 					can.numerate();
 				}
+			}
+		}
+	}
+
+		//The live rectangle. Any movement can change what a location area holds,
+		//and not only the movement of a component: dragging the area itself
+		//changes the location of components that never moved. So the rule is
+		//asked about the whole folio rather than about what was dragged, and it
+		//answers with the difference alone - a folio with no area drawn on it
+		//produces nothing and costs one pass over the items.
+	const QVector<LocationArea> areas{LocationAreaItem::areasOf(m_diagram)};
+	if (!areas.isEmpty())
+	{
+		const QList<LocationAssignment> assignments{
+			LocationAreaItem::pendingAssignments(m_diagram, areas)};
+
+			//Child of the same parent as the movement, added after it, so that
+			//undo runs backwards through the two: the components let go of their
+			//location first, and only then does the geometry go back. It also
+			//means the person gets one undo step for one drag, which is what
+			//makes the count go back from 5 to 6 in a single keystroke.
+		if (!assignments.isEmpty())
+		{
+			new AssignLocationCommand(assignments,
+						  QObject::tr("Affecter les composants d'une zone"),
+						  undo_object);
+			if (undo_object->text().isEmpty()) {
+				undo_object->setText(QObject::tr("Affecter les composants d'une zone"));
 			}
 		}
 	}

@@ -167,7 +167,8 @@ namespace QET {
 										  int shapes=0,
 										  int element_text=0,
 										  int tables_count=0,
-										  int terminal_strip_count=0);
+										  int terminal_strip_count=0,
+										  int location_areas_count=0);
 	QList<QDomElement> findInDomElement(const QDomElement &, const QString &);
 	QList<QDomElement> findInDomElement(const QDomElement &, const QString &, const QString &);
 	QList<QChar> forbiddenCharacters();

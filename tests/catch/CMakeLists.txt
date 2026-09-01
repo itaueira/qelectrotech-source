@@ -111,6 +111,7 @@ add_executable(
     src/iosheet_test.cpp
     src/iotree_test.cpp
     src/location_test.cpp
+    src/locationcontainment_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -194,6 +195,13 @@ add_executable(
     ${QET_DIR}/sources/location/locationtree.h
     ${QET_DIR}/sources/location/projectlocation.cpp
     ${QET_DIR}/sources/location/projectlocation.h
+    # The containment rule knows nothing but QRectF and QString, which is
+    # what lets CU-32.2 - six push buttons, one dragged out, one dragged
+    # in - be proved here instead of on a screen. What draws the rectangle
+    # and what pushes the undo command stay out, in sources/qetgraphicsitem
+    # and sources/undocommand.
+    ${QET_DIR}/sources/location/locationcontainment.cpp
+    ${QET_DIR}/sources/location/locationcontainment.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:

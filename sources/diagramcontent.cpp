@@ -26,6 +26,7 @@
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/elementtextitemgroup.h"
 #include "qetgraphicsitem/independenttextitem.h"
+#include "qetgraphicsitem/locationareaitem.h"
 #include "qetgraphicsitem/qetshapeitem.h"
 #include "qetgraphicsitem/terminal.h"
 #include "TerminalStrip/GraphicsItem/terminalstripitem.h"
@@ -89,6 +90,10 @@ DiagramContent::DiagramContent(Diagram *diagram, bool selected) :
 			}
 			case DiagramImageItem::Type:       { m_images        << qgraphicsitem_cast<DiagramImageItem *>(item);       break;}
 			case QetShapeItem::Type:           { m_shapes        << qgraphicsitem_cast<QetShapeItem *>(item);           break;}
+			//A location area answers type() with a value of its own, so it
+			//lands here and never in the shape case above, even though it is
+			//built on one. That is what keeps the two counts apart.
+			case LocationAreaItem::Type:       { m_location_areas << qgraphicsitem_cast<LocationAreaItem *>(item);      break;}
 			case DynamicElementTextItem::Type: { m_element_texts << qgraphicsitem_cast<DynamicElementTextItem *>(item); break;}
 			case QGraphicsItemGroup::Type: {
 				if (auto *group = dynamic_cast<ElementTextItemGroup *>(item)) {
@@ -211,7 +216,8 @@ bool DiagramContent::hasDeletableItems() const
 			|| qgi->type() == DiagramImageItem::Type
 			|| qgi->type() == DynamicElementTextItem::Type
 			|| qgi->type() == QetGraphicsTableItem::Type
-			|| qgi->type() == TerminalStripItem::Type)
+			|| qgi->type() == TerminalStripItem::Type
+			|| qgi->type() == LocationAreaItem::Type)
 			return true;
 		if(qgi->type() == QGraphicsItemGroup::Type)
 			if(dynamic_cast<ElementTextItemGroup *>(qgi))
@@ -230,6 +236,7 @@ bool DiagramContent::hasCopiableItems() const
 	if(!m_shapes.isEmpty())      return true;
 	if(!m_elements.isEmpty())    return true;
 	if(!m_text_fields.isEmpty()) return true;
+	if(!m_location_areas.isEmpty()) return true;
 	
 	return false;
 }
@@ -252,6 +259,7 @@ void DiagramContent::clear()
 	m_selected_items.clear();
 	m_tables.clear();
 	m_terminal_strip.clear();
+	m_location_areas.clear();
 }
 
 /**
@@ -287,6 +295,14 @@ int DiagramContent::removeNonMovableItems()
 		}
 	}
 
+	const QSet<LocationAreaItem *> areas_set = m_location_areas;
+	for(LocationAreaItem *area : areas_set) {
+		if (!area->isMovable()) {
+			m_location_areas.remove(area);
+			++count_;
+		}
+	}
+
 	return count_;
 }
 
@@ -307,6 +323,10 @@ DiagramContent &DiagramContent::operator+=(const DiagramContent &other)
 	for(QetShapeItem *qsi : other.m_shapes)
 		if(!m_shapes.contains(qsi))
 			m_shapes << qsi;
+	
+	for(LocationAreaItem *lai : other.m_location_areas)
+		if(!m_location_areas.contains(lai))
+			m_location_areas << lai;
 	
 	for(Conductor *c : other.m_conductors_to_update)
 		if(!m_conductors_to_update.contains(c))
@@ -400,6 +420,7 @@ QList<QGraphicsItem *> DiagramContent::items(int filter) const
 	if (filter & TextGroup)			for(auto qgi : m_texts_groups)  items_list << qgi;
 	if (filter & Tables)            for(auto qgi : m_tables)        items_list << qgi;
 	if (filter & TerminalStrip)     for(const auto qgi : std::as_const(m_terminal_strip)) items_list << qgi;
+	if (filter & LocationAreas)     for(auto qgi : m_location_areas) items_list << qgi;
 
 	if (filter & SelectedOnly) {
 		for(const auto &qgi : std::as_const(items_list)) {
@@ -429,6 +450,7 @@ int DiagramContent::count(int filter) const
 		if (filter & TextGroup)          for(auto etig      : m_texts_groups)         { if (etig      -> isSelected()) ++ count; }
 		if (filter & Tables)             for(auto table     : m_tables)               { if (table     -> isSelected()) ++ count;  }
 		if (filter & TerminalStrip)      for(const auto &strip : std::as_const(m_terminal_strip)) {if (strip->isSelected()) ++ count;}
+		if (filter & LocationAreas)      for(auto area      : m_location_areas)       { if (area      -> isSelected()) ++ count; }
 	}
 	else {
 		if (filter & Elements)           count += m_elements.count();
@@ -442,6 +464,7 @@ int DiagramContent::count(int filter) const
 		if (filter & TextGroup)			 count += m_texts_groups.count();
 		if (filter & Tables)             count += m_tables.count();
 		if (filter & TerminalStrip)      count += m_terminal_strip.count();
+		if (filter & LocationAreas)      count += m_location_areas.count();
 	}
 	return(count);
 }
@@ -463,6 +486,7 @@ QString DiagramContent::sentence(int filter) const
 	int elmt_text_count  = (filter & ElementTextFields) ? m_element_texts.count() : 0;
 	int tables_count     = (filter & Tables) ? m_tables.count() : 0;
 	const int strip_count = (filter & TerminalStrip) ? m_terminal_strip.count() : 0;
+	const int location_areas_count = (filter & LocationAreas) ? m_location_areas.count() : 0;
 	return(
 		QET::ElementsAndConductorsSentence(
 			elements_count,
@@ -472,7 +496,8 @@ QString DiagramContent::sentence(int filter) const
 			shapes_count,
 			elmt_text_count,
 			tables_count,
-			strip_count
+			strip_count,
+			location_areas_count
 		)
 	);
 }

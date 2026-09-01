@@ -367,6 +367,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/environment/ui/environmentdialog.h
 
   ${QET_DIR}/sources/location/locatableelement.h
+  ${QET_DIR}/sources/location/locationcontainment.cpp
+  ${QET_DIR}/sources/location/locationcontainment.h
   ${QET_DIR}/sources/location/locationtree.cpp
   ${QET_DIR}/sources/location/locationtree.h
   ${QET_DIR}/sources/location/projectlocation.cpp
@@ -443,6 +445,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/diagramevent/diagrameventaddelement.h
   ${QET_DIR}/sources/diagramevent/diagrameventaddimage.cpp
   ${QET_DIR}/sources/diagramevent/diagrameventaddimage.h
+  ${QET_DIR}/sources/diagramevent/diagrameventaddlocationarea.cpp
+  ${QET_DIR}/sources/diagramevent/diagrameventaddlocationarea.h
   ${QET_DIR}/sources/diagramevent/diagrameventaddshape.cpp
   ${QET_DIR}/sources/diagramevent/diagrameventaddshape.h
   ${QET_DIR}/sources/diagramevent/diagrameventaddtext.cpp
@@ -661,6 +665,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/qetgraphicsitem/elementtextitemgroup.h
   ${QET_DIR}/sources/qetgraphicsitem/independenttextitem.cpp
   ${QET_DIR}/sources/qetgraphicsitem/independenttextitem.h
+  ${QET_DIR}/sources/qetgraphicsitem/locationareaitem.cpp
+  ${QET_DIR}/sources/qetgraphicsitem/locationareaitem.h
   ${QET_DIR}/sources/qetgraphicsitem/masterelement.cpp
   ${QET_DIR}/sources/qetgraphicsitem/masterelement.h
   ${QET_DIR}/sources/qetgraphicsitem/qetgraphicsitem.cpp

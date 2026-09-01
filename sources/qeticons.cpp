@@ -116,6 +116,7 @@ namespace QET {
 		QIcon Home;
 		QIcon HotSpot;
 		QIcon InsertImage;
+		QIcon LocationArea;
 		QIcon Lower;
 		QIcon IC_MoveFile;
 		QIcon Mirror;
@@ -557,6 +558,7 @@ void QET::Icons::initIcons()
 	Home                .addFile(":/ico/22x22/go-home.png");
 	HotSpot             .addFile(":/ico/22x22/hotspot.png");
 	InsertImage         .addFile(":/ico/22x22/insert-image.png");
+	LocationArea        .addFile(":/ico/22x22/location-area.png");
 	Lower               .addFile(":/ico/22x22/lower.png");
 	IC_MoveFile         .addFile(":/ico/16x16/item-move.png");
 	Mirror              .addFile(":/ico/16x16/mirror.png");

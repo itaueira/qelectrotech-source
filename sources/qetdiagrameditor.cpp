@@ -42,6 +42,7 @@
 #include "conductornumexport.h"
 #include "diagramcommands.h"
 #include "diagramevent/diagrameventaddimage.h"
+#include "diagramevent/diagrameventaddlocationarea.h"
 #ifdef QET_HAS_QTPDF
 #include "diagramevent/diagrameventaddpdf.h"
 #endif
@@ -1176,6 +1177,7 @@ void QETDiagramEditor::setUpActions()
 	QAction *add_rectangle = m_add_item_actions_group.addAction(QET::Icons::PartRectangle, tr("Ajouter un rectangle"));
 	QAction *add_ellipse   = m_add_item_actions_group.addAction(QET::Icons::PartEllipse,   tr("Ajouter une ellipse"));
 	QAction *add_polyline  = m_add_item_actions_group.addAction(QET::Icons::PartPolygon,   tr("Ajouter une polyligne"));
+	QAction *add_location_area = m_add_item_actions_group.addAction(QET::Icons::LocationArea, tr("Ajouter une zone de localisation"));
 	QAction *add_terminal_strip = m_add_item_actions_group.addAction(QET::Icons::TerminalStrip, tr("Ajouter un plan de bornes"));
 
 	add_text     ->setStatusTip(tr("Ajoute un champ de texte sur le folio actuel"));
@@ -1187,6 +1189,7 @@ void QETDiagramEditor::setUpActions()
 	add_rectangle->setStatusTip(tr("Ajoute un rectangle sur le folio actuel"));
 	add_ellipse  ->setStatusTip(tr("Ajoute une ellipse sur le folio actuel"));
 	add_polyline ->setStatusTip(tr("Ajoute une polyligne sur le folio actuel"));
+	add_location_area->setStatusTip(tr("Dessine sur le folio actuel une zone qui affecte les composants qu'elle contient"));
 	add_terminal_strip->setStatusTip(tr("Ajoute un plan de bornier sur le folio actuel"));
 
 	add_text     ->setData(QStringLiteral("text"));
@@ -1198,6 +1201,7 @@ void QETDiagramEditor::setUpActions()
 	add_rectangle->setData(QStringLiteral("rectangle"));
 	add_ellipse  ->setData(QStringLiteral("ellipse"));
 	add_polyline ->setData(QStringLiteral("polyline"));
+	add_location_area->setData(QStringLiteral("location_area"));
 	add_terminal_strip->setData(QStringLiteral("terminal_strip"));
 
 	add_text->setCheckable(true);
@@ -1205,6 +1209,7 @@ void QETDiagramEditor::setUpActions()
 	add_rectangle->setCheckable(true);
 	add_ellipse->setCheckable(true);
 	add_polyline->setCheckable(true);
+	add_location_area->setCheckable(true);
 
 	connect(&m_add_item_actions_group, &QActionGroup::triggered, this, &QETDiagramEditor::addItemGroupTriggered);
 
@@ -3077,6 +3082,14 @@ void QETDiagramEditor::addItemGroupTriggered(QAction *action)
 		statusBar()->clearMessage();
 		});
 	}
+	else if (value == QLatin1String("location_area"))
+	{
+		diagram_event = new DiagramEventAddLocationArea(d);
+		statusBar()-> showMessage(tr("Cliquez-glissez, ou cliquez les deux coins, pour dessiner la zone. Click droit pour annuler"));
+		connect(diagram_event, &DiagramEventInterface::destroyed, [this]() {
+		statusBar()->clearMessage();
+		});
+	}
 	else if (value == "image")
 	{
 		DiagramEventAddImage *deai = new DiagramEventAddImage(d);
@@ -3450,6 +3463,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 				DiagramContent::SelectedOnly
 				| DiagramContent::Elements
 				| DiagramContent::Shapes
+				| DiagramContent::LocationAreas
 				| DiagramContent::Images);
 	m_depth_action_group->setEnabled(list.isEmpty()? false : true);
 }

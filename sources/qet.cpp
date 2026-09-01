@@ -266,7 +266,8 @@ QString QET::ElementsAndConductorsSentence(
 		int shapes_count,
 		int element_text_count,
 		int tables_count,
-		int terminal_strip_count)
+		int terminal_strip_count,
+		int location_areas_count)
 {
 	QString text;
 	if (elements_count) {
@@ -335,6 +336,14 @@ QString QET::ElementsAndConductorsSentence(
 					"%n plan de bornes",
 					"part of a sentence listing the content of a diagram",
 					terminal_strip_count);
+	}
+
+	if (location_areas_count) {
+		if (!text.isEmpty()) text += ", ";
+		text += QObject::tr(
+					"%n zone(s) de localisation",
+					"part of a sentence listing the content of a diagram",
+					location_areas_count);
 	}
 
 	return(text);

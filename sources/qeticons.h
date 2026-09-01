@@ -122,6 +122,7 @@ namespace QET {
 		extern QIcon Home;
 		extern QIcon HotSpot;
 		extern QIcon InsertImage;
+		extern QIcon LocationArea;
 		extern QIcon Lower;
 		extern QIcon IC_MoveFile;
 		extern QIcon Mirror;

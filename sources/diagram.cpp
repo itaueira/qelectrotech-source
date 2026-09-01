@@ -34,6 +34,7 @@
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/elementtextitemgroup.h"
 #include "qetgraphicsitem/independenttextitem.h"
+#include "qetgraphicsitem/locationareaitem.h"
 #include "qetgraphicsitem/qetshapeitem.h"
 #include "qetgraphicsitem/terminal.h"
 #include "qetxml.h"
@@ -990,6 +991,7 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 	QVector<DiagramTextItem *> list_texts;
 	QVector<DiagramImageItem *> list_images;
 	QVector<QetShapeItem *> list_shapes;
+	QVector<LocationAreaItem *> list_location_areas;
 	QVector<QetGraphicsTableItem *> table_vector;
 	QVector<TerminalStripItem *> strip_vector;
 
@@ -1039,6 +1041,12 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 				auto shape = static_cast<QetShapeItem *>(qgi);
 				if (whole_content || shape->isSelected())
 					list_shapes << shape;
+				break;
+			}
+			case LocationAreaItem::Type: {
+				auto area = static_cast<LocationAreaItem *>(qgi);
+				if (whole_content || area->isSelected())
+					list_location_areas << area;
 				break;
 			}
 			case QetGraphicsTableItem::Type: {
@@ -1104,6 +1112,19 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 			dom_shapes.appendChild(dii -> toXml(document));
 		}
 		dom_root.appendChild(dom_shapes);
+	}
+
+		//The areas go under a tag of their own rather than among the shapes.
+		//An older version of the program opening this file then finds a section
+		//it does not know and leaves it alone, instead of reading the rectangles
+		//as plain shapes, showing them without the location they stand for and
+		//saving them back that way.
+	if (!list_location_areas.isEmpty()) {
+		auto dom_areas = document.createElement(QStringLiteral("location_areas"));
+		for (auto area : list_location_areas) {
+			dom_areas.appendChild(area->toXml(document));
+		}
+		dom_root.appendChild(dom_areas);
 	}
 
 	if (table_vector.size()) {
@@ -1524,6 +1545,17 @@ bool Diagram::fromXml(QDomElement &document,
 		added_shapes << dii;
 	}
 
+		// Load location area
+	QList<LocationAreaItem *> added_location_areas;
+	for (auto area_xml : QET::findInDomElement(root,
+											   QStringLiteral("location_areas"),
+											   LocationAreaItem::tagName())) {
+		auto area = new LocationAreaItem(QPointF(0,0));
+		area->fromXml(area_xml);
+		addItem(area);
+		added_location_areas << area;
+	}
+
 		//Load tables
 	QVector<QetGraphicsTableItem *> added_tables;
 	for (const auto &dom_table : QETXML::subChild(root,
@@ -1545,6 +1577,7 @@ bool Diagram::fromXml(QDomElement &document,
 		QVector <QGraphicsItem *> added_items;
 		for (auto element : std::as_const(added_elements   )) added_items << element;
 		for (auto shape   : std::as_const(added_shapes     )) added_items << shape;
+		for (auto area    : std::as_const(added_location_areas)) added_items << area;
 		for (auto text    : std::as_const(added_texts      )) added_items << text;
 		for (auto image   : std::as_const(added_images     )) added_items << image;
 		for (auto table   : std::as_const(added_tables     )) added_items << table;
@@ -1608,6 +1641,9 @@ bool Diagram::fromXml(QDomElement &document,
 		content_ptr -> m_shapes		= QSet<QetShapeItem *>(
 					added_shapes.begin(),
 					added_shapes.end());
+		content_ptr -> m_location_areas	= QSet<LocationAreaItem *>(
+					added_location_areas.begin(),
+					added_location_areas.end());
 		content_ptr->m_terminal_strip.swap(added_strips);
 		content_ptr->m_tables.swap(added_tables);
 	}
@@ -1941,6 +1977,7 @@ void Diagram::changeZValue(QET::DepthOption option)
 	QList<QGraphicsItem *> l = dc.items(DiagramContent::SelectedOnly | \
 					    DiagramContent::Elements | \
 					    DiagramContent::Shapes | \
+					    DiagramContent::LocationAreas | \
 					    DiagramContent::Images);
 	QList<QGraphicsObject *> list;
 	for(QGraphicsItem *item : l)

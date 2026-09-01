@@ -35,6 +35,7 @@ class Diagram;
 class DiagramTextItem;
 class QetGraphicsTableItem;
 class TerminalStripItem;
+class LocationAreaItem;
 
 /**
 	This class provides a container that makes the transmission of diagram content
@@ -66,8 +67,15 @@ class DiagramContent
 			TextGroup = 256,
 			Tables = 512,
 			TerminalStrip = 1024,
-			All = 2047,
-			SelectedOnly = 2048
+			//A location area is an organisational overlay, not drawing
+			//content, which is why it gets a bit of its own instead of
+			//being counted among the shapes it is built on. Folding it
+			//into Shapes would make a caption say "3 shapes" when one
+			//of the three is an enclosure, and a caption that names the
+			//wrong thing is how a delete goes unnoticed.
+			LocationAreas = 2048,
+			All = 4095,
+			SelectedOnly = 4096
 		};
 		
 		QList<Element *> m_elements;
@@ -84,6 +92,7 @@ class DiagramContent
 		QVector<QetGraphicsTableItem *> m_tables;
 		QVector<TerminalStripItem *> m_terminal_strip;
 		QVector<QPointer<TerminalElement>> m_terminal_elements;
+		QSet<LocationAreaItem *> m_location_areas;
 
 		
 		QList<DiagramTextItem *> selectedTexts() const;
