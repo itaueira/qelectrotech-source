@@ -56,6 +56,44 @@ BOMExportDialog::~BOMExportDialog()
 /**
 	@brief BOMExportDialog::exec
 	@return
+
+	@par End of the file : nothing after the last row
+	getBom() terminates every row with a line break, so the stream writes
+	the text and stops there. What stood here was
+	@c {stream << getBom() << &Qt::endl(stream)}, and the call binds tighter
+	than the unary @c & : that is @c {&(Qt::endl(stream))}, so the
+	manipulator runs and the @c QTextStream* it returns is then printed by
+	@c {operator<<(const void *)} as a hexadecimal address. Measured on a
+	two row export, the file ended in an empty row followed by
+	@c 0x9a033ff0e0 - every csv this dialog ever wrote carried that. Writing
+	@c Qt::endl instead would drop the address but keep the empty row,
+	because the content already ends in a break. The price of writing
+	nothing is that a payload which did not end in a line break would leave
+	the file without a final newline; getBom() is the only payload here and
+	it always terminates its rows.
+
+	@par Replacing a file : truncate, do not delete first
+	The existing file is no longer deleted before the new one is opened.
+	@c QIODevice::WriteOnly truncates on open - measured, forty bytes down
+	to two with no @c QFile::remove anywhere - so the delete bought no
+	behaviour, and the save dialog has already asked the user to confirm the
+	overwrite. What it did buy was a window with no file at all: the delete
+	succeeded, the open then failed, and the user was left without the new
+	list and without the old one. The price is that the separate "cannot
+	replace" report disappears, so a file the user holds open in a
+	spreadsheet is now refused by open() and reported as a file that could
+	not be written; and the wording is a new @c tr() string, so the twenty
+	three catalogues that translate the old one fall back to the French
+	source until lupdate runs again.
+
+	@par A failed open : say it and stop
+	The open carries an error branch that reports and returns. It had none,
+	so a folder without write permission, a full disk or a network drive
+	that dropped produced no file and no message - and, with the delete
+	above, no old file either. The system reason is appended outside
+	@c tr(), which mixes the French sentence with the language of the
+	operating system: the price of telling the user that access was denied
+	instead of only that something went wrong.
 */
 int BOMExportDialog::exec()
 {
@@ -70,21 +108,18 @@ int BOMExportDialog::exec()
 		QFile file(file_path);
 		if (!file_path.isEmpty())
 		{
-			if (QFile::exists(file_path ))
+			if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
 			{
-				// if file already exist -> delete it
-				if (!QFile::remove(file_path) )
-				{
-					QMessageBox::critical(this, tr("Erreur"),
-										  tr("Impossible de remplacer le fichier!\n\n")+
-										  "Destination : "+file_path+"\n");
-				}
+				QMessageBox::critical(this, tr("Erreur"),
+									  tr("Le fichier « %1 » n'a pas pu être écrit.").arg(file_path)+
+									  "\n\n"+file.errorString());
+				return r;
 			}
-			if (file.open(QIODevice::WriteOnly | QIODevice::Text))
-			{
-				QTextStream stream(&file);
-				stream << getBom() << &Qt::endl(stream);
-			}
+
+				//getBom() ends its last row with a line break already, so
+				//nothing is appended after it.
+			QTextStream stream(&file);
+			stream << getBom();
 		}
 	}
 	return r;

@@ -43,6 +43,37 @@ ConductorNumExport::ConductorNumExport(QETProject *project, QWidget *parent) :
 	@brief ConductorNumExport::toCsv
 	Export the num of conductors into a csv file.
 	@return true if suceesfully exported.
+
+	@par End of the file : nothing after the last row
+	wiresNum() terminates every row with a line break, so the stream writes
+	the text and stops. What stood here was
+	@c {stream << wiresNum() << &Qt::endl(stream)}, which the precedence of
+	the call over the unary @c & turns into @c {&(Qt::endl(stream))} : the
+	manipulator runs and its @c QTextStream* return is printed by
+	@c {operator<<(const void *)} as a hexadecimal address, measured as an
+	empty row plus @c 0x9a033ff0e0 at the end of every exported file. The
+	price of writing nothing is a file with no final newline should the
+	payload ever stop terminating its rows.
+
+	@par Replacing a file : truncate, do not delete first
+	The existing file is no longer deleted before the new one is opened,
+	because @c QIODevice::WriteOnly truncates on open - measured, forty
+	bytes down to two with no @c QFile::remove - and the save dialog has
+	already asked the user to confirm the overwrite. The delete only opened
+	a window in which the old file was gone and the new one had not been
+	proved writable. The price is that the separate "cannot replace" report
+	disappears and its @c tr() string, translated in twenty three
+	catalogues, is replaced by a new one that falls back to French until
+	lupdate runs again.
+
+	@par A failed open : say it, do not only return false
+	The error branch already returned false, but said nothing, and the sole
+	caller - QETDiagramEditor, where the action is wired - discards the
+	return value. So the user picked a file name and got no file and no
+	message. The branch now reports before returning. The price is a dialog
+	that mixes the French sentence with the system reason in the language of
+	the operating system, which is what distinguishes a denied folder from a
+	full disk.
 */
 bool ConductorNumExport::toCsv()
 {
@@ -58,26 +89,18 @@ bool ConductorNumExport::toCsv()
 	QFile file(filename);
 	if(!filename.isEmpty())
 	{
-		if(QFile::exists(filename))
+		if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
 		{
-			// if file already exist -> delete it
-			if(!QFile::remove(filename))
-			{
-				QMessageBox::critical(m_parent_widget, QObject::tr("Erreur"),
-									  QObject::tr("Impossible de remplacer le fichier!\n\n") %
-									  "Destination : " % filename % "\n");
-				return false;
-			}
-		}
-		if (file.open(QIODevice::WriteOnly | QIODevice::Text))
-		{
-			QTextStream stream(&file);
-
-			stream << wiresNum() << &Qt::endl(stream);
-		}
-		else {
+			QMessageBox::critical(m_parent_widget, QObject::tr("Erreur"),
+								  QObject::tr("Le fichier « %1 » n'a pas pu être écrit.").arg(filename) %
+								  "\n\n" % file.errorString());
 			return false;
 		}
+
+			//wiresNum() ends its last row with a line break already, so
+			//nothing is appended after it.
+		QTextStream stream(&file);
+		stream << wiresNum();
 	}
 	else {
 		return false;
