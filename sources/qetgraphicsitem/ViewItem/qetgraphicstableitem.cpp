@@ -430,6 +430,24 @@ int QetGraphicsTableItem::displayNRow() const
 	When remove a previous table (set to nullptr) from a table,
 	the model is also removed, you need to set a new model
 	@param table
+
+	@par The model is copied only when it is a ProjectDBModel
+	setModel is public and accepts any QAbstractItemModel, so the model
+	of the old previous table is not always the one built by the factory,
+	and a table that was built but not filled yet carries no model at all.
+	Only a ProjectDBModel has a copy constructor, and that constructor
+	reads the private members of its source, so the cast is checked
+	instead of handing a pointer to the wrong type to the copy
+	constructor. When the cast fails the old model is shared instead of
+	copied, so the table keeps showing on the folio exactly what it was
+	showing before the link was removed.
+	Price : both tables then read the same model instance, so a later
+	change of query shows up in both, which is the independence the copy
+	was there to buy. A null model stays null and the table falls back to
+	the empty box of a table without a model, as said above.
+	The default model of fromXml is not reused here because it needs
+	diagram()->project(), and QetGraphicsTableFactory links the table
+	before adding it to the diagram, so diagram() is still null there.
 */
 void QetGraphicsTableItem::setPreviousTable(QetGraphicsTableItem *table)
 {
@@ -447,7 +465,15 @@ void QetGraphicsTableItem::setPreviousTable(QetGraphicsTableItem *table)
 	}
 	else //Copie the model of old previous table
 	{
-		setModel(new ProjectDBModel(*static_cast<ProjectDBModel *>(old_previous_table->model())));
+		auto *old_model = old_previous_table->model();
+		if (auto *project_db_model = qobject_cast<ProjectDBModel *>(old_model))
+		{
+			setModel(new ProjectDBModel(*project_db_model));
+		}
+		else //An unknown model cannot be copied, share it instead
+		{
+			setModel(old_model);
+		}
 	}
 
 	if (old_previous_table &&
