@@ -752,13 +752,9 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="79"/>
-        <source>Impossible de remplacer le fichier!
-
-</source>
-        <translation>Não é possível substituir o arquivo!
-
-</translation>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="114"/>
+        <source>Le fichier « %1 » n'a pas pu être écrit.</source>
+        <translation>O arquivo « %1 » não pôde ser escrito.</translation>
     </message>
     <message>
         <location filename="../sources/ui/bomexportdialog.cpp" line="115"/>
@@ -13911,13 +13907,9 @@ O que você deseja fazer?</translation>
         <translation>Arquivos csv (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/conductornumexport.cpp" line="67"/>
-        <source>Impossible de remplacer le fichier!
-
-</source>
-        <translation>Não é possível substituir o arquivo!
-
-</translation>
+        <location filename="../sources/conductornumexport.cpp" line="95"/>
+        <source>Le fichier « %1 » n'a pas pu être écrit.</source>
+        <translation>O arquivo « %1 » não pôde ser escrito.</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="246"/>
