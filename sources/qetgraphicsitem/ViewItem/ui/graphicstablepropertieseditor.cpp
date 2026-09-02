@@ -109,10 +109,38 @@ void GraphicsTablePropertiesEditor::setTable(QetGraphicsTableItem *table)
 /**
 	@brief GraphicsTablePropertiesEditor::apply
 	Apply the current edition
+
+	@par The guard tests the diagram, not only the table
+	Deleting a table only takes it off its scene :
+	DeleteQGraphicsItemCommand::redo() calls removeItem() on it and
+	nothing destroys the object, while Diagram::removeItem() emits no
+	selectionChanged(), so the properties dock is never cleared and goes
+	on showing a table whose diagram() answers nullptr from then on. The
+	condition here used to read !m_table_item && m_table_item->diagram(),
+	which is false in exactly that state, so it let this function reach
+	d->undoStack() with d null.
+	The null QPointer that condition seems to aim at cannot happen here.
+	This function runs only from the live edit connections of
+	setUpEditConnection(), and every path that destroys the edited table
+	deletes this editor first, in the same call stack : closing a project
+	empties the properties dock in QETDiagramEditor::projectWasClosed
+	before it schedules the project for deletion, and removing a folio
+	empties it from the diagram destroyed() signal. Neither leaves the
+	event loop a turn in which a spinbox of a surviving editor could call
+	in.
+	Price : the first operand is insurance against a case measurement
+	says does not occur, kept because it costs one test and because it is
+	the guard on_m_apply_geometry_to_linked_table_pb_clicked() already
+	uses below. Turning the && into an || and stopping there would not
+	do : that returns whenever the table is alive, and this function
+	would never apply anything at all. The state itself is left alone,
+	the panel still shows a table the user has deleted and its spinboxes
+	still move ; they only stop pushing undo commands into a diagram that
+	is gone.
 */
 void GraphicsTablePropertiesEditor::apply()
 {
-	if(!m_table_item && m_table_item->diagram()) {
+	if(m_table_item.isNull() || !m_table_item->diagram()) {
 		return;
 	}
 	auto d = m_table_item->diagram();

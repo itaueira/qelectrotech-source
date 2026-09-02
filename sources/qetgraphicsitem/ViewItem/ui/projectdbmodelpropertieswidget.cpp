@@ -51,6 +51,37 @@ ProjectDBModelPropertiesWidget::~ProjectDBModelPropertiesWidget()
 /**
 	@brief projectDBModelPropertiesWidget::setModel
 	@param model
+
+	@par m_model is a raw pointer and stays one
+	It cannot dangle. Every ProjectDBModel is built with the QETProject
+	it reads as its QObject parent, at all three construction sites :
+	QetGraphicsTableFactory passes the project twice, and the two in
+	QetGraphicsTableItem do the same, the copy constructor keeping the
+	parent of the model it copies. Nothing in the tree ever deletes a
+	ProjectDBModel, not even QetGraphicsTableItem::setModel, whose
+	documentation hands that duty to its caller and no caller takes it.
+	So a model is destroyed only with its project, and this widget is
+	already gone by then : QETDiagramEditor::projectWasClosed empties the
+	properties dock, which deletes this widget, before it schedules the
+	project for deletion, and ~QETProject deletes every Diagram from its
+	own body, each emptying the dock again through its destroyed()
+	signal, all of it before ~QObject reaches the models parented to the
+	project.
+	A QPointer was refused on that ground : a guard that cannot fire
+	reads as a case that does happen, and it would call for a test at the
+	six dereferences of on_m_edit_query_pb_clicked() below, which say by
+	their silence that the model is there. It would also not be enough on
+	its own, since the two buttons take their enabled state from m_model
+	once, here, and a dead model would leave them clickable. Connecting
+	to the model destroyed() signal was refused for the same reason, and
+	because it would answer too late anyway : a model destroyed as a
+	child of its project emits destroyed() after the dock holding this
+	widget has already been emptied.
+	Price : the invariant lives in this comment and not in the type, so
+	giving a ProjectDBModel any other parent, or deleting one by hand,
+	breaks this widget with nothing said at compile time. The m_model
+	test in on_m_refresh_pb_clicked() is left as it is rather than made
+	to match, so the file still reads as if the two cases differed.
 */
 void ProjectDBModelPropertiesWidget::setModel(ProjectDBModel *model)
 {
