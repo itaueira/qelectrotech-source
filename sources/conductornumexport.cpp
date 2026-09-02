@@ -26,6 +26,7 @@
 #include "qetgraphicsitem/terminal.h"
 
 #include <QFileDialog>
+#include <QMessageBox>
 
 /**
 	@brief ConductorNumExport::ConductorNumExport
@@ -42,7 +43,9 @@ ConductorNumExport::ConductorNumExport(QETProject *project, QWidget *parent) :
 /**
 	@brief ConductorNumExport::toCsv
 	Export the num of conductors into a csv file.
-	@return true if suceesfully exported.
+	@return true only when a file was written and its content reached the
+	device; false when the export was cancelled, when there was nothing to
+	export, and when the write failed.
 
 	@par End of the file : nothing after the last row
 	wiresNum() terminates every row with a line break, so the stream writes
@@ -74,9 +77,89 @@ ConductorNumExport::ConductorNumExport(QETProject *project, QWidget *parent) :
 	that mixes the French sentence with the system reason in the language of
 	the operating system, which is what distinguishes a denied folder from a
 	full disk.
+
+	@par Nothing to export : measured before the file name is asked for
+	@c wiresNum() went straight into the stream, so a project whose
+	conductors carry no number opened the file, wrote zero bytes and
+	returned @c true - an export that reported success and left an empty
+	csv. The payload is now built and measured first, and an empty one
+	reports and returns without ever reaching @c open(). Measuring before
+	the save dialog rather than after also closes the hole in the decision
+	above: @c QIODevice::WriteOnly truncates on open, and the confirmed
+	overwrite that justifies it was destroying the user's previous export
+	to make room for nothing. The price is that the string is built even
+	when the user then cancels the dialog; the hash it reads was already
+	filled by the constructor, so that costs one walk over a hash in
+	memory, not a second walk over the project.
+
+	@par An empty result is not a failure, so it does not speak like one
+	The empty case reports with @c QMessageBox::information, not with
+	@c critical, and the three outcomes now leave by three different doors:
+	silence when the user closed the save dialog, because they know what
+	they did; an information box when there is nothing to write; an error
+	box, with the system reason, when a write was attempted and failed.
+	The price is that the two states a designer cannot tell apart from that
+	one information box - no number typed anywhere, versus numbers that sit
+	only on folio report links, which @c fillHash() drops on purpose -
+	carry the same sentence. Naming the second in the dialog would cost a
+	longer string in twenty three catalogues for the rarer case, so it is
+	named here instead.
+
+	@par A write that does not land : flush, then read the error
+	@c QTextStream buffers in user space, so the error of a write that
+	could not land is not in the file until the buffer is pushed into it.
+	@c flush() therefore comes first and @c QFile::error() is read straight
+	after, while the device is still open. The next reader can break this
+	without noticing by moving the test below a tidy @c {file.close()} :
+	close() unsets the error once its own flush and close succeed, and the
+	explicit flush above has already emptied the buffer, so that close does
+	succeed and wipes the error the failed write left behind. The price is
+	that the report arrives after the fact - the short file stays on disk,
+	see the refusal below.
+
+	@par Refused : the truncated file on a full disk
+	The write still goes straight at the destination, so a disk that fills
+	up in the middle leaves a csv that looks complete and is not. The
+	branch above says so, but cannot undo it. @c QSaveFile is the fix -
+	temporary file, atomic rename on commit(), original untouched on
+	failure - and it is refused here for two measured reasons. The trap
+	first : @c QTextStream only flushes past its own threshold, so commit()
+	called while the stream is still alive renames a file the buffer never
+	reached, and the stream then flushes into a closed device, trading a
+	rare truncation for content lost on every export, with a syntax check
+	as the only proof available today. Then coherence :
+	wiringlistexport.cpp and ui/bomexportdialog.cpp write the same way, and
+	the same refusal is already written into the second of them. The three
+	belong in one change, with the flush before the commit written into it.
+
+	@par Refused : the return value still cannot say why
+	Four things can happen here - written, nothing to export, cancelled,
+	failed - and @c bool has two seats. The header could grow an enum,
+	because nothing outside this file needs @c toCsv() to stay a @c bool :
+	its one caller in qetdiagrameditor.cpp discards the value, and
+	cli_export.cpp never calls it, it calls @c wiresNum() and writes the
+	file itself. The enum is refused because no caller would read it today,
+	while it costs a recompile of both including translation units in a
+	tree whose build is a single deferred step. What @c true means is
+	narrowed instead, from "the file was opened" to "the file was written",
+	which is the question the name asks. The price is that a future
+	non-interactive caller cannot tell a project with no numbers from a
+	full disk, and will have to add the enum then: the three dialogs are
+	the only place that difference lives.
 */
 bool ConductorNumExport::toCsv()
 {
+		//Measured before a file name is asked for: an export with nothing
+		//in it must not reach open(), which truncates what is already
+		//there.
+	const QString csv = wiresNum();
+	if (csv.isEmpty())
+	{
+		QMessageBox::information(m_parent_widget, QObject::tr("Rien à exporter"),
+								 QObject::tr("Aucun conducteur numéroté n'a été trouvé dans ce projet. Aucun fichier n'a été écrit."));
+		return false;
+	}
+
 		//save in csv file in same directory as project by default
 	QString dir = m_project->currentDir();
 	if (dir.isEmpty()) dir = QETApp::documentDir();
@@ -86,23 +169,36 @@ bool ConductorNumExport::toCsv()
 	//    }
 
 	QString filename = QFileDialog::getSaveFileName(m_parent_widget, QObject::tr("Enregister sous... "), name, QObject::tr("Fichiers csv (*.csv)"));
-	QFile file(filename);
-	if(!filename.isEmpty())
+	if (filename.isEmpty())
 	{
-		if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-		{
-			QMessageBox::critical(m_parent_widget, QObject::tr("Erreur"),
-								  QObject::tr("Le fichier « %1 » n'a pas pu être écrit.").arg(filename) %
-								  "\n\n" % file.errorString());
-			return false;
-		}
-
-			//wiresNum() ends its last row with a line break already, so
-			//nothing is appended after it.
-		QTextStream stream(&file);
-		stream << wiresNum();
+			//The user closed the save dialog. Nothing was written and
+			//nothing failed, so nothing is reported.
+		return false;
 	}
-	else {
+
+	QFile file(filename);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		QMessageBox::critical(m_parent_widget, QObject::tr("Erreur"),
+							  QObject::tr("Le fichier « %1 » n'a pas pu être écrit.").arg(filename) %
+							  "\n\n" % file.errorString());
+		return false;
+	}
+
+		//wiresNum() ends its last row with a line break already, so
+		//nothing is appended after it.
+	QTextStream stream(&file);
+	stream << csv;
+
+		//The buffer is pushed into the device first, and the device is
+		//asked for its error while it is still open. Do not move this
+		//below a close().
+	stream.flush();
+	if (file.error() != QFileDevice::NoError)
+	{
+		QMessageBox::critical(m_parent_widget, QObject::tr("Erreur"),
+							  QObject::tr("L'écriture du fichier « %1 » a échoué.").arg(filename) %
+							  "\n\n" % file.errorString());
 		return false;
 	}
 
@@ -111,7 +207,29 @@ bool ConductorNumExport::toCsv()
 
 /**
 	@brief ConductorNumExport::wiresNum
-	@return the wire num formatted in csv
+	@return the wire num formatted in csv : one row per numbered conductor
+	end that is not a folio report, so a wire numbered at both ends is
+	printed twice, once per marker. An empty string when the project holds
+	no such end.
+
+	@par An empty string needs no null twin here
+	ui/bomexportdialog.cpp had to tell a query that failed from a query
+	that answered no row, and did it with a null QString against an empty
+	one. Nothing of that kind belongs here, because there is no failure to
+	tell apart : @c fillHash() has no error path at all - it only skips, at
+	the blank number test and at the two folio report tests - and the two
+	pointers it walks through cannot be null. @c Conductor::m_text_item is
+	built in the body of the only Conductor constructor, at
+	conductor.cpp:164, and never set back to null; the only
+	@c {new Terminal(...)} in the tree, at element.cpp:668, passes the
+	owning element as the parent. So an empty return carries exactly one
+	meaning, and toCsv() can report it as the ordinary answer it is. The
+	price is that this leans on two invariants held elsewhere : a Conductor
+	built one day without its text item, or a Terminal built with no
+	element, turns the two unguarded dereferences in @c fillHash() into a
+	crash instead of a skipped row. Guards are left out rather than added
+	because a dead guard hides which invariant is actually being relied on,
+	and this paragraph is the record of both.
 */
 QString ConductorNumExport::wiresNum() const
 {
