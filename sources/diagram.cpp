@@ -107,7 +107,8 @@ Diagram::Diagram(QETProject *project) :
 	draw_colored_conductors_ (true),
 	m_event_interface        (nullptr),
 	m_freeze_new_elements    (false),
-	m_freeze_new_conductors_ (false)
+	m_freeze_new_conductors_ (false),
+	m_dash_external_wires    (false)
 {
 
 	QSettings settings;
@@ -921,6 +922,14 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 					  m_freeze_new_conductors_
 					  ? QStringLiteral("true") : QStringLiteral("false"));
 
+			//Dashed external wire. Written unconditionally, and in the same
+			//words as the two above, so that folioFlag() can tell a folio
+			//saved before the option existed - no attribute, so the default -
+			//from one where it was deliberately switched off.
+		dom_root.setAttribute(QStringLiteral("dashExternalWires"),
+					  m_dash_external_wires
+					  ? QStringLiteral("true") : QStringLiteral("false"));
+
 		//Element Folio Sequential Variables
 		if (!m_elmt_unitfolio_max.isEmpty()
 				|| !m_elmt_tenfolio_max.isEmpty()
@@ -1423,6 +1432,11 @@ bool Diagram::fromXml(QDomElement &document,
 
 			// Load Freeze New Conductor
 		m_freeze_new_conductors_ = folioFlag(root, QStringLiteral("freezeNewConductor"));
+
+			// Load Dashed External Wire. Read through folioFlag() and never
+			// through toInt(), which answers 0 to both "true" and "false" -
+			// see the note on folioFlag() at the top of this file.
+		m_dash_external_wires = folioFlag(root, QStringLiteral("dashExternalWires"));
 
 			//Load Element Folio Sequential
 		folioSequentialsFromXml(root,
@@ -2389,6 +2403,71 @@ void Diagram::setFreezeNewConductors(bool b) {
 bool Diagram::freezeNewConductors()
 {
 	return m_freeze_new_conductors_;
+}
+
+/**
+	@brief Diagram::dashExternalWires
+	@return true when this folio paints a wire that leaves a location dashed
+
+	Called from Conductor::paint(), which is to say on every repaint of
+	every conductor on the folio, so it stays a plain read of a bool and
+	acquires nothing. See the header for why the switch is per folio.
+*/
+bool Diagram::dashExternalWires() const
+{
+	return m_dash_external_wires;
+}
+
+/**
+	@brief Diagram::setDashExternalWires
+	@param dash : true to paint the wires that leave a location dashed
+
+	Two things happen here that the two freeze siblings above do not do,
+	and both were measured rather than assumed.
+
+	@par The project is marked modified, because nothing else would
+
+	Diagram::setFreezeNewElements and Diagram::setFreezeNewConductors are
+	bare assignments, and so are their QETProject namesakes: no
+	setModified() anywhere on that path. A project is otherwise marked
+	modified by its undo stack (QETProject::undoStackChanged), and this
+	option is applied straight, with no command pushed - the same way the
+	folio properties dialog already applies the default conductor
+	properties. Left as a bare assignment, the box would tick, the drawing
+	would change, the title bar would show no asterisk, and the answer
+	would be gone on closing without a prompt.
+
+	The cost is that the change cannot be undone with ctrl-Z, only
+	un-ticked by hand. That is the price of following the local convention
+	of the dialog rather than inventing a command for one bool, and it is
+	the same price the default conductor properties already pay there.
+
+	@par The conductors are repainted, on the mold of setDrawTerminals
+
+	A folio option that changes how something is drawn has to invalidate
+	what is drawn, or the folio keeps the old stroke until something else
+	happens to dirty it. Only conductors are touched, not the whole scene,
+	because only conductors read this flag - repainting the border and
+	every element as well would cost a full folio redraw for nothing.
+
+	Both are guarded on a real change, so setting the option to the value
+	it already has costs one comparison and marks nothing.
+*/
+void Diagram::setDashExternalWires(bool dash)
+{
+	if (m_dash_external_wires == dash) {
+		return;
+	}
+
+	m_dash_external_wires = dash;
+
+	for (Conductor *conductor : conductors()) {
+		conductor->update();
+	}
+
+	if (m_project) {
+		m_project->setModified(true);
+	}
 }
 
 /**

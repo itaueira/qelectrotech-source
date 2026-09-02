@@ -24,8 +24,10 @@
 #include "../conductorsegmentprofile.h"
 #include "../diagram.h"
 #include "../diagramcommands.h"
+#include "../location/locationboundary.h"
 #include "../qetdiagrameditor.h"
 #include "../qetgraphicsitem/terminal.h"
+#include "../qetinformation.h"
 #include "../ui/conductorpropertiesdialog.h"
 #include "conductortextitem.h"
 #include "element.h"
@@ -36,6 +38,41 @@
 #include <QtDebug>
 
 #define PR(x) qDebug() << #x " = " << x;
+
+namespace
+{
+	/**
+		@brief The location path one end of a conductor stands in.
+		@param terminal one end of the conductor
+		@return the path the component carrying that terminal declares, empty
+		when there is nothing to declare
+
+		A terminal belongs to a component and a component carries the path, so
+		the answer is two hops away and either hop can be missing. Both are
+		tested rather than asserted: Terminal::parentElement() returns a member
+		initialised to nullptr, and a terminal on a free-standing conductor has
+		no component behind it.
+
+		An empty answer is not a failure and needs no separate signal for one:
+		crossesLocationBoundary() already treats an unknown end as crossing
+		nothing, so "no component" and "component with no location" arrive at
+		the same, conservative, answer.
+	*/
+	QString terminalLocationPath(const Terminal *terminal)
+	{
+		if (!terminal) {
+			return QString();
+		}
+
+		const Element *element = terminal->parentElement();
+		if (!element) {
+			return QString();
+		}
+
+		return element->elementInformations()
+				.value(QETInformation::ELMT_LOCATION_PATH).toString();
+	}
+}
 
 bool Conductor::pen_and_brush_initialized = false;
 QPen Conductor::conductor_pen = QPen();
@@ -497,6 +534,35 @@ QPointF Conductor::extendTerminal(const QPointF &terminal, Qet::Orientation term
 	@param painter Le QPainter a utiliser pour dessiner le conducteur
 	@param options Les options de style pour le conducteur
 	@param qw Le QWidget sur lequel on dessine
+
+	@par The dashed external wire is an overlay, and never a stored property
+
+	Decision G of the specification. A wire whose two ends sit in locations
+	that neither share nor contain one another is painted dashed, and that is
+	decided here, from the two ends and the folio flag, with nothing written
+	back to m_properties. So the wire keeps the style its owner chose,
+	un-ticking the folio option puts every wire back the way it was, and
+	moving a component to another location changes the drawing with no
+	conductor to edit.
+
+	Nobody should be tempted to store the answer on the conductor later: it
+	would be a second copy of a fact that already lives in the two
+	components, and the two would drift the first time somebody reassigned a
+	location.
+
+	The cost is paid on every repaint of every conductor, which is why the
+	folio flag is read before anything else and the two location paths are
+	only fetched once it says yes. On a folio with the option off, the whole
+	of it is one bool.
+
+	@par The bicolor branch is a second stroke, not a contradiction
+
+	Further down, the bicolor branch forces Qt::CustomDashLine for its own
+	pass. That pass is painted after this one, over the same path and with
+	its own pattern, so it neither reads nor overrules the style set here - a
+	bicolor external wire comes out dashed in both colours. Whoever reads
+	that branch should not go looking for the bug: there are two strokes, and
+	each one sets its own style.
 */
 void Conductor::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *qw)
 {
@@ -530,6 +596,26 @@ void Conductor::paint(QPainter *painter, const QStyleOptionGraphicsItem *options
 		//Set the conductor style
 	final_conductor_pen.setColor(final_conductor_color);
 	final_conductor_pen.setStyle(m_properties.style);
+
+		//Overlay a dash on a wire that leaves its location, when the folio
+		//asks for it. This is decided at paint time and stored nowhere, and
+		//the bicolor branch further down keeps its own style: see the two
+		//@par sections in the comment above this function before changing
+		//either of them.
+		//
+		//The folio flag is tested first so that a folio with the option off
+		//costs one bool and never a location lookup.
+	if (Diagram *parent_diagram = diagram())
+	{
+		if (parent_diagram->dashExternalWires()
+				&& crossesLocationBoundary(
+					terminalLocationPath(terminal1),
+					terminalLocationPath(terminal2)))
+		{
+			final_conductor_pen.setStyle(Qt::DashLine);
+		}
+	}
+
 	final_conductor_pen.setJoinStyle(Qt::SvgMiterJoin); // better rendering with dot
 
 		//Use a cosmetic line, below a certain zoom

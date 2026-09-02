@@ -177,6 +177,7 @@ class Diagram : public QGraphicsScene
 
 		bool m_freeze_new_elements;
 		bool m_freeze_new_conductors_;
+		bool m_dash_external_wires;
 		QUuid m_uuid = QUuid::createUuid();
 	
 	// METHODS
@@ -304,6 +305,35 @@ class Diagram : public QGraphicsScene
 		void freezeConductors(bool freeze);
 		void setFreezeNewConductors(bool);
 		bool freezeNewConductors();
+
+		/**
+			@brief Whether this folio dashes the wires that leave a location.
+			@return true when the folio paints an external wire dashed
+
+			Stored in the .qet as the dashExternalWires attribute of
+			<diagram>, and off by default. Off is the only safe default: a
+			folio saved before this option existed carries no attribute, and
+			a folio that changed its own appearance on the first opening
+			after an upgrade would look like a corrupted drawing rather than
+			a new feature.
+
+			@par The switch is per folio, and that is the whole point
+
+			The nearby display options - the grid, the terminals, the empty
+			fields - are application keys in the Display menu, one answer for
+			every project the person ever opens. This one is not, because the
+			decision it encodes is about a drawing and not about a person: an
+			overview folio wants the dashes and a wiring detail of one
+			enclosure does not, and both live in the same project.
+
+			The cost is that the option has to be set folio by folio, and
+			there is no "apply to the whole project" for it. That is paid
+			once per folio, in the folio properties dialog, and it buys a
+			drawing whose appearance travels with the file instead of with
+			whoever opens it.
+		*/
+		bool dashExternalWires() const;
+		void setDashExternalWires(bool);
 	
 		//methods related to insertion and loading of folio sequential
 		void insertFolioSeqHash (QHash<QString, QStringList> *hash,
