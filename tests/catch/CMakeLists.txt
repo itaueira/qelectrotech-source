@@ -346,3 +346,54 @@ endif ()
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/local/tests.cmake)
     include(${CMAKE_CURRENT_SOURCE_DIR}/local/tests.cmake)
 endif ()
+
+# ---------------------------------------------------------------------------
+# C_uitests - the second suite: the one that needs a project open.
+#
+# It is a separate executable on purpose. C_unittests lists its sources by
+# hand, and that hand-written list is a contract: it records that those rules
+# can be computed without a sheet, an element or a project. Linking it against
+# qet_core would erase the contract - everything would compile, and the day a
+# pure rule started needing an Element nobody would notice.
+#
+# So the split is: C_unittests stays as it is, and anything that has to open a
+# real project lands here, where qet_core brings the whole program in.
+#
+# Guarded by if(TARGET qet_core) because this directory can also be configured
+# on its own, from tests/catch/, with no parent project - which is what the
+# QET_DIR fallback above exists for. In that mode the target does not exist
+# and only C_unittests is built.
+if(TARGET qet_core)
+    add_executable(
+        C_uitests
+        main.cpp
+        src/ui/uibench.cpp
+        src/ui/uibench.h
+        src/ui/projectopen_test.cpp)
+
+    target_link_libraries(
+        C_uitests
+        PUBLIC
+        Catch2::Catch2
+        PRIVATE
+        qet_core
+        Qt::Test)
+
+    # ${QET_DIR} for the same reason as above: diagramcontext.h includes
+    # "pugixml/src/pugixml.hpp", a path that only resolves from the root.
+    # The current directory is what lets a test in src/ui/ include "uibench.h".
+    target_include_directories(
+        C_uitests
+        PRIVATE
+        ${QET_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR})
+
+    # The fixtures are the projects the program ships with. Passing the path in
+    # rather than deriving it from the working directory means the suite gives
+    # the same answer whether it is run from the build tree, from the source
+    # tree or by the CI.
+    target_compile_definitions(
+        C_uitests
+        PRIVATE
+        QET_EXAMPLES_DIR="${QET_DIR}/examples")
+endif()
