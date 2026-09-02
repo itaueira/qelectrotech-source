@@ -132,35 +132,72 @@ include(cmake/fetch_kdeaddons.cmake)
 
 # Add sub directories
 option(PACKAGE_TESTS "Build the tests" ON)
-if(PACKAGE_TESTS)
-    message("Add sub directory tests")
-    add_subdirectory(tests)
-endif()
+#
+# add_subdirectory(tests) is issued at the very bottom of this file, not here.
+# Two reasons, both load-bearing:
+#
+#   1. A test target links qet_core, and a target can only be referenced after
+#      it has been created.
+#
+#   2. add_definitions() is directory-scoped: it only reaches subdirectories
+#      added *after* the call. cmake/define_definitions.cmake, included right
+#      below, is what emits -DBUILD_WITHOUT_KF. With tests added here, a build
+#      configured with BUILD_WITH_KF=OFF compiled the test target without that
+#      definition while the program had it - and sources/qetproject.h:36
+#      changes the class layout on that very macro. Same class, two layouts,
+#      one link: an ODR violation, which does not fail to build, it corrupts
+#      at run time. Nothing the test target currently compiles includes
+#      qetproject.h, so the defect was latent; linking qet_core wakes it up.
 
 # als laatse
 include(cmake/define_definitions.cmake)
 
+# Everything the program is made of, minus main(), in one object library.
+#
+# The point is that a test target can link it. A test that opens a project and
+# looks at the resulting sheet needs a live QETProject, Diagram and Element,
+# and their transitive closure is most of sources/ - not a list anyone
+# maintains by hand. The older test target does maintain such a list, on
+# purpose and unchanged; see tests/catch/CMakeLists.txt for why.
+#
+# OBJECT, not STATIC: the object files are handed to the linker one by one, so
+# Qt resources and static initialisers behave exactly as they do today. A
+# static library would drop the object holding qelectrotech.qrc, because
+# nothing references it by symbol.
+set(QET_CORE_SRC_FILES ${QET_SRC_FILES})
+list(REMOVE_ITEM QET_CORE_SRC_FILES ${QET_DIR}/sources/main.cpp)
+
+add_library(qet_core OBJECT
+    ${QET_CORE_SRC_FILES}
+    ${QET_DIR}/qelectrotech.qrc
+)
+
 # On Windows, WIN32 sets /SUBSYSTEM:WINDOWS to suppress the console window.
 # Qt automatically links qtmain.lib which provides the WinMain entry point,
 # so no source code change is needed.
+#
+# ${QM_FILES} is empty at this point: the translation block that fills it comes
+# further down, so the variable expands to nothing here. That is how upstream
+# has it, and it still works because install() reads QM_FILES after that block.
+# Left alone deliberately - fixing it is a separate change.
 if(WIN32)
     add_executable(
         ${PROJECT_NAME}
         WIN32
         ${QET_RES_FILES}
-        ${QET_SRC_FILES}
+        ${QET_DIR}/sources/main.cpp
         ${QM_FILES}
-        ${QET_DIR}/qelectrotech.qrc
     )
 else()
     add_executable(
         ${PROJECT_NAME}
         ${QET_RES_FILES}
-        ${QET_SRC_FILES}
+        ${QET_DIR}/sources/main.cpp
         ${QM_FILES}
-        ${QET_DIR}/qelectrotech.qrc
     )
 endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE qet_core)
 
 if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE TRUE)
@@ -207,8 +244,10 @@ if(QT_VERSION_MAJOR EQUAL 6)
         )
 
         # Automatically creates the update_translations umbrella target.
+        # qet_core, not the executable: lupdate scans the sources of the target
+        # it is given, and the sources moved.
         qt_add_lupdate(
-            ${PROJECT_NAME}
+            qet_core
             TS_FILES ${TS_FILES}
         )
 
@@ -220,8 +259,9 @@ if(QT_VERSION_MAJOR EQUAL 6)
             QM_FILES_OUTPUT_VARIABLE QM_FILES
         )
 
+        # qet_core, not the executable: that is where the sources are now.
         qt_add_lupdate(
-            SOURCE_TARGETS ${PROJECT_NAME}
+            SOURCE_TARGETS qet_core
             TS_FILES ${TS_FILES}
             LUPDATE_TARGET update_translations
             NO_GLOBAL_TARGET
@@ -268,7 +308,7 @@ if(QET_ENABLE_PCH)
             "QET_ENABLE_PCH needs CMake 3.16 or newer (found ${CMAKE_VERSION}); "
             "building without precompiled headers.")
     else()
-        target_precompile_headers(${PROJECT_NAME} PRIVATE
+        target_precompile_headers(qet_core PRIVATE
             "$<$<COMPILE_LANGUAGE:CXX>:<QtCore/QtCore$<ANGLE-R>>"
             "$<$<COMPILE_LANGUAGE:CXX>:<QtGui/QtGui$<ANGLE-R>>"
             "$<$<COMPILE_LANGUAGE:CXX>:<QtWidgets/QtWidgets$<ANGLE-R>>"
@@ -278,10 +318,13 @@ if(QET_ENABLE_PCH)
     endif()
 endif()
 
+# On qet_core, and PUBLIC rather than PRIVATE: whatever links this library
+# compiles against the same headers and links the same libraries the sources
+# were built with. The executable gets all of it by linking qet_core, so
+# nothing is lost by moving these off the executable.
 target_link_libraries(
-    ${PROJECT_NAME}
+    qet_core
     PUBLIC
-    PRIVATE
     pugixml::pugixml
     SingleApplication::SingleApplication
     SQLite3::SQLite3
@@ -290,8 +333,8 @@ target_link_libraries(
 )
 
 target_include_directories(
-    ${PROJECT_NAME}
-    PRIVATE
+    qet_core
+    PUBLIC
     ${QET_DIR}/sources/titleblock
     ${QET_DIR}/sources/ui
     ${QET_DIR}/sources/qetgraphicsitem
@@ -328,8 +371,8 @@ target_include_directories(
 
 if(NOT BUILD_WITH_KF)
     target_include_directories(
-        ${PROJECT_NAME}
-        PRIVATE
+        qet_core
+        PUBLIC
         ${QET_DIR}/sources/ui/nokde
     )
 endif()
@@ -356,4 +399,13 @@ if (NOT MINGW)
         install(FILES misc/qelectrotech.appdata.xml DESTINATION ${QET_APPDATA_PATH})
     endif()
     install(FILES ${QM_FILES} DESTINATION ${QET_LANG_PATH})
+endif()
+
+# Added last, deliberately: see the note next to option(PACKAGE_TESTS) above.
+# By this point qet_core exists and cmake/define_definitions.cmake has run, so
+# the test targets both can link the program and are compiled with the same
+# definitions as the program.
+if(PACKAGE_TESTS)
+    message("Add sub directory tests")
+    add_subdirectory(tests)
 endif()
