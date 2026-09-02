@@ -179,7 +179,7 @@ void ElementQueryWidget::setQuery(const QString &query)
 					++c;
 				}
 				ui->m_protection_cb->setChecked(str_type.contains(ElementData::masterTypeToString(ElementData::Protection)) ? true : false);
-				if (ui->m_protection_cb) {
+				if (ui->m_protection_cb->isChecked()) {
 					++c;
 				}
 			ui->m_thumbnail_cb->setChecked  (str_type.contains(ElementData::typeToString(ElementData::Thumbnail)) ? true : false);

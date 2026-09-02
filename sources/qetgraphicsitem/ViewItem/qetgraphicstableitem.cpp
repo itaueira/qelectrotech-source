@@ -578,6 +578,17 @@ int QetGraphicsTableItem::minimumRowHeight() const
 	Save the table to xml
 	@param dom_document : parent document
 	@return the dom_element that describe the table
+
+	@par The model is written only when it is a ProjectDBModel
+	setModel is public and accepts any QAbstractItemModel, so the
+	model is not always the one built by the factory. Only a
+	ProjectDBModel knows how to write itself, so the cast is checked
+	and the "model" block is left out when the cast fails, instead of
+	dereferencing a pointer to the wrong type while saving.
+	Price : a foreign model loses its content on save. The table comes
+	back with its geometry, its name and its header, and with the empty
+	default model that fromXml builds when it finds no "model" block.
+	The saved file stays well formed, which a bad cast cannot promise.
 */
 QDomElement QetGraphicsTableItem::toXml(QDomDocument &dom_document) const
 {
@@ -603,11 +614,12 @@ QDomElement QetGraphicsTableItem::toXml(QDomDocument &dom_document) const
 	else if (m_model) //There is not a previous table, we need to save the model
 	{
 			//Add model
-		auto dom_model = dom_document.createElement("model");
-		auto project_db_model = static_cast<ProjectDBModel *>(m_model.data());
-		dom_model.appendChild(project_db_model->toXml(dom_document));
-		dom_table.appendChild(dom_model);
-
+		if (auto *project_db_model = qobject_cast<ProjectDBModel *>(m_model.data()))
+		{
+			auto dom_model = dom_document.createElement("model");
+			dom_model.appendChild(project_db_model->toXml(dom_document));
+			dom_table.appendChild(dom_model);
+		}
 	}
 
 	return dom_table;

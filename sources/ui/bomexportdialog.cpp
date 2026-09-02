@@ -109,7 +109,7 @@ QString BOMExportDialog::getBom()
 		const auto fields_ = query_.record();
 
 			//HEADERS
-		if (ui->m_include_headers)
+		if (ui->m_include_headers->isChecked())
 		{
 			QStringList header_name;
 			for (auto i=0 ; i<fields_.count() ; ++i)
@@ -124,10 +124,13 @@ QString BOMExportDialog::getBom()
 				} else if (field_name == "designation_qty") {
 					header_name << tr("Quantité numéro d'article", "Special field with name : designation quantity");
 				} else {
-					header_name << QETInformation::translatedInfoKey(field_name);
-					if (header_name.isEmpty()) {
-						header_name << field_name;
-					}
+						//An info key with no translation gives back an empty
+						//string, and an empty header cell names no column. The
+						//text is measured before it joins the list - once
+						//appended, the list is never empty.
+					const auto translated_name = QETInformation::translatedInfoKey(field_name);
+					header_name << (translated_name.isEmpty() ? field_name
+										 : translated_name);
 				}
 
 			}
