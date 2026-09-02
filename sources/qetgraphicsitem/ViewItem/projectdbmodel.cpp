@@ -31,6 +31,27 @@
 	@brief ProjectDBModel::ProjectDBModel
 	@param project :project of this nomenclature
 	@param parent : parent QObject
+
+	@par A live project is required, and is not checked here
+	m_project is a QPointer, which reads as if it could be empty, and the
+	connect below dereferences it at once. It cannot be empty here : both
+	callers pass Diagram::project() (QetGraphicsTableFactory::newTable and
+	QetGraphicsTableItem::fromXml), and a diagram only ever exists with the
+	project that built it, since QETProject is the only place that builds a
+	Diagram, it passes itself, and Diagram never reassigns that member. The
+	requirement is written down instead of guarded.
+	Price : a caller that breaks it does not get an empty model, it gets a
+	crash with nothing to read. QETProject::dataBase() returns the address
+	of a member subobject, so on an empty m_project it answers a small
+	non-null offset rather than null, and the fault lands inside connect,
+	on a sender Qt has no reason to doubt : there is no invalid nullptr
+	parameter warning to find in the log. Guarding this connect alone would
+	buy the opposite trade, and a worse one : rowCount(), columnCount() and
+	data() read m_record alone, and setQuery() already skips its work
+	without a project, so the model would live on and draw an empty box on
+	the folio for good, a nomenclature quietly missing instead of a stop at
+	the mistake, while setHeaderString() and fillValue() would still
+	dereference m_project unguarded.
 */
 ProjectDBModel::ProjectDBModel(QETProject *project, QObject *parent) :
 	QAbstractTableModel(parent),
@@ -42,6 +63,21 @@ ProjectDBModel::ProjectDBModel(QETProject *project, QObject *parent) :
 /**
 	@brief ProjectDBModel::ProjectDBModel
 	@param other_model
+
+	@par The copied model always carries a live project
+	This constructor takes m_project from other_model and dereferences it
+	at once, under the same requirement as the constructor above and for
+	its own reason : its only caller is
+	QetGraphicsTableItem::setPreviousTable, which copies a model it got by
+	a checked cast out of a QPointer, so a destroyed model reads back null
+	there and is shared instead of copied ; and every ProjectDBModel is a
+	QObject child of the project it points at, here (the copy takes the
+	parent of its source) as at the two places that build one, so a model
+	is destroyed with its project and never outlives it.
+	Price : the same as above, plus one more reader to keep honest. Any
+	future ProjectDBModel built with something other than its own project
+	as parent breaks the argument without a word, and the fault shows up
+	in the connect below rather than where the parent was chosen.
 */
 ProjectDBModel::ProjectDBModel(const ProjectDBModel &other_model) :
 	QAbstractTableModel(other_model.parent())

@@ -44,13 +44,45 @@
 	the this function set item as edited item of editor and return editor
 	@param parent : parent widget of the returned editor
 	@return an editor or nullptr
+
+	@par Only a ProjectDBModel gets an editor
+	ProjectDBModelPropertiesWidget is the only editor this overload can
+	build, and it reads its model as a ProjectDBModel : identifier(),
+	queryString() and setQuery() reach private members at fixed offsets,
+	and setQuery() then walks m_project->dataBase().
+	QetGraphicsTableItem::setModel is public and accepts any
+	QAbstractItemModel, so the model handed over here is not always the one
+	built by QetGraphicsTableFactory.
+	The cast is therefore checked : qobject_cast answers null both for a
+	foreign model and for a table that carries no model yet, and both leave
+	with nullptr, which the only caller already expects and handles.
+	Price : a table showing a model this factory does not know gets no
+	query editor at all in the properties panel, only the position, size
+	and link part of it, and its query cannot be edited from there. That is
+	already what a table without a model shows, and there is no other
+	editor to offer : the one that exists cannot read a model whose layout
+	it does not know, and used to write into it on the first click.
+
+	@par The class name comparison is left as it is
+	className() returns a pointer into the string data of the metaobject it
+	belongs to, so comparing the two const char * below compares addresses,
+	not text. Two classes never share that address, so equality means
+	editor->metaObject() is ProjectDBModelPropertiesWidget's own
+	metaobject and the cast that follows is exact ; a derived class answers
+	a different address and only loses the reuse, which costs one new
+	widget.
+	Price : the guard is an address comparison that reads like a text one,
+	so it stays sound for a reason its own spelling does not show. Making
+	it compare text, the way the item overload below does through a
+	QString, would let a derived class match and the cast would be
+	unchecked again.
 */
 PropertiesEditorWidget *PropertiesEditorFactory::propertiesEditor(
 		QAbstractItemModel *model,
 		PropertiesEditorWidget *editor,
 		QWidget *parent)
 {
-	if (auto m = static_cast<ProjectDBModel *>(model))
+	if (auto m = qobject_cast<ProjectDBModel *>(model))
 	{
 		if (editor &&
 			editor->metaObject()->className()
