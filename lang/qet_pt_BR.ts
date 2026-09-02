@@ -712,6 +712,11 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
 <context>
     <name>BOMExportDialog</name>
     <message>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="273"/>
+        <source>La nomenclature n&apos;a pas pu être extraite du projet.</source>
+        <translation>A lista de material não pôde ser extraída do projeto.</translation>
+    </message>
+    <message>
         <location filename="../sources/ui/bomexportdialog.ui" line="14"/>
         <source>Dialog</source>
         <translation>Diálogo</translation>
@@ -734,7 +739,7 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
     <message>
         <location filename="../sources/ui/bomexportdialog.cpp" line="68"/>
         <source>nomenclature_</source>
-        <translation>nomenclature_</translation>
+        <translation>lista_de_material_</translation>
     </message>
     <message>
         <location filename="../sources/ui/bomexportdialog.cpp" line="69"/>
@@ -13532,6 +13537,21 @@ O que você deseja fazer?</translation>
 <context>
     <name>QObject</name>
     <message>
+        <location filename="../sources/conductornumexport.cpp" line="158"/>
+        <source>Rien à exporter</source>
+        <translation>Nada a exportar</translation>
+    </message>
+    <message>
+        <location filename="../sources/conductornumexport.cpp" line="159"/>
+        <source>Aucun conducteur numéroté n&apos;a été trouvé dans ce projet. Aucun fichier n&apos;a été écrit.</source>
+        <translation>Nenhum condutor numerado foi encontrado neste projeto. Nenhum arquivo foi escrito.</translation>
+    </message>
+    <message>
+        <location filename="../sources/conductornumexport.cpp" line="200"/>
+        <source>L&apos;écriture du fichier « %1 » a échoué.</source>
+        <translation>A escrita do arquivo « %1 » falhou.</translation>
+    </message>
+    <message>
         <location filename="../sources/conductorautonumerotation.cpp" line="103"/>
         <source>Modifier les propriétés d&apos;un conducteur</source>
         <comment>undo caption</comment>
@@ -13894,7 +13914,7 @@ O que você deseja fazer?</translation>
     <message>
         <location filename="../sources/conductornumexport.cpp" line="52"/>
         <source>numero_de_fileries_</source>
-        <translation>numero_de_arquivo</translation>
+        <translation>numeracao_de_fios_</translation>
     </message>
     <message>
         <location filename="../sources/conductornumexport.cpp" line="57"/>
