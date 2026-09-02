@@ -147,6 +147,59 @@ QList<ConductorData> WiringListExport::collectConductors(const QDomElement &root
     return conductors;
 }
 
+/**
+	@brief WiringListExport::toCsv
+	Ask for a file name and write the wiring list into it.
+
+	@par The empty test below is a failure test, and is right to be
+	The three text exporters in this tree each mean something different
+	by an empty payload, so this one says which it is. Here empty means
+	the project could not be read - never "there is nothing to write" -
+	because @c toCsvString() emits its header row unconditionally, and
+	the sentence the branch shows says exactly that. A project with no
+	cable at all reaches the save dialog and writes a csv holding the
+	nine column names, which is the honest answer and is what a
+	spreadsheet expects to open. For comparison, and because the
+	difference is not visible from any one of the three files :
+	@c ConductorNumExport::wiresNum() has no header, so empty there is
+	the ordinary "no numbered conductor" and conductornumexport.cpp
+	reports it with an information box and writes no file; and
+	ui/bomexportdialog.cpp, whose payload can fail or be legitimately
+	empty, keeps the two apart with a null @c QString against an empty
+	one, at bomexportdialog.cpp:145. The price of this one's choice is
+	that a designer who exports a project with no cable gets a file with
+	headings and no rows and no warning that it is empty, and has to open
+	it to find that out.
+
+	@par Refused : the write is not checked, and success is claimed anyway
+	@c out is not flushed and @c QFile::error() is never read, so the
+	success box below fires on a full disk exactly as it does on a good
+	write. @c ConductorNumExport::toCsv() was just given that check -
+	@c flush() first, then @c QFile::error() while the device is still
+	open, above a @c close() that would wipe the error - and this
+	function needs the same three lines. It is refused in this pass
+	because the task that found it scoped this file to documentation once
+	the measurement showed there was no empty-state defect here to fix,
+	and because a write check that cannot be run is a change worth
+	pairing with the build that proves it. The price of leaving it is the
+	worst-shaped bug of the three: the designer is told "exporté avec
+	succès" over a truncated file, so they do not re-export, and the
+	short file is the one that reaches the panel builder.
+
+	@par Refused : the truncated file on a full disk
+	@c QSaveFile is the fix for the paragraph above - temporary file,
+	atomic rename on commit(), original untouched on failure - and it is
+	refused here for the reason already written into
+	conductornumexport.cpp and ui/bomexportdialog.cpp: @c QTextStream
+	only flushes past its own threshold, so a commit() called while the
+	stream is alive renames a file the buffer never reached and the
+	stream then flushes into a closed device, trading a rare truncation
+	for content lost on every export. This file is the third of the three
+	that write the same way, and the change belongs to all three at once,
+	with the @c flush() before the @c commit() written into it and a real
+	build behind it. The price of the delay is that all three keep
+	writing straight at the destination until then.
+*/
 void WiringListExport::toCsv()
 {
     if (!m_project) return;
@@ -177,6 +230,46 @@ void WiringListExport::toCsv()
     QMessageBox::information(m_parent, tr("Export réussi"), tr("Le plan de câblage a été exporté avec succès !"));
 }
 
+/**
+	@brief WiringListExport::toCsvString
+	@return the wiring list formatted as csv : one header row of nine
+	column names, then one row per cable, folio-numbered elements sorted
+	by folio and then by component. Never an empty string unless the
+	project could not be read at all - see the invariant below.
+
+	@par An empty return means a failure, and can mean nothing else
+	This is the invariant the command-line exporter leans on, so breaking
+	it breaks a test in another file. The header row is written
+	unconditionally at line 462 below, before the loop over the
+	cables, and there is no return between the two guards at the top of
+	this function and that write. So the only two ways out with an empty
+	string are those guards: a null @c m_project, and a project whose
+	@c toXml() gave back a null document. A project that is perfectly
+	readable and simply holds no cable returns the header row on its own
+	- nine names and a line break, not an empty string. Whoever adds a
+	third early return between here and the header write must either
+	make it non-empty or fix cli_export.cpp:exportCsv(), where an empty
+	string from this function is reported as a failed read of the
+	project. The price of relying on this rather than returning a
+	distinguishable value is that a caller cannot tell the two guards
+	apart, which is why neither of them says which one fired.
+
+	@par The return does not race the stream's destructor
+	@c out is still alive on the @c return statement, so the invariant
+	above would be worthless if @c QTextStream held the header in a
+	buffer of its own until it was destroyed. It does not, when the
+	device is a @c QString : the text is appended straight into the
+	string, and the user-space buffer that the file-writing paths have to
+	@c flush() is only used for a @c QIODevice. Measured, rather than
+	read out of Qt's sources, which are not installed here: a standalone
+	probe shaped like this function - build a @c QString, attach a
+	@c QTextStream, write only the header, return the string - reports a
+	size of 25 and @c isEmpty() false against Qt 6.11.1, with the
+	destructor not yet run. The price of leaning on that is that a
+	future rewrite which streams into a @c QFile or a @c QBuffer here,
+	instead of a @c QString, inherits the buffering and has to flush
+	before it reads the result back.
+*/
 QString WiringListExport::toCsvString() const
 {
     if (!m_project) return QString();

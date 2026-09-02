@@ -258,19 +258,121 @@ int exportImages(QETProject &project, const QString &format,
 	return 0;
 }
 
+/**
+	@brief exportCsv
+	Writes the wiring list (--export-cables) or the wire numbers
+	(--export-wires) to @p output.
+	@return 0 when the file was written, 1 when the project structure
+	could not be read and 1 when the file could not be opened.
+
+	@par "Empty" does not mean the same thing on the two branches
+	One @c csv.isEmpty() test used to serve both payloads, and the two
+	disagree about what an empty string is. @c toCsvString() writes its
+	nine column headers unconditionally, at wiringlistexport.cpp:462, so
+	past its two guards - a null project, and a project that would not
+	serialise to XML - the string always holds at least that header row:
+	empty there can only be a failure. @c wiresNum() has no header at
+	all, one bare number per row, and @c fillHash() has no error path,
+	only the blank-number skip and the two folio report skips, so empty
+	there is the ordinary answer "no conductor in this project carries a
+	number outside a folio report". Each branch now tests its own value.
+	The price is one test in two places instead of one in a single place,
+	which a later reader can merge back without noticing; the paragraphs
+	below are what turns that tidy-up into a visible mistake.
+
+	@par A legitimate empty list exits 0, not 1
+	The shared test returned 1 for both, and the wires branch is the one
+	where an empty payload is reachable with nothing wrong, so a project
+	whose wires are simply not numbered stopped every batch script that
+	checks the exit code. That branch now writes the file and returns 0.
+	The price is that a script which read the exit code as "there is
+	something in the file" has to read the file, or its line count,
+	instead.
+
+	@par The file is written even when the list is empty
+	This keeps the convention the rest of this file already holds:
+	exportBom(), exportLinks() and exportNets() build their header - or
+	their empty JSON array - before they know the row count, never test
+	for an empty body, and report a count of zero with exit 0. The output
+	file is the answer, and the exit code says only whether the question
+	could be asked. For a payload with no header, the faithful form of
+	that is a zero-byte file, which for one-number-per-line is exactly
+	and completely "no numbered wires". Skipping @c open() would be worse
+	here than it is in the editor: @c ConductorNumExport::toCsv() stops
+	before @c open() on purpose, because there a save dialog has just
+	made the user confirm an overwrite and a dialog can explain why
+	nothing was written, while a script gets only the file and the exit
+	code, and a previous run's list left in place reads as this run's
+	result. The price is the opposite one, and it is real: an empty
+	export now truncates the previous export, so a batch pointed at the
+	wrong project overwrites yesterday's good list with nothing. The note
+	on stdout is what says so.
+
+	@par The note goes to stdout, because it is not an error
+	"Nothing to export" went to stderr, which is the stream a batch log
+	greps for faults. An empty list is an outcome, not a fault, so it is
+	reported on stdout beside the "Exported" line, and stderr is left to
+	the two branches that really do fail. The price is that a script
+	watching stderr alone now sees nothing at all for an empty wires
+	export, and has to read stdout or the file.
+
+	@par The cables branch keeps exit 1, and now names the fault
+	Empty on that branch means the project structure could not be read,
+	so "Nothing to export (empty list)" was reporting a failed read as an
+	empty answer - the one message that would have sent a designer
+	looking at their wires instead of at their file. The sentence now
+	names the fault, and says in English what the editor says in French
+	at wiringlistexport.cpp:209 for the same state. The price is that the
+	two guards behind it, no project and a project that would not
+	serialise, still cannot be told apart from the command line.
+
+	@par Refused : --export-pdf, --export-png and --export-svg keep exit 1
+	Those three return 1 for a project with no folio at all, at
+	cli_export.cpp:131 and :221, which is arguably as legitimate a
+	project state as an unnumbered wire. They are left as they are
+	because they are not list exporters: there is no header to write and
+	no valid artifact to produce - a zero-page pdf is malformed, and an
+	empty image directory tells a script nothing - so the empty input is
+	the whole answer and a fault code is a fair way to give it. The price
+	is that a batch walking a tree of projects still stops at the first
+	one saved with no folio, and whoever changes that first has to decide
+	what file, if any, a zero-page export should leave behind.
+
+	@par Refused : the write is still not checked
+	@c fout is not flushed and @c QFile::error() is not read, here or in
+	the five other functions in this file that write a file, so a disk
+	that fills up mid-write ends with "Exported ..." on stdout and exit
+	0. @c ConductorNumExport::toCsv() was just given that check and this
+	path deserves the same one. It is refused now because it is one
+	change over six call sites in this file plus the three exporters, it
+	has to carry the flush-before-the-error-read ordering that the
+	comment at conductornumexport.cpp:193 exists to protect, and a syntax
+	check is the only proof available in this session. The price is that
+	an empty wires export and a truncated one are both reported as
+	success, which is precisely the failure this function's own exit code
+	was just corrected for.
+*/
 int exportCsv(QETProject &project, const QString &format, const QString &output)
 {
 	QString csv;
 	if (format == "cables") {
 		WiringListExport wle(&project, nullptr);
 		csv = wle.toCsvString();
+		// Empty is a failure on this branch only: the header above the
+		// rows is unconditional, so see the invariant recorded in the
+		// toCsvString() documentation before merging this test away.
+		if (csv.isEmpty()) {
+			err << "Cannot read the project structure in memory.\n";
+			return 1;
+		}
 	} else { // wires
 		ConductorNumExport cne(&project, nullptr);
 		csv = cne.wiresNum();
-	}
-	if (csv.isEmpty()) {
-		err << "Nothing to export (empty list).\n";
-		return 1;
+		// Empty is an ordinary project state on this branch, so it is a
+		// note on stdout and the export carries on to write the file.
+		if (csv.isEmpty())
+			out << "No numbered wire found in this project; "
+				   "writing an empty list.\n";
 	}
 
 	QFile file(output);

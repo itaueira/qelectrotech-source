@@ -46,8 +46,18 @@ public:
     explicit WiringListExport(QETProject *project, QWidget *parent = nullptr);
     void toCsv();
     /**
-        Build the wiring-list CSV and return it as a string (no GUI).
-        Used by toCsv() and by the headless command-line export.
+	Build the wiring-list CSV and return it as a string (no GUI).
+	Used by toCsv() and by the headless command-line export.
+
+	@par An empty return is a failure, not an empty project
+	The header row of nine column names is written unconditionally, so a
+	readable project with no cable in it returns that row and not an
+	empty string. Both callers read an empty return as "the project
+	could not be read": do not add an early return that gives back an
+	empty string for an ordinary state. The invariant, and what it costs,
+	is recorded on the definition in wiringlistexport.cpp. The price of
+	saying it here too is a paragraph that has to be kept in step with
+	that one.
     */
     QString toCsvString() const;
 
