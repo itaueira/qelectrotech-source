@@ -61,6 +61,38 @@ const qreal Diagram::margin = 5.0;
 */
 QColor		Diagram::background_color = Qt::white;
 
+namespace
+{
+	/**
+		@brief One boolean folio attribute, read back the way it was written.
+		@param root the <diagram> element
+		@param name the attribute name
+		@param default_value what an absent attribute means
+		@return the stored answer
+
+		The writer spells these attributes "true" and "false", and QString's
+		toInt() has no opinion on either word: it returns 0 for both, with its
+		ok flag down, so a reader written that way loads every saved option as
+		false and the person who ticked the box finds it clear on reopening.
+
+		The comparison is on the word, and "1" is accepted beside "true"
+		because an attribute written by a hand or by another tool is worth
+		reading rather than dropping. Anything else, an absent attribute
+		included, means the default - which is what tells apart a folio saved
+		before the option existed from one where it was deliberately switched
+		off.
+	*/
+	bool folioFlag(const QDomElement &root, const QString &name, bool default_value = false)
+	{
+		if (!root.hasAttribute(name)) {
+			return default_value;
+		}
+
+		const QString value{root.attribute(name).trimmed().toLower()};
+		return value == QLatin1String("true") || value == QLatin1String("1");
+	}
+}
+
 /**
 	@brief Diagram::Diagram
 	Constructor
@@ -1387,10 +1419,10 @@ bool Diagram::fromXml(QDomElement &document,
 		m_conductors_autonum_name = root.attribute(QStringLiteral("conductorAutonum"));
 
 			// Load Freeze New Element
-		m_freeze_new_elements = root.attribute(QStringLiteral("freezeNewElement")).toInt();
+		m_freeze_new_elements = folioFlag(root, QStringLiteral("freezeNewElement"));
 
 			// Load Freeze New Conductor
-		m_freeze_new_conductors_ = root.attribute(QStringLiteral("freezeNewConductor")).toInt();
+		m_freeze_new_conductors_ = folioFlag(root, QStringLiteral("freezeNewConductor"));
 
 			//Load Element Folio Sequential
 		folioSequentialsFromXml(root,
