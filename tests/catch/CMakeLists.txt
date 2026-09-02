@@ -113,6 +113,8 @@ add_executable(
     src/location_test.cpp
     src/locationcontainment_test.cpp
     src/enclosuretransfer_test.cpp
+    src/locationboundary_test.cpp
+    src/locationvariable_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -203,6 +205,14 @@ add_executable(
     # and sources/undocommand.
     ${QET_DIR}/sources/location/locationcontainment.cpp
     ${QET_DIR}/sources/location/locationcontainment.h
+    # The external wire rule is two strings and an answer: whether a
+    # conductor between two locations leaves the panel. It is here and not on
+    # a folio because what can be got wrong is the comparison - QCM1 against
+    # QCM10, the door of an enclosure against its own body - and none of that
+    # needs a conductor drawn. The painting override that consumes it stays
+    # out, in sources/qetgraphicsitem.
+    ${QET_DIR}/sources/location/locationboundary.cpp
+    ${QET_DIR}/sources/location/locationboundary.h
     # The enclosure transfer rule is arithmetic over rectangles: it says
     # which mounted positions survive a change of enclosure and names the
     # ones that do not. No scene, no project, no database - so the half of
