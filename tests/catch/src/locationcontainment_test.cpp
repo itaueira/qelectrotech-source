@@ -192,7 +192,22 @@ TEST_CASE("inside means the centre is inside", "[location][containment]")
 		//Where a terminal block goes. Full containment would answer
 		//nothing here, and the enclosure would list none of its
 		//terminals.
-		CHECK(locationPathAt(areas, QRectF(90, 45, 30, 10)) == "QCM1");
+		//
+		//The numbers carry the whole point, so they are spelled out:
+		//the strip runs from x=80 to x=110 and so pokes 10 units past
+		//the right edge at x=100, while its centre stays at x=95,
+		//inside. Hanging over is not the same as being centred
+		//outside, and only the first one is mounted here.
+		CHECK(locationPathAt(areas, QRectF(80, 45, 30, 10)) == "QCM1");
+	}
+
+	SECTION("hanging so far over that the centre leaves is not mounted")
+	{
+		//The other side of the same coin, and the reason the section
+		//above states its numbers. This strip runs from x=90 to x=120,
+		//so its centre sits at x=105, outside. The rule is the centre
+		//and nothing else.
+		CHECK(locationPathAt(areas, QRectF(90, 45, 30, 10)).isEmpty());
 	}
 
 	SECTION("a component larger than the enclosure is mounted in it")
