@@ -20,10 +20,12 @@
 
 #include <QImage>
 #include <QList>
+#include <QRectF>
 #include <QString>
 #include <QStringList>
 
 class Diagram;
+class DiagramTextItem;
 class QETProject;
 
 /**
@@ -131,6 +133,105 @@ namespace UiBench
 
 	/// The sheet drawn into an image, for the appearance checks.
 	QImage render(Diagram *diagram, int width = 1600);
+
+	/*
+		Appearance: what the sheet looks like, checked without a screen.
+
+		Not by comparing pixels against a stored image, and the reason is worth
+		writing down here rather than being rediscovered. The drawing font comes
+		from QETApp::diagramTextsFont(), which reads it from the QSettings with
+		"Liberation Sans" as its default, and nothing in this program registers a
+		font of its own through QFontDatabase::addApplicationFont(). The text is
+		therefore drawn with whatever the machine happens to have installed: the
+		same sheet is a different image on two machines, and a reference image
+		would go red for a reason that has nothing to do with the code it was put
+		there to guard.
+
+		What does not move when the font changes is geometry - the frame, the
+		title block, the size a component takes from its own definition - and
+		that is what the functions below measure. Ink is counted, never compared
+		shape by shape, and only over things that are drawn as lines.
+	*/
+
+	/**
+		The page: the rectangle the sheet frames, title block included, in scene
+		coordinates. It is what a print or an export puts on paper - the export
+		path computes the same rectangle, in diagramRect() of
+		sources/cli_export.cpp, for that same reason.
+	*/
+	QRectF pageRect(Diagram *diagram);
+
+	/// The border alone, row and column headers included, title block excluded.
+	QRectF borderRect(Diagram *diagram);
+
+	/// The drawing area: inside the border, headers excluded.
+	QRectF drawingRect(Diagram *diagram);
+
+	/// The title block alone. Empty when the sheet is drawn without one.
+	QRectF titleBlockRect(Diagram *diagram);
+
+	/// Every text the sheet draws: those carried by components and the free ones.
+	QList<DiagramTextItem *> texts(Diagram *diagram);
+
+	/**
+		One line per component that is not entirely on the page, naming it and
+		saying where it went. Empty when the sheet keeps everything on the page.
+
+		A list and not a count, so that a failure names the component instead of
+		sending whoever reads it back to the sheet to find out which one.
+
+		Components only, deliberately: a component takes its size from its own
+		definition, so the answer is the same on every machine. The text boxes
+		are left out because their width comes from the font.
+	*/
+	QStringList elementsOffPage(Diagram *diagram);
+
+	/// One line per component whose bounding rectangle has no surface at all.
+	QStringList elementsWithoutSurface(Diagram *diagram);
+
+	/**
+		A sheet rendered at a known scale, so that a rectangle of the scene can
+		be pointed at inside the image.
+
+		render() above cannot do that: it scales the whole scene rectangle into
+		an image whose proportions it does not control, and KeepAspectRatio then
+		places the result somewhere inside - so where a given rectangle of the
+		scene landed is not recoverable. Here the page is rendered on its own and
+		the mapping is kept; map() gives it back.
+
+		The grid and the guides are turned off for the duration, exactly as the
+		export path does in renderDiagram() of sources/cli_export.cpp. They are
+		on-screen comfort, not part of what the sheet says, and leaving them on
+		would make "there is ink inside the title block" mean nothing more than
+		"a grid dot fell there".
+	*/
+	class Rendering
+	{
+		public:
+			Rendering() = default;
+			explicit Rendering(Diagram *diagram, int width = 1200);
+
+			bool isNull() const {return m_image.isNull();}
+			const QImage &image() const {return m_image;}
+			/// The part of the scene the image covers: pageRect() of the sheet.
+			QRectF sceneRegion() const {return m_region;}
+
+			/// Where a rectangle of the scene lands inside the image.
+			QRect map(const QRectF &scene_rect) const;
+
+			/// Pixels of the whole image that are not the background.
+			int ink() const;
+			/// Pixels that are not the background inside a rectangle of the scene.
+			int ink(const QRectF &scene_rect) const;
+
+		private:
+			int inkOfImageRect(const QRect &image_rect) const;
+
+			QImage m_image;
+			QRectF m_region;
+			qreal m_scale_x = 1.;
+			qreal m_scale_y = 1.;
+	};
 }
 
 #endif // UIBENCH_H

@@ -20,14 +20,17 @@
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontent.h"
 #include "../../../../sources/diagramcontext.h"
+#include "../../../../sources/qetgraphicsitem/diagramtextitem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/independenttextitem.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/qetversion.h"
 
+#include <QColor>
 #include <QDir>
 #include <QDomDocument>
 #include <QFile>
+#include <QPainter>
 #include <QUndoStack>
 #include <QVersionNumber>
 
@@ -244,4 +247,189 @@ QImage UiBench::render(Diagram *diagram, int width)
 	image.fill(Qt::white);
 	diagram->toPaintDevice(image, width, height, Qt::KeepAspectRatio);
 	return image;
+}
+
+namespace
+{
+	/// "K1 at (410, 230) 60x80" - what a failure has to say to be actionable.
+	QString describe(Element *element)
+	{
+		const QRectF rect = element->sceneBoundingRect();
+		QString name = element->displayedLabel();
+		if (name.isEmpty()) {
+			name = element->name();
+		}
+		return QStringLiteral("%1 at (%2, %3) %4x%5")
+			   .arg(name)
+			   .arg(rect.x()).arg(rect.y())
+			   .arg(rect.width()).arg(rect.height());
+	}
+}
+
+QRectF UiBench::pageRect(Diagram *diagram)
+{
+	return diagram ? diagram->border_and_titleblock.borderAndTitleBlockRect()
+				   : QRectF();
+}
+
+QRectF UiBench::borderRect(Diagram *diagram)
+{
+	return diagram ? diagram->border_and_titleblock.outsideBorderRect() : QRectF();
+}
+
+QRectF UiBench::drawingRect(Diagram *diagram)
+{
+	return diagram ? diagram->border_and_titleblock.insideBorderRect() : QRectF();
+}
+
+QRectF UiBench::titleBlockRect(Diagram *diagram)
+{
+	return diagram ? diagram->border_and_titleblock.titleBlockRect() : QRectF();
+}
+
+QList<DiagramTextItem *> UiBench::texts(Diagram *diagram)
+{
+	QList<DiagramTextItem *> list;
+	if (!diagram) {
+		return list;
+	}
+
+	// Every kind at once - the texts of a component, the free ones, the ones a
+	// conductor carries - because they are one thing to whoever reads the sheet:
+	// something written on it. DiagramContent sorts them by kind, which is the
+	// wrong question here, and its content() does not collect the component
+	// texts at all (see Diagram::content(), which only looks for three types).
+	const QList<QGraphicsItem *> items = diagram->items();
+	for (QGraphicsItem *item : items) {
+		if (DiagramTextItem *text = dynamic_cast<DiagramTextItem *>(item)) {
+			list << text;
+		}
+	}
+	return list;
+}
+
+QStringList UiBench::elementsOffPage(Diagram *diagram)
+{
+	QStringList off_page;
+	if (!diagram) {
+		return off_page;
+	}
+
+	const QRectF page = pageRect(diagram);
+	if (page.isEmpty()) {
+		return off_page;
+	}
+
+	const QList<Element *> elements = diagram->elements();
+	for (Element *element : elements) {
+		if (!page.contains(element->sceneBoundingRect())) {
+			off_page << describe(element);
+		}
+	}
+	off_page.sort();
+	return off_page;
+}
+
+QStringList UiBench::elementsWithoutSurface(Diagram *diagram)
+{
+	QStringList degenerate;
+	if (!diagram) {
+		return degenerate;
+	}
+
+	const QList<Element *> elements = diagram->elements();
+	for (Element *element : elements) {
+		const QRectF rect = element->boundingRect();
+		if (rect.isEmpty() || !rect.isValid()) {
+			degenerate << describe(element);
+		}
+	}
+	degenerate.sort();
+	return degenerate;
+}
+
+UiBench::Rendering::Rendering(Diagram *diagram, int width)
+{
+	if (!diagram || width <= 0) {
+		return;
+	}
+
+	m_region = pageRect(diagram);
+	if (m_region.isEmpty()) {
+		return;
+	}
+
+	const int height = qMax(1, qRound(width * m_region.height() / m_region.width()));
+	m_scale_x = width / m_region.width();
+	m_scale_y = height / m_region.height();
+
+	m_image = QImage(width, height, QImage::Format_ARGB32);
+	m_image.fill(Qt::white);
+
+	// Grid and guides off around the render, put back afterwards: the same
+	// thing renderDiagram() does in sources/cli_export.cpp, and for the same
+	// reason - neither of them is on the paper.
+	const bool was_drawing_grid = diagram->displayGrid();
+	const bool was_drawing_guides = diagram->displayGuides();
+	diagram->setDisplayGrid(false);
+	diagram->setDisplayGuides(false);
+
+	QPainter painter(&m_image);
+	painter.setRenderHint(QPainter::Antialiasing, true);
+	painter.setRenderHint(QPainter::TextAntialiasing, true);
+	// IgnoreAspectRatio, with a height already computed from the page, so that
+	// the image is exactly the page and nothing is letterboxed into it: it is
+	// what makes map() a plain scale instead of a guess.
+	diagram->render(&painter,
+					QRectF(QPointF(0., 0.), QSizeF(m_image.size())),
+					m_region,
+					Qt::IgnoreAspectRatio);
+	painter.end();
+
+	diagram->setDisplayGrid(was_drawing_grid);
+	diagram->setDisplayGuides(was_drawing_guides);
+}
+
+QRect UiBench::Rendering::map(const QRectF &scene_rect) const
+{
+	if (m_image.isNull()) {
+		return QRect();
+	}
+
+	const QRectF mapped((scene_rect.left() - m_region.left()) * m_scale_x,
+						(scene_rect.top()  - m_region.top())  * m_scale_y,
+						scene_rect.width()  * m_scale_x,
+						scene_rect.height() * m_scale_y);
+	return mapped.toAlignedRect().intersected(m_image.rect());
+}
+
+int UiBench::Rendering::ink() const
+{
+	return inkOfImageRect(m_image.rect());
+}
+
+int UiBench::Rendering::ink(const QRectF &scene_rect) const
+{
+	return inkOfImageRect(map(scene_rect));
+}
+
+int UiBench::Rendering::inkOfImageRect(const QRect &image_rect) const
+{
+	const QRect area = image_rect.intersected(m_image.rect());
+	if (area.isEmpty()) {
+		return 0;
+	}
+
+	// Counted, not compared: how much was drawn here, never what shape it had.
+	// A count survives a change of font; a shape does not.
+	int pixels = 0;
+	const QColor background(Qt::white);
+	for (int y = area.top() ; y <= area.bottom() ; ++y) {
+		for (int x = area.left() ; x <= area.right() ; ++x) {
+			if (m_image.pixelColor(x, y) != background) {
+				++pixels;
+			}
+		}
+	}
+	return pixels;
 }
