@@ -67,7 +67,7 @@ namespace
 	}
 }
 
-TEST_CASE("CU-11.1 — a planilha de duas colunas entra sem configuração",
+TEST_CASE("T11 — a planilha de duas colunas entra sem configuração",
 	  "[io][iosheet]")
 {
 	SECTION("tipo na primeira coluna, descrição na segunda")
@@ -128,7 +128,7 @@ TEST_CASE("CU-11.1 — a planilha de duas colunas entra sem configuração",
 	}
 }
 
-TEST_CASE("CU-11.2 — linha em branco no meio não trunca a leitura",
+TEST_CASE("T11 — linha em branco no meio não trunca a leitura",
 	  "[io][iosheet]")
 {
 	QList<QStringList> grade = planilhaDeSessenta();

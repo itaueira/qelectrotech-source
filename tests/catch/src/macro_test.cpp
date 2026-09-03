@@ -673,7 +673,7 @@ TEST_CASE("CU-05.6 — marcador órfão é nomeado, e nada é inserido", "[macro
 	}
 }
 
-TEST_CASE("CU-06.6 — o radical e o número saem do próprio valor", "[macro]")
+TEST_CASE("T06 — o radical e o número saem do próprio valor", "[macro]")
 {
 	int number = 0;
 	int width = 0;
@@ -757,7 +757,7 @@ TEST_CASE("CU-06.6 — o radical e o número saem do próprio valor", "[macro]")
 	}
 }
 
-TEST_CASE("CU-06.6 — duas inserções seguidas pegam os próximos números", "[macro]")
+TEST_CASE("T06 — duas inserções seguidas pegam os próximos números", "[macro]")
 {
 	SECTION("valor que ninguém tomou volta como está")
 	{
@@ -829,7 +829,7 @@ TEST_CASE("CU-06.6 — duas inserções seguidas pegam os próximos números", "
 	}
 }
 
-TEST_CASE("CU-06.6 — só o texto anda, e a ordem é a da declaração", "[macro]")
+TEST_CASE("T06 — só o texto anda, e a ordem é a da declaração", "[macro]")
 {
 	MacroParameterSet set;
 

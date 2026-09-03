@@ -497,7 +497,7 @@ TEST_CASE("CU-13.5 — o acessório diz de quem ele é", "[catalog]")
 	}
 }
 
-TEST_CASE("CU-13.11 — o rótulo de desfazer nomeia a tag, nunca o símbolo", "[catalog]")
+TEST_CASE("T13 — o rótulo de desfazer nomeia a tag, nunca o símbolo", "[catalog]")
 {
 	CatalogPart part(QStringLiteral("PSS24-W/5"), 1);
 

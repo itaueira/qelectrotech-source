@@ -349,7 +349,7 @@ TEST_CASE("CU-12.6 — révision : le projet livré garde l'ancienne largeur")
 	      == QStringLiteral("Disjuntor tripolar 25 A"));
 }
 
-TEST_CASE("CU-12.7 — deux postes sur le même catalogue")
+TEST_CASE("T12 — deux postes sur le même catalogue")
 {
 	QTemporaryDir directory;
 	REQUIRE(directory.isValid());

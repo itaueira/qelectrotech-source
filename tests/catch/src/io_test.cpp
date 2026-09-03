@@ -49,7 +49,7 @@ namespace
 	}
 }
 
-TEST_CASE("CU-11.1 — o tipo de E/S vai e volta pelas duas letras da planilha",
+TEST_CASE("T11 — o tipo de E/S vai e volta pelas duas letras da planilha",
 	  "[io]")
 {
 	SECTION("as seis letras que o programa escreve")
@@ -88,7 +88,7 @@ TEST_CASE("CU-11.1 — o tipo de E/S vai e volta pelas duas letras da planilha",
 	}
 }
 
-TEST_CASE("CU-11.1 — a coluna de tipo é lida do jeito que a pessoa escreveu",
+TEST_CASE("T11 — a coluna de tipo é lida do jeito que a pessoa escreveu",
 	  "[io]")
 {
 	bool ok = false;
@@ -161,7 +161,7 @@ TEST_CASE("CU-11.1 — a coluna de tipo é lida do jeito que a pessoa escreveu",
 	}
 }
 
-TEST_CASE("CU-11.2 — a dobra de texto ignora caixa, acento e espaço duplo",
+TEST_CASE("T11 — a dobra de texto ignora caixa, acento e espaço duplo",
 	  "[io]")
 {
 	REQUIRE(IoPoint::normalize(QString::fromUtf8("Botão de Emergência"))
@@ -171,7 +171,7 @@ TEST_CASE("CU-11.2 — a dobra de texto ignora caixa, acento e espaço duplo",
 	REQUIRE(IoPoint::normalize(QStringLiteral("")).isEmpty());
 }
 
-TEST_CASE("CU-11.5 — o ponto de E/S escreve só o que tem", "[io]")
+TEST_CASE("T11 — o ponto de E/S escreve só o que tem", "[io]")
 {
 	QDomDocument documento;
 
@@ -236,7 +236,7 @@ TEST_CASE("CU-11.5 — o ponto de E/S escreve só o que tem", "[io]")
 	}
 }
 
-TEST_CASE("CU-11.2 — a chave da importação é uma cascata", "[io]")
+TEST_CASE("T11 — a chave da importação é uma cascata", "[io]")
 {
 	IoList lista;
 	lista.append(completa("S1", "I0.0", "Botão de emergência"));
@@ -270,7 +270,7 @@ TEST_CASE("CU-11.2 — a chave da importação é uma cascata", "[io]")
 	}
 }
 
-TEST_CASE("CU-11.2 — a planilha completa completa o que a básica importou",
+TEST_CASE("T11 — a planilha completa completa o que a básica importou",
 	  "[io]")
 {
 	IoList lista;
@@ -310,7 +310,7 @@ TEST_CASE("CU-11.2 — a planilha completa completa o que a básica importou",
 	REQUIRE(lista.count() == 2);
 }
 
-TEST_CASE("CU-11.2 — chave que casa com dois pontos não casa com nenhum",
+TEST_CASE("T11 — chave que casa com dois pontos não casa com nenhum",
 	  "[io]")
 {
 	SECTION("dois pontos guardados com a mesma descrição")
@@ -351,7 +351,7 @@ TEST_CASE("CU-11.2 — chave que casa com dois pontos não casa com nenhum",
 	}
 }
 
-TEST_CASE("CU-11.2 — a importação nunca apaga, ela relata", "[io]")
+TEST_CASE("T11 — a importação nunca apaga, ela relata", "[io]")
 {
 	IoList lista;
 	const QString id_a = lista.append(completa("S1", "I0.0", "Botão"));
@@ -372,7 +372,7 @@ TEST_CASE("CU-11.2 — a importação nunca apaga, ela relata", "[io]")
 	REQUIRE_FALSE(relatorio.isEmpty());
 }
 
-TEST_CASE("CU-11.4 — o desenho não é assunto da planilha", "[io]")
+TEST_CASE("T11 — o desenho não é assunto da planilha", "[io]")
 {
 	IoList lista;
 	const QString id = lista.append(completa("S1", "I0.0", "Botão"));
@@ -441,7 +441,7 @@ TEST_CASE("CU-11.4 — o desenho não é assunto da planilha", "[io]")
 	}
 }
 
-TEST_CASE("CU-11.2 — a coluna vazia não apaga o que está preenchido", "[io]")
+TEST_CASE("T11 — a coluna vazia não apaga o que está preenchido", "[io]")
 {
 	IoList lista;
 	lista.append(completa("S1", "I0.0", "Botão de emergência"));
@@ -474,7 +474,7 @@ TEST_CASE("CU-11.2 — a coluna vazia não apaga o que está preenchido", "[io]"
 	}
 }
 
-TEST_CASE("CU-11.5 — o bloco io_list vai e volta pelo arquivo do projeto",
+TEST_CASE("T11 — o bloco io_list vai e volta pelo arquivo do projeto",
 	  "[io]")
 {
 	QDomDocument documento;

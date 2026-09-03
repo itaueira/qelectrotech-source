@@ -129,7 +129,7 @@ namespace
 	}
 }
 
-TEST_CASE("CU-11.9 — os números batem: o projeto é a soma dos CLPs",
+TEST_CASE("T11 — os números batem: o projeto é a soma dos CLPs",
 	  "[io][iotree]")
 {
 	const IoList list = projeto();
@@ -175,7 +175,7 @@ TEST_CASE("CU-11.9 — os números batem: o projeto é a soma dos CLPs",
 	}
 }
 
-TEST_CASE("CU-11.9 — o cartão que ninguém usou aparece assim mesmo",
+TEST_CASE("T11 — o cartão que ninguém usou aparece assim mesmo",
 	  "[io][iotree]")
 {
 	const IoList list = projeto();
@@ -189,7 +189,7 @@ TEST_CASE("CU-11.9 — o cartão que ninguém usou aparece assim mesmo",
 	REQUIRE_FALSE(clp2.cards.at(1).missing);
 }
 
-TEST_CASE("CU-11.9 — ponto que nomeia cartão inexistente não some da conta",
+TEST_CASE("T11 — ponto que nomeia cartão inexistente não some da conta",
 	  "[io][iotree]")
 {
 	const IoList list = projeto();
@@ -213,7 +213,7 @@ TEST_CASE("CU-11.9 — ponto que nomeia cartão inexistente não some da conta",
 	}
 }
 
-TEST_CASE("CU-11.9 — quem não nomeou CLP cai num só, chamado Automate",
+TEST_CASE("T11 — quem não nomeou CLP cai num só, chamado Automate",
 	  "[io][iotree]")
 {
 	IoList list;

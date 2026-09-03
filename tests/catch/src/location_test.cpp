@@ -57,7 +57,7 @@ namespace
 	}
 }
 
-TEST_CASE("CU-32.1 — a árvore guarda o armário, o que está dentro dele e o caminho de cada um",
+TEST_CASE("T32 — a árvore guarda o armário, o que está dentro dele e o caminho de cada um",
 	  "[localizacao]")
 {
 	LocationTree arvore;
@@ -106,7 +106,7 @@ TEST_CASE("CU-32.1 — a árvore guarda o armário, o que está dentro dele e o 
 	}
 }
 
-TEST_CASE("CU-32.1 — o código recusa tudo o que tornaria o caminho ambíguo",
+TEST_CASE("T32 — o código recusa tudo o que tornaria o caminho ambíguo",
 	  "[localizacao]")
 {
 	SECTION("um código vazio não nomeia lugar nenhum")
@@ -163,7 +163,7 @@ TEST_CASE("CU-32.1 — o código recusa tudo o que tornaria o caminho ambíguo",
 	}
 }
 
-TEST_CASE("CU-32.1 — renomear um armário devolve o caminho antigo e o novo de tudo que está dentro",
+TEST_CASE("T32 — renomear um armário devolve o caminho antigo e o novo de tudo que está dentro",
 	  "[localizacao]")
 {
 	LocationTree arvore;
@@ -219,7 +219,7 @@ TEST_CASE("CU-32.1 — renomear um armário devolve o caminho antigo e o novo de
 	}
 }
 
-TEST_CASE("CU-32.1 — mover uma localização leva o que está dentro e recusa o laço",
+TEST_CASE("T32 — mover uma localização leva o que está dentro e recusa o laço",
 	  "[localizacao]")
 {
 	LocationTree arvore;
@@ -273,7 +273,7 @@ TEST_CASE("CU-32.1 — mover uma localização leva o que está dentro e recusa 
 	}
 }
 
-TEST_CASE("CU-32.3 — apagar um armário devolve todo caminho que deixou de existir",
+TEST_CASE("T32 — apagar um armário devolve todo caminho que deixou de existir",
 	  "[localizacao]")
 {
 	LocationTree arvore;
@@ -328,7 +328,7 @@ TEST_CASE("CU-32.2 — a etiqueta da norma repete o mais em vez de aninhar",
 	}
 }
 
-TEST_CASE("CU-32.5 — a lista de material conta os armários e deixa de fora a peça virtual",
+TEST_CASE("T32 — a lista de material conta os armários e deixa de fora a peça virtual",
 	  "[localizacao]")
 {
 	LocationTree arvore;
@@ -379,7 +379,7 @@ TEST_CASE("CU-32.5 — a lista de material conta os armários e deixa de fora a 
 	}
 }
 
-TEST_CASE("CU-32.1 — a árvore volta do arquivo igual ao que entrou",
+TEST_CASE("T32 — a árvore volta do arquivo igual ao que entrou",
 	  "[localizacao]")
 {
 	LocationTree arvore;
@@ -411,7 +411,7 @@ TEST_CASE("CU-32.1 — a árvore volta do arquivo igual ao que entrou",
 	}
 }
 
-TEST_CASE("CU-32.1 — o arquivo pode guardar o que a árvore não aceita, e a leitura conserta",
+TEST_CASE("T32 — o arquivo pode guardar o que a árvore não aceita, e a leitura conserta",
 	  "[localizacao]")
 {
 	QDomDocument documento;
@@ -532,7 +532,7 @@ TEST_CASE("a chave que o componente carrega", "[localizacao]")
 	}
 }
 
-TEST_CASE("CU-32.1 — o componente segue a árvore por consulta direta, e o vizinho de nome parecido fica onde está",
+TEST_CASE("T32 — o componente segue a árvore por consulta direta, e o vizinho de nome parecido fica onde está",
 	  "[localizacao]")
 {
 	LocationTree arvore;

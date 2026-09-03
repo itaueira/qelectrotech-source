@@ -77,7 +77,7 @@ namespace
 	}
 }
 
-TEST_CASE("CU-11.8 — o papel do catálogo diz em qual barra o comum entra",
+TEST_CASE("T11 — o papel do catálogo diz em qual barra o comum entra",
 	  "[iocommon]")
 {
 	CHECK(IoCommon::busOfRole(CatalogPinRole::SupplyCommon)
@@ -136,7 +136,7 @@ TEST_CASE("CU-11.8 — o papel do catálogo diz em qual barra o comum entra",
 	}
 }
 
-TEST_CASE("CU-11.8 — a peça atribuída responde borne a borne, na mesma ordem",
+TEST_CASE("T11 — a peça atribuída responde borne a borne, na mesma ordem",
 	  "[iocommon]")
 {
 	const CatalogPart part = peca(QList<CatalogPinRole>{
@@ -185,7 +185,7 @@ TEST_CASE("CU-11.8 — a peça atribuída responde borne a borne, na mesma ordem
 	}
 }
 
-TEST_CASE("CU-11.8 — o grupo escolhe o sub-símbolo, e o que não tem grupo "
+TEST_CASE("T11 — o grupo escolhe o sub-símbolo, e o que não tem grupo "
 	  "atende a todos",
 	  "[iocommon]")
 {
@@ -222,7 +222,7 @@ TEST_CASE("CU-11.8 — o grupo escolhe o sub-símbolo, e o que não tem grupo "
 	}
 }
 
-TEST_CASE("CU-11.8 — qual barra, e em qual folha",
+TEST_CASE("T11 — qual barra, e em qual folha",
 	  "[iocommon]")
 {
 	QList<IoCommon::Bus> buses;
@@ -295,7 +295,7 @@ TEST_CASE("CU-11.8 — qual barra, e em qual folha",
 	}
 }
 
-TEST_CASE("CU-11.8 — o plano liga o que dá, e diz por que recusou o resto",
+TEST_CASE("T11 — o plano liga o que dá, e diz por que recusou o resto",
 	  "[iocommon]")
 {
 	QList<IoCommon::Bus> buses;
@@ -369,7 +369,7 @@ TEST_CASE("CU-11.8 — o plano liga o que dá, e diz por que recusou o resto",
 	}
 }
 
-TEST_CASE("CU-11.8 — oito cartões numa ação só, e rodar de novo não duplica "
+TEST_CASE("T11 — oito cartões numa ação só, e rodar de novo não duplica "
 	  "fio",
 	  "[iocommon]")
 {

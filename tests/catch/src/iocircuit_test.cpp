@@ -66,7 +66,7 @@ namespace
 	}
 }
 
-TEST_CASE("CU-11.4 — o ponto vira circuito, e o que ele sabe entra "
+TEST_CASE("T11 — o ponto vira circuito, e o que ele sabe entra "
 	  "nas variáveis do macro",
 	  "[iocircuit]")
 {
@@ -144,7 +144,7 @@ TEST_CASE("CU-11.4 — o ponto vira circuito, e o que ele sabe entra "
 	}
 }
 
-TEST_CASE("CU-11.4 — o macro decide o que quer: o que ele não declara "
+TEST_CASE("T11 — o macro decide o que quer: o que ele não declara "
 	  "não é escrito, e o que só ele sabe fica no padrão dele",
 	  "[iocircuit]")
 {
@@ -186,7 +186,7 @@ TEST_CASE("CU-11.4 — o macro decide o que quer: o que ele não declara "
 	CHECK(!table.columns().contains(QStringLiteral("DESCRICAO")));
 }
 
-TEST_CASE("CU-11.4 — o nome da variável casa inteiro, e nunca por prefixo",
+TEST_CASE("T11 — o nome da variável casa inteiro, e nunca por prefixo",
 	  "[iocircuit]")
 {
 	CHECK(IoCircuit::keyForColumn(QStringLiteral("MARCACAO_DISJUNTOR"))
@@ -217,7 +217,7 @@ TEST_CASE("CU-11.4 — o nome da variável casa inteiro, e nunca por prefixo",
 	CHECK(table.value(0, QStringLiteral("MARCACAO_RELE")).isEmpty());
 }
 
-TEST_CASE("CU-11.4 — a mesma variável em três idiomas, e com acento",
+TEST_CASE("T11 — a mesma variável em três idiomas, e com acento",
 	  "[iocircuit]")
 {
 	SECTION("cada apelido devolve a sua chave")
@@ -280,7 +280,7 @@ TEST_CASE("CU-11.4 — a mesma variável em três idiomas, e com acento",
 	}
 }
 
-TEST_CASE("CU-11.4 — o ponto que não desenha é dito pelo nome e pelo motivo",
+TEST_CASE("T11 — o ponto que não desenha é dito pelo nome e pelo motivo",
 	  "[iocircuit]")
 {
 	IoList list;
@@ -357,7 +357,7 @@ TEST_CASE("CU-11.4 — o ponto que não desenha é dito pelo nome e pelo motivo"
 	}
 }
 
-TEST_CASE("CU-11.5 — o borne de campo é contado antes de qualquer desenho",
+TEST_CASE("T11 — o borne de campo é contado antes de qualquer desenho",
 	  "[iocircuit]")
 {
 	IoList list;
@@ -387,7 +387,7 @@ TEST_CASE("CU-11.5 — o borne de campo é contado antes de qualquer desenho",
 	CHECK(plan.text().contains(QStringLiteral("12")));
 }
 
-TEST_CASE("CU-11.4 — oito pontos, oito linhas, e o macro de um não invade "
+TEST_CASE("T11 — oito pontos, oito linhas, e o macro de um não invade "
 	  "a linha do outro",
 	  "[iocircuit]")
 {
@@ -461,7 +461,7 @@ TEST_CASE("CU-11.4 — oito pontos, oito linhas, e o macro de um não invade "
 	}
 }
 
-TEST_CASE("CU-11.4 — o que a coluna Connecter à tem de nomear",
+TEST_CASE("T11 — o que a coluna Connecter à tem de nomear",
 	  "[iocircuit]")
 {
 	CHECK(IoCircuit::isMacroPath(QStringLiteral("partida.qetmak")));

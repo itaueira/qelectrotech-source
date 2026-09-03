@@ -61,7 +61,7 @@ namespace
 	}
 }
 
-TEST_CASE("CU-11.3 — a direção do canal manda, e o universal aceita os dois",
+TEST_CASE("T11 — a direção do canal manda, e o universal aceita os dois",
 	  "[ioassignment]")
 {
 	SECTION("um ponto de saída não entra num canal de entrada")
@@ -115,7 +115,7 @@ TEST_CASE("CU-11.3 — a direção do canal manda, e o universal aceita os dois"
 	}
 }
 
-TEST_CASE("CU-11.3 — o canal se chama pelo que o cartão diz, nunca pelo T1",
+TEST_CASE("T11 — o canal se chama pelo que o cartão diz, nunca pelo T1",
 	  "[ioassignment]")
 {
 	QVector<ElementData::PlcIO> ios;
@@ -155,7 +155,7 @@ TEST_CASE("CU-11.3 — o canal se chama pelo que o cartão diz, nunca pelo T1",
 	}
 }
 
-TEST_CASE("CU-11.3 — canal ocupado é canal ocupado, inclusive o digitado à mão",
+TEST_CASE("T11 — canal ocupado é canal ocupado, inclusive o digitado à mão",
 	  "[ioassignment]")
 {
 	QVector<ElementData::PlcIO> ios = cartao(4);
@@ -240,7 +240,7 @@ TEST_CASE("CU-11.3 — canal ocupado é canal ocupado, inclusive o digitado à m
 	}
 }
 
-TEST_CASE("CU-11.3 — dezesseis pontos entram num cartão de dezesseis, "
+TEST_CASE("T11 — dezesseis pontos entram num cartão de dezesseis, "
 	  "sem digitação",
 	  "[ioassignment]")
 {
@@ -309,7 +309,7 @@ TEST_CASE("CU-11.3 — dezesseis pontos entram num cartão de dezesseis, "
 	}
 }
 
-TEST_CASE("CU-11.3 — o ponto sem canal compatível fica de fora, e é dito pelo nome",
+TEST_CASE("T11 — o ponto sem canal compatível fica de fora, e é dito pelo nome",
 	  "[ioassignment]")
 {
 	QVector<ElementData::PlcIO> ios = cartao(2);
@@ -405,7 +405,7 @@ TEST_CASE("CU-11.3 — o ponto sem canal compatível fica de fora, e é dito pel
 	}
 }
 
-TEST_CASE("CU-11.3 — atribuir preenche a célula vazia e não toca no resto",
+TEST_CASE("T11 — atribuir preenche a célula vazia e não toca no resto",
 	  "[ioassignment]")
 {
 	QVector<ElementData::PlcIO> ios = cartao(3);
@@ -467,7 +467,7 @@ TEST_CASE("CU-11.3 — atribuir preenche a célula vazia e não toca no resto",
 	}
 }
 
-TEST_CASE("CU-11.3 — devolver o canal não apaga o que foi digitado depois",
+TEST_CASE("T11 — devolver o canal não apaga o que foi digitado depois",
 	  "[ioassignment]")
 {
 	QVector<ElementData::PlcIO> ios = cartao(3);
