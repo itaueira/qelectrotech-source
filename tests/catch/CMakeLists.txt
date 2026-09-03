@@ -370,7 +370,12 @@ if(TARGET qet_core)
         src/ui/uibench.cpp
         src/ui/uibench.h
         src/ui/projectopen_test.cpp
-        src/ui/appearance_test.cpp)
+        src/ui/appearance_test.cpp
+        src/ui/dragassign_test.cpp
+        src/ui/iecoff_test.cpp
+        src/ui/assignpart_test.cpp
+        src/ui/renumberproject_test.cpp
+        src/ui/createsymbol_test.cpp)
 
     target_link_libraries(
         C_uitests

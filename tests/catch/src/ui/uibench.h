@@ -23,6 +23,7 @@
 #include <QRectF>
 #include <QString>
 #include <QStringList>
+#include <QTemporaryDir>
 
 class Diagram;
 class DiagramTextItem;
@@ -117,6 +118,82 @@ namespace UiBench
 		private:
 			QETProject *m_project = nullptr;
 			QString m_error;
+	};
+
+	/**
+		The whole content of a file, as text. Handed to ScratchProject so that
+		an example can be copied into a directory of its own before a test
+		saves it.
+	*/
+	QString fileContent(const QString &path);
+
+	/**
+		A project written into a directory of its own, opened from there.
+
+		Two things the Project above cannot do, and both are needed by a case
+		that ends with "save, close, open again".
+
+		The first is saving at all. Project opens a file of examples/, which
+		is part of the source tree: writing it back would modify the tree, and
+		a suite that does that is a suite nobody can run twice. Here the file
+		lives in a QTemporaryDir that goes away with the test.
+
+		The second is a project the test wrote itself. A drag of six push
+		buttons in and out of a rectangle needs six push buttons in a
+		rectangle, and no example ships one; the XML is built by the case,
+		written here, and opened by the very same QETProject the program uses.
+
+		The temporary directory is emptied when the object dies, whatever the
+		case did with it.
+	*/
+	class ScratchProject
+	{
+		public:
+			/**
+				@param xml_content the whole .qet file, as text
+				@param file_name the name it takes inside the temporary
+				directory - only visible in a message, but a legible one
+			*/
+			explicit ScratchProject(const QString &xml_content,
+						const QString &file_name
+						= QStringLiteral("bench.qet"));
+			~ScratchProject();
+
+			ScratchProject(const ScratchProject &) = delete;
+			ScratchProject &operator=(const ScratchProject &) = delete;
+
+			bool isOpen() const;
+			/// Empty while isOpen(); says what went wrong otherwise.
+			QString error() const {return m_error;}
+			QString filePath() const {return m_file_path;}
+
+			QETProject *project() const {return m_project;}
+			QETProject *operator->() const {return m_project;}
+
+			QList<Diagram *> diagrams() const;
+			Diagram *diagram(int index) const;
+			int diagramCount() const;
+
+			/**
+				Save the project, close it, open the file again.
+
+				Every pointer the case holds into the old project - a Diagram,
+				an Element, a shape - dangles afterwards and has to be taken
+				again from the reopened project. Said here because it is the
+				one way to use this wrongly.
+
+				@return false and fills error() when the save or the reopening
+				failed.
+			*/
+			bool saveAndReopen();
+
+		private:
+			void open();
+
+			QTemporaryDir m_dir;
+			QString m_file_path;
+			QString m_error;
+			QETProject *m_project = nullptr;
 	};
 
 	/// What the sheet draws for each element, already composed - not the stored value.

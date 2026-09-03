@@ -24,6 +24,7 @@
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/independenttextitem.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/qetresult.h"
 #include "../../../../sources/qetversion.h"
 
 #include <QColor>
@@ -169,6 +170,108 @@ Diagram *UiBench::Project::busiestSheet() const
 		}
 	}
 	return best;
+}
+
+QString UiBench::fileContent(const QString &path)
+{
+	QFile file(path);
+	if (!file.open(QIODevice::ReadOnly)) {
+		return QString();
+	}
+	return QString::fromUtf8(file.readAll());
+}
+
+UiBench::ScratchProject::ScratchProject(const QString &xml_content,
+					const QString &file_name)
+{
+	QETProject::setBackupEnabled(false);
+
+	if (!m_dir.isValid())
+	{
+		m_error = QStringLiteral("no temporary directory: %1").arg(m_dir.errorString());
+		return;
+	}
+
+	m_file_path = QDir(m_dir.path()).absoluteFilePath(file_name);
+
+	QFile file(m_file_path);
+	if (!file.open(QIODevice::WriteOnly))
+	{
+		m_error = QStringLiteral("cannot write %1: %2")
+			  .arg(m_file_path, file.errorString());
+		return;
+	}
+	file.write(xml_content.toUtf8());
+	file.close();
+
+	open();
+}
+
+UiBench::ScratchProject::~ScratchProject()
+{
+	delete m_project;
+}
+
+void UiBench::ScratchProject::open()
+{
+	QString reason;
+	if (!opensWithoutDialog(m_file_path, &reason))
+	{
+		m_error = reason;
+		return;
+	}
+
+	m_project = new QETProject(m_file_path);
+	if (m_project->state() != QETProject::Ok)
+	{
+		m_error = QStringLiteral("opening returned state %1 for %2")
+			  .arg(static_cast<int>(m_project->state())).arg(m_file_path);
+		return;
+	}
+	m_error.clear();
+}
+
+bool UiBench::ScratchProject::isOpen() const
+{
+	return m_project && m_project->state() == QETProject::Ok;
+}
+
+QList<Diagram *> UiBench::ScratchProject::diagrams() const
+{
+	return m_project ? m_project->diagrams() : QList<Diagram *>();
+}
+
+Diagram *UiBench::ScratchProject::diagram(int index) const
+{
+	const QList<Diagram *> list = diagrams();
+	return (index >= 0 && index < list.count()) ? list.at(index) : nullptr;
+}
+
+int UiBench::ScratchProject::diagramCount() const
+{
+	return diagrams().count();
+}
+
+bool UiBench::ScratchProject::saveAndReopen()
+{
+	if (!m_project)
+	{
+		m_error = QStringLiteral("there is no project to save");
+		return false;
+	}
+
+	const QETResult written = m_project->write();
+	if (!written.isOk())
+	{
+		m_error = QStringLiteral("saving %1 failed: %2")
+			  .arg(m_file_path, written.errorMessage());
+		return false;
+	}
+
+	delete m_project;
+	m_project = nullptr;
+	open();
+	return isOpen();
 }
 
 QStringList UiBench::displayedLabels(Diagram *diagram)
