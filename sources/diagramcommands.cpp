@@ -76,10 +76,29 @@ void PasteDiagramCommand::redo()
 		first_redo = false;
 
 		//make new uuid for every pasted conductor, because old uuid are
-		//the uuid of the copied conductor
+		//the uuid of the copied conductor. This is also what keeps a
+		//pasted wire out of the original cable: a cable's wire reaches
+		//its conductor by uuid (CableWire::conductorUuid()), so a copy
+		//that kept the original uuid would join the original cable with
+		//nobody asking. Deliberately outside the "erase label on copy"
+		//setting below: identity is not a label, and a duplicated uuid is
+		//a broken project whatever the user set.
 		const QList <Conductor *> all_pasted_conductors = content.conductors();
-		for (Conductor *c : all_pasted_conductors) {
+		for (Conductor *c : all_pasted_conductors)
+		{
 			c -> newUuid();
+
+			//The cable attribute is the one-line mirror of that same
+			//membership, written by the program rather than typed by the
+			//user, and it travels literally through the XML the copy is
+			//made of. Left alone it would name a cable this conductor is
+			//not in. The mirror follows the membership: both go.
+			ConductorProperties cp = c -> properties();
+			if (!cp.m_cable.isEmpty())
+			{
+				cp.m_cable.clear();
+				c -> setProperties(cp);
+			}
 		}
 
 		//this is the first paste, we do some actions for the new element
@@ -98,21 +117,36 @@ void PasteDiagramCommand::redo()
 				dc.addValue("comment", "");
 				dc.addValue("location", "");
 				e->setElementInformations(dc);
-				
-				//Reset the text of conductors, the same way the label/comment/
-				//location above are reset to "" rather than to some other
-				//value - "erase on copy" means erase, not "replace with the
-				//project's default new-conductor text" (which happens to
-				//default to a literal "_" character, unrelated to whether the
-				//user wanted this copy's old label kept or cleared; see
-				//issue #413).
-				const QList <Conductor *> conductors_list = content.m_conductors_to_move;
-				for (Conductor *c : conductors_list)
-				{
-					ConductorProperties cp = c -> properties();
-					cp.text = "";
-					c -> setProperties(cp);
-				}
+			}
+		}
+
+		//Reset the text of conductors, the same way the label/comment/
+		//location above are reset to "" rather than to some other
+		//value - "erase on copy" means erase, not "replace with the
+		//project's default new-conductor text" (which happens to
+		//default to a literal "_" character, unrelated to whether the
+		//user wanted this copy's old label kept or cleared; see
+		//issue #413).
+		//This loop used to sit inside the element loop above. Through the
+		//clipboard that only wasted work - it ran once per pasted element
+		//over the same whole list - and never lost a reset, because a
+		//clipboard content cannot hold conductors without elements:
+		//Diagram::toXml() only writes a conductor when both of its
+		//elements are selected, and Diagram::fromXml() only rebuilds one
+		//when both terminals are among the elements it just added. What
+		//the nesting did break is this command's own contract, which takes
+		//a DiagramContent and says nothing about elements being in it: a
+		//caller that hands over conductors alone got no reset at all. It
+		//is out here so that the reset follows the contract rather than
+		//the habits of today's three callers.
+		if (settings.value("diagramcommands/erase-label-on-copy", true).toBool())
+		{
+			const QList <Conductor *> conductors_list = content.m_conductors_to_move;
+			for (Conductor *c : conductors_list)
+			{
+				ConductorProperties cp = c -> properties();
+				cp.text = "";
+				c -> setProperties(cp);
 			}
 		}
 	}

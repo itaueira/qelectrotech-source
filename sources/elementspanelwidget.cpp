@@ -690,7 +690,21 @@ void ElementsPanelWidget::duplicateDiagram()
 				// KEY of the conductor table, and its insert is a plain INSERT,
 				// so a duplicated uuid fails and the wire silently disappears
 				// from the wiring list and the per-element wire count.
+				// The new uuid is also what keeps the duplicated folio out of
+				// the cables of the original one: a cable's wire names its
+				// conductor by uuid, and no wire names these.
 				cond->newUuid();
+
+				// And the cable attribute is the mirror of that membership,
+				// written by the program, not typed by the user. It came
+				// through the XML with the rest; left alone it would name a
+				// cable this conductor is not in.
+				ConductorProperties cp = cond->properties();
+				if (!cp.m_cable.isEmpty())
+				{
+					cp.m_cable.clear();
+					cond->setProperties(cp);
+				}
 			}
 		}
 	}

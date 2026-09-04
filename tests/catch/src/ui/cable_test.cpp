@@ -23,13 +23,23 @@
 #include "../../../../sources/cable/cablereport.h"
 #include "../../../../sources/cable/cablewire.h"
 #include "../../../../sources/diagram.h"
+#include "../../../../sources/diagramcommands.h"
+#include "../../../../sources/diagramcontent.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
+#include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetproject.h"
 
 #include <catch2/catch.hpp>
 
+#include <QDomDocument>
 #include <QList>
+#include <QPointF>
+#include <QSet>
+#include <QSettings>
+#include <QStringList>
+#include <QUndoStack>
 #include <QUuid>
+#include <QVariant>
 #include <algorithm>
 
 /*
@@ -108,7 +118,12 @@ namespace {
 	confused, and the deliberate spare in the same cable is here so that the
 	difference is measured and not assumed.
 */
-TEST_CASE("CU-15.13 - a wire whose conductor is gone comes back as a marked spare", "[cable]")
+// Labelled T15 rather than CU-15.13 on purpose. The use case asks that the
+// orphan wire APPEAR as a marked spare and that the project REPORT it, and
+// neither half has a user interface yet: sources/cable/ holds the model, the
+// wire and the report, and CableReport has no user outside sources/cable/.
+// What is provable today - the rule and the round trip - is what this proves.
+TEST_CASE("T15 - a wire whose conductor is gone comes back as a marked spare", "[cable]")
 {
 	const QString content =
 			UiBench::fileContent(UiBench::examplePath(
@@ -412,4 +427,437 @@ TEST_CASE("T15 - a project with no cable block reads with no cable", "[cable]")
 	CHECK(report.isEmpty());
 	CHECK_FALSE(report.hasOrphan());
 	CHECK(report.toText().isEmpty());
+}
+
+/*
+	Copy and paste, and the two things a copied wire must not bring with it.
+
+	A pasted conductor is a new wire, and it has to be new in the two ways
+	that matter to the cables: it must not answer to the identity of the wire
+	it was copied from, and it must not claim membership of the cable that
+	wire belongs to. The identity is the uuid a cable's wire reaches its
+	conductor by (CableWire::conductorUuid()), and the membership has a
+	one-line mirror in the "cable" attribute of the conductor itself, written
+	by the program and travelling literally through the XML the copy is made
+	of.
+
+	The case that motivates all this is copying a stretch of cable: a
+	selection of wires and nothing else. That is also the selection the reset
+	of the conductor labels used to miss entirely, because its loop sat
+	inside the loop over the pasted elements - with no element in the
+	content, the loop body never ran, and the copy came out wearing the
+	original's wire numbers.
+
+	Read this before trusting the sections below: a content of wires and no
+	element is not something the clipboard can hand over today.
+	Diagram::toXml(false, true) writes a conductor out only when both of its
+	elements are selected, and Diagram::fromXml builds a pasted conductor
+	only when both of its terminals are found among the elements it has just
+	added - so every content that reaches PasteDiagramCommand through the
+	clipboard has at least one element in it. The sections therefore do both:
+	one drives the whole clipboard round trip, and the two others hand the
+	command the content its own contract is written for, built out of
+	conductors that the clipboard round trip really produced.
+
+	The fixture is written here rather than taken from examples/ for one
+	reason: no example ships a conductor whose "cable" attribute is already
+	filled, and it is the copy of a filled one that is the whole subject.
+*/
+
+namespace {
+
+		/// The two terminals of the symbol the fixture embeds, by uuid.
+	const QString top_terminal_uuid =
+			QStringLiteral("{beef0001-0000-4000-8000-000000000001}");
+	const QString bottom_terminal_uuid =
+			QStringLiteral("{beef0001-0000-4000-8000-000000000002}");
+
+		/// The identity each of the two source conductors carries in the file.
+	const QString first_wire_uuid =
+			QStringLiteral("{d0d0cafe-0000-4000-8000-000000000001}");
+	const QString second_wire_uuid =
+			QStringLiteral("{d0d0cafe-0000-4000-8000-000000000002}");
+
+		/// The cable both source conductors say they belong to.
+	const QString source_cable = QStringLiteral("W12");
+
+		/// The wire number each source conductor carries.
+	const QString first_wire_text = QStringLiteral("L1");
+	const QString second_wire_text = QStringLiteral("L2");
+
+		/// The identities of the two source conductors, sorted.
+	QStringList sourceWireUuids()
+	{
+		QStringList uuids{first_wire_uuid, second_wire_uuid};
+		uuids.sort();
+		return uuids;
+	}
+
+	/**
+		The project the paste case works on, as text.
+
+		Four instances of one symbol, in two vertical pairs, and one
+		conductor running down each pair. Both conductors say they belong to
+		the same cable and carry a wire number of their own.
+
+		The formula is written empty on purpose, and not left out to be
+		tidy: Conductor::setProperties() recomputes the text from the formula
+		whenever there is one, so a conductor carrying a formula would not
+		come out of a paste with an empty text however well the reset works.
+		A fixture with a formula would measure that path and call it this one.
+	*/
+	QString pasteFixtureXml()
+	{
+		struct Instance
+		{
+			int x;
+			int y;
+			const char *label;
+		};
+
+			// Two pairs, one instance above the other in each pair.
+		const Instance instances[] = {
+			{100, 100, "X1"},
+			{100, 200, "X2"},
+			{300, 100, "X3"},
+			{300, 200, "X4"}};
+
+		QString elements_xml;
+		int index = 0;
+		for (const Instance &instance : instances)
+		{
+			++ index;
+			elements_xml += QStringLiteral(
+						"<element x=\"%1\" y=\"%2\" z=\"10\" prefix=\"\""
+						" freezeLabel=\"false\" orientation=\"0\""
+						" type=\"embed://bench/wireend.elmt\""
+						" uuid=\"{c0ffee01-0000-4000-8000-00000000000%3}\">"
+						"<terminals/><inputs/>"
+						"<elementInformations>"
+						"<elementInformation show=\"1\" name=\"label\">%4"
+						"</elementInformation>"
+						"</elementInformations>"
+						"<dynamic_texts/><texts_groups/>"
+						"</element>")
+					.arg(instance.x)
+					.arg(instance.y)
+					.arg(index)
+					.arg(QLatin1String(instance.label));
+		}
+
+		struct Wire
+		{
+			const QString &uuid;
+			const QString &text;
+			int upper_instance;
+			int lower_instance;
+		};
+
+		const Wire wires[] = {
+			{first_wire_uuid, first_wire_text, 1, 2},
+			{second_wire_uuid, second_wire_text, 3, 4}};
+
+		QString conductors_xml;
+		for (const Wire &wire : wires)
+		{
+			conductors_xml += QStringLiteral(
+						  "<conductor uuid=\"%1\""
+						  " element1=\"{c0ffee01-0000-4000-8000-00000000000%2}\""
+						  " terminal1=\"%3\""
+						  " element2=\"{c0ffee01-0000-4000-8000-00000000000%4}\""
+						  " terminal2=\"%5\""
+						  " type=\"multi\" num=\"%6\" formula=\"\""
+						  " cable=\"%7\" freezeLabel=\"false\"/>")
+					  .arg(wire.uuid)
+					  .arg(wire.upper_instance)
+					  .arg(bottom_terminal_uuid)
+					  .arg(wire.lower_instance)
+					  .arg(top_terminal_uuid)
+					  .arg(wire.text)
+					  .arg(source_cable);
+		}
+
+		return QStringLiteral(
+			       "<project title=\"bench\" version=\"0.80\">"
+			       "<collection>"
+			       "<category name=\"bench\">"
+			       "<element name=\"wireend.elmt\">"
+			       "<definition type=\"element\" version=\"0.80\""
+			       " width=\"20\" height=\"40\""
+			       " hotspot_x=\"10\" hotspot_y=\"20\""
+			       " orientation=\"dnnn\" link_type=\"simple\">"
+			       "<names><name lang=\"en\">Wire end</name></names>"
+			       "<description>"
+			       "<line x1=\"0\" y1=\"-15\" x2=\"0\" y2=\"15\""
+			       " length1=\"1.5\" end1=\"none\""
+			       " length2=\"1.5\" end2=\"none\""
+			       " antialias=\"false\""
+			       " style=\"line-style:normal;line-weight:normal;"
+			       "filling:none;color:black\"/>"
+			       "<terminal uuid=\"%3\" name=\"\" type=\"Generic\""
+			       " orientation=\"n\" x=\"0\" y=\"-15\"/>"
+			       "<terminal uuid=\"%4\" name=\"\" type=\"Generic\""
+			       " orientation=\"s\" x=\"0\" y=\"15\"/>"
+			       "</description>"
+			       "</definition>"
+			       "</element>"
+			       "</category>"
+			       "</collection>"
+			       "<diagram title=\"Bench\" order=\"1\" height=\"600\""
+			       " cols=\"15\" colsize=\"50\" rows=\"8\" rowsize=\"80\""
+			       " displaycols=\"true\" displayrows=\"true\">"
+			       "<elements>%1</elements>"
+			       "<inputs/>"
+			       "<conductors>%2</conductors>"
+			       "</diagram>"
+			       "</project>")
+		       .arg(elements_xml, conductors_xml)
+		       .arg(top_terminal_uuid, bottom_terminal_uuid);
+	}
+
+		/// The uuid of each conductor, as text, sorted.
+	QStringList uuidsOf(const QList<Conductor *> &conductors)
+	{
+		QStringList uuids;
+		for (const Conductor *conductor : conductors) {
+			uuids << conductor->uuid().toString();
+		}
+		uuids.sort();
+		return uuids;
+	}
+
+		/// The cable each conductor claims to belong to, sorted.
+	QStringList cablesOf(const QList<Conductor *> &conductors)
+	{
+		QStringList cables;
+		for (const Conductor *conductor : conductors) {
+			cables << conductor->properties().m_cable;
+		}
+		cables.sort();
+		return cables;
+	}
+
+		/// The wire number each conductor shows, sorted.
+	QStringList textsOf(const QList<Conductor *> &conductors)
+	{
+		QStringList texts;
+		for (const Conductor *conductor : conductors) {
+			texts << conductor->properties().text;
+		}
+		texts.sort();
+		return texts;
+	}
+
+	/**
+		The copy and the paste of DiagramView, without the clipboard.
+
+		The same three steps DiagramView::copy() and DiagramView::paste()
+		take - toXml(false, true), a trip through text, fromXml - so that
+		what lands in @a pasted is what a real copy and paste would have
+		produced, serialisation included. The undo command is left to the
+		caller: it is the one thing each section drives differently.
+	*/
+	bool copySelectionAndReadItBack(Diagram *folio, DiagramContent *pasted)
+	{
+		const QString clipboard_text = folio->toXml(false, true).toString(4);
+
+		QDomDocument document;
+		if (!document.setContent(clipboard_text)) {
+			return false;
+		}
+
+		return folio->fromXml(document, QPointF(600, 100), false, pasted);
+	}
+
+		/// What the "erase label on copy" preference reads while a guard below lives.
+	enum class EraseLabels
+	{
+			/// The key removed, so the default written in the code applies.
+		AtItsDefault,
+			/// The key set to false, the way a user who wants the labels kept sets it.
+		Off
+	};
+
+	/**
+		The "erase label on copy" preference, put back on the way out.
+
+		The suite writes into settings of its own and not into those of the
+		program (see main.cpp), but they are still one store shared by every
+		case of the run and by every run on the machine. Without the reset, a
+		section that turns the preference off would leave the next case
+		measuring a preference it never set - and the sections below are
+		about both sides of that preference.
+	*/
+	class ErasePreference
+	{
+		public:
+			explicit ErasePreference(EraseLabels wanted)
+			{
+				QSettings settings;
+				m_was_stored = settings.contains(m_key);
+				m_stored = settings.value(m_key);
+
+				if (wanted == EraseLabels::Off) {
+					settings.setValue(m_key, false);
+				} else {
+					settings.remove(m_key);
+				}
+			}
+
+			~ErasePreference()
+			{
+				QSettings settings;
+				if (m_was_stored) {
+					settings.setValue(m_key, m_stored);
+				} else {
+					settings.remove(m_key);
+				}
+			}
+
+			ErasePreference(const ErasePreference &) = delete;
+			ErasePreference &operator=(const ErasePreference &) = delete;
+
+		private:
+			const QString m_key =
+					QStringLiteral("diagramcommands/erase-label-on-copy");
+			bool m_was_stored = false;
+			QVariant m_stored;
+	};
+}
+
+TEST_CASE("T15 — a pasted wire loses the identity and the cable of the wire it came from",
+	  "[cable][paste]")
+{
+	UiBench::ScratchProject scratch{pasteFixtureXml(),
+					QStringLiteral("paste.qet")};
+	REQUIRE(scratch.isOpen());
+	REQUIRE(scratch.error().isEmpty());
+
+	Diagram *folio = scratch.diagram(0);
+	REQUIRE(folio);
+
+		//The fixture as the loading path read it: four components, two
+		//conductors, and the two conductors carrying the identities, the
+		//cable and the wire numbers written in the file. Checked and not
+		//assumed, because every expected value below is one of these.
+	REQUIRE(folio->elements().count() == 4);
+	REQUIRE(folio->conductors().count() == 2);
+	REQUIRE(uuidsOf(folio->conductors()) == sourceWireUuids());
+	REQUIRE(cablesOf(folio->conductors())
+		== QStringList({source_cable, source_cable}));
+	REQUIRE(textsOf(folio->conductors())
+		== QStringList({first_wire_text, second_wire_text}));
+
+	const QList<Element *> sources = folio->elements();
+	for (Element *element : sources) {
+		element->setSelected(true);
+	}
+
+	SECTION("the whole selection, components and wires: what the clipboard carries today")
+	{
+		ErasePreference preference{EraseLabels::AtItsDefault};
+
+		DiagramContent pasted;
+		REQUIRE(copySelectionAndReadItBack(folio, &pasted));
+		REQUIRE(pasted.m_elements.count() == 4);
+		REQUIRE(pasted.m_conductors_to_move.count() == 2);
+
+			//Before the command: the copy is a twin. It answers to the same
+			//uuid, claims the same cable and shows the same wire number -
+			//which is what makes the work of the command visible below, and
+			//what a paste that skipped it would leave in the project.
+		CHECK(uuidsOf(pasted.m_conductors_to_move) == sourceWireUuids());
+		CHECK(cablesOf(pasted.m_conductors_to_move)
+		      == QStringList({source_cable, source_cable}));
+		CHECK(textsOf(pasted.m_conductors_to_move)
+		      == QStringList({first_wire_text, second_wire_text}));
+
+		folio->undoStack().push(new PasteDiagramCommand(folio, pasted));
+
+		const QStringList pasted_uuids = uuidsOf(pasted.m_conductors_to_move);
+		CHECK(pasted_uuids.count() == 2);
+		CHECK_FALSE(pasted_uuids.contains(first_wire_uuid));
+		CHECK_FALSE(pasted_uuids.contains(second_wire_uuid));
+		CHECK(cablesOf(pasted.m_conductors_to_move)
+		      == QStringList({QString(), QString()}));
+		CHECK(textsOf(pasted.m_conductors_to_move)
+		      == QStringList({QString(), QString()}));
+
+			//And the folio now holds four conductors with four different
+			//identities. Written as the size of a set because a cable
+			//reaches its wire by uuid: two conductors sharing one is not a
+			//duplicated label, it is a project that cannot say which wire a
+			//cable holds.
+		const QStringList folio_uuids = uuidsOf(folio->conductors());
+		CHECK(folio_uuids.count() == 4);
+		CHECK(QSet<QString>(folio_uuids.begin(), folio_uuids.end()).count() == 4);
+
+			//The two originals are untouched: a paste clears the copy, not
+			//the drawing the copy was made from.
+		CHECK(cablesOf(folio->conductors())
+		      == QStringList({QString(), QString(), source_cable, source_cable}));
+	}
+
+	SECTION("wires alone, with no component in the content")
+	{
+		ErasePreference preference{EraseLabels::AtItsDefault};
+
+		DiagramContent pasted;
+		REQUIRE(copySelectionAndReadItBack(folio, &pasted));
+		REQUIRE(pasted.m_conductors_to_move.count() == 2);
+
+			//The content the contract of the command is written for, and the
+			//one the clipboard cannot build today (see the head of this
+			//case): the two conductors the round trip above really produced,
+			//and nothing else.
+		DiagramContent wires_only;
+		wires_only.m_conductors_to_move = pasted.m_conductors_to_move;
+		REQUIRE(wires_only.m_elements.isEmpty());
+		REQUIRE(wires_only.conductors().count() == 2);
+
+		folio->undoStack().push(new PasteDiagramCommand(folio, wires_only));
+
+		const QStringList pasted_uuids = uuidsOf(wires_only.m_conductors_to_move);
+		CHECK(pasted_uuids.count() == 2);
+		CHECK_FALSE(pasted_uuids.contains(first_wire_uuid));
+		CHECK_FALSE(pasted_uuids.contains(second_wire_uuid));
+
+		CHECK(cablesOf(wires_only.m_conductors_to_move)
+		      == QStringList({QString(), QString()}));
+
+			//The assertion the nesting used to make impossible: with no
+			//element in the content, the reset of the wire numbers has to
+			//run all the same.
+		CHECK(textsOf(wires_only.m_conductors_to_move)
+		      == QStringList({QString(), QString()}));
+	}
+
+	SECTION("wires alone with the preference off: the number is kept, the identity is not")
+	{
+		ErasePreference preference{EraseLabels::Off};
+
+		DiagramContent pasted;
+		REQUIRE(copySelectionAndReadItBack(folio, &pasted));
+		REQUIRE(pasted.m_conductors_to_move.count() == 2);
+
+		DiagramContent wires_only;
+		wires_only.m_conductors_to_move = pasted.m_conductors_to_move;
+		REQUIRE(wires_only.m_elements.isEmpty());
+
+		folio->undoStack().push(new PasteDiagramCommand(folio, wires_only));
+
+			//The other side of the same border. "Erase label on copy" is a
+			//preference about labels, so the wire numbers stay - and the
+			//uuid and the cable go anyway, because neither is a label: one
+			//is the identity a cable reaches its wire by, the other is the
+			//written mirror of a membership this copy does not have.
+		CHECK(textsOf(wires_only.m_conductors_to_move)
+		      == QStringList({first_wire_text, second_wire_text}));
+
+		const QStringList pasted_uuids = uuidsOf(wires_only.m_conductors_to_move);
+		CHECK_FALSE(pasted_uuids.contains(first_wire_uuid));
+		CHECK_FALSE(pasted_uuids.contains(second_wire_uuid));
+		CHECK(cablesOf(wires_only.m_conductors_to_move)
+		      == QStringList({QString(), QString()}));
+	}
 }
