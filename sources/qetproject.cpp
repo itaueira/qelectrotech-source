@@ -24,6 +24,7 @@
 #include "autoNum/assignvariables.h"
 #include "autoNum/numerotationcontext.h"
 #include "autoNum/numerotationcontextcommands.h"
+#include "cable/cable.h"
 #include "diagram.h"
 #include "qetapp.h"
 #include "qetmessagebox.h"
@@ -1128,6 +1129,19 @@ QDomDocument QETProject::toXml()
 		project_root.appendChild(xml_strip);
 	}
 
+		//Write the cables to xml, beside the terminal strips: a cable belongs
+		//to the project and not to a folio, which is what lets one cable
+		//enter on folio 3 and leave on folio 7 and still be one cable.
+		//A project with no cable gets no block at all, same as above.
+	if (m_cable_vector.count())
+	{
+		auto xml_cables = xml_doc.createElement(QStringLiteral("cables"));
+		for (const auto &cable : m_cable_vector) {
+			xml_cables.appendChild(cable->toXml(xml_doc));
+		}
+		project_root.appendChild(xml_cables);
+	}
+
 	// Write the elements collection.
 	project_root.appendChild(m_elements_collection->root().cloneNode(true));
 
@@ -1720,6 +1734,14 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 	readTerminalStripXml(xml_project);
 	const qint64 strips_ms = phase_timer.restart();
 
+		//Load the cables and link each wire to its conductor. This has to
+		//come after readDiagramsXml() above: resolving before the conductors
+		//are in memory would find none of them and mark every wire of every
+		//cable as having lost its conductor.
+	readCableXml(xml_project);
+	resolveCables();
+	const qint64 cables_ms = phase_timer.restart();
+
 		//Now that all are loaded we refresh content of the project.
 	refresh();
 	const qint64 refresh_ms = phase_timer.restart();
@@ -1730,11 +1752,12 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 
 	qInfo().nospace()
 			<< "Project content built in "
-			<< (elements_ms + diagrams_ms + strips_ms
+			<< (elements_ms + diagrams_ms + strips_ms + cables_ms
 				+ refresh_ms + database_ms) / 1000.0
 			<< " seconds (elements collection " << elements_ms / 1000.0
 			<< ", diagrams " << diagrams_ms / 1000.0
 			<< ", terminal strips " << strips_ms / 1000.0
+			<< ", cables " << cables_ms / 1000.0
 			<< ", refresh " << refresh_ms / 1000.0
 			<< ", database " << database_ms / 1000.0 << ")";
 
@@ -1982,6 +2005,34 @@ void QETProject::readTerminalStripXml(const QDomDocument &xml_project)
 			auto terminal_strip = new TerminalStrip(this);
 			terminal_strip->fromXml(xml_strip);
 			addTerminalStrip(terminal_strip);
+		}
+	}
+}
+
+/**
+ * @brief QETProject::readCableXml
+ * Read the cables of this project.
+ * A project written before the cables existed has no cables block, and reads
+ * with no cable, which is not an error.
+ *
+ * The wires are not linked to their conductors here: that is resolveCables(),
+ * which the caller has to run once the folios are in memory.
+ * @param xml_project
+ */
+void QETProject::readCableXml(const QDomDocument &xml_project)
+{
+	auto xml_elmt = xml_project.documentElement();
+	auto xml_cables = xml_elmt.firstChildElement(QStringLiteral("cables"));
+	if (!xml_cables.isNull())
+	{
+		for (auto xml_cable : QETXML::findInDomElement(xml_cables, Cable::xmlTagName()))
+		{
+			auto cable = new Cable(this);
+			if (cable->fromXml(xml_cable)) {
+				addCable(cable);
+			} else {
+				delete cable;
+			}
 		}
 	}
 }
@@ -2382,6 +2433,105 @@ bool QETProject::addTerminalStrip(TerminalStrip *strip)
  */
 bool QETProject::removeTerminalStrip(TerminalStrip *strip) {
 	return m_terminal_strip_vector.removeOne(strip);
+}
+
+/**
+ * @brief QETProject::cables
+ * @return a QVector who contain all cables owned by this project.
+ * A cable belongs to the project and not to a folio, which is what lets one
+ * cable enter on a folio and leave on another and still be one cable.
+ */
+QVector<Cable *> QETProject::cables() const {
+	return m_cable_vector;
+}
+
+/**
+ * @brief QETProject::cable
+ * @param uuid
+ * @return the cable of this project whose uuid is \p uuid, nullptr if this
+ * project has no such cable.
+ */
+Cable *QETProject::cable(const QUuid &uuid) const
+{
+	for (Cable *cable : m_cable_vector)
+	{
+		if (cable->uuid() == uuid) {
+			return cable;
+		}
+	}
+
+	return nullptr;
+}
+
+/**
+ * @brief QETProject::newCable
+ * @param label : label of the cable
+ * @return Create a new cable with this project as parent.
+ * You can retrieve this cable at any time by calling QETProject::cables()
+ */
+Cable *QETProject::newCable(const QString &label)
+{
+	auto cable = new Cable(label, this);
+
+	m_cable_vector.append(cable);
+	return cable;
+}
+
+/**
+ * @brief QETProject::addCable
+ * Add \p cable to the cable list of the project.
+ * The project of \p cable must be this project.
+ * @param cable
+ * @return true if successfully added
+ */
+bool QETProject::addCable(Cable *cable)
+{
+	if (!cable || cable->parent() != this)
+		return false;
+
+	if (m_cable_vector.contains(cable))
+		return true;
+
+	m_cable_vector.append(cable);
+	return true;
+}
+
+/**
+ * @brief QETProject::removeCable
+ * Remove \p cable from the cable list of this project.
+ * The cable is removed from the list but not deleted.
+ * @param cable
+ * @return true if successfully removed.
+ */
+bool QETProject::removeCable(Cable *cable) {
+	return m_cable_vector.removeOne(cable);
+}
+
+/**
+ * @brief QETProject::resolveCables
+ * Link every wire of every cable of this project to the conductor it names.
+ *
+ * The index of conductors is built once for the whole project, and the
+ * report is rebuilt from scratch: a wire whose conductor came back stops
+ * being reported, and one whose conductor left starts being reported,
+ * without anything having to be persisted about it.
+ *
+ * This must only run once the folios are in memory: run before them, it
+ * finds no conductor at all and marks every wire as having lost one.
+ * It is safe to call again at any time.
+ */
+void QETProject::resolveCables()
+{
+	m_cable_report.clear();
+
+	if (m_cable_vector.isEmpty()) {
+		return;
+	}
+
+	const auto index = Cable::conductorsOf(this, &m_cable_report);
+	for (Cable *cable : m_cable_vector) {
+		cable->resolve(index, &m_cable_report);
+	}
 }
 
 /**

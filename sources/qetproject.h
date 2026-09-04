@@ -23,6 +23,7 @@
 #include "project/projectpropertieshandler.h"
 #include "autoNum/iecstructure.h"
 #include "borderproperties.h"
+#include "cable/cablereport.h"
 #include "conductorproperties.h"
 #include "dataBase/projectdatabase.h"
 #include "macro/circuittable.h"
@@ -55,6 +56,7 @@ class QUndoStack;
 class XmlElementCollection;
 class QTimer;
 class TerminalStrip;
+class Cable;
 
 
 #include <QColor>
@@ -297,6 +299,24 @@ class QETProject : public QObject
 		bool addTerminalStrip(TerminalStrip *strip);
 		bool removeTerminalStrip(TerminalStrip *strip);
 
+		QVector<Cable *> cables() const;
+		Cable *cable(const QUuid &uuid) const;
+		Cable *newCable(const QString &label = QString());
+		bool addCable(Cable *cable);
+		bool removeCable(Cable *cable);
+		/**
+			@brief Link the wires of every cable to the conductors they name.
+
+			Called once at the end of loading, when the folios are in memory
+			and not before - a resolution run early finds no conductor at all
+			and turns every wire into a spare. Safe to call again whenever the
+			drawing has changed under the cables, and cableReport() then says
+			what the new answer is.
+		*/
+		void resolveCables();
+		/// @return what the last resolveCables() found; see CableReport
+		CableReport cableReport() const {return m_cable_report;}
+
 	public slots:
 		Diagram *addNewDiagram(int pos = -1);
 		void removeDiagram(Diagram *);
@@ -345,6 +365,7 @@ class QETProject : public QObject
 		void readProjectPropertiesXml(QDomDocument &xml_project);
 		void readDefaultPropertiesXml(QDomDocument &xml_project);
 		void readTerminalStripXml(const QDomDocument &xml_project);
+		void readCableXml(const QDomDocument &xml_project);
 		void readUsageXml(QDomDocument &xml_project);
 
 		void writeProjectPropertiesXml(QDomElement &);
@@ -423,6 +444,9 @@ class QETProject : public QObject
 		QUuid m_uuid = QUuid::createUuid();
 		projectDataBase m_data_base;
 		QVector<TerminalStrip *> m_terminal_strip_vector;
+		QVector<Cable *> m_cable_vector;
+			/// What the last resolveCables() found; read through cableReport()
+		CableReport m_cable_report;
 
 		ProjectPropertiesHandler m_project_properties_handler;
 };

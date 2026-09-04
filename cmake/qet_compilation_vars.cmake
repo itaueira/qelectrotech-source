@@ -316,6 +316,13 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/autoNum/ui/selectautonumw.cpp
   ${QET_DIR}/sources/autoNum/ui/selectautonumw.h
 
+  ${QET_DIR}/sources/cable/cable.cpp
+  ${QET_DIR}/sources/cable/cable.h
+  ${QET_DIR}/sources/cable/cablereport.cpp
+  ${QET_DIR}/sources/cable/cablereport.h
+  ${QET_DIR}/sources/cable/cablewire.cpp
+  ${QET_DIR}/sources/cable/cablewire.h
+
   ${QET_DIR}/sources/catalog/catalog.cpp
   ${QET_DIR}/sources/catalog/catalog.h
   ${QET_DIR}/sources/catalog/catalogassignment.cpp

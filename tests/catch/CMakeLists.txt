@@ -375,7 +375,8 @@ if(TARGET qet_core)
         src/ui/iecoff_test.cpp
         src/ui/assignpart_test.cpp
         src/ui/renumberproject_test.cpp
-        src/ui/createsymbol_test.cpp)
+        src/ui/createsymbol_test.cpp
+        src/ui/cable_test.cpp)
 
     target_link_libraries(
         C_uitests
