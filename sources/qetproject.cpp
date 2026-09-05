@@ -150,6 +150,13 @@ QETProject::QETProject(KAutoSaveFile *backup, QObject *parent) :
 	QFileInfo fi(m_file_path);
 	setReadOnly(!fi.isWritable());
 
+		//What was just read comes from a crash backup, so no file on the disk
+		//holds it: the .qet is the older state the crash left behind, and the
+		//backup file has just been re-pointed. Saying so here is what makes
+		//writeBackup() write it again instead of taking the project for
+		//untouched - the one case where the state in memory is the only copy.
+	markContentChanged();
+
 	init();
 }
 
@@ -171,7 +178,7 @@ QETProject::~QETProject()
 		//Wait for any in-flight async crash-recovery backup to finish: the worker
 		//writes through &m_backup_file, a member that would otherwise be destroyed
 		//under it (issue #492).
-	m_backup_future.waitForFinished();
+	waitForBackup();
 
 		//We block database signal to avoid hundreds of unnecessary emitted signal
 		//due to deletion (diagram, item, etc...) and as much update made in the not yet deleted things.
@@ -244,6 +251,12 @@ void QETProject::init()
 
 	m_undo_stack = new QUndoStack(this);
 	connect(m_undo_stack, &QUndoStack::cleanChanged, this, &QETProject::undoStackChanged);
+		//Every push, undo and redo moves the index, and each of them changes
+		//what toXml() would write. cleanChanged() above does not cover that:
+		//it only fires when the stack crosses its clean mark, so the second
+		//edit of a session goes unannounced - which is exactly the state
+		//writeBackup() must not mistake for an untouched project.
+	connect(m_undo_stack, &QUndoStack::indexChanged, this, &QETProject::markContentChanged);
 
 	m_save_backup_timer.setInterval(BACKUP_INTERVAL);
 	connect(&m_save_backup_timer, &QTimer::timeout, this, &QETProject::writeBackup);
@@ -411,7 +424,7 @@ void QETProject::setFilePath(const QString &filepath)
 		return;
 	}
 		//Don't close/re-point the backup file while a backup is still writing it.
-	m_backup_future.waitForFinished();
+	waitForBackup();
 	if (m_backup_file.isOpen()) {
 		m_backup_file.close();
 	}
@@ -1278,6 +1291,10 @@ QETResult QETProject::write()
 	updateDiagramsFolioData();
 
 	setModified(false);
+		//The .qet on the disk now holds this state, so a crash-recovery backup
+		//of it would write the same thing a second time. Recorded after the
+		//write returned, never before it.
+	m_backed_up_revision.store(m_content_revision);
 	return(QETResult());
 }
 
@@ -1591,8 +1608,18 @@ void QETProject::diagramOrderChanged(int old_index, int new_index) {
 
 /**
 	Mark this project as modified and emit the projectModified() signal.
+
+	The revision is bumped outside the guard below, and that is the whole
+	point of it being there: the guard only lets through a change of the
+	flag, so the second caller in a row saying "modified" changes nothing
+	and emits nothing. Bumping inside it would make every modification
+	after the first one invisible to writeBackup(), which is the one way
+	this could lose work.
 */
 void QETProject::setModified(bool modified) {
+	if (modified) {
+		markContentChanged();
+	}
 	if (m_modified != modified) {
 		m_modified = modified;
 		emit projectModified(this, m_modified);
@@ -2206,22 +2233,72 @@ void QETProject::detachDiagram(Diagram *diagram)
 /**
 	@brief QETProject::writeBackup
 	Write a backup file of this project, in the case that QET crash
+	@return true when the project was serialised and the write started,
+	false when there was nothing to write
+
+	@par Why the third guard is not "is the project modified"
+
+	Serialising is the expensive half of a backup - seconds, on the
+	interface thread, for a project of a few megabytes - and the timer
+	fires every twenty minutes whether or not anything was drawn. The
+	modified flag would only fix half of that: it is false for a project
+	nobody touched, but it stays true from the first edit of the morning
+	to the save of the evening, and every tick in between would write the
+	same file again.
+
+	So what is compared is which state the backup already holds, and not
+	whether there is anything unsaved. m_content_revision moves with the
+	project; m_backed_up_revision is the last one that reached a file.
+
+	@par Erring towards writing, in both directions
+
+	The revision is bumped by anything that claims a change, real or not,
+	and it is recorded as backed up only once the write has returned
+	success. A backup that is written for nothing costs the time it used
+	to cost every time; a backup that is skipped when it was needed costs
+	the user's work.
 */
-void QETProject::writeBackup()
+bool QETProject::writeBackup()
 {
 	if (!m_backup_enabled)
-		return;
+		return false;
 		//Don't launch a new backup while the previous one is still writing:
 		//both would write through &m_backup_file on different threads.
 	if (m_backup_future.isRunning())
-		return;
+		return false;
+		//Nothing has changed since the state a file already holds.
+	if (m_content_revision == m_backed_up_revision.load())
+		return false;
+
+		//Read before toXml(), so that a change slipping in during the
+		//serialisation is left for the next backup instead of being taken
+		//for one this document contains.
+	const quint64 revision = m_content_revision;
 		//Capture the document by value (implicitly shared, so cheap): the
 		//Qt5-style QtConcurrent::run(function, reference-args) call did not
 		//survive the Qt6 API change, a lambda behaves identically on both.
 	QDomDocument xml_project(toXml());
-	m_backup_future = QtConcurrent::run([this, xml_project]() mutable {
-		return QET::writeToFile(xml_project, &m_backup_file, nullptr);
+	m_backup_future = QtConcurrent::run([this, xml_project, revision]() mutable {
+		const bool written = QET::writeToFile(xml_project, &m_backup_file, nullptr);
+			//A write that failed leaves the state unbacked on purpose, so
+			//that the next tick tries again instead of taking the project
+			//for safe on a file that was never written.
+		if (written) {
+			m_backed_up_revision.store(revision);
+		}
+		return written;
 	});
+	return true;
+}
+
+/**
+	@brief QETProject::waitForBackup
+	Block until the backup started by writeBackup() has reached the disk.
+	Returns at once when none is in flight.
+*/
+void QETProject::waitForBackup()
+{
+	m_backup_future.waitForFinished();
 }
 
 /**

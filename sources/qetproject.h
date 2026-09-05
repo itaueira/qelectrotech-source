@@ -45,6 +45,8 @@
 #include <QHash>
 #include <QFuture>
 
+#include <atomic>
+
 class Diagram;
 class ElementsLocation;
 class QETResult;
@@ -203,6 +205,27 @@ class QETProject : public QObject
 		QDomDocument toXml();
 		bool close();
 		QETResult write();
+
+		/**
+			@brief Write the crash-recovery backup of this project.
+			@return true when the project was serialised and the write
+			started, false when there was nothing to write.
+
+			Public because the timer is not the only caller worth having:
+			the answer "was anything written?" is what tells a caller
+			whether the backup file is current.
+		*/
+		bool writeBackup();
+		/**
+			@brief Block until the backup started by writeBackup() has
+			reached the disk. Returns at once when none is in flight.
+
+			The worker writes through &m_backup_file, a member it does not
+			own, so anything that re-points or destroys that file waits here
+			first.
+		*/
+		void waitForBackup();
+
 		bool isReadOnly() const;
 		void setReadOnly(bool);
 
@@ -357,6 +380,9 @@ class QETProject : public QObject
 		void removeDiagramsTitleBlockTemplate(TitleBlockTemplatesCollection *, const QString &);
 		void usedTitleBlockTemplateChanged(const QString &);
 		void undoStackChanged (bool a) {if (!a) setModified(true);}
+			/// Say that what toXml() would write is not what it was: see
+			/// m_content_revision and writeBackup().
+		void markContentChanged() {++m_content_revision;}
 
 	private:
 		void readProjectXml(QDomDocument &xml_project);
@@ -373,7 +399,6 @@ class QETProject : public QObject
 		void writeUsageXml(QDomElement &);
 		void addDiagram(Diagram *diagram, int pos = -1);
 		void detachDiagram(Diagram *diagram);
-		void writeBackup();
 		void init();
 		ProjectState openFile(QFile *file);
 		void refresh();
@@ -441,6 +466,21 @@ class QETProject : public QObject
 			   m_autosave_timer;
 		QFuture<bool> m_backup_future;
 		KAutoSaveFile m_backup_file;
+			/// Which state the project is in: bumped by anything that claims
+			/// to change what toXml() would write. Not a count of edits and
+			/// not a value ever shown - only the comparison below means
+			/// something.
+		quint64 m_content_revision = 0;
+			/// The revision a file on the disk already holds: the .qet after
+			/// a save, the backup file after a backup. Equal to the one above
+			/// means writeBackup() has nothing to do.
+			///
+			/// Atomic because the backup write runs on a worker thread and
+			/// records itself there, while a save records itself on the
+			/// interface thread. Both only ever store a revision that reached
+			/// the disk, so the race can cost an extra backup and never a
+			/// missing one.
+		std::atomic<quint64> m_backed_up_revision {0};
 		QUuid m_uuid = QUuid::createUuid();
 		projectDataBase m_data_base;
 		QVector<TerminalStrip *> m_terminal_strip_vector;

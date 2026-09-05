@@ -464,7 +464,7 @@ TEST_CASE("CU-30.5 — la convention de côtés appartient à l'atelier")
 	}
 }
 
-TEST_CASE("CU-30.1 — le bloc sort de la liste des bornes", "[pinout]")
+TEST_CASE("T30 — le bloc sort de la liste des bornes", "[pinout]")
 {
 	const SymbolGrid grid;
 	const PinoutGenerator generator = standardGenerator();
@@ -616,7 +616,7 @@ TEST_CASE("CU-30.1 — le bloc sort de la liste des bornes", "[pinout]")
 	}
 }
 
-TEST_CASE("CU-30.2 — une pinoute trop longue se coupe en blocs", "[pinout]")
+TEST_CASE("T30 — une pinoute trop longue se coupe en blocs", "[pinout]")
 {
 	const SymbolGrid grid;
 	PinoutGenerator generator = standardGenerator();
@@ -776,7 +776,7 @@ TEST_CASE("CU-30.4 — la liste compte un point, la feuille montre deux bornes",
 		CHECK(body.height() == Approx(60.0));
 	}
 }
-TEST_CASE("CU-30.3 — une même borne ne se dessine pas deux fois", "[pinout]")
+TEST_CASE("T30 — une même borne ne se dessine pas deux fois", "[pinout]")
 {
 	PinoutGenerator generator = standardGenerator();
 

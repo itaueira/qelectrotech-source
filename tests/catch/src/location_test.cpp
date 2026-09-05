@@ -305,7 +305,7 @@ TEST_CASE("T32 — apagar um armário devolve todo caminho que deixou de existir
 	}
 }
 
-TEST_CASE("CU-32.2 — a etiqueta da norma repete o mais em vez de aninhar",
+TEST_CASE("T32 — a etiqueta da norma repete o mais em vez de aninhar",
 	  "[localizacao]")
 {
 	CHECK(LocationTree::iecTag(QString("QCM1")) == QString("+QCM1"));
