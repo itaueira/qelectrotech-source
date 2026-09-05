@@ -236,10 +236,16 @@ jobs:
             exit 1
           fi
           echo "usando $WDQ"
+          # Qt5 only: windeployqt-qt5 deploys ANGLE and stops with "libGLESv2.dll does not
+          # exist", because MSYS2 does not ship it.  windeployqt6 has no such flag and no
+          # such need, so the flag is added for Qt5 alone.  Measured: without it the call
+          # exits 1 on a clean folder, with it exits 0 and deploys 9 DLLs plus the plugins.
+          ANGLE=""
+          if [ "${{ matrix.qt }}" = "5" ]; then ANGLE="--no-angle"; fi
           mkdir -p dist
           cp "$EXE" dist/QElectroTech.exe
           cd dist
-          "$WDQ" --release --no-compiler-runtime ./QElectroTech.exe
+          "$WDQ" --release --no-compiler-runtime $ANGLE ./QElectroTech.exe
           for pass in 1 2 3; do
             for bin in *.dll *.exe platforms/*.dll sqldrivers/*.dll imageformats/*.dll; do
               [ -f "$bin" ] || continue
