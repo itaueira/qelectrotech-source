@@ -362,6 +362,12 @@ bool QetLogger::hasPendingCrashDump() const
 	if (m_disabled) {
 		return false;
 	}
+	if (m_log_dir.isEmpty()) {
+		// init() never ran, so this process never had a dump path at all.
+		// Without this, crashDumpPath() answers "/crash_dump.log" and the
+		// question goes to the root of the current drive.
+		return false;
+	}
 	const QFileInfo info(crashDumpPath());
 	return info.exists() && info.isFile() && info.size() > 0;
 }

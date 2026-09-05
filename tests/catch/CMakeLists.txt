@@ -380,7 +380,8 @@ if(TARGET qet_core)
         src/ui/ioimport_test.cpp
         src/ui/ioassign_test.cpp
         src/ui/macroinsert_test.cpp
-        src/ui/backup_test.cpp)
+        src/ui/backup_test.cpp
+        src/ui/crashrecovery_test.cpp)
 
     target_link_libraries(
         C_uitests

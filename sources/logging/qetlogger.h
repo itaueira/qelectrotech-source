@@ -53,7 +53,7 @@
 	  on Windows, an unhandled structured exception) flushes the ring to
 	  a fixed crash-dump file before the process dies.
 	- Step 5: hasPendingCrashDump()/pendingCrashDumpContents()/
-	  clearPendingCrashDump() let startup code (see QETApp::checkBackupFiles())
+	  clearPendingCrashDump() let startup code (see QETApp::checkCrashDump())
 	  notice and offer an unretrieved crash dump from the *previous* run;
 	  buildDiagnosticsReport() is the equivalent for a manual "save a
 	  report right now" action on the *current*, still-running session.

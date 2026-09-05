@@ -85,6 +85,14 @@ class ProjectLock
 		static QString currentUser();
 		static QString currentMachine();
 
+		/**
+			@return true when a process of *this* machine is still running.
+			Public because the same question, about the same kind of plain
+			text file, is asked by the session marker of CrashRecovery:
+			better one copy of the platform code than two.
+		*/
+		static bool processIsAlive(qint64 pid);
+
 	private:
 		QString m_project_path;
 		bool m_acquired = false;

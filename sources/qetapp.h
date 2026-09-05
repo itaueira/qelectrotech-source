@@ -328,7 +328,6 @@ class QETApp : public QObject
 		void initConfiguration();
 		void initSystemTray();
 		void buildSystemTrayMenu();
-		void checkBackupFiles();
 		void checkCrashDump();
 		void fetchWindowStats(
 			const QList<QETDiagramEditor *> &,

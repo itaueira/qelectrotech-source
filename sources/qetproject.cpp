@@ -25,6 +25,7 @@
 #include "autoNum/numerotationcontext.h"
 #include "autoNum/numerotationcontextcommands.h"
 #include "cable/cable.h"
+#include "crashrecovery.h"
 #include "diagram.h"
 #include "qetapp.h"
 #include "qetmessagebox.h"
@@ -129,11 +130,18 @@ QETProject::QETProject(KAutoSaveFile *backup, QObject *parent) :
 	m_data_base(this, this),
 	m_project_properties_handler{this}
 {
+		//The project this copy belongs to, in the shape QFile can open.
+		//The two KAutoSaveFile implementations do not store the URL the
+		//same way, and one of them yields "/C:/dir/x.qet" on Windows -
+		//a path that opens nothing, and that would have been written
+		//back into the project as its own file path.
+	const QString managed_path = CrashRecovery::localPathOf(backup->managedFile());
+
 	m_state = openFile(backup);
 		//Failed to open from the backup, try to open the crashed
 	if (m_state != ProjectState::Ok)
 	{
-		QFile file(backup->managedFile().path());
+		QFile file(managed_path);
 		m_state = openFile(&file);
 		if(m_state != ProjectState::Ok)
 		{
@@ -143,7 +151,7 @@ QETProject::QETProject(KAutoSaveFile *backup, QObject *parent) :
 		}
 	}
 		//Set the real path, instead of the path of the backup.
-	setFilePath(backup->managedFile().path());
+	setFilePath(managed_path);
 	delete  backup;
 
 		//Set the project to read only mode if the file it.

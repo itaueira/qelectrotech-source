@@ -20,6 +20,7 @@
 #include <QToolBar>
 
 #include "catalog/catalog.h"
+#include "crashrecovery.h"
 #include "environment/qetenvironment.h"
 #include "configdialog.h"
 #include "ui/configpage/configpages.h"
@@ -54,11 +55,6 @@
 #include <QFontDatabase>
 #include <QProcessEnvironment>
 #include <QRegularExpression>
-#ifdef BUILD_WITHOUT_KF
-#	include "ui/nokde/kautosavefile.h"
-#else
-#	include <KAutoSaveFile>
-#endif
 
 #ifdef QET_ALLOW_OVERRIDE_CED_OPTION
 QString QETApp::m_overrided_common_elements_dir = QString();
@@ -121,6 +117,12 @@ QETApp::QETApp() :
 	if (non_interactive_execution_) {
 		std::exit(EXIT_SUCCESS);
 	}
+
+		//Before anything can open a project, and before checkCrashDump()
+		//below clears the dump this reads: it is what tells the rest of the
+		//run whether the previous one ended abruptly. See crashrecovery.h.
+	CrashRecovery::beginSession();
+
 	initConfiguration();
 	initLanguage();
 	QET::Icons::initIcons();
@@ -162,7 +164,19 @@ QETApp::QETApp() :
 		m_splash_screen -> hide();
 	}
 
-	checkBackupFiles();
+		//What used to be here was the recovery offer, for every project the
+		//machine had ever seen. It moved to the moment a project is opened
+		//(rules 1 and 2 of crashrecovery.h), and what stays is the crash
+		//dump of the previous run.
+		//
+		//It stays subordinated to the recovery offer, exactly as it was:
+		//discussion #644 step 5 is explicit that the two prompts must never
+		//both show, and the project the user is about to recover comes
+		//first. The dump is not thrown away, only left for a run that has
+		//nothing to recover.
+	if (!CrashRecovery::hasPendingRecovery()) {
+		checkCrashDump();
+	}
 }
 
 /**
@@ -189,6 +203,12 @@ QETApp::~QETApp()
 	ElementPictureFactory::dropInstance();
 	MachineInfo::dropInstance();
 	TerminalStripEditorWindow::dropInstance();
+
+		//Last: getting here at all is what makes this shutdown a normal one,
+		//and it is the only thing that keeps the next run from offering a
+		//recovery. Only this run's marker is removed - a second copy of the
+		//program closing must not answer for the first.
+	CrashRecovery::endSession();
 }
 
 
@@ -2746,98 +2766,11 @@ void QETApp::buildSystemTrayMenu()
 }
 
 /**
-	@brief QETApp::checkBackupFiles
-	Check for backup files.
-	If backup was found, open a dialog and ask user what to do.
-*/
-void QETApp::checkBackupFiles()
-{
-	QList<KAutoSaveFile *> stale_files = KAutoSaveFile::allStaleFiles();
-
-	//Remove from the list @stale_files, the stales file of opened project
-	const QList<KAutoSaveFile *> sf = stale_files;
-	for (KAutoSaveFile *kasf : sf)
-	{
-		for (QETProject *project : registeredProjects().values())
-		{
-			/* We must adjust with the flag
-			 * QUrl::StripTrailingSlash to compare a path formatted
-			 * like the path returned by KAutoSaveFile
-			 */
-			const QString path = QUrl::fromLocalFile(
-						project->filePath()).adjusted(
-						QUrl::RemoveScheme
-						| QUrl::StripTrailingSlash).path();
-			if (kasf->managedFile() == path) {
-				stale_files.removeOne(kasf);
-			}
-		}
-	}
-
-	if (stale_files.isEmpty()) {
-		// Only offer an unretrieved crash dump when there's no project
-		// to recover this run -- discussion #644 step 5 is explicit
-		// that the two prompts must never both show at once.
-		checkCrashDump();
-		return;
-	}
-
-	QString text;
-	if(stale_files.size() == 1) {
-		text.append(tr("<b>Le fichier de restauration suivant a été trouvé,<br>"
-					   "Voulez-vous l'ouvrir ?</b><br>"));
-	} else {
-		text.append(tr("<b>Les fichiers de restauration suivant on été trouvé,<br>"
-					   "Voulez-vous les ouvrir ?</b><br>"));
-	}
-	for(const KAutoSaveFile *kasf : stale_files)
-	{
-#	ifdef Q_OS_WIN
-	//Remove the first character '/' before the name of the drive
-	text.append("<br>" + kasf->managedFile().path().remove(0,1));
-#	else
-	text.append("<br>" + kasf->managedFile().path());
-#	endif
-	}
-
-	//Open backup file
-	if (QET::QetMessageBox::question(nullptr,
-					 tr("Fichier de restauration"),
-					 text,
-					 QMessageBox::Ok
-					 |QMessageBox::Cancel
-					 )
-			== QMessageBox::Ok)
-	{
-		//If there are open editors, find those that are visible
-		if (diagramEditors().count())
-		{
-			diagramEditors().first()->setVisible(true);
-			diagramEditors().first()->openBackupFiles(stale_files);
-		}
-		else
-		{
-			QETDiagramEditor *editor = new QETDiagramEditor();
-			editor->openBackupFiles(stale_files);
-		}
-	}
-	else //Clear backup file
-	{
-		//Remove the stale files
-		for (KAutoSaveFile *stale : stale_files)
-		{
-			stale->open(QIODevice::ReadWrite);
-			delete stale;
-		}
-	}
-}
-
-/**
 	@brief QETApp::checkCrashDump
 	Discussion #644, step 5: if the crash handler (step 4) left an
 	unretrieved dump from a previous run, offer it to the user. Only
-	called from checkBackupFiles() when there was no stale project file
-	to recover this run, so the two prompts never both show at once.
+	called when no project has a recovery copy waiting, so the two
+	prompts never both show at once - see CrashRecovery.
 */
 void QETApp::checkCrashDump()
 {

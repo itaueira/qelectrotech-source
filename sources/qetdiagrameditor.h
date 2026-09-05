@@ -69,7 +69,6 @@ class QETDiagramEditor : public QETMainWindow
 		ProjectView *currentProjectView() const;
 		QETProject *currentProject() const;
 		bool drawGrid() const;
-		void openBackupFiles (QList<KAutoSaveFile *> backup_files);
 
 	  protected:
 		bool event(QEvent *) override;

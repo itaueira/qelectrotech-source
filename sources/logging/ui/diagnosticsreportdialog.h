@@ -24,7 +24,7 @@
 	@brief The DiagnosticsReportDialog class
 	Discussion #644, step 5: "Show what's in it before saving -- the user
 	is about to attach this to a public tracker." Used for both the
-	after-a-crash offer (QETApp::checkBackupFiles()) and the manual
+	after-a-crash offer (QETApp::checkCrashDump()) and the manual
 	"Help > Diagnostics > Save report" action -- the only difference
 	between the two is the intro text and where the content comes from
 	(QetLogger::pendingCrashDumpContents() vs. buildDiagnosticsReport()).

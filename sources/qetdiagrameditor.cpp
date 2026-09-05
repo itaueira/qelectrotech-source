@@ -30,6 +30,7 @@
 #include "catalog/ui/catalogreplacedialog.h"
 #include "catalog/ui/catalogimportdialog.h"
 #include "catalog/ui/catalogrepositorydialog.h"
+#include "crashrecovery.h"
 #include "environment/projectlock.h"
 #include "environment/ui/environmentdialog.h"
 #include "catalog/ui/catalogmanagerdialog.h"
@@ -92,7 +93,9 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QFileInfo>
 #include <QInputDialog>
+#include <QLocale>
 #ifdef BUILD_WITHOUT_KF
 #	include "ui/nokde/kautosavefile.h"
 #else
@@ -2717,6 +2720,47 @@ bool QETDiagramEditor::openAndAddProject(
 		}
 	}
 
+		//Rule 2 of the recovery specification: this is where a recovery
+		//copy is offered - when this project is opened, and never at the
+		//start of the program. Rules 1, 3 and 4 are decided by
+		//CrashRecovery: only this project, only its newest copy, and only
+		//when the previous session ended abruptly.
+		//
+		//Not offered for a project somebody else has open: it opens
+		//read-only, so there is nothing here to restore into.
+	KAutoSaveFile *recovery = nullptr;
+	if (interactive && !held_by_somebody_else)
+	{
+		recovery = CrashRecovery::candidateFor(filepath);
+		if (recovery)
+		{
+			const QDateTime written =
+				QFileInfo(recovery->fileName()).lastModified();
+			const QMessageBox::StandardButton answer =
+				QET::QetMessageBox::question(
+					this,
+					tr("Fichier de restauration", "message box title"),
+					tr("QElectroTech s'est arrêté brutalement alors que ce "
+					   "projet était ouvert. Une copie de restauration du %1 "
+					   "a été conservée.\n\n"
+					   "Voulez-vous ouvrir cette copie plutôt que le fichier "
+					   "enregistré ?", "message box content")
+						.arg(QLocale::system().toString(
+							     written, QLocale::ShortFormat)),
+					QMessageBox::Ok | QMessageBox::Cancel,
+					QMessageBox::Ok);
+			if (answer != QMessageBox::Ok)
+			{
+					//Never opened, so destroying it leaves the copy on
+					//the disk; the copies are thrown away explicitly,
+					//so the same question does not come back.
+				delete recovery;
+				recovery = nullptr;
+				CrashRecovery::discardCopiesOf(filepath);
+			}
+		}
+	}
+
 	//Create the project
 	DialogWaiting::instance(this);
 
@@ -2727,7 +2771,10 @@ bool QETDiagramEditor::openAndAddProject(
 		//own window and this one resumes unharmed.
 	QETUtils::FontRestorationScope font_scope;
 
-	QETProject *project = new QETProject(filepath);
+		//QETProject takes ownership of the recovery copy, and falls back to
+		//the file on the disk by itself when the copy turns out unreadable.
+	QETProject *project = recovery ? new QETProject(recovery)
+				       : new QETProject(filepath);
 	if (project -> state() != QETProject::Ok)
 	{
 		if (interactive && project -> state() != QETProject::FileOpenDiscard)
@@ -3649,36 +3696,6 @@ bool QETDiagramEditor::drawGrid() const
 	return m_draw_grid->isChecked();
 }
 
-/**
-	@brief QETDiagramEditor::openBackupFiles
-	@param backup_files
-*/
-void QETDiagramEditor::openBackupFiles(QList<KAutoSaveFile *> backup_files)
-{
-	for (KAutoSaveFile *file : backup_files)
-	{
-			//Create the project
-		DialogWaiting::instance(this);
-
-		QETProject *project = new QETProject(file, this);
-		if (project->state() != QETProject::Ok)
-		{
-			if (project -> state() != QETProject::FileOpenDiscard)
-			{
-				QET::QetMessageBox::warning(
-					this,
-					tr("Échec de l'ouverture du projet", "message box title"),
-					QString(tr(
-						"Une erreur est survenue lors de l'ouverture du fichier %1.",
-						"message box content")).arg(file->managedFile().fileName()));
-			}
-			delete project;
-			DialogWaiting::dropInstance();
-		}
-		addProject(project);
-		DialogWaiting::dropInstance();
-	}
-}
 /**
 	met a jour le menu "Fenetres"
 */

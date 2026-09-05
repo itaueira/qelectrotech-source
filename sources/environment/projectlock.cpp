@@ -205,29 +205,30 @@ ProjectLock::Holder ProjectLock::holder() const
 	return found;
 }
 
-namespace
+/**
+	@brief ProjectLock::processIsAlive
+	@param pid
+	@return true when a process of this machine is still running
+*/
+bool ProjectLock::processIsAlive(qint64 pid)
 {
-	/// Whether a process of this machine is still running.
-	bool processIsAlive(qint64 pid)
-	{
-		if (pid <= 0) {
-			return false;
-		}
-#if defined(Q_OS_WIN)
-		HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE,
-					    static_cast<DWORD>(pid));
-		if (!handle) {
-			return false;
-		}
-		DWORD exit_code = 0;
-		const bool alive = GetExitCodeProcess(handle, &exit_code)
-				   && exit_code == STILL_ACTIVE;
-		CloseHandle(handle);
-		return alive;
-#else
-		return ::kill(static_cast<pid_t>(pid), 0) == 0 || errno == EPERM;
-#endif
+	if (pid <= 0) {
+		return false;
 	}
+#if defined(Q_OS_WIN)
+	HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE,
+				    static_cast<DWORD>(pid));
+	if (!handle) {
+		return false;
+	}
+	DWORD exit_code = 0;
+	const bool alive = GetExitCodeProcess(handle, &exit_code)
+			   && exit_code == STILL_ACTIVE;
+	CloseHandle(handle);
+	return alive;
+#else
+	return ::kill(static_cast<pid_t>(pid), 0) == 0 || errno == EPERM;
+#endif
 }
 
 /**
