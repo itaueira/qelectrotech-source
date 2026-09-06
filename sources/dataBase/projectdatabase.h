@@ -111,7 +111,9 @@ class projectDataBase : public QObject
 
 	private:
 		bool createDataBase();
+		static QString elementViewBody();
 		void createElementNomenclatureView();
+		void createElementLabelView();
 		void createSummaryView();
 		void populateDiagramTable();
 		void populateElementTable();

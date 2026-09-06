@@ -136,6 +136,7 @@ add_executable(
     src/collectionloadgate_test.cpp
     src/collectionthreadbudget_test.cpp
     src/updatecoalescer_test.cpp
+    src/componentlabel_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -350,6 +351,19 @@ add_executable(
     # sources/TerminalStrip e em sources/undocommand.
     ${QET_DIR}/sources/TerminalStrip/terminalstripstructure.cpp
     ${QET_DIR}/sources/TerminalStrip/terminalstripstructure.h
+    # O que uma etiqueta de componente pergunta ao banco do projeto, e o que
+    # ela faz da resposta (T21). Duas strings de consulta e duas
+    # transformações de valor: nem QSqlQuery entra aqui, o que é justamente
+    # o que permite ler as perguntas e conferir as respostas sem projeto
+    # aberto. **O que este alvo não vê é a fiação** — quem executa as duas
+    # consultas e quem carrega a revisão do folio para as entradas é o
+    # ComponentLabelCollector, que precisa de QETProject e por isso mora na
+    # outra suíte. Apagar aquela chamada, ou apontar a consulta para a vista
+    # filtrada, deixa esta suíte inteira verde; as duas coisas foram
+    # plantadas e conferidas, e só os casos de src/ui/ as pegaram.
+    ${QET_DIR}/sources/label/componentlabelquery.cpp
+    ${QET_DIR}/sources/label/componentlabelquery.h
+    ${QET_DIR}/sources/label/labelentry.h
     )
 
 if(NOT BUILD_WITH_KF)
@@ -448,7 +462,8 @@ if(TARGET qet_core)
         src/ui/listengine_test.cpp
         src/ui/titleblockeditor_test.cpp
         src/ui/navigate_test.cpp
-        src/ui/dbnotify_test.cpp)
+        src/ui/dbnotify_test.cpp
+        src/ui/componentlabel_test.cpp)
 
     target_link_libraries(
         C_uitests
