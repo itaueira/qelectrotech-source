@@ -2455,9 +2455,31 @@ bool QETDiagramEditor::event(QEvent *e)
 	if (m_first_show && e->type() == QEvent::WindowActivate)
 	{
 		m_first_show = false;
-		QTimer::singleShot(250, m_element_collection_widget, &ElementsCollectionWidget::reload);
+			//A project given on the command line is still being read at
+			//this point: the waiting dialog pumps the event loop while it
+			//loads, which is how this activation reaches us in the middle
+			//of the load. The gate holds the collection back until that
+			//read is over, and answers false here; with no project being
+			//read it answers true and nothing changes.
+		if (m_collection_load_gate.windowActivated()) {
+			startElementsCollectionLoad();
+		}
 	}
 	return(QETMainWindow::event(e));
+}
+
+/**
+	@brief QETDiagramEditor::startElementsCollectionLoad
+	Starts the load of the elements collection, shortly.
+
+	The delay is the one this has always had: the window is given a moment to
+	finish showing itself before thousands of element files are parsed on
+	every core. What is new is *when* this is called - see CollectionLoadGate,
+	which owns that decision and lets it through exactly once.
+*/
+void QETDiagramEditor::startElementsCollectionLoad()
+{
+	QTimer::singleShot(250, m_element_collection_widget, &ElementsCollectionWidget::reload);
 }
 
 /**
@@ -2761,6 +2783,13 @@ bool QETDiagramEditor::openAndAddProject(
 		}
 	}
 
+		//Reading this project and walking the elements collection are the
+		//same work on the same cores, and doing them at once costs far more
+		//than doing them one after the other. So the collection is held back
+		//from here to each DialogWaiting::dropInstance() below - paired with
+		//dropInstance() on purpose, since both exits already carry it.
+	m_collection_load_gate.projectLoadStarted();
+
 	//Create the project
 	DialogWaiting::instance(this);
 
@@ -2793,6 +2822,9 @@ bool QETDiagramEditor::openAndAddProject(
 		}
 		delete project;
 		DialogWaiting::dropInstance();
+		if (m_collection_load_gate.projectLoadFinished()) {
+			startElementsCollectionLoad();
+		}
 		return(false);
 	}
 
@@ -2805,6 +2837,13 @@ bool QETDiagramEditor::openAndAddProject(
 	QETApp::projectsRecentFiles() -> fileWasOpened(filepath);
 	addProject(project);
 	DialogWaiting::dropInstance();
+
+		//The project is in and the window is usable: the collection may now
+		//have the machine. Nothing was skipped - it starts here instead of
+		//in the middle of the load above.
+	if (m_collection_load_gate.projectLoadFinished()) {
+		startElementsCollectionLoad();
+	}
 
 		//Report font descriptions which could not be read as-is (written by
 		//an incompatible Qt version or corrupted), so the user learns about

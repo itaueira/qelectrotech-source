@@ -132,6 +132,7 @@ add_executable(
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
     src/terminalstripstructure_test.cpp
+    src/collectionloadgate_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -294,6 +295,13 @@ add_executable(
     # aberto, fica de fora de propósito — mesma razão do SheetSymbolExtractor.
     ${QET_DIR}/sources/ElementsCollection/pinoutusage.cpp
     ${QET_DIR}/sources/ElementsCollection/pinoutusage.h
+    # Quando a coleção de símbolos pode começar a carregar (T42). É a regra
+    # mais pura que existe aqui: nem Qt ela inclui — só um contador e dois
+    # sinalizadores —, e é justamente por não depender de janela que ela pode
+    # ser conferida sem uma. O agendamento em si fica no QETDiagramEditor, que
+    # precisa de QETApp e por isso não entra em suíte nenhuma.
+    ${QET_DIR}/sources/ElementsCollection/collectionloadgate.cpp
+    ${QET_DIR}/sources/ElementsCollection/collectionloadgate.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string

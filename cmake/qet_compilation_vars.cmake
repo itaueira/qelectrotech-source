@@ -565,6 +565,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/editor/UndoCommand/addpartcommand.cpp
   ${QET_DIR}/sources/editor/UndoCommand/addpartcommand.h
 
+  ${QET_DIR}/sources/ElementsCollection/collectionloadgate.cpp
+  ${QET_DIR}/sources/ElementsCollection/collectionloadgate.h
   ${QET_DIR}/sources/ElementsCollection/elementcollectionhandler.cpp
   ${QET_DIR}/sources/ElementsCollection/elementcollectionhandler.h
   ${QET_DIR}/sources/ElementsCollection/elementcollectionitem.cpp

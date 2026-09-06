@@ -18,6 +18,7 @@
 #ifndef QET_DIAGRAM_EDITOR_H
 #define QET_DIAGRAM_EDITOR_H
 
+#include "ElementsCollection/collectionloadgate.h"
 #include "SearchAndReplace/ui/searchandreplacewidget.h"
 #include "qetmainwindow.h"
 
@@ -77,6 +78,10 @@ class QETDiagramEditor : public QETMainWindow
 		// constructor may dispatch a Qt event calling event() (e.g. the
 		// QActionGroup members below trigger QObject::setParent events).
 		bool m_first_show = true;
+		// Same reason, and the same place: event() reads it too. It decides
+		// when the elements collection may start loading -- see T42, and the
+		// comment on startElementsCollectionLoad().
+		CollectionLoadGate m_collection_load_gate;
 
 		QETDiagramEditor(const QETDiagramEditor &);
 		void setUpElementsPanel ();
@@ -89,6 +94,7 @@ class QETDiagramEditor : public QETMainWindow
 		void setUpMenu          ();
 		
 		bool addProject(QETProject *, bool = true);
+		void startElementsCollectionLoad();
 		DiagramView *currentDiagramView() const;
 		Element *currentElement() const;
 		ProjectView *findProject(DiagramView *) const;
