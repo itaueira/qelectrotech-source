@@ -111,6 +111,7 @@ add_executable(
     src/catalogclasspackage_test.cpp
     src/catalogimport_test.cpp
     src/titleblockvariables_test.cpp
+    src/titleblockauthoring_test.cpp
     src/environment_test.cpp
     src/symbol_test.cpp
     src/pinout_test.cpp
@@ -409,7 +410,8 @@ if(TARGET qet_core)
         src/ui/macroinsert_test.cpp
         src/ui/backup_test.cpp
         src/ui/crashrecovery_test.cpp
-        src/ui/listengine_test.cpp)
+        src/ui/listengine_test.cpp
+        src/ui/titleblockeditor_test.cpp)
 
     target_link_libraries(
         C_uitests

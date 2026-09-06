@@ -189,7 +189,20 @@ class TitleBlockTemplate : public QObject {
 	void applyRowColNums();
 	void rowColsChanged();
 	QStringList listOfVariables();
-	
+	/**
+		@brief The text a cell shows, once the variables it names have been
+		replaced from the given context and the unfilled ones dropped.
+
+		Public because it is the only way to ask what a cell resolves to
+		without painting it, and painting it answers in pixels: on a build
+		without a screen this machine's Qt5 rasterises no glyph at all, so
+		an assertion over ink passes on one build and fails on the other
+		for a reason that has nothing to do with the title block.
+	*/
+	QString finalTextForCell(
+			const TitleBlockCell &,
+			const DiagramContext &) const;
+
 	protected:
 	void loadInformation(const QDomElement &);
 	bool loadLogos(const QDomElement &, bool = false);
@@ -226,9 +239,6 @@ class TitleBlockTemplate : public QObject {
 	*/
 	std::optional<WidthConstraintCase> classifyWidthConstraint(int &abs_total, qreal &remaining_width_fraction);
 	int lengthRange(int, int, const QList<int> &) const;
-	QString finalTextForCell(
-			const TitleBlockCell &,
-			const DiagramContext &) const;
 	QString interpreteVariables(
 			const QString &,
 			const DiagramContext &) const;

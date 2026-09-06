@@ -19,6 +19,7 @@
 
 #include "../qetapp.h"
 #include "../qeticons.h"
+#include "../qetinformation.h"
 #include "../titleblock/templatescollection.h"
 #include "../titleblocktemplate.h"
 #include "ui_titleblockpropertieswidget.h"
@@ -504,9 +505,24 @@ void TitleBlockPropertiesWidget::addTemplateVariables(
 		QStringLiteral("previous-folio-num"), QStringLiteral("next-folio-num")
 	};
 
+	// And the rest of the title block's own vocabulary, which the program
+	// fills in by itself: the project title, the saved date, the file path.
+	// The list above names the ones with a widget of their own and predates
+	// listOfVariables() reaching the bare "%name" form -- a template written
+	// "%saveddate" would otherwise ask a person to fill in a date the
+	// program writes on saving.
+	static const QSet<QString> provided_by_the_program = [] {
+		const QStringList keys = QETInformation::titleblockInfoKeys();
+		return QSet<QString>(keys.begin(), keys.end());
+	}();
+
 	const QStringList variables = tpl -> listOfVariables();
 	for (const QString &name : variables) {
-		if (name.isEmpty() || reserved.contains(name)) continue;
+		if (name.isEmpty()
+				|| reserved.contains(name)
+				|| provided_by_the_program.contains(name)) {
+			continue;
+		}
 		if (!context.contains(name)) context.addValue(name, "");
 	}
 }

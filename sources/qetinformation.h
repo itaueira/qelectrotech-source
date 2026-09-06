@@ -22,6 +22,8 @@
 #include <QHash>
 #include <QVariant>
 
+class DiagramContext;
+
 /**
  * Inside this namespace you will find all information used in QElectrotech for
  * element, conductor and diagram.
@@ -174,6 +176,51 @@ namespace QETInformation
 		@return the same text with the unresolved variables removed
 	*/
 	QString stripUnresolvedVariables(const QString &text);
+
+	/**
+		@brief The title block variables @a text refers to.
+
+		The mirror image of stripUnresolvedVariables(): it names exactly
+		the references that function erases, under the same two rules and
+		in the same order. The braced form counts whatever stands inside
+		the braces, because the braces are what say "this is a variable";
+		the bare form counts only the vocabulary the title block has, so
+		that a cell reading "Escala 100%" is not taken for a reference,
+		and longest first so that "%folio-total" is one name and not
+		"%folio" plus a stray "-total".
+
+		The two are stated here, side by side, on purpose: the title block
+		editor has to show what the folio erases, and two readings of
+		"what is a variable" would drift apart without anybody noticing
+		until a title block was being drawn.
+
+		@param text a cell text, before substitution
+		@return the names referenced, first appearance first, without
+		repetition
+	*/
+	QStringList titleblockVariablesIn(const QString &text);
+
+	/**
+		@brief A context that renders every variable of @a texts as its
+		own name.
+
+		What the folio drops, the person drawing the title block has to
+		see: a cell whose value is "%{revisor_4}" comes out empty on the
+		folio, which is right, and came out empty in the editor too, which
+		left the title block being drawn blind. Feeding this context to
+		TitleBlockTemplate::renderCell() puts the name of the attribute
+		back in the cell while it is being drawn, and changes nothing on
+		the folio, which renders with the context of its project.
+
+		A name the diagram context cannot hold is left out - see
+		DiagramContext::validKeyRegExp(). Such a name can never be given a
+		value either, so an empty cell is the truth about it.
+
+		@param texts the cell texts to scan - value and label alike, since
+		both are substituted
+		@return a context mapping each name found to itself
+	*/
+	DiagramContext titleblockAuthoringContext(const QStringList &texts);
 
 	QStringList folioReportInfoKeys();
 	QHash <QString, QString> folioReportInfoKeyToVar();

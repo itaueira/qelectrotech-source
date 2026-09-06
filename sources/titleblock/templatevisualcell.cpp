@@ -18,6 +18,7 @@
 #include "templatevisualcell.h"
 
 #include "../diagramcontext.h"
+#include "../qetinformation.h"
 #include "../titleblocktemplate.h"
 
 /**
@@ -89,7 +90,7 @@ void TitleBlockTemplateVisualCell::paint(
 	QRectF drawing_rectangle(QPointF(0, 0), geometry().size() /*- QSizeF(1, 1)*/);
 	
 	if (template_ && cell_) {
-		template_ -> renderCell(*painter, *cell_, DiagramContext(), drawing_rectangle.toRect());
+		template_ -> renderCell(*painter, *cell_, authoringContext(), drawing_rectangle.toRect());
 	}
 	if (isSelected()) {
 		QBrush selection_brush = QApplication::palette().highlight();
@@ -100,6 +101,43 @@ void TitleBlockTemplateVisualCell::paint(
 		painter -> setBrush(selection_brush);
 		painter -> drawRect(drawing_rectangle/*.adjusted(1, 1, -1, -1)*/);
 	}
+}
+
+/**
+	@return the context this preview renders with: every variable the cell
+	names, standing for its own name.
+
+	The folio prints nothing where nobody filled a value in, which is right,
+	and the preview used to render with an empty context, which made the same
+	thing happen here - so a person drawing a title block could not see which
+	cells already carried an attribute and which were plain text. Before the
+	folio was fixed the cell showed "%{name}", and that accident was doing the
+	job.
+
+	Nothing of this reaches the folio: the folio renders through
+	TitleBlockTemplate::render(), with the context its project built.
+
+	The context is the cell's own, not the whole template's. Only this cell is
+	being rendered, so its own variables are all that can be substituted into
+	it, and building it per cell keeps a repaint linear in the number of cells
+	instead of quadratic - which matters in an editor where dragging a column
+	repaints everything.
+*/
+DiagramContext TitleBlockTemplateVisualCell::authoringContext() const
+{
+	if (!cell_ || cell_ -> type() != TitleBlockCell::TextCell) {
+		return DiagramContext();
+	}
+
+	QStringList texts;
+	texts << cell_ -> value.name();
+		//The label too: finalTextForCell() substitutes in both, so a
+		//variable used only as a label is the half of the cell that would
+		//go on being blank.
+	if (cell_ -> display_label && !cell_ -> label.isEmpty()) {
+		texts << cell_ -> label.name();
+	}
+	return QETInformation::titleblockAuthoringContext(texts);
 }
 
 /**

@@ -22,6 +22,7 @@
 #include <QHash>
 #include <QRegularExpression>
 #include <algorithm>
+#include "diagramcontext.h"
 #include "location/locationtree.h"
 #include "qetinformation.h"
 
@@ -94,6 +95,86 @@ QString QETInformation::stripUnresolvedVariables(const QString &text)
 		stripped.remove(QLatin1Char('%') + key);
 	}
 	return stripped;
+}
+
+/**
+	@brief QETInformation::titleblockVariablesIn
+	@param text
+	@return the variable names @a text refers to
+*/
+QStringList QETInformation::titleblockVariablesIn(const QString &text)
+{
+	QStringList names;
+	if (!text.contains(QLatin1Char('%'))) {
+		return names;
+	}
+	QString scratch = text;
+
+		//Same two rules as stripUnresolvedVariables, in the same order,
+		//because what the folio erases is exactly what the editor has to
+		//name. The braced form goes first and is taken out of the scratch
+		//copy, so the bare pass below never sees what it already claimed.
+	static const QRegularExpression braced(
+				QStringLiteral("%\\{([^{}]*)\\}"));
+	QRegularExpressionMatchIterator iterator = braced.globalMatch(scratch);
+	while (iterator.hasNext()) {
+		const QString name = iterator.next().captured(1);
+			//"%{}" names nothing, and the folio drops it all the same:
+			//there is no name to put back in its place.
+		if (!name.isEmpty() && !names.contains(name)) {
+			names << name;
+		}
+	}
+	scratch.remove(braced);
+
+		//Sorted once and kept: the keys are constants, and this runs for
+		//every cell of every repaint of the title block editor.
+	static const QStringList keys = []() {
+		QStringList sorted = titleblockInfoKeys();
+		std::sort(sorted.begin(), sorted.end(),
+			  [](const QString &a, const QString &b) {
+				return a.length() > b.length();
+			  });
+		return sorted;
+	}();
+	for (const QString &key : keys) {
+		const QString reference = QLatin1Char('%') + key;
+		if (!scratch.contains(reference)) {
+			continue;
+		}
+		if (!names.contains(key)) {
+			names << key;
+		}
+			//Taken out for the same reason the longest key is tried
+			//first: otherwise "folio" would claim what is left of
+			//"%folio-total".
+		scratch.remove(reference);
+	}
+	return names;
+}
+
+/**
+	@brief QETInformation::titleblockAuthoringContext
+	@param texts
+	@return a context in which each variable of @a texts stands for its own
+	name
+*/
+DiagramContext QETInformation::titleblockAuthoringContext(
+		const QStringList &texts)
+{
+	DiagramContext context;
+	for (const QString &text : texts) {
+		const QStringList names = titleblockVariablesIn(text);
+		for (const QString &name : names) {
+				//The name is its own value: substitution then leaves
+				//the name standing where the value would have gone,
+				//and stripUnresolvedVariables finds nothing left to
+				//erase. A name the context refuses is dropped here,
+				//and that is deliberate - see the header.
+			context.addValue(name, name);
+		}
+	}
+	return context;
 }
 
 /**

@@ -1838,23 +1838,33 @@ QString TitleBlockTemplate::interpreteVariables(
 QStringList TitleBlockTemplate::listOfVariables()
 {
 	QStringList list;
-	// Match every "%{name}" placeholder. The bare "%name" form can't be
-	// extracted reliably without the variable list, and templates use the
-	// braced form, so only that is collected here.
-	static const QRegularExpression rx(QStringLiteral("%\\{([^}]+)\\}"));
+	// What counts as a variable is decided in one place only, next to the
+	// rule that erases the unfilled ones from the folio: see
+	// QETInformation::titleblockVariablesIn(). It reaches both forms, and
+	// the bare one is not an edge case -- default.titleblock, the template
+	// embedded in the resources and used when a project names none, is
+	// written with the bare form and nothing else.
 	// run through each individual cell
 	for (int j = 0 ; j < rows_heights_.count() ; ++ j) {
 		for (int i = 0 ; i < columns_width_.count() ; ++ i) {
-			if (cells_[i][j] -> spanner_cell
-					|| cells_[i][j] -> cell_type
+			const TitleBlockCell *cell = cells_[i][j];
+			if (cell -> spanner_cell
+					|| cell -> cell_type
 					== TitleBlockCell::EmptyCell)
 				continue;
-			const QString cell_value = cells_[i][j] -> value.name();
-			auto it = rx.globalMatch(cell_value);
-			while (it.hasNext()) {
-				const QString name = it.next().captured(1);
-				if (!name.isEmpty() && !list.contains(name))
-					list << name;
+			QStringList names =
+				QETInformation::titleblockVariablesIn(
+					cell -> value.name());
+			// The label too: finalTextForCell() substitutes in
+			// both, so a variable used only as a label never got a
+			// field the project could fill in.
+			if (cell -> display_label && !cell -> label.isEmpty()) {
+				names += QETInformation::titleblockVariablesIn(
+						cell -> label.name());
+			}
+			for (int k = 0 ; k < names.count() ; ++ k) {
+				if (!list.contains(names.at(k)))
+					list << names.at(k);
 			}
 		}
 	}

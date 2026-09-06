@@ -20,6 +20,7 @@
 #include "../qet.h"
 
 #include <QtWidgets>
+class DiagramContext;
 class TitleBlockTemplate;
 #include "../titleblockcell.h"
 
@@ -42,6 +43,8 @@ class TitleBlockTemplateVisualCell : public QGraphicsLayoutItem, public QGraphic
 	QRectF boundingRect() const override;
 	void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget * = nullptr) override;
 	
+	DiagramContext authoringContext() const;
+
 	public slots:
 	void setTemplateCell(TitleBlockTemplate *, TitleBlockCell *);
 	TitleBlockTemplate *titleBlockTemplate() const;
