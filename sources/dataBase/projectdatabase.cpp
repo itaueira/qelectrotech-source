@@ -504,6 +504,7 @@ bool projectDataBase::createDataBase()
 	}
 
 	createElementNomenclatureView();
+	createElementLabelView();
 	createSummaryView();
 	prepareQuery();
 	updateDB();
@@ -511,11 +512,22 @@ bool projectDataBase::createDataBase()
 }
 
 /**
-	@brief projectDataBase::createElementNomenclatureView
+	@brief projectDataBase::elementViewBody
+	The SELECT the two element views share: every column an element row
+	carries, and the join that ties an element to the sheet it is drawn on.
+	It stops short of any filtering, so each caller states on its own what it
+	leaves out.
+
+	Shared rather than copied, for the reason the comment inside it already
+	records: the two views below differ by one clause and by nothing else, so
+	a column added to one and forgotten in the other would stay invisible
+	until a field came out empty on a label, or a table came back with no
+	column at all on the folio. Sharing the body makes that divergence
+	unrepresentable rather than merely unlikely.
 */
-void projectDataBase::createElementNomenclatureView()
+QString projectDataBase::elementViewBody()
 {
-	QString create_view ("CREATE VIEW element_nomenclature_view AS SELECT "
+	QString body        ("SELECT "
 						 "ei.label AS label,"
 						 "ei.plant AS plant,"
 						 "ei.location AS location,"
@@ -594,13 +606,26 @@ void projectDataBase::createElementNomenclatureView()
 						 "di.folio AS folio,"
 						 "e.pos AS position "
 						 " FROM element_info ei, diagram_info di, element e, diagram d"
-						 " WHERE ei.element_uuid = e.uuid AND e.diagram_uuid = d.uuid AND di.diagram_uuid = d.uuid AND (ei.exclude_from_bom IS NOT 'true')");
+						 " WHERE ei.element_uuid = e.uuid AND e.diagram_uuid = d.uuid AND di.diagram_uuid = d.uuid");
+	return body;
+}
+
+/**
+	@brief projectDataBase::createElementNomenclatureView
+	The bill of materials view: the shared body, minus the rows the user
+	asked to keep out of the parts list.
+*/
+void projectDataBase::createElementNomenclatureView()
+{
+	const QString create_view = QStringLiteral("CREATE VIEW element_nomenclature_view AS ")
+				+ elementViewBody()
+				+ QStringLiteral(" AND (ei.exclude_from_bom IS NOT 'true')");
 
 	QSqlQuery query(m_data_base);
 	if (!query.exec(create_view)) {
 		qDebug() << query.lastError();
 	}
-	
+
 	QSqlQuery query_version{m_data_base};
 	query_version.exec("select sqlite_version();");
 	query_version.next();
@@ -608,6 +633,33 @@ void projectDataBase::createElementNomenclatureView()
 	query_version.finish();
 	
 	qInfo() << "SQLite version: " << version;
+}
+
+/**
+	@brief projectDataBase::createElementLabelView
+	The same rows as the nomenclature view, without the bill of materials
+	filter.
+
+	The two are not the same question. "Exclude from the bill of materials"
+	is a box the user ticks to keep an item out of the purchase list; it does
+	not say the item is absent from the cabinet, and an item kept out of the
+	purchase list still has to be marked on the rail. A collector reading the
+	filtered view would leave holes in the marking that nobody notices until
+	assembly, which is the whole reason this second view exists.
+
+	The clause is the only difference, and it is written where it is because
+	of that: the body above says what an element row is, and each view says
+	what it drops.
+*/
+void projectDataBase::createElementLabelView()
+{
+	const QString create_view = QStringLiteral("CREATE VIEW element_label_view AS ")
+				+ elementViewBody();
+
+	QSqlQuery query(m_data_base);
+	if (!query.exec(create_view)) {
+		qDebug() << query.lastError();
+	}
 }
 
 /**

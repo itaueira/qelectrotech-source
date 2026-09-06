@@ -375,6 +375,12 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/environment/ui/environmentdialog.cpp
   ${QET_DIR}/sources/environment/ui/environmentdialog.h
 
+  ${QET_DIR}/sources/label/componentlabelcollector.cpp
+  ${QET_DIR}/sources/label/componentlabelcollector.h
+  ${QET_DIR}/sources/label/componentlabelquery.cpp
+  ${QET_DIR}/sources/label/componentlabelquery.h
+  ${QET_DIR}/sources/label/labelentry.h
+
   ${QET_DIR}/sources/location/enclosuretransfer.cpp
   ${QET_DIR}/sources/location/enclosuretransfer.h
   ${QET_DIR}/sources/location/locatableelement.h
