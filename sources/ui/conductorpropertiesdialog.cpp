@@ -21,6 +21,8 @@
 #include "../QPropertyUndoCommand/qpropertyundocommand.h"
 #include "../diagram.h"
 #include "../qetgraphicsitem/conductor.h"
+#include "../qetproject.h"
+#include "../undocommand/groupedupdatecommand.h"
 #include "conductorpropertieswidget.h"
 #include "ui_conductorpropertiesdialog.h"
 
@@ -72,18 +74,35 @@ void ConductorPropertiesDialog::PropertiesDialog(Conductor *conductor,
 	old_value.setValue(conductor->properties());
 	new_value.setValue(cpd.properties());
 
-	QPropertyUndoCommand *undo = new QPropertyUndoCommand(conductor, "properties", old_value, new_value);
-	undo->setText(tr("Modifier les propriétés d'un conducteur", "undo caption"));
+		//Asked once and kept: the walk of the potential is not free, and it
+		//used to be made twice here for the same answer.
+	const QSet<Conductor *> potential = conductor->relatedPotentialConductors();
+	QUndoCommand *undo = nullptr;
 
-	if (!conductor->relatedPotentialConductors().isEmpty() && cpd.applyAll())
+	if (!potential.isEmpty() && cpd.applyAll())
 	{
-		undo->setText(tr("Modifier les propriétés de plusieurs conducteurs", "undo caption"));
+			//The whole potential in one gesture, so one notice to the data
+			//base rather than one per conductor. Only this branch is grouped:
+			//a single conductor is a single row and has nothing to group, and
+			//a bare QPropertyUndoCommand still merges with the next edit of
+			//the same property -- a wrapper around it would quietly stop that.
+		auto *group = new GroupedUpdateCommand(
+				conductor->diagram() ? conductor->diagram()->project() : nullptr,
+				tr("Modifier les propriétés de plusieurs conducteurs", "undo caption"));
+		new QPropertyUndoCommand(conductor, "properties", old_value, new_value, group);
 
-		foreach (Conductor *potential_conductor, conductor->relatedPotentialConductors())
+		for (Conductor *potential_conductor : potential)
 		{
 			old_value.setValue(potential_conductor->properties());
-			new QPropertyUndoCommand (potential_conductor, "properties", old_value, new_value, undo);
+			new QPropertyUndoCommand (potential_conductor, "properties", old_value, new_value, group);
 		}
+		undo = group;
+	}
+	else
+	{
+		auto *single = new QPropertyUndoCommand(conductor, "properties", old_value, new_value);
+		single->setText(tr("Modifier les propriétés d'un conducteur", "undo caption"));
+		undo = single;
 	}
 
 	conductor->diagram()->undoStack().push(undo);

@@ -22,6 +22,7 @@
 #include "../conductorautonumerotation.h"
 #include "../conductorsegment.h"
 #include "../conductorsegmentprofile.h"
+#include "../dataBase/projectdatabase.h"
 #include "../diagram.h"
 #include "../diagramcommands.h"
 #include "../location/locationboundary.h"
@@ -29,6 +30,7 @@
 #include "../qetgraphicsitem/terminal.h"
 #include "../qetinformation.h"
 #include "../ui/conductorpropertiesdialog.h"
+#include "../undocommand/groupedupdatecommand.h"
 #include "conductortextitem.h"
 #include "element.h"
 #include "../QetGraphicsItemModeler/qetgraphicshandleritem.h"
@@ -1754,6 +1756,13 @@ QPainterPath Conductor::path() const
 void Conductor::setPropertyToPotential(const ConductorProperties &property,
 					   bool only_text)
 {
+		//One gesture as far as the data base is concerned, whatever the size
+		//of the potential. No caller in this tree reaches here today, which is
+		//exactly why the guard is written now rather than left to whoever adds
+		//the first one.
+	projectDataBase::Operation operation(
+			diagram() ? diagram()->project() : nullptr);
+
 	setProperties(property);
 	QSet <Conductor *> potential_list = relatedPotentialConductors();
 
@@ -1861,7 +1870,12 @@ void Conductor::displayedTextChanged()
 	new_value.setValue(new_properties);
 
 
-	QUndoCommand *undo = new QUndoCommand(tr("Modifier les propriétés d'un conducteur", "undo caption"));
+		//One gesture, however many conductors the potential holds: the
+		//children below each write a row, and the grouped command turns that
+		//into one notice to the data base instead of one per row.
+	QUndoCommand *undo = new GroupedUpdateCommand(
+			diagram() ? diagram()->project() : nullptr,
+			tr("Modifier les propriétés d'un conducteur", "undo caption"));
 	new QPropertyUndoCommand(this, "properties", old_value, new_value, undo);
 
 	if (!relatedPotentialConductors().isEmpty())

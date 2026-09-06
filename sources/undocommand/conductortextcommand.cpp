@@ -19,7 +19,10 @@
 
 #include <QCoreApplication>
 
+#include "../dataBase/projectdatabase.h"
+#include "../diagram.h"
 #include "../qetgraphicsitem/conductor.h"
+#include "../qetproject.h"
 
 ConductorTextCommand::ConductorTextCommand(const QList<Conductor *> &conductors,
 					   bool visible,
@@ -63,6 +66,22 @@ bool ConductorTextCommand::isEmpty() const
 
 void ConductorTextCommand::apply(bool forward)
 {
+		//Showing or hiding the number over a whole selection is one gesture:
+		//one notice to the data base, not one per conductor. The project is
+		//taken from the first conductor that still has a folio -- they all
+		//belong to the same one, and a command whose conductors have all been
+		//deleted groups nothing, which is the right answer.
+	QETProject *project = nullptr;
+	for (const Change &change : m_changes)
+	{
+		if (change.conductor && change.conductor->diagram())
+		{
+			project = change.conductor->diagram()->project();
+			break;
+		}
+	}
+	projectDataBase::Operation operation(project);
+
 	for (const Change &change : m_changes)
 	{
 		if (!change.conductor) {

@@ -134,6 +134,7 @@ add_executable(
     src/terminalstripstructure_test.cpp
     src/collectionloadgate_test.cpp
     src/collectionthreadbudget_test.cpp
+    src/updatecoalescer_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -240,6 +241,12 @@ add_executable(
     # mounting plate editor.
     ${QET_DIR}/sources/location/enclosuretransfer.cpp
     ${QET_DIR}/sources/location/enclosuretransfer.h
+    # Quando uma mudanca do banco do projeto e anunciada (T17). Regra tao
+    # pura quanto a do portao da colecao: um contador e um sinalizador, sem
+    # Qt nenhum. Quem emite o sinal e projectDataBase, que precisa de
+    # projeto aberto e por isso fica no C_uitests, em dbnotify_test.cpp.
+    ${QET_DIR}/sources/dataBase/updatecoalescer.cpp
+    ${QET_DIR}/sources/dataBase/updatecoalescer.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
@@ -429,6 +436,7 @@ if(TARGET qet_core)
         src/ui/backup_test.cpp
         src/ui/crashrecovery_test.cpp
         src/ui/listengine_test.cpp
+        src/ui/dbnotify_test.cpp
         src/ui/titleblockeditor_test.cpp)
 
     target_link_libraries(

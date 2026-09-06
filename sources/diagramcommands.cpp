@@ -17,10 +17,12 @@
 */
 #include "diagramcommands.h"
 
+#include "dataBase/projectdatabase.h"
 #include "diagram.h"
 #include "qetgraphicsitem/conductortextitem.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/elementtextitemgroup.h"
+#include "qetproject.h"
 #include "qgimanager.h"
 
 /**
@@ -56,6 +58,13 @@ PasteDiagramCommand::~PasteDiagramCommand()
 */
 void PasteDiagramCommand::undo()
 {
+		//A paste is one gesture: the items land, the pasted conductors are
+		//given new identities and their text is reset, and every one of those
+		//is a row of the data base. One notice for the paste, not one per
+		//item.
+	projectDataBase::Operation operation(
+			diagram ? diagram->project() : nullptr);
+
 	diagram -> showMe();
 
 	foreach(QGraphicsItem *item, content.items(filter))
@@ -68,6 +77,13 @@ void PasteDiagramCommand::undo()
 */
 void PasteDiagramCommand::redo()
 {
+		//A paste is one gesture: the items land, the pasted conductors are
+		//given new identities and their text is reset, and every one of those
+		//is a row of the data base. One notice for the paste, not one per
+		//item.
+	projectDataBase::Operation operation(
+			diagram ? diagram->project() : nullptr);
+
 	diagram -> showMe();
 	QSettings settings;
 
