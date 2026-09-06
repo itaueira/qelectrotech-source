@@ -25,6 +25,7 @@
 #include <QSqlQuery>
 #include <QTemporaryDir>
 #include <QUuid>
+#include <QTemporaryFile>
 
 namespace
 {
@@ -393,9 +394,16 @@ TEST_CASE("CU-12.8 — sans catalogue, le lien reste la référence")
 	// what was written in the .qet itself.
 	Catalog unreachable;
 	QString error;
-	const QString impossible =
-		QStringLiteral("Z:/nao-existe-") + QUuid::createUuid().toString(QUuid::WithoutBraces)
-		+ QStringLiteral("/catalogo.sqlite");
+		//An unreachable path has to be unreachable on every platform, and "Z:/..." is not:
+		//on Windows it is a drive that does not exist, but on Linux "Z:" is a perfectly
+		//legal directory name and the path is relative -- SQLite created the directories,
+		//opened the file, and this case failed while leaving Z:/nao-existe-<uuid>/ inside
+		//the repository.  A regular file standing where a directory is expected is refused
+		//by every filesystem, and creates nothing anywhere.
+	QTemporaryFile blocker;
+	REQUIRE(blocker.open());
+	blocker.close();
+	const QString impossible = blocker.fileName() + QStringLiteral("/catalogo.sqlite");
 	CHECK_FALSE(unreachable.open(impossible, &error));
 	CHECK_FALSE(error.isEmpty());
 	CHECK_FALSE(unreachable.isOpen());

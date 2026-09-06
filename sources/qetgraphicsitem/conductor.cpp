@@ -136,6 +136,12 @@ Conductor::Conductor(Terminal *p1, Terminal* p2) :
 		//m_valid become false if the conductor can't be added to terminal (conductor already exist)
 	m_valid = (!ajout_p1 || !ajout_p2) ? false : true;
 
+		//Listen to the two components this wire hangs off, because the
+		//stroke is decided from their locations at paint time and nothing
+		//else would tell this conductor that one of them moved.
+	watchLocationOf(terminal1);
+	watchLocationOf(terminal2);
+
 		//Default attribute to paint a conductor
 	if (!pen_and_brush_initialized)
 	{
@@ -169,6 +175,104 @@ Conductor::Conductor(Terminal *p1, Terminal* p2) :
 		setProperties(p1->diagram()->defaultConductorProperties);
 	else if (p2->diagram())
 		setProperties(p2->diagram()->defaultConductorProperties);
+}
+
+/**
+	@brief Conductor::watchLocationOf
+	@param terminal one of the two ends of this conductor
+
+	Subscribe to the component that carries @a terminal, so that this
+	conductor is told when the information of that component changes.
+
+	Nothing happens for an end that carries no component: a conductor drawn
+	between two free terminals has no location to follow, and
+	terminalLocationPath() already answers "nothing" for it.
+
+	Qt::UniqueConnection is what makes a wire looping back onto the same
+	component safe. Both ends then name the same Element and the second
+	call is refused, so the handler runs once per change instead of twice.
+	It works here because the slot is a pointer to member function and not
+	a lambda - a lambda would be accepted by connect() and silently
+	duplicated.
+
+	Neither side of the connection needs to be undone by hand. It dies with
+	the conductor, which is a QObject, and with the component, which is
+	another one; and the case that would matter - deleting a component -
+	deletes the conductors hanging off its terminals anyway.
+*/
+void Conductor::watchLocationOf(Terminal *terminal)
+{
+	if (!terminal) {
+		return;
+	}
+
+	Element *element = terminal->parentElement();
+	if (!element) {
+		return;
+	}
+
+	connect(element, &Element::elementInfoChange,
+		this, &Conductor::elementInformationChanged,
+		Qt::UniqueConnection);
+}
+
+/**
+	@brief Conductor::elementInformationChanged
+	@param old_info what the component said before
+	@param new_info what it says now
+
+	Ask for a repaint when, and only when, one of the two ends changed
+	location.
+
+	@par Why the conductor listens instead of the component telling it
+
+	The rule that turns two locations into a dashed stroke is read at paint
+	time, in paint() below, out of terminalLocationPath() above: this file
+	is the only one that knows the stroke depends on a location at all.
+	Element::setElementInformations() would have to learn it, and so would
+	Element::setElementData(), which writes the same information by another
+	road - the terminal strip editors and the channel table of a PLC master
+	go through it. Two writers, one rule: fixing the first and forgetting
+	the second is the very defect being fixed here, so the subscription
+	hangs off the signal both of them already emit.
+
+	@par Why the location is compared instead of repainting on any change
+
+	setElementInformations() runs in a loop over the whole folio when
+	components are renumbered and when a catalogue part is assigned to a
+	selection. Those write labels, manufacturer codes and cross references,
+	none of which the stroke depends on, and a repaint per wire per
+	component would be paid on every one of them. The comparison costs two
+	lookups and stops there.
+
+	@par What is deliberately not tested here
+
+	Diagram::dashExternalWires(). paint() reads that flag first so that a
+	folio with the option off never pays for a location lookup, and the
+	mirror image of that test would fit here - a location that moves while
+	the option is off changes no pixel. It is left out because it would tie
+	this handler to the one thing that happens to read the location today,
+	and because the saving is not real: a location changes when somebody
+	deliberately assigns one, not in a loop, and one update() of one item
+	is cheaper than the bug of forgetting to widen this test the day
+	something else on the wire starts reading where its ends stand.
+
+	No undo command is pushed and none is needed: update() schedules a
+	repaint and changes nothing that is saved. The change of location
+	itself is already on the stack - AssignLocationCommand,
+	ChangeElementInformationCommand, EditLocationTreeCommand - and undoing
+	it emits this same signal the other way round, so the wire is repainted
+	on the way back too.
+*/
+void Conductor::elementInformationChanged(const DiagramContext &old_info,
+					  const DiagramContext &new_info)
+{
+	if (old_info.value(QETInformation::ELMT_LOCATION_PATH)
+			== new_info.value(QETInformation::ELMT_LOCATION_PATH)) {
+		return;
+	}
+
+	update();
 }
 
 /**

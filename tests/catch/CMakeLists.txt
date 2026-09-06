@@ -62,8 +62,23 @@ find_package(
 # Qt6-only: the tests link ${QET_PRIVATE_LIBRARIES}, which contains
 # Qt::GuiPrivate; Qt6 only creates that target when the component is
 # explicitly requested (Qt5 creates it implicitly and has no such package).
+#
+# Asked with QUIET and checked by target, which is what the root CMakeLists
+# already does for the same question -- and the reason the root configured
+# fine on a runner where this line did not.  Some distributions (Ubuntu
+# 24.04 among them) create the Qt6::GuiPrivate target alongside Gui without
+# shipping a separate Qt6GuiPrivateConfig.cmake, so REQUIRED on the package
+# fails while the target the tests actually link is right there.  The target
+# is still mandatory below; only the way of asking changed.
 if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS GuiPrivate)
+  find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS GuiPrivate)
+  if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
+    message(FATAL_ERROR
+      "Qt${QT_VERSION_MAJOR}::GuiPrivate was not found, and the test targets "
+      "link it through QET_PRIVATE_LIBRARIES. Install the Qt6 private headers "
+      "(e.g. 'qt6-base-private-dev' on Debian/Ubuntu) or use a Qt build that "
+      "provides the GuiPrivate component.")
+  endif()
 endif()
 
 # Qt Test, e só no alvo de teste: ele traz o QTest e o QSignalSpy, que são o que
@@ -115,6 +130,7 @@ add_executable(
     src/enclosuretransfer_test.cpp
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
+    src/terminalstripstructure_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -288,6 +304,16 @@ add_executable(
     ${QET_DIR}/sources/environment/projectlock.h
     ${QET_DIR}/sources/environment/qetenvironment.cpp
     ${QET_DIR}/sources/environment/qetenvironment.h
+    # A régua de bornes vista como estrutura, e a regra que decide o que o
+    # programa pode pontear sozinho. Depende de QString, de QVector e do enum
+    # de tipo de borne — o `elementdata.h` entra só como cabeçalho, pelo mesmo
+    # motivo e do mesmo jeito que na lista de E/S acima. Nem Element nem
+    # RealTerminal, de propósito: é essa ausência que permite conferir por
+    # contagem o que de outro modo só se veria montando uma régua e olhando
+    # para ela. O que liga a regra ao TerminalStrip fica de fora, em
+    # sources/TerminalStrip e em sources/undocommand.
+    ${QET_DIR}/sources/TerminalStrip/terminalstripstructure.cpp
+    ${QET_DIR}/sources/TerminalStrip/terminalstripstructure.h
     )
 
 if(NOT BUILD_WITH_KF)
@@ -377,6 +403,7 @@ if(TARGET qet_core)
         src/ui/renumberproject_test.cpp
         src/ui/createsymbol_test.cpp
         src/ui/cable_test.cpp
+        src/ui/dashedwire_test.cpp
         src/ui/ioimport_test.cpp
         src/ui/ioassign_test.cpp
         src/ui/macroinsert_test.cpp

@@ -783,11 +783,17 @@ TEST_CASE("CircuitClipboard — a grade que a planilha realmente escreveu", "[ci
 
 	SECTION("Windows, Mac e Linux escrevem o fim de linha diferente e dão a mesma grade")
 	{
-		const QList<QStringList> windows = CircuitClipboard::parse(QStringLiteral("a\tb\r\nc\td\r\n"));
-		const QList<QStringList> mac = CircuitClipboard::parse(QStringLiteral("a\tb\rc\td\r"));
-		const QList<QStringList> linux = CircuitClipboard::parse(QStringLiteral("a\tb\nc\td\n"));
-		CHECK(windows == linux);
-		CHECK(mac == linux);
+			//`linux` is a macro the GNU compiler defines as 1 when targeting Linux, so a
+			//variable of that name turns into `const QList<QStringList> 1 = ...` and the
+			//file stops compiling -- but only there.  The Windows build has no such macro
+			//and compiled this happily, which is how it went unseen: this is the only job
+			//that compiles this file on Linux.  Same family as `interface`, a macro on
+			//Windows.  Names that say what the value holds are reserved by nobody.
+		const QList<QStringList> crlf_grid = CircuitClipboard::parse(QStringLiteral("a\tb\r\nc\td\r\n"));
+		const QList<QStringList> cr_grid   = CircuitClipboard::parse(QStringLiteral("a\tb\rc\td\r"));
+		const QList<QStringList> lf_grid   = CircuitClipboard::parse(QStringLiteral("a\tb\nc\td\n"));
+		CHECK(crlf_grid == lf_grid);
+		CHECK(cr_grid == lf_grid);
 	}
 
 	SECTION("a célula entre aspas guarda tabulação, quebra de linha e aspas dobradas")

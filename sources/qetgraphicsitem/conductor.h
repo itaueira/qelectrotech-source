@@ -24,6 +24,7 @@
 #include <QUuid>
 
 class ConductorProfile;
+class DiagramContext;
 class ConductorSegmentProfile;
 class Diagram;
 class Terminal;
@@ -149,6 +150,20 @@ class Conductor : public QGraphicsObject
 
 	public:
 		void setFreezeLabel(bool freeze);
+
+	private:
+		/**
+			@brief Hear about the location of the component holding @a terminal.
+
+			The stroke of a wire depends on where its two ends stand, and that
+			is read at paint time - so something has to say when it moved. See
+			elementInformationChanged() for why the listening is done from
+			here rather than from the component.
+		*/
+		void watchLocationOf(Terminal *terminal);
+		void elementInformationChanged(
+				const DiagramContext &old_info,
+				const DiagramContext &new_info);
 	
 	public slots:
 		void displayedTextChanged();
