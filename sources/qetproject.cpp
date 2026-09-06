@@ -1079,6 +1079,13 @@ QDomDocument QETProject::toXml()
 		project_root.appendChild(m_iec_settings.toXml(xml_doc));
 	}
 
+		//The assembly state, written only when it says something - the same
+		//rule as the block above. A project still on the drawing board carries
+		//no photograph and no node, so its file is the file it always was.
+	if (!m_assembly_state.isEmpty()) {
+		project_root.appendChild(m_assembly_state.toXml(xml_doc));
+	}
+
 		//The table of circuits, written only when it holds a row - the same
 		//rule as the block above, for the same reason.
 	if (!m_circuit_table.isEmpty()) {
@@ -1718,6 +1725,13 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 	m_iec_settings.fromXml(xml_project.documentElement().firstChildElement(
 				       IecStructureSettings::xmlTagName()));
 
+		//The assembly state, read here for the same reason and with the same
+		//tolerance: absent from every project written before this existed, and
+		//absent means the project is still on the drawing board, where the
+		//automation may touch everything.
+	m_assembly_state.fromXml(xml_project.documentElement().firstChildElement(
+					 AssemblyState::tagName()));
+
 		//The table of circuits. Absent from every project that never used the
 		//generator, and absent means an empty table - which is what the
 		//dialogue opens on the first time.
@@ -2350,6 +2364,29 @@ void QETProject::setIecSettings(const IecStructureSettings &settings)
 	m_iec_settings = settings;
 	setModified(true);
 	refreshElementLabels();
+}
+
+/**
+	@brief QETProject::assemblyState
+	@return how far this project has gone towards being a panel, and the
+	photograph taken when it was marked
+*/
+AssemblyState QETProject::assemblyState() const
+{
+	return m_assembly_state;
+}
+
+/**
+	@brief QETProject::setAssemblyState
+	@param state
+*/
+void QETProject::setAssemblyState(const AssemblyState &state)
+{
+	if (m_assembly_state == state) {
+		return;
+	}
+	m_assembly_state = state;
+	setModified(true);
 }
 
 /**

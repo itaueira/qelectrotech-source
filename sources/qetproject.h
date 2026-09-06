@@ -21,6 +21,7 @@
 #include "ElementsCollection/elementslocation.h"
 #include "NameList/nameslist.h"
 #include "project/projectpropertieshandler.h"
+#include "autoNum/assemblystate.h"
 #include "autoNum/iecstructure.h"
 #include "borderproperties.h"
 #include "cable/cablereport.h"
@@ -275,6 +276,28 @@ class QETProject : public QObject
 		void setIecSettings(const IecStructureSettings &settings);
 
 		/**
+			@brief How far this project has gone from the drawing board to the
+			panel in service, and the photograph taken when it was marked.
+
+			A state of the project and not a mark on each component: freezing
+			four hundred components one at a time is work nobody does, and an
+			automation nobody uses after the panel is built is an automation
+			that was not written.
+
+			Written to the .qet only when it says something, so a project that
+			never left the drawing board keeps opening in an unmodified
+			QElectroTech.
+		*/
+		AssemblyState assemblyState() const;
+		/**
+			@param state
+			Set directly only when loading. Everywhere else it goes through
+			AssemblyStateCommand, because marking a panel as built is visible
+			to the user and taking it back has to be one Ctrl+Z.
+		*/
+		void setAssemblyState(const AssemblyState &state);
+
+		/**
 			@brief The table of circuits the generator draws this project from.
 
 			Kept with the project and not with the application, because the
@@ -458,6 +481,7 @@ class QETProject : public QObject
 		XmlElementCollection *m_elements_collection = nullptr;
 		bool m_freeze_new_elements = false;
 		IecStructureSettings m_iec_settings;
+		AssemblyState m_assembly_state;
 		CircuitTable m_circuit_table;
 		IoList m_io_list;
 		LocationTree m_location_tree;
