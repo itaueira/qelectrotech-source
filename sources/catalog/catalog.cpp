@@ -2067,6 +2067,12 @@ bool Catalog::removeImportProfile(const QString &name, QString *error)
 	fields that exist today become properties of the Component class and
 	keep working, and assigning a part writes them without any mapping
 	table in between.
+
+	The physical view keys are the exception - the four clearances, the two
+	insertion offsets and the outline flag have no counterpart among the fixed
+	fields, so they are new keys. They are spelled the way
+	DiagramContext::isKeyAcceptable() demands, so that assigning a part carries
+	them to the component like the others.
 */
 QStringList Catalog::seededComponentPropertyKeys()
 {
@@ -2084,7 +2090,14 @@ QStringList Catalog::seededComponentPropertyKeys()
 		 QStringLiteral("image"),
 		 QStringLiteral("width"),
 		 QStringLiteral("height"),
-		 QStringLiteral("depth") };
+		 QStringLiteral("depth"),
+		 QStringLiteral("clearance_top"),
+		 QStringLiteral("clearance_bottom"),
+		 QStringLiteral("clearance_left"),
+		 QStringLiteral("clearance_right"),
+		 QStringLiteral("insertion_x"),
+		 QStringLiteral("insertion_y"),
+		 QStringLiteral("draw_outline") };
 }
 
 /**
@@ -2212,6 +2225,7 @@ bool Catalog::seedDefaultModel(QString *error)
 		int list_index;             ///< 0 for a free field, else index in seeded_lists
 		CatalogListBehaviour behaviour;
 		const char *unit;
+		const char *default_value = ""; ///< what a part starts with; empty is "not filled"
 	};
 
 	// The keys are on purpose the ones QElectroTech already uses for the
@@ -2221,6 +2235,21 @@ bool Catalog::seedDefaultModel(QString *error)
 	// is how a user learns to distrust both. The three measures are what the
 	// physical view of the part will read, and what the revision use case of
 	// the specification exercises.
+	//
+	// The clearance and insertion keys below have no field in the program yet:
+	// they belong to the physical view, and they live here rather than in a
+	// table of their own because a value that belongs to a part code is what
+	// catalog_property is for. None of the six is seeded with a number: a
+	// clearance nobody measured has to read as "not measured", never as zero
+	// millimetre, which is the rule the part dialog already writes down for a
+	// measure left at zero.
+	//
+	// draw_outline is the one that needs a default, and for the opposite
+	// reason: a check box has no "not filled" state - it writes 0 or 1 on every
+	// save - so a flag starting empty would record "do not draw the outline"
+	// for every part somebody merely opened. It starts at 1, which is also the
+	// honest default: the box in millimetre is what a part without a picture
+	// has to show.
 	static const SeedProperty seed_properties[] = {
 		{ "designation",                    QT_TRANSLATE_NOOP("Catalog", "Numéro d'article"),            CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
 		{ "description",                    QT_TRANSLATE_NOOP("Catalog", "Description textuelle"),            CatalogPropertyType::Text,    0, CatalogListBehaviour::None,      "" },
@@ -2236,7 +2265,14 @@ bool Catalog::seedDefaultModel(QString *error)
 		{ "image",                          QT_TRANSLATE_NOOP("Catalog", "Image"),                  CatalogPropertyType::Image,   0, CatalogListBehaviour::None,      "" },
 		{ "width",                          QT_TRANSLATE_NOOP("Catalog", "Largeur"),                CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
 		{ "height",                         QT_TRANSLATE_NOOP("Catalog", "Hauteur"),                CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
-		{ "depth",                          QT_TRANSLATE_NOOP("Catalog", "Profondeur"),             CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" }
+		{ "depth",                          QT_TRANSLATE_NOOP("Catalog", "Profondeur"),             CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
+		{ "clearance_top",                  QT_TRANSLATE_NOOP("Catalog", "Dégagement supérieur"),   CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
+		{ "clearance_bottom",               QT_TRANSLATE_NOOP("Catalog", "Dégagement inférieur"),   CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
+		{ "clearance_left",                 QT_TRANSLATE_NOOP("Catalog", "Dégagement gauche"),      CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
+		{ "clearance_right",                QT_TRANSLATE_NOOP("Catalog", "Dégagement droit"),       CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
+		{ "insertion_x",                    QT_TRANSLATE_NOOP("Catalog", "Point d'insertion X"),    CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
+		{ "insertion_y",                    QT_TRANSLATE_NOOP("Catalog", "Point d'insertion Y"),    CatalogPropertyType::Measure, 0, CatalogListBehaviour::None,      "mm" },
+		{ "draw_outline",                   QT_TRANSLATE_NOOP("Catalog", "Tracer le contour"),      CatalogPropertyType::Boolean, 0, CatalogListBehaviour::None,      "", "1" },
 	};
 
 	const int component_id = class_ids.value(QStringLiteral("component"));
@@ -2252,7 +2288,8 @@ bool Catalog::seedDefaultModel(QString *error)
 					      "(class_id, key, name, type, list_behaviour, list_name, "
 					      "options, default_value, unit, description, order_index) "
 					      "VALUES (:class_id, :key, :name, :type, :list_behaviour, "
-					      ":list_name, '', '', :unit, '', :order_index)"));
+					      ":list_name, '', :default_value, :unit, '', "
+					      ":order_index)"));
 		insert.bindValue(QStringLiteral(":class_id"), component_id);
 		insert.bindValue(QStringLiteral(":key"), QString::fromLatin1(seed.key));
 		insert.bindValue(QStringLiteral(":name"),
@@ -2261,6 +2298,8 @@ bool Catalog::seedDefaultModel(QString *error)
 		insert.bindValue(QStringLiteral(":list_behaviour"),
 				 CatalogProperty::listBehaviourToString(seed.behaviour));
 		insert.bindValue(QStringLiteral(":list_name"), list_name);
+		insert.bindValue(QStringLiteral(":default_value"),
+				 QString::fromLatin1(seed.default_value));
 		insert.bindValue(QStringLiteral(":unit"), QString::fromLatin1(seed.unit));
 		insert.bindValue(QStringLiteral(":order_index"), property_order++);
 		if (!insert.exec())

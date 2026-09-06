@@ -1178,6 +1178,41 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
         <source>Profondeur</source>
         <translation>Profundidade</translation>
     </message>
+    <message>
+        <location filename="../sources/catalog/catalog.cpp" line="2269"/>
+        <source>Dégagement supérieur</source>
+        <translation>Folga superior</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalog.cpp" line="2270"/>
+        <source>Dégagement inférieur</source>
+        <translation>Folga inferior</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalog.cpp" line="2271"/>
+        <source>Dégagement gauche</source>
+        <translation>Folga à esquerda</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalog.cpp" line="2272"/>
+        <source>Dégagement droit</source>
+        <translation>Folga à direita</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalog.cpp" line="2273"/>
+        <source>Point d&apos;insertion X</source>
+        <translation>Ponto de inserção X</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalog.cpp" line="2274"/>
+        <source>Point d&apos;insertion Y</source>
+        <translation>Ponto de inserção Y</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalog.cpp" line="2275"/>
+        <source>Tracer le contour</source>
+        <translation>Desenhar o contorno</translation>
+    </message>
 </context>
 <context>
     <name>CatalogBrowserDialog</name>

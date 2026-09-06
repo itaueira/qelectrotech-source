@@ -16,8 +16,10 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../../../sources/catalog/catalog.h"
+#include "../../../sources/catalog/catalogassignment.h"
 #include "../../../sources/catalog/catalogpackage.h"
 #include "../../../sources/catalog/catalogschema.h"
+#include "../../../sources/diagramcontext.h"
 #include "qt_catch_tostring.h"
 
 #include <QFile>
@@ -61,6 +63,43 @@ namespace
 			}
 		}
 		return false;
+	}
+
+	/// The property @a key of the class, or a null one when it is not declared.
+	CatalogProperty propertyByKey(const QList<CatalogProperty> &properties,
+				      const QString &key)
+	{
+		for (const CatalogProperty &property : properties)
+		{
+			if (property.key == key) {
+				return property;
+			}
+		}
+		return CatalogProperty();
+	}
+
+	/// How many properties of the list carry @a key. Two means a seeding ran twice.
+	int countProperties(const QList<CatalogProperty> &properties, const QString &key)
+	{
+		int count = 0;
+		for (const CatalogProperty &property : properties)
+		{
+			if (property.key == key) {
+				++count;
+			}
+		}
+		return count;
+	}
+
+	/// The six clearance and insertion keys of the physical view, in millimetre.
+	QStringList physicalViewMeasureKeys()
+	{
+		return { QStringLiteral("clearance_top"),
+			 QStringLiteral("clearance_bottom"),
+			 QStringLiteral("clearance_left"),
+			 QStringLiteral("clearance_right"),
+			 QStringLiteral("insertion_x"),
+			 QStringLiteral("insertion_y") };
 	}
 }
 
@@ -857,4 +896,145 @@ TEST_CASE("CU-30.4 — un point à deux fils est un canal, et le canal se garde"
 		CHECK_FALSE(written.contains(QStringLiteral("channel=\"\"")));
 		CHECK_FALSE(written.contains(QStringLiteral("secondary-label=\"\"")));
 	}
+}
+
+TEST_CASE("T20 — la classe composant porte le dégagement, le point d'insertion et le contour")
+{
+	OpenCatalog fixture;
+	Catalog &catalog = fixture.catalog;
+
+	const QList<CatalogProperty> component =
+		catalog.effectiveProperties(classId(catalog, "component"));
+
+		//The four clearances and the two insertion offsets are lengths, and a
+		//length in this catalog is stored in millimetre. They are seeded with
+		//no value at all: a clearance nobody measured has to read as "not
+		//measured", and a default here would turn an absence into a figure.
+	for (const QString &key : physicalViewMeasureKeys())
+	{
+		const CatalogProperty property = propertyByKey(component, key);
+		INFO("propriete " << key.toStdString());
+		CHECK(property.key == key);
+		CHECK(property.type == CatalogPropertyType::Measure);
+		CHECK(property.unit == QStringLiteral("mm"));
+		CHECK(property.default_value.isEmpty());
+		CHECK(property.list_behaviour == CatalogListBehaviour::None);
+	}
+
+		//The outline flag is the exception, and on purpose: a check box has no
+		//"not filled" state, so a flag starting empty would record "do not draw
+		//the outline" for every part somebody merely opened and saved.
+	const CatalogProperty outline = propertyByKey(component, QStringLiteral("draw_outline"));
+	CHECK(outline.key == QStringLiteral("draw_outline"));
+	CHECK(outline.type == CatalogPropertyType::Boolean);
+	CHECK(outline.unit.isEmpty());
+	CHECK(outline.default_value == QStringLiteral("1"));
+
+		//A subclass reads them by inheritance, which is what makes the physical
+		//view a property of every component and not of the contactor alone.
+	const QList<CatalogProperty> contactor =
+		catalog.effectiveProperties(classId(catalog, "contactor"));
+	for (const QString &key : physicalViewMeasureKeys()) {
+		CHECK(hasProperty(contactor, key));
+	}
+	CHECK(hasProperty(contactor, QStringLiteral("draw_outline")));
+
+		//The seeded list and the seeding itself have to say the same thing:
+		//they are two places, and two places drift.
+	const QStringList seeded = Catalog::seededComponentPropertyKeys();
+	QStringList physical = physicalViewMeasureKeys();
+	physical << QStringLiteral("draw_outline");
+	for (const QString &key : physical)
+	{
+		INFO("propriete " << key.toStdString());
+		CHECK(seeded.contains(key));
+		CHECK(seeded.count(key) == 1);
+
+			//A key the element cannot carry would be a key the assignment
+			//silently drops, and nothing would say so.
+		CHECK(DiagramContext::isKeyAcceptable(key));
+
+			//A package carries what it does not exclude. Price and supplier
+			//are excluded; a dimension is not, and neither is a clearance.
+		CHECK_FALSE(CatalogPackage::excludedKeys().contains(key));
+		CHECK_FALSE(CatalogAssignment::protectedElementKeys().contains(key));
+	}
+}
+
+TEST_CASE("T20 — semer une deuxième fois ne duplique aucune propriété")
+{
+	OpenCatalog fixture;
+	Catalog &catalog = fixture.catalog;
+
+	const int component_id = classId(catalog, "component");
+	const int before = catalog.effectiveProperties(component_id).size();
+
+		//open() already seeded this catalog. Seeding again has to be a no-op:
+		//catalog_property has a UNIQUE(class_id, key), so a second run would
+		//either fail the whole transaction or leave two rows behind.
+	QString error;
+	CHECK(catalog.seedDefaultModel(&error));
+	CHECK(error.isEmpty());
+
+	const QList<CatalogProperty> after = catalog.effectiveProperties(component_id);
+	CHECK(after.size() == before);
+
+	QStringList physical = physicalViewMeasureKeys();
+	physical << QStringLiteral("draw_outline");
+	for (const QString &key : physical)
+	{
+		INFO("propriete " << key.toStdString());
+		CHECK(countProperties(after, key) == 1);
+	}
+}
+
+TEST_CASE("T20 — un dégagement jamais saisi reste vide, et n'est pas zéro")
+{
+	OpenCatalog fixture;
+	Catalog &catalog = fixture.catalog;
+
+	const int contactor_id = classId(catalog, "contactor");
+
+	CatalogPart part(QStringLiteral("VUE-PHYSIQUE-1"), contactor_id);
+	part.setValue(QStringLiteral("designation"), QStringLiteral("Contacteur 25 A"));
+	QString error;
+	REQUIRE(catalog.savePart(part, &error));
+	REQUIRE(error.isEmpty());
+
+	const CatalogPart saved = catalog.partByCode(QStringLiteral("VUE-PHYSIQUE-1"));
+	REQUIRE_FALSE(saved.isNull());
+
+	QHash<QString, QString> values = catalog.effectiveValues(saved);
+	for (const QString &key : physicalViewMeasureKeys())
+	{
+		INFO("propriete " << key.toStdString());
+			//Empty, and not "0": the difference is the whole point. Zero
+			//millimetre of clearance is a statement; nobody made it here.
+		CHECK(values.value(key).isEmpty());
+		CHECK_FALSE(saved.hasValue(key));
+	}
+	CHECK(values.value(QStringLiteral("draw_outline")) == QStringLiteral("1"));
+
+		//What is filled comes back filled, and only what is filled.
+	CatalogPart measured = saved;
+	measured.setValue(QStringLiteral("clearance_top"), QStringLiteral("50"));
+	measured.setValue(QStringLiteral("insertion_x"), QStringLiteral("12.5"));
+	REQUIRE(catalog.savePart(measured, &error));
+	REQUIRE(error.isEmpty());
+
+	const CatalogPart reread = catalog.partByCode(QStringLiteral("VUE-PHYSIQUE-1"));
+	values = catalog.effectiveValues(reread);
+	CHECK(values.value(QStringLiteral("clearance_top")) == QStringLiteral("50"));
+	CHECK(values.value(QStringLiteral("insertion_x")) == QStringLiteral("12.5"));
+	CHECK(values.value(QStringLiteral("clearance_bottom")).isEmpty());
+	CHECK(values.value(QStringLiteral("insertion_y")).isEmpty());
+
+		//And they reach the component: the assignment copies every effective
+		//value the protected list does not hold back, which is how a clearance
+		//cadastred once ends up in the project without anybody retyping it.
+	const QHash<QString, QString> to_element =
+		CatalogAssignment::valuesForElement(catalog, reread);
+	CHECK(to_element.value(QStringLiteral("clearance_top")) == QStringLiteral("50"));
+	CHECK(to_element.value(QStringLiteral("insertion_x")) == QStringLiteral("12.5"));
+	CHECK(to_element.value(QStringLiteral("draw_outline")) == QStringLiteral("1"));
 }
