@@ -135,6 +135,7 @@ add_executable(
     src/terminalstripstructure_test.cpp
     src/collectionloadgate_test.cpp
     src/collectionthreadbudget_test.cpp
+    src/updatecoalescer_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -250,6 +251,12 @@ add_executable(
     # sources/qetgraphicsitem and sources/undocommand.
     ${QET_DIR}/sources/location/mountingmeasure.cpp
     ${QET_DIR}/sources/location/mountingmeasure.h
+    # When a project database change is announced. As pure as the collection
+    # gate rule: a counter and a flag, no Qt at all. What emits the signal is
+    # projectDataBase, which needs an open project and therefore lives in
+    # C_uitests, in dbnotify_test.cpp.
+    ${QET_DIR}/sources/dataBase/updatecoalescer.cpp
+    ${QET_DIR}/sources/dataBase/updatecoalescer.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
@@ -440,7 +447,8 @@ if(TARGET qet_core)
         src/ui/crashrecovery_test.cpp
         src/ui/listengine_test.cpp
         src/ui/titleblockeditor_test.cpp
-        src/ui/navigate_test.cpp)
+        src/ui/navigate_test.cpp
+        src/ui/dbnotify_test.cpp)
 
     target_link_libraries(
         C_uitests

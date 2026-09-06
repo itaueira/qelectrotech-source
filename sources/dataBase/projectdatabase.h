@@ -18,6 +18,8 @@
 #ifndef PROJECTDATABASE_H
 #define PROJECTDATABASE_H
 
+#include "updatecoalescer.h"
+
 #include <QObject>
 #include <QSqlDatabase>
 #include <QSqlQuery>
@@ -64,6 +66,40 @@ class projectDataBase : public QObject
 		void removeConductor    (Conductor *conductor);
 		void updateConductor    (Conductor *conductor);
 
+		/**
+			Open a gesture. Every change made until the matching
+			endOperation() is announced once, when it closes, instead of one
+			announcement per row -- see UpdateCoalescer for the rule, and for
+			what a nested or an unbalanced call does.
+
+			Prefer the Operation guard below: an operation left open by an
+			early return stops the folio from ever following the project
+			again, and that failure is silent.
+		*/
+		void beginOperation();
+		void endOperation();
+
+		/**
+			@brief An operation open for as long as this object lives.
+
+			A null project -- or a null data base -- is accepted and means no
+			grouping, so that a caller writes the guard without checking
+			first.
+		*/
+		class Operation
+		{
+			public:
+				explicit Operation(projectDataBase *data_base);
+				explicit Operation(QETProject *project);
+				~Operation();
+
+				Operation(const Operation &) = delete;
+				Operation &operator=(const Operation &) = delete;
+
+			private:
+				QPointer<projectDataBase> m_data_base;
+		};
+
 	private slots:
 			//Refresh the sender()'s row after Conductor::setProperties().
 		void conductorPropertiesChanged();
@@ -89,6 +125,8 @@ class projectDataBase : public QObject
 		static QHash<QString, QString> elementInfoToString(
 				Element *elmt);
 		void bindDiagramInfoValues(QSqlQuery &query, Diagram *diagram);
+		/// Announce a change, now or when the open gesture ends.
+		void notifyUpdated();
 
 	private:
 		QPointer<QETProject> m_project;
@@ -107,6 +145,9 @@ class projectDataBase : public QObject
 				  m_insert_conductor_query,
 				  m_update_conductor_query,
 				  m_remove_conductor_query;
+
+		/// Whether a change is announced now or held until the gesture ends.
+		UpdateCoalescer m_coalescer;
 
 #ifdef QET_EXPORT_PROJECT_DB
 	public:

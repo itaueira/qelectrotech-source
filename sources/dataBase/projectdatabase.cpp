@@ -65,7 +65,7 @@ projectDataBase::projectDataBase(QETProject *project, QObject *parent) :
 			m_diagram_info_order_changed.exec();
 
 		}
-		emit dataBaseUpdated();
+		notifyUpdated();
 	});
 }
 
@@ -90,7 +90,7 @@ void projectDataBase::updateDB()
 	populateElementTable();
 	populateElementInfoTable();
 	populateConductorTable();
-	emit dataBaseUpdated();
+	notifyUpdated();
 }
 
 /**
@@ -143,7 +143,7 @@ void projectDataBase::addElement(Element *element)
 	if (!m_insert_element_info_query.exec()) {
 		qDebug() << "projectDataBase::addElement insert element info error : " << m_insert_element_info_query.lastError();
 	} else {
-		emit dataBaseUpdated();
+		notifyUpdated();
 	}
 }
 
@@ -157,7 +157,7 @@ void projectDataBase::removeElement(Element *element)
 	if(!m_remove_element_query.exec()) {
 		qDebug() << "projectDataBase::removeElement remove error : " << m_remove_element_query.lastError();
 	} else {
-		emit dataBaseUpdated();
+		notifyUpdated();
 	}
 }
 
@@ -175,24 +175,27 @@ void projectDataBase::elementInfoChanged(Element *element)
 	if (!m_update_element_query.exec()) {
 		qDebug() << "projectDataBase::elementInfoChanged update error : " << m_update_element_query.lastError();
 	} else {
-		emit dataBaseUpdated();
+		notifyUpdated();
 	}
 }
 
 void projectDataBase::elementInfoChanged(QList<Element *> elements)
 {
-	this->blockSignals(true);
-		//Block signal for not emit dataBaseUpdated at
-		//each call of the method elementInfoChanged(Element *element)
+		//One notice for the whole list, not one per element: the single
+		//element overload announces on its own, and a hundred of them would
+		//make every list drawn on a folio re-run its query a hundred times.
+		//
+		//This used to be blockSignals(), which does the same thing here by
+		//silencing every signal of this object rather than the one being
+		//grouped. Going through the operation leaves one grouping mechanism
+		//in this class instead of two that could disagree.
+	Operation operation(this);
 
-	m_data_base.transaction();	
+	m_data_base.transaction();
 	for (auto elmt : elements) {
 		elementInfoChanged(elmt);
 	}
 	m_data_base.commit();
-
-	this->blockSignals(false);
-	emit dataBaseUpdated();
 }
 
 void projectDataBase::addDiagram(Diagram *diagram)
@@ -220,7 +223,7 @@ void projectDataBase::addDiagram(Diagram *diagram)
 			qDebug() << "projectDataBase::addDiagram update diagram infp order error : " << m_diagram_info_order_changed.lastError();
 		}
 	}
-	emit dataBaseUpdated();
+	notifyUpdated();
 }
 
 void projectDataBase::removeDiagram(Diagram *diagram)
@@ -229,7 +232,7 @@ void projectDataBase::removeDiagram(Diagram *diagram)
 	if (!m_remove_diagram_query.exec()) {
 		qDebug() << "projectDataBase::removeDiagram delete error : " << m_remove_diagram_query.lastError();
 	} else {
-		emit dataBaseUpdated();
+		notifyUpdated();
 	}
 }
 
@@ -240,7 +243,7 @@ void projectDataBase::diagramInfoChanged(Diagram *diagram)
 	if (!m_update_diagram_info_query.exec()) {
 		qDebug() << "projectDataBase::diagramInfoChanged update error : " << m_update_diagram_info_query.lastError();
 	} else {
-		emit dataBaseUpdated();
+		notifyUpdated();
 	}
 }
 
@@ -277,7 +280,7 @@ void projectDataBase::addConductor(Conductor *conductor)
 	if (!m_insert_conductor_query.exec()) {
 		qDebug() << "projectDataBase::addConductor insert error : " << m_insert_conductor_query.lastError();
 	} else {
-		emit dataBaseUpdated();
+		notifyUpdated();
 	}
 }
 
@@ -291,7 +294,7 @@ void projectDataBase::removeConductor(Conductor *conductor)
 	if (!m_remove_conductor_query.exec()) {
 		qDebug() << "projectDataBase::removeConductor delete error : " << m_remove_conductor_query.lastError();
 	} else {
-		emit dataBaseUpdated();
+		notifyUpdated();
 	}
 }
 
@@ -315,15 +318,34 @@ void projectDataBase::updateConductor(Conductor *conductor)
 	m_update_conductor_query.bindValue(QStringLiteral(":text"), conductor->properties().text);
 	if (!m_update_conductor_query.exec()) {
 		qDebug() << "projectDataBase::updateConductor update error : " << m_update_conductor_query.lastError();
+		return;
 	}
 
-		//Deliberately no dataBaseUpdated() here, unlike add/remove. The only
-		//column this touches is the wire text, which no view watched by
-		//ProjectDBModel displays -- the nomenclature shows elements, and its
-		//wire_count changes when a conductor appears or disappears, not when
-		//it is renamed. Emitting would make every ProjectDBModel re-run its
-		//query, and auto-numbering renames every conductor in the project in
-		//one pass.
+		//A write that matched no row is not a change: properties can be set
+		//on a conductor before it is inserted -- pasting a circuit does
+		//exactly that -- and announcing there would redraw every list on a
+		//folio for a row that is not in the table. Only zero counts as
+		//nothing happened: a driver that cannot tell answers -1, and an
+		//answer of "do not know" must not silence a real change.
+	if (m_update_conductor_query.numRowsAffected() == 0) {
+		return;
+	}
+
+		//This announced nothing at all until T17, and the reason written here
+		//rested on a wire_count column of element_nomenclature_view. There is
+		//no such column: the view is spelled out in
+		//createElementNomenclatureView() and carries no subquery of any kind.
+		//It exists on a branch that was never merged. (Not to be confused
+		//with the wire_count attribute a cable writes into the project file,
+		//which has nothing to do with this table.)
+		//
+		//What the wrong reason hid is a real cost, and it argues for grouping
+		//rather than for silence: renaming a wire renames the whole potential,
+		//so one gesture is dozens of calls to this method, and announcing each
+		//of them makes every list drawn on a folio re-run its query dozens of
+		//times. Whoever knows a gesture has begun opens an operation, and the
+		//notice is delivered once, at the end of it.
+	notifyUpdated();
 }
 
 /**
@@ -351,6 +373,79 @@ void projectDataBase::conductorPropertiesChanged()
 {
 	if (auto *conductor = qobject_cast<Conductor *>(sender())) {
 		updateConductor(conductor);
+	}
+}
+
+/**
+	@brief projectDataBase::beginOperation
+	Open a gesture: what follows is announced once, when it closes.
+*/
+void projectDataBase::beginOperation()
+{
+	m_coalescer.beginOperation();
+}
+
+/**
+	@brief projectDataBase::endOperation
+	Close a gesture, announcing it if anything happened.
+*/
+void projectDataBase::endOperation()
+{
+	if (m_coalescer.endOperation()) {
+		emit dataBaseUpdated();
+	}
+}
+
+/**
+	@brief projectDataBase::notifyUpdated
+	Announce a change, now or when the open gesture ends.
+
+	Every emission of dataBaseUpdated() outside endOperation() goes through
+	here, and not only the conductor ones: a gesture that adds a folio and
+	renames the wires on it is one gesture, and a grouping that only knew
+	about conductors would announce the rest of it anyway.
+*/
+void projectDataBase::notifyUpdated()
+{
+	if (m_coalescer.notify()) {
+		emit dataBaseUpdated();
+	}
+}
+
+/**
+	@brief projectDataBase::Operation::Operation
+	@param data_base : the data base whose notices are grouped; nullptr
+	means no grouping.
+*/
+projectDataBase::Operation::Operation(projectDataBase *data_base) :
+	m_data_base(data_base)
+{
+	if (m_data_base) {
+		m_data_base->beginOperation();
+	}
+}
+
+/**
+	@brief projectDataBase::Operation::Operation
+	@param project : the project whose data base groups the notices;
+	nullptr means no grouping.
+*/
+projectDataBase::Operation::Operation(QETProject *project) :
+	m_data_base(project ? project->dataBase() : nullptr)
+{
+	if (m_data_base) {
+		m_data_base->beginOperation();
+	}
+}
+
+/**
+	@brief projectDataBase::Operation::~Operation
+	Close the gesture, whatever ended it.
+*/
+projectDataBase::Operation::~Operation()
+{
+	if (m_data_base) {
+		m_data_base->endOperation();
 	}
 }
 
@@ -488,11 +583,14 @@ bool projectDataBase::createDataBase()
 		qDebug() << "conductor_table query : "<< query_.lastError();
 	}
 
-		//The element-facing columns are looked up per element row, not per
-		//conductor row: element_nomenclature_view carries a correlated
-		//subquery counting the wires touching each element. Without these
-		//indexes each element row full-scans the conductor table, which grows
-		//as elements x conductors.
+		//No query uses these indexes yet, and the comment that stood here said
+		//one did: it credited element_nomenclature_view with a correlated
+		//subquery counting the wires of each element. The view is spelled out
+		//in createElementNomenclatureView() and has no subquery at all -- that
+		//one lives on a branch that was never merged. They are kept because
+		//the wiring list joins the conductor table on exactly these three
+		//columns, and are named here for what they are: paid for in advance,
+		//not in use.
 	for (const QString &index_ : {
 			QStringLiteral("CREATE INDEX idx_conductor_terminal1_element ON conductor (terminal1_element_uuid)"),
 			QStringLiteral("CREATE INDEX idx_conductor_terminal2_element ON conductor (terminal2_element_uuid)"),

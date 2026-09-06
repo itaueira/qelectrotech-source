@@ -447,6 +447,8 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
   ${QET_DIR}/sources/dataBase/projectdatabase.h
+  ${QET_DIR}/sources/dataBase/updatecoalescer.cpp
+  ${QET_DIR}/sources/dataBase/updatecoalescer.h
 
   ${QET_DIR}/sources/dataBase/ui/elementquerywidget.cpp
   ${QET_DIR}/sources/dataBase/ui/elementquerywidget.h
@@ -972,6 +974,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/editlocationtreecommand.h
   ${QET_DIR}/sources/undocommand/explodeelementcommand.cpp
   ${QET_DIR}/sources/undocommand/explodeelementcommand.h
+  ${QET_DIR}/sources/undocommand/groupedupdatecommand.cpp
+  ${QET_DIR}/sources/undocommand/groupedupdatecommand.h
   ${QET_DIR}/sources/undocommand/importiopointscommand.cpp
   ${QET_DIR}/sources/undocommand/importiopointscommand.h
   ${QET_DIR}/sources/undocommand/itemmodelcommand.cpp
