@@ -62,18 +62,33 @@ jobs:
             qt6-l10n-tools libqt6svg6-dev libqt6sql6-sqlite \
             libsqlite3-dev cmake ninja-build ccache pkg-config g++
 
-      # BUILD_WITH_KF: ligado no Qt6, desligado no Qt5. Com QT_VERSION_MAJOR=5 o
-      # cmake/fetch_kdeaddons.cmake:30 busca KDE Frameworks v5.77.0, de 2020, que nao acompanha
-      # compilador atual — e o mesmo motivo pelo qual o workflow de onde esta receita saiu passa
-      # BUILD_WITH_KF=OFF. O QET tem caminho alternativo para isso (sources/ui/nokde/), entao a
-      # configuracao e suportada; o que o job Qt5 prova e que o codigo do QET compila com Qt5.
+      # BUILD_WITH_KF fica OFF nos dois jobs de Linux, e a razao e de versao e nao de gosto.
+      #
+      # No Qt5, cmake/fetch_kdeaddons.cmake busca KDE Frameworks v5.77.0, de 2020, que nao acompanha
+      # compilador atual -- e o mesmo motivo pelo qual o workflow de onde esta receita saiu passa
+      # BUILD_WITH_KF=OFF.
+      #
+      # No Qt6 a parede e a oposta e foi medida em 05/09/2026: o fetch fixa KF v6.10.0, cujos
+      # kcoreaddons e kwidgetsaddons declaram REQUIRED_QT_VERSION 6.6.0, e o runner ubuntu-24.04
+      # traz qt6-base-dev 6.4.2. Descer de versao nao resolve (a v6.0.0 do KF ja pede Qt 6.5.0) e o
+      # noble nao empacota KF6, entao instalar tambem nao. Enquanto o runner nao tiver Qt >= 6.6, o
+      # job Linux Qt6 morre em "Configurar" -- que e como ele morreu em TODAS as execucoes desde que
+      # esta trilha nasceu, em 30/08/2026.
+      #
+      # A cobertura de KF nao se perde: o Windows Qt6 continua com BUILD_WITH_KF=ON e passa. O que
+      # cada job prova fica assim: Windows Qt6 = codigo + KF; Linux Qt6 = codigo com Qt6 fora do
+      # Windows; os dois Qt5 = o codigo ainda compila na versao antiga. O QET tem caminho
+      # alternativo para o KF em sources/ui/nokde/, entao a configuracao e suportada.
+      #
+      # Para devolver o KF ao Linux, o caminho e instalar um Qt >= 6.6 no runner (aqtinstall) em vez
+      # do Qt do apt -- mais caro, e a decisao de fazer isso nao foi tomada.
       - name: Configurar
         run: |
           set -euo pipefail
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
             -DQT_VERSION_MAJOR=${{ matrix.qt }} \
-            -DBUILD_WITH_KF=${{ matrix.qt == 6 && 'ON' || 'OFF' }} \
+            -DBUILD_WITH_KF=OFF \
             -DPACKAGE_TESTS=ON \
             -DQET_EXPORT_PROJECT_DB=ON \
             -DCMAKE_POLICY_DEFAULT_CMP0077=NEW \
