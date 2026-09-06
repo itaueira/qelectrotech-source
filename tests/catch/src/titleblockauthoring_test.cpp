@@ -169,10 +169,17 @@ TEST_CASE("T26 — o editor nomeia a variável que a folha apaga", "[titleblock]
 
 		REQUIRE(context.contains(QStringLiteral("revisor_4")));
 		REQUIRE(context.contains(QStringLiteral("author")));
+			// The value is the name in brackets, not the bare name.
+			// That is what lets the person drawing the title block
+			// tell a field from fixed text reading the same word -
+			// a difference that otherwise shows up only on the first
+			// printed project. Brackets live in the editor preview
+			// alone; render() with the project context never sees
+			// them, and titleblockvariables_test.cpp still proves it.
 		CHECK(context.value(QStringLiteral("revisor_4")).toString()
-		      == QStringLiteral("revisor_4"));
+		      == QStringLiteral("[revisor_4]"));
 		CHECK(context.value(QStringLiteral("author")).toString()
-		      == QStringLiteral("author"));
+		      == QStringLiteral("[author]"));
 		CHECK(context.keys().count() == 2);
 	}
 

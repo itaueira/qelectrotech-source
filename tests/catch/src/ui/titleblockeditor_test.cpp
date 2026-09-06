@@ -257,20 +257,26 @@ TEST_CASE("T26 — a célula diz o nome do atributo no editor, e a folha não mu
 		      == QStringLiteral(" Escala 100%"));
 	}
 
-	SECTION("no editor, a mesma célula diz o nome do atributo")
+	SECTION("no editor, a mesma célula diz o nome do atributo, entre colchetes")
 	{
+			// The brackets are the answer to P120, decided 06/09/2026: without
+			// them a cell holding the literal word "author" and a cell holding
+			// %{author} draw identically, and whoever is drawing the title
+			// block cannot tell a field from fixed text until the first
+			// project is printed. They exist in the editor preview only - the
+			// section above proves the printed sheet is untouched.
 		CHECK(tbt.finalTextForCell(
 			      *bare_in_value,
 			      editorContextFor(&tbt, bare_in_value))
-		      == QStringLiteral(" Autor : author"));
+		      == QStringLiteral(" Autor : [author]"));
 		CHECK(tbt.finalTextForCell(
 			      *braced_in_value,
 			      editorContextFor(&tbt, braced_in_value))
-		      == QStringLiteral(" Revisor : revisor_4"));
+		      == QStringLiteral(" Revisor : [revisor_4]"));
 		CHECK(tbt.finalTextForCell(
 			      *braced_in_label,
 			      editorContextFor(&tbt, braced_in_label))
-		      == QStringLiteral(" setor : Quadro"));
+		      == QStringLiteral(" [setor] : Quadro"));
 
 		// And the fixed text is fixed in the editor too: nothing in it is
 		// a reference, so there is no name to put anywhere.

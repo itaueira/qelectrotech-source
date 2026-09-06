@@ -166,12 +166,22 @@ DiagramContext QETInformation::titleblockAuthoringContext(
 	for (const QString &text : texts) {
 		const QStringList names = titleblockVariablesIn(text);
 		for (const QString &name : names) {
-				//The name is its own value: substitution then leaves
-				//the name standing where the value would have gone,
-				//and stripUnresolvedVariables finds nothing left to
-				//erase. A name the context refuses is dropped here,
+				//The value is the name inside brackets: substitution
+				//then leaves a marked name where the value would have
+				//gone, and stripUnresolvedVariables finds nothing left
+				//to erase. A name the context refuses is dropped here,
 				//and that is deliberate - see the header.
-			context.addValue(name, name);
+				//
+				//The brackets are what tells a field apart from fixed
+				//text that happens to read the same. Without them a cell
+				//holding the literal word "author" and a cell holding
+				//%{author} draw identically, and the person drawing the
+				//title block cannot tell which is which until the first
+				//project is printed - which is too late. They exist only
+				//in the editor preview: the printed sheet goes through
+				//render() with the project context and never sees them.
+			context.addValue(name, QStringLiteral("[") + name
+					 + QStringLiteral("]"));
 		}
 	}
 	return context;
