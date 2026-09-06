@@ -290,6 +290,16 @@ QString ElementQueryWidget::queryStr() const
 		//Made a string list with the columns (keys) chosen by the user
 	QStringList keys = selectedKeys();
 
+		//No column chosen - which is the state this widget opens in -
+		//used to build a SELECT with nothing between SELECT and FROM.
+		//That is invalid SQL, and it reached the model, which drew a box
+		//with no column and no row on the folio : the very same drawing
+		//as a list that ran and found nothing. No query is returned
+		//instead, and the model turns it into a sentence.
+	if (keys.isEmpty()) {
+		return QString();
+	}
+
 	QString select ="SELECT ";
 	QString order_by = " ORDER BY ";
 	QString filter_;

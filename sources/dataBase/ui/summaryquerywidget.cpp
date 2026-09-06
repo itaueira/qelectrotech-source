@@ -62,6 +62,13 @@ QString SummaryQueryWidget::queryStr() const
 		//Made a string list with the columns (keys) choosen by the user
 	QStringList keys = selectedKeys();
 
+		//No column chosen, no query : same reason as in
+		//ElementQueryWidget::queryStr(), and this widget opens with an
+		//empty list of chosen columns too.
+	if (keys.isEmpty()) {
+		return QString();
+	}
+
 	QString select ="SELECT ";
 	QString order_by = " ORDER BY ";
 

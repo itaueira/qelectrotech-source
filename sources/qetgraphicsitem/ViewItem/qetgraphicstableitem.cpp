@@ -34,6 +34,12 @@
 
 static int no_model_height = 20;
 static int no_model_width = 40;
+	//The box a table draws when it has no table to draw but something to
+	//say. Its width is fixed - there is no column to take one from - and a
+	//multiple of 10, like every other width here; its height is whatever
+	//the message needs at that width.
+static int error_box_width = 300;
+static int error_box_margin = 5;
 
 /**
 	@brief QetGraphicsTableItem::adjustTableToFolio
@@ -184,6 +190,10 @@ void QetGraphicsTableItem::setModel(QAbstractItemModel *model)
 			   this, &QetGraphicsTableItem::dataChanged);
 		disconnect(m_model, &QAbstractItemModel::modelReset,
 			   this, &QetGraphicsTableItem::modelReseted);
+		if (auto db_model = qobject_cast<ProjectDBModel *>(m_model.data())) {
+			disconnect(db_model, &ProjectDBModel::queryErrorChanged,
+				   this, &QetGraphicsTableItem::modelErrorChanged);
+		}
 	}
 	m_model = model;
 	m_header_item->setModel(m_model);
@@ -198,6 +208,15 @@ void QetGraphicsTableItem::setModel(QAbstractItemModel *model)
 			this, &QetGraphicsTableItem::dataChanged);
 		connect(m_model, &QAbstractItemModel::modelReset,
 			this, &QetGraphicsTableItem::modelReseted);
+			//A query that starts failing, or stops failing, without
+			//changing the number of rows - which is what an error and
+			//an empty result have in common - is announced by this
+			//signal alone : the model resets itself only when the
+			//query changes.
+		if (auto db_model = qobject_cast<ProjectDBModel *>(m_model.data())) {
+			connect(db_model, &ProjectDBModel::queryErrorChanged,
+				this, &QetGraphicsTableItem::modelErrorChanged);
+		}
 	}
 
 	if (m_next_table) {
@@ -245,6 +264,18 @@ void QetGraphicsTableItem::paint(
 	pen.setWidthF(0.7);
 	pen.setColor(Qt::black);
 	painter->setPen(pen);
+
+		//A list that could not be established says so, in place of the
+		//table it cannot draw. Without this the two are the same drawing :
+		//no column, no row, and a frame of no width at all.
+	const auto error_ = modelError();
+	if (!error_.isEmpty())
+	{
+		paintError(painter, error_);
+		painter->restore();
+		return;
+	}
+
 	painter->drawRect(0,0, m_header_item->rect().width(), m_current_size.height());
 
 	if (isSelected())
@@ -368,6 +399,12 @@ QSize QetGraphicsTableItem::minimumSize() const
 {
 	if (!m_model) {
 		return QSize(no_model_width, no_model_height);
+	}
+
+		//A table with an error to show has no column to take a width
+		//from, and needs the room the message takes.
+	if (!modelError().isEmpty()) {
+		return errorBoxSize();
 	}
 
 	auto row_count = m_model->rowCount();
@@ -896,6 +933,128 @@ void QetGraphicsTableItem::modelReseted()
 }
 
 /**
+	@brief QetGraphicsTableItem::modelErrorChanged
+	The model started - or stopped - having something to say instead of a
+	table. Both change what is drawn and how big it is, so the geometry is
+	set up again : an error box takes its size from the message, a table
+	takes it from its columns.
+*/
+void QetGraphicsTableItem::modelErrorChanged()
+{
+	prepareGeometryChange();
+	setUpColumnAndRowMinimumSize();
+	adjustSize();
+	setUpBoundingRect();
+	update();
+}
+
+/**
+	@brief QetGraphicsTableItem::modelError
+	@return what the model has to say instead of a table, empty when it has
+	a table to show.
+*/
+QString QetGraphicsTableItem::modelError() const
+{
+	if (const auto db_model = qobject_cast<ProjectDBModel *>(m_model.data())) {
+		return db_model->lastError();
+	}
+	return QString();
+}
+
+/**
+	@brief QetGraphicsTableItem::tableRect
+	@return the rectangle this item draws, in item coordinates.
+
+	The width comes from the header, because the header is what carries the
+	columns. An error box has no column : it takes the room the message
+	needs, or the room the table already occupied on the folio, whichever is
+	the larger - so a list that breaks does not shrink away from the place
+	the draughtsman gave it.
+*/
+QRectF QetGraphicsTableItem::tableRect() const
+{
+	if (modelError().isEmpty()) {
+		return QRectF(0, 0,
+			      m_header_item->rect().width(),
+			      m_current_size.height());
+	}
+
+	const auto error_size = errorBoxSize();
+	return QRectF(0, 0,
+		      std::max(error_size.width(), m_current_size.width()),
+		      std::max(error_size.height(), m_current_size.height()));
+}
+
+/**
+	@brief QetGraphicsTableItem::errorFont
+	@return the font the error message is written with : the one of the
+	header, which is the only font of the table the model can still answer
+	when it has no cell at all - index(0,0) is invalid without a row.
+*/
+QFont QetGraphicsTableItem::errorFont() const
+{
+	if (m_model) {
+		return m_model->headerData(0,
+					   Qt::Horizontal,
+					   Qt::FontRole).value<QFont>();
+	}
+	return QFont();
+}
+
+/**
+	@brief QetGraphicsTableItem::errorBoxSize
+	@return the smallest box the error message fits in.
+*/
+QSize QetGraphicsTableItem::errorBoxSize() const
+{
+	const QFontMetrics metrics(errorFont());
+	const auto text_rect = metrics.boundingRect(
+				QRect(0, 0, error_box_width - error_box_margin*2, 0),
+				Qt::AlignCenter | Qt::TextWordWrap,
+				modelError());
+
+	return QSize(error_box_width,
+		     std::max(text_rect.height() + error_box_margin*2,
+			      m_minimum_row_height));
+}
+
+/**
+	@brief QetGraphicsTableItem::paintError
+	Draw the message the model gave instead of the table.
+	@param painter
+	@param error
+*/
+void QetGraphicsTableItem::paintError(QPainter *painter, const QString &error)
+{
+	const auto box = tableRect();
+	painter->drawRect(box);
+
+	if (isSelected())
+	{
+		painter->save();
+		QColor color(Qt::darkBlue);
+		color.setAlpha(20);
+		painter->setBrush(QBrush (color));
+		painter->setPen(Qt::NoPen);
+		painter->drawRect(box);
+		painter->restore();
+	}
+
+	painter->save();
+	QPen pen = painter->pen();
+	pen.setColor(Qt::red);
+	painter->setPen(pen);
+	painter->setFont(errorFont());
+	painter->drawText(box.adjusted(error_box_margin,
+				       error_box_margin,
+				       -error_box_margin,
+				       -error_box_margin),
+			  Qt::AlignCenter | Qt::TextWordWrap,
+			  error);
+	painter->restore();
+}
+
+/**
 	@brief QetGraphicsTableItem::setUpColumnAndRowMinimumSize
 	Calculate the minimum row height and the minimum column width for each columns
 	this function doesn't change the geometry of the table.
@@ -941,7 +1100,12 @@ void QetGraphicsTableItem::setUpBoundingRect()
 	QRect rect(
 				0,
 				-header_size.height(),
-				header_size.width(),
+					//The header is what carries the columns, so it is
+					//what gives the width - except when there is no
+					//column at all and the table draws an error box
+					//instead, which the header knows nothing of.
+				std::max(header_size.width(),
+					 static_cast<int>(tableRect().width())),
 				m_current_size.height() + header_size.height());
 	m_bounding_rect = rect.adjusted(
 				-m_br_margin,

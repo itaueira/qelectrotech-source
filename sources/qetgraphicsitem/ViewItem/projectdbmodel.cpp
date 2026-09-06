@@ -108,17 +108,23 @@ int ProjectDBModel::rowCount(const QModelIndex &parent) const
 	Reimplemented for QAbstractTableModel
 	@param parent
 	@return
+
+	@par The columns are the ones the query asked for, not the ones the
+	first row happened to bring back
+	Taking the count from m_record.first() made the number of columns a
+	consequence of the result : a query that found nothing and a query that
+	never ran both answered 0, and the table on the folio drew the same
+	empty box for both. The names now come from the record of the query
+	itself, which SQLite fills as soon as the statement is valid, whether or
+	not a single row matched - so a list with no item keeps its header and a
+	broken query has none, and lastError() says which is which.
 */
 int ProjectDBModel::columnCount(const QModelIndex &parent) const
 {
 	if (parent.isValid())
 		return 0;
 	
-	if (m_record.count()) {
-		return m_record.first().count();
-	}
-	
-	return 0;
+	return m_column_names.count();
 }
 
 /**
@@ -204,7 +210,17 @@ QVariant ProjectDBModel::data(const QModelIndex &index, int role) const
 		return m_index_0_0_data.value(role);
 	}
 	
-	if (role == Qt::DisplayRole) {
+	if (role == Qt::DisplayRole)
+	{
+			//columnCount() no longer comes from the row that is being
+			//read, so a caller can legitimately ask for a cell of a row
+			//that is shorter than the table is wide. QList::at() on a
+			//bad index is undefined behaviour, and an empty cell is the
+			//right answer here.
+		if (index.row() >= m_record.count() ||
+			index.column() >= m_record.at(index.row()).count()) {
+			return QVariant();
+		}
 		QVariant v(m_record.at(index.row()).at(index.column()));
 		return v;
 	}
@@ -396,14 +412,51 @@ void ProjectDBModel::setHeaderString()
 	}
 }
 
+/**
+	@brief ProjectDBModel::fillValue
+	Run the current query and keep what it returned : the name of each
+	column, the value of each cell, and - when it did not run - the reason.
+
+	@par A failure stops here instead of going on with an empty record
+	It used to be written to qDebug() and left behind, so the model went on
+	filling nothing and the table drew a box with no column and no row : on
+	the folio, a query that could not be run looked exactly like a list with
+	nothing in it. The error is now state of the model, lastError() says it
+	and queryErrorChanged() announces it.
+*/
 void ProjectDBModel::fillValue()
 {
 	m_record.clear();
+	m_column_names.clear();
 	
-	auto query_ = m_project->dataBase()->newQuery(m_query);
-	if (!query_.exec()) {
-		qDebug() << "Query error : " << query_.lastError();
+	if (m_query.trimmed().isEmpty())
+	{
+			//No column chosen : the query widgets refuse to build a
+			//SELECT with no column rather than handing over a broken
+			//one, and this is where that refusal becomes a sentence.
+		setLastError(tr("Aucune colonne n'a été choisie : il n'y a rien à afficher."));
+		return;
 	}
+
+		//newQuery() returns QSqlQuery(query, db), and that constructor
+		//executes the query : what comes back is already a result set,
+		//which is why setHeaderString() above reads record() off it
+		//without executing anything. Asking it to exec() a second time
+		//did more than double the work - on a statement that failed to
+		//prepare it also threw the reason away, and lastError() then
+		//read "No query Unable to fetch row" instead of the "no such
+		//column" the data base had answered. Measured, not supposed :
+		//it is what the test of this behaviour reported first.
+	auto query_ = m_project->dataBase()->newQuery(m_query);
+	if (!query_.isActive())
+	{
+		const auto error_ = query_.lastError().text().trimmed();
+		setLastError(error_.isEmpty()
+			     ? tr("La liste n'a pas pu être établie.")
+			     : tr("La liste n'a pas pu être établie : %1").arg(error_));
+		return;
+	}
+	setLastError(QString());
 	
 		//Which information each column holds, and not only the value it
 		//holds: a stored form and a drawn form are not always the same
@@ -411,18 +464,43 @@ void ProjectDBModel::fillValue()
 		//outside the row loop: the query is fixed for the whole pass, only
 		//the row moves.
 	const auto fields_ = query_.record();
+	for (auto i=0 ; i<fields_.count() ; ++i) {
+		m_column_names << fields_.fieldName(i);
+	}
 
 	while (query_.next())
 	{
 		QStringList record_;
-		auto i=0;
-		while (query_.value(i).isValid())
+			//One value per column of the query, so that a row can
+			//never come back shorter than the table is wide - which
+			//is what columnCount() now answers. The former form
+			//stopped at the first value the driver reads as invalid,
+			//and a NULL in the middle of a row was taken to be one
+			//of those. Measured, and it is not : SQLite hands a null
+			//value back as a null variant that is still valid, so
+			//planting the old loop again leaves every row exactly as
+			//it is. What changed here is the guarantee, not the
+			//rows - and the guarantee is what columnCount() rests on.
+		for (auto i=0 ; i<fields_.count() ; ++i)
 		{
 			record_ << QETInformation::displayedInfoValue(fields_.fieldName(i),
 								     query_.value(i));
-			++i;
 		}
 		m_record << record_;
 	}
 }
 
+/**
+	@brief ProjectDBModel::setLastError
+	Set the error state of the model to @a error, and tell the views when it
+	changed. An empty string means the query runs.
+	@param error
+*/
+void ProjectDBModel::setLastError(const QString &error)
+{
+	if (m_last_error == error) {
+		return;
+	}
+	m_last_error = error;
+	emit queryErrorChanged(m_last_error);
+}

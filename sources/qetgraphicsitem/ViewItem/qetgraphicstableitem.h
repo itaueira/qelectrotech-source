@@ -92,6 +92,14 @@ class QetGraphicsTableItem : public QetGraphicsItem
 		static QString xmlTagName() {return QString("graphics_table");}
 		virtual bool toDXF (const QString &filepath);
 
+		/**
+			What the model has to say instead of a table, empty when it
+			has a table to show. Only a ProjectDBModel knows how to
+			answer, so any other model always answers the empty string.
+		*/
+		QString modelError() const;
+		QRectF tableRect() const;
+
 	protected:
 		virtual void hoverEnterEvent(
 				QGraphicsSceneHoverEvent *event) override;
@@ -106,6 +114,10 @@ class QetGraphicsTableItem : public QetGraphicsItem
 
 	private:
 		void modelReseted();
+		void modelErrorChanged();
+		void paintError(QPainter *painter, const QString &error);
+		QFont errorFont() const;
+		QSize errorBoxSize() const;
 		void setUpColumnAndRowMinimumSize();
 		void setUpBoundingRect();
 		void adjustHandlerPos();

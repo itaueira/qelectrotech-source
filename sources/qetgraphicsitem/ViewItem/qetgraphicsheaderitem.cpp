@@ -108,6 +108,14 @@ void QetGraphicsHeaderItem::paint(
 
 	painter->save();
 
+		//No column to head : the table below is saying why it has none,
+		//and a rectangle of no width draws as a bare tick above it.
+	if (m_current_rect.width() <= 0)
+	{
+		painter->restore();
+		return;
+	}
+
 	QPen pen;
 	pen.setWidthF(0.7);
 	pen.setColor(Qt::black);

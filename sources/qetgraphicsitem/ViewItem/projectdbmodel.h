@@ -66,21 +66,47 @@ class ProjectDBModel : public QAbstractTableModel
 		QString queryString() const;
 		QETProject *project() const;
 
+		/**
+			The name of each column the current query returns, in the
+			order the query returns them. Empty when the query could
+			not be run at all.
+		*/
+		QStringList columnNames() const {return m_column_names;}
+		/**
+			Empty while the current query runs. Otherwise the sentence
+			to show to the reader, error of the data base included.
+
+			This is the state that tells apart the two things that used
+			to be drawn the same way : a list that ran and found
+			nothing, and a query that never ran.
+		*/
+		QString lastError() const {return m_last_error;}
+
 		QDomElement toXml(QDomDocument &document) const;
 		void fromXml(const QDomElement &element);
 		void setIdentifier(const QString &identifier);
 		QString identifier() const {return m_identifier;}
 		static QString xmlTagName() {return QString("project_data_base_model");}
 
+	signals:
+		/**
+			Emitted when lastError() changes, in both directions : the
+			empty string says the query runs again.
+		*/
+		void queryErrorChanged(const QString &error);
+
 	private:
 		void dataBaseUpdated();
 		void setHeaderString();
 		void fillValue();
+		void setLastError(const QString &error);
 
 	private:
 		QPointer<QETProject> m_project;
 		QString m_query;
 		QVector<QStringList> m_record;
+		QStringList m_column_names;
+		QString m_last_error;
 		//First int = section, second int = Qt::role, QVariant = value
 		QHash<int, QHash<int, QVariant>> m_header_data;
 		QHash<int, QVariant> m_index_0_0_data;
