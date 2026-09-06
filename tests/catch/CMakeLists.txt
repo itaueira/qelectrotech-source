@@ -133,6 +133,7 @@ add_executable(
     src/locationvariable_test.cpp
     src/terminalstripstructure_test.cpp
     src/collectionloadgate_test.cpp
+    src/collectionthreadbudget_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -302,6 +303,15 @@ add_executable(
     # precisa de QETApp e por isso não entra em suíte nenhuma.
     ${QET_DIR}/sources/ElementsCollection/collectionloadgate.cpp
     ${QET_DIR}/sources/ElementsCollection/collectionloadgate.h
+    # Quantos núcleos a varredura da coleção pode tomar (T42, passo 2). Regra
+    # pura outra vez: entra o número de núcleos da máquina, sai o número de
+    # threads. **O que ela não vê é a fiação** — quem chama o
+    # setMaxThreadCount() com o número que ela devolve é o
+    # ElementsCollectionModel, que precisa de QETApp e não entra em suíte
+    # nenhuma. Apagar aquela chamada deixa esta suíte inteira verde; foi
+    # plantado e conferido. Só medição pega.
+    ${QET_DIR}/sources/ElementsCollection/collectionthreadbudget.cpp
+    ${QET_DIR}/sources/ElementsCollection/collectionthreadbudget.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string

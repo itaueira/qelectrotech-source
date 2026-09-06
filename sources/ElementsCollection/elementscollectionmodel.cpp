@@ -19,6 +19,7 @@
 
 #include "../qetapp.h"
 #include "../qetproject.h"
+#include "collectionthreadbudget.h"
 #include "elementcollectionhandler.h"
 #include "elementcollectionitem.h"
 #include "fileelementcollectionitem.h"
@@ -26,6 +27,8 @@
 #include "xmlprojectelementcollectionitem.h"
 
 
+#include <QThread>
+#include <QThreadPool>
 #include <QtConcurrentMap>
 
 /**
@@ -308,6 +311,25 @@ void ElementsCollectionModel::loadCollections(bool common_collection,
 			this, &ElementsCollectionModel::loadingFinished);
 	connect(watcher, &QFutureWatcher<void>::finished, watcher, &QFutureWatcher<void>::deleteLater);
 
+
+		//Leave the machine some cores. Without this the map below fills
+		//one thread per core with element files to parse, for as long as
+		//the scan lasts, and the thread drawing the window has to wait its
+		//turn among them - see CollectionThreadBudget for what that costs
+		//and what it buys.
+		//
+		//Set on the global pool rather than on a pool of our own because
+		//QtConcurrent::map() only grew an overload taking a QThreadPool* in
+		//Qt6, and this has to behave the same under Qt5, where there is no
+		//such overload. The cap is safe to leave standing: this map is the
+		//only concurrent *map* in the program, and the two QtConcurrent::run
+		//calls that share this pool (the startup worker and the backup
+		//write) submit one task each, so no reachable count starves them.
+	QThreadPool::globalInstance()->setMaxThreadCount(
+				CollectionThreadBudget::threadCount(
+					QThread::idealThreadCount(),
+					qEnvironmentVariable(
+						CollectionThreadBudget::kOverrideVariable)));
 
 	m_future = QtConcurrent::map(m_items_list_to_setUp, setUpData);
 	watcher->setFuture(m_future);
