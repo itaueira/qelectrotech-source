@@ -129,6 +129,7 @@ add_executable(
     src/location_test.cpp
     src/locationcontainment_test.cpp
     src/enclosuretransfer_test.cpp
+    src/mountingmeasure_test.cpp
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
     src/terminalstripstructure_test.cpp
@@ -240,6 +241,15 @@ add_executable(
     # mounting plate editor.
     ${QET_DIR}/sources/location/enclosuretransfer.cpp
     ${QET_DIR}/sources/location/enclosuretransfer.h
+    # The dimension arithmetic: what a dimension between two points reads,
+    # where a hole sits on the mounting surface, and what movement makes a
+    # dimension read a typed value. It is QPointF and qreal and nothing
+    # else, which is what lets the sign of y - down, as the mounting frame
+    # declares it - be nailed here rather than found in a workshop. What
+    # draws the dimension and what pushes the undo command stay out, in
+    # sources/qetgraphicsitem and sources/undocommand.
+    ${QET_DIR}/sources/location/mountingmeasure.cpp
+    ${QET_DIR}/sources/location/mountingmeasure.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
