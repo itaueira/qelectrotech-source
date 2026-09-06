@@ -20,27 +20,60 @@
 #include "../diagram.h"
 
 /**
+	@brief QetGraphicsItem::showItem
+	Bring @a item forward and point at it: its folio is raised, @a item becomes
+	the one selected item of that folio, and every view of the folio zooms onto
+	it.
+
+	Clearing the folio first is the point of this function, not housekeeping.
+	Navigating asks "where is it?", and an item left selected from before
+	answers a second time, on the same folio, with the same highlight: whoever
+	followed the reference cannot tell the answer from the leftover. A caller
+	that needs a selection of its own has to take it again afterwards.
+
+	Only the folio of @a item is cleared, never the whole project. Folios are
+	tabs of a QTabWidget (ProjectView), so exactly one of them is on screen and
+	a selection on another folio is not part of the answer being shown; dropping
+	it would throw away work nobody asked to leave. This is what
+	QETDiagramEditor::showElement and the missing part report already do.
+	LocationReportDialog clears every folio because it selects on every folio -
+	a different job, not a different opinion.
+
+	Does nothing when @a item is null or is not on a folio.
+	@param item : the item to show; may be nullptr
+*/
+void QetGraphicsItem::showItem(QetGraphicsItem *item)
+{
+	if (!item)
+	{
+		return;
+	}
+
+		//diagram() is the scene of this item, so this guards both.
+	Diagram *diagram = item->diagram();
+	if (!diagram)
+	{
+		return;
+	}
+
+	diagram->showMe();
+	diagram->clearSelection();
+	item->setSelected(true);
+
+		//Zoom to the item
+	for(QGraphicsView *view : diagram->views())
+	{
+		QRectF fit = item->sceneBoundingRect();
+		fit.adjust(-200, -200, 200, 200);
+		view->fitInView(fit, Qt::KeepAspectRatioByExpanding);
+	}
+}
+
+/**
 	@brief QetGraphicsItem::QetGraphicsItem
 	Default constructor
 	@param parent : Parent Item
 */
-void QetGraphicsItem::showItem(QetGraphicsItem *item)
-{
-	if (item && item->diagram())
-	{
-		item->diagram()->showMe();
-		item->setSelected(true);
-
-			//Zoom to the item
-		for(QGraphicsView *view : item->scene()->views())
-		{
-			QRectF fit = item->sceneBoundingRect();
-			fit.adjust(-200, -200, 200, 200);
-			view->fitInView(fit, Qt::KeepAspectRatioByExpanding);
-		}
-	}
-}
-
 QetGraphicsItem::QetGraphicsItem(QGraphicsItem *parent):
 	QGraphicsObject(parent),
 	is_movable_(true),

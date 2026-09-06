@@ -429,7 +429,8 @@ if(TARGET qet_core)
         src/ui/backup_test.cpp
         src/ui/crashrecovery_test.cpp
         src/ui/listengine_test.cpp
-        src/ui/titleblockeditor_test.cpp)
+        src/ui/titleblockeditor_test.cpp
+        src/ui/navigate_test.cpp)
 
     target_link_libraries(
         C_uitests
