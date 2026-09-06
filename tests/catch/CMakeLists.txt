@@ -116,6 +116,7 @@ add_executable(
     src/symbol_test.cpp
     src/pinout_test.cpp
     src/symbolpreview_test.cpp
+    src/assemblystate_test.cpp
     src/iecstructure_test.cpp
     src/renumber_test.cpp
     src/macro_test.cpp
@@ -164,6 +165,8 @@ add_executable(
     # catalog core: no Element, no Diagram, so the ordering and the inheritance
     # can be tested without a project open. ProjectRenumberer is the part that
     # does need one, and it is deliberately not here.
+    ${QET_DIR}/sources/autoNum/assemblystate.cpp
+    ${QET_DIR}/sources/autoNum/assemblystate.h
     ${QET_DIR}/sources/autoNum/iecstructure.cpp
     ${QET_DIR}/sources/autoNum/iecstructure.h
     ${QET_DIR}/sources/autoNum/numberingformat.cpp
@@ -420,6 +423,7 @@ if(TARGET qet_core)
         src/ui/iecoff_test.cpp
         src/ui/assignpart_test.cpp
         src/ui/renumberproject_test.cpp
+        src/ui/assemblymark_test.cpp
         src/ui/createsymbol_test.cpp
         src/ui/cable_test.cpp
         src/ui/dashedwire_test.cpp

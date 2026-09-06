@@ -498,6 +498,24 @@
     </message>
 </context>
 <context>
+    <name>AssemblyState</name>
+    <message>
+        <location filename="../sources/autoNum/assemblystate.cpp" line="257"/>
+        <source>En étude</source>
+        <translation>Em projeto</translation>
+    </message>
+    <message>
+        <location filename="../sources/autoNum/assemblystate.cpp" line="260"/>
+        <source>Monté</source>
+        <translation>Montado</translation>
+    </message>
+    <message>
+        <location filename="../sources/autoNum/assemblystate.cpp" line="263"/>
+        <source>En service</source>
+        <translation>Em campo</translation>
+    </message>
+</context>
+<context>
     <name>AutoNumberingDockWidget</name>
     <message>
         <location filename="../sources/autoNum/ui/autonumberingdockwidget.ui" line="14"/>
@@ -17607,6 +17625,19 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <location filename="../sources/catalog/catalogassignment.cpp" line="171"/>
         <source>Attribuer la pièce %1 à %2</source>
         <translation>Atribuir a peça %1 a %2</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/undocommand/assemblystatecommand.cpp" line="47"/>
+        <source>Marquer le projet comme %1 : %n élément(s) figé(s)</source>
+        <translation>
+            <numerusform>Marcar o projeto como %1: %n item congelado</numerusform>
+            <numerusform>Marcar o projeto como %1: %n itens congelados</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/undocommand/assemblystatecommand.cpp" line="55"/>
+        <source>Remettre le projet en étude</source>
+        <translation>Devolver o projeto para em projeto</translation>
     </message>
     <message numerus="yes">
         <location filename="../sources/undocommand/assigncatalogpartcommand.cpp" line="99"/>

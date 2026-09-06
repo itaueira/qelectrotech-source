@@ -287,6 +287,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/titleblocktemplaterenderer.cpp
   ${QET_DIR}/sources/titleblocktemplaterenderer.h
 
+  ${QET_DIR}/sources/autoNum/assemblystate.cpp
+  ${QET_DIR}/sources/autoNum/assemblystate.h
   ${QET_DIR}/sources/autoNum/assignvariables.cpp
   ${QET_DIR}/sources/autoNum/assignvariables.h
   ${QET_DIR}/sources/autoNum/iecstructure.cpp
@@ -944,6 +946,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/adddiagramcommand.h
   ${QET_DIR}/sources/undocommand/adddiagramcontentcommand.cpp
   ${QET_DIR}/sources/undocommand/adddiagramcontentcommand.h
+  ${QET_DIR}/sources/undocommand/assemblystatecommand.cpp
+  ${QET_DIR}/sources/undocommand/assemblystatecommand.h
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.cpp
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.h
   ${QET_DIR}/sources/undocommand/assigniopointscommand.cpp
