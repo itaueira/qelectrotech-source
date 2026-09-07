@@ -453,7 +453,7 @@
     <message>
         <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="20"/>
         <source>Ajouter le plan de bornes suivant :</source>
-        <translation>Adicione o seguinte plano de terminal:</translation>
+        <translation>Adicione o seguinte plano de terminais:</translation>
     </message>
 </context>
 <context>
@@ -1959,7 +1959,7 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
     <message>
         <location filename="../sources/catalog/ui/catalogmanagerdialog.cpp" line="122"/>
         <source>À décocher pour une pièce qui n&apos;a jamais de symbole : butée de bornier, poignée de porte, étiquette de bouton, fusible.</source>
-        <translation>Desmarque para peça que nunca tem símbolo: batente de régua, punho de porta, plaqueta de botão, fusível.</translation>
+        <translation>Desmarque para peça que nunca tem símbolo: batente de régua de bornes, punho de porta, plaqueta de botão, fusível.</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogmanagerdialog.cpp" line="125"/>
@@ -4218,7 +4218,7 @@ Continuar?</translation>
     <message>
         <location filename="../sources/ui/contactgroupselectiondialog.cpp" line="222"/>
         <source>Inverseur</source>
-        <translation>Inversor</translation>
+        <translation>Reversor</translation>
     </message>
     <message>
         <location filename="../sources/ui/contactgroupselectiondialog.cpp" line="223"/>
@@ -5727,7 +5727,7 @@ Ir ver, ou guardar o duplicado sabendo disso?</translation>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="197"/>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="525"/>
         <source>Inverseur</source>
-        <translation>Inversor</translation>
+        <translation>Reversor</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="198"/>
@@ -6649,13 +6649,13 @@ Ao importar este arquivo, você confirma que:
         <location filename="../sources/elementspanel.cpp" line="290"/>
         <source>Double-cliquez pour réduire ou développer la collection company de cartouches</source>
         <comment>Status tip</comment>
-        <translation>Clique em ambos os lados para recolher ou expandir a coleção de blocos da empresa</translation>
+        <translation>Dê um duplo clique para reduzir ou expandir a coleção de blocos de legenda da empresa</translation>
     </message>
     <message>
         <location filename="../sources/elementspanel.cpp" line="291"/>
         <source>Ceci est la collection company de cartouches -- utilisez-la pour créer, stocker et éditer vos propres cartouches.</source>
         <comment>&quot;What&apos;s this&quot; tip</comment>
-        <translation>Esta é a coleção de blocos da empresa – use para criar, armazenar e editar seus próprios blocos.</translation>
+        <translation>Esta é a coleção de blocos de legenda da empresa, utilize-a para criar, guardar e editar os seus próprios blocos de legenda.</translation>
     </message>
     <message>
         <location filename="../sources/elementspanel.cpp" line="298"/>
@@ -7618,7 +7618,7 @@ que você cria. Entradas de texto e números
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="369"/>
         <source>Répertoire des cartouches utilisateur</source>
-        <translation>Local do armazenamento do usuário</translation>
+        <translation>Local dos blocos de legenda do usuário</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="400"/>
@@ -7700,7 +7700,7 @@ Aqui você pode especificar o valor padrão deste campo para os elementos que vo
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="306"/>
         <source>Répertoire des cartouches company</source>
-        <translation>Local dos blocos da empresa</translation>
+        <translation>Local dos blocos de legenda da empresa</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="334"/>
@@ -8012,12 +8012,12 @@ Aqui você pode especificar o valor padrão deste campo para os elementos que vo
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="515"/>
         <source>Chemin des cartouches company</source>
-        <translation>Caminho dos blocos da empresa</translation>
+        <translation>Caminho dos blocos de legenda da empresa</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="529"/>
         <source>Chemin des cartouches utilisateur</source>
-        <translation>Caminho do armazenamento do usuário</translation>
+        <translation>Caminho dos blocos de legenda do usuário</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="543"/>
@@ -10668,7 +10668,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     <message>
         <location filename="../sources/location/enclosuretransfer.cpp" line="258"/>
         <source>un élément sans repère</source>
-        <translation>um elemento sem referência</translation>
+        <translation>um elemento sem tag</translation>
     </message>
 </context>
 <context>
@@ -13517,7 +13517,7 @@ Opções disponíveis:
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1184"/>
         <source>Ajouter un plan de bornes</source>
-        <translation>Adicionar um plano de terminal</translation>
+        <translation>Adicionar um plano de terminais</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1186"/>
@@ -16224,8 +16224,8 @@ O que você deseja fazer?</translation>
         <source>%n plan de bornes</source>
         <comment>part of a sentence listing the content of a diagram</comment>
         <translation>
-            <numerusform>%n Planejador de terminais</numerusform>
-            <numerusform>%n Planejador de terminais</numerusform>
+            <numerusform>%n plano de terminais</numerusform>
+            <numerusform>%n planos de terminais</numerusform>
         </translation>
     </message>
     <message numerus="yes">
