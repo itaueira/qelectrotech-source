@@ -139,6 +139,7 @@ add_executable(
     src/collectionthreadbudget_test.cpp
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
+    src/drcrule_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -270,6 +271,17 @@ add_executable(
     # C_uitests, in dbnotify_test.cpp.
     ${QET_DIR}/sources/dataBase/updatecoalescer.cpp
     ${QET_DIR}/sources/dataBase/updatecoalescer.h
+    # What a design rule declares about itself, and the register that holds
+    # the rules. QString and QHash, and QCoreApplication only for the word
+    # the panel shows: no project, no data base, no folio - which is what
+    # lets the severity order, the tolerant read of the project file and
+    # the refusal of a repeated identifier be nailed before a single rule
+    # is written against the contract. The two engines that run the rules
+    # need a QETProject and stay out, in C_uitests.
+    ${QET_DIR}/sources/drc/drcrule.cpp
+    ${QET_DIR}/sources/drc/drcrule.h
+    ${QET_DIR}/sources/drc/drcruleset.cpp
+    ${QET_DIR}/sources/drc/drcruleset.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:

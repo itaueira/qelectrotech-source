@@ -369,6 +369,11 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.h
 
+  ${QET_DIR}/sources/drc/drcrule.cpp
+  ${QET_DIR}/sources/drc/drcrule.h
+  ${QET_DIR}/sources/drc/drcruleset.cpp
+  ${QET_DIR}/sources/drc/drcruleset.h
+
   ${QET_DIR}/sources/environment/filediskstate.h
   ${QET_DIR}/sources/environment/projectlock.cpp
   ${QET_DIR}/sources/environment/projectlock.h

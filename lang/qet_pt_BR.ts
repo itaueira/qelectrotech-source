@@ -4800,6 +4800,24 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
     </message>
 </context>
 <context>
+    <name>DrcRule</name>
+    <message>
+        <location filename="../sources/drc/drcrule.cpp" line="163"/>
+        <source>Information</source>
+        <translation>Informação</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcrule.cpp" line="166"/>
+        <source>Avertissement</source>
+        <translation>Aviso</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcrule.cpp" line="169"/>
+        <source>Erreur</source>
+        <translation>Erro</translation>
+    </message>
+</context>
+<context>
     <name>DynamicElementTextItem</name>
     <message>
         <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="78"/>
