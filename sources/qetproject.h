@@ -30,6 +30,7 @@
 #include "macro/circuittable.h"
 #include "plc/iolist.h"
 #include "location/locationtree.h"
+#include "location/mountinglayout.h"
 #include "properties/reportproperties.h"
 #include "properties/xrefproperties.h"
 #include "titleblock/templatescollection.h"
@@ -331,6 +332,21 @@ class QETProject : public QObject
 		*/
 		LocationTree locationTree() const;
 		void setLocationTree(const LocationTree &tree);
+
+		/**
+			@brief What is mounted on each face of each enclosure of
+			this project, in millimetre.
+
+			Kept with the project and not with the window that shows
+			it, because a mounting plate outlives every window, and
+			because a panel is frequently laid out before its first
+			folio is drawn - the layout has to be able to exist while
+			no diagram does. Written to the .qet only when it holds a
+			face, so a project that never opened the layout keeps
+			opening in an unmodified QElectroTech.
+		*/
+		MountingLayout mountingLayout() const;
+		void setMountingLayout(const MountingLayout &layout);
 		/**
 			@brief Make every component say the text of its tag again.
 			The composed tag is built when the text is drawn, so a change of the
@@ -485,6 +501,7 @@ class QETProject : public QObject
 		CircuitTable m_circuit_table;
 		IoList m_io_list;
 		LocationTree m_location_tree;
+		MountingLayout m_mounting_layout;
 		bool m_freeze_new_conductors = false;
 		QTimer m_save_backup_timer,
 			   m_autosave_timer;

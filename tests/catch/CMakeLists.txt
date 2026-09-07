@@ -130,6 +130,7 @@ add_executable(
     src/location_test.cpp
     src/locationcontainment_test.cpp
     src/enclosuretransfer_test.cpp
+    src/mountinglayout_test.cpp
     src/mountingmeasure_test.cpp
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
@@ -246,6 +247,14 @@ add_executable(
     # mounting plate editor.
     ${QET_DIR}/sources/location/enclosuretransfer.cpp
     ${QET_DIR}/sources/location/enclosuretransfer.h
+    # What is mounted on each face of each enclosure, in millimetre. It is
+    # the caller the rule above never had, and it is here for the same
+    # reason the rule is: a layout is a list of rectangles and a pair of
+    # numbers, so a plate can be filled, written to a file, read back and
+    # swapped for a smaller plate without a window ever opening. What draws
+    # the face and what pushes the undo command stay out.
+    ${QET_DIR}/sources/location/mountinglayout.cpp
+    ${QET_DIR}/sources/location/mountinglayout.h
     # The dimension arithmetic: what a dimension between two points reads,
     # where a hole sits on the mounting surface, and what movement makes a
     # dimension read a typed value. It is QPointF and qreal and nothing
@@ -467,7 +476,8 @@ if(TARGET qet_core)
         src/ui/titleblockeditor_test.cpp
         src/ui/navigate_test.cpp
         src/ui/dbnotify_test.cpp
-        src/ui/componentlabel_test.cpp)
+        src/ui/componentlabel_test.cpp
+        src/ui/mountinglayoutsave_test.cpp)
 
     target_link_libraries(
         C_uitests

@@ -1105,6 +1105,13 @@ QDomDocument QETProject::toXml()
 		project_root.appendChild(m_location_tree.toXml(xml_doc));
 	}
 
+		//What is mounted on each face of each enclosure, in millimetre,
+		//by the same rule: a project whose panel nobody laid out writes
+		//no such element at all.
+	if (!m_mounting_layout.isEmpty()) {
+		project_root.appendChild(m_mounting_layout.toXml(xml_doc));
+	}
+
 	// titleblock templates, if any
 	if (m_titleblocks_collection.templates().count()) {
 		QDomElement titleblocktemplates_elmt = xml_doc.createElement("titleblocktemplates");
@@ -1749,6 +1756,12 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 		//carries even when the tree that explained it is gone.
 	m_location_tree.fromXml(xml_project.documentElement().firstChildElement(
 					LocationTree::tagName()));
+
+		//What is mounted where. Tolerant the same way: no element means
+		//nothing has been laid out yet, which is where every project
+		//written before this existed stands.
+	m_mounting_layout.fromXml(xml_project.documentElement().firstChildElement(
+					  MountingLayout::tagName()));
 
 		//Load the project-wide properties
 	readProjectPropertiesXml(xml_project);
@@ -2465,6 +2478,35 @@ void QETProject::setLocationTree(const LocationTree &tree)
 		return;
 	}
 	m_location_tree = tree;
+	setModified(true);
+}
+
+/**
+	@brief QETProject::mountingLayout
+	@return what is mounted on each face of each enclosure, in millimetre,
+	empty when nothing has been laid out
+*/
+MountingLayout QETProject::mountingLayout() const
+{
+	return m_mounting_layout;
+}
+
+/**
+	@brief QETProject::setMountingLayout
+	@param layout
+
+	Guarded on equality for the reason setLocationTree is: a layout opened
+	and closed without a change must not leave the project asking to be
+	saved. The comparison behind the guard allows a nanometre of slack on
+	every length, so a layout that went through the file and came back is
+	the layout that went in.
+*/
+void QETProject::setMountingLayout(const MountingLayout &layout)
+{
+	if (m_mounting_layout == layout) {
+		return;
+	}
+	m_mounting_layout = layout;
 	setModified(true);
 }
 
