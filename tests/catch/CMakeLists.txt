@@ -131,6 +131,7 @@ add_executable(
     src/locationcontainment_test.cpp
     src/enclosuretransfer_test.cpp
     src/mountinglayout_test.cpp
+    src/mountingcheck_test.cpp
     src/mountingmeasure_test.cpp
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
@@ -256,6 +257,15 @@ add_executable(
     # the face and what pushes the undo command stay out.
     ${QET_DIR}/sources/location/mountinglayout.cpp
     ${QET_DIR}/sources/location/mountinglayout.h
+    # The three questions a mounting surface is asked: do two parts want the
+    # same room, does each part have the air it asked for, and is everything
+    # on the plate at all. Rectangles and a hash of clearances, so that "these
+    # two collide" and "this drive is 70 mm short" are settled here instead of
+    # on a screen - a geometry rule that can only be exercised by dragging
+    # something is a rule nobody checks twice. What highlights the offending
+    # part and what lists it in a panel stay out, in the layout editor.
+    ${QET_DIR}/sources/location/mountingcheck.cpp
+    ${QET_DIR}/sources/location/mountingcheck.h
     # The dimension arithmetic: what a dimension between two points reads,
     # where a hole sits on the mounting surface, and what movement makes a
     # dimension read a typed value. It is QPointF and qreal and nothing

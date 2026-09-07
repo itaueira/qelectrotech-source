@@ -397,6 +397,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/locationcontainment.h
   ${QET_DIR}/sources/location/locationtree.cpp
   ${QET_DIR}/sources/location/locationtree.h
+  ${QET_DIR}/sources/location/mountingcheck.cpp
+  ${QET_DIR}/sources/location/mountingcheck.h
   ${QET_DIR}/sources/location/mountinglayout.cpp
   ${QET_DIR}/sources/location/mountinglayout.h
   ${QET_DIR}/sources/location/mountingmeasure.cpp
