@@ -50,6 +50,90 @@ QString CatalogAssignment::partRevisionKey()
 }
 
 /**
+	@brief CatalogAssignment::accessoryBlockCount
+	@return how many accessories one assignment can carry
+*/
+int CatalogAssignment::accessoryBlockCount()
+{
+	return 4;
+}
+
+/**
+	@brief CatalogAssignment::accessoryBlockKey
+	@param key : a field of the block, empty for the block itself
+	@param block : 1 to accessoryBlockCount()
+	@return the element information key of that field in that block
+*/
+QString CatalogAssignment::accessoryBlockKey(const QString &key, int block)
+{
+	// "auxiliary1", "designation_auxiliary1"... - the names QElectroTech
+	// already gives those fields, in qetinformation.h. Built here instead of
+	// listed there because the shape is a rule and a list of thirty six
+	// strings would only be a copy of one.
+	const QString suffix = QStringLiteral("auxiliary%1").arg(block);
+	return key.isEmpty() ? suffix
+			     : QStringLiteral("%1_%2").arg(key, suffix);
+}
+
+/**
+	@brief CatalogAssignment::accessoryValuesForElement
+	@param catalog
+	@param part
+	@return the auxiliary blocks the accessories of @a part fill in
+*/
+QHash<QString, QString> CatalogAssignment::accessoryValuesForElement(const Catalog &catalog,
+								     const CatalogPart &part)
+{
+	QHash<QString, QString> values;
+
+	// The eight fields an auxiliary block has in common with the main one.
+	// The keys of the catalog properties are on purpose the ones the element
+	// already uses, so the block is filled without a mapping table - the same
+	// reason the main block needs none.
+	static const char *const carried[] = { "designation",
+					       "description",
+					       "manufacturer",
+					       "manufacturer_reference",
+					       "machine_manufacturer_reference",
+					       "supplier",
+					       "unity" };
+
+	for (int block = 1 ; block <= accessoryBlockCount() ; ++block)
+	{
+		// A block past the end of the set is written empty, which is what
+		// takes the accessory of the previous part away.
+		const CatalogAccessory accessory = part.accessories.value(block - 1);
+		QHash<QString, QString> effective;
+		if (!accessory.code.isEmpty())
+		{
+			// An accessory whose code is in no part of the catalog still
+			// comes along by its reference and its quantity: a set typed
+			// from a data sheet before the accessory itself was registered
+			// is a normal state of a growing catalog, not an error.
+			const CatalogPart accessory_part = catalog.partByCode(accessory.code);
+			if (!accessory_part.isNull()) {
+				effective = catalog.effectiveValues(accessory_part);
+			}
+		}
+
+		values.insert(accessoryBlockKey(QString(), block), accessory.code);
+		for (const char *field : carried)
+		{
+			const QString key = QLatin1String(field);
+			values.insert(accessoryBlockKey(key, block), effective.value(key));
+		}
+
+		// How many of the accessory come with the component, which is the set
+		// speaking and not the accessory's own sheet.
+		values.insert(accessoryBlockKey(QStringLiteral("quantity"), block),
+			      accessory.code.isEmpty() ? QString()
+						       : QString::number(accessory.quantity));
+	}
+
+	return values;
+}
+
+/**
 	@brief CatalogAssignment::protectedElementKeys
 	@return the keys a part assignment never writes
 */
@@ -92,6 +176,29 @@ QHash<QString, QString> CatalogAssignment::valuesForElement(const Catalog &catal
 		// what the previous one had put there, otherwise the component keeps
 		// the manufacturer of a product it no longer is.
 		values.insert(key, effective.value(key));
+	}
+
+	// The accessories the part was saved with, each in one auxiliary block.
+	// This is here and not in the undo command on purpose: every way of
+	// assigning a part - one component, a selection, a project wide
+	// replacement, the default part of a symbol - goes through this function,
+	// and an accessory that came along on only some of them would be worse
+	// than one that never came.
+	//
+	// Written after the loop above so that the block wins over a catalog
+	// property that happens to be named after it: the field belongs to the
+	// accessory, and a class carrying a property called
+	// "designation_auxiliary1" would otherwise decide what the accessory says
+	// about itself.
+	const QHash<QString, QString> accessory_values =
+			accessoryValuesForElement(catalog, part);
+	const QStringList accessory_keys = accessory_values.keys();
+	for (const QString &key : accessory_keys)
+	{
+		if (protected_keys.contains(key)) {
+			continue;
+		}
+		values.insert(key, accessory_values.value(key));
 	}
 
 	values.insert(partCodeKey(), part.code);

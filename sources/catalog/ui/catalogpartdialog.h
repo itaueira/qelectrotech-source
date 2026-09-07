@@ -75,6 +75,7 @@ class CatalogPartDialog : public QDialog
 		void buildValueEditors();
 		void fillPinTable();
 		void fillAccessoryTable();
+		void updateAccessoryOverflow();
 		bool collect(CatalogPart &part);
 		bool save(bool as_new_revision);
 		void movePin(int offset);
@@ -94,6 +95,9 @@ class CatalogPartDialog : public QDialog
 		QHash<QString, QWidget *> m_editors;
 		QTableWidget *m_pins = nullptr;
 		QTableWidget *m_accessories = nullptr;
+		/// Shown only when the set has more accessories than a component
+		/// has auxiliary blocks to receive them.
+		QLabel *m_accessory_overflow = nullptr;
 		QLabel *m_status = nullptr;
 };
 

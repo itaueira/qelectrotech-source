@@ -103,8 +103,15 @@ class CatalogPin
 	@brief The CatalogAccessory class
 	An accessory a catalog part brings along. Saving a part together with its
 	accessories records the set: next time that part is assigned, the
-	accessories come with it. A fuse inside a fuse holder is the case that
-	repeats in every cabinet.
+	accessories come with it, one per auxiliary block of the component. A fuse
+	inside a fuse holder is the case that repeats in every cabinet.
+
+	Only the code and the quantity are recorded, because the accessory is
+	itself a part: everything else about it - its manufacturer, its order
+	number, its description - is read from the catalog at assignment time, so
+	correcting the accessory's own record corrects every component that
+	carries it. See CatalogAssignment::accessoryValuesForElement, which is
+	also where the limit of four lives.
 */
 class CatalogAccessory
 {

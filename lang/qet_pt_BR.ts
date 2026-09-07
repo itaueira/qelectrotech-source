@@ -2491,9 +2491,14 @@ O que já existe aqui não é alterado. Continuar?</translation>
         <translation>Escolher no catálogo…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogpartdialog.cpp" line="161"/>
-        <source>Un accessoire enregistré ici revient avec la pièce à chaque attribution : c&apos;est ainsi qu&apos;un fusible reste dans son porte-fusible. Pour qu&apos;il ne revienne plus, le retirer ici et enregistrer de nouveau.</source>
-        <translation>Acessório gravado aqui volta com a peça em cada atribuição: é assim que um fusível fica dentro do porta-fusível. Para que não volte mais, remova-o aqui e salve de novo.</translation>
+        <location filename="../sources/catalog/ui/catalogpartdialog.cpp" line="162"/>
+        <source>Un accessoire enregistré ici revient avec la pièce à chaque attribution, dans un bloc auxiliaire du composant : c&apos;est ainsi qu&apos;un fusible reste dans son porte-fusible. Pour qu&apos;il ne revienne plus, le retirer ici et enregistrer de nouveau.</source>
+        <translation>Acessório gravado aqui volta com a peça em cada atribuição, num bloco auxiliar do componente: é assim que um fusível fica dentro do porta-fusível. Para que não volte mais, remova-o aqui e salve de novo.</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogpartdialog.cpp" line="466"/>
+        <source>Cette pièce a %1 accessoires, et un composant n&apos;a que %2 blocs auxiliaires : à l&apos;attribution, seuls les %3 premiers l&apos;accompagneront.</source>
+        <translation>Esta peça tem %1 acessórios, e um componente tem apenas %2 blocos auxiliares: na atribuição, só os %3 primeiros irão com ela.</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogpartdialog.cpp" line="174"/>
@@ -6697,7 +6702,7 @@ Ao importar este arquivo, você confirma que:
     <message>
         <location filename="../sources/elementspanelwidget.cpp" line="67"/>
         <source>Copier et coller</source>
-        <translation>Copiar e colar</translation>
+        <translation>Duplicar</translation>
     </message>
     <message>
         <location filename="../sources/elementspanelwidget.cpp" line="68"/>

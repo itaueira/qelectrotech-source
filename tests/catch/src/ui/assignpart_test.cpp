@@ -23,6 +23,7 @@
 #include "../../../../sources/catalog/catalogassignment.h"
 #include "../../../../sources/catalog/catalogpart.h"
 #include "../../../../sources/catalog/ui/catalogprojectactions.h"
+#include "../../../../sources/dataBase/projectdatabase.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontext.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
@@ -31,6 +32,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <QSqlError>
+#include <QSqlQuery>
 #include <QUndoCommand>
 #include <QUndoStack>
 
@@ -66,6 +69,26 @@ namespace {
 
 	const QString part_code = QStringLiteral("CONT-9A-24VCC");
 	const QString bare_part_code = QStringLiteral("DJ-C16-2P");
+
+	/// The fuse inside its holder: the embedded accessory of the specification.
+	const QString fuse_code = QStringLiteral("FUS-2A-GG");
+	const QString holder_code = QStringLiteral("PORTE-FUS-1P");
+
+	/*
+		The keys of the first auxiliary block, written out and not built with
+		CatalogAssignment::accessoryBlockKey().
+
+		On purpose: these exact spellings are a column each of
+		element_nomenclature_view and of the element_info table, and a
+		variable each for the folio texts. A test that asked the program for
+		the name of the key would agree with any name the program chose,
+		including one no query knows - which reads, on screen, exactly like an
+		accessory that never came.
+	*/
+	const QString accessory_code_key = QStringLiteral("auxiliary1");
+	const QString accessory_designation_key = QStringLiteral("designation_auxiliary1");
+	const QString accessory_manufacturer_key = QStringLiteral("manufacturer_auxiliary1");
+	const QString accessory_quantity_key = QStringLiteral("quantity_auxiliary1");
 
 	/// The keys a part fills in, and the keys the designer owns.
 	const QString manufacturer_key = QStringLiteral("manufacturer");
@@ -277,6 +300,37 @@ namespace {
 		}
 		labels.sort();
 		return labels;
+	}
+
+	/**
+		What the parts list view answers for one column, one entry per row.
+
+		This is the query the bill of material and the table on the folio both
+		run, so asking it is asking whether the value would be printed - which
+		is a different question from whether the element carries it.
+	*/
+	QStringList nomenclatureValues(QETProject *project, const QString &column)
+	{
+		QStringList values;
+		if (!project || !project->dataBase()) {
+			return values;
+		}
+
+		QSqlQuery query = project->dataBase()->newQuery(
+					  QStringLiteral("SELECT %1 FROM element_nomenclature_view")
+					  .arg(column));
+		if (!query.exec())
+		{
+			// A query that fails must not read as a list that came back
+			// empty: the two mean opposite things, and the whole T16 finding
+			// of 01/09 was about a grid that could not tell them apart.
+			values << QStringLiteral("query failed: %1").arg(query.lastError().text());
+			return values;
+		}
+		while (query.next()) {
+			values << query.value(0).toString();
+		}
+		return values;
 	}
 
 	/// Which terminal is not back where it was, said out loud.
@@ -646,5 +700,178 @@ TEST_CASE("CV D.3 (fila) — a conta de quem esta sem peça cai por um, e o Ctrl
 		REQUIRE_FALSE(missing.contains(x1));
 		REQUIRE_FALSE(labelsWithoutPart(scratch.project())
 			      .contains(QStringLiteral("X1")));
+	}
+}
+
+TEST_CASE("T13 — o acessório da peça chega ao componente desenhado, e sai com ele",
+	  "[uibench][catalog]")
+{
+	/*
+		B.4 of the Fase 1 script, and the half no rule can see.
+
+		Which keys an accessory turns into is arithmetic, and it is proved
+		without a project open, in catalogassignment_test.cpp. That the keys
+		reach the component that is drawn, land in the column the parts list
+		reads, survive the file being written and come back with one Ctrl+Z is
+		wiring, and wiring is what was missing: the catalog kept the set, the
+		part dialog said it would come along, the registration of the task
+		said it did, and nothing between the two ever read it. The suite was
+		green throughout, because the only accessory case it had was the
+		catalog round trip.
+
+		So the sections below deliberately go the whole way to the file and to
+		the database. A check that stopped at the element information would
+		still pass on a program whose keys the .qet refuses to write, and that
+		refusal exists: DiagramContext::addValue drops any key its own regular
+		expression rejects, silently.
+	*/
+	CatalogFixture fixture;
+	QString error;
+
+	const int contactor_class =
+		fixture.catalog.classByKey(QStringLiteral("contactor")).id;
+	REQUIRE(contactor_class > 0);
+
+	// The fuse and its holder: the case that repeats in every cabinet. The
+	// fuse is a part of its own, because what is bought is a fuse.
+	CatalogPart fuse(fuse_code, contactor_class);
+	fuse.setValue(designation_key, QStringLiteral("Fuse 2 A gG"));
+	fuse.setValue(manufacturer_key, QStringLiteral("Supplier C"));
+	REQUIRE(fixture.catalog.savePart(fuse, &error));
+
+	CatalogPart holder(holder_code, contactor_class);
+	holder.setValue(designation_key, QStringLiteral("Fuse holder 1 P"));
+	holder.accessories.append(CatalogAccessory(fuse_code, 2));
+	REQUIRE(fixture.catalog.savePart(holder, &error));
+
+	const CatalogPart saved_holder = fixture.catalog.partByCode(holder_code);
+	REQUIRE(saved_holder.accessories.size() == 1);
+
+	UiBench::ScratchProject scratch(fixtureXml(), QStringLiteral("accessory.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+	Diagram *sheet = scratch.diagram(0);
+	REQUIRE(sheet != nullptr);
+	Element *k1 = component(sheet, QStringLiteral("K1"));
+	REQUIRE(k1 != nullptr);
+
+	SECTION("controle negativo — antes da atribuição o bloco está vazio")
+	{
+		// Without this every section below would pass on a fixture that came
+		// with the accessory already written into it.
+		REQUIRE(informationOf(k1, accessory_code_key).isEmpty());
+		REQUIRE(informationOf(k1, accessory_designation_key).isEmpty());
+		REQUIRE(informationOf(k1, accessory_quantity_key).isEmpty());
+	}
+
+	SECTION("atribuir a peça traz o acessório junto, com os dados da peça dele")
+	{
+		REQUIRE(CatalogProjectActions::assignPart(
+				QList<Element *>({k1}), fixture.catalog, saved_holder) == 1);
+
+		REQUIRE(informationOf(k1, CatalogAssignment::partCodeKey()) == holder_code);
+		REQUIRE(informationOf(k1, accessory_code_key) == fuse_code);
+		REQUIRE(informationOf(k1, accessory_designation_key)
+			== QStringLiteral("Fuse 2 A gG"));
+		REQUIRE(informationOf(k1, accessory_manufacturer_key)
+			== QStringLiteral("Supplier C"));
+		REQUIRE(informationOf(k1, accessory_quantity_key) == QStringLiteral("2"));
+	}
+
+	SECTION("um único Ctrl+Z leva o acessório junto com o resto")
+	{
+		const int steps_before = sheet->undoStack().index();
+		REQUIRE(CatalogProjectActions::assignPart(
+				QList<Element *>({k1}), fixture.catalog, saved_holder) == 1);
+		REQUIRE(sheet->undoStack().index() == steps_before + 1);
+		REQUIRE(informationOf(k1, accessory_code_key) == fuse_code);
+
+		sheet->undoStack().undo();
+
+		REQUIRE(sheet->undoStack().index() == steps_before);
+		REQUIRE(informationOf(k1, accessory_code_key).isEmpty());
+		REQUIRE(informationOf(k1, accessory_designation_key).isEmpty());
+		REQUIRE(informationOf(k1, CatalogAssignment::partCodeKey()).isEmpty());
+	}
+
+	SECTION("o acessório está no arquivo, e volta com o projeto")
+	{
+		REQUIRE(CatalogProjectActions::assignPart(
+				QList<Element *>({k1}), fixture.catalog, saved_holder) == 1);
+
+		INFO(scratch.error().toStdString());
+		REQUIRE(scratch.saveAndReopen());
+
+		// Every pointer into the old project dangles now.
+		Diagram *reopened = scratch.diagram(0);
+		REQUIRE(reopened != nullptr);
+		Element *reopened_k1 = component(reopened, QStringLiteral("K1"));
+		REQUIRE(reopened_k1 != nullptr);
+
+		REQUIRE(informationOf(reopened_k1, accessory_code_key) == fuse_code);
+		REQUIRE(informationOf(reopened_k1, accessory_designation_key)
+			== QStringLiteral("Fuse 2 A gG"));
+		REQUIRE(informationOf(reopened_k1, accessory_quantity_key)
+			== QStringLiteral("2"));
+	}
+
+	SECTION("a lista de material vê o acessório na coluna que ela já conhece")
+	{
+		// The whole reason the auxiliary blocks were chosen over a storage of
+		// our own: the accessory arrives in a column element_nomenclature_view
+		// already selects, so the parts list has it without one line of T16.
+		REQUIRE(CatalogProjectActions::assignPart(
+				QList<Element *>({k1}), fixture.catalog, saved_holder) == 1);
+
+		const QStringList carried =
+			nomenclatureValues(scratch.project(), accessory_code_key);
+		INFO(carried.join(QStringLiteral(" | ")).toStdString());
+		REQUIRE(carried.contains(fuse_code));
+
+		const QStringList quantities =
+			nomenclatureValues(scratch.project(), accessory_quantity_key);
+		INFO(quantities.join(QStringLiteral(" | ")).toStdString());
+		REQUIRE(quantities.contains(QStringLiteral("2")));
+	}
+
+	SECTION("controle negativo — trocar por uma peça sem acessório limpa o bloco")
+	{
+		REQUIRE(CatalogProjectActions::assignPart(
+				QList<Element *>({k1}), fixture.catalog, saved_holder) == 1);
+		REQUIRE(informationOf(k1, accessory_code_key) == fuse_code);
+
+		// The other holder, the one sold without the fuse: the component must
+		// not keep the fuse of a product it no longer is.
+		REQUIRE(CatalogProjectActions::assignPart(
+				QList<Element *>({k1}), fixture.catalog, fixture.bare_part) == 1);
+
+		REQUIRE(informationOf(k1, CatalogAssignment::partCodeKey()) == bare_part_code);
+		REQUIRE(informationOf(k1, accessory_code_key).isEmpty());
+		REQUIRE(informationOf(k1, accessory_designation_key).isEmpty());
+	}
+
+	SECTION("atribuir a doze componentes traz o acessório para os doze")
+	{
+		// One accessory arriving on the component that happened to be first
+		// would be a defect nobody sees on a single assignment.
+		Element *k2 = component(sheet, QStringLiteral("K2"));
+		Element *q1 = component(sheet, QStringLiteral("Q1"));
+		REQUIRE(k2 != nullptr);
+		REQUIRE(q1 != nullptr);
+
+		REQUIRE(CatalogProjectActions::assignPart(
+				QList<Element *>({k1, k2, q1}), fixture.catalog,
+				saved_holder) == 3);
+
+		REQUIRE(informationOf(k1, accessory_code_key) == fuse_code);
+		REQUIRE(informationOf(k2, accessory_code_key) == fuse_code);
+		REQUIRE(informationOf(q1, accessory_code_key) == fuse_code);
+
+		sheet->undoStack().undo();
+
+		REQUIRE(informationOf(k1, accessory_code_key).isEmpty());
+		REQUIRE(informationOf(k2, accessory_code_key).isEmpty());
+		REQUIRE(informationOf(q1, accessory_code_key).isEmpty());
 	}
 }

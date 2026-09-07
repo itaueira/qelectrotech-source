@@ -154,6 +154,54 @@ class CatalogAssignment
 		*/
 		static bool isWithoutPart(const QHash<QString, QString> &values);
 
+		/**
+			@return how many accessories one assignment can carry onto a
+			component.
+
+			An accessory embedded in a part is a second article bought for the
+			same component, and QElectroTech already has the four auxiliary
+			blocks for exactly that: nine fields each, a column each in the
+			project database, a variable each for the folio texts. Storing the
+			set anywhere else would have meant a bill of material that only
+			this fork can read.
+
+			Four is therefore not a chosen number, it is the number of blocks
+			that exist. A part saved with more accessories than that cannot
+			hand them all over, which is why the part dialog says so while the
+			set is being edited, and not after an assignment has silently
+			dropped one.
+		*/
+		static int accessoryBlockCount();
+
+		/**
+			@param key : one of the fields an auxiliary block shares with the
+			main one, empty for the block itself
+			@param block : 1 to accessoryBlockCount()
+			@return the element information key of that field in that block
+		*/
+		static QString accessoryBlockKey(const QString &key, int block);
+
+		/**
+			@param catalog
+			@param part
+			@return the auxiliary blocks the accessories of @a part fill in.
+
+			Every block is written, the empty ones included: a component must
+			not keep the fuse of the holder it no longer is. Which of those
+			empty values actually erases anything is decided by the three
+			argument overload of valuesForElement, by the same rule that
+			guards every other field.
+
+			The values come from the accessory's own part, read from the
+			catalog by its code, so the accessory arrives with its
+			manufacturer and its order number and not only with a reference.
+			The quantity is the one recorded in the set, not the one on the
+			accessory's own sheet: what the component needs is how many come
+			with it.
+		*/
+		static QHash<QString, QString> accessoryValuesForElement(const Catalog &catalog,
+									 const CatalogPart &part);
+
 		/// The information keys that carry the link to the catalog
 		/**
 			@brief The element information key that says which component an
@@ -164,6 +212,15 @@ class CatalogAssignment
 			link. The accessory keeps its own location - the handle is on the
 			door while the breaker is on the plate - because it is an element of
 			its own and carries its own `location`.
+
+			This is the other accessory of the specification, and not the one
+			accessoryValuesForElement carries: here the accessory is an
+			element drawn on a folio, an auxiliary contact block being the
+			case. An accessory embedded in a part has no symbol at all - a
+			fuse, a door handle - and travels as an auxiliary block instead.
+			Two mechanisms, one word, and reading either name as the other is
+			how the assignment came to be described as working while it was
+			not.
 		*/
 		static QString accessoryOwnerKey();
 		static QString partCodeKey();

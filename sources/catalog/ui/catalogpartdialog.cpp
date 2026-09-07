@@ -18,6 +18,7 @@
 #include "catalogpartdialog.h"
 
 #include "../catalog.h"
+#include "../catalogassignment.h"
 #include "catalogbrowserdialog.h"
 
 #include <QCheckBox>
@@ -159,16 +160,25 @@ void CatalogPartDialog::buildWidgets()
 	accessory_buttons->addStretch();
 
 	QLabel *accessory_hint = new QLabel(tr("Un accessoire enregistré ici revient avec la pièce à "
-					       "chaque attribution : c'est ainsi qu'un fusible reste dans "
-					       "son porte-fusible. Pour qu'il ne revienne plus, le retirer "
-					       "ici et enregistrer de nouveau."), this);
+					       "chaque attribution, dans un bloc auxiliaire du composant : "
+					       "c'est ainsi qu'un fusible reste dans son porte-fusible. Pour "
+					       "qu'il ne revienne plus, le retirer ici et enregistrer de "
+					       "nouveau."), this);
 	accessory_hint->setWordWrap(true);
+
+		//Said here, where the set is being decided, and not after an
+		//assignment has quietly left one behind: a component has four
+		//auxiliary blocks, so the fifth accessory has nowhere to go.
+	m_accessory_overflow = new QLabel(this);
+	m_accessory_overflow->setWordWrap(true);
+	m_accessory_overflow->setVisible(false);
 
 	QWidget *accessory_tab = new QWidget(this);
 	QVBoxLayout *accessory_layout = new QVBoxLayout(accessory_tab);
 	accessory_layout->addWidget(m_accessories);
 	accessory_layout->addLayout(accessory_buttons);
 	accessory_layout->addWidget(accessory_hint);
+	accessory_layout->addWidget(m_accessory_overflow);
 
 	QTabWidget *tabs = new QTabWidget(this);
 	tabs->addTab(scroll, tr("Propriétés"));
@@ -426,6 +436,40 @@ void CatalogPartDialog::fillAccessoryTable()
 				       new QTableWidgetItem(QString::number(accessory.quantity)));
 	}
 	m_accessories->resizeColumnsToContents();
+	updateAccessoryOverflow();
+}
+
+/**
+	@brief CatalogPartDialog::updateAccessoryOverflow
+	Say, while the set is being edited, how much of it an assignment can
+	carry.
+
+	The catalog keeps as many accessories as the office wants to record; what
+	travels onto a component is one per auxiliary block, and there are four of
+	those. Saying it here is the whole point of the warning: after the
+	assignment a missing accessory looks like a program that forgot, and
+	nobody can tell that apart from a set that was never complete.
+
+	Counted from the table and not from m_part, because the table is what the
+	person is looking at: the rows added since the dialog opened are not in
+	the part until it is saved.
+*/
+void CatalogPartDialog::updateAccessoryOverflow()
+{
+	const int blocks = CatalogAssignment::accessoryBlockCount();
+	const int recorded = m_accessories->rowCount();
+
+	m_accessory_overflow->setVisible(recorded > blocks);
+	if (recorded > blocks)
+	{
+		m_accessory_overflow->setText(
+			tr("Cette pièce a %1 accessoires, et un composant n'a que %2 blocs "
+			   "auxiliaires : à l'attribution, seuls les %3 premiers "
+			   "l'accompagneront.")
+			.arg(recorded)
+			.arg(blocks)
+			.arg(blocks));
+	}
 }
 
 /**
@@ -526,6 +570,7 @@ void CatalogPartDialog::addAccessory()
 	m_accessories->insertRow(row);
 	m_accessories->setItem(row, 0, new QTableWidgetItem(code.trimmed()));
 	m_accessories->setItem(row, 1, new QTableWidgetItem(QStringLiteral("1")));
+	updateAccessoryOverflow();
 }
 
 /**
@@ -542,6 +587,7 @@ void CatalogPartDialog::pickAccessoryFromCatalog()
 	m_accessories->insertRow(row);
 	m_accessories->setItem(row, 0, new QTableWidgetItem(chosen.code));
 	m_accessories->setItem(row, 1, new QTableWidgetItem(QStringLiteral("1")));
+	updateAccessoryOverflow();
 }
 
 /**
@@ -553,6 +599,7 @@ void CatalogPartDialog::removeSelectedAccessory()
 	if (row >= 0) {
 		m_accessories->removeRow(row);
 	}
+	updateAccessoryOverflow();
 }
 
 /**

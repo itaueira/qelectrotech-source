@@ -1318,9 +1318,13 @@ void QETDiagramEditor::setUpToolBar()
 	Assign one catalog part to every component selected on the current folio.
 
 	The most repeated action of the day, which is why it is one dialog and one
-	confirmation and nothing else. Assigning a part removes the accessories
-	the components had, so the user is told before it happens rather than
-	after.
+	confirmation and nothing else.
+
+	Assigning a part takes away the accessories the part it replaces had put
+	on the component, and puts its own in their place - the auxiliary blocks
+	of the component are where both live. What somebody typed into a block by
+	hand is not touched, by the same rule that guards every other field, and
+	that is why there is no warning here: nothing a person wrote is at stake.
 */
 void QETDiagramEditor::assignCatalogPart()
 {

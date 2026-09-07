@@ -309,7 +309,7 @@ TEST_CASE("CU-13.9 — atribuir peça não apaga o que o projetista escreveu", "
 	}
 }
 
-TEST_CASE("CU-13.6 — un accessoire enregistré avec la pièce revient avec elle")
+TEST_CASE("T13 — un accessoire enregistré avec la pièce est gardé par le catalogue")
 {
 	AssignmentFixture fixture;
 	QString error;
@@ -581,4 +581,201 @@ TEST_CASE("a ancestralidade de classe responde por descendência, não por igual
 		CHECK_FALSE(catalog.isDescendantOf(999999,
 						   QStringLiteral("accessory")));
 	}
+}
+
+TEST_CASE("T13 — o acessório embutido na peça viaja num bloco auxiliar")
+{
+	/*
+		The rule half of B.4 of the Fase 1 script: which keys an assignment
+		writes when the part was saved with an accessory. What this file
+		cannot see is whether those keys reach the component that is drawn -
+		that is wiring, it needs a project open, and it lives in
+		tests/catch/src/ui/assignpart_test.cpp. The distinction is not
+		academic here: the only accessory case in this suite used to be the
+		catalog round trip above, it was green, and the accessory never left
+		the catalog.
+	*/
+	AssignmentFixture fixture;
+	QString error;
+
+	// The fuse is a part of its own, with its own manufacturer and its own
+	// order number, because that is what gets bought.
+	CatalogPart fuse(QStringLiteral("FUSIVEL-2A"), fixture.contactor_id);
+	fuse.setValue(QStringLiteral("designation"), QStringLiteral("Fusível 2 A gG"));
+	fuse.setValue(QStringLiteral("manufacturer"), QStringLiteral("Fornecedor B"));
+	fuse.setValue(QStringLiteral("manufacturer_reference"), QStringLiteral("F-2A-GG"));
+	fuse.setValue(QStringLiteral("unity"), QStringLiteral("pc"));
+	REQUIRE(fixture.catalog.savePart(fuse, &error));
+
+	CatalogPart holder(QStringLiteral("PORTA-FUSIVEL-1"), fixture.contactor_id);
+	holder.setValue(QStringLiteral("designation"), QStringLiteral("Porta-fusível 1 P"));
+	holder.accessories.append(CatalogAccessory(QStringLiteral("FUSIVEL-2A"), 2));
+	REQUIRE(fixture.catalog.savePart(holder, &error));
+
+	const CatalogPart saved_holder =
+			fixture.catalog.partByCode(QStringLiteral("PORTA-FUSIVEL-1"));
+	REQUIRE(saved_holder.accessories.size() == 1);
+
+	SECTION("o primeiro bloco recebe a referência, a quantidade e os dados da peça do acessório")
+	{
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(fixture.catalog, saved_holder);
+
+		CHECK(values.value(QStringLiteral("auxiliary1")) == QStringLiteral("FUSIVEL-2A"));
+		CHECK(values.value(QStringLiteral("designation_auxiliary1"))
+		      == QStringLiteral("Fusível 2 A gG"));
+		CHECK(values.value(QStringLiteral("manufacturer_auxiliary1"))
+		      == QStringLiteral("Fornecedor B"));
+		CHECK(values.value(QStringLiteral("manufacturer_reference_auxiliary1"))
+		      == QStringLiteral("F-2A-GG"));
+		CHECK(values.value(QStringLiteral("unity_auxiliary1")) == QStringLiteral("pc"));
+
+			//The quantity of the set, not the one on the accessory's own
+			//sheet: what the holder needs is how many come with it.
+		CHECK(values.value(QStringLiteral("quantity_auxiliary1")) == QStringLiteral("2"));
+
+			//And the main block still belongs to the holder.
+		CHECK(values.value(QStringLiteral("part_code"))
+		      == QStringLiteral("PORTA-FUSIVEL-1"));
+		CHECK(values.value(QStringLiteral("designation"))
+		      == QStringLiteral("Porta-fusível 1 P"));
+	}
+
+	SECTION("os blocos que a peça não usa são escritos vazios")
+	{
+		// Which is what takes the fuse of the previous holder away. Whether
+		// an empty value actually erases anything is decided by the three
+		// argument overload, and that rule is checked below.
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(fixture.catalog, saved_holder);
+
+		for (int block = 2 ; block <= CatalogAssignment::accessoryBlockCount() ; ++block)
+		{
+			const QString key =
+				CatalogAssignment::accessoryBlockKey(QString(), block);
+			INFO(key.toStdString());
+			CHECK(values.contains(key));
+			CHECK(values.value(key).isEmpty());
+		}
+	}
+
+	SECTION("trocar por uma peça sem acessório apaga o bloco que a anterior escreveu")
+	{
+		CatalogPart plain(QStringLiteral("PORTA-FUSIVEL-2"), fixture.contactor_id);
+		REQUIRE(fixture.catalog.savePart(plain, &error));
+
+		const QHash<QString, QString> current =
+			CatalogAssignment::valuesForElement(fixture.catalog, saved_holder);
+		REQUIRE(current.value(QStringLiteral("auxiliary1"))
+			== QStringLiteral("FUSIVEL-2A"));
+
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(fixture.catalog, plain, current);
+
+		CHECK(values.contains(QStringLiteral("auxiliary1")));
+		CHECK(values.value(QStringLiteral("auxiliary1")).isEmpty());
+		CHECK(values.value(QStringLiteral("manufacturer_auxiliary1")).isEmpty());
+	}
+
+	SECTION("controle negativo — o bloco que uma pessoa digitou não é apagado")
+	{
+		/*
+			The other side of the rule the 21/08 finding wrote down: an empty
+			field of the part says nothing about the field, it does not say
+			the field is empty. Without this section the one above would pass
+			on a program that wipes the four blocks on every assignment,
+			taking with it the door handle somebody typed while looking at
+			the cabinet.
+		*/
+		QHash<QString, QString> current;
+		current.insert(QStringLiteral("auxiliary2"), QStringLiteral("PUNHO-PORTA"));
+		current.insert(QStringLiteral("designation_auxiliary2"),
+			       QStringLiteral("Punho de porta"));
+
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(fixture.catalog, saved_holder,
+							    current);
+
+		CHECK_FALSE(values.contains(QStringLiteral("auxiliary2")));
+		CHECK_FALSE(values.contains(QStringLiteral("designation_auxiliary2")));
+		CHECK(values.value(QStringLiteral("auxiliary1")) == QStringLiteral("FUSIVEL-2A"));
+	}
+
+	SECTION("quatro acessórios enchem os quatro blocos, e o quinto não tem onde caber")
+	{
+		// Not a number chosen here: it is how many auxiliary blocks an
+		// element has. The part keeps all five, and the dialog says so while
+		// the set is being edited - what must not happen is the fifth
+		// vanishing without anybody being told.
+		CatalogPart crowded(QStringLiteral("BLOCO-CHEIO"), fixture.contactor_id);
+		for (int index = 1 ; index <= 5 ; ++index) {
+			crowded.accessories.append(
+				CatalogAccessory(QStringLiteral("ACC-%1").arg(index), 1));
+		}
+		REQUIRE(fixture.catalog.savePart(crowded, &error));
+
+		const CatalogPart reread =
+				fixture.catalog.partByCode(QStringLiteral("BLOCO-CHEIO"));
+		REQUIRE(reread.accessories.size() == 5);
+		REQUIRE(CatalogAssignment::accessoryBlockCount() == 4);
+
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(fixture.catalog, reread);
+
+		QStringList carried;
+		for (int block = 1 ; block <= CatalogAssignment::accessoryBlockCount() ; ++block) {
+			carried << values.value(
+				CatalogAssignment::accessoryBlockKey(QString(), block));
+		}
+		CHECK(carried == QStringList({ QStringLiteral("ACC-1"), QStringLiteral("ACC-2"),
+					       QStringLiteral("ACC-3"), QStringLiteral("ACC-4") }));
+		CHECK_FALSE(values.values().contains(QStringLiteral("ACC-5")));
+	}
+
+	SECTION("um acessório que ainda não é peça do catálogo vem pela referência")
+	{
+		// A set typed from a data sheet before the accessory itself was
+		// registered is a normal state of a growing catalog. Losing the
+		// reference would lose the only thing that was known.
+		CatalogPart holder_of_unknown(QStringLiteral("PORTA-FUSIVEL-3"),
+					      fixture.contactor_id);
+		holder_of_unknown.accessories.append(
+			CatalogAccessory(QStringLiteral("NAO-CADASTRADO"), 3));
+		REQUIRE(fixture.catalog.savePart(holder_of_unknown, &error));
+
+		const QHash<QString, QString> values =
+			CatalogAssignment::valuesForElement(
+				fixture.catalog,
+				fixture.catalog.partByCode(QStringLiteral("PORTA-FUSIVEL-3")));
+
+		CHECK(values.value(QStringLiteral("auxiliary1"))
+		      == QStringLiteral("NAO-CADASTRADO"));
+		CHECK(values.value(QStringLiteral("quantity_auxiliary1")) == QStringLiteral("3"));
+		CHECK(values.value(QStringLiteral("designation_auxiliary1")).isEmpty());
+	}
+
+	SECTION("nenhum bloco auxiliar está na lista de chaves protegidas")
+	{
+		// Said out loud because the merge honours protectedElementKeys(), so
+		// protecting a block would silently stop the accessory travelling.
+		const QStringList protected_keys = CatalogAssignment::protectedElementKeys();
+		for (const QString &key : protected_keys) {
+			INFO(key.toStdString());
+			CHECK_FALSE(key.contains(QStringLiteral("auxiliary")));
+		}
+	}
+}
+
+TEST_CASE("T13 — a forma da chave de um bloco auxiliar é a que o programa já usa")
+{
+	// The keys are built and not listed, so the shape is worth one check: get
+	// it wrong and the accessory lands in a column no query knows, which looks
+	// exactly like an accessory that never came.
+	CHECK(CatalogAssignment::accessoryBlockKey(QString(), 1)
+	      == QStringLiteral("auxiliary1"));
+	CHECK(CatalogAssignment::accessoryBlockKey(QStringLiteral("designation"), 1)
+	      == QStringLiteral("designation_auxiliary1"));
+	CHECK(CatalogAssignment::accessoryBlockKey(
+		      QStringLiteral("machine_manufacturer_reference"), 4)
+	      == QStringLiteral("machine_manufacturer_reference_auxiliary4"));
 }
