@@ -453,7 +453,7 @@
     <message>
         <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="20"/>
         <source>Ajouter le plan de bornes suivant :</source>
-        <translation>Adicione o seguinte plano de terminais:</translation>
+        <translation>Adicione o seguinte plano de bornes:</translation>
     </message>
 </context>
 <context>
@@ -5640,7 +5640,7 @@ Ir ver, ou guardar o duplicado sabendo disso?</translation>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="198"/>
         <source>Nb. bornes</source>
-        <translation>Nº de bornes</translation>
+        <translation>Nº de terminais</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="209"/>
@@ -7225,7 +7225,7 @@ Ao importar este arquivo, você confirma que:
     <message>
         <location filename="../sources/exportpropertieswidget.cpp" line="212"/>
         <source>Dessiner les noms des bornes</source>
-        <translation>Desenhar os nomes dos bornes</translation>
+        <translation>Desenhar os nomes dos terminais</translation>
     </message>
     <message>
         <location filename="../sources/exportpropertieswidget.cpp" line="216"/>
@@ -7465,7 +7465,7 @@ que você cria. Entradas de texto e números
     <message>
         <location filename="../sources/TerminalStrip/ui/freeterminaleditor.cpp" line="118"/>
         <source>Modifier des propriétés de borniers</source>
-        <translation>Editar propriedades da régua de terminais</translation>
+        <translation>Editar propriedades da régua de bornes</translation>
     </message>
 </context>
 <context>
@@ -11194,7 +11194,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     <message>
         <location filename="../sources/editor/graphicspart/partterminal.cpp" line="576"/>
         <source>Déplacer le label d&apos;une borne</source>
-        <translation>Mover o rótulo de um borne</translation>
+        <translation>Mover o rótulo de um terminal</translation>
     </message>
 </context>
 <context>
@@ -12158,7 +12158,7 @@ As seguintes variáveis ​​são incompatíveis:
     <message>
         <location filename="../sources/print/projectprintwindow.ui" line="189"/>
         <source>Dessiner les noms des bornes</source>
-        <translation>Desenhar os nomes dos bornes</translation>
+        <translation>Desenhar os nomes dos terminais</translation>
     </message>
     <message>
         <location filename="../sources/print/projectprintwindow.ui" line="199"/>
@@ -13025,7 +13025,7 @@ Opções disponíveis:
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="522"/>
         <source>Gestionnaire de borniers (DEV)</source>
-        <translation>Gerenciador de régua de terminais (DEV)</translation>
+        <translation>Gerenciador de régua de bornes (DEV)</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="630"/>
@@ -13100,7 +13100,7 @@ Opções disponíveis:
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="949"/>
         <source>Lancer le plugin de création de borniers</source>
-        <translation>Iniciar o plugin de criação de terminal</translation>
+        <translation>Iniciar o plugin de criação de réguas de bornes</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="953"/>
@@ -13517,7 +13517,7 @@ Opções disponíveis:
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1184"/>
         <source>Ajouter un plan de bornes</source>
-        <translation>Adicionar um plano de terminais</translation>
+        <translation>Adicionar um plano de bornes</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1186"/>
@@ -13562,7 +13562,7 @@ Opções disponíveis:
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1196"/>
         <source>Ajoute un plan de bornier sur le folio actuel</source>
-        <translation>Adiciona um plano de bloco terminal na folha atual</translation>
+        <translation>Adiciona um plano de régua de bornes na folha atual</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1227"/>
@@ -14920,12 +14920,12 @@ Abrir em modo somente leitura é a escolha segura: você vê o desenho, sem risc
     <message>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="791"/>
         <source>Nombre de bornes incorrect</source>
-        <translation>Número de bornes incorreto</translation>
+        <translation>Número de terminais incorreto</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="792"/>
         <source>&lt;br&gt;&lt;b&gt;Erreur&lt;/b&gt; :&lt;br&gt;Les définitions de conducteur ne peuvent posséder qu&apos;une seule borne.&lt;br&gt;&lt;b&gt;Solution&lt;/b&gt; :&lt;br&gt;Vérifier que l&apos;élément ne possède qu&apos;une seule borne</source>
-        <translation>&lt;br&gt;&lt;b&gt;Erro&lt;/b&gt;:&lt;br&gt;Definição de condutor só pode ter um borne.&lt;br&gt;&lt;b&gt;Solução&lt;/b&gt;:&lt;br&gt;Confira se o elemento tem só um borne</translation>
+        <translation>&lt;br&gt;&lt;b&gt;Erro&lt;/b&gt;:&lt;br&gt;Definição de condutor só pode ter um terminal.&lt;br&gt;&lt;b&gt;Solução&lt;/b&gt;:&lt;br&gt;Confira se o elemento tem só um terminal</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="998"/>
@@ -16224,8 +16224,8 @@ O que você deseja fazer?</translation>
         <source>%n plan de bornes</source>
         <comment>part of a sentence listing the content of a diagram</comment>
         <translation>
-            <numerusform>%n plano de terminais</numerusform>
-            <numerusform>%n planos de terminais</numerusform>
+            <numerusform>%n plano de bornes</numerusform>
+            <numerusform>%n planos de bornes</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -17199,110 +17199,110 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminalstripcommand.cpp" line="38"/>
         <source>Ajouter un groupe de bornes</source>
-        <translation>Adicionar um grupo de terminais</translation>
+        <translation>Adicionar um grupo de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminalstripcommand.cpp" line="68"/>
         <source>Supprimer un groupe de bornes</source>
-        <translation>Excluir um grupo de terminais</translation>
+        <translation>Excluir um grupo de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="38"/>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="55"/>
         <source>Ajouter une borne</source>
-        <translation>Adicionar um terminal</translation>
+        <translation>Adicionar um borne</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="39"/>
         <source>Ajouter la borne %1</source>
-        <translation>Adicionar terminal %1</translation>
+        <translation>Adicionar borne %1</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="41"/>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="57"/>
         <source>à un groupe de bornes</source>
-        <translation>a um grupo de terminais</translation>
+        <translation>a um grupo de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="42"/>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="58"/>
         <source>au groupe de bornes %1</source>
-        <translation>para o grupo de terminais %1</translation>
+        <translation>para o grupo de bornes %1</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="54"/>
         <source>Ajouter %1 bornes</source>
-        <translation>Adicionar %1 terminais</translation>
+        <translation>Adicionar %1 bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="141"/>
         <source>Enlever %1 bornes</source>
-        <translation>Remover %1 terminais</translation>
+        <translation>Remover %1 bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="173"/>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="196"/>
         <source>Déplacer une borne</source>
-        <translation>Mover um terminal</translation>
+        <translation>Mover um borne</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="174"/>
         <source>Déplacer la borne %1</source>
-        <translation>Mover terminal %1</translation>
+        <translation>Mover borne %1</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="176"/>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="198"/>
         <source> d&apos;un groupe de bornes</source>
-        <translation> de um grupo de terminais</translation>
+        <translation> de um grupo de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="177"/>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="199"/>
         <source> du groupe de bornes %1</source>
-        <translation> do grupo de terminais %1</translation>
+        <translation> do grupo de bornes %1</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="179"/>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="201"/>
         <source>vers un groupe de bornes</source>
-        <translation>a um grupo de terminais</translation>
+        <translation>a um grupo de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="180"/>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="202"/>
         <source>vers le groupe de bornes %1</source>
-        <translation>para o grupo de terminais %1</translation>
+        <translation>para o grupo de bornes %1</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="195"/>
         <source>Déplacer des bornes</source>
-        <translation>Mover terminais</translation>
+        <translation>Mover bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="144"/>
         <source>d&apos;un groupe de bornes</source>
-        <translation>de um grupo de terminais</translation>
+        <translation>de um grupo de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="145"/>
         <source>du groupe de bornes %1</source>
-        <translation>do grupo de terminais %1</translation>
+        <translation>do grupo de bornes %1</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.cpp" line="142"/>
         <source>Enlever une borne</source>
-        <translation>Remover um terminal</translation>
+        <translation>Remover um borne</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/changeterminalstripdata.cpp" line="27"/>
         <source>Modifier les proriétés d&apos;un groupe de bornes</source>
-        <translation>Modifique as propriedades do grupo de terminais</translation>
+        <translation>Modifique as propriedades do grupo de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/sortterminalstripcommand.cpp" line="27"/>
         <source>Trier le bornier %1</source>
-        <translation>Ordenar bloco terminal %1</translation>
+        <translation>Ordenar régua de bornes %1</translation>
     </message>
     <message>
         <location filename="../sources/properties/elementdata.cpp" line="871"/>
@@ -17393,17 +17393,17 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/bridgeterminalscommand.cpp" line="28"/>
         <source>Ponter des bornes entre-elles</source>
-        <translation>Unindo os terminais</translation>
+        <translation>Unindo os bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/bridgeterminalscommand.cpp" line="57"/>
         <source>Supprimer des ponts de bornes</source>
-        <translation>Excluir pontes terminais</translation>
+        <translation>Excluir pontes de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/UndoCommand/changeterminalstripcolor.cpp" line="37"/>
         <source>Modifier la couleur d&apos;un pont de bornes</source>
-        <translation>Alterar a cor de uma ponte terminal</translation>
+        <translation>Alterar a cor de uma ponte de bornes</translation>
     </message>
     <message>
         <location filename="../sources/editor/UndoCommand/openelmtcommand.cpp" line="31"/>
@@ -21523,12 +21523,12 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/editor/ui/terminaleditor.cpp" line="183"/>
         <source>Bornier intérieur</source>
-        <translation>Bloco de terminais interno</translation>
+        <translation>Terminal interno</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/terminaleditor.cpp" line="184"/>
         <source>Bornier extérieur</source>
-        <translation>Bloco de terminais externo</translation>
+        <translation>Terminal externo</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/terminaleditor.cpp" line="185"/>
@@ -21558,7 +21558,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/editor/ui/terminaleditor.cpp" line="300"/>
         <source>Afficher/cacher le nom du terminal</source>
-        <translation>Exibir/ocultar o nome do borne</translation>
+        <translation>Exibir/ocultar o nome do terminal</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/terminaleditor.cpp" line="315"/>
@@ -21607,7 +21607,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
         <location filename="../sources/editor/ui/terminaleditor.cpp" line="532"/>
         <location filename="../sources/editor/ui/terminaleditor.cpp" line="561"/>
         <source>Modifier le nom de la borne</source>
-        <translation>Alterar o nome do borne</translation>
+        <translation>Alterar o nome do terminal</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/terminaleditor.cpp" line="551"/>
@@ -21647,7 +21647,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/editor/ui/terminaleditor.ui" line="84"/>
         <source>Nom de la borne</source>
-        <translation>Nome do borne</translation>
+        <translation>Nome do terminal</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/terminaleditor.ui" line="90"/>
@@ -21773,7 +21773,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripcreatordialog.ui" line="14"/>
         <source>Création groupe de bornes</source>
-        <translation>Criação de um grupo de terminais</translation>
+        <translation>Criação de um grupo de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripcreatordialog.ui" line="20"/>
@@ -21811,12 +21811,12 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="240"/>
         <source>Ponter les bornes</source>
-        <translation>Pontear os terminais</translation>
+        <translation>Pontear os bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="247"/>
         <source>Déponter les bornes</source>
-        <translation>Remover ponte dos terminais</translation>
+        <translation>Remover ponte dos bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="258"/>
@@ -21856,7 +21856,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="233"/>
         <source>Degrouper les bornes</source>
-        <translation>Desagrupar terminais</translation>
+        <translation>Desagrupar bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="108"/>
@@ -21927,7 +21927,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="226"/>
         <source>Grouper les bornes</source>
-        <translation>Agrupar os terminais</translation>
+        <translation>Agrupar os bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="166"/>
@@ -21952,12 +21952,12 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="109"/>
         <source>Bornes indépendantes</source>
-        <translation>Terminais independentes</translation>
+        <translation>Bornes independentes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="179"/>
         <source>Modifier des propriétés de borniers</source>
-        <translation>Editar propriedades da régua de terminais</translation>
+        <translation>Editar propriedades da régua de bornes</translation>
     </message>
 </context>
 <context>
@@ -21965,7 +21965,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.ui" line="14"/>
         <source>Gestionnaire de borniers</source>
-        <translation>Gerenciador de terminal</translation>
+        <translation>Gerenciador de régua de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.ui" line="43"/>
@@ -21975,22 +21975,22 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.ui" line="61"/>
         <source>Ajouter un bornier</source>
-        <translation>Adicionar um bloco de terminais</translation>
+        <translation>Adicionar uma régua de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.ui" line="64"/>
         <source>Ajouter un bornier au projet</source>
-        <translation>Adicionar uma régua de terminais ao projeto</translation>
+        <translation>Adicionar uma régua de bornes ao projeto</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.ui" line="73"/>
         <source>Supprimer le bornier</source>
-        <translation>Excluir bloco de terminais</translation>
+        <translation>Excluir régua de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.ui" line="76"/>
         <source>Supprimer le bornier du projet</source>
-        <translation>Excluir régua de terminais do projeto</translation>
+        <translation>Excluir régua de bornes do projeto</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.ui" line="85"/>
@@ -22000,7 +22000,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.ui" line="88"/>
         <source>Recharger les borniers</source>
-        <translation>Recarregue os terminais</translation>
+        <translation>Recarregue as réguas de bornes</translation>
     </message>
 </context>
 <context>
@@ -22008,7 +22008,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/GraphicsItem/terminalstripitem.cpp" line="96"/>
         <source>plan de bornes</source>
-        <translation>plano de terminais</translation>
+        <translation>plano de bornes</translation>
     </message>
 </context>
 <context>
@@ -22021,7 +22021,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="65"/>
         <source>Borne niveau 0 :</source>
-        <translation>Novo Terminal 0 :</translation>
+        <translation>Borne nível 0 :</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="482"/>
@@ -22141,7 +22141,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="117"/>
         <source>Borne niveau 2 :</source>
-        <translation>Novo Terminal 2 :</translation>
+        <translation>Borne nível 2 :</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="169"/>
@@ -22151,12 +22151,12 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="110"/>
         <source>Borne niveau 3 :</source>
-        <translation>Novo Terminal 3 :</translation>
+        <translation>Borne nível 3 :</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="197"/>
         <source>Borne niveau 1 :</source>
-        <translation>Novo Terminal 1 :</translation>
+        <translation>Borne nível 1 :</translation>
     </message>
 </context>
 <context>
@@ -22217,7 +22217,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/ConfigPage/terminalstripprojectconfigpage.cpp" line="33"/>
         <source>Plan de bornes</source>
-        <translation>Planejador de Terminais</translation>
+        <translation>Plano de bornes</translation>
     </message>
 </context>
 <context>
@@ -22225,7 +22225,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.ui" line="14"/>
         <source>Explorateur de bornier</source>
-        <translation>Explorador de terminais</translation>
+        <translation>Explorador de réguas de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="233"/>
@@ -22235,7 +22235,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="239"/>
         <source>Bornes indépendante</source>
-        <translation>Terminais independentes</translation>
+        <translation>Bornes independentes</translation>
     </message>
 </context>
 <context>
