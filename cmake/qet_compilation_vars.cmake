@@ -403,6 +403,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/mountinglayout.h
   ${QET_DIR}/sources/location/mountingmeasure.cpp
   ${QET_DIR}/sources/location/mountingmeasure.h
+  ${QET_DIR}/sources/location/mountingpartview.cpp
+  ${QET_DIR}/sources/location/mountingpartview.h
   ${QET_DIR}/sources/location/projectlocation.cpp
   ${QET_DIR}/sources/location/projectlocation.h
   ${QET_DIR}/sources/location/ui/locationbomdialog.cpp

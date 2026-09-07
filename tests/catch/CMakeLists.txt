@@ -133,6 +133,7 @@ add_executable(
     src/mountinglayout_test.cpp
     src/mountingcheck_test.cpp
     src/mountingmeasure_test.cpp
+    src/mountingpartview_test.cpp
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
     src/terminalstripstructure_test.cpp
@@ -275,6 +276,16 @@ add_executable(
     # sources/qetgraphicsitem and sources/undocommand.
     ${QET_DIR}/sources/location/mountingmeasure.cpp
     ${QET_DIR}/sources/location/mountingmeasure.h
+    # The road from a product code to the body of the part: how big it is, how
+    # much air it wants, where its axis is. It is the one file of the layout
+    # that opens the catalog, and it is here because both of its ends already
+    # are - the catalog core below and the mounting rules above - so a
+    # clearance can travel from a data base row to a named violation without a
+    # window opening. It is also the only place where "nobody measured this"
+    # and "this is zero" are still told apart, which is why it has to be
+    # exercised against a real catalog and not against a hash somebody typed.
+    ${QET_DIR}/sources/location/mountingpartview.cpp
+    ${QET_DIR}/sources/location/mountingpartview.h
     # When a project database change is announced. As pure as the collection
     # gate rule: a counter and a flag, no Qt at all. What emits the signal is
     # projectDataBase, which needs an open project and therefore lives in
