@@ -6838,12 +6838,12 @@ Ao importar este arquivo, você confirma que:
     <message>
         <location filename="../sources/location/enclosuretransfer.cpp" line="505"/>
         <source>Le coffret de remplacement n&apos;a pas de surface de montage utilisable : rien ne peut y être reporté.</source>
-        <translation>O armário de substituição não tem superfície de montagem utilizável: nada pode ser transferido para ele.</translation>
+        <translation>O painel de substituição não tem superfície de montagem utilizável: nada pode ser transferido para ele.</translation>
     </message>
     <message>
         <location filename="../sources/location/enclosuretransfer.cpp" line="510"/>
         <source>La surface de montage du coffret de remplacement est de %1 x %2 mm ; celle du coffret actuel n&apos;est pas connue.</source>
-        <translation>A superfície de montagem do armário de substituição é de %1 x %2 mm; a do armário atual não é conhecida.</translation>
+        <translation>A superfície de montagem do painel de substituição é de %1 x %2 mm; a do painel atual não é conhecida.</translation>
     </message>
     <message>
         <location filename="../sources/location/enclosuretransfer.cpp" line="518"/>
@@ -6905,7 +6905,7 @@ Ao importar este arquivo, você confirma que:
     <message>
         <location filename="../sources/environment/ui/environmentdialog.cpp" line="70"/>
         <source>Tout est dans ce dossier : les projets, la bibliothèque de symboles, la bibliothèque de l&apos;entreprise, le catalogue de pièces, les cartouches et les macros. Partager, c&apos;est mettre ce dossier sur le lecteur réseau et pointer chaque poste dessus — un seul chemin, et non six.</source>
-        <translation>Tudo está nesta pasta: os projetos, a biblioteca de símbolos, a biblioteca da empresa, o catálogo de peças, os carimbos e as macros. Compartilhar é colocar esta pasta no drive de rede e apontar cada posto para ela — um caminho só, e não seis.</translation>
+        <translation>Tudo está nesta pasta: os projetos, a biblioteca de símbolos, a biblioteca da empresa, o catálogo de peças, as legendas e as macros. Compartilhar é colocar esta pasta no drive de rede e apontar cada posto para ela — um caminho só, e não seis.</translation>
     </message>
     <message>
         <location filename="../sources/environment/ui/environmentdialog.cpp" line="77"/>
@@ -9861,7 +9861,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     <message>
         <location filename="../sources/location/ui/locationbomdialog.cpp" line="449"/>
         <source>Armoires et supports</source>
-        <translation>Armários e suportes</translation>
+        <translation>Painéis e suportes</translation>
     </message>
     <message>
         <location filename="../sources/location/ui/locationbomdialog.cpp" line="549"/>
@@ -10301,7 +10301,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     <message>
         <location filename="../sources/location/ui/locationreportdialog.cpp" line="589"/>
         <source>Le projet n&apos;a encore aucune localisation. Elles se font dans « Armoires et localisations… ».</source>
-        <translation>O projeto ainda não tem nenhuma localização. Elas se fazem em « Armários e localizações… ».</translation>
+        <translation>O projeto ainda não tem nenhuma localização. Elas se fazem em « Painéis e localizações… ».</translation>
     </message>
     <message>
         <location filename="../sources/location/ui/locationreportdialog.cpp" line="611"/>
@@ -10735,7 +10735,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     <message>
         <location filename="../sources/NameList/ui/namelistdialog.cpp" line="69"/>
         <source>Variables de cartouche</source>
-        <translation>Variáveis do carimbo</translation>
+        <translation>Variáveis da legenda</translation>
     </message>
 </context>
 <context>
@@ -14379,12 +14379,12 @@ Abrir em modo somente leitura é a escolha segura: você vê o desenho, sem risc
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="920"/>
         <source>Armoires et localisations…</source>
-        <translation>Armários e localizações…</translation>
+        <translation>Painéis e localizações…</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="921"/>
         <source>Fait les armoires du projet, les emboîte, et met la sélection dans l&apos;une d&apos;elles en un geste.</source>
-        <translation>Faz os armários do projeto, encaixa um dentro do outro, e põe a seleção em um deles num só gesto.</translation>
+        <translation>Faz os painéis do projeto, encaixa um dentro do outro, e põe a seleção em um deles num só gesto.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="929"/>
@@ -14394,7 +14394,7 @@ Abrir em modo somente leitura é a escolha segura: você vê o desenho, sem risc
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="930"/>
         <source>Liste ce qui n&apos;est encore dans aucune armoire, folio par folio, et permet de les y mettre.</source>
-        <translation>Lista o que ainda não está em nenhum armário, folha por folha, e permite colocá-los em um armário.</translation>
+        <translation>Lista o que ainda não está em nenhum painel, folha por folha, e permite colocá-los em um painel.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="938"/>
@@ -14404,7 +14404,7 @@ Abrir em modo somente leitura é a escolha segura: você vê o desenho, sem risc
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="939"/>
         <source>Ce qu&apos;il faut sortir du magasin pour une armoire, sous-localisations comprises. S&apos;exporte, et se pose sur le folio.</source>
-        <translation>O que é preciso retirar do estoque para um armário, sublocalizações incluídas. A lista se exporta, e se põe na folha.</translation>
+        <translation>O que é preciso retirar do estoque para um painel, sublocalizações incluídas. A lista se exporta, e se põe na folha.</translation>
     </message>
 </context>
 <context>
@@ -15578,7 +15578,7 @@ O que você deseja fazer?</translation>
         <location filename="../sources/titleblock/qettemplateeditor.cpp" line="412"/>
         <location filename="../sources/titleblock/qettemplateeditor.cpp" line="413"/>
         <source>Éditeur de cartouche</source>
-        <translation>Editor de carimbo</translation>
+        <translation>Editor de legenda</translation>
     </message>
     <message>
         <location filename="../sources/titleblock/qettemplateeditor.cpp" line="442"/>
@@ -23014,7 +23014,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <source>Attention : la somme des largeurs relatives dépasse 100%% de la largeur totale, ce modèle de cartouche ne peut être satisfait par aucune largeur.
 </source>
         <comment>tooltip warning shown when a template&apos;s relative-to-total-length columns alone already exceed 100%% of the total width</comment>
-        <translation>Atenção: a soma das larguras relativas passa de 100%% da largura total; nenhuma largura satisfaz este modelo de carimbo.
+        <translation>Atenção: a soma das larguras relativas passa de 100%% da largura total; nenhuma largura satisfaz este modelo de bloco de legenda.
 </translation>
     </message>
     <message>
@@ -23022,7 +23022,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <source>Attention : les colonnes de largeur fixe ne peuvent pas tenir dans la largeur restante, ce modèle de cartouche ne peut être satisfait par aucune largeur.
 </source>
         <comment>tooltip warning shown when a template&apos;s relative-to-total-length columns already consume all available width, leaving no room for its fixed-width columns</comment>
-        <translation>Atenção: as colunas de largura fixa não cabem na largura restante; nenhuma largura satisfaz este modelo de carimbo.
+        <translation>Atenção: as colunas de largura fixa não cabem na largura restante; nenhuma largura satisfaz este modelo de bloco de legenda.
 </translation>
     </message>
     <message>
@@ -23096,7 +23096,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
     <message>
         <location filename="../sources/location/enclosuretransfer.cpp" line="309"/>
         <source>%1 : le coffret de remplacement n&apos;a aucune surface de montage utilisable.</source>
-        <translation>%1: o armário de substituição não tem nenhuma superfície de montagem utilizável.</translation>
+        <translation>%1: o painel de substituição não tem nenhuma superfície de montagem utilizável.</translation>
     </message>
 </context>
 <context>
