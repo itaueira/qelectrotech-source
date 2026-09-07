@@ -51,6 +51,17 @@ namespace QETInformation
 	static QString ELMT_PLANT                        = "plant";
 	static QString ELMT_LOCATION                     = "location";
 	static QString ELMT_LOCATION_PATH                = "location_path";
+	/** Which connector a pin belongs to, written on the pin as the
+	 * connector's own name - "CN1", "XS2" (T34). Free text, and per
+	 * instance: two copies of the same catalog part in one project are two
+	 * connectors, and a link carried by the part would fold them into one
+	 * and halve the count of spare ways without saying so.
+	 *
+	 * Three things in this program answer to "connector", and this is
+	 * neither of the other two: the catalog seeds a part class of that name,
+	 * and CatalogPin has a connector field that belongs to the part rather
+	 * than to the instance drawn on a folio. */
+	static QString ELMT_CONNECTOR                    = "connector";
 	static QString ELMT_AUX1                         = "auxiliary1";
 	static QString ELMT_DESCRIPTION_AUX1                 = "description_auxiliary1";
 	static QString ELMT_DESIGNATION_AUX1                  = "designation_auxiliary1";

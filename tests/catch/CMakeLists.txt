@@ -510,7 +510,8 @@ if(TARGET qet_core)
         src/ui/navigate_test.cpp
         src/ui/dbnotify_test.cpp
         src/ui/componentlabel_test.cpp
-        src/ui/mountinglayoutsave_test.cpp)
+        src/ui/mountinglayoutsave_test.cpp
+        src/ui/connectorlink_test.cpp)
 
     target_link_libraries(
         C_uitests

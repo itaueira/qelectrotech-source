@@ -630,6 +630,12 @@ QString projectDataBase::elementViewBody()
 						 "ei.plant AS plant,"
 						 "ei.location AS location,"
 						 "ei.location_path AS location_path,"
+						 //The connector a pin belongs to (T34). Listed here for
+						 //the reason the comment further down gives in full: the
+						 //column of element_info appears on its own, this line
+						 //does not, and without it the parts list offers a name
+						 //its own query cannot select.
+						 "ei.connector AS connector,"
 						 "ei.comment AS comment,"
 						 "ei.function AS function,"
 						 "ei.description AS description,"
