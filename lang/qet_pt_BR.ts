@@ -795,7 +795,7 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
         <source>Quantité numéro d&apos;article</source>
         <comment>Special field with name : designation quantity</comment>
         <translatorcomment>Campo especial com nome: quantidade de designação</translatorcomment>
-        <translation>Número de quantidade do item</translation>
+        <translation>Quantidade por código da peça</translation>
     </message>
 </context>
 <context>
@@ -1049,7 +1049,7 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
     <message>
         <location filename="../sources/catalog/catalog.cpp" line="2133"/>
         <source>Élément de bornier</source>
-        <translation>Elemento de régua</translation>
+        <translation>Elemento de régua de bornes</translation>
     </message>
     <message>
         <location filename="../sources/catalog/catalog.cpp" line="2134"/>
@@ -1124,7 +1124,7 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
     <message>
         <location filename="../sources/catalog/catalog.cpp" line="2225"/>
         <source>Numéro d&apos;article</source>
-        <translation>Número do artigo</translation>
+        <translation>Código da peça</translation>
     </message>
     <message>
         <location filename="../sources/catalog/catalog.cpp" line="2226"/>
@@ -4571,7 +4571,7 @@ Gravar uma revisão deixa esses projetos como estão e serve só para os próxim
     <message>
         <location filename="../sources/ui/diagramcontextwidget.ui" line="50"/>
         <source>Nom</source>
-        <translation>Nomes</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <location filename="../sources/ui/diagramcontextwidget.ui" line="55"/>
@@ -5743,7 +5743,7 @@ Ir ver, ou guardar o duplicado sabendo disso?</translation>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="201"/>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="533"/>
         <source>Puissance</source>
-        <translation>Contato de Potência</translation>
+        <translation>Potência</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="202"/>
@@ -5761,7 +5761,7 @@ Ir ver, ou guardar o duplicado sabendo disso?</translation>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="204"/>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="536"/>
         <source>Temporisé travail &amp; repos</source>
-        <translation>Temporizado ao trabalho</translation>
+        <translation>Temporizado ao trabalho e ao repouso</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="207"/>
@@ -9568,7 +9568,7 @@ Por favor, use o editor avançado para isso.</translation>
     <message>
         <location filename="../sources/ui/linksingleelementwidget.ui" line="56"/>
         <source>Cet élément est déjà lié</source>
-        <translation>Este elemento já está conectado</translation>
+        <translation>Este elemento já está vinculado</translation>
     </message>
     <message>
         <location filename="../sources/ui/linksingleelementwidget.ui" line="63"/>
@@ -10563,7 +10563,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
         <location filename="../sources/ui/masterpropertieswidget.cpp" line="63"/>
         <location filename="../sources/ui/masterpropertieswidget.cpp" line="69"/>
         <source>Vignette</source>
-        <translation>Vinheta</translation>
+        <translation>Miniatura</translation>
     </message>
     <message>
         <location filename="../sources/ui/masterpropertieswidget.cpp" line="64"/>
@@ -12473,13 +12473,13 @@ Você deseja salvar as alterações?</translation>
         <location filename="../sources/qetapp.cpp" line="549"/>
         <source>Cartouches company</source>
         <comment>title of the company&apos;s 					title block templates collection</comment>
-        <translation>Blocos de elementos da empresa</translation>
+        <translation>Blocos de legenda da empresa</translation>
     </message>
     <message>
         <location filename="../sources/qetapp.cpp" line="569"/>
         <source>Cartouches utilisateur</source>
         <comment>title of the user&apos;s 					title block templates collection</comment>
-        <translation>Blocos de elementos do usuário</translation>
+        <translation>Blocos de legenda do usuário</translation>
     </message>
     <message>
         <location filename="../sources/qetapp.cpp" line="1699"/>
@@ -16696,7 +16696,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="289"/>
         <source>Fichier</source>
-        <translation>Pasta</translation>
+        <translation>Arquivo</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="290"/>
@@ -16713,6 +16713,11 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/qetinformation.cpp" line="324"/>
         <source>Chemin de localisation</source>
         <translation>Caminho de localização</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetinformation.cpp" line="417"/>
+        <source>Connecteur</source>
+        <translation>Conector</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="292"/>
@@ -16840,12 +16845,12 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="332"/>
         <source>Description textuelle auxiliaire 1</source>
-        <translation>Descrição do texto auxiliar 1</translation>
+        <translation>Descrição textual auxiliar 1</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="333"/>
         <source>Numéro d&apos;article auxiliaire 1</source>
-        <translation>Item auxiliar número 1</translation>
+        <translation>Código da peça auxiliar 1</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="334"/>
@@ -16855,17 +16860,17 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="335"/>
         <source>Numéro de commande auxiliaire 1</source>
-        <translation>Comando auxiliar número 1</translation>
+        <translation>Número do pedido auxiliar 1</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="336"/>
         <source>Numéro interne auxiliaire 1</source>
-        <translation>Código interno auxiliar 1</translation>
+        <translation>Número interno auxiliar 1</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="337"/>
         <source>Fournisseur auxiliaire 1</source>
-        <translation>Fornecedor Auxiliar 1</translation>
+        <translation>Fornecedor auxiliar 1</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="338"/>
@@ -16885,12 +16890,12 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="341"/>
         <source>Description textuelle auxiliaire 2</source>
-        <translation>Descrição do texto auxiliar 2</translation>
+        <translation>Descrição textual auxiliar 2</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="342"/>
         <source>Numéro d&apos;article auxiliaire 2</source>
-        <translation>Item auxiliar número 2</translation>
+        <translation>Código da peça auxiliar 2</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="343"/>
@@ -16900,17 +16905,17 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="344"/>
         <source>Numéro de commande auxiliaire 2</source>
-        <translation>Comando auxiliar número 2</translation>
+        <translation>Número do pedido auxiliar 2</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="345"/>
         <source>Numéro interne auxiliaire 2</source>
-        <translation>Código interno auxiliar 2</translation>
+        <translation>Número interno auxiliar 2</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="346"/>
         <source>Fournisseur auxiliaire 2</source>
-        <translation>Fornecedor Auxiliar 2</translation>
+        <translation>Fornecedor auxiliar 2</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="347"/>
@@ -16930,12 +16935,12 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="350"/>
         <source>Description textuelle auxiliaire 3</source>
-        <translation>Descrição do texto auxiliar 3</translation>
+        <translation>Descrição textual auxiliar 3</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="351"/>
         <source>Numéro d&apos;article auxiliaire 3</source>
-        <translation>Item auxiliar número 3</translation>
+        <translation>Código da peça auxiliar 3</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="352"/>
@@ -16945,7 +16950,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="353"/>
         <source>Numéro de commande auxiliaire 3</source>
-        <translation>Comando auxiliar número 3</translation>
+        <translation>Número do pedido auxiliar 3</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="354"/>
@@ -16955,7 +16960,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="355"/>
         <source>Fournisseur auxiliaire 3</source>
-        <translation>Fornecedor Auxiliar 3</translation>
+        <translation>Fornecedor auxiliar 3</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="356"/>
@@ -16975,12 +16980,12 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="359"/>
         <source>Description textuelle auxiliaire 4</source>
-        <translation>Descrição do texto auxiliar 4</translation>
+        <translation>Descrição textual auxiliar 4</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="360"/>
         <source>Numéro d&apos;article auxiliaire 4</source>
-        <translation>Item auxiliar número 4</translation>
+        <translation>Código da peça auxiliar 4</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="361"/>
@@ -16990,7 +16995,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="362"/>
         <source>Numéro de commande auxiliaire 4</source>
-        <translation>Comando auxiliar número 4</translation>
+        <translation>Número do pedido auxiliar 4</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="363"/>
@@ -17000,7 +17005,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="364"/>
         <source>Fournisseur auxiliaire 4</source>
-        <translation>Fornecedor Auxiliar 4</translation>
+        <translation>Fornecedor auxiliar 4</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="365"/>
@@ -17055,7 +17060,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/qetinformation.cpp" line="314"/>
         <source>Numéro d&apos;article</source>
-        <translation>Número do artigo</translation>
+        <translation>Código da peça</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="315"/>
@@ -17928,7 +17933,7 @@ Adicione uma nova tabela ou ajuste a tabela existente para exibir todas as infor
     <message>
         <location filename="../sources/ElementsCollection/ui/renamedialog.ui" line="44"/>
         <source>Annuler</source>
-        <translation>Desfazer</translation>
+        <translation>Cancelar</translation>
     </message>
     <message>
         <location filename="../sources/ElementsCollection/ui/renamedialog.ui" line="54"/>
