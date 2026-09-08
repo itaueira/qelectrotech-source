@@ -101,7 +101,8 @@ QStringList NumberingFormat::tokens()
 		 QStringLiteral("%{n}"),
 		 QStringLiteral("%{folio}"),
 		 QStringLiteral("%{rung}"),
-		 QStringLiteral("%{location}") };
+		 QStringLiteral("%{location}"),
+		 QStringLiteral("%{connector}") };
 }
 
 /**
@@ -130,6 +131,7 @@ QString NumberingFormat::render(const QString &root,
 	label.replace(QStringLiteral("%{folio}"), context.value(QStringLiteral("folio")));
 	label.replace(QStringLiteral("%{rung}"), context.value(QStringLiteral("rung")));
 	label.replace(QStringLiteral("%{location}"), context.value(QStringLiteral("location")));
+	label.replace(QStringLiteral("%{connector}"), context.value(QStringLiteral("connector")));
 
 	// A token nobody filled leaves nothing behind rather than the token
 	// itself: a label reading "M%{rung}1" on a folio with no line numbering
@@ -178,6 +180,18 @@ QList<NumberingFormat> NumberingFormat::builtinFormats()
 	with_location.scope = NumberingScope::Location;
 	formats.append(with_location);
 
+	// The ways of a connector, numbered from one inside each connector (T34).
+	// The pattern is the bare counter because the connector name is not part of
+	// the pin's tag: the pin carries the number and the connector name sits
+	// beside it in its own field, which is what lets the parts list ask for
+	// every pin of XS1. An office that writes "XS1:3" on the pin instead has
+	// %{connector} for it.
+	NumberingFormat by_connector(
+		QCoreApplication::translate("NumberingFormat", "Par connecteur"),
+		QStringLiteral("%{n}"));
+	by_connector.scope = NumberingScope::Connector;
+	formats.append(by_connector);
+
 	return formats;
 }
 
@@ -194,6 +208,7 @@ QString NumberingFormat::scopeToString(NumberingScope scope)
 		case NumberingScope::Folio:    return QStringLiteral("folio");
 		case NumberingScope::Rung:     return QStringLiteral("rung");
 		case NumberingScope::Location: return QStringLiteral("location");
+		case NumberingScope::Connector: return QStringLiteral("connector");
 	}
 	return QStringLiteral("project");
 }
@@ -213,6 +228,9 @@ NumberingScope NumberingFormat::scopeFromString(const QString &string)
 	}
 	if (string == QStringLiteral("location")) {
 		return NumberingScope::Location;
+	}
+	if (string == QStringLiteral("connector")) {
+		return NumberingScope::Connector;
 	}
 	return NumberingScope::Project;
 }
@@ -234,6 +252,8 @@ QString NumberingFormat::translatedScopeName(NumberingScope scope)
 			return QCoreApplication::translate("NumberingFormat", "Par ligne");
 		case NumberingScope::Location:
 			return QCoreApplication::translate("NumberingFormat", "Par localisation");
+		case NumberingScope::Connector:
+			return QCoreApplication::translate("NumberingFormat", "Par connecteur");
 	}
 	return QString();
 }

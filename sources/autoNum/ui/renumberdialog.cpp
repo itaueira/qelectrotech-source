@@ -256,7 +256,7 @@ void RenumberDialog::recompute()
 	m_preview->setRowCount(0);
 	for (const RenumberEntry &entry : m_plan.entries)
 	{
-		if (only_changes && !entry.changed && !entry.frozen) {
+		if (only_changes && !entry.changed && !entry.frozen && !entry.skipped) {
 			continue;
 		}
 
@@ -268,11 +268,16 @@ void RenumberDialog::recompute()
 		QString note;
 		if (entry.frozen) {
 			note = tr("numéroté à la main : laissé tel quel");
+		} else if (entry.skipped) {
+				//Numbering by connector, on something that belongs to no
+				//connector. Said in the row rather than left to be guessed from
+				//a tag that did not move.
+			note = tr("sans connecteur : laissé tel quel");
 		} else if (!entry.changed) {
 			note = tr("inchangé");
 		}
 		QTableWidgetItem *note_item = new QTableWidgetItem(note);
-		if (entry.frozen)
+		if (entry.frozen || entry.skipped)
 		{
 			QFont font = note_item->font();
 			font.setItalic(true);
@@ -282,25 +287,46 @@ void RenumberDialog::recompute()
 	}
 	m_preview->resizeColumnsToContents();
 
-	m_summary->setText(tr("%1 composant(s) dans la portée, %2 changement(s), "
-			      "%3 numéroté(s) à la main et laissé(s) tel(s) quel(s).")
-			   .arg(m_plan.entries.size())
-			   .arg(m_plan.changeCount())
-			   .arg(m_plan.frozenCount()));
+	QString summary = tr("%1 composant(s) dans la portée, %2 changement(s), "
+			     "%3 numéroté(s) à la main et laissé(s) tel(s) quel(s).")
+			  .arg(m_plan.entries.size())
+			  .arg(m_plan.changeCount())
+			  .arg(m_plan.frozenCount());
+	if (m_plan.skippedCount() > 0)
+	{
+		summary += QLatin1Char(' ')
+			   + tr("%n composant(s) n'appartenant à aucun connecteur : "
+				"laissé(s) tel(s) quel(s).", "", m_plan.skippedCount());
+	}
+	m_summary->setText(summary);
+
+	QStringList warnings;
 
 	// A duplicate is the one outcome renumbering must never produce, so it is
 	// said here, before the button is pressed, and not discovered in the
 	// workshop.
 	if (m_plan.hasDuplicates())
 	{
-		m_warning->setText(tr("<b>Attention :</b> ce format produirait des repères en double : "
-				      "%1. Changez de format ou de portée avant d'appliquer.")
-				   .arg(m_plan.duplicates().join(QStringLiteral(", "))));
+		warnings << tr("<b>Attention :</b> ce format produirait des repères en double : "
+			       "%1. Changez de format ou de portée avant d'appliquer.")
+			    .arg(m_plan.duplicates().join(QStringLiteral(", ")));
 	}
-	else
+
+	// Two spellings of one connector name were counted as one connector, which
+	// is the only answer that numbers its ways once. Said out loud all the
+	// same: the field itself was not touched, and it is the field the parts
+	// list filters on.
+	const QStringList inconsistent = m_plan.inconsistentConnectors();
+	for (const QString &name : inconsistent)
 	{
-		m_warning->clear();
+		warnings << tr("Le connecteur « %1 » est écrit de plusieurs façons : %2. "
+			       "Ses broches ont été numérotées comme un seul connecteur ; "
+			       "le champ, lui, n'a pas été corrigé.")
+			    .arg(name)
+			    .arg(m_plan.connector_spellings.value(name)
+				 .join(QStringLiteral(", ")));
 	}
+	m_warning->setText(warnings.join(QStringLiteral("<br/>")));
 }
 
 /**

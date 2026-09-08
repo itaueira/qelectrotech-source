@@ -22,6 +22,7 @@
 
 #include <QHash>
 #include <QList>
+#include <QMap>
 #include <QPointF>
 #include <QString>
 #include <QStringList>
@@ -50,6 +51,17 @@ class RenumberInput
 		QString rung;         ///< what %{rung} becomes
 		QString location;     ///< what %{location} becomes
 		/**
+			The connector this pin belongs to, as the draughtsman wrote it on
+			the pin: what %{connector} becomes, and what the counter of a
+			connector scoped format restarts on (T34).
+
+			Free text, and empty for anything that is not a pin. Nothing
+			normalises it on the way in, so "CN1", "cn1" and "CN1 " are three
+			different strings for one connector; Renumberer::connectorKey is
+			where they are made to count as one.
+		*/
+		QString connector;
+		/**
 			The format to number this object with, taken from its class.
 
 			Per object and not per run, because the registered decision of
@@ -69,7 +81,33 @@ class RenumberEntry
 		QString uuid;
 		QString from;
 		QString to;
+		/**
+			The identity space this tag lives in, empty for almost everything.
+
+			A tag is normally unique in the whole project, and two objects
+			carrying the same one is the mistake a renumbering must never make.
+			The way of a connector is the exception, and it is one by design
+			(T34): the pin carries the way number alone, and the connector it
+			sits in is the rest of its identity - so way 1 of XS1 and way 1 of
+			XS2 are two different things that both read "1".
+
+			Without this, numbering two connectors at once would report every
+			way as a double and ask the user to confirm each time, which teaches
+			them to click through the one warning that matters.
+		*/
+		QString group;
 		bool frozen = false;    ///< left alone because it was set by hand
+		/**
+			Left alone because the format had nothing to say about it: numbering
+			by connector met a component that belongs to no connector (T34).
+
+			A different thing from frozen, and shown as a different thing: the
+			user did not protect this one, the rule passed it over. Handing it
+			the first free number of a nameless group would be an answer made up
+			out of nothing, and dropping it from the plan would leave the doubt
+			of whether it was renumbered unseen.
+		*/
+		bool skipped = false;
 		bool changed = false;
 };
 
@@ -85,10 +123,24 @@ class RenumberPlan
 {
 	public:
 		QList<RenumberEntry> entries;
+		/**
+			One entry per connector the plan numbered: the name that went into
+			the labels, and every spelling that name was written with on a pin.
+
+			Two spellings in one list is the draughtsman having typed the same
+			connector two ways. They were counted as one connector - counting
+			them apart is what would restart the numbering halfway and hand two
+			ways the same number - but they are reported rather than merged in
+			silence, so the field can be put right.
+		*/
+		QMap<QString, QStringList> connector_spellings;
 
 		int changeCount() const;
 		int frozenCount() const;
-		/// The labels that would appear more than once, if any
+		int skippedCount() const;
+		/// The connector names that were written more than one way
+		QStringList inconsistentConnectors() const;
+		/// The labels that would appear more than once inside one group
 		QStringList duplicates() const;
 		bool hasDuplicates() const;
 		/// The new label of @a uuid, empty when it is not in the plan
@@ -111,6 +163,23 @@ class Renumberer
 			setting of the environment and not of the command, because two
 			people renumbering the same project have to get the same answer.
 		*/
+		/**
+			@param connector : a connector name as it was typed on a pin
+			@return what makes two of those names the same connector.
+
+			The ends are trimmed and the case is folded, and nothing else: "CN1",
+			"cn1" and "CN1 " are one connector, while "CN 1" is another one,
+			because a space in the middle of a name is a name and not a slip.
+
+			The normalising happens here, on the way in, and never on the way
+			out: what the pin carries stays what the user typed. Renumbering is
+			allowed to change a tag, and it is not allowed to quietly rewrite a
+			field the user filled in by hand. The day a connector management
+			window becomes the only thing that writes the field, it is this same
+			function it has to agree with.
+		*/
+		static QString connectorKey(const QString &connector);
+
 		static bool readingOrderLessThan(const RenumberInput &first,
 						 const RenumberInput &second,
 						 bool columns_first);

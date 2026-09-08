@@ -34,7 +34,16 @@ enum class NumberingScope
 	Project,   ///< one counter for the whole project
 	Folio,     ///< the counter restarts on each folio
 	Rung,      ///< numbered by the line of the schematic the symbol sits on
-	Location   ///< the counter restarts in each location
+	Location,  ///< the counter restarts in each location
+	/**
+		The counter restarts in each connector: the ways of XS1 are numbered 1,
+		2, 3 while the ways of XS2 start at one again (T34).
+
+		Which connector a pin belongs to is written on the pin itself, so a
+		component that names no connector is passed over rather than counted
+		into a nameless group - see RenumberEntry::skipped.
+	*/
+	Connector
 };
 
 /**
@@ -56,6 +65,7 @@ enum class NumberingScope
 	| `%{root}` | the tag root of the class, house or IEC (T12) |
 	| `%{n}` | the counter, padded to `digits` |
 	| `%{folio}` `%{rung}` `%{location}` | the context of the object |
+	| `%{connector}` | the connector a pin belongs to (T34) |
 */
 class NumberingFormat
 {

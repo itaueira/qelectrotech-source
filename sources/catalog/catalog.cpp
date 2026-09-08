@@ -2144,7 +2144,14 @@ bool Catalog::seedDefaultModel(QString *error)
 		{ "location",               QT_TRANSLATE_NOOP("Catalog", "Localisation"),       "project_object", "",    "",  false },
 		{ "terminal_strip",         QT_TRANSLATE_NOOP("Catalog", "Bornier"),            "project_object", "X",   "X", false },
 		{ "terminal_strip_element", QT_TRANSLATE_NOOP("Catalog", "Élément de bornier"), "terminal_strip", "X",   "X", true  },
-		{ "connector",              QT_TRANSLATE_NOOP("Catalog", "Connecteur"),         "project_object", "X",   "X", true  },
+			//XS and not X, and it is the one seed that leaves its family on
+			//purpose (T34). A terminal strip, a terminal of a strip and a
+			//connector all used to seed "X", so a counter working by tag root
+			//ran one series across the three and produced X1, X2, X3 with a
+			//strip, a terminal and a connector inside it. XS is what IEC 81346
+			//writes for a plug and socket connector, and it is a root like any
+			//other: the catalog management window renames it without code.
+		{ "connector",              QT_TRANSLATE_NOOP("Catalog", "Connecteur"),         "project_object", "XS",  "XS", true  },
 		{ "accessory",              QT_TRANSLATE_NOOP("Catalog", "Accessoire"),         "project_object", "",    "",  true  },
 		{ "wire_cable",             QT_TRANSLATE_NOOP("Catalog", "Fil / Câble"),        "project_object", "W",   "W", false },
 		{ "rail_duct",              QT_TRANSLATE_NOOP("Catalog", "Rail / Goulotte"),    "project_object", "",    "",  false },

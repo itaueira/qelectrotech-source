@@ -119,6 +119,7 @@ add_executable(
     src/assemblystate_test.cpp
     src/iecstructure_test.cpp
     src/renumber_test.cpp
+    src/connectornumbering_test.cpp
     src/macro_test.cpp
     src/circuit_test.cpp
     src/ioassignment_test.cpp
@@ -519,7 +520,8 @@ if(TARGET qet_core)
         src/ui/dbnotify_test.cpp
         src/ui/componentlabel_test.cpp
         src/ui/mountinglayoutsave_test.cpp
-        src/ui/connectorlink_test.cpp)
+        src/ui/connectorlink_test.cpp
+        src/ui/connectorrenumber_test.cpp)
 
     target_link_libraries(
         C_uitests

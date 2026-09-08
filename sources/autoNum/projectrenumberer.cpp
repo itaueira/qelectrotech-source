@@ -22,6 +22,7 @@
 #include "../diagram.h"
 #include "../diagramposition.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qetinformation.h"
 #include "../qetproject.h"
 #include "../undocommand/renumbercommand.h"
 #include "iecstructure.h"
@@ -249,6 +250,12 @@ QList<RenumberInput> ProjectRenumberer::inputsFor(const Catalog &catalog,
 					.value(IecStructure::folioLocationKey())
 					.toString();
 		}
+
+		// The connector this pin belongs to, for a format numbering by
+		// connector (T34). Empty for everything that is not a pin, and a
+		// connector scoped format then passes the component over rather than
+		// counting it into a nameless group.
+		input.connector = information.value(QETInformation::ELMT_CONNECTOR).toString();
 
 		// The rung, i.e. the line of the schematic the symbol sits on, comes
 		// from the coordinate system of the folio - which is exactly what the
