@@ -6182,7 +6182,7 @@ Ir ver, ou guardar o duplicado sabendo disso?</translation>
     <message>
         <location filename="../sources/dataBase/ui/elementquerywidget.ui" line="308"/>
         <source>Boutons et commutateurs</source>
-        <translation>Botões e interruptores</translation>
+        <translation>Botões e comutadores</translation>
     </message>
     <message>
         <location filename="../sources/dataBase/ui/elementquerywidget.ui" line="268"/>
@@ -7306,13 +7306,13 @@ Si le chiffre défini dans le champ Valeur possède moins de digits que le type 
 Le champ &quot;Incrémentation&quot; n&apos;est pas utilisé.
 </source>
         <comment>help dialog about the folio autonumerotation</comment>
-        <translation>Aqui você pode definir como as novas folhas serão numeradas.
+        <translation>É aqui que você pode definir como as novas folhas serão numeradas.
 -Uma numeração é composta por uma variável mínima.
 -Você pode adicionar ou excluir uma variável de numeração usando os botões - e +.
 -Uma variável de numeração inclui: um tipo, um valor e um incremento.
 
--os tipos &quot;Número 1&quot;, &quot;Número 01&quot; e &quot;Número 001&quot; representam um tipo numérico definido no campo &quot;Valor&quot;, que é incrementado com cada nova folha pelo valor do campo &quot;Incremento&quot;.
-- &quot;Dígito 01&quot; e &quot;Dígito 001&quot; são representados respectivamente no diagrama por no mínimo dois e três dígitos.
+-os tipos &quot;Formato numérico 1&quot;, &quot;Formato numérico 01&quot; e &quot;Formato numérico 001&quot; representam um tipo numérico definido no campo &quot;Valor&quot;, que é incrementado com cada nova folha pelo valor do campo &quot;Incremento&quot;.
+- &quot;Formato numérico 01&quot; e &quot;Formato numérico 001&quot; são representados respectivamente no esquema por no mínimo dois e três dígitos.
 Se o dígito definido no campo Valor tiver menos dígitos que o tipo escolhido, isso será precedido por um ou dois 0s para respeitar seu tipo.
 
 -O tipo &quot;Texto&quot; representa um texto fixo.
@@ -9833,7 +9833,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     <message>
         <location filename="../sources/location/ui/locationbomdialog.cpp" line="210"/>
         <source>Poser sur le folio courant un tableau de nomenclature limité à cette localisation. Le tableau suit le projet : il se met à jour tout seul.</source>
-        <translation>Colocar na folha atual uma tabela de nomenclatura limitada a esta localização. A tabela acompanha o projeto: ela se atualiza sozinha.</translation>
+        <translation>Colocar na folha atual uma tabela com a lista de material limitada a esta localização. A tabela acompanha o projeto: ela se atualiza sozinha.</translation>
     </message>
     <message>
         <location filename="../sources/location/ui/locationbomdialog.cpp" line="251"/>
@@ -11005,7 +11005,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="279"/>
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="467"/>
         <source>Chiffre 1 - Folio</source>
-        <translation>Dígito 1 - Folha</translation>
+        <translation>Formato numérico 1 - Folha</translation>
     </message>
     <message>
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="139"/>
@@ -11013,7 +11013,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="283"/>
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="471"/>
         <source>Chiffre 01 - Folio</source>
-        <translation>Dígito 01 - Folha</translation>
+        <translation>Formato numérico 01 - Folha</translation>
     </message>
     <message>
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="141"/>
@@ -11021,7 +11021,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="287"/>
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="475"/>
         <source>Chiffre 001 - Folio</source>
-        <translation>Dígito 001 - Folha</translation>
+        <translation>Formato numérico 001 - Folha</translation>
     </message>
     <message>
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="148"/>
@@ -11051,7 +11051,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="301"/>
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="491"/>
         <source>Element Column</source>
-        <translation>Coluna do Elemento</translation>
+        <translation>Coluna do elemento</translation>
     </message>
     <message>
         <location filename="../sources/autoNum/ui/numparteditorw.cpp" line="166"/>
@@ -13489,7 +13489,7 @@ Opções disponíveis:
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="507"/>
         <source>Ajouter une nomenclature</source>
-        <translation>Adicionar nomenclatura</translation>
+        <translation>Adicionar lista de material</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1005"/>
@@ -17160,7 +17160,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/factory/qetgraphicstablefactory.cpp" line="60"/>
         <source>Ajouter une nomenclature</source>
-        <translation>Adicionar nomenclatura</translation>
+        <translation>Adicionar lista de material</translation>
     </message>
     <message>
         <location filename="../sources/factory/qetgraphicstablefactory.cpp" line="79"/>
@@ -18817,13 +18817,13 @@ Si le chiffre défini dans le champ Valeur possède moins de digits que le type 
 Le champ &quot;Incrémentation&quot; n&apos;est pas utilisé.
 </source>
         <comment>help dialog about the folio autonumerotation</comment>
-        <translation>Aqui que você pode definir como as novas folhas serão numeradas.
+        <translation>É aqui que você pode definir como as novas folhas serão numeradas.
 -Uma numeração é composta por uma variável mínima.
 -Você pode adicionar ou excluir uma variável de numeração usando os botões - e +.
 -Uma variável de numeração inclui: um tipo, um valor e um incremento.
 
--os tipos &quot;Número 1&quot;, &quot;Número 01&quot; e &quot;Número 001&quot; representam um tipo numérico definido no campo &quot;Valor&quot;, que é incrementado com cada nova folha pelo valor do campo &quot;Incremento&quot;.
-- &quot;Dígito 01&quot; e &quot;Dígito 001&quot; são representados respectivamente no diagrama por no mínimo dois e três dígitos.
+-os tipos &quot;Formato numérico 1&quot;, &quot;Formato numérico 01&quot; e &quot;Formato numérico 001&quot; representam um tipo numérico definido no campo &quot;Valor&quot;, que é incrementado com cada nova folha pelo valor do campo &quot;Incremento&quot;.
+- &quot;Formato numérico 01&quot; e &quot;Formato numérico 001&quot; são representados respectivamente no esquema por no mínimo dois e três dígitos.
 Se o dígito definido no campo Valor tiver menos dígitos que o tipo escolhido, isso será precedido por um ou dois 0s para respeitar seu tipo.
 
 -O tipo &quot;Texto&quot; representa um texto fixo.
@@ -18855,8 +18855,8 @@ Les autres champs ne sont pas utilisés.</source>
 -Você pode adicionar ou excluir uma variável de numeração usando os botões - e +.
 -Uma variável de numeração inclui: um tipo, um valor e um incremento.
 
--os tipos &quot;Dígito 1&quot;, &quot;Dígito 01&quot; e &quot;Dígito 001&quot; representam um tipo numérico definido no campo &quot;Valor&quot;, que é incrementado com cada novo condutor pelo valor do campo &quot;Incremento&quot;.
-- &quot;Dígito 01&quot; e &quot;Dígito 001&quot; são representados respectivamente no diagrama por no mínimo dois e três dígitos.
+-os tipos &quot;Formato numérico 1&quot;, &quot;Formato numérico 01&quot; e &quot;Formato numérico 001&quot; representam um tipo numérico definido no campo &quot;Valor&quot;, que é incrementado com cada novo condutor pelo valor do campo &quot;Incremento&quot;.
+- &quot;Formato numérico 01&quot; e &quot;Formato numérico 001&quot; são representados respectivamente no esquema por no mínimo dois e três dígitos.
 Se o dígito definido no campo Valor tiver menos dígitos que o tipo escolhido, isso será precedido por um ou dois 0s para respeitar seu tipo.
 
 -O tipo &quot;Texto&quot; representa um texto fixo.
@@ -18900,8 +18900,8 @@ Les autres champs ne sont pas utilisés.</source>
 -Você pode adicionar ou remover uma variável de numeração usando os botões - e +.
 -Uma variável de numeração inclui: um tipo, um valor e um incremento.
 
--os tipos “Dígito 1”, “Dígito 01” e “Dígito 001”, representam um tipo numérico definido no campo “Valor”, que incrementa a cada novo condutor o valor do campo “Incremento”.
--“Dígito 01” e “Dígito 001”, são representados respectivamente no diagrama por no mínimo dois e três dígitos.
+-os tipos “Formato numérico 1”, “Formato numérico 01” e “Formato numérico 001”, representam um tipo numérico definido no campo “Valor”, que incrementa a cada novo condutor o valor do campo “Incremento”.
+-“Formato numérico 01” e “Formato numérico 001”, são representados respectivamente no esquema por no mínimo dois e três dígitos.
 Se o número definido no campo Valor tiver menos dígitos que o tipo escolhido, será precedido de um ou dois 0 para respeitar o seu tipo.
 
 -O tipo “Texto” representa um texto fixo.
@@ -23334,7 +23334,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
     <message>
         <location filename="../sources/ui/xrefpropertieswidget.cpp" line="103"/>
         <source>Commutateur / bouton</source>
-        <translation>Botão seletor</translation>
+        <translation>Comutador / botão</translation>
     </message>
     <message>
         <location filename="../sources/ui/xrefpropertieswidget.cpp" line="104"/>
