@@ -201,6 +201,26 @@ int exportPdf(QETProject &project, const QString &output)
 			geom.sourceRectOf = [](Diagram *dg) {
 				return QRectF(diagramRect(dg));
 			};
+
+			// Here every page is cut to its own sheet, so a link pointing at
+			// another sheet points at a page of another size. Both mappings
+			// below are therefore asked for the TARGET's page rather than for
+			// the one being drawn: without them the framed region is scaled by
+			// the ratio between the two sheets and flipped around the wrong
+			// height, and a jump from a large sheet to a smaller one lands
+			// beside the target page instead of on it. Each replicates, for
+			// another page, exactly what the loop above does for this one.
+			const int resolution = writer.resolution();
+			geom.pageTargetOf = [](Diagram *dg) {
+				const QRect own = diagramRect(dg);
+				return QRectF(0, 0, own.width(), own.height());
+			};
+			geom.devToPdfOn = [resolution](Diagram *dg, const QPointF &d) {
+				const qreal scale = 72.0 / resolution;
+				const qreal fullH = diagramRect(dg).height() * scale;
+				return QPointF(scale * d.x(), fullH - scale * d.y());
+			};
+
 			PdfLinks::injectCrossRefLinks(engine, diagram, geom, pageMap, output);
 		}
 	}

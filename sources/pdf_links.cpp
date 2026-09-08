@@ -56,10 +56,22 @@ void injectCrossRefLinks(QPdfEngine *engine, Diagram *diagram,
 		if (!dg) return QRectF();
 		const QRectF srcT = geom.sourceRectOf(dg);
 		if (srcT.width() <= 0.0 || srcT.height() <= 0.0) return QRectF();
-		const qreal sT = qMin(target.width()  / srcT.width(),
-							  target.height() / srcT.height());
+
+		// The page to frame on is the TARGET's page, not the one being drawn.
+		// They are the same page size in a printer-driven export and are not
+		// when each page is cut to its own sheet, which is why the caller gets
+		// to say; see PageGeometry::pageTargetOf.
+		QRectF pageT = target;
+		if (geom.pageTargetOf) {
+			const QRectF own = geom.pageTargetOf(dg);
+			if (own.width() > 0.0 && own.height() > 0.0)
+				pageT = own;
+		}
+
+		const qreal sT = qMin(pageT.width()  / srcT.width(),
+							  pageT.height() / srcT.height());
 		QTransform fitT;
-		fitT.translate(target.x(), target.y());
+		fitT.translate(pageT.x(), pageT.y());
 		fitT.scale(sT, sT);
 		fitT.translate(-srcT.x(), -srcT.y());
 
@@ -77,8 +89,13 @@ void injectCrossRefLinks(QPdfEngine *engine, Diagram *diagram,
 							 0,  (minSide - elemScene.height()) / 2.0);
 
 		const QRectF devT = fitT.mapRect(elemScene);
-		const QPointF a = geom.devToPdf(devT.topLeft());
-		const QPointF b = geom.devToPdf(devT.bottomRight());
+		// Same reasoning as pageT above: the Y flip is around the height of
+		// the page the destination lives on.
+		const QPointF a = geom.devToPdfOn ? geom.devToPdfOn(dg, devT.topLeft())
+										  : geom.devToPdf(devT.topLeft());
+		const QPointF b = geom.devToPdfOn
+						  ? geom.devToPdfOn(dg, devT.bottomRight())
+						  : geom.devToPdf(devT.bottomRight());
 		return QRectF(QPointF(qMin(a.x(), b.x()), qMin(a.y(), b.y())),
 					  QPointF(qMax(a.x(), b.x()), qMax(a.y(), b.y())));
 	};

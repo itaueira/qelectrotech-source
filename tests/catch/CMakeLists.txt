@@ -490,6 +490,14 @@ if(TARGET qet_core)
         main.cpp
         src/ui/uibench.cpp
         src/ui/uibench.h
+        # Reads a PDF the export has just written. It is a bench helper and
+        # not a test, for the same reason uibench is: what it answers - is
+        # this word findable, does this jump land on this page - is a
+        # property of the emitted bytes, and more than one case of the
+        # T37 needs the same answer.
+        src/ui/pdfprobe.cpp
+        src/ui/pdfprobe.h
+        src/ui/pdfexport_test.cpp
         src/ui/projectopen_test.cpp
         src/ui/appearance_test.cpp
         src/ui/dragassign_test.cpp

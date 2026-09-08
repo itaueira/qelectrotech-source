@@ -53,6 +53,34 @@ namespace PdfLinks {
 		std::function<QPointF(const QPointF &)> devToPdf;
 		/// a diagram -> its source rectangle in scene pixels (for /FitR framing)
 		std::function<QRectF(Diagram *)> sourceRectOf;
+
+		/**
+			A diagram -> the paint rectangle, in device pixels, of the page it
+			was drawn on.
+
+			Leave it unset when every page of the document has the same
+			geometry, which is the case of a printer-driven export: the page
+			comes from the printer and not from the sheet, so the page being
+			drawn and the page being pointed at are interchangeable.
+
+			Set it when the pages differ in size.  A link frames a rectangle on
+			its TARGET page, and computing that rectangle with the geometry of
+			the page currently being drawn scales it by the wrong factor: a
+			jump from a large sheet to a smaller one then frames a region that
+			is not on the target sheet at all.
+		*/
+		std::function<QRectF(Diagram *)> pageTargetOf;
+
+		/**
+			Device pixels -> PDF points on the page a given diagram was drawn
+			on.
+
+			Unset for the same reason as pageTargetOf, and with the same
+			consequence when it should have been set: the conversion flips Y
+			around the page height, so a target page shorter than the one being
+			drawn receives every destination shifted up by the difference.
+		*/
+		std::function<QPointF(Diagram *, const QPointF &)> devToPdfOn;
 	};
 
 	/**
