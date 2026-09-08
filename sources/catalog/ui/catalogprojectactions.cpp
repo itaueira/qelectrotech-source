@@ -284,7 +284,12 @@ int CatalogProjectActions::assignPart(const QList<Element *> &elements,
 void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *parent)
 {
 	const QList<Element *> all = components(project);
-	const QList<Element *> missing = componentsWithoutPart(project);
+		//Not const, and not copied into the lambdas below: the table shrinks as
+		//rows are assigned, and a list that does not shrink with it makes every
+		//row index below the removed one point at the wrong component. The
+		//double click read that stale index and walked to a component the user
+		//had not chosen.
+	QList<Element *> missing = componentsWithoutPart(project);
 
 	QDialog dialog(parent);
 	dialog.setWindowTitle(QObject::tr("Composants sans pièce"));
@@ -353,7 +358,7 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 		//activated, not doubleClicked: it also fires on Enter, so the table
 		//can be used without a mouse, and it follows the platform convention.
 	QObject::connect(table, &QTableWidget::activated, table,
-			 [table, missing, &dialog](const QModelIndex &index)
+			 [table, &missing, &dialog](const QModelIndex &index)
 	{
 		const int row = index.row();
 		if (row < 0 || row >= missing.size()) {
@@ -391,7 +396,7 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 	});
 
 	QObject::connect(assign, &QPushButton::clicked, &dialog,
-			 [&dialog, table, missing, setSummary]()
+			 [&dialog, table, &missing, setSummary]()
 	{
 		Catalog *catalog = QETApp::catalog();
 		if (!catalog) {
@@ -440,6 +445,7 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 		std::sort(rows.begin(), rows.end(), std::greater<int>());
 		for (int row : rows) {
 			table->removeRow(row);
+			missing.removeAt(row);
 		}
 
 		setSummary(table->rowCount());
