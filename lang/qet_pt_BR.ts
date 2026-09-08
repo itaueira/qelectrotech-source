@@ -13964,6 +13964,16 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         <translation>Componentes sem peça</translation>
     </message>
     <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="579"/>
+        <source>Pièces sans vue physique</source>
+        <translation>Peças sem vista física</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="580"/>
+        <source>Liste les composants dont la pièce n&apos;a ni largeur ni hauteur au catalogue : ce qui reste à mesurer avant de dessiner une implantation.</source>
+        <translation>Lista os componentes cuja peça não tem largura nem altura no catálogo: o que falta medir antes de desenhar a disposição física do painel.</translation>
+    </message>
+    <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="574"/>
         <source>Environnement de travail</source>
         <translation>Ambiente de trabalho</translation>
@@ -17635,6 +17645,70 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="329"/>
         <source>Attribue une pièce du catalogue aux composants sélectionnés dans cette liste, sans avoir à les retrouver un par un sur les folios.</source>
         <translation>Atribui uma peça do catálogo aos componentes selecionados nesta lista, sem ter de achar cada um deles nas folhas.</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="630"/>
+        <source>Pièces sans vue physique</source>
+        <translation>Peças sem vista física</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="648"/>
+        <source>Le catalogue n&apos;a pas répondu : impossible de dire quelles pièces sont mesurées.</source>
+        <translation>O catálogo não respondeu: não há como dizer quais peças estão medidas.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="654"/>
+        <source>Aucun des %n composant(s) du projet n&apos;a de pièce attribuée : c&apos;est « Composants sans pièce » qui répond à cela.</source>
+        <translation>
+            <numerusform>O componente do projeto não tem peça atribuída: quem responde a isso é « Componentes sem peça ».</numerusform>
+            <numerusform>Nenhum dos %n componentes do projeto tem peça atribuída: quem responde a isso é « Componentes sem peça ».</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="662"/>
+        <source>Les %n composant(s) du projet qui ont une pièce ont une vue physique. Le plan peut être dessiné.</source>
+        <translation>
+            <numerusform>O componente do projeto que tem peça tem vista física. A disposição pode ser desenhada.</numerusform>
+            <numerusform>Os %n componentes do projeto que têm peça têm vista física. A disposição pode ser desenhada.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="676"/>
+        <source>%1 composant(s) sur %2 utilisent une pièce sans vue physique : %3 code(s) à mesurer. Double-cliquez une ligne pour aller au composant.</source>
+        <translation>%1 de %2 componentes usam uma peça sem vista física: %3 código(s) a medir. Dê duplo clique numa linha para ir ao componente.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="691"/>
+        <source>%n composant(s) tiennent leur taille de leur classe et non de leur pièce.</source>
+        <translation>
+            <numerusform>%n componente tira o tamanho da classe, e não da peça.</numerusform>
+            <numerusform>%n componentes tiram o tamanho da classe, e não da peça.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="705"/>
+        <source>Code</source>
+        <translation>Código</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="706"/>
+        <source>Désignation</source>
+        <translation>Designação</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="707"/>
+        <source>Manque</source>
+        <translation>Falta</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="772"/>
+        <source>Mesurer la pièce…</source>
+        <translation>Medir a peça…</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="773"/>
+        <source>Ouvre la fiche de la pièce des lignes sélectionnées pour y saisir les millimètres : une fiche par code, et les lignes mesurées quittent la liste.</source>
+        <translation>Abre a ficha da peça das linhas selecionadas para digitar os milímetros: uma ficha por código, e as linhas medidas saem da lista.</translation>
     </message>
     <message>
         <source>%1 composant(s) sur %2 n&apos;ont plus de pièce à attribuer. Double-cliquez une ligne pour aller au composant.</source>
@@ -23573,6 +23647,39 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <location filename="../sources/SearchAndReplace/ui/replaceadvanceddialog.ui" line="92"/>
         <source>Quoi :</source>
         <translation>O que:</translation>
+    </message>
+</context>
+<context>
+    <name>MissingPhysicalView</name>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="465"/>
+        <source>pièce absente du catalogue</source>
+        <translation>peça ausente do catálogo</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="467"/>
+        <source>ni largeur ni hauteur</source>
+        <translation>sem largura nem altura</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="474"/>
+        <source>hauteur manquante, largeur héritée de la classe %1</source>
+        <translation>falta a altura; a largura é herdada da classe %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="476"/>
+        <source>hauteur manquante</source>
+        <translation>falta a altura</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="479"/>
+        <source>largeur manquante, hauteur héritée de la classe %1</source>
+        <translation>falta a largura; a altura é herdada da classe %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="481"/>
+        <source>largeur manquante</source>
+        <translation>falta a largura</translation>
     </message>
 </context>
 </TS>

@@ -571,6 +571,22 @@ void QETDiagramEditor::setUpActions()
 		CatalogProjectActions::showMissingPartReport(this->currentProject(), this);
 	});
 
+		//Beside its sibling and not inside it: one asks who has nothing to
+		//buy, the other asks which of the bought products nobody has
+		//measured. Same menu, same list of components, two questions, and
+		//an answer to one of them is no answer to the other.
+	m_catalog_no_physical_view = new QAction(QET::Icons::TableOfContent,
+						 tr("Pièces sans vue physique"), this);
+	m_catalog_no_physical_view->setToolTip(tr(
+				   "Liste les composants dont la pièce n'a ni largeur ni "
+				   "hauteur au catalogue : ce qui reste à mesurer avant "
+				   "de dessiner une implantation."));
+	m_catalog_no_physical_view->setStatusTip(m_catalog_no_physical_view->toolTip());
+	connect(m_catalog_no_physical_view, &QAction::triggered, this, [this]()
+	{
+		CatalogProjectActions::showMissingPhysicalViewReport(this->currentProject(), this);
+	});
+
 	m_environment = new QAction(QET::Icons::Configure, tr("Environnement de travail"), this);
 	connect(m_environment, &QAction::triggered, this, [this]()
 	{
@@ -2379,6 +2395,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_catalogue -> addSeparator();
 	menu_catalogue -> addAction(m_link_accessory);
 	menu_catalogue -> addAction(m_catalog_missing);
+	menu_catalogue -> addAction(m_catalog_no_physical_view);
 	menu_catalogue -> addSeparator();
 	menu_catalogue -> addAction(m_catalog_import);
 	menu_catalogue -> addAction(m_catalog_repository);
@@ -3376,6 +3393,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_link_accessory              -> setEnabled(editable_project);
 	m_catalog_register            -> setEnabled(editable_project);
 	m_catalog_missing             -> setEnabled(opened_project);
+	m_catalog_no_physical_view    -> setEnabled(opened_project);
 		//The environment belongs to the station, not to a project.
 	m_environment                 -> setEnabled(true);
 	m_catalog_import              -> setEnabled(true);

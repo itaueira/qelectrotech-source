@@ -528,6 +528,11 @@ if(TARGET qet_core)
         src/ui/dragassign_test.cpp
         src/ui/iecoff_test.cpp
         src/ui/assignpart_test.cpp
+        # Which products of an open project the catalogue cannot draw
+        # yet. The rule behind the report, not the report: no suite here
+        # opens a QDialog, so the window is left to a person and the
+        # list it shows is proved by number.
+        src/ui/physicalviewreport_test.cpp
         src/ui/contextmenuassign_test.cpp
         src/ui/renumberproject_test.cpp
         src/ui/assemblymark_test.cpp

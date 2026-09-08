@@ -17,6 +17,7 @@
 */
 #include "catalogprojectactions.h"
 #include "catalogbrowserdialog.h"
+#include "catalogpartdialog.h"
 #include <algorithm>
 #include <QPushButton>
 #include "../catalogclass.h"
@@ -33,6 +34,7 @@
 #include "../../undocommand/assigncatalogpartcommand.h"
 #include "../catalog.h"
 #include "../catalogassignment.h"
+#include "../physicalview.h"
 
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -70,6 +72,56 @@ namespace
 			values.insert(key, context.value(key).toString());
 		}
 		return values;
+	}
+
+	/// What the catalogue holds about the body of one product code.
+	struct PartBody
+	{
+			/// true when the catalogue holds that code at all
+		bool known = false;
+			/// what the catalogue calls the product
+		QString description;
+			/// how big it is, and where each number was written
+		CatalogPhysicalView view;
+	};
+
+	/**
+		Read one product code out of the catalogue.
+
+		The same shape MountingPartReader::viewOfPart reads with, and that
+		is the point: the report says a product is ready exactly when the
+		layout would draw it. Two readings of the ten keys would be two
+		answers, and the one that disagreed would be the one nobody ran.
+	*/
+	PartBody bodyOf(const Catalog &catalog, const QString &code)
+	{
+		PartBody body;
+		const CatalogPart part = catalog.partByCode(code);
+		body.known = !part.isNull();
+		if (!body.known) {
+			return body;
+		}
+
+			//Fetched once for the product and not once per key:
+			//Catalog::effectiveProperty walks the ancestry of the class
+			//on every call, and ten calls would walk it ten times.
+		QHash<QString, CatalogProperty> properties;
+		const QList<CatalogProperty> declared =
+				catalog.effectiveProperties(part.class_id);
+		for (const CatalogProperty &property : declared) {
+			properties.insert(property.key, property);
+		}
+
+		const QHash<QString, QString> values = catalog.effectiveValues(part);
+		body.description = values.value(QStringLiteral("designation")).trimmed();
+
+			//With the origins, and not without: a width that came from
+			//the initial value of a class is the same number and not the
+			//same fact, and this report is the one place that difference
+			//has a reader.
+		body.view = CatalogPhysicalView::read(values, properties,
+						      catalog.valueOrigins(part));
+		return body;
 	}
 }
 
@@ -391,6 +443,417 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 		}
 
 		setSummary(table->rowCount());
+	});
+
+	QVBoxLayout *layout = new QVBoxLayout(&dialog);
+	layout->addWidget(summary);
+	layout->addWidget(table);
+	layout->addWidget(buttons);
+
+	dialog.exec();
+}
+
+/**
+	@brief CatalogProjectActions::MissingPhysicalView::describe
+	@return what is missing, in one sentence
+*/
+QString CatalogProjectActions::MissingPhysicalView::describe() const
+{
+	switch (state)
+	{
+		case UnknownPart:
+			return tr("pièce absente du catalogue");
+		case NoMeasure:
+			return tr("ni largeur ni hauteur");
+		case WidthOnly:
+				//The clause is added only when it says something: a
+				//width typed on the product needs no comment, while
+				//a width taken from the class is a number nobody
+				//measured on this product.
+			return measured_origin.isFromClass()
+			       ? tr("hauteur manquante, largeur héritée de la classe %1")
+				 .arg(measured_origin.className())
+			       : tr("hauteur manquante");
+		case HeightOnly:
+			return measured_origin.isFromClass()
+			       ? tr("largeur manquante, hauteur héritée de la classe %1")
+				 .arg(measured_origin.className())
+			       : tr("largeur manquante");
+	}
+	return QString();
+}
+
+/**
+	@brief CatalogProjectActions::PhysicalViewReport::codesToMeasure
+	@return the distinct product codes to measure, sorted
+
+	The number the cataloguing queue is actually as long as. Sixty
+	components missing a body are not sixty records to fill in - the same
+	contactor is drawn twelve times - and a report that counted components
+	alone would make the work look twelve times bigger than it is.
+*/
+QStringList CatalogProjectActions::PhysicalViewReport::codesToMeasure() const
+{
+	QStringList codes;
+	for (const MissingPhysicalView &entry : missing)
+	{
+		if (!codes.contains(entry.part_code)) {
+			codes << entry.part_code;
+		}
+	}
+	codes.sort();
+	return codes;
+}
+
+/**
+	@brief CatalogProjectActions::physicalViewReport
+	@param project
+	@param catalog
+	@return which components point at a product the catalogue cannot draw
+*/
+CatalogProjectActions::PhysicalViewReport
+CatalogProjectActions::physicalViewReport(QETProject *project, const Catalog &catalog)
+{
+	PhysicalViewReport report;
+
+	const QList<Element *> all = components(project);
+	report.components   = all.size();
+	report.catalog_read = catalog.isOpen();
+
+		//One reading per product code and not per component: a plate
+		//with twelve of the same contactor would otherwise ask the data
+		//base the same three questions twelve times.
+	QHash<QString, PartBody> read;
+
+	for (Element *element : all)
+	{
+		const QHash<QString, QString> values = informationOf(element);
+
+			//A component nobody bought a product for is the subject
+			//of the report next door, and the two lists mixed would
+			//be one heading over two problems. It is not counted as
+			//missing here and it is not counted in with_part either,
+			//which is what the sentence divides by.
+		if (CatalogAssignment::isWithoutPart(values)) {
+			continue;
+		}
+		++report.with_part;
+
+		if (!report.catalog_read) {
+			continue;
+		}
+
+		const QString code =
+				values.value(CatalogAssignment::partCodeKey()).trimmed();
+		if (!read.contains(code)) {
+			read.insert(code, bodyOf(catalog, code));
+		}
+		const PartBody body = read.value(code);
+
+		if (body.known && body.view.hasPhysicalView())
+		{
+				//Drawable, so out of the list - and counted, so the
+				//summary can say how much of what is drawable is
+				//drawable on a number that belongs to a class.
+			if (body.view.width.origin.isFromClass()
+					|| body.view.height.origin.isFromClass()) {
+				++report.inherited_size;
+			}
+			continue;
+		}
+
+		MissingPhysicalView entry;
+		entry.element     = element;
+		entry.part_code   = code;
+		entry.description = body.description;
+
+		if (!body.known) {
+			entry.state = MissingPhysicalView::UnknownPart;
+		}
+		else if (body.view.hasWidth())
+		{
+			entry.state           = MissingPhysicalView::WidthOnly;
+			entry.measured_origin = body.view.width.origin;
+		}
+		else if (body.view.hasHeight())
+		{
+			entry.state           = MissingPhysicalView::HeightOnly;
+			entry.measured_origin = body.view.height.origin;
+		}
+		else {
+			entry.state = MissingPhysicalView::NoMeasure;
+		}
+
+		report.missing << entry;
+	}
+
+		//By product code first, because the work is done product by
+		//product: the twelve rows of the same contactor are one visit to
+		//the part dialogue, and a list in folio order would scatter them
+		//over the whole report. The tag breaks the tie, so two runs over
+		//the same project answer in the same order.
+	std::sort(report.missing.begin(), report.missing.end(),
+		  [](const MissingPhysicalView &left, const MissingPhysicalView &right)
+	{
+		if (left.part_code != right.part_code) {
+			return left.part_code < right.part_code;
+		}
+		const QString left_tag  = left.element  ? left.element->actualLabel()  : QString();
+		const QString right_tag = right.element ? right.element->actualLabel() : QString();
+		return left_tag < right_tag;
+	});
+
+	return report;
+}
+
+/**
+	@brief CatalogProjectActions::showMissingPhysicalViewReport
+	@param project
+	@param parent
+*/
+void CatalogProjectActions::showMissingPhysicalViewReport(QETProject *project,
+							  QWidget *parent)
+{
+	Catalog *catalog = QETApp::catalog();
+	const PhysicalViewReport report = catalog
+					  ? physicalViewReport(project, *catalog)
+					  : PhysicalViewReport();
+
+		//The rows are held beside the table and shortened with it. Held,
+		//and not read back from the table, because the double click
+		//needs the element behind the row: an index into a list that no
+		//longer matches the rows walks the folio to the wrong component,
+		//which looks like navigation and is not.
+	QList<MissingPhysicalView> rows = report.missing;
+
+	QDialog dialog(parent);
+	dialog.setWindowTitle(QObject::tr("Pièces sans vue physique"));
+	dialog.resize(760, 480);
+
+	QLabel *summary = new QLabel(&dialog);
+	summary->setWordWrap(true);
+
+		//Four states and not two, because they are four different pieces
+		//of news: the catalogue did not answer, nothing in the project
+		//points at a product, everything that does is measured, and the
+		//working state. One sentence per state, for the reason written
+		//on the report next door - what must never happen is the wording
+		//changing while nothing but a count did.
+	auto setSummary = [summary, report, &rows]()
+	{
+		QStringList sentences;
+
+		if (!report.catalog_read)
+		{
+			sentences << QObject::tr(
+				"Le catalogue n'a pas répondu : impossible de dire "
+				"quelles pièces sont mesurées.");
+		}
+		else if (!report.with_part)
+		{
+			sentences << QObject::tr(
+				"Aucun des %n composant(s) du projet n'a de pièce "
+				"attribuée : c'est « Composants sans pièce » qui "
+				"répond à cela.",
+				"", report.components);
+		}
+		else if (rows.isEmpty())
+		{
+			sentences << QObject::tr(
+				"Les %n composant(s) du projet qui ont une pièce ont "
+				"une vue physique. Le plan peut être dessiné.",
+				"", report.with_part);
+		}
+		else
+		{
+			QStringList codes;
+			for (const MissingPhysicalView &entry : rows)
+			{
+				if (!codes.contains(entry.part_code)) {
+					codes << entry.part_code;
+				}
+			}
+			sentences << QObject::tr(
+				"%1 composant(s) sur %2 utilisent une pièce sans vue "
+				"physique : %3 code(s) à mesurer. Double-cliquez une "
+				"ligne pour aller au composant.")
+				     .arg(rows.size())
+				     .arg(report.with_part)
+				     .arg(codes.size());
+		}
+
+			//Said apart, and only when there is something to say: an
+			//inherited size is not a missing size, so it cannot be a
+			//row, and a report that never mentioned it would let
+			//inheritance pass for cataloguing.
+		if (report.catalog_read && report.inherited_size)
+		{
+			sentences << QObject::tr(
+				"%n composant(s) tiennent leur taille de leur classe "
+				"et non de leur pièce.",
+				"", report.inherited_size);
+		}
+
+		summary->setText(sentences.join(QLatin1Char(' ')));
+	};
+	setSummary();
+
+	QTableWidget *table = new QTableWidget(&dialog);
+	table->setColumnCount(5);
+	table->setHorizontalHeaderLabels({ QObject::tr("Repère"),
+					   QObject::tr("Folio"),
+					   QObject::tr("Code"),
+					   QObject::tr("Désignation"),
+					   QObject::tr("Manque") });
+	table->setSelectionBehavior(QAbstractItemView::SelectRows);
+	table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	table->verticalHeader()->setVisible(false);
+	table->horizontalHeader()->setStretchLastSection(true);
+	table->setRowCount(rows.size());
+
+	for (int row = 0 ; row < rows.size() ; ++row)
+	{
+		const MissingPhysicalView &entry = rows.at(row);
+
+		QString folio;
+		if (entry.element && entry.element->diagram()
+				&& entry.element->diagram()->project())
+		{
+			folio = QString::number(
+					entry.element->diagram()->project()
+					->folioIndex(entry.element->diagram()) + 1);
+		}
+
+		QString label = entry.element
+				? informationOf(entry.element).value(QStringLiteral("label"))
+				: QString();
+		if (label.isEmpty()) {
+			label = QObject::tr("(sans repère)");
+		}
+
+		table->setItem(row, 0, new QTableWidgetItem(label));
+		table->setItem(row, 1, new QTableWidgetItem(folio));
+		table->setItem(row, 2, new QTableWidgetItem(entry.part_code));
+		table->setItem(row, 3, new QTableWidgetItem(entry.description));
+		table->setItem(row, 4, new QTableWidgetItem(entry.describe()));
+	}
+	table->resizeColumnsToContents();
+
+		//activated, not doubleClicked: it also fires on Enter, so the
+		//table can be used without a mouse. Same move as the report next
+		//door - whoever clicked wanted to see the component, so the
+		//window steps out of the way.
+	QObject::connect(table, &QTableWidget::activated, table,
+			 [&rows, &dialog](const QModelIndex &index)
+	{
+		const int row = index.row();
+		if (row < 0 || row >= rows.size()) {
+			return;
+		}
+		Element *element = rows.at(row).element;
+		if (!element || !element->diagram()) {
+			return;
+		}
+		element->diagram()->showMe();
+		element->diagram()->clearSelection();
+		element->setSelected(true);
+		element->ensureVisible();
+		dialog.accept();
+	});
+
+	QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Close, &dialog);
+	QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::accept);
+
+		//The queue closes here, like the one next door: pick the rows,
+		//fill in the millimetres, and the rows leave. A report that only
+		//states what is missing sends the person to another window to
+		//find again what this one already names.
+	QPushButton *measure = new QPushButton(
+				QObject::tr("Mesurer la pièce…"), &dialog);
+	measure->setToolTip(QObject::tr(
+		"Ouvre la fiche de la pièce des lignes sélectionnées pour y saisir "
+		"les millimètres : une fiche par code, et les lignes mesurées "
+		"quittent la liste."));
+	measure->setEnabled(false);
+	buttons->addButton(measure, QDialogButtonBox::ActionRole);
+
+	QObject::connect(table, &QTableWidget::itemSelectionChanged, measure,
+			 [table, measure]()
+	{
+		measure->setEnabled(!table->selectedItems().isEmpty());
+	});
+
+	QObject::connect(measure, &QPushButton::clicked, &dialog,
+			 [&dialog, table, &rows, setSummary]()
+	{
+		Catalog *catalog = QETApp::catalog();
+		if (!catalog || !catalog->isOpen()) {
+			return;
+		}
+
+			//One visit per code and not per row: twelve rows of the
+			//same contactor are one record to fill in.
+		QStringList codes;
+		const QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+		for (const QTableWidgetSelectionRange &range : ranges)
+		{
+			for (int row = range.topRow() ; row <= range.bottomRow() ; ++row)
+			{
+				if (row >= 0 && row < rows.size()
+						&& !codes.contains(rows.at(row).part_code)) {
+					codes << rows.at(row).part_code;
+				}
+			}
+		}
+		if (codes.isEmpty()) {
+			return;
+		}
+
+		for (const QString &code : codes)
+		{
+			CatalogPart part = catalog->partByCode(code);
+			if (part.isNull())
+			{
+					//The code is drawn on a folio and the
+					//catalogue does not hold it. The record is
+					//born here carrying that code, rather than
+					//sending the person to the browser to type
+					//again what this window already names.
+				const CatalogClass component =
+						catalog->classByKey(QStringLiteral("component"));
+				part = CatalogPart(code, component.isNull() ? 0 : component.id);
+			}
+
+			CatalogPartDialog part_dialog(catalog, part, &dialog);
+			if (part_dialog.exec() != QDialog::Accepted)
+			{
+					//Backing out of one record stops the walk:
+					//somebody who cancels the second of five
+					//dialogues did not ask for the third.
+				break;
+			}
+		}
+
+			//Read back rather than assumed: the record may have been
+			//saved with the width alone, and a row leaving the list on
+			//the strength of the dialogue having been accepted would be
+			//a product reported as ready that the layout cannot draw.
+		QHash<QString, PartBody> read;
+		for (int row = rows.size() - 1 ; row >= 0 ; --row)
+		{
+			const QString code = rows.at(row).part_code;
+			if (!read.contains(code)) {
+				read.insert(code, bodyOf(*catalog, code));
+			}
+			const PartBody body = read.value(code);
+			if (body.known && body.view.hasPhysicalView())
+			{
+				rows.removeAt(row);
+				table->removeRow(row);
+			}
+		}
+
+		setSummary();
 	});
 
 	QVBoxLayout *layout = new QVBoxLayout(&dialog);
