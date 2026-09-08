@@ -343,6 +343,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/catalog/catalogpart.h
   ${QET_DIR}/sources/catalog/catalogproperty.cpp
   ${QET_DIR}/sources/catalog/catalogproperty.h
+  ${QET_DIR}/sources/catalog/physicalview.cpp
+  ${QET_DIR}/sources/catalog/physicalview.h
   ${QET_DIR}/sources/catalog/catalogrepository.cpp
   ${QET_DIR}/sources/catalog/catalogrepository.h
   ${QET_DIR}/sources/catalog/catalogschema.cpp

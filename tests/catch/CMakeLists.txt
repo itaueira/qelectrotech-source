@@ -110,6 +110,7 @@ add_executable(
     src/catalogassignment_test.cpp
     src/catalogclasspackage_test.cpp
     src/catalogimport_test.cpp
+    src/physicalview_test.cpp
     src/titleblockvariables_test.cpp
     src/titleblockauthoring_test.cpp
     src/environment_test.cpp
@@ -332,6 +333,14 @@ add_executable(
     ${QET_DIR}/sources/catalog/catalogpart.h
     ${QET_DIR}/sources/catalog/catalogproperty.cpp
     ${QET_DIR}/sources/catalog/catalogproperty.h
+    # Whether a product code is ready to be drawn: a reading over the map
+    # of values a part holds, no data base and no window. It is here
+    # because it is the one place "nobody measured this" and "this is
+    # zero" are told apart, and because the layout, the part dialogue and
+    # the report of what is still to be catalogued all have to give the
+    # same answer - so the answer is proved once, here.
+    ${QET_DIR}/sources/catalog/physicalview.cpp
+    ${QET_DIR}/sources/catalog/physicalview.h
     ${QET_DIR}/sources/catalog/catalogrepository.cpp
     ${QET_DIR}/sources/catalog/catalogrepository.h
     ${QET_DIR}/sources/catalog/catalogschema.cpp

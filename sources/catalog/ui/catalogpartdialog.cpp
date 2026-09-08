@@ -19,6 +19,7 @@
 
 #include "../catalog.h"
 #include "../catalogassignment.h"
+#include "../physicalview.h"
 #include "catalogbrowserdialog.h"
 
 #include <QCheckBox>
@@ -672,6 +673,17 @@ bool CatalogPartDialog::collect(CatalogPart &part)
 	return true;
 }
 
+namespace
+{
+	/// @return the label of @a key, the key itself when nothing declares it
+	QString fieldName(const QHash<QString, CatalogProperty> &declarations,
+			  const QString &key)
+	{
+		const QString name = declarations.value(key).name;
+		return name.isEmpty() ? key : name;
+	}
+}
+
 /**
 	@brief CatalogPartDialog::save
 	@param as_new_revision
@@ -692,6 +704,42 @@ bool CatalogPartDialog::save(bool as_new_revision)
 	if (!to_save.isValid(&error))
 	{
 		QMessageBox::warning(this, tr("Pièce incomplète"), error);
+		return false;
+	}
+
+	// The axis of the part is a pair, and half of it is not half an answer.
+	// Refused rather than completed, and refused rather than quietly
+	// dropped: the missing half would have to be invented, and an invented
+	// axis clips a whole row of a rail at the wrong height - an error that
+	// only shows up when the plate comes back drilled. What was typed stays
+	// on screen so that the other half can be typed beside it.
+	QHash<QString, CatalogProperty> declarations;
+	const QList<CatalogProperty> declared =
+			m_catalog->effectiveProperties(to_save.class_id);
+	for (const CatalogProperty &property : declared) {
+		declarations.insert(property.key, property);
+	}
+
+	const CatalogPhysicalView body =
+			CatalogPhysicalView::read(m_catalog->effectiveValues(to_save),
+						  declarations);
+	if (body.hasHalfInsertionPoint())
+	{
+			//Named by the key when the class no longer declares
+			//the property: Catalog::effectiveValues keeps the
+			//value of a removed property visible, so this can be
+			//reached with nothing to read the label from, and a
+			//message naming two empty quotes helps nobody.
+		const QString x_name = fieldName(declarations,
+						 QStringLiteral("insertion_x"));
+		const QString y_name = fieldName(declarations,
+						 QStringLiteral("insertion_y"));
+		QMessageBox::warning(this, tr("Point d'insertion incomplet"),
+				     tr("Le point d'insertion demande ses deux "
+					"décalages. Renseignez « %1 » et « %2 », "
+					"ou laissez les deux vides : la pièce sera "
+					"alors posée par son coin.")
+				     .arg(x_name, y_name));
 		return false;
 	}
 

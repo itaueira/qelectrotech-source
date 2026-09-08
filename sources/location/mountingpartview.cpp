@@ -18,11 +18,9 @@
 #include "mountingpartview.h"
 
 #include "../catalog/catalog.h"
+#include "../catalog/physicalview.h"
 
 #include <QSet>
-#include <QVariant>
-
-#include <cmath>
 
 namespace
 {
@@ -35,11 +33,14 @@ namespace
 		ask, asked the same way on purpose: a dimension nobody filled in
 		arrives as zero, and four files that disagreed about whether zero
 		is a length would describe four different panels.
+
+		Answered by the catalogue rather than here, because the part
+		dialogue asks it too and the catalogue cannot include this
+		header. The two tolerances are compared by a case of the suite.
 	*/
 	bool isUsableLength(qreal length)
 	{
-		return std::isfinite(length)
-		       && length > MountingArea::tolerance();
+		return CatalogPhysicalView::isLength(length);
 	}
 
 	/**
@@ -63,101 +64,6 @@ namespace
 			return !isUsableLength(before) && !isUsableLength(after);
 		}
 		return qAbs(after - before) <= MountingArea::tolerance();
-	}
-
-	/// What one catalogue cell says about a length, and whether it said it.
-	class ReadMeasure
-	{
-		public:
-				/// the number the cell holds, whatever it is
-			qreal value = 0.0;
-				/// true when the cell held a number at all
-			bool declared = false;
-	};
-
-	/**
-		@brief measureOf
-		@param properties the properties the class of the part declares,
-		by key
-		@param values every value of the part, the initial values of its
-		class included
-		@param key which measure
-		@return the number and whether anybody typed one
-
-		The conversion is the catalogue's own, CatalogProperty::toVariant,
-		and it is used rather than a bare toDouble for one reason: it
-		answers with an invalid QVariant instead of a zero, which is the
-		only place in the program where "not measured" and "zero
-		millimetre" are still told apart. Reading it as a number here
-		would collapse the two before this file ever saw them.
-
-		The value is trimmed first, and that is the one repair the read
-		makes: a spreadsheet import carries a stray space often enough,
-		and reading is tolerant. Not repaired, and worth knowing: a
-		comma as the decimal separator is not read as a number, because
-		1,250 is a thousand two hundred and fifty to one office and one
-		and a quarter to another - so it is reported as unmeasured
-		rather than guessed at.
-
-		A property the class no longer declares still has its value read,
-		as text: Catalog::effectiveValues keeps the values of a removed
-		property visible instead of dropping them, and a clearance that
-		survived the removal of its own field is a number somebody typed.
-	*/
-	ReadMeasure measureOf(const QHash<QString, CatalogProperty> &properties,
-			      const QHash<QString, QString> &values,
-			      const QString &key)
-	{
-		ReadMeasure read;
-
-		const QString raw = values.value(key).trimmed();
-		if (raw.isEmpty()) {
-			return read;
-		}
-
-		const QVariant typed = properties.contains(key)
-				       ? properties.value(key).toVariant(raw)
-				       : QVariant(raw);
-		bool ok = false;
-		const qreal number = typed.toDouble(&ok);
-		if (!ok) {
-			return read;
-		}
-
-		read.value    = number;
-		read.declared = true;
-		return read;
-	}
-
-	/**
-		@brief flagOf
-		@param values every value of the part
-		@param key which flag
-		@param fallback what it means when the cell says nothing usable
-		@return what the flag says
-
-		The three spellings the catalogue writes for a boolean, and the
-		fallback decided here rather than in CatalogProperty: that class
-		answers "invalid" for anything else, which is the right answer
-		for a conversion and no answer at all for a drawing. What a
-		missing outline flag has to mean belongs where the outline is
-		drawn.
-	*/
-	bool flagOf(const QHash<QString, QString> &values,
-		    const QString &key,
-		    bool fallback)
-	{
-		const QString raw = values.value(key).trimmed().toLower();
-		if (raw.isEmpty()) {
-			return fallback;
-		}
-		if (raw == QStringLiteral("1") || raw == QStringLiteral("true")) {
-			return true;
-		}
-		if (raw == QStringLiteral("0") || raw == QStringLiteral("false")) {
-			return false;
-		}
-		return fallback;
 	}
 
 	/// @return the distinct codes of @a codes, in the order they were met
@@ -309,16 +215,12 @@ QPointF MountingPartView::insertionAt(const QPointF &corner) const
 */
 QStringList MountingPartReader::physicalViewKeys()
 {
-	return { QStringLiteral("width"),
-		 QStringLiteral("height"),
-		 QStringLiteral("depth"),
-		 QStringLiteral("clearance_top"),
-		 QStringLiteral("clearance_bottom"),
-		 QStringLiteral("clearance_left"),
-		 QStringLiteral("clearance_right"),
-		 QStringLiteral("insertion_x"),
-		 QStringLiteral("insertion_y"),
-		 QStringLiteral("draw_outline") };
+		//The catalogue's list and not a copy of it: two lists of the
+		//same ten keys would drift, and the drift would be silent -
+		//a key present in one and missing from the other makes every
+		//part read as unmeasured, which every caller tolerates on
+		//purpose.
+	return CatalogPhysicalView::keys();
 }
 
 /**
@@ -376,68 +278,47 @@ MountingPartView MountingPartReader::viewOfPart(const Catalog &catalog,
 		properties.insert(property.key, property);
 	}
 
-	const QHash<QString, QString> values = catalog.effectiveValues(part);
+	const CatalogPhysicalView body =
+			CatalogPhysicalView::read(catalog.effectiveValues(part),
+						  properties);
 
-	const ReadMeasure part_width =
-			measureOf(properties, values, QStringLiteral("width"));
-	const ReadMeasure part_height =
-			measureOf(properties, values, QStringLiteral("height"));
-	const ReadMeasure part_depth =
-			measureOf(properties, values, QStringLiteral("depth"));
-
-		//Folded here and not at the point of use: a width of minus ten
-		//is not a body ten millimetre wide facing the other way, it is
-		//a record somebody mistyped, and a negative dimension that
-		//reached a rectangle would make that rectangle claim room to
-		//the left of where the part stands.
-	view.width  = isUsableLength(part_width.value) ? part_width.value : 0.0;
-	view.height = isUsableLength(part_height.value) ? part_height.value : 0.0;
-	view.depth  = isUsableLength(part_depth.value) ? part_depth.value : 0.0;
-
-	const ReadMeasure top =
-			measureOf(properties, values, QStringLiteral("clearance_top"));
-	const ReadMeasure bottom =
-			measureOf(properties, values, QStringLiteral("clearance_bottom"));
-	const ReadMeasure left =
-			measureOf(properties, values, QStringLiteral("clearance_left"));
-	const ReadMeasure right =
-			measureOf(properties, values, QStringLiteral("clearance_right"));
+		//Folded here and not in the reading: a width of minus ten is not a
+		//body ten millimetre wide facing the other way, it is a record
+		//somebody mistyped, and a negative dimension that reached a
+		//rectangle would make that rectangle claim room to the left of
+		//where the part stands. The catalogue keeps the number it read,
+		//because a dialogue showing it back has to show what was typed.
+	view.width  = body.hasWidth() ? body.width.value : 0.0;
+	view.height = body.hasHeight() ? body.height.value : 0.0;
+	view.depth  = body.hasDepth() ? body.depth.value : 0.0;
 
 		//Through asked(), which folds what is not a length to nothing
 		//asked for - the same fold MountingClearance applies, applied
 		//here so that the table handed to the check holds only numbers
 		//it can use.
-	view.clearance = MountingClearance(MountingClearance::asked(top.value),
-					   MountingClearance::asked(bottom.value),
-					   MountingClearance::asked(left.value),
-					   MountingClearance::asked(right.value));
+	view.clearance = MountingClearance(
+			MountingClearance::asked(body.clearance_top.value),
+			MountingClearance::asked(body.clearance_bottom.value),
+			MountingClearance::asked(body.clearance_left.value),
+			MountingClearance::asked(body.clearance_right.value));
 
 		//Declared is about the cell and not about the number. A part
 		//recorded as needing no air at all is a statement somebody made
 		//- a breaker is meant to be clipped against its neighbour - and
 		//it reads in the numbers exactly like a part nobody looked at.
 		//The flag is the only place the difference survives.
-	view.clearance_declared = top.declared || bottom.declared
-				  || left.declared || right.declared;
-
-	const ReadMeasure insertion_x =
-			measureOf(properties, values, QStringLiteral("insertion_x"));
-	const ReadMeasure insertion_y =
-			measureOf(properties, values, QStringLiteral("insertion_y"));
+	view.clearance_declared = body.hasClearance();
 
 		//Both or neither, because an axis needs two numbers. And not
 		//folded: an offset of zero is the top left corner of the body,
 		//which is a place somebody may well have chosen, and an offset
 		//may be negative for a part whose axis sits above its own
-		//outline. Only the declaration decides here.
-	view.insertion_declared = insertion_x.declared && insertion_y.declared;
-	view.insertion_half_declared =
-			insertion_x.declared != insertion_y.declared;
-	if (view.insertion_declared) {
-		view.insertion = QPointF(insertion_x.value, insertion_y.value);
-	}
+		//outline. Only the declaration decides there.
+	view.insertion_declared      = body.hasInsertionPoint();
+	view.insertion_half_declared = body.hasHalfInsertionPoint();
+	view.insertion               = body.insertionOffset();
 
-	view.draw_outline = flagOf(values, QStringLiteral("draw_outline"), true);
+	view.draw_outline = body.draw_outline;
 
 	return view;
 }
