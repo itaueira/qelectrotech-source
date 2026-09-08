@@ -2473,12 +2473,12 @@ O que já existe aqui não é alterado. Continuar?</translation>
     </message>
     <message>
         <source>L&apos;ordre des bornes est celui des bornes du symbole : c&apos;est lui qui décide quel numéro remplace quelle étiquette provisoire. La colonne « Symbole » sert aux pièces dessinées en plusieurs symboles, comme une bobine et ses contacts.</source>
-        <translation type="vanished">A ordem dos bornes é a ordem dos bornes do símbolo: é ela que decide qual número substitui qual rótulo provisório. A coluna « Símbolo » serve para peças desenhadas em vários símbolos, como uma bobina e seus contatos.</translation>
+        <translation type="vanished">A ordem dos bornes é a ordem dos terminais do símbolo: é ela que decide qual número substitui qual rótulo provisório. A coluna « Símbolo » serve para peças desenhadas em vários símbolos, como uma bobina e seus contatos.</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogpartdialog.cpp" line="127"/>
         <source>L&apos;ordre des bornes est celui des bornes du symbole : c&apos;est lui qui décide quel numéro remplace quelle étiquette provisoire. La colonne « Symbole » sert aux pièces dessinées en plusieurs symboles, comme une bobine et ses contacts. La colonne « Canal » groupe les bornes d&apos;un même point d&apos;entrée ou de sortie : une entrée à deux fils est un canal de deux bornes, son entrée et son commun de retour.</source>
-        <translation>A ordem dos bornes é a ordem dos bornes do símbolo: é ela que decide qual número substitui qual etiqueta provisória. A coluna « Símbolo » serve às peças desenhadas em vários símbolos, como uma bobina e os contatos dela. A coluna « Canal » agrupa os bornes de um mesmo ponto de entrada ou de saída: uma entrada a dois fios é um canal de dois bornes, a entrada dela e o comum de retorno.</translation>
+        <translation>A ordem dos bornes é a ordem dos terminais do símbolo: é ela que decide qual número substitui qual etiqueta provisória. A coluna « Símbolo » serve às peças desenhadas em vários símbolos, como uma bobina e os contatos dela. A coluna « Canal » agrupa os bornes de um mesmo ponto de entrada ou de saída: uma entrada a dois fios é um canal de dois bornes, a entrada dela e o comum de retorno.</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogpartdialog.cpp" line="146"/>
@@ -18678,7 +18678,7 @@ Crie seu próprio texto usando as seguintes variáveis:
     <message>
         <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="206"/>
         <source>Eléments bornier</source>
-        <translation>Elementos do bloco de terminais</translation>
+        <translation>Elementos de régua de bornes</translation>
     </message>
     <message>
         <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="462"/>
