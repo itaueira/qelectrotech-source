@@ -128,6 +128,29 @@ CatalogMeasure CatalogPhysicalView::measureIn(const QHash<QString, QString> &val
 }
 
 /**
+	@brief CatalogPhysicalView::measureIn
+	@param values every value of the part, the initial values of its class
+	included
+	@param properties the properties the class declares, by key
+	@param origins where each value was written
+	@param key which measure
+	@return the number, whether anybody typed one, and which record holds it
+
+	The number is read by the overload above rather than read again here:
+	two readings of one cell is how a panel ends up explaining a number
+	other than the one it draws.
+*/
+CatalogMeasure CatalogPhysicalView::measureIn(const QHash<QString, QString> &values,
+					      const QHash<QString, CatalogProperty> &properties,
+					      const QHash<QString, CatalogValueOrigin> &origins,
+					      const QString &key)
+{
+	CatalogMeasure measure = measureIn(values, properties, key);
+	measure.origin = origins.value(key);
+	return measure;
+}
+
+/**
 	@brief CatalogPhysicalView::flagIn
 	@param values every value of the part
 	@param key which flag
@@ -160,29 +183,50 @@ bool CatalogPhysicalView::flagIn(const QHash<QString, QString> &values,
 	@brief CatalogPhysicalView::read
 	@param values every value of the part
 	@param properties the properties the class declares, by key
-	@return the body the values describe
+	@return the body the values describe, every measure carrying an Unread
+	origin because this caller did not ask for one
 */
 CatalogPhysicalView CatalogPhysicalView::read(const QHash<QString, QString> &values,
 					      const QHash<QString, CatalogProperty> &properties)
 {
+	return read(values, properties, QHash<QString, CatalogValueOrigin>());
+}
+
+/**
+	@brief CatalogPhysicalView::read
+	@param values every value of the part
+	@param properties the properties the class declares, by key
+	@param origins where each value was written
+	@return the body the values describe
+*/
+CatalogPhysicalView CatalogPhysicalView::read(const QHash<QString, QString> &values,
+					      const QHash<QString, CatalogProperty> &properties,
+					      const QHash<QString, CatalogValueOrigin> &origins)
+{
 	CatalogPhysicalView view;
 
-	view.width  = measureIn(values, properties, QStringLiteral("width"));
-	view.height = measureIn(values, properties, QStringLiteral("height"));
-	view.depth  = measureIn(values, properties, QStringLiteral("depth"));
+	view.width  = measureIn(values, properties, origins, QStringLiteral("width"));
+	view.height = measureIn(values, properties, origins, QStringLiteral("height"));
+	view.depth  = measureIn(values, properties, origins, QStringLiteral("depth"));
 
 	view.clearance_top =
-			measureIn(values, properties, QStringLiteral("clearance_top"));
+			measureIn(values, properties, origins, QStringLiteral("clearance_top"));
 	view.clearance_bottom =
-			measureIn(values, properties, QStringLiteral("clearance_bottom"));
+			measureIn(values, properties, origins, QStringLiteral("clearance_bottom"));
 	view.clearance_left =
-			measureIn(values, properties, QStringLiteral("clearance_left"));
+			measureIn(values, properties, origins, QStringLiteral("clearance_left"));
 	view.clearance_right =
-			measureIn(values, properties, QStringLiteral("clearance_right"));
+			measureIn(values, properties, origins, QStringLiteral("clearance_right"));
 
-	view.insertion_x = measureIn(values, properties, QStringLiteral("insertion_x"));
-	view.insertion_y = measureIn(values, properties, QStringLiteral("insertion_y"));
+	view.insertion_x =
+			measureIn(values, properties, origins, QStringLiteral("insertion_x"));
+	view.insertion_y =
+			measureIn(values, properties, origins, QStringLiteral("insertion_y"));
 
+		//No origin on the flag, and it is not an omission: the outline
+		//has a fallback of its own - a part with no picture draws as a
+		//box - so "nobody wrote it anywhere" is already an answer with
+		//nothing to name, while the four clearances have none.
 	view.draw_outline = flagIn(values, QStringLiteral("draw_outline"), true);
 
 	return view;

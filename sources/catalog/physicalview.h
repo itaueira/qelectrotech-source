@@ -19,6 +19,7 @@
 #define PHYSICALVIEW_H
 
 #include "catalogproperty.h"
+#include "catalogvalueorigin.h"
 
 #include <QHash>
 #include <QPointF>
@@ -26,7 +27,8 @@
 #include <QStringList>
 
 /**
-	@brief What one cell of the catalogue says about a length.
+	@brief What one cell of the catalogue says about a length, and which
+	record it was written on.
 
 	Two facts and not one, because a length has one state more than a
 	number: nobody filled it in. The catalogue keeps the two apart - an
@@ -34,6 +36,14 @@
 	difference out of it. Collapsing them into a bare qreal is the one
 	mistake this class exists to make impossible, and it is the mistake
 	that turns a part nobody measured into a part measured as nothing.
+
+	Three, with the origin, and the third is a question of its own: 100 mm
+	typed on the part and 100 mm taken from the initial value of the class
+	are the same number and not the same fact, because editing the class
+	moves the second and not the first. It travels here, beside the number
+	it explains, so that a panel cannot pair a number with the origin of
+	another - which is the way a table of numbers and a table of origins
+	kept apart eventually goes wrong.
 */
 class CatalogMeasure
 {
@@ -58,6 +68,15 @@ class CatalogMeasure
 		qreal value = 0.0;
 			/// true when the cell held a number
 		bool declared = false;
+		/**
+			which record holds the cell: the part, or the class that
+			declares the property.
+
+			Unread unless the view was read with the origins asked
+			for, because a reading carrying no provenance has to say
+			so rather than say the cell is empty.
+		*/
+		CatalogValueOrigin origin;
 };
 
 /**
@@ -140,6 +159,27 @@ class CatalogPhysicalView
 						const QHash<QString, CatalogProperty> &properties,
 						const QString &key);
 		/**
+			@brief What one cell says about a length, and where it
+			was written.
+			@param values every value of the part, the initial values
+			of its class included
+			@param properties the properties the class declares, by
+			key
+			@param origins where each value was written, as
+			Catalog::valueOrigins answers
+			@param key which measure
+			@return the number, whether anybody typed one, and which
+			record holds it
+
+			The origin of a key @a origins says nothing about stays
+			Unread: this reading carries no provenance for that cell,
+			which is not the same statement as the cell being empty.
+		*/
+		static CatalogMeasure measureIn(const QHash<QString, QString> &values,
+						const QHash<QString, CatalogProperty> &properties,
+						const QHash<QString, CatalogValueOrigin> &origins,
+						const QString &key);
+		/**
 			@brief What one cell says about a flag.
 			@param values every value of the part
 			@param key which flag
@@ -168,6 +208,25 @@ class CatalogPhysicalView
 		*/
 		static CatalogPhysicalView read(const QHash<QString, QString> &values,
 						const QHash<QString, CatalogProperty> &properties);
+		/**
+			@brief Read the body of a part out of its values, each
+			measure knowing which record it was written on.
+			@param values every value of the part, the initial values
+			of its class included
+			@param properties the properties the class declares, by
+			key
+			@param origins where each value was written - what
+			Catalog::valueOrigins returns for the same part
+			@return the view
+
+			The overload a panel calls. The numbers are the same
+			numbers the two overloads above read, one reading and not
+			two, so that what is drawn and what is explained cannot
+			disagree.
+		*/
+		static CatalogPhysicalView read(const QHash<QString, QString> &values,
+						const QHash<QString, CatalogProperty> &properties,
+						const QHash<QString, CatalogValueOrigin> &origins);
 		/**
 			@brief Read the body of a part out of nothing but its
 			values.

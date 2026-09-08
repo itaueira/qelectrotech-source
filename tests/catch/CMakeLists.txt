@@ -110,6 +110,7 @@ add_executable(
     src/catalogassignment_test.cpp
     src/catalogclasspackage_test.cpp
     src/catalogimport_test.cpp
+    src/catalogvalueorigin_test.cpp
     src/physicalview_test.cpp
     src/titleblockvariables_test.cpp
     src/titleblockauthoring_test.cpp
@@ -333,6 +334,11 @@ add_executable(
     ${QET_DIR}/sources/catalog/catalogpart.h
     ${QET_DIR}/sources/catalog/catalogproperty.cpp
     ${QET_DIR}/sources/catalog/catalogproperty.h
+    # Which record a value was written on - the part, or the class that
+    # declares the property. A value type over Qt Core, no data base of its
+    # own: the resolving is Catalog's, next to the flattening it explains.
+    ${QET_DIR}/sources/catalog/catalogvalueorigin.cpp
+    ${QET_DIR}/sources/catalog/catalogvalueorigin.h
     # Whether a product code is ready to be drawn: a reading over the map
     # of values a part holds, no data base and no window. It is here
     # because it is the one place "nobody measured this" and "this is

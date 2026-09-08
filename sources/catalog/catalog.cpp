@@ -1943,6 +1943,99 @@ QHash<QString, QString> Catalog::effectiveValues(const CatalogPart &part) const
 	return values;
 }
 
+/**
+	@brief Catalog::valueOrigins
+	@param part
+	@return where each value of @a part was written
+
+	Walks the same two lists effectiveValues walks, in the same order, and
+	the repetition is deliberate rather than something to be tidied away:
+	the two answers are read side by side, and an origin resolved by another
+	rule would explain a number other than the one on screen. A key of one
+	is a key of the other.
+*/
+QHash<QString, CatalogValueOrigin> Catalog::valueOrigins(const CatalogPart &part) const
+{
+	QHash<QString, CatalogValueOrigin> origins;
+
+	const QList<CatalogProperty> properties = effectiveProperties(part.class_id);
+	for (const CatalogProperty &property : properties) {
+		origins.insert(property.key, originOf(part, property.key, property));
+	}
+
+	// A value left behind by a property that was removed is kept visible by
+	// effectiveValues, so it is answered for here too: the part is what
+	// holds it, the declaration that would have explained it being gone.
+	const QStringList own_keys = part.values.keys();
+	for (const QString &key : own_keys)
+	{
+		if (!origins.contains(key)) {
+			origins.insert(key, originOf(part, key, CatalogProperty()));
+		}
+	}
+
+	return origins;
+}
+
+/**
+	@brief Catalog::valueOrigin
+	@param part
+	@param key
+	@return where the value of @a key was written
+*/
+CatalogValueOrigin Catalog::valueOrigin(const CatalogPart &part,
+					const QString &key) const
+{
+	return originOf(part, key, effectiveProperty(part.class_id, key));
+}
+
+/**
+	@brief Catalog::originOf
+	@param part
+	@param key
+	@param property the declaration of @a key, a null CatalogProperty when
+	no class of the part declares it
+	@return where the value effectiveValues returns for @a key was written
+
+	Three answers and not two, and the third is what the function is for: a
+	cell holding nothing is not a cell somebody filled with emptiness.
+
+	The own cell of the part wins whatever it holds, emptiness included -
+	that is the branch effectiveValues takes, so a part whose value was
+	cleared falls back to nothing rather than back to the initial value of
+	its class. Naming the class there would explain a number the part does
+	not show.
+
+	And an initial value that is itself empty is inherited by nobody: that
+	is what the seeding writes for every measure nobody took, so naming a
+	class for it would turn a field the office never filled into a field the
+	office decided - which is the whole failure this pair of answers exists
+	to prevent.
+*/
+CatalogValueOrigin Catalog::originOf(const CatalogPart &part,
+				     const QString &key,
+				     const CatalogProperty &property) const
+{
+	if (part.hasValue(key))
+	{
+		return part.value(key).trimmed().isEmpty()
+		       ? CatalogValueOrigin::unset()
+		       : CatalogValueOrigin::fromPart();
+	}
+
+	if (property.isNull() || property.default_value.trimmed().isEmpty()) {
+		return CatalogValueOrigin::unset();
+	}
+
+	// The class that declares the property, and not the class of the part:
+	// the initial value belongs to the declaration, and the declaration is
+	// where somebody would go to change it.
+	const CatalogClass declaring = classById(property.class_id);
+	return CatalogValueOrigin::fromClass(property.class_id,
+					     declaring.key,
+					     declaring.name);
+}
+
 // -----------------------------------------------------------------------------
 // Spreadsheet import profiles
 // -----------------------------------------------------------------------------

@@ -21,6 +21,7 @@
 #include "catalogclass.h"
 #include "catalogpart.h"
 #include "catalogproperty.h"
+#include "catalogvalueorigin.h"
 
 #include <QHash>
 #include <QList>
@@ -186,6 +187,30 @@ class Catalog : public QObject
 			what a list, a bill of material or a part assignment reads.
 		*/
 		QHash<QString, QString> effectiveValues(const CatalogPart &part) const;
+		/**
+			@return where each value effectiveValues returns was
+			written: on the part, or on the class that declares the
+			property. One entry per key of effectiveValues, and the
+			same keys.
+
+			The parallel question, kept parallel rather than folded
+			into a map of pairs: a bill of material has no use for
+			the second answer and goes on reading the first alone,
+			while a screen showing a number has to be able to say
+			whether editing the class would change it.
+		*/
+		QHash<QString, CatalogValueOrigin> valueOrigins(const CatalogPart &part) const;
+		/**
+			@param part
+			@param key
+			@return where the value of @a key was written.
+
+			For the caller showing one field. A caller showing
+			several asks for the map above: this walks the ancestry
+			of the class of the part once per call.
+		*/
+		CatalogValueOrigin valueOrigin(const CatalogPart &part,
+					       const QString &key) const;
 
 		// ---------------------------------------------------------------
 		// Spreadsheet import profiles
@@ -231,6 +256,10 @@ class Catalog : public QObject
 		void reloadClasses();
 		void reloadProperties();
 		void reloadLists();
+
+		CatalogValueOrigin originOf(const CatalogPart &part,
+					    const QString &key,
+					    const CatalogProperty &property) const;
 
 		CatalogPart readPart(int part_id) const;
 		bool writePartRows(const CatalogPart &part, QString *error);

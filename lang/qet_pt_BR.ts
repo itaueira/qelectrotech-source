@@ -3293,6 +3293,24 @@ Os dados da peça ficam legíveis para quem tem acesso à pasta. O preço e as c
     </message>
 </context>
 <context>
+    <name>CatalogValueOrigin</name>
+    <message>
+        <location filename="../sources/catalog/catalogvalueorigin.cpp" line="131"/>
+        <source>valeur saisie sur la pièce</source>
+        <translation>valor digitado na peça</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogvalueorigin.cpp" line="133"/>
+        <source>valeur héritée de la classe %1</source>
+        <translation>valor herdado da classe %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/catalog/catalogvalueorigin.cpp" line="135"/>
+        <source>valeur non renseignée</source>
+        <translation>valor não preenchido</translation>
+    </message>
+</context>
+<context>
     <name>CircuitGenerator</name>
     <message>
         <location filename="../sources/macro/circuitgenerator.cpp" line="58"/>
