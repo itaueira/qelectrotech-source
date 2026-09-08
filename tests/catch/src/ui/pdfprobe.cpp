@@ -354,6 +354,19 @@ QHash<QString, int> Document::fontsOf(int resources_object) const
 	one, "<lo> <hi> [ <u> <u> ... ]", and a run mapped to consecutive code
 	points, "<lo> <hi> <u>". Reading only the first would lose whole fonts
 	without saying so.
+
+	They are read in a single pass, entry by entry, and that is not a matter
+	of taste. Reading the map twice - once for the arrays, once for the
+	contiguous runs - makes the second pass read the insides of the first:
+	three code points sitting next to each other inside an array are also a
+	valid contiguous entry, and the later pass overwrote what the earlier
+	one had got right. It was measured: a page saying FOLIOGAMMA came back
+	as FwxIwGAyyA, and the frame's own words as "Fitheiro" and "Dutu".
+	Worse than the garbling is that whether it bites depends on the layout
+	of the map - the same sheets read correctly in one document and wrongly
+	in another, only because they were emitted in a different order. That is
+	a probe turning an intact file into a defect, and it is the one thing
+	this file must not do.
 */
 const QHash<int, uint> &Document::toUnicodeOf(int font_object) const
 {
@@ -374,36 +387,50 @@ const QHash<int, uint> &Document::toUnicodeOf(int font_object) const
 
 	const QString cmap = QString::fromLatin1(streamOf(to_unicode));
 
-	const QRegularExpression listed(
-		QStringLiteral("<([0-9A-Fa-f]+)>\\s*<([0-9A-Fa-f]+)>\\s*\\[([^\\]]*)\\]"));
-	QRegularExpressionMatchIterator it = listed.globalMatch(cmap);
-	while (it.hasNext()) {
-		const QRegularExpressionMatch m = it.next();
-		const int low = m.captured(1).toInt(nullptr, 16);
-		const QRegularExpression one(QStringLiteral("<([0-9A-Fa-f]+)>"));
-		QRegularExpressionMatchIterator vt = one.globalMatch(m.captured(3));
-		int offset = 0;
-		while (vt.hasNext()) {
-			map.insert(low + offset,
-				   vt.next().captured(1).toUInt(nullptr, 16));
-			++offset;
-		}
-	}
-
-	const QRegularExpression ranged(
+	// Only what stands between beginbfrange and endbfrange is a mapping;
+	// the codespace range above it has the same shape and means something
+	// else entirely.
+	const QRegularExpression block(
+		QStringLiteral("beginbfrange(.*?)endbfrange"),
+		QRegularExpression::DotMatchesEverythingOption);
+	// One entry: two glyph numbers, then either an array of code points or
+	// a single one. The alternation is what keeps an array whole - the scan
+	// resumes after its closing bracket and cannot re-read what is inside.
+	const QRegularExpression entry(
 		QStringLiteral("<([0-9A-Fa-f]+)>\\s*<([0-9A-Fa-f]+)>\\s*"
-			       "<([0-9A-Fa-f]+)>"));
-	it = ranged.globalMatch(cmap);
-	while (it.hasNext()) {
-		const QRegularExpressionMatch m = it.next();
-		const int  low  = m.captured(1).toInt(nullptr, 16);
-		const int  high = m.captured(2).toInt(nullptr, 16);
-		const uint dest = m.captured(3).toUInt(nullptr, 16);
-		if (high < low || high - low > 0xFFFF) {
-			continue;
-		}
-		for (int g = low ; g <= high ; ++g) {
-			map.insert(g, dest + uint(g - low));
+					   "(?:\\[([^\\]]*)\\]|<([0-9A-Fa-f]+)>)"));
+	const QRegularExpression one(QStringLiteral("<([0-9A-Fa-f]+)>"));
+
+	QRegularExpressionMatchIterator bt = block.globalMatch(cmap);
+	while (bt.hasNext()) {
+		const QString body = bt.next().captured(1);
+		QRegularExpressionMatchIterator it = entry.globalMatch(body);
+		while (it.hasNext()) {
+			const QRegularExpressionMatch m = it.next();
+			const int low  = m.captured(1).toInt(nullptr, 16);
+			const int high = m.captured(2).toInt(nullptr, 16);
+
+			if (m.captured(3).isNull()) {
+				const uint dest =
+					m.captured(4).toUInt(nullptr, 16);
+				if (high < low || high - low > 0xFFFF) {
+					continue;
+				}
+				for (int g = low ; g <= high ; ++g) {
+					map.insert(g, dest + uint(g - low));
+				}
+				continue;
+			}
+
+			QRegularExpressionMatchIterator vt =
+				one.globalMatch(m.captured(3));
+			int offset = 0;
+			while (vt.hasNext()) {
+				map.insert(low + offset,
+						   vt.next().captured(1)
+						   .toUInt(nullptr, 16));
+				++offset;
+			}
 		}
 	}
 	return map;

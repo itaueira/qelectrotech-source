@@ -499,6 +499,7 @@ if(TARGET qet_core)
         src/ui/pdfprobe.cpp
         src/ui/pdfprobe.h
         src/ui/pdfexport_test.cpp
+        src/ui/pdffolios_test.cpp
         src/ui/projectopen_test.cpp
         src/ui/appearance_test.cpp
         src/ui/dragassign_test.cpp

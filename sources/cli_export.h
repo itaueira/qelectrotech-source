@@ -42,7 +42,7 @@ namespace CLIExport {
 		@return process exit code (0 on success).
 
 		Usage:
-		  qelectrotech --export-pdf     <project.qet> <output.pdf>
+		  qelectrotech --export-pdf     <project.qet> <output.pdf> [folios=N,N]
 		  qelectrotech --export-png     <project.qet> <output_dir>
 		  qelectrotech --export-svg     <project.qet> <output_dir>
 		  qelectrotech --export-cables  <project.qet> <output.csv>
@@ -56,7 +56,11 @@ namespace CLIExport {
 		  qelectrotech --set-titleblock <project.qet> <output.qet> key=value...
 		  qelectrotech --set-iec        <project.qet> <output.qet> <mode> [opts]
 
-		PDF: one multi-page document (one diagram per page).
+		PDF: one multi-page document (one diagram per page).  The optional
+		     folios=N[,N...] narrows it to those folios and to that order
+		     (1-based, as the sheet list numbers them); a folio outside
+		     the project, a repeated one or a misspelled option is
+		     refused rather than quietly ignored.
 		PNG/SVG: one file per diagram, named <output_dir>/<NN>_<title>.<ext>.
 		cables: wiring list (one row per conductor) as CSV.
 		wires: list of distinct wire numbers as CSV.

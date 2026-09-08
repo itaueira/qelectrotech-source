@@ -125,16 +125,108 @@ void renderDiagram(Diagram *diagram, QPainter &painter, const QRectF &target)
 	diagram->setDisplayGuides(was_drawing_guides);
 }
 
-int exportPdf(QETProject &project, const QString &output)
+/// Option that narrows an export to a few sheets: "folios=12,13,40".
+const QLatin1String folio_option("folios=");
+
+/**
+	Pick, out of @p diagrams, the folios @p options asks for, in the order it
+	asks for them.  Without a "folios=" option the whole project is taken,
+	which is what the command line did before this existed.
+
+	The numbers are the 1-based folio positions the rest of the program
+	already speaks: the index the page map below hands to the cross-reference
+	links, and the one the sheet list of the print window shows.
+
+	Nothing here is guessed.  An unknown option, something that is not a
+	number, a folio outside the project and a folio asked for twice all fail
+	before a single byte is written.  The alternative is worse than an error:
+	a document that looks complete to whoever receives it and is not - a
+	mistyped "folio=3" that quietly exported all eighty sheets is exactly the
+	outcome worth stopping for.
+
+	Repetition is refused rather than honoured for a reason belonging to this
+	export path: one diagram is exactly one page here, and the page map is
+	keyed by diagram, so a sheet asked for twice would print twice and only
+	one of the two pages could ever be reached by a jump.
+
+	@return false, having already said why, when @p options is malformed;
+	@p selection is only meaningful when it returns true.
+*/
+bool selectFolios(const QList<Diagram *> &diagrams,
+				  const QStringList &options,
+				  QList<Diagram *> &selection)
 {
-	const QList<Diagram *> diagrams = project.diagrams();
-	if (diagrams.isEmpty()) {
+	selection = diagrams;
+
+	QString asked;
+	bool given = false;
+	for (const QString &option : options) {
+		if (!option.startsWith(folio_option)) {
+			err << "Bad option '" << option
+				<< "' (expected folios=N[,N...]).\n";
+			return false;
+		}
+		if (given) {
+			err << "Option 'folios' given more than once.\n";
+			return false;
+		}
+		asked = option.mid(folio_option.size());
+		given = true;
+	}
+	if (!given)
+		return true;
+	if (asked.isEmpty()) {
+		err << "No folio given (expected folios=N[,N...]).\n";
+		return false;
+	}
+
+	QList<Diagram *> chosen;
+	const QStringList numbers = asked.split(QLatin1Char(','));
+	for (const QString &number : numbers) {
+		bool ok = false;
+		const int folio = number.trimmed().toInt(&ok);
+		if (!ok) {
+			err << "Bad folio '" << number << "' (expected a number).\n";
+			return false;
+		}
+		if (folio < 1 || folio > diagrams.size()) {
+			err << "Folio " << folio << " out of range (the project has "
+				<< diagrams.size() << " folio(s)).\n";
+			return false;
+		}
+		Diagram *diagram = diagrams.at(folio - 1);
+		if (chosen.contains(diagram)) {
+			err << "Folio " << folio << " asked for twice.\n";
+			return false;
+		}
+		chosen << diagram;
+	}
+	selection = chosen;
+	return true;
+}
+
+int exportPdf(QETProject &project, const QString &output,
+			  const QStringList &options)
+{
+	const QList<Diagram *> all_diagrams = project.diagrams();
+	if (all_diagrams.isEmpty()) {
 		err << "No diagrams to export.\n";
 		return 1;
 	}
 
+	// A "folios=" option cuts the document down to a few sheets, in the
+	// order it asks for; without it every sheet goes out, in project order.
+	QList<Diagram *> diagrams;
+	if (!selectFolios(all_diagrams, options, diagrams)) {
+		return 2;
+	}
+
 	// Page numbers (1-based) for cross-reference hyperlink targets: each
 	// diagram is exactly one page in the CLI export (no tiling).
+	// Only the exported sheets are in the map, and that is what keeps a
+	// narrowed document consistent: a reference whose target was left out
+	// finds nothing here and is not written at all, rather than pointing at
+	// whichever sheet happens to have taken that page number.
 	QMap<Diagram *, int> pageMap;
 	for (int i = 0; i < diagrams.size(); ++i)
 		pageMap.insert(diagrams.at(i), i + 1);
@@ -992,7 +1084,7 @@ int run(const QStringList &args)
 		return 2;
 	}
 	if (format == "pdf")
-		return exportPdf(project, output);
+		return exportPdf(project, output, rest.mid(2));
 	if (format == "cables" || format == "wires")
 		return exportCsv(project, format, output);
 	if (format == "bom")
