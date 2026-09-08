@@ -597,8 +597,36 @@ QMap<QString, QString> LocationTree::lostPaths(const QStringList &removed)
 }
 
 /**
+	@brief LocationTree::indexOfBomLine
+	See the header for why this compares the key and never the number.
+*/
+int LocationTree::indexOfBomLine(const QList<BomLine> &lines,
+				 const QString &part_code,
+				 int part_revision)
+{
+	const int total = int(lines.count());
+	for (int i = 0 ; i < total ; ++ i)
+	{
+		if (lines.at(i).part_code == part_code
+		    && lines.at(i).part_revision == part_revision)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+/**
 	@brief LocationTree::bomLines
 	@return one line per part the locations themselves were bought as
+
+	A location is counted and not measured, and that is the default the
+	fractional quantity was careful not to disturb: an enclosure, a plate
+	and a door are handed over as pieces, one per place, unit "un". A rail
+	and a duct are measured, but they are not locations - they belong to
+	the layout inside one, and it is the layout that knows how much of a
+	bar a face used. What this function guarantees is that the line those
+	metres will land on already has room for them.
 */
 QList<LocationTree::BomLine> LocationTree::bomLines() const
 {
@@ -614,17 +642,8 @@ QList<LocationTree::BomLine> LocationTree::bomLines() const
 			continue;
 		}
 
-		int found = -1;
-		const int total = int(lines.count());
-		for (int i = 0; i < total; ++i)
-		{
-			if (lines.at(i).part_code == location.part_code
-			    && lines.at(i).part_revision == location.part_revision)
-			{
-				found = i;
-				break;
-			}
-		}
+		int found = indexOfBomLine(lines, location.part_code,
+					   location.part_revision);
 
 		if (found < 0)
 		{
@@ -633,11 +652,16 @@ QList<LocationTree::BomLine> LocationTree::bomLines() const
 			line.part_revision = location.part_revision;
 			line.name = location.name.isEmpty() ? location.code
 							    : location.name;
+			line.unit = BomMeasure::defaultUnit(BomMeasure::Kind::Count);
 			lines.append(line);
 			found = int(lines.count()) - 1;
 		}
 
-		lines[found].quantity += 1;
+			//One place, one piece. Written as 1.0 rather than 1 only
+			//because the field is a real number now; the arithmetic is
+			//the same, and every total it produces is a whole number
+			//held exactly.
+		lines[found].quantity += 1.0;
 		lines[found].paths << location_path;
 	}
 

@@ -388,6 +388,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/label/componentlabelquery.h
   ${QET_DIR}/sources/label/labelentry.h
 
+  ${QET_DIR}/sources/location/bommeasure.cpp
+  ${QET_DIR}/sources/location/bommeasure.h
   ${QET_DIR}/sources/location/enclosuretransfer.cpp
   ${QET_DIR}/sources/location/enclosuretransfer.h
   ${QET_DIR}/sources/location/locatableelement.h

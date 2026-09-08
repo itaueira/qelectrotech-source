@@ -18,6 +18,7 @@
 #ifndef LOCATIONTREE_H
 #define LOCATIONTREE_H
 
+#include "bommeasure.h"
 #include "projectlocation.h"
 
 #include <QCoreApplication>
@@ -61,6 +62,19 @@ class LocationTree
 			The storeroom does not want to read fourteen doors: it wants to
 			read one door, quantity fourteen, and to be told which fourteen
 			when it asks. Hence the paths.
+
+			It also has to be able to read one rail, three metres two -
+			because a rail and a duct are cut to size, and a two metre bar
+			cut into three pieces is neither one bar nor three. So the line
+			says both things: a number that may carry a fraction, and the
+			unit that says how to read it. Which of the two a part uses is
+			BomMeasure::kindForClass, and what the number looks like on
+			paper is BomMeasure::formatQuantity - a counted line prints
+			"14" and never "14.0".
+
+			Nothing here is written to a file. The line is worked out from
+			the tree every time it is asked for, which is why the quantity
+			could change type without a single stored project changing.
 		*/
 		struct BomLine
 		{
@@ -70,11 +84,40 @@ class LocationTree
 			int part_revision = 0;
 				/// the name of the first location that used this part
 			QString name;
-				/// how many locations of the project use it
-			int quantity = 0;
+				/**
+					How much of it the project uses: a count of places for
+					an ordinary part, a summed length for one that is cut
+					to size. Whole numbers stay whole - five places are
+					5.0, exactly, and print as "5".
+				*/
+			double quantity = 0.0;
+				/// how the quantity has to be read; see BomMeasure
+			QString unit = BomMeasure::countUnit();
 				/// which ones, by path, in the order the tree gives them
 			QStringList paths;
 		};
+
+		/**
+			@brief Find the line a part belongs on.
+			@param lines the lines built so far
+			@param part_code the catalogue part
+			@param part_revision the revision of it, 0 for whatever is current
+			@return the index of the line, -1 when there is none yet
+
+			The consolidation rule, named and in one place because more than
+			one producer of lines needs it and two spellings of it would
+			drift apart.
+
+			It compares the key and never the quantity, and that is the
+			whole reason it is a function. Two cut pieces of the same rail
+			are one line with their lengths added; a merge that compared
+			numbers would split them into two lines the day the two numbers
+			differed in the last bit of a double, and the list would be
+			wrong in a way nobody reading it could see.
+		*/
+		static int indexOfBomLine(const QList<BomLine> &lines,
+					  const QString &part_code,
+					  int part_revision);
 
 		LocationTree();
 

@@ -23,6 +23,7 @@
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
 #include "../../qetproject.h"
+#include "../bommeasure.h"
 #include "../locationtree.h"
 #include "../projectlocation.h"
 
@@ -455,8 +456,22 @@ int LocationBomDialog::fillLocations()
 			}
 		}
 
+			//How much of it this scope asks for. A counted line is
+			//counted, one per place the scope kept - the reason the
+			//number is not line.quantity. A measured line cannot be
+			//narrowed from here: that would need the length each place
+			//used, which the mounting face knows and this dialogue does
+			//not, so the whole of it is shown rather than a number
+			//invented out of the count of paths.
+		const bool measured = BomMeasure::kindForUnit(line.unit)
+				      == BomMeasure::Kind::Length;
+		const double shown = measured ? line.quantity
+					      : double(paths.count());
+
 		QTreeWidgetItem *item = new QTreeWidgetItem(group);
-		item->setText(QuantityColumn, QString::number(paths.count()));
+		item->setText(QuantityColumn,
+			      BomMeasure::formatQuantityWithUnit(shown,
+								 line.unit));
 		item->setTextAlignment(QuantityColumn,
 				       Qt::AlignRight | Qt::AlignVCenter);
 		item->setText(PartColumn, partLabel(line.part_code,
@@ -470,7 +485,12 @@ int LocationBomDialog::fillLocations()
 	}
 
 	if (group) {
-		group->setText(QuantityColumn, QString::number(total));
+			//A count of pieces, and it stays one: metres do not add up
+			//with cabinets, so a measured line contributes the places
+			//it occupies here and its length only on its own row.
+		group->setText(QuantityColumn,
+			       BomMeasure::formatQuantity(total,
+							  BomMeasure::countUnit()));
 		group->setTextAlignment(QuantityColumn,
 					Qt::AlignRight | Qt::AlignVCenter);
 	}
@@ -575,8 +595,15 @@ int LocationBomDialog::fillComponents()
 			}
 		}
 
+			//A component is a piece, and the fractional quantity
+			//changed nothing about that: this half of the list counts
+			//exactly as it counted before, unit "un", and asks the
+			//same function the other half asks so that the two cannot
+			//drift into printing the same number two ways.
 		QTreeWidgetItem *item = new QTreeWidgetItem(group);
-		item->setText(QuantityColumn, QString::number(quantity));
+		item->setText(QuantityColumn,
+			      BomMeasure::formatQuantity(quantity,
+							 BomMeasure::countUnit()));
 		item->setTextAlignment(QuantityColumn,
 				       Qt::AlignRight | Qt::AlignVCenter);
 		item->setText(PartColumn, partLabel(part_code, revision));
@@ -591,7 +618,9 @@ int LocationBomDialog::fillComponents()
 	}
 
 	if (group) {
-		group->setText(QuantityColumn, QString::number(total));
+		group->setText(QuantityColumn,
+			       BomMeasure::formatQuantity(total,
+							  BomMeasure::countUnit()));
 		group->setTextAlignment(QuantityColumn,
 					Qt::AlignRight | Qt::AlignVCenter);
 	}

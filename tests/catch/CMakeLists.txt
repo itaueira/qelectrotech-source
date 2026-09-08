@@ -129,6 +129,7 @@ add_executable(
     src/iosheet_test.cpp
     src/iotree_test.cpp
     src/location_test.cpp
+    src/bommeasure_test.cpp
     src/locationcontainment_test.cpp
     src/enclosuretransfer_test.cpp
     src/mountinglayout_test.cpp
@@ -220,6 +221,13 @@ add_executable(
     ${QET_DIR}/sources/plc/iosheet.h
     ${QET_DIR}/sources/plc/iotree.cpp
     ${QET_DIR}/sources/plc/iotree.h
+    # How a line of material arrives at its number: counted by the piece,
+    # or measured by the length and cut to size. A rule over a string and a
+    # double, no catalog and no project, which is what lets "a count never
+    # prints 14.0" and "two cut pieces of one rail are one line" be nailed
+    # here. Who fills the length in is the layout, and it stays out.
+    ${QET_DIR}/sources/location/bommeasure.cpp
+    ${QET_DIR}/sources/location/bommeasure.h
     # A arvore de localizacoes nao conhece nada alem de QString e QDomDocument,
     # de proposito: ela e aritmetica de caminho, e a aritmetica e o que
     # precisa de bancada. O que a liga a folha fica em sources/undocommand
