@@ -563,7 +563,14 @@ if(TARGET qet_core)
         src/ui/componentlabel_test.cpp
         src/ui/mountinglayoutsave_test.cpp
         src/ui/connectorlink_test.cpp
-        src/ui/connectorrenumber_test.cpp)
+        src/ui/connectorrenumber_test.cpp
+        # Which connectors of an open project nobody can count the ways of,
+        # and which pins belong to no connector at all. The rule behind the
+        # report and not the report: no suite here opens a QDialog, so the
+        # window is left to a person and the two lists it shows are proved by
+        # number. The arithmetic of the reserve itself is one floor down, in
+        # connectorways_test.cpp of C_unittests, and is not repeated here.
+        src/ui/connectorcheck_test.cpp)
 
     target_link_libraries(
         C_uitests

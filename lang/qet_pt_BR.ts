@@ -14434,6 +14434,16 @@ Abrir em modo somente leitura é a escolha segura: você vê o desenho, sem risc
         <source>Ce qu&apos;il faut sortir du magasin pour une armoire, sous-localisations comprises. S&apos;exporte, et se pose sur le folio.</source>
         <translation>O que é preciso retirar do estoque para um painel, sublocalizações incluídas. A lista se exporta, e se põe na folha.</translation>
     </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="596"/>
+        <source>Contrôle des connecteurs</source>
+        <translation>Conferência dos conectores</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="597"/>
+        <source>Liste les connecteurs dont le nombre de voies ne peut pas être établi et les broches qui n&apos;appartiennent à aucun connecteur, et permet d&apos;y remédier depuis la liste.</source>
+        <translation>Lista os conectores cujo número de vias não dá para estabelecer e os pinos que não pertencem a conector nenhum, e deixa corrigir isso a partir da lista.</translation>
+    </message>
 </context>
 <context>
     <name>QETElementEditor</name>
@@ -16744,6 +16754,7 @@ Deseja substituí-lo?</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="417"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="111"/>
         <source>Connecteur</source>
         <translation>Conector</translation>
     </message>
@@ -17617,27 +17628,33 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="266"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="127"/>
         <source>Repère</source>
         <translation>Tag</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="267"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="112"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="128"/>
         <source>Folio</source>
         <translation>Folha</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="268"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="129"/>
         <source>Symbole</source>
         <translation>Símbolo</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="289"/>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="487"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="52"/>
         <source>(sans repère)</source>
         <translation>(sem tag)</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="328"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="272"/>
         <source>Attribuer une pièce…</source>
         <translation>Atribuir uma peça…</translation>
     </message>
@@ -17858,6 +17875,103 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
             <numerusform>importar %n ponto de E/S</numerusform>
             <numerusform>importar %n pontos de E/S</numerusform>
         </translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="94"/>
+        <source>Contrôle des connecteurs</source>
+        <translation>Conferência dos conectores</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="106"/>
+        <source>Connecteurs dont les voies ne peuvent pas être comptées</source>
+        <translation>Conectores cujas vias não dá para contar</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="113"/>
+        <source>Broches dessinées</source>
+        <translation>Pinos desenhados</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="114"/>
+        <source>Pièce</source>
+        <translation>Peça</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="115"/>
+        <source>Problème</source>
+        <translation>Problema</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="122"/>
+        <source>Broches n&apos;appartenant à aucun connecteur</source>
+        <translation>Pinos que não pertencem a conector nenhum</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="158"/>
+        <source>Le catalogue n&apos;a pas répondu : impossible de dire quels connecteurs ont une pièce, ni quelles broches en sont.</source>
+        <translation>O catálogo não respondeu: não há como dizer quais conectores têm peça, nem quais pinos são de conector.</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="165"/>
+        <source>Ce projet ne dessine aucun connecteur : il n&apos;y a rien à contrôler ici.</source>
+        <translation>Este projeto não desenha conector nenhum: não há o que conferir aqui.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="171"/>
+        <source>Les %n connecteur(s) du projet ont une pièce avec son brochage, et aucune broche n&apos;est hors connecteur.</source>
+        <translation>
+            <numerusform>O conector do projeto tem peça com pinagem, e nenhum pino está fora de conector.</numerusform>
+            <numerusform>Os %n conectores do projeto têm peça com pinagem, e nenhum pino está fora de conector.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="178"/>
+        <source>%n voie(s) de réserve au total.</source>
+        <translation>
+            <numerusform>%n via de reserva no total.</numerusform>
+            <numerusform>%n vias de reserva no total.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="184"/>
+        <source>%1 connecteur(s) sur %2 n&apos;ont pas de pièce exploitable, et %3 broche(s) n&apos;appartiennent à aucun connecteur. Double-cliquez une ligne pour aller au composant.</source>
+        <translation>%1 de %2 conectores não têm peça utilizável, e %3 pino(s) não pertencem a conector nenhum. Dê duplo clique numa linha para ir ao componente.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="199"/>
+        <source>%n connecteur(s) dessinent une voie que leur pièce ne déclare pas.</source>
+        <translation>
+            <numerusform>%n conector desenha uma via que a peça dele não declara.</numerusform>
+            <numerusform>%n conectores desenham uma via que a peça deles não declara.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="273"/>
+        <source>Attribue une pièce du catalogue à toutes les broches des connecteurs sélectionnés : c&apos;est elle qui dit combien de voies le connecteur a.</source>
+        <translation>Atribui uma peça do catálogo a todos os pinos dos conectores selecionados: é ela que diz quantas vias o conector tem.</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="281"/>
+        <source>Affecter à un connecteur…</source>
+        <translation>Atribuir a um conector…</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="282"/>
+        <source>Écrit le nom du connecteur sur les broches sélectionnées, en une seule action annulable.</source>
+        <translation>Escreve o nome do conector nos pinos selecionados, numa ação só, que dá para desfazer.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="367"/>
+        <source>À quel connecteur ces %n broche(s) appartiennent-elles ?</source>
+        <translation>
+            <numerusform>A que conector este pino pertence?</numerusform>
+            <numerusform>A que conector estes %n pinos pertencem?</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="370"/>
+        <source>Affecter à un connecteur</source>
+        <translation>Atribuir a um conector</translation>
     </message>
 </context>
 <context>
@@ -23680,6 +23794,34 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="481"/>
         <source>largeur manquante</source>
         <translation>falta a largura</translation>
+    </message>
+</context>
+<context>
+    <name>DrawnConnector</name>
+    <message>
+        <location filename="../sources/connector/connectorcheck.cpp" line="132"/>
+        <source>catalogue non lu</source>
+        <translation>catálogo não lido</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/connectorcheck.cpp" line="134"/>
+        <source>aucune de ses broches ne porte de pièce</source>
+        <translation>nenhum pino dele tem peça</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/connectorcheck.cpp" line="136"/>
+        <source>pièce « %1 » absente du catalogue</source>
+        <translation>peça « %1 » ausente do catálogo</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/connectorcheck.cpp" line="143"/>
+        <source>la pièce « %1 » ne déclare aucune broche : le nombre de voies reste inconnu</source>
+        <translation>a peça « %1 » não declara pino nenhum: o número de vias continua desconhecido</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/connectorcheck.cpp" line="146"/>
+        <source>ses broches portent %1 pièces différentes : %2</source>
+        <translation>os pinos dele têm %1 peças diferentes: %2</translation>
     </message>
 </context>
 </TS>

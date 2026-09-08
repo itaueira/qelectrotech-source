@@ -36,6 +36,7 @@
 #include "catalog/ui/catalogmanagerdialog.h"
 #include "catalog/ui/catalogpartdialog.h"
 #include "catalog/ui/catalogprojectactions.h"
+#include "connector/ui/connectorreportdialog.h"
 #include <QCoreApplication>
 #include "ElementsCollection/elementscollectionwidget.h"
 #include "QWidgetAnimation/qwidgetanimation.h"
@@ -585,6 +586,23 @@ void QETDiagramEditor::setUpActions()
 	connect(m_catalog_no_physical_view, &QAction::triggered, this, [this]()
 	{
 		CatalogProjectActions::showMissingPhysicalViewReport(this->currentProject(), this);
+	});
+
+		//The third of the end of project checks, and the one that asks
+		//about the wiring rather than about the buying: which connectors
+		//nobody can count the ways of, and which pins belong to no
+		//connector at all.
+	m_connector_check = new QAction(QET::Icons::TableOfContent,
+					tr("Contrôle des connecteurs"), this);
+	m_connector_check->setToolTip(tr(
+				  "Liste les connecteurs dont le nombre de voies ne peut "
+				  "pas être établi et les broches qui n'appartiennent à "
+				  "aucun connecteur, et permet d'y remédier depuis la "
+				  "liste."));
+	m_connector_check->setStatusTip(m_connector_check->toolTip());
+	connect(m_connector_check, &QAction::triggered, this, [this]()
+	{
+		ConnectorCheck::showReport(this->currentProject(), this);
 	});
 
 	m_environment = new QAction(QET::Icons::Configure, tr("Environnement de travail"), this);
@@ -2396,6 +2414,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_catalogue -> addAction(m_link_accessory);
 	menu_catalogue -> addAction(m_catalog_missing);
 	menu_catalogue -> addAction(m_catalog_no_physical_view);
+	menu_catalogue -> addAction(m_connector_check);
 	menu_catalogue -> addSeparator();
 	menu_catalogue -> addAction(m_catalog_import);
 	menu_catalogue -> addAction(m_catalog_repository);
@@ -3394,6 +3413,10 @@ void QETDiagramEditor::slot_updateActions()
 	m_catalog_register            -> setEnabled(editable_project);
 	m_catalog_missing             -> setEnabled(opened_project);
 	m_catalog_no_physical_view    -> setEnabled(opened_project);
+		//Opened and not editable, the same as the two reports above it:
+		//reading what a project still needs is worth doing on a project
+		//nobody can write to.
+	m_connector_check             -> setEnabled(opened_project);
 		//The environment belongs to the station, not to a project.
 	m_environment                 -> setEnabled(true);
 	m_catalog_import              -> setEnabled(true);
