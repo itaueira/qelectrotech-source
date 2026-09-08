@@ -71,6 +71,7 @@ class DiagramView : public QGraphicsView
 		void editSelection();
 		void setEventInterface (DVEventInterface *event_interface);
 		QList<QAction *> contextMenuActions() const;
+		bool selectionHasElement() const;
 	
 	protected:
 		void mouseDoubleClickEvent(QMouseEvent *) override;

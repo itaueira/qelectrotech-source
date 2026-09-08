@@ -191,7 +191,12 @@ class QETDiagramEditor : public QETMainWindow
 		*m_edit_diagram_properties, ///< Show a dialog to edit diagram properties
 		*m_conductor_reset,         ///< Reset paths of selected conductors
 		*m_cut,                     ///< Cut selection to clipboard
-		*m_copy;                    ///< Copy selection to clipboard
+		*m_copy,                    ///< Copy selection to clipboard
+			//Public for the same reason as the four above, and for no other:
+			//DiagramView::contextMenuActions() offers it on the folio. This
+			//short public block is the list of actions the context menu is
+			//allowed to reach - everything else stays private.
+		*m_catalog_assign = nullptr;///< Assign a catalog part to the selected components
 		
 		QActionGroup
 		m_row_column_actions_group, /// Action related to add/remove rows/column in diagram
@@ -238,7 +243,6 @@ class QETDiagramEditor : public QETMainWindow
 		*m_terminal_numbering,         ///< Action to launch terminal numbering
 		*m_catalog_manager = nullptr,   ///< Action to open the catalog classes and properties
 		*m_catalog_browse = nullptr,    ///< Action to browse the catalog parts
-		*m_catalog_assign = nullptr,    ///< Action to assign a catalog part to the selection
 		*m_catalog_register = nullptr,  ///< Action to save the selected components as a catalog part
 		*m_catalog_missing = nullptr,   ///< Action to report the components with no part
 		*m_environment = nullptr,       ///< Action to see and change the work environment

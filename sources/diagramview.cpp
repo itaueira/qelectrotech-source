@@ -26,6 +26,7 @@
 #include "qetdiagrameditor.h"
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/conductortextitem.h"
+#include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/independenttextitem.h"
 #include "qeticons.h"
 #include "titleblock/integrationmovetemplateshandler.h"
@@ -1197,6 +1198,19 @@ QList<QAction *> DiagramView::contextMenuActions() const
 			list << m_separators.at(0);
 			list << m_create_template; // Add the create template action
 			list << qde->m_conductor_reset;
+				//Assigning a catalog part is offered here, and not only in the
+				//Catalog menu, because the component is already under the
+				//cursor: going up to a menu and coming back is the long way
+				//round for what is done all day.
+				//Only when a component is selected. A conductor, a shape or a
+				//text is a selection too, and none of them has a part to
+				//carry. assignCatalogPart() does say so in a message box, but
+				//a context menu answers « what can I do with this », and an
+				//entry whose whole answer is « not this » wastes the click it
+				//asks for.
+			if (selectionHasElement()) {
+				list << qde->m_catalog_assign;
+			}
 			list << m_separators.at(1);
 			list << qde->m_selection_actions_group.actions();
 			list << m_separators.at(2);
@@ -1214,6 +1228,33 @@ QList<QAction *> DiagramView::contextMenuActions() const
 	}
 
 	return list;
+}
+
+/**
+	@brief DiagramView::selectionHasElement
+	@return true when at least one component is part of the selection.
+
+	The test is the very one QETDiagramEditor::assignCatalogPart() runs
+	before it does anything, and it is written the same way here on purpose:
+	the menu must offer the action exactly when the action would act. Two
+	different ways of asking « is there a component in here » would drift
+	apart, and the drift would show up as an entry that answers nothing.
+*/
+bool DiagramView::selectionHasElement() const
+{
+	if (!m_diagram) {
+		return false;
+	}
+
+	const QList<QGraphicsItem *> items = m_diagram->selectedItems();
+	for (QGraphicsItem *item : items)
+	{
+		if (qgraphicsitem_cast<Element *>(item)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**

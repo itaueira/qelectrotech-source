@@ -505,6 +505,7 @@ if(TARGET qet_core)
         src/ui/dragassign_test.cpp
         src/ui/iecoff_test.cpp
         src/ui/assignpart_test.cpp
+        src/ui/contextmenuassign_test.cpp
         src/ui/renumberproject_test.cpp
         src/ui/assemblymark_test.cpp
         src/ui/createsymbol_test.cpp
