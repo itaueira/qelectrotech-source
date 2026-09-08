@@ -146,6 +146,7 @@ add_executable(
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
     src/drcrule_test.cpp
+    src/connectorways_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -355,6 +356,17 @@ add_executable(
     ${QET_DIR}/sources/catalog/catalogtable.h
     ${QET_DIR}/sources/catalog/catalogtablereader.cpp
     ${QET_DIR}/sources/catalog/catalogtablereader.h
+    # What a connector has against what the folios draw of it: the reserve.
+    # Two lists of strings in, three lists out, so it has the property the
+    # catalog core above has and one more - it does not even open the
+    # catalogue, it is fed the pinout. That is what lets "nine used, seven
+    # reserve", "this label is on no way of this part" and "nobody wrote
+    # down how many ways there are" be told apart here rather than on a
+    # folio. What reads the pinout out of the part, what collects the pins
+    # of one connector and what puts the number in a table all need a
+    # project open and stay out.
+    ${QET_DIR}/sources/connector/connectorways.cpp
+    ${QET_DIR}/sources/connector/connectorways.h
     # The environment and the in-use lock have the same property as the
     # catalog core: no QETApp, no Diagram, so the rules that decide
     # whether a project gets overwritten can be tested cheaply.

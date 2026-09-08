@@ -373,6 +373,9 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.cpp
   ${QET_DIR}/sources/catalog/ui/catalogpropertydialog.h
 
+  ${QET_DIR}/sources/connector/connectorways.cpp
+  ${QET_DIR}/sources/connector/connectorways.h
+
   ${QET_DIR}/sources/drc/drcrule.cpp
   ${QET_DIR}/sources/drc/drcrule.h
   ${QET_DIR}/sources/drc/drcruleset.cpp
