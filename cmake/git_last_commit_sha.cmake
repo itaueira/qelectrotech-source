@@ -37,5 +37,16 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
   endif()
 endif()
 
-# This adds to definitions => .cpp
-add_definitions(-DGIT_COMMIT_SHA="${GIT_COMMIT_SHA}")
+# Scope the definition to the three files that actually read it, instead of
+# adding it to every compilation unit.
+#
+# As a global add_definitions() this value lands on the command line of every
+# object in the tree, so the SHA changing -- which it does on every commit --
+# invalidates the whole object tree and the compiler cache along with it, since
+# the define is part of the cache key. A one-line commit then costs a full
+# rebuild. Scoped this way, a commit recompiles these three files and relinks.
+set_source_files_properties(
+  ${QET_DIR}/sources/logging/crashhandler.cpp
+  ${QET_DIR}/sources/logging/qetlogger.cpp
+  ${QET_DIR}/sources/machine_info.cpp
+  PROPERTIES COMPILE_DEFINITIONS GIT_COMMIT_SHA="${GIT_COMMIT_SHA}")
