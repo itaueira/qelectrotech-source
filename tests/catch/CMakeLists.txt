@@ -149,6 +149,7 @@ add_executable(
     src/drcrule_test.cpp
     src/connectorways_test.cpp
     src/connectorswap_test.cpp
+    src/csvwriter_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -306,6 +307,15 @@ add_executable(
     # C_uitests, in dbnotify_test.cpp.
     ${QET_DIR}/sources/dataBase/updatecoalescer.cpp
     ${QET_DIR}/sources/dataBase/updatecoalescer.h
+    # How a cell of a list is written when it holds the separator, a
+    # double quote or an end of line. A rule over two strings: no project,
+    # no data base, no window -- and it is here because the failure it
+    # prevents is silent. A shifted row reads like a well-formed one, so
+    # the only place the rule can be pinned is a bench that compares the
+    # written text, character for character. The exporters that call it
+    # need a project open and stay out.
+    ${QET_DIR}/sources/utils/csvwriter.cpp
+    ${QET_DIR}/sources/utils/csvwriter.h
     # What a design rule declares about itself, and the register that holds
     # the rules. QString and QHash, and QCoreApplication only for the word
     # the panel shows: no project, no data base, no folio - which is what
@@ -578,6 +588,13 @@ if(TARGET qet_core)
         src/ui/backup_test.cpp
         src/ui/crashrecovery_test.cpp
         src/ui/listengine_test.cpp
+        # O que sai da lista de material quando o material tem ponto e
+        # virgula, aspas ou quebra de linha no nome. Precisa de projeto
+        # aberto porque o que se prova e o arquivo escrito, lido de volta
+        # por um leitor proprio -- a regra de escape em si fica um andar
+        # abaixo, em csvwriter_test.cpp do C_unittests, e nao se repete
+        # aqui.
+        src/ui/csvexport_test.cpp
         src/ui/titleblockeditor_test.cpp
         src/ui/navigate_test.cpp
         src/ui/dbnotify_test.cpp

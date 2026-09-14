@@ -24,6 +24,7 @@
 #include "qetgraphicsitem/conductortextitem.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/terminal.h"
+#include "utils/csvwriter.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -240,7 +241,11 @@ QString ConductorNumExport::wiresNum() const
 	for (QString key : list)
 	{
 		for (int i=0; i<m_hash.value(key) ; ++i) {
-			csv.append(key % "\n");
+				//One column, and quoted all the same: a wire number
+				//is text somebody typed, and one holding a ';' or an
+				//end of line turns a one-column file into a ragged
+				//one that still opens.
+			csv.append(QETCsv::field(key) % "\n");
 		}
 	}
 

@@ -23,6 +23,7 @@
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
 #include "../../qetproject.h"
+#include "../../utils/csvwriter.h"
 #include "../bommeasure.h"
 #include "../locationtree.h"
 #include "../projectlocation.h"
@@ -632,6 +633,15 @@ int LocationBomDialog::fillComponents()
 	@brief LocationBomDialog::asText
 	@param separator
 	@return the list as text, one line per row, group name included
+
+	The cells are quoted by QETCsv against @p separator, and against the
+	one the caller passes rather than against a semicolon written here:
+	the same text goes out twice, tabulated to the clipboard and
+	semicoloned to a file, and a designation such as "Contator 3P; 25A"
+	shifted every column of its row in the file while leaving it readable.
+	Quoting the clipboard form too is deliberate - it is pasted into a
+	spreadsheet, where an end of line inside a cell breaks the paste the
+	same way.
 */
 QString LocationBomDialog::asText(const QString &separator) const
 {
@@ -645,7 +655,7 @@ QString LocationBomDialog::asText(const QString &separator) const
 	       << tr("Fabricant")
 	       << tr("Référence")
 	       << tr("Localisation");
-	lines << header.join(separator);
+	lines << QETCsv::row(header, separator);
 
 	for (int g = 0 ; g < m_tree->topLevelItemCount() ; ++g)
 	{
@@ -658,7 +668,7 @@ QString LocationBomDialog::asText(const QString &separator) const
 			for (int c = 0 ; c < ColumnCount ; ++c) {
 				values << item->text(c);
 			}
-			lines << values.join(separator);
+			lines << QETCsv::row(values, separator);
 		}
 	}
 

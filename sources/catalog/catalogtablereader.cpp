@@ -17,6 +17,8 @@
 */
 #include "catalogtablereader.h"
 
+#include "../utils/csvwriter.h"
+
 #include <QCoreApplication>
 #include <QFile>
 #include <QFileInfo>
@@ -506,20 +508,15 @@ CatalogTable CatalogTableReader::read(const QString &file_path,
 	@param field
 	@param delimiter
 	@return the field, quoted only when it has to be
+
+	The rule moved to sources/utils/csvwriter.h, unchanged, when three
+	other exporters turned out to be joining raw text. This entry point
+	stays because it is what the writer below reads and what names the
+	rule where a table is written.
 */
 QString CatalogTableReader::quoteField(const QString &field, QChar delimiter)
 {
-	const bool needs_quotes = field.contains(delimiter)
-				  || field.contains(QLatin1Char('"'))
-				  || field.contains(QLatin1Char('\n'))
-				  || field.contains(QLatin1Char('\r'));
-	if (!needs_quotes) {
-		return field;
-	}
-
-	QString quoted = field;
-	quoted.replace(QLatin1Char('"'), QStringLiteral("\"\""));
-	return QLatin1Char('"') + quoted + QLatin1Char('"');
+	return QETCsv::field(field, delimiter);
 }
 
 /**

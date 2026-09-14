@@ -21,6 +21,7 @@
 #include "../qetapp.h"
 #include "../qetinformation.h"
 #include "../qetproject.h"
+#include "../utils/csvwriter.h"
 #include "ui_bomexportdialog.h"
 
 #include <QMessageBox>
@@ -314,23 +315,39 @@ QString BOMExportDialog::getBom()
 				}
 
 			}
-			return_string = header_name.join(";") % "\n";
+				//Quoted, like the rows below: a column can be named
+				//by a field key that was never translated, and an
+				//untranslated key is free text.
+			return_string = QETCsv::row(header_name) % "\n";
 		}
 
 			//ROWS
 		while (query_.next())
 		{
-			auto i=0;
 			QStringList values;
-			while (query_.value(i).isValid())
+				//Counted over the record, which is the rule the
+				//header above counts by. What stood here walked
+				//until QSqlQuery::value() answered an invalid
+				//variant, so the width of a row was decided by its
+				//content while the width of the header was decided
+				//by the query - two rules that agree until the day
+				//they do not, and the file that comes out then is
+				//shifted by a column and still opens. (Measured on
+				//this driver the two do agree: SQLite hands back a
+				//null column as a valid null variant, so the old
+				//loop did not stop short. This is the guarantee,
+				//not the repair of a failure anybody saw.)
+			for (auto i=0 ; i<fields_.count() ; ++i)
 			{
 				values << QETInformation::displayedInfoValue(fields_.fieldName(i),
 									    query_.value(i));
-				++i;
 			}
 
-			return_string += values.join(";") % "\n";
-			values.clear();
+				//The cells are what the user typed into the
+				//components: a designation holding the separator
+				//("Contator 3P; 25A") shifted every column of its
+				//row, and the file still opened.
+			return_string += QETCsv::row(values) % "\n";
 		}
 	}
 

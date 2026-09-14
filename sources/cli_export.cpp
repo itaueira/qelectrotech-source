@@ -29,6 +29,7 @@
 #include "qetgraphicsitem/terminal.h"
 #include "qetproject.h"
 #include "titleblockproperties.h"
+#include "utils/csvwriter.h"
 #include "wiringlistexport.h"
 
 // Private Qt PDF engine for drawHyperlink() — see pdf_links / projectprintwindow.
@@ -500,15 +501,14 @@ int exportCsv(QETProject &project, const QString &format, const QString &output)
 }
 
 /// Quote a field for CSV output (RFC-4180 style, ';' delimiter).
+///
+/// The rule itself moved to sources/utils/csvwriter.h, where the two
+/// bills of material and the wiring list now read it too: it was the only
+/// correct copy in the program, and three exporters were joining raw text
+/// next to it. This stays as the local spelling of the ';' default.
 QString csvField(const QString &value)
 {
-	if (value.contains(';') || value.contains('"')
-		|| value.contains('\n') || value.contains('\r')) {
-		QString v = value;
-		v.replace('"', "\"\"");
-		return '"' % v % '"';
-	}
-	return value;
+	return QETCsv::field(value);
 }
 
 /// Bill of materials: one row per element, key component-data fields.
@@ -537,8 +537,8 @@ int exportBom(QETProject &project, const QString &output)
 	while (query.next()) {
 		QStringList values;
 		for (int i = 0; i < columns.size(); ++i)
-			values << csvField(query.value(i).toString());
-		csv += values.join(";") % "\n";
+			values << query.value(i).toString();
+		csv += QETCsv::row(values) % "\n";
 		++rows;
 	}
 

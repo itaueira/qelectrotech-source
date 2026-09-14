@@ -1,5 +1,6 @@
 #include "wiringlistexport.h"
 #include "qetproject.h"
+#include "utils/csvwriter.h"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QTextStream>
@@ -459,26 +460,35 @@ QString WiringListExport::toCsvString() const
 
     QString csv;
     QTextStream out(&csv);
-    out << tr("Page", "Wiring list CSV header") << ";"
-    << tr("Composant 1", "Wiring list CSV header") << ";"
-    << tr("Borne 1", "Wiring list CSV header") << ";"
-    << tr("Composant 2", "Wiring list CSV header") << ";"
-    << tr("Borne 2", "Wiring list CSV header") << ";"
-    << tr("Tension / Protocole", "Wiring list CSV header") << ";"
-    << tr("Couleur du fil", "Wiring list CSV header") << ";"
-    << tr("Section du fil", "Wiring list CSV header") << ";"
-    << tr("Fonction", "Wiring list CSV header") << "\n";
+
+    // Quoted through QETCsv rather than joined raw. Every cell of this list
+    // is text somebody typed on a folio -- a component label, a wire colour,
+    // a function -- and one holding the ';' used to shift every column of
+    // its row, in a file that still opened and still looked complete.
+    QStringList header;
+    header << tr("Page", "Wiring list CSV header")
+    << tr("Composant 1", "Wiring list CSV header")
+    << tr("Borne 1", "Wiring list CSV header")
+    << tr("Composant 2", "Wiring list CSV header")
+    << tr("Borne 2", "Wiring list CSV header")
+    << tr("Tension / Protocole", "Wiring list CSV header")
+    << tr("Couleur du fil", "Wiring list CSV header")
+    << tr("Section du fil", "Wiring list CSV header")
+    << tr("Fonction", "Wiring list CSV header");
+    out << QETCsv::row(header) << "\n";
 
     for (const ConductorData &c : uniqueConductors) {
-        out << c.folio << ";"
-        << c.element1_label << ";"
-        << c.terminalname1 << ";"
-        << c.element2_label << ";"
-        << c.terminalname2 << ";"
-        << c.tension_protocol << ";"
-        << c.conductor_color << ";"
-        << c.conductor_section << ";"
-        << c.function << "\n";
+        QStringList values;
+        values << c.folio
+        << c.element1_label
+        << c.terminalname1
+        << c.element2_label
+        << c.terminalname2
+        << c.tension_protocol
+        << c.conductor_color
+        << c.conductor_section
+        << c.function;
+        out << QETCsv::row(values) << "\n";
     }
 
     return csv;
