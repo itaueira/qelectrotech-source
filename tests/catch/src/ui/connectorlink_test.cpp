@@ -426,28 +426,25 @@ TEST_CASE("T34 — every element information key the parts list offers is select
 		in the list and missing from the view; each of them turned the table
 		on the folio into nothing at all, with no message.
 
-		formula is the one key deliberately absent from the view, and it is
-		also one of the two the column selector of the parts list refuses to
-		offer (elementquerywidget.cpp skips formula and exclude_from_bom). So
-		the invariant is: everything the selector can offer, the view can
-		select. exclude_from_bom is hidden for a different reason - it has its
-		own check box - and it is in the view, so it needs no exception here.
+		There is no exception left. The view body is generated from
+		elementInfoKeys() (T16 step 1), so the invariant is no longer
+		"everything the selector can offer, the view can select" but the
+		stronger "every key, without exception". formula used to be excused
+		here because the hand-written view left it out while the column
+		selector also refused to offer it (elementquerywidget.cpp still skips
+		formula and exclude_from_bom); the selector is free to stay selective,
+		but the view underneath it no longer decides that by omission.
 	*/
 	UiBench::ScratchProject bench(fixtureXml(), QStringLiteral("connectorlink.qet"));
 	INFO(bench.error().toStdString());
 	REQUIRE(bench.isOpen());
 	REQUIRE(bench.project()->dataBase() != nullptr);
 
-	const QStringList not_offered = {QStringLiteral("formula")};
-
 	QStringList unselectable;
 	const QStringList keys = QETInformation::elementInfoKeys();
+	REQUIRE_FALSE(keys.isEmpty());
 	for (const QString &key : keys)
 	{
-		if (not_offered.contains(key)) {
-			continue;
-		}
-
 		QSqlQuery query = bench.project()->dataBase()->newQuery(
 					  QStringLiteral("SELECT %1 FROM element_nomenclature_view LIMIT 1")
 					  .arg(key));
@@ -461,10 +458,16 @@ TEST_CASE("T34 — every element information key the parts list offers is select
 	INFO("keys the view cannot select: " << unselectable.join(QStringLiteral(", ")).toStdString());
 	CHECK(unselectable.isEmpty());
 
-		//And the exception really is one: formula is absent from the view, so
-		//the list above is an invariant and not an empty check that would
-		//stay green if every key were excused.
-	QSqlQuery formula_query = bench.project()->dataBase()->newQuery(
-				    QStringLiteral("SELECT formula FROM element_nomenclature_view LIMIT 1"));
-	CHECK_FALSE(formula_query.exec());
+		//The probe above can still fail. It used to be formula that proved
+		//it - the one key the view did not carry - and generating the view
+		//took that witness away, so the witness is now a column no list will
+		//ever produce. Without this, a loop that excused every key, or one
+		//asking a question the driver always answers, would stay green.
+	QSqlQuery absent_query = bench.project()->dataBase()->newQuery(
+				    QStringLiteral("SELECT no_such_column FROM element_nomenclature_view LIMIT 1"));
+	CHECK_FALSE(absent_query.exec());
+
+		//And formula, the key that was missing, is now one of the keys the
+		//loop above covers rather than an exception to it.
+	CHECK(keys.contains(QStringLiteral("formula")));
 }

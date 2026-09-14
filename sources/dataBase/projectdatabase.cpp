@@ -622,95 +622,44 @@ bool projectDataBase::createDataBase()
 	until a field came out empty on a label, or a table came back with no
 	column at all on the folio. Sharing the body makes that divergence
 	unrepresentable rather than merely unlikely.
+
+	The element information columns are generated from
+	QETInformation::elementInfoKeys() rather than written out, which closes
+	the same class of divergence one level up. That list already creates the
+	columns of element_info and already drives the insert; this view used to
+	repeat it by hand, and the repetition was forgotten twice - plc_unit and
+	plc_bus shipped as keys the selector offered and the query could not
+	select, and a table asking for one came back with no row and no column at
+	all: empty on the folio, and silent. Both times the repair was to add the
+	line that had been left out. There is no second list left to forget.
 */
 QString projectDataBase::elementViewBody()
 {
-	QString body        ("SELECT "
-						 "ei.label AS label,"
-						 "ei.plant AS plant,"
-						 "ei.location AS location,"
-						 "ei.location_path AS location_path,"
-						 //The connector a pin belongs to (T34). Listed here for
-						 //the reason the comment further down gives in full: the
-						 //column of element_info appears on its own, this line
-						 //does not, and without it the parts list offers a name
-						 //its own query cannot select.
-						 "ei.connector AS connector,"
-						 "ei.comment AS comment,"
-						 "ei.function AS function,"
-						 "ei.description AS description,"
-						 "ei.designation AS designation,"
-						 "ei.manufacturer AS manufacturer,"
-						 "ei.manufacturer_reference AS manufacturer_reference,"
-						 "ei.machine_manufacturer_reference AS machine_manufacturer_reference,"
-						 "ei.supplier AS supplier,"
-						 "ei.quantity AS quantity,"
-						 "ei.unity AS unity,"
-						 "ei.auxiliary1 AS auxiliary1,"
-						 "ei.description_auxiliary1 AS description_auxiliary1,"
-						 "ei.designation_auxiliary1 AS designation_auxiliary1,"
-						 "ei.manufacturer_auxiliary1 AS manufacturer_auxiliary1,"
-						 "ei.manufacturer_reference_auxiliary1 AS manufacturer_reference_auxiliary1,"
-						 "ei.machine_manufacturer_reference_auxiliary1 AS machine_manufacturer_reference_auxiliary1,"
-						 "ei.supplier_auxiliary1 AS supplier_auxiliary1,"
-						 "ei.quantity_auxiliary1 AS quantity_auxiliary1,"
-						 "ei.unity_auxiliary1 AS unity_auxiliary1,"
-						 
-						 "ei.auxiliary2 AS auxiliary2,"
-						 "ei.description_auxiliary2 AS description_auxiliary2,"
-						 "ei.designation_auxiliary2 AS designation_auxiliary2,"
-						 "ei.manufacturer_auxiliary2 AS manufacturer_auxiliary2,"
-						 "ei.manufacturer_reference_auxiliary2 AS manufacturer_reference_auxiliary2,"
-						 "ei.machine_manufacturer_reference_auxiliary2 AS machine_manufacturer_reference_auxiliary2,"
-						 "ei.supplier_auxiliary2 AS supplier_auxiliary2,"
-						 "ei.quantity_auxiliary2 AS quantity_auxiliary2,"
-						 "ei.unity_auxiliary2 AS unity_auxiliary2,"
-						 
-						 "ei.auxiliary3 AS auxiliary3,"
-						 "ei.description_auxiliary3 AS description_auxiliary3,"
-						 "ei.designation_auxiliary3 AS designation_auxiliary3,"
-						 "ei.manufacturer_auxiliary3 AS manufacturer_auxiliary3,"
-						 "ei.manufacturer_reference_auxiliary3 AS manufacturer_reference_auxiliary3,"
-						 "ei.machine_manufacturer_reference_auxiliary3 AS machine_manufacturer_reference_auxiliary3,"
-						 "ei.supplier_auxiliary3 AS supplier_auxiliary3,"
-						 "ei.quantity_auxiliary3 AS quantity_auxiliary3,"
-						 "ei.unity_auxiliary3 AS unity_auxiliary3,"
-						 
-						 "ei.auxiliary4 AS auxiliary4,"
-						 "ei.description_auxiliary4 AS description_auxiliary4,"
-						 "ei.designation_auxiliary4 AS designation_auxiliary4,"
-						 "ei.manufacturer_auxiliary4 AS manufacturer_auxiliary4,"
-						 "ei.manufacturer_reference_auxiliary4 AS manufacturer_reference_auxiliary4,"
-						 "ei.machine_manufacturer_reference_auxiliary4 AS machine_manufacturer_reference_auxiliary4,"
-						 "ei.supplier_auxiliary4 AS supplier_auxiliary4,"
-						 "ei.quantity_auxiliary4 AS quantity_auxiliary4,"
-						 "ei.unity_auxiliary4 AS unity_auxiliary4,"
-					 "ei.exclude_from_bom AS exclude_from_bom,"
-					 "ei.part_code AS part_code,"
-					 "ei.part_revision AS part_revision,"
-					 
-					 //Every key of QETInformation::elementInfoKeys() becomes a
-					 //column of element_info on its own, but this view is written
-					 //by hand: a key added to the list and forgotten here makes
-					 //the column selector offer a name the query cannot select,
-					 //and a table asking for it comes back with no row and no
-					 //column at all - empty on the folio, and silent.
-					 "ei.plc_type AS plc_type,"
-					 "ei.plc_address AS plc_address,"
-					 "ei.plc_function AS plc_function,"
-					 "ei.plc_comment AS plc_comment,"
-					 "ei.plc_crossref AS plc_crossref,"
-					 "ei.plc_unit AS plc_unit,"
-					 "ei.plc_bus AS plc_bus,"
-					
-					 "d.pos AS diagram_position,"
-						 "e.type AS element_type,"
-						 "e.sub_type AS element_sub_type,"
-						 "di.title AS title,"
-						 "di.folio AS folio,"
-						 "e.pos AS position "
-						 " FROM element_info ei, diagram_info di, element e, diagram d"
-						 " WHERE ei.element_uuid = e.uuid AND e.diagram_uuid = d.uuid AND di.diagram_uuid = d.uuid");
+	QString body(QStringLiteral("SELECT "));
+	for (const QString &key : QETInformation::elementInfoKeys())
+	{
+			//Aliased to its own name on purpose: the callers select by
+			//column name, so the name an information key carries in
+			//element_info is the name it has to carry here.
+		body += QStringLiteral("ei.") + key
+			+ QStringLiteral(" AS ") + key
+			+ QStringLiteral(",");
+	}
+
+		//What is left is what no list of information keys can produce: these
+		//columns are the join itself, not a property of the element, so they
+		//stay written out.
+	body += QStringLiteral("d.pos AS diagram_position,"
+			       "e.type AS element_type,"
+			       "e.sub_type AS element_sub_type,"
+			       "di.title AS title,"
+			       "di.folio AS folio,"
+			       "e.pos AS position"
+			       " FROM element_info ei, diagram_info di, element e, diagram d"
+			       " WHERE ei.element_uuid = e.uuid"
+			       " AND e.diagram_uuid = d.uuid"
+			       " AND di.diagram_uuid = d.uuid");
+
 	return body;
 }
 

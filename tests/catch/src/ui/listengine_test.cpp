@@ -24,12 +24,15 @@
 #include "../../../../sources/qetgraphicsitem/ViewItem/projectdbmodel.h"
 #include "../../../../sources/qetgraphicsitem/ViewItem/qetgraphicsheaderitem.h"
 #include "../../../../sources/qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
+#include "../../../../sources/qetinformation.h"
 #include "../../../../sources/qetproject.h"
 
 #include <catch2/catch.hpp>
 
 #include <QImage>
 #include <QPainter>
+#include <QSqlQuery>
+#include <QSqlRecord>
 #include <QString>
 #include <QStringList>
 
@@ -71,6 +74,25 @@ namespace {
 	/// A query every project with a component answers.
 	const QString working_query = QStringLiteral(
 		"SELECT label, designation FROM element_nomenclature_view");
+
+	/// The columns a view publishes, in the order it publishes them.
+	QStringList viewColumns(QETProject *project, const QString &view)
+	{
+		QSqlQuery query = project->dataBase()->newQuery(
+					QStringLiteral("SELECT * FROM %1 LIMIT 1").arg(view));
+		if (!query.exec()) {
+			return QStringList();
+		}
+
+			//Read from the statement and not from a row: a view of a
+			//project with no component still publishes its columns.
+		QStringList columns;
+		const QSqlRecord record_ = query.record();
+		for (int i = 0 ; i < record_.count() ; ++i) {
+			columns << record_.fieldName(i);
+		}
+		return columns;
+	}
 
 	/**
 		The item drawn on its own, on white, with nothing else on the
@@ -320,5 +342,201 @@ TEST_CASE("T16 — a consulta que não roda deixa de desenhar o mesmo que a list
 		ProjectDBModel model(project.project());
 		model.setQuery(widget.queryStr());
 		REQUIRE_FALSE(model.lastError().isEmpty());
+	}
+}
+
+TEST_CASE("T16 — a visão do banco nasce da lista canônica, e publica o que publicava antes",
+	  "[uibench][listengine][database]")
+{
+	/*
+		There were two lists of element information columns, and they had to
+		agree: elementInfoKeys(), which creates the columns of element_info and
+		drives the insert, and the body of the two element views, written out
+		by hand. The second was forgotten twice - plc_unit and plc_bus were
+		keys the column selector offered and the view could not select, and a
+		table asking for one came back with no row and no column at all, empty
+		on the folio and silent. Both repairs added the line that had been left
+		out, which leaves the next key to be forgotten in the same way.
+
+		The view body is now generated from elementInfoKeys(), so there is no
+		second list. What that must not do is quietly republish a different set
+		of columns: every caller selects by name, and a name that moved or
+		vanished takes a parts list with it. So the set below is the one the
+		hand-written view published before this change, read off the previous
+		revision of projectdatabase.cpp and not off the new output - copying
+		the new output would only prove the generator agrees with itself.
+	*/
+	UiBench::Project project(reference_example);
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+	REQUIRE(project.project()->dataBase() != nullptr);
+
+		//The 67 columns element_nomenclature_view published while its body
+		//was written out by hand.
+	const QStringList published_before = {
+		QStringLiteral("label"), QStringLiteral("plant"),
+		QStringLiteral("location"), QStringLiteral("location_path"),
+		QStringLiteral("connector"), QStringLiteral("comment"),
+		QStringLiteral("function"), QStringLiteral("description"),
+		QStringLiteral("designation"), QStringLiteral("manufacturer"),
+		QStringLiteral("manufacturer_reference"),
+		QStringLiteral("machine_manufacturer_reference"),
+		QStringLiteral("supplier"), QStringLiteral("quantity"),
+		QStringLiteral("unity"), QStringLiteral("auxiliary1"),
+		QStringLiteral("description_auxiliary1"),
+		QStringLiteral("designation_auxiliary1"),
+		QStringLiteral("manufacturer_auxiliary1"),
+		QStringLiteral("manufacturer_reference_auxiliary1"),
+		QStringLiteral("machine_manufacturer_reference_auxiliary1"),
+		QStringLiteral("supplier_auxiliary1"),
+		QStringLiteral("quantity_auxiliary1"),
+		QStringLiteral("unity_auxiliary1"), QStringLiteral("auxiliary2"),
+		QStringLiteral("description_auxiliary2"),
+		QStringLiteral("designation_auxiliary2"),
+		QStringLiteral("manufacturer_auxiliary2"),
+		QStringLiteral("manufacturer_reference_auxiliary2"),
+		QStringLiteral("machine_manufacturer_reference_auxiliary2"),
+		QStringLiteral("supplier_auxiliary2"),
+		QStringLiteral("quantity_auxiliary2"),
+		QStringLiteral("unity_auxiliary2"), QStringLiteral("auxiliary3"),
+		QStringLiteral("description_auxiliary3"),
+		QStringLiteral("designation_auxiliary3"),
+		QStringLiteral("manufacturer_auxiliary3"),
+		QStringLiteral("manufacturer_reference_auxiliary3"),
+		QStringLiteral("machine_manufacturer_reference_auxiliary3"),
+		QStringLiteral("supplier_auxiliary3"),
+		QStringLiteral("quantity_auxiliary3"),
+		QStringLiteral("unity_auxiliary3"), QStringLiteral("auxiliary4"),
+		QStringLiteral("description_auxiliary4"),
+		QStringLiteral("designation_auxiliary4"),
+		QStringLiteral("manufacturer_auxiliary4"),
+		QStringLiteral("manufacturer_reference_auxiliary4"),
+		QStringLiteral("machine_manufacturer_reference_auxiliary4"),
+		QStringLiteral("supplier_auxiliary4"),
+		QStringLiteral("quantity_auxiliary4"),
+		QStringLiteral("unity_auxiliary4"), QStringLiteral("exclude_from_bom"),
+		QStringLiteral("part_code"), QStringLiteral("part_revision"),
+		QStringLiteral("plc_type"), QStringLiteral("plc_address"),
+		QStringLiteral("plc_function"), QStringLiteral("plc_comment"),
+		QStringLiteral("plc_crossref"), QStringLiteral("plc_unit"),
+		QStringLiteral("plc_bus"), QStringLiteral("diagram_position"),
+		QStringLiteral("element_type"), QStringLiteral("element_sub_type"),
+		QStringLiteral("title"), QStringLiteral("folio"),
+		QStringLiteral("position")};
+
+	const QStringList published_now =
+			viewColumns(project.project(),
+				    QStringLiteral("element_nomenclature_view"));
+	REQUIRE_FALSE(published_now.isEmpty());
+
+	SECTION("nenhuma coluna publicada antes sumiu nem mudou de nome")
+	{
+		QStringList lost;
+		for (const QString &column : published_before) {
+			if (!published_now.contains(column)) {
+				lost << column;
+			}
+		}
+
+			//Named and not counted: a total says one column is gone and
+			//sends whoever reads it back to a list of sixty-seven.
+		INFO("columns the generated view stopped publishing: "
+		     << lost.join(QStringLiteral(", ")).toStdString());
+		CHECK(lost.isEmpty());
+	}
+
+	SECTION("a única coluna a mais é justamente a que faltava")
+	{
+		QStringList added;
+		for (const QString &column : published_now) {
+			if (!published_before.contains(column)) {
+				added << column;
+			}
+		}
+
+			//formula was the one key of elementInfoKeys() the hand-written
+			//view left out. It is the gain of the change, and it is checked
+			//by name so that a second unplanned column cannot ride in on a
+			//count that happens to match.
+		INFO("columns the generated view added: "
+		     << added.join(QStringLiteral(", ")).toStdString());
+		CHECK(added == QStringList({QStringLiteral("formula")}));
+	}
+
+	SECTION("toda chave de informação é selecionável, sem exceção")
+	{
+			//The property the generation buys, stated over both views
+			//because both are built from the same body.
+		for (const QString &view : {QStringLiteral("element_nomenclature_view"),
+					    QStringLiteral("element_label_view")})
+		{
+			QStringList unselectable;
+			const QStringList keys = QETInformation::elementInfoKeys();
+			REQUIRE_FALSE(keys.isEmpty());
+
+			for (const QString &key : keys)
+			{
+				QSqlQuery query = project.project()->dataBase()->newQuery(
+						QStringLiteral("SELECT %1 FROM %2 LIMIT 1")
+						.arg(key, view));
+				if (!query.exec()) {
+					unselectable << key;
+				}
+			}
+
+			INFO("view " << view.toStdString()
+			     << ", keys it cannot select: "
+			     << unselectable.join(QStringLiteral(", ")).toStdString());
+			CHECK(unselectable.isEmpty());
+		}
+
+			//The probe can still fail: without this, a view that answered
+			//every question would pass the loop above for the wrong reason.
+		QSqlQuery absent = project.project()->dataBase()->newQuery(
+				QStringLiteral("SELECT no_such_column"
+					       " FROM element_nomenclature_view LIMIT 1"));
+		CHECK_FALSE(absent.exec());
+	}
+
+	SECTION("as duas visões publicam as mesmas colunas")
+	{
+			//They differ by the bill of materials filter and by nothing
+			//else. A label collector reading element_label_view has to find
+			//every column the parts list finds.
+		CHECK(viewColumns(project.project(),
+				  QStringLiteral("element_label_view"))
+		      == published_now);
+	}
+
+	SECTION("a ordem publicada é a da lista canônica, e nada mais")
+	{
+		/*
+			The order did change here, and this pins it rather than hides
+			it: exclude_from_bom, part_code and part_revision used to be
+			written before the plc_ columns and now follow them, because
+			that is where elementInfoKeys() puts them. No caller can see it
+			- every query in the program and in the tests names the columns
+			it wants, and none of them selects * from these views - but the
+			next reordering should be a decision and not a surprise.
+		*/
+		QStringList expected = QETInformation::elementInfoKeys();
+		expected << QStringLiteral("diagram_position")
+			 << QStringLiteral("element_type")
+			 << QStringLiteral("element_sub_type")
+			 << QStringLiteral("title")
+			 << QStringLiteral("folio")
+			 << QStringLiteral("position");
+
+		CHECK(published_now == expected);
+
+			//And the view carries one column per key, so a key added
+			//tomorrow cannot be missing from it.
+		int info_columns = 0;
+		for (const QString &column : published_now) {
+			if (QETInformation::elementInfoKeys().contains(column)) {
+				++info_columns;
+			}
+		}
+		CHECK(info_columns == QETInformation::elementInfoKeys().count());
 	}
 }
