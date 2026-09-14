@@ -23824,4 +23824,40 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <translation>os pinos dele têm %1 peças diferentes: %2</translation>
     </message>
 </context>
+<context>
+    <name>ConnectorCheck</name>
+    <message>
+        <location filename="../sources/connector/connectorcheck.cpp" line="534"/>
+        <source>Échanger les broches « %1 » et « %2 »</source>
+        <translation>Trocar os pinos « %1 » e « %2 »</translation>
+    </message>
+</context>
+<context>
+    <name>ConnectorSwap</name>
+    <message>
+        <location filename="../sources/connector/connectorswap.cpp" line="87"/>
+        <source>aucune broche à cette place</source>
+        <translation>nenhum pino nesta posição</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/connectorswap.cpp" line="89"/>
+        <source>une broche ne s&apos;échange pas avec elle-même</source>
+        <translation>um pino não troca com ele mesmo</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/connectorswap.cpp" line="91"/>
+        <source>une des deux broches n&apos;appartient à aucun connecteur</source>
+        <translation>um dos dois pinos não pertence a conector nenhum</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/connectorswap.cpp" line="97"/>
+        <source>les deux broches sont de connecteurs différents : déplacer une broche vers un autre connecteur est une autre opération</source>
+        <translation>os dois pinos são de conectores diferentes: mover um pino para outro conector é outra operação</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/connectorswap.cpp" line="105"/>
+        <source>les deux broches portent déjà le même numéro de voie</source>
+        <translation>os dois pinos já têm o mesmo número de via</translation>
+    </message>
+</context>
 </TS>

@@ -475,3 +475,66 @@ int ConnectorCheck::assignConnector(const QList<Element *> &pins,
 	diagram->undoStack().push(new ChangeElementInformationCommand(changes));
 	return changes.size();
 }
+
+/**
+	@brief ConnectorCheck::swapPins
+	@param first
+	@param second
+	@return why nothing was written, ConnectorSwap::Refusal::None otherwise
+*/
+ConnectorSwap::Refusal ConnectorCheck::swapPins(Element *first, Element *second)
+{
+	if (!first || !second) {
+		return ConnectorSwap::Refusal::NoSuchPin;
+	}
+
+	const DiagramContext first_before = first->elementInformations();
+	const DiagramContext second_before = second->elementInformations();
+
+		//A list of the two, read off the folio, and the rule is asked
+		//about the places 0 and 1 of it. The uuid is what makes one
+		//component handed in twice answer SamePin rather than SameLabel.
+	QList<ConnectorSwap::Pin> pins;
+	pins << ConnectorSwap::Pin(
+		    first->uuid().toString(),
+		    first_before.value(QETInformation::ELMT_CONNECTOR).toString(),
+		    first_before.value(QETInformation::ELMT_LABEL).toString());
+	pins << ConnectorSwap::Pin(
+		    second->uuid().toString(),
+		    second_before.value(QETInformation::ELMT_CONNECTOR).toString(),
+		    second_before.value(QETInformation::ELMT_LABEL).toString());
+
+	const ConnectorSwap::Plan plan = ConnectorSwap::plan(pins, 0, 1);
+	if (!plan.isValid()) {
+		return plan.refusal;
+	}
+
+		//Either folio does: the stack is the project's, so two pins drawn
+		//on two folios still swap in one step.
+	Diagram *diagram = first->diagram() ? first->diagram() : second->diagram();
+	if (!diagram) {
+		return ConnectorSwap::Refusal::NoSuchPin;
+	}
+
+	DiagramContext first_after = first_before;
+	first_after.addValue(QETInformation::ELMT_LABEL, plan.first_label);
+	DiagramContext second_after = second_before;
+	second_after.addValue(QETInformation::ELMT_LABEL, plan.second_label);
+
+	QMap<QPointer<Element>, QPair<DiagramContext, DiagramContext> > changes;
+	changes.insert(first, qMakePair(first_before, first_after));
+	changes.insert(second, qMakePair(second_before, second_after));
+
+		//The two numbers, and not the two components: what the sentence
+		//has to let the reader recognise a fortnight later is the row of
+		//the table the swap was made on.
+	QUndoStack &stack = diagram->undoStack();
+	stack.beginMacro(QCoreApplication::translate(
+				 "ConnectorCheck",
+				 "Échanger les broches « %1 » et « %2 »")
+			 .arg(plan.second_label, plan.first_label));
+	stack.push(new ChangeElementInformationCommand(changes));
+	stack.endMacro();
+
+	return ConnectorSwap::Refusal::None;
+}

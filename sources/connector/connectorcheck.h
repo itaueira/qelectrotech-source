@@ -18,6 +18,7 @@
 #ifndef CONNECTORCHECK_H
 #define CONNECTORCHECK_H
 
+#include "connectorswap.h"
 #include "connectorways.h"
 
 #include <QCoreApplication>
@@ -259,6 +260,47 @@ namespace ConnectorCheck
 		because it would make a connector no report can name.
 	*/
 	int assignConnector(const QList<Element *> &pins, const QString &connector);
+
+	/**
+		@brief Exchange the way labels of @a first and @a second, through
+		the undo stack.
+		@param first
+		@param second
+		@return ConnectorSwap::Refusal::None when the two labels were
+		written, and why nothing was written otherwise.
+
+		The rule is ConnectorSwap's and is not repeated here: this reads
+		the connector and the label off the two drawn components, asks it
+		what to write, and writes it. What it adds is the half a rule over
+		a list cannot have - the undo stack, and the folio following.
+
+		@par Nothing moves
+
+		The two components are not touched apart from their label. They
+		keep their place on the folio, their terminals, and what is wired
+		to them, so a list read again after the call holds the same two
+		components at the same two places, carrying each other's number.
+		The whole use case is that sentence, and its opposite - moving the
+		two symbols over and leaving the numbers where they were - would
+		print the very same table.
+
+		@par One step on the stack, and its own step
+
+		The two writes go in one ChangeElementInformationCommand, because
+		the designer saw one gesture and one Ctrl+Z has to undo it; that
+		command already tells the project data base on both the doing and
+		the undoing, so the parts list beside the drawing follows in the
+		same step.
+
+		It is wrapped in a macro all the same, and that is not ceremony.
+		ChangeElementInformationCommand merges with the command before it
+		when the two hold the same components - which is exactly what two
+		swaps of one pair are - and merged they would become a single
+		entry, so that the second swap could not be undone on its own. The
+		macro is what keeps two gestures two steps, and it is what carries
+		the sentence the undo menu shows.
+	*/
+	ConnectorSwap::Refusal swapPins(Element *first, Element *second);
 }
 
 #endif // CONNECTORCHECK_H

@@ -375,6 +375,8 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/connector/connectorcheck.cpp
   ${QET_DIR}/sources/connector/connectorcheck.h
+  ${QET_DIR}/sources/connector/connectorswap.cpp
+  ${QET_DIR}/sources/connector/connectorswap.h
   ${QET_DIR}/sources/connector/connectorways.cpp
   ${QET_DIR}/sources/connector/connectorways.h
   ${QET_DIR}/sources/connector/ui/connectorreportdialog.cpp

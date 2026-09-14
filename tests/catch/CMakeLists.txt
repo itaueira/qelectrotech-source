@@ -147,6 +147,7 @@ add_executable(
     src/componentlabel_test.cpp
     src/drcrule_test.cpp
     src/connectorways_test.cpp
+    src/connectorswap_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -367,6 +368,15 @@ add_executable(
     # project open and stay out.
     ${QET_DIR}/sources/connector/connectorways.cpp
     ${QET_DIR}/sources/connector/connectorways.h
+    # Exchanging the way labels of two pins of one connector. Same property
+    # again: a list of three strings per pin in, two labels out, so which
+    # swap is refused and which label lands where is settled without a folio
+    # open. It leans on renumberplan above for the connector key, which is
+    # already here for the same reason. What needs a project - the undo
+    # stack, and the folio following the number - is ConnectorCheck::swapPins
+    # and stays out.
+    ${QET_DIR}/sources/connector/connectorswap.cpp
+    ${QET_DIR}/sources/connector/connectorswap.h
     # The environment and the in-use lock have the same property as the
     # catalog core: no QETApp, no Diagram, so the rules that decide
     # whether a project gets overwritten can be tested cheaply.
@@ -570,7 +580,13 @@ if(TARGET qet_core)
         # window is left to a person and the two lists it shows are proved by
         # number. The arithmetic of the reserve itself is one floor down, in
         # connectorways_test.cpp of C_unittests, and is not repeated here.
-        src/ui/connectorcheck_test.cpp)
+        src/ui/connectorcheck_test.cpp
+        # Two pins of one connector trading their numbers on an open project:
+        # one step on the stack, the folio following, and nothing moving. The
+        # arithmetic of which label lands where is one floor down in
+        # connectorswap_test.cpp of C_unittests; what is here is the half a
+        # rule over a list cannot have.
+        src/ui/connectorswap_test.cpp)
 
     target_link_libraries(
         C_uitests
