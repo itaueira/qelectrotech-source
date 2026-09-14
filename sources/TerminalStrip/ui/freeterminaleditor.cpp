@@ -22,6 +22,7 @@
 #include "../../diagram.h"
 #include "../../elementprovider.h"
 #include "freeterminalmodel.h"
+#include "../terminalmove.h"
 #include "../terminalstrip.h"
 #include "../UndoCommand/addterminaltostripcommand.h"
 
@@ -112,6 +113,7 @@ void FreeTerminalEditor::reload()
  */
 void FreeTerminalEditor::apply()
 {
+	auto change_count = 0;
 	const auto modified_data = m_model->modifiedModelRealTerminalData();
 	if (modified_data.size())
 	{
@@ -129,12 +131,18 @@ void FreeTerminalEditor::apply()
 
 				if (element_->elementData() != current_data) {
 					m_project->undoStack()->push(new ChangeElementDataCommand(element_, current_data));
+					++change_count;
 				}
 			}
 		}
 
 		m_project->undoStack()->endMacro();
 	}
+
+		//What was written, and - when nothing was - which button does
+		//move a terminal. Apply is pressed at the very moment somebody
+		//expects a terminal to travel, so that is the moment to say it.
+	emit message(TerminalMove::Decision::describeApply(change_count));
 
 	reload();
 }
@@ -250,25 +258,42 @@ void FreeTerminalEditor::on_m_move_pb_clicked()
 		//Get the selected real terminal
 	const auto index_list = ui->m_table_view->selectionModel()->selectedIndexes();
 	const auto real_t_vector = m_model->realTerminalForIndex(index_list);
-	if (real_t_vector.isEmpty()) {
-		return;
-	}
 
 		//Get the terminal strip who receive the real terminal
 	const auto strip_uuid = ui->m_move_in_cb->currentData().toUuid();
 	TerminalStrip *terminal_strip{nullptr};
-	for (const auto &strip : m_project->terminalStrip()) {
-		if (strip->uuid() == strip_uuid) {
-			terminal_strip = strip;
-			break;
+	if (m_project)
+	{
+		for (const auto &strip : m_project->terminalStrip()) {
+			if (strip->uuid() == strip_uuid) {
+				terminal_strip = strip;
+				break;
+			}
 		}
 	}
 
+		//An empty list and a destination that was not found are two
+		//different answers: the first says this project has no terminal
+		//strip at all, and no amount of selecting would have helped.
+	auto destination_ = TerminalMove::Destination::Resolved;
 	if (!terminal_strip) {
+		destination_ = ui->m_move_in_cb->count() ? TerminalMove::Destination::Vanished
+							 : TerminalMove::Destination::Empty;
+	}
+
+	const auto decision_ = TerminalMove::decide(index_list.count(),
+						    real_t_vector.count(),
+						    destination_);
+	if (!decision_.isValid())
+	{
+		emit message(decision_.describe());
 		return;
 	}
 
 	m_project->undoStack()->push(new AddTerminalToStripCommand(real_t_vector, terminal_strip));
+
+	emit message(TerminalMove::Decision::describeMove(real_t_vector.count(),
+							  ui->m_move_in_cb->currentText()));
 
 	reload();
 }
@@ -278,5 +303,18 @@ void FreeTerminalEditor::setDisabledMove(bool b)
 	ui->m_move_label->setDisabled(b);
 	ui->m_move_in_cb->setDisabled(b);
 	ui->m_move_pb->setDisabled(b);
+
+		//A disabled button cannot be clicked, so it cannot answer for
+		//itself: whoever aims at it and finds it dead gets the reason
+		//from the tooltip, which a disabled widget still shows. Without
+		//this, the move looks exactly as broken while it waits for a
+		//pending edit as it did while it refused in silence.
+	const auto tool_tip = b ? tr("Enregistrez ou annulez les modifications en "
+				     "cours avant de déplacer la borne.")
+				: tr("Déplacer les bornes sélectionnées dans le "
+				     "bornier choisi. Le bouton Appliquer, lui, "
+				     "n'en déplace aucune.");
+	ui->m_move_in_cb->setToolTip(tool_tip);
+	ui->m_move_pb->setToolTip(tool_tip);
 }
 

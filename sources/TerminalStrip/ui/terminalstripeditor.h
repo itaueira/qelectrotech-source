@@ -46,6 +46,19 @@ class TerminalStripEditor : public QWidget
 		void reload();
 		void apply();
 
+	signals:
+		/**
+			@brief Emitted with one sentence for the person using
+			this editor.
+
+			This editor is a page of a stacked widget and has no
+			status bar of its own; the window it sits in has one,
+			and it is the window that decides where the sentence
+			is shown. Emitted when a click is refused and when a
+			click did something, never on its own.
+		*/
+		void message(const QString &text);
+
 	private:
         void clear();
 		void spanMultiLevelTerminals();

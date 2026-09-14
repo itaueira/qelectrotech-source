@@ -98,8 +98,22 @@ TerminalStripData TerminalStrip::data() const {
  * of the terminal strip unchanged
  * @param data
  */
-void TerminalStrip::setData(const TerminalStripData &data) {
+void TerminalStrip::setData(const TerminalStripData &data)
+{
+		//The uuid is kept, as the comment above has always promised and
+		//as the assignment below used not to do: TerminalStripData
+		//copies its uuid like any other field, and a default built one
+		//carries a uuid of its own.
+		//
+		//TerminalStripEditor::apply() hands over exactly such a freshly
+		//built data, so every click on Apply used to give the strip a
+		//new identity. What then failed was the move: the destination
+		//list had been filled with the uuid the strip had when the page
+		//was loaded, the strip no longer answered to it, and the button
+		//returned without moving anything and without a word.
+	const auto uuid_ = m_data.m_uuid;
 	m_data = data;
+	m_data.m_uuid = uuid_;
 }
 
 bool TerminalStrip::addTerminal(QSharedPointer<RealTerminal> real_t)

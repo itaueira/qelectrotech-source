@@ -30,6 +30,7 @@
 #include "../UndoCommand/bridgeterminalscommand.h"
 #include "../UndoCommand/changeterminalstripcolor.h"
 #include "../physicalterminal.h"
+#include "../terminalmove.h"
 #include "../terminalstripbridge.h"
 
 /**
@@ -173,6 +174,7 @@ void TerminalStripEditor::reload()
  */
 void TerminalStripEditor::apply()
 {
+	auto change_count = 0;
 
 	if (m_current_strip)
 	{
@@ -184,6 +186,19 @@ void TerminalStripEditor::apply()
 		data.m_name         = ui->m_name_le->text();
 		data.m_comment      = ui->m_comment_le->text();
 		data.m_description  = ui->m_description_te->toPlainText();
+
+			//Counted and not assumed: the command below is pushed
+			//whichever way this reading goes, but what is told to
+			//the person has to be true, and "properties saved"
+			//said over a strip nobody edited is what let Apply
+			//pass for the button that moves a terminal.
+		if (data.m_installation != m_current_strip->installation()
+			|| data.m_location    != m_current_strip->location()
+			|| data.m_name        != m_current_strip->name()
+			|| data.m_comment     != m_current_strip->comment()
+			|| data.m_description != m_current_strip->description()) {
+			++change_count;
+		}
 
 		m_project->undoStack()->push(new ChangeTerminalStripData(m_current_strip, data, nullptr));
 
@@ -199,16 +214,22 @@ void TerminalStripEditor::apply()
 					current_data.setTerminalLED(data_.led_);
 					current_data.m_informations.addValue(QStringLiteral("label"), data_.label_);
 
-					if (element->elementData() != current_data)
+					if (element->elementData() != current_data) {
 						m_project->undoStack()->push(new ChangeElementDataCommand(element, current_data));
-					if (data_.level_ != data_.real_terminal.toStrongRef()->level())
+						++change_count;
+					}
+					if (data_.level_ != data_.real_terminal.toStrongRef()->level()) {
 						m_project->undoStack()->push(new ChangeTerminalLevel(m_current_strip, data_.real_terminal, data_.level_));
+						++change_count;
+					}
 				}
 			}
 		}
 
 		m_project->undoStack()->endMacro();
 	}
+
+	emit message(TerminalMove::Decision::describeApply(change_count));
 
 	reload();
 }
@@ -691,12 +712,18 @@ void TerminalStripEditor::on_m_bridge_color_cb_activated(const QColor &col)
 
 void TerminalStripEditor::on_m_move_to_pb_clicked()
 {
+		//Silent on purpose, and the only one of this slot that is: this
+		//page is only ever shown with a strip loaded in it, so there is
+		//nobody to talk to here and nothing a person could have done
+		//differently. Every refusal below answers a request that was
+		//actually made, and every one of them says so.
 	if (!m_model || !m_current_strip || !m_current_strip->project()) {
 		return;
 	}
 
 		//Get selected physical terminal
-	const auto index_vector = m_model->modelPhysicalTerminalDataForIndex(ui->m_table_widget->selectionModel()->selectedIndexes());
+	const auto selected_index_list = ui->m_table_widget->selectionModel()->selectedIndexes();
+	const auto index_vector = m_model->modelPhysicalTerminalDataForIndex(selected_index_list);
 	QVector<QSharedPointer<PhysicalTerminal>> phy_vector;
 	for (const auto &index : index_vector)
 	{
@@ -705,18 +732,13 @@ void TerminalStripEditor::on_m_move_to_pb_clicked()
 			phy_vector.append(shared_);
 	}
 
-	if (phy_vector.isEmpty()) {
-		return;
-	}
-
 	const auto uuid_{ui->m_move_to_cb->currentData().toUuid()};
+
 		//Uuid is null we move the selected terminal to indepandant terminal
-	if (uuid_.isNull()) {
-		m_current_strip->project()->undoStack()->push(new RemoveTerminalFromStripCommand(phy_vector, m_current_strip));
-	}
-	else
+	TerminalStrip *receiver_strip{nullptr};
+	auto destination_ = TerminalMove::Destination::Resolved;
+	if (!uuid_.isNull())
 	{
-		TerminalStrip *receiver_strip{nullptr};
 		for (const auto &strip_ : m_current_strip->project()->terminalStrip())
 		{
 			if (strip_->uuid() == uuid_) {
@@ -726,10 +748,28 @@ void TerminalStripEditor::on_m_move_to_pb_clicked()
 		}
 
 		if (!receiver_strip) {
-			return;
+			destination_ = TerminalMove::Destination::Vanished;
 		}
-
-		m_current_strip->project()->undoStack()->push(new MoveTerminalCommand(phy_vector, m_current_strip, receiver_strip));
 	}
+
+		//This list always offers the independent terminals, so it is
+		//never empty and Destination::Empty cannot arise here.
+	const auto decision_ = TerminalMove::decide(selected_index_list.count(),
+						    phy_vector.count(),
+						    destination_);
+	if (!decision_.isValid())
+	{
+		emit message(decision_.describe());
+		return;
+	}
+
+	if (receiver_strip) {
+		m_current_strip->project()->undoStack()->push(new MoveTerminalCommand(phy_vector, m_current_strip, receiver_strip));
+	} else {
+		m_current_strip->project()->undoStack()->push(new RemoveTerminalFromStripCommand(phy_vector, m_current_strip));
+	}
+
+	emit message(TerminalMove::Decision::describeMove(phy_vector.count(),
+							  ui->m_move_to_cb->currentText()));
 }
 

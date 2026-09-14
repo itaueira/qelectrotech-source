@@ -141,6 +141,7 @@ add_executable(
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
     src/terminalstripstructure_test.cpp
+    src/terminalmove_test.cpp
     src/collectionloadgate_test.cpp
     src/collectionthreadbudget_test.cpp
     src/updatecoalescer_test.cpp
@@ -442,6 +443,16 @@ add_executable(
     # sources/TerminalStrip e em sources/undocommand.
     ${QET_DIR}/sources/TerminalStrip/terminalstripstructure.cpp
     ${QET_DIR}/sources/TerminalStrip/terminalstripstructure.h
+    # E a regra do botão que move uma borne de régua: qual recusa uma
+    # leitura da janela merece, e a frase que cada recusa carrega. Mesma
+    # propriedade da de cima, e uma a mais -- ela não conhece nem o enum
+    # de tipo de borne, só QString e tr(). Está aqui porque o defeito que
+    # ela conserta é mudo: um botão que voltava sem mover e sem dizer
+    # nada, e o único jeito de garantir que nenhuma saída volte a ser
+    # calada é percorrer as recusas por contagem. Quem mostra a frase é a
+    # janela da régua, que precisa de projeto aberto e fica de fora.
+    ${QET_DIR}/sources/TerminalStrip/terminalmove.cpp
+    ${QET_DIR}/sources/TerminalStrip/terminalmove.h
     # O que uma etiqueta de componente pergunta ao banco do projeto, e o que
     # ela faz da resposta (T21). Duas strings de consulta e duas
     # transformações de valor: nem QSqlQuery entra aqui, o que é justamente
@@ -586,7 +597,14 @@ if(TARGET qet_core)
         # arithmetic of which label lands where is one floor down in
         # connectorswap_test.cpp of C_unittests; what is here is the half a
         # rule over a list cannot have.
-        src/ui/connectorswap_test.cpp)
+        src/ui/connectorswap_test.cpp
+        # A régua de bornes continua sendo a mesma régua depois de
+        # gravar as propriedades dela. Precisa de projeto aberto porque
+        # uma TerminalStrip só existe dentro de um, e é a identidade de
+        # que o botão de mover depende: a lista de destinos guarda uuid,
+        # e não ponteiro. A frase que a recusa diz é um andar abaixo, em
+        # terminalmove_test.cpp do C_unittests.
+        src/ui/terminalstripidentity_test.cpp)
 
     target_link_libraries(
         C_uitests

@@ -78,10 +78,10 @@
    <item row="0" column="3">
     <widget class="QPushButton" name="m_move_pb">
      <property name="toolTip">
-      <string>Appliquer le déplacement</string>
+      <string>Déplacer les bornes sélectionnées dans le bornier choisi. Le bouton Appliquer, lui, n'en déplace aucune.</string>
      </property>
      <property name="text">
-      <string/>
+      <string>Déplacer</string>
      </property>
      <property name="icon">
       <iconset resource="../../../qelectrotech.qrc">

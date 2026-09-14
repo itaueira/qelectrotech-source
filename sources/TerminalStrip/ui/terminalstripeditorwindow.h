@@ -87,6 +87,14 @@ class TerminalStripEditorWindow : public QMainWindow
 		void addTreeDockWidget();
 		void currentStripChanged(TerminalStrip *strip);
 		void updateUi();
+		/**
+			@brief Show @a text in the status bar of this window.
+
+			The two editor pages have no status bar of their own,
+			and a refused click does not deserve a modal box: they
+			emit one sentence, and this is where it is shown.
+		*/
+		void showMessage(const QString &text);
 
 	private:
 		Ui::TerminalStripEditorWindow *ui{nullptr};

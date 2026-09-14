@@ -29,6 +29,9 @@
 #include "terminalstripeditorwindow.h"
 #include "terminalstriptreedockwidget.h"
 
+#include <QPushButton>
+#include <QStatusBar>
+
 QPointer<TerminalStripEditorWindow> TerminalStripEditorWindow::window_;
 
 static const int EMPTY_PAGE = 0;
@@ -68,9 +71,41 @@ TerminalStripEditorWindow::TerminalStripEditorWindow(QETProject *project, QWidge
 
 	connect(m_tree_dock, &TerminalStripTreeDockWidget::currentStripChanged, this, &TerminalStripEditorWindow::currentStripChanged);
 
+		//Both pages talk through the status bar of this window, which is
+		//the least intrusive place that is still read: a refused click
+		//does not deserve a modal box, and a click that did something
+		//has to be told apart from a click that did nothing.
+	connect(m_free_terminal_editor, &FreeTerminalEditor::message,
+		this, &TerminalStripEditorWindow::showMessage);
+	connect(m_terminal_strip_editor, &TerminalStripEditor::message,
+		this, &TerminalStripEditorWindow::showMessage);
+
+		//Said on the button that was used in place of the other one:
+		//Apply commits what the table holds, and moving a terminal from
+		//one strip to another is a different button, next to the list of
+		//destinations.
+	if (auto apply_button = ui->m_button_box->button(QDialogButtonBox::Apply)) {
+		apply_button->setToolTip(tr("Enregistrer le type, la fonction et le "
+					    "voyant des bornes affichées. Pour changer "
+					    "une borne de bornier, utilisez le bouton "
+					    "« Déplacer »."));
+	}
+
 	ui->m_stacked_widget->insertWidget(EMPTY_PAGE, new QWidget(ui->m_stacked_widget));
 	ui->m_stacked_widget->insertWidget(FREE_TERMINAL_PAGE, m_free_terminal_editor);
 	ui->m_stacked_widget->insertWidget(TERMINAL_STRIP_PAGE, m_terminal_strip_editor);
+}
+
+/**
+ * @brief TerminalStripEditorWindow::showMessage
+ * Show @a text in the status bar of this window.
+ * @param text
+ */
+void TerminalStripEditorWindow::showMessage(const QString &text)
+{
+	if (!text.isEmpty()) {
+		statusBar()->showMessage(text, 8000);
+	}
 }
 
 /**
