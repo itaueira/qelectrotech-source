@@ -112,6 +112,12 @@ class QETDiagramEditor : public QETMainWindow
 		void save();
 		void saveAs();
 		bool newProject();
+		/**
+			Create a new project out of a template project file, chosen by
+			the user. The new project is not attached to the template: see
+			ProjectTemplate::detachFromFile().
+		*/
+		bool newProjectFromTemplate();
 		bool openProject();
 		bool openRecentFile(const QString &);
 		bool closeProject(ProjectView *);
@@ -290,6 +296,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_save_file,			///< Save current project
 		*m_save_file_as,		///< Save current project as a specific file
 		*m_find = nullptr,
+		*m_new_from_template = nullptr,	///< Start a new project from a template project
 		*m_jump_to_element = nullptr;	///< Open the "jump to element" quick-open popup
 
 		QList <QAction *> m_zoom_action_toolBar; ///Only zoom action must displayed in the toolbar

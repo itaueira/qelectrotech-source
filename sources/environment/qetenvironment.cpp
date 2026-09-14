@@ -284,6 +284,15 @@ QString QETEnvironment::groupingsDir()
 }
 
 /**
+	@brief QETEnvironment::projectTemplatesDir
+	@return where the project templates are filed
+*/
+QString QETEnvironment::projectTemplatesDir()
+{
+	return subDir(QStringLiteral("project-templates"));
+}
+
+/**
 	@brief QETEnvironment::catalogFile
 	@return the shared catalog of this environment
 */

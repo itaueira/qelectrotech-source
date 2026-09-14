@@ -587,6 +587,11 @@ if(TARGET qet_core)
         src/ui/macroinsert_test.cpp
         src/ui/backup_test.cpp
         src/ui/crashrecovery_test.cpp
+        # Starting a project from a template project: what comes across, and
+        # above all what must not - the path of the template. It needs a
+        # project open because what is proved is a whole .qet read, copied
+        # and written somewhere else.
+        src/ui/projecttemplate_test.cpp
         src/ui/listengine_test.cpp
         # O que sai da lista de material quando o material tem ponto e
         # virgula, aspas ou quebra de linha no nome. Precisa de projeto

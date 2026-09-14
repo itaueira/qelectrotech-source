@@ -73,6 +73,18 @@ class QETEnvironment
 			folder would mean the designer has to remember which is which.
 		*/
 		static QString groupingsDir();
+		/**
+			@brief Where the project templates are filed (T26).
+			The .qet a new job starts from: a cover sheet, an index, a
+			schematic folio already framed. A whole project and not a piece
+			of one, which is why it is not filed with the title blocks.
+
+			Not one of the skeletonFolders(), on purpose: an environment
+			created before this folder existed has to keep looking like an
+			environment, otherwise the dialog starts asking whether it really
+			is one. It is created the first time it is asked for.
+		*/
+		static QString projectTemplatesDir();
 		static QString catalogFile();
 
 		/// The relative names of the folders an environment holds

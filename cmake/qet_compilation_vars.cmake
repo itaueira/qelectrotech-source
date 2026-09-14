@@ -676,6 +676,8 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/project/projectpropertieshandler.cpp
   ${QET_DIR}/sources/project/projectpropertieshandler.h
+  ${QET_DIR}/sources/project/projecttemplate.cpp
+  ${QET_DIR}/sources/project/projecttemplate.h
   ${QET_DIR}/sources/project/projectusagetracker.cpp
   ${QET_DIR}/sources/project/projectusagetracker.h
 

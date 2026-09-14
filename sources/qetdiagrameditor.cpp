@@ -62,6 +62,7 @@
 #include "plc/ui/iolistdialog.h"
 #include "print/projectprintwindow.h"
 #include "project/projectpropertieshandler.h"
+#include "project/projecttemplate.h"
 #include "projectview.h"
 #include "qetproject.h"
 #include "qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
@@ -1098,9 +1099,21 @@ void QETDiagramEditor::setUpActions()
 	m_save_file    ->setStatusTip( tr("Enregistre le projet courant et tous ses folios", "status bar tip") );
 	m_save_file_as ->setStatusTip( tr("Enregistre le projet courant avec un autre nom de fichier", "status bar tip") );
 
+		//Starting a project from a template project. Kept out of
+		//m_file_actions_group on purpose: that group is also what fills the
+		//main toolbar, and this is a once-per-project action which would
+		//only take a button away from what is used all day. It is placed in
+		//the File menu by setUpMenu(), right under "New".
+	m_new_from_template = new QAction(QET::Icons::ProjectNew,
+					  tr("Nouveau à partir d'un modèle…"), this);
+	m_new_from_template->setStatusTip(
+				tr("Crée un projet à partir d'un projet modèle, sans toucher au modèle",
+				   "status bar tip"));
+
 	connect(m_save_file_as, &QAction::triggered, this, &QETDiagramEditor::saveAs);
 	connect(m_save_file,    &QAction::triggered, this, &QETDiagramEditor::save);
 	connect(new_file,       &QAction::triggered, this, &QETDiagramEditor::newProject);
+	connect(m_new_from_template, &QAction::triggered, this, &QETDiagramEditor::newProjectFromTemplate);
 	connect(open_file,      &QAction::triggered, this, &QETDiagramEditor::openProject);
 	connect(m_close_file,   &QAction::triggered, [this]() {
 		if (ProjectView *project_view = currentProjectView()) {
@@ -2332,7 +2345,20 @@ void QETDiagramEditor::setUpMenu()
 	QMenu *recentfile = menu_fichier -> addMenu(QET::Icons::DocumentOpenRecent, tr("&Récemment ouverts"));
 	recentfile->addActions(QETApp::projectsRecentFiles()->menu()->actions());
 	connect(QETApp::projectsRecentFiles(), &RecentFiles::fileOpeningRequested, this, &QETDiagramEditor::openRecentFile);
-	menu_fichier -> addActions(m_file_actions_group.actions());
+	const QList<QAction *> file_actions = m_file_actions_group.actions();
+	menu_fichier -> addActions(file_actions);
+		//Right under "New", which is where somebody starting a project
+		//looks. Inserted rather than appended because the actions above come
+		//in as a group, and "New from a template" belongs beside the one it
+		//is an alternative to, not after "Close".
+	if (m_new_from_template)
+	{
+		if (file_actions.size() > 1) {
+			menu_fichier -> insertAction(file_actions.at(1), m_new_from_template);
+		} else {
+			menu_fichier -> addAction(m_new_from_template);
+		}
+	}
 	menu_fichier -> addSeparator();
 	//menu_fichier -> addAction(import_diagram);
 	menu_fichier -> addAction(m_export_to_images);
@@ -2606,6 +2632,65 @@ bool QETDiagramEditor::newProject()
 	new_project -> addNewDiagram();
 
 	return addProject(new_project);
+}
+
+/**
+	@brief QETDiagramEditor::newProjectFromTemplate
+	Create a new project out of a template project file.
+
+	The template is a whole .qet: the cover sheet, the index and the folios
+	the house always starts from, already framed and with their title blocks
+	filled in. It is read and never written - the project that comes out of
+	it carries no file path at all, so the first "Save" asks where to put it
+	instead of writing over the template.
+	@return true when a project was created
+*/
+bool QETDiagramEditor::newProjectFromTemplate()
+{
+	const QString filepath = QFileDialog::getOpenFileName(
+				this,
+				tr("Nouveau projet à partir d'un modèle", "dialog title"),
+				ProjectTemplate::templatesDir(),
+				ProjectTemplate::nameFilter());
+	if (filepath.isEmpty()) {
+		return(false);
+	}
+
+		//Same pairing as openAndAddProject(): reading a template is reading
+		//a project, so it gets the waiting dialog, and the elements
+		//collection is held back from walking the same cores meanwhile.
+	m_collection_load_gate.projectLoadStarted();
+	DialogWaiting::instance(this);
+
+	QString error;
+	QETProject *project = ProjectTemplate::openAsNewProject(filepath, this, &error);
+	if (project) {
+		addProject(project);
+	}
+
+	DialogWaiting::dropInstance();
+	if (m_collection_load_gate.projectLoadFinished()) {
+		startElementsCollectionLoad();
+	}
+
+	if (!project)
+	{
+		QET::QetMessageBox::critical(
+					this,
+					tr("Impossible d'ouvrir le modèle", "message box title"),
+					error);
+		return(false);
+	}
+
+		//The template is deliberately not added to the recently opened
+		//files: what is offered there is opened for editing, and this one is
+		//never to be edited by accident.
+	statusBar()->showMessage(
+				tr("Nouveau projet créé à partir du modèle %1. "
+				   "Il n'a pas encore de fichier : « Enregistrer » demandera où le ranger.")
+				.arg(QFileInfo(filepath).fileName()),
+				10000);
+	return(true);
 }
 
 /**
