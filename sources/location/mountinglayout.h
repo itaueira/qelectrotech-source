@@ -18,6 +18,7 @@
 #ifndef MOUNTINGLAYOUT_H
 #define MOUNTINGLAYOUT_H
 
+#include "drillingorigin.h"
 #include "enclosuretransfer.h"
 
 #include <QCoreApplication>
@@ -52,6 +53,15 @@ class QDomElement;
 	on purpose: a tall enclosure really does have an upper and a lower
 	mounting plate, and a cabinet really does have a left and a right side
 	panel. What tells those two apart is name, which is a person's words.
+
+	drilling_origin is where the workshop measures this face from, and it is
+	on the face and not on the project because a project is not drilled, a
+	plate is. One panel really does hold a mounting plate punched on a
+	machine that datums from its own bottom left corner and a door marked
+	out by hand off the top, and a setting shared by both would be wrong on
+	one of them every time. It costs nothing to carry: a face that never
+	chose one carries the default, which is the corner the model frame
+	already starts at.
 
 	The area may be unusable, and that is a state and not an error. A
 	location whose useful mounting area nobody has measured yet carries the
@@ -91,6 +101,21 @@ class MountingSurface
 			layout the program could not hold.
 		*/
 		EnclosureTransferPlan planFor(const MountingArea &new_area) const;
+
+		/**
+			@return the origin of this face bound to its dimensions,
+			ready to turn a position into a coordinate a person
+			reads.
+
+			Built here and never stored, so the two halves cannot go
+			stale apart: every coordinate measured from a bottom
+			corner changes the day this plate is resized, and a frame
+			kept in a member would go on answering about the plate of
+			yesterday. This is the one place the choice meets the
+			dimensions, which is what makes the drilling table and
+			whatever draws the face agree by construction.
+		*/
+		DrillingFrame drillingFrame() const;
 
 		/**
 			@return how to call this face out loud: its name, failing
@@ -141,6 +166,8 @@ class MountingSurface
 		QString name;
 			/// how much room there is to mount on, millimetre
 		MountingArea area;
+			/// where this face is measured from when it is drilled
+		DrillingOrigin drilling_origin;
 			/// what is screwed to it, millimetre, in no special order
 		QList<MountedItem> items;
 };

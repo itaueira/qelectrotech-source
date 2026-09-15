@@ -458,6 +458,29 @@ QDomElement MountingSurface::toXml(QDomDocument &document) const
 		element.setAttribute(QStringLiteral("height"), num(area.height));
 	}
 
+		//Written only when it is not the default, so that a project
+		//from before the corner was a choice, opened and saved by
+		//somebody who never went near the setting, comes back out as
+		//the file it went in as. A default written down would make
+		//every such project report itself as modified.
+	if (drilling_origin.corner != DrillingCorner::TopLeft) {
+		element.setAttribute(QStringLiteral("drilling_origin"),
+				     DrillingOrigin::cornerToken(drilling_origin.corner));
+	}
+
+		//Both coordinates or neither, unlike the width and the height
+		//above. A shift is one thing a person measured to a point, not
+		//two measurements that can be known one at a time: "35 mm in
+		//from the edge, and nothing said about how far down" is not a
+		//datum anybody can find.
+	if (drilling_origin.hasOffset())
+	{
+		element.setAttribute(QStringLiteral("drilling_origin_x"),
+				     num(drilling_origin.offset.x()));
+		element.setAttribute(QStringLiteral("drilling_origin_y"),
+				     num(drilling_origin.offset.y()));
+	}
+
 	for (const MountedItem &item : items) {
 		element.appendChild(itemToXml(document, item));
 	}
@@ -493,6 +516,19 @@ bool MountingSurface::fromXml(const QDomElement &element)
 	area = MountingArea(length(element.attribute(QStringLiteral("width"))),
 			    length(element.attribute(QStringLiteral("height"))));
 
+		//Tolerant on both counts, and it is the older projects that
+		//need it: a file written before the corner was a choice says
+		//nothing here, and has to come back measured from the corner it
+		//was drawn against. An attribute naming a corner this version
+		//does not know is read the same way rather than refused - a
+		//project that will not open is a worse answer than a project
+		//that opens with the default and can be set again.
+	drilling_origin = DrillingOrigin(
+		DrillingOrigin::cornerFromToken(
+			element.attribute(QStringLiteral("drilling_origin"))),
+		QPointF(length(element.attribute(QStringLiteral("drilling_origin_x"))),
+			length(element.attribute(QStringLiteral("drilling_origin_y")))));
+
 	items.clear();
 	for (QDomElement child = element.firstChildElement(itemTagName());
 	     !child.isNull();
@@ -502,6 +538,15 @@ bool MountingSurface::fromXml(const QDomElement &element)
 	}
 
 	return true;
+}
+
+/**
+	@brief MountingSurface::drillingFrame
+	@return the origin of this face bound to its dimensions
+*/
+DrillingFrame MountingSurface::drillingFrame() const
+{
+	return DrillingFrame(drilling_origin, area);
 }
 
 QString MountingSurface::tagName()
@@ -536,6 +581,7 @@ bool MountingSurface::operator==(const MountingSurface &other) const
 	    || kind != other.kind
 	    || name != other.name
 	    || !sameArea(area, other.area)
+	    || drilling_origin != other.drilling_origin
 	    || items.count() != other.items.count()) {
 		return false;
 	}

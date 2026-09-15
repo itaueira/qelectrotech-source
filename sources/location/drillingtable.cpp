@@ -251,17 +251,62 @@ QString DrillingToolTotal::sizeText(const QLocale &locale) const
 
 /**
 	@brief DrillingTable::referenceFrameText
+	@param frame the origin and the surface it is measured on
+	@param locale the locale whose decimal separator to use
 	@return the frame the coordinates are stated in
 
 	It holds a semicolon of its own, and that is not an accident of
 	punctuation worth removing: it is the first line of every file this
 	writes, so the rule that keeps a cell whole is exercised by the file
 	header before any hole is in it.
+
+	Assembled from a template and three pieces rather than written out
+	sixteen times. Gluing translated fragments is a habit worth suspecting
+	in general - agreement and word order do not survive it in every
+	language - and it is taken here for a measured reason: the pieces are a
+	noun phrase and two independent clauses, they are the same pieces a
+	corner selector shows, and the alternative is sixteen sentences in which
+	a translator can make two of them disagree about the same corner. The
+	template carries the punctuation, so a language that separates its
+	clauses differently can move it.
 */
-QString DrillingTable::referenceFrameText()
+QString DrillingTable::referenceFrameText(const DrillingFrame &frame,
+					  const QLocale &locale)
 {
-	return tr("Origine : coin supérieur gauche de la surface de montage ; "
-		  "x vers la droite, y vers le bas ; cotes en millimètres.");
+	const DrillingOrigin &origin = frame.origin;
+
+	QStringList sentences;
+
+	sentences << tr("Origine : %1 de la surface de montage ; %2, %3 ; "
+			"cotes en millimètres.")
+		     .arg(DrillingOrigin::cornerName(origin.corner),
+			  origin.xGrowsRight() ? tr("x vers la droite")
+					       : tr("x vers la gauche"),
+			  origin.yGrowsDown() ? tr("y vers le bas")
+					      : tr("y vers le haut"));
+
+		//Said only when it is true, because a sentence that reads
+		//"décalé de 0 mm" on every sheet is a sentence people stop
+		//reading - and this one has to be read on the sheets where it
+		//is the difference between two holes 35 mm apart.
+	if (origin.hasOffset()) {
+		sentences << tr("Zéro décalé de %1 en x et de %2 en y vers "
+				"l'intérieur de la surface.")
+			     .arg(shownNumber(origin.offset.x(), locale),
+				  shownNumber(origin.offset.y(), locale));
+	}
+
+		//The warning that a whole column of question marks is about the
+		//plate and not about the holes. Without it the table looks like
+		//a list of holes nobody measured, which sends the reader to the
+		//wrong place entirely.
+	if (!frame.canMeasure()) {
+		sentences << tr("Dimensions de la surface inconnues : les "
+				"coordonnées ne peuvent pas être mesurées "
+				"depuis ce coin.");
+	}
+
+	return sentences.join(QLatin1Char(' '));
 }
 
 /**
@@ -296,14 +341,24 @@ int DrillingTable::columnCount()
 	@brief DrillingTable::row
 	@param hole the hole
 	@param locale the locale whose decimal separator to use
+	@param frame the origin the coordinates are read from
 	@return the cells, raw and unquoted, in column order
+
+	The coordinate is asked for and not computed. That is the whole of the
+	discipline: this function knows what a column is called and nothing
+	about what a corner means, so there is no second place in the program
+	where a width could be subtracted with the wrong sign.
 */
-QStringList DrillingTable::row(const DrillingHole &hole, const QLocale &locale)
+QStringList DrillingTable::row(const DrillingHole &hole,
+			       const QLocale &locale,
+			       const DrillingFrame &frame)
 {
+	const QPointF coordinate = frame.coordinateOf(hole.position);
+
 	QStringList cells;
 	cells << hole.designation()
-	      << shownNumber(hole.position.x(), locale)
-	      << shownNumber(hole.position.y(), locale)
+	      << shownNumber(coordinate.x(), locale)
+	      << shownNumber(coordinate.y(), locale)
 	      << ((hole.shape == DrillingShape::Round) ? tr("Perçage")
 							: tr("Découpe"))
 	      << hole.sizeText(locale)
@@ -316,11 +371,13 @@ QStringList DrillingTable::row(const DrillingHole &hole, const QLocale &locale)
 	@param holes the holes, in the order they are to be drilled
 	@param separator the delimiter between cells
 	@param locale the locale whose decimal separator to use
+	@param frame the origin the coordinates are read from
 	@return the frame line, the header line and one line per hole
 */
 QString DrillingTable::toDelimitedText(const QList<DrillingHole> &holes,
 				       const QString &separator,
-				       const QLocale &locale)
+				       const QLocale &locale,
+				       const DrillingFrame &frame)
 {
 	QStringList lines;
 
@@ -328,17 +385,17 @@ QString DrillingTable::toDelimitedText(const QList<DrillingHole> &holes,
 		//row is what a spreadsheet shows when a title is written as one
 		//cell, and it costs the reader the one invariant worth having
 		//over this file: every line has the same number of cells.
-	QStringList frame;
-	frame << referenceFrameText();
-	while (frame.size() < columnCount()) {
-		frame << QString();
+	QStringList frame_line;
+	frame_line << referenceFrameText(frame, locale);
+	while (frame_line.size() < columnCount()) {
+		frame_line << QString();
 	}
-	lines << QETCsv::row(frame, separator);
+	lines << QETCsv::row(frame_line, separator);
 
 	lines << QETCsv::row(header(), separator);
 
 	for (const DrillingHole &hole : holes) {
-		lines << QETCsv::row(DrillingTable::row(hole, locale),
+		lines << QETCsv::row(DrillingTable::row(hole, locale, frame),
 				     separator);
 	}
 

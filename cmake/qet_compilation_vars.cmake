@@ -403,6 +403,8 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/location/bommeasure.cpp
   ${QET_DIR}/sources/location/bommeasure.h
+  ${QET_DIR}/sources/location/drillingorigin.cpp
+  ${QET_DIR}/sources/location/drillingorigin.h
   ${QET_DIR}/sources/location/drillingtable.cpp
   ${QET_DIR}/sources/location/drillingtable.h
   ${QET_DIR}/sources/location/enclosuretransfer.cpp

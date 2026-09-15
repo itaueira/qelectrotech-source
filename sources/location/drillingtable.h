@@ -18,6 +18,7 @@
 #ifndef DRILLINGTABLE_H
 #define DRILLINGTABLE_H
 
+#include "drillingorigin.h"
 #include "enclosuretransfer.h"
 
 #include <QCoreApplication>
@@ -64,6 +65,16 @@ enum class DrillingShape
 	and this. A table that declared its own would be a second convention,
 	and the failure of a drilling table with two conventions is that every
 	number in it is plausible.
+
+	@par The model frame and the read frame are two different things
+
+	position stays in the model frame above, always, whatever corner the
+	workshop measures from. What the corner changes is what is PRINTED, and
+	that happens in one place: DrillingFrame, applied by row(). A hole
+	stored in whatever frame the shop last picked would take its fit, its
+	extents and its collisions with it - the day somebody changed the
+	corner, every rule in this module would be reading positions that had
+	silently moved.
 
 	@par The anchor inside the hole is the centre
 
@@ -227,12 +238,18 @@ class DrillingToolTotal
 
 	@par Why the frame is written into the file
 
-	The first line of the emitted text is the frame of
-	MountingArea, spelled out. Without it the same pair of numbers admits
-	four readings - the origin could be any of the four corners - and a
-	workshop that guesses wrong drills a panel that is a mirror of the one
-	that was drawn. The drawing prints the same sentence, from
-	referenceFrameText(), so that the two cannot say different things.
+	The first line of the emitted text is the frame the numbers were
+	measured in, spelled out. It matters more since the corner became a
+	choice, not less: when there was one convention the sentence was a
+	reminder, and now it is the only thing on the sheet that says which of
+	the four was used. It is built from the very frame the coordinates went
+	through rather than written out beside them.
+
+	Without it the same pair of numbers admits four readings - the origin
+	could be any of the four corners - and a workshop that guesses wrong
+	drills a panel that is a mirror of the one that was drawn. The drawing
+	prints the same sentence, from referenceFrameText(), so that the two
+	cannot say different things.
 
 	@par Why every line has the same number of cells
 
@@ -257,14 +274,34 @@ class DrillingTable
 
 	public:
 		/**
-			@return the frame the coordinates are stated in, as a
+			@brief The frame the coordinates are stated in, as a
 			sentence for a person to read.
+			@param frame the origin and the surface it is measured on
+			@param locale the locale whose decimal separator to use
+			@return "Origine : coin supérieur gauche...", and the
+			other readings of it
 
-			The words are here; the decision is not. It is
-			MountingArea's, at enclosuretransfer.h, and this sentence
-			says what that file says and adds nothing to it.
+			The words are here; the decision is not. Which corner is
+			the workshop's, carried on the mounting surface; what a
+			corner is called is DrillingOrigin's, so that a selector
+			and this sentence cannot disagree; and this assembles
+			them.
+
+			The default argument is the frame a project that never
+			chose one is read in, which is what lets a caller with no
+			surface in hand - a header written before there is a
+			plate - still print a true sentence.
+
+			It says two more things when they are true, each as a
+			sentence of its own: that the zero is shifted off the
+			corner, and that the surface has no dimensions, so a
+			coordinate measured from that corner could not be worked
+			out at all. The second is the one worth reading twice -
+			it is the only warning that a row of question marks is a
+			missing plate and not a missing hole.
 		*/
-		static QString referenceFrameText();
+		static QString referenceFrameText(const DrillingFrame &frame = DrillingFrame(),
+						  const QLocale &locale = QLocale());
 
 			/// @return the column names, in order
 		static QStringList header();
@@ -275,6 +312,7 @@ class DrillingTable
 			@brief One hole as a row of cells.
 			@param hole the hole
 			@param locale the locale whose decimal separator to use
+			@param frame the origin the coordinates are read from
 			@return the cells, raw and unquoted, in column order
 
 			Raw on purpose: quoting is done when the cells are
@@ -282,15 +320,25 @@ class DrillingTable
 			known. A caller that puts these into a table widget
 			wants them unquoted, and a caller that writes a file
 			calls toDelimitedText instead of quoting them itself.
+
+			The two number cells come out of DrillingFrame and never
+			off hole.position, which is what makes the header and the
+			rows under it describe the same origin. A hole whose
+			coordinate cannot be worked out in @a frame prints a
+			question mark in both, the way every unmeasured number in
+			this table does.
 		*/
 		static QStringList row(const DrillingHole &hole,
-				       const QLocale &locale = QLocale());
+				       const QLocale &locale = QLocale(),
+				       const DrillingFrame &frame = DrillingFrame());
 
 		/**
 			@brief The whole table as delimited text.
 			@param holes the holes, in the order they are to be drilled
 			@param separator the delimiter between cells
 			@param locale the locale whose decimal separator to use
+			@param frame the origin the coordinates are read from,
+			printed on the first line and applied to every row
 			@return the frame line, the header line and one line per
 			hole, joined by "\n", without a trailing one
 
@@ -309,7 +357,8 @@ class DrillingTable
 		*/
 		static QString toDelimitedText(const QList<DrillingHole> &holes,
 					       const QString &separator = QStringLiteral(";"),
-					       const QLocale &locale = QLocale());
+					       const QLocale &locale = QLocale(),
+					       const DrillingFrame &frame = DrillingFrame());
 
 		/**
 			@brief How many holes each tool makes.

@@ -138,6 +138,7 @@ add_executable(
     src/mountingcheck_test.cpp
     src/mountingmeasure_test.cpp
     src/drillingtable_test.cpp
+    src/drillingorigin_test.cpp
     src/mountingpartview_test.cpp
     src/mountingprofile_test.cpp
     src/locationboundary_test.cpp
@@ -318,6 +319,15 @@ add_executable(
     # that this table goes through it.
     ${QET_DIR}/sources/location/drillingtable.cpp
     ${QET_DIR}/sources/location/drillingtable.h
+    # Which corner of the plate the workshop measures from, and the one place
+    # a position becomes the number printed beside a hole. The whole of it is
+    # four corners, a shift and two inverse functions - no plate drawn, no
+    # project open - which is what lets the error it guards against be pinned
+    # on a bench. That error does not look like an error: every coordinate
+    # comes out plausible, self consistent and wrong the same way, and the
+    # panel is drilled as a mirror of the one that was drawn.
+    ${QET_DIR}/sources/location/drillingorigin.cpp
+    ${QET_DIR}/sources/location/drillingorigin.h
     # The road from a product code to the body of the part: how big it is, how
     # much air it wants, where its axis is. It is the one file of the layout
     # that opens the catalog, and it is here because both of its ends already
