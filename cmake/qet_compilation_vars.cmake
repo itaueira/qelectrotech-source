@@ -479,6 +479,13 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/plc/ui/iolistdialog.cpp
   ${QET_DIR}/sources/plc/ui/iolistdialog.h
 
+  # The engine of the Sql route of the project check: it runs the rules
+  # whose answer is a query over the tables projectdatabase derives from
+  # the project XML. It sits here and not beside the rule contract of
+  # sources/drc/ because it is the only part of the checker that knows
+  # the schema; the walk over the objects knows none of it.
+  ${QET_DIR}/sources/dataBase/drcsqlengine.cpp
+  ${QET_DIR}/sources/dataBase/drcsqlengine.h
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
   ${QET_DIR}/sources/dataBase/projectdatabase.h
   ${QET_DIR}/sources/dataBase/updatecoalescer.cpp

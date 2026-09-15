@@ -4910,6 +4910,29 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
     </message>
 </context>
 <context>
+    <name>DrcSqlEngine</name>
+    <message>
+        <location filename="../sources/dataBase/drcsqlengine.cpp" line="35"/>
+        <source>Aucune requête n&apos;est enregistrée pour cette règle.</source>
+        <translation>Nenhuma consulta está registrada para esta regra.</translation>
+    </message>
+    <message>
+        <location filename="../sources/dataBase/drcsqlengine.cpp" line="41"/>
+        <source>Aucun projet à vérifier.</source>
+        <translation>Nenhum projeto a verificar.</translation>
+    </message>
+    <message>
+        <location filename="../sources/dataBase/drcsqlengine.cpp" line="48"/>
+        <source>La requête n&apos;a pas pu être exécutée.</source>
+        <translation>A consulta não pôde ser executada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/dataBase/drcsqlengine.cpp" line="51"/>
+        <source>La requête n&apos;a pas pu être exécutée : %1</source>
+        <translation>A consulta não pôde ser executada: %1</translation>
+    </message>
+</context>
+<context>
     <name>DynamicElementTextItem</name>
     <message>
         <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="78"/>

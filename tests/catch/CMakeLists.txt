@@ -641,6 +641,14 @@ if(TARGET qet_core)
         # leitura: o dado está vazio no arquivo, e o caso mede as duas
         # coisas de uma vez.
         src/ui/terminalstriptree_test.cpp
+        # O motor da rota SQL da verificacao de projeto: o que ele
+        # pergunta ao banco do projeto, o que ele se recusa a perguntar,
+        # e como ele distingue uma consulta que quebrou de uma que nao
+        # achou nada. Precisa de projeto aberto porque o que se prova e
+        # uma pergunta feita a um banco com linhas dentro; o contrato de
+        # regra, que e aritmetica sobre uma lista, fica um andar abaixo
+        # em drcrule_test.cpp do C_unittests e nao se repete aqui.
+        src/ui/drcsql_test.cpp)
 
     target_link_libraries(
         C_uitests
