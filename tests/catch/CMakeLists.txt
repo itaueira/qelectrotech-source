@@ -651,6 +651,13 @@ if(TARGET qet_core)
         src/ui/elementtable_test.cpp
         src/ui/componentlabel_test.cpp
         src/ui/mountinglayoutsave_test.cpp
+        # A cena em milímetro da placa de montagem: o que ela conta, o que
+        # ela se recusa a fazer item, e o que um arraste deixa na pilha. Está
+        # aqui porque uma QGraphicsScene precisa de uma QApplication, e a
+        # lista escrita à mão do C_unittests é um contrato de que aquelas
+        # regras se calculam sem cena nenhuma. A aritmética da placa fica um
+        # andar abaixo, em mountinglayout_test.cpp, e não se repete aqui.
+        src/ui/mountingscene_test.cpp
         # O modelo de configuração escrito no .qet e lido de volta. Precisa de
         # projeto aberto porque o que se prova são as duas linhas do
         # QETProject que gravam e leem a árvore — a aritmética dela fica um

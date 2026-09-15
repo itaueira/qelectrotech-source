@@ -405,6 +405,10 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/bommeasure.h
   ${QET_DIR}/sources/location/enclosuretransfer.cpp
   ${QET_DIR}/sources/location/enclosuretransfer.h
+  ${QET_DIR}/sources/location/layout/mountedpartitem.cpp
+  ${QET_DIR}/sources/location/layout/mountedpartitem.h
+  ${QET_DIR}/sources/location/layout/mountingscene.cpp
+  ${QET_DIR}/sources/location/layout/mountingscene.h
   ${QET_DIR}/sources/location/locatableelement.h
   ${QET_DIR}/sources/location/locationboundary.cpp
   ${QET_DIR}/sources/location/locationboundary.h
@@ -1050,6 +1054,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/rotatetextscommand.h
   ${QET_DIR}/sources/undocommand/movegraphicsitemcommand.cpp
   ${QET_DIR}/sources/undocommand/movegraphicsitemcommand.h
+  ${QET_DIR}/sources/undocommand/movemountedpartcommand.cpp
+  ${QET_DIR}/sources/undocommand/movemountedpartcommand.h
 
   ${QET_DIR}/sources/utils/conductorcreator.cpp
   ${QET_DIR}/sources/utils/conductorcreator.h
