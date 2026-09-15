@@ -37,6 +37,115 @@
 
 namespace PdfLinks {
 
+namespace {
+
+/**
+	The object number of every page of @p data, in document order.
+
+	Read from the page tree (/Type /Pages -> /Kids [ N 0 R ... ]).  This is
+	reliable; scanning raw bytes for "/Type /Page" is NOT: that marker also
+	occurs inside content streams, and a forward lookahead wrongly tags
+	neighbouring objects (it found 280 "pages" for a 137-page document).  Qt
+	writes a single, flat /Kids array listing every page.
+*/
+QVector<int> collectPageObjects(const QByteArray &data)
+{
+	QVector<int> pageObjs;
+	int pagesPos = data.indexOf("/Type /Pages");
+	int kidsPos  = (pagesPos == -1) ? -1 : data.indexOf("/Kids", pagesPos);
+	int lb       = (kidsPos  == -1) ? -1 : data.indexOf('[', kidsPos);
+	int rb       = (lb       == -1) ? -1 : data.indexOf(']', lb);
+	if (lb != -1 && rb != -1 && rb > lb) {
+		const QString kids =
+			QString::fromLatin1(data.mid(lb + 1, rb - lb - 1));
+		QRegularExpression re(QStringLiteral("(\\d+)\\s+\\d+\\s+R"));
+		auto it = re.globalMatch(kids);
+		while (it.hasNext()) {
+			int objNum = it.next().captured(1).toInt();
+			if (objNum > 0) pageObjs.append(objNum);
+		}
+	}
+	return pageObjs;
+}
+
+/**
+	Where every object of @p body begins, by object number.
+
+	Measured rather than read from the table that is already in the file,
+	because the table is exactly what the caller is about to replace: each of
+	these passes rewrites objects in place, which moves everything after them.
+*/
+QMap<int, int> objectOffsets(const QByteArray &body)
+{
+	QMap<int, int> offsets;
+	const QByteArray objMarker(" 0 obj");
+	int p = 0;
+	while ((p = body.indexOf(objMarker, p)) != -1) {
+		int numStart = p - 1;
+		while (numStart > 0
+			   && body[numStart - 1] != '\n' && body[numStart - 1] != '\r')
+			--numStart;
+		QByteArray numStr = body.mid(numStart, p - numStart).trimmed();
+		bool ok = false;
+		int objNum = numStr.toInt(&ok);
+		if (ok && objNum > 0)
+			offsets[objNum] = numStart;
+		++p;
+	}
+	return offsets;
+}
+
+/**
+	A cross-reference table covering object 1 up to the highest of @p offsets.
+
+	A gap is written as a free entry rather than left out: the table is read
+	positionally, so a missing line would shift every object after it.
+*/
+QByteArray buildXrefTable(const QMap<int, int> &offsets)
+{
+	const int maxObj = offsets.lastKey();
+	QByteArray xref;
+	xref += "xref\n";
+	xref += "0 " + QByteArray::number(maxObj + 1) + "\n";
+	xref += "0000000000 65535 f \n";
+	for (int i = 1; i <= maxObj; ++i) {
+		if (offsets.contains(i)) {
+			xref += QByteArray::number(offsets[i]).rightJustified(10, '0')
+				+ " 00000 n \n";
+		} else {
+			xref += "0000000000 65535 f \n";
+		}
+	}
+	return xref;
+}
+
+/**
+	@p text as a PDF text string: UTF-16BE behind a byte-order mark, written
+	as a hexadecimal string.
+
+	Hexadecimal spares the escaping of parentheses and backslashes, which a
+	sheet title may well carry.  The byte-order mark is what tells a reader to
+	decode UTF-16 instead of PDFDocEncoding (PDF 1.7, 7.9.2.2): without it an
+	accented title comes back mangled in the bookmark panel.  A QString is
+	already UTF-16, so every code unit is written as it stands and a surrogate
+	pair needs no special case.
+*/
+QByteArray pdfTextString(const QString &text)
+{
+	QByteArray utf16be;
+	utf16be.reserve(2 + text.size() * 2);
+	utf16be.append('\xfe');
+	utf16be.append('\xff');
+	for (QChar c : text) {
+		const ushort u = c.unicode();
+		utf16be.append(static_cast<char>((u >> 8) & 0xFF));
+		utf16be.append(static_cast<char>(u & 0xFF));
+	}
+	return "<" + utf16be.toHex() + ">";
+}
+
+} // namespace
+
 void injectCrossRefLinks(QPdfEngine *engine, Diagram *diagram,
 						 const PageGeometry &geom,
 						 const QMap<Diagram *, int> &pageMap,
@@ -193,29 +302,7 @@ void convertUriToGoTo(const QString &pdfPath)
 	f.close();
 
 	// --- 2. Collect page object numbers in document order ---
-	// Read them from the page tree (/Type /Pages -> /Kids [ N 0 R ... ]).
-	// This is reliable; scanning raw bytes for "/Type /Page" is NOT: that
-	// marker also occurs inside content streams, and a forward lookahead
-	// wrongly tags neighbouring objects (it found 280 "pages" for a 137-page
-	// document). Qt writes a single, flat /Kids array listing every page.
-	QVector<int> pageObjs;
-	{
-		int pagesPos = data.indexOf("/Type /Pages");
-		int kidsPos  = (pagesPos == -1) ? -1 : data.indexOf("/Kids", pagesPos);
-		int lb       = (kidsPos  == -1) ? -1 : data.indexOf('[', kidsPos);
-		int rb       = (lb       == -1) ? -1 : data.indexOf(']', lb);
-		if (lb != -1 && rb != -1 && rb > lb) {
-			const QString kids =
-				QString::fromLatin1(data.mid(lb + 1, rb - lb - 1));
-			QRegularExpression re(QStringLiteral("(\\d+)\\s+\\d+\\s+R"));
-			auto it = re.globalMatch(kids);
-			while (it.hasNext()) {
-				int objNum = it.next().captured(1).toInt();
-				if (objNum > 0) pageObjs.append(objNum);
-			}
-		}
-	}
-
+	const QVector<int> pageObjs = collectPageObjects(data);
 	if (pageObjs.isEmpty()) return;  // nothing to do
 
 	// --- 3. Replace URI annotations with GoTo ---
@@ -664,6 +751,184 @@ void convertComponentInfoAnnotations(const QString &pdfPath,
 	result += QByteArray::number(newXrefOffset);
 	result += "\n%%EOF\n";
 
+	QFile outF(pdfPath);
+	if (!outF.open(QIODevice::WriteOnly | QIODevice::Truncate)) return;
+	outF.write(result);
+	outF.close();
+}
+
+QString outlineTitleOf(Diagram *diagram, int page)
+{
+	if (diagram) {
+		// simplified() because the panel shows one line per entry: a title
+		// carrying a line break would be read as far as the break and no
+		// further, which reads as a truncated sheet name.
+		const QString title = diagram->title().simplified();
+		if (!title.isEmpty())
+			return title;
+		const QString folio =
+			diagram->border_and_titleblock.finalfolio().simplified();
+		if (!folio.isEmpty())
+			return folio;
+	}
+	return QString::number(page);
+}
+
+void injectOutline(const QString &pdfPath, const QList<OutlineEntry> &entries)
+{
+	if (entries.isEmpty()) return;
+
+	// --- 1. Read raw bytes ---
+	QFile f(pdfPath);
+	if (!f.open(QIODevice::ReadOnly)) return;
+	QByteArray data = f.readAll();
+	f.close();
+
+	// Never lay a second tree over a first: the catalog would end up with two
+	// /Outlines keys and a reader would follow whichever it parsed last.
+	if (data.contains("/Type /Outlines")) return;
+
+	// --- 2. The pages the entries can point at ---
+	const QVector<int> pageObjs = collectPageObjects(data);
+	if (pageObjs.isEmpty()) return;
+
+	// Everything up to the existing cross-reference table; the table itself is
+	// rebuilt at the end, because the objects appended below are not in it and
+	// the catalog above grows by a key, which moves what follows it.
+	int xrefStart = data.lastIndexOf("\nxref\n");
+	if (xrefStart == -1) xrefStart = data.lastIndexOf("\nxref ");
+	if (xrefStart == -1) return;  // malformed PDF
+	++xrefStart;                  // skip the leading '\n'
+	QByteArray body = data.left(xrefStart);
+
+	// The catalog is where a reader looks for the tree. Without the key the
+	// objects written below are unreachable and the file is merely bigger.
+	int catPos = body.indexOf("/Type /Catalog");
+	int catLen = 14;
+	if (catPos == -1) {
+		catPos = body.indexOf("/Type/Catalog");
+		catLen = 13;
+	}
+	if (catPos == -1) return;
+
+	// Keep only what this document can honour, in the order given. A narrowed
+	// export - "folios=12,13,40" - has fewer pages than the project has
+	// sheets, and a bookmark onto a page that was left out opens nothing.
+	QList<OutlineEntry> kept;
+	for (const OutlineEntry &e : entries) {
+		if (e.page >= 1 && e.page <= pageObjs.size())
+			kept.append(e);
+	}
+	if (kept.isEmpty()) return;
+
+	const QMap<int, int> existing = objectOffsets(body);
+	if (existing.isEmpty()) return;
+
+	const int rootObj   = existing.lastKey() + 1;
+	const int firstItem = rootObj + 1;
+	const int count     = kept.size();
+
+	// --- 3. Point the catalog at the tree ---
+	// Inserted immediately after the /Type key rather than at the end of the
+	// dictionary: the engine does not write the closing ">>" of the catalog
+	// at a place these bytes can recognise reliably, and a key may be added
+	// anywhere in a dictionary.
+	QByteArray catalogKeys =
+		"\n/Outlines " + QByteArray::number(rootObj) + " 0 R";
+	// And open the reader on that panel. Writing the tree without this leaves
+	// it to the reader's own default, which is usually to show nothing - and
+	// a navigation panel nobody finds is the complaint this answers.
+	if (!body.contains("/PageMode"))
+		catalogKeys += "\n/PageMode /UseOutlines";
+	body.insert(catPos + catLen, catalogKeys);
+
+	// --- 4. The tree itself: one flat level, one entry per emitted sheet ---
+	QByteArray objects;
+	objects += QByteArray::number(rootObj) + " 0 obj\n<<\n";
+	objects += "/Type /Outlines\n";
+	objects += "/First " + QByteArray::number(firstItem) + " 0 R\n";
+	objects += "/Last "
+			   + QByteArray::number(firstItem + count - 1) + " 0 R\n";
+	// A positive /Count is what makes the panel come up with the sheets
+	// already listed instead of folded under a single root.
+	objects += "/Count " + QByteArray::number(count) + "\n";
+	objects += ">>\nendobj\n";
+
+	for (int i = 0; i < count; ++i) {
+		const int self = firstItem + i;
+		objects += QByteArray::number(self) + " 0 obj\n<<\n";
+		objects += "/Title " + pdfTextString(kept.at(i).title) + "\n";
+		objects += "/Parent " + QByteArray::number(rootObj) + " 0 R\n";
+		if (i > 0)
+			objects += "/Prev " + QByteArray::number(self - 1) + " 0 R\n";
+		if (i < count - 1)
+			objects += "/Next " + QByteArray::number(self + 1) + " 0 R\n";
+		// /Fit and not /FitR: a bookmark opens a whole sheet. It is the same
+		// destination convertUriToGoTo() writes for a link with no rectangle
+		// to frame, so both ways of reaching a folio land on it alike.
+		objects += "/Dest ["
+				   + QByteArray::number(pageObjs.at(kept.at(i).page - 1))
+				   + " 0 R /Fit]\n";
+		objects += ">>\nendobj\n";
+	}
+
+	QByteArray out = body + objects;
+
+	// --- 5. Rebuild the cross-reference table ---
+	const QMap<int, int> offsets = objectOffsets(out);
+	if (offsets.isEmpty()) return;
+	const QByteArray xref = buildXrefTable(offsets);
+
+	// --- 6. Carry the trailer over, with /Size grown by what was appended ---
+	QByteArray trailer;
+	{
+		int tPos = data.indexOf("trailer", xrefStart);
+		if (tPos != -1) {
+			int tEnd = data.indexOf("%%EOF", tPos);
+			if (tEnd != -1)
+				trailer = data.mid(tPos, tEnd + 5 - tPos);
+		}
+	}
+	if (trailer.isEmpty())
+		trailer = "trailer\n<<>>\n%%EOF";
+
+	{
+		int sizePos = trailer.indexOf("/Size ");
+		if (sizePos != -1) {
+			int numStart = sizePos + 6;
+			int numEnd = numStart;
+			while (numEnd < trailer.size()
+				   && trailer[numEnd] >= '0' && trailer[numEnd] <= '9')
+				++numEnd;
+			if (numEnd > numStart) {
+				trailer.replace(numStart, numEnd - numStart,
+								QByteArray::number(offsets.lastKey() + 1));
+			}
+		}
+	}
+
+	// The copied trailer still carries the offset of the table it came with,
+	// which is now wrong; the one appended below is the last in the file and
+	// is the one a reader takes.
+	{
+		int stPos = trailer.indexOf("\nstartxref\n");
+		if (stPos != -1)
+			trailer = trailer.left(stPos);
+		if (!trailer.endsWith("%%EOF\n"))
+			trailer += "\n%%EOF\n";
+	}
+
+	QByteArray result;
+	result.reserve(out.size() + xref.size() + trailer.size() + 64);
+	const int newXrefOffset = out.size();
+	result += out;
+	result += xref;
+	result += trailer;
+	result += "\nstartxref\n";
+	result += QByteArray::number(newXrefOffset);
+	result += "\n%%EOF\n";
+
+	// --- 7. Write back ---
 	QFile outF(pdfPath);
 	if (!outF.open(QIODevice::WriteOnly | QIODevice::Truncate)) return;
 	outF.write(result);

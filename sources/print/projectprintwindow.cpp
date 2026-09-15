@@ -249,6 +249,22 @@ void ProjectPrintWindow::requestPaint()
 		}
 	}
 
+	// One bookmark per selected sheet, opening the first page that sheet
+	// takes. Assigned and not appended to: the preview repaints on every
+	// change of the selection, and a list that grew each time would end up
+	// naming sheets the emitted document no longer has.
+	//
+	// Unlike the cross-reference links below, this does not ask for
+	// fit_page: a sheet spread over several pages still opens at the first
+	// of them, which is what a bookmark is for.
+	m_outline_entries.clear();
+	for (auto diagram : selectedDiagram()) {
+		PdfLinks::OutlineEntry entry;
+		entry.page  = diagramPageMap.value(diagram, 0);
+		entry.title = PdfLinks::outlineTitleOf(diagram, entry.page);
+		m_outline_entries.append(entry);
+	}
+
 	bool first = true;
 	QPainter painter(m_printer);
 	int annotIndex = 0;
@@ -880,6 +896,11 @@ void ProjectPrintWindow::print()
 			// Convert URI link annotations into native internal GoTo/FitR
 			// actions so cross-references jump inside the document.
 			PdfLinks::convertUriToGoTo(pdfFile);
+
+			// And the bookmark panel, last of the three: it rebuilds the
+			// cross-reference table over whatever the passes above left.
+			PdfLinks::injectOutline(pdfFile, m_outline_entries);
+			m_outline_entries.clear();
 
 			this->close();
 		});

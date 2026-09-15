@@ -566,6 +566,12 @@ if(TARGET qet_core)
         src/ui/pdfprobe.h
         src/ui/pdfexport_test.cpp
         src/ui/pdffolios_test.cpp
+        # The bookmark tree of an emitted PDF, read back out of the bytes.
+        # It needs a project open because what is proved is a whole .qet
+        # exported and reopened; and it is here and not beside the pure
+        # rules because the tree is written over a file the engine has
+        # already closed, so there is nothing to look at until one exists.
+        src/ui/pdfoutline_test.cpp
         src/ui/projectopen_test.cpp
         src/ui/appearance_test.cpp
         src/ui/dragassign_test.cpp

@@ -105,6 +105,8 @@ class ProjectPrintWindow : public QMainWindow
 		QColor m_backup_diagram_background_color;
 		QHash<Diagram *, QCheckBox *> m_diagram_list_hash;
 		QList<PdfLinks::ComponentInfo> m_componentInfoList;
+		/// One bookmark per selected sheet, rebuilt on every preview repaint.
+		QList<PdfLinks::OutlineEntry> m_outline_entries;
 };
 
 #endif // PROJECTPRINTWINDOW_H

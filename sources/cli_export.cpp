@@ -232,6 +232,11 @@ int exportPdf(QETProject &project, const QString &output,
 	for (int i = 0; i < diagrams.size(); ++i)
 		pageMap.insert(diagrams.at(i), i + 1);
 
+	// The bookmark panel of the emitted file, filled sheet by sheet in the
+	// loop below and written once after it: an outline belongs to the
+	// document and not to a page.
+	QList<PdfLinks::OutlineEntry> outline;
+
 	QPdfWriter writer(output);
 	writer.setCreator("QElectroTech");
 	writer.setResolution(96);
@@ -259,6 +264,14 @@ int exportPdf(QETProject &project, const QString &output,
 		const QRectF target(0, 0,
 							writer.width(), writer.height());
 		renderDiagram(diagram, painter, target);
+
+		// Collected here, and not while the page map was being built, because
+		// the fallback reads the folio string the title block resolves - which
+		// it only has once the sheet has been through its own layout.
+		PdfLinks::OutlineEntry entry;
+		entry.page  = pageMap.value(diagram, 0);
+		entry.title = PdfLinks::outlineTitleOf(diagram, entry.page);
+		outline.append(entry);
 
 		// Inject clickable cross-reference / folio-report hyperlinks for this
 		// page.  The geometry is rebuilt from the QPdfWriter (not a QPrinter):
@@ -322,6 +335,11 @@ int exportPdf(QETProject &project, const QString &output,
 	// Rewrite the URI link annotations into native internal GoTo actions, so
 	// the cross-references jump inside the document in any PDF viewer.
 	PdfLinks::convertUriToGoTo(output);
+
+	// And give the reader a navigation panel: one bookmark per emitted
+	// sheet. Last, because it rebuilds the cross-reference table over
+	// whatever the pass above left behind.
+	PdfLinks::injectOutline(output, outline);
 
 	out << "Exported " << diagrams.size() << " page(s) -> " << output << "\n";
 	return 0;

@@ -18,6 +18,7 @@
 #ifndef PDF_LINKS_H
 #define PDF_LINKS_H
 
+#include <QList>
 #include <QMap>
 #include <QPointF>
 #include <QRectF>
@@ -113,6 +114,50 @@ namespace PdfLinks {
 	*/
 	void convertComponentInfoAnnotations(const QString &pdfPath,
 										const QList<ComponentInfo> &annotations);
+
+	/// One line of the bookmark panel: what it reads, and what it opens.
+	struct OutlineEntry {
+		/// The label shown in the reader's navigation panel.
+		QString title;
+		/// 1-based page the entry opens, in the emitted document.
+		int page = 0;
+	};
+
+	/**
+		The label a bookmark carries for @p diagram, drawn on page @p page.
+
+		It lives here, and not in each caller, because the printed window and
+		the command line have to emit the same document for the same project:
+		a title decided twice would differ the day one of the two changed.
+
+		The sheet title comes first, since that is what the person who drew
+		the project wrote on it. An untitled sheet falls back to the folio
+		string its own title block resolves ("1/14"), and a sheet without one
+		to the page number - both language-neutral on purpose, so that the
+		file does not depend on which of the two paths emitted it: the command
+		line runs before any translator is installed and the window runs after.
+	*/
+	QString outlineTitleOf(Diagram *diagram, int page);
+
+	/**
+		Post-process a Qt-generated PDF file: give it a document outline - the
+		bookmark tree a reader lists in its navigation panel - with one flat
+		entry per emitted sheet, each opening its page whole.
+
+		Written over the bytes rather than asked of the engine because there
+		is nothing to ask: QPdfEngine exposes drawHyperlink() and
+		addFileAttachment() and no outline call whatsoever, in Qt5 or in Qt6.
+		This is the same treatment convertUriToGoTo() gives the link actions,
+		for the same reason.
+
+		Does nothing when the file already carries an outline, so that a
+		second call cannot leave the catalog pointing at two trees. Entries
+		naming a page the document does not have are dropped rather than
+		written: a narrowed export must not offer a bookmark that opens
+		nothing.
+	*/
+	void injectOutline(const QString &pdfPath,
+					   const QList<OutlineEntry> &entries);
 
 }
 
