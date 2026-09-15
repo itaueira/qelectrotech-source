@@ -24,6 +24,7 @@
 #include <QList>
 #include <QString>
 
+class AssemblyState;
 class Catalog;
 class Element;
 class QETProject;
@@ -86,8 +87,41 @@ namespace ProjectRenumberer
 	/// The letters at the start of a tag: "MTR12" gives "MTR"
 	QString rootOfLabel(const QString &label);
 
-	/// true when this component was numbered by hand and must not be touched
+	/**
+		@param element
+		@return true when the renumbering must leave the tag of @a element
+		where it is.
+
+		Two reasons, and they are independent of one another:
+		1. somebody ticked "lock the numbering" on this very component;
+		2. the project was marked as built while this component was already
+		   drawn on it, so its label is a printed sticker on a part screwed
+		   to a rail (T29).
+
+		The second one is *derived* and never written: the photograph of the
+		marking is read, and nothing is stored on the component. That is what
+		lets the marking be taken back without freeing what reason 1 protects
+		- once written, a lock put there by the machine is indistinguishable
+		from a lock put there by the draughtsman.
+
+		The project is reached through the sheet @a element is drawn on. A
+		component handed in with no sheet - one that has been cut, or one a
+		test built - is judged on reason 1 alone, which is the honest answer:
+		with no project there is no photograph to be in.
+	*/
 	bool isFrozen(const Element *element);
+
+	/**
+		@param element
+		@param state : the assembly state to judge @a element against
+		@return the same answer as above, against a state handed in rather
+		than looked up.
+
+		Here so that the two reasons can be exercised against a state that
+		was built on purpose, and so that a caller holding the state already
+		does not fetch it once per component.
+	*/
+	bool isFrozen(const Element *element, const AssemblyState &state);
 
 	/**
 		@brief The component that already carries @a label, if any.

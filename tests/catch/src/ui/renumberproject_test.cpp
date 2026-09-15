@@ -19,6 +19,7 @@
 
 #include "../qt_catch_tostring.h"
 
+#include "../../../../sources/autoNum/assemblystate.h"
 #include "../../../../sources/autoNum/numberingformat.h"
 #include "../../../../sources/autoNum/projectrenumberer.h"
 #include "../../../../sources/autoNum/renumberplan.h"
@@ -27,9 +28,11 @@
 #include "../../../../sources/diagramcontext.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/undocommand/assemblystatecommand.h"
 
 #include <catch2/catch.hpp>
 
+#include <QDomDocument>
 #include <QPointF>
 #include <QUndoCommand>
 #include <QUndoStack>
@@ -189,6 +192,52 @@ namespace {
 			{"contactor.elmt", 100, 100 + drop, "K5", false, 1},
 			{"contactor.elmt", 300, 100, "K6", false, 2}};
 		return projectXml(instances);
+	}
+
+	/**
+		Two more components drawn on @a sheet after it was opened: the control
+		circuit somebody adds to a panel that is already on the bench.
+
+		They arrive through Diagram::fromXml, which is the path a paste takes,
+		rather than being built here by hand. What the case has to be able to
+		say is that the renumbering meets them exactly as it meets the ones
+		that came out of the file - and an instance assembled in the test
+		would be a different object from the one a draughtsman would have
+		dropped, so the answer would be about the test.
+
+		Their uuid is written down rather than generated, so that "this one is
+		not in the photograph" is a fact of the fixture and not of the run.
+
+		@param label the tag they carry when drawn, which is what decides
+		their tag root
+	*/
+	bool addControlCircuit(Diagram *sheet, const char *label)
+	{
+		if (!sheet) {
+			return false;
+		}
+
+		const QList<Instance> added = {
+			{"contactor.elmt", 100, 300, label, false, 7},
+			{"contactor.elmt", 300, 300, label, false, 8}};
+
+		QString drawn;
+		for (const Instance &instance : added) {
+			drawn += elementXml(instance);
+		}
+
+		QDomDocument fragment;
+		if (!fragment.setContent(QStringLiteral(
+						 "<diagram><elements>%1</elements>"
+						 "<inputs/><conductors/></diagram>")
+					 .arg(drawn))) {
+			return false;
+		}
+
+		QDomElement root = fragment.documentElement();
+		// false: the border and the title block of the sheet are not to be
+		// read again from a fragment that carries none.
+		return sheet->fromXml(root, QPointF(), false);
 	}
 
 	Element *elementAt(Diagram *sheet, qreal x, qreal y)
@@ -582,5 +631,265 @@ TEST_CASE("F1 F.1 (fila) — a tolerância de 10 unidades da ordem de leitura, d
 
 		REQUIRE(plan.labelFor(right->uuid().toString()) == QStringLiteral("K1"));
 		REQUIRE(plan.labelFor(left->uuid().toString()) == QStringLiteral("K2"));
+	}
+}
+
+TEST_CASE("CU-29.1 — circuito novo em quadro montado: só o que veio depois é numerado",
+	  "[uibench][renumber][assembly]")
+{
+	/*
+		The case of T29 that costs the most when it is missing: a panel is on
+		the bench, its labels printed and stuck on, and a control circuit has
+		to be added. Renumbering today would remake the tags of the four
+		hundred parts already screwed down, so nobody runs it - and the change
+		goes back to being done by hand.
+
+		What is proved here is the whole of the case as the roteiro states it,
+		with one half left out on purpose: that the project is a real one, and
+		that the shop finds the drawing it expects, is for a person to look at.
+		The rest is here, on components read off a sheet loaded from a file
+		and drawn on it afterwards through the very path a paste takes.
+
+		The new circuit is tagged KA, a root of its own. The collision that
+		arises when it shares the root of a part already on the rail is a
+		different subject, measured in the case below, and mixing the two
+		would make this one fail for a reason that is not the freezing.
+	*/
+	Catalog catalog;
+	QString catalog_error;
+	const bool catalog_open = catalog.openInMemory(&catalog_error);
+	INFO(catalog_error.toStdString());
+	REQUIRE(catalog_open);
+
+	UiBench::ScratchProject scratch(sheetXml(), QStringLiteral("assembled.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+	Diagram *sheet = scratch.diagram(0);
+	REQUIRE(sheet != nullptr);
+	REQUIRE(sheet->elements().count() == 6);
+
+	Element *top_left = elementAt(sheet, 100, 100);
+	Element *top_middle = elementAt(sheet, 300, 100);
+	Element *top_right = elementAt(sheet, 500, 100);
+	Element *second_row = elementAt(sheet, 200, 200);
+	Element *typed_by_hand = elementAt(sheet, 150, 400);
+	REQUIRE(top_left != nullptr);
+	REQUIRE(top_middle != nullptr);
+	REQUIRE(top_right != nullptr);
+	REQUIRE(second_row != nullptr);
+	REQUIRE(typed_by_hand != nullptr);
+
+	// What is screwed to the rail, in the order it is drawn. The tags of
+	// these five are the whole subject: not one of them may move.
+	const QList<Element *> on_the_rail = {top_left, top_middle, top_right,
+					      second_row, typed_by_hand};
+	const QStringList before = {QStringLiteral("K3"), QStringLiteral("K1"),
+				    QStringLiteral("Q9"), QStringLiteral("K2"),
+				    QStringLiteral("K7")};
+	REQUIRE(labelsOf(on_the_rail) == before);
+
+	SECTION("controle negativo — sem a marcação, a renumeração mexe em tudo")
+	{
+		/*
+			Without this the case below would pass on a program that had
+			simply stopped renumbering, and "nothing existing changed" would
+			be the report of a broken automation rather than of a working
+			freeze.
+		*/
+		REQUIRE(addControlCircuit(sheet, "KA"));
+		const QList<Element *> components =
+			ProjectRenumberer::components(scratch.project());
+		REQUIRE(components.count() == 7);
+
+		const RenumberPlan plan = Renumberer::plan(
+			ProjectRenumberer::inputsFor(catalog, components, sequentialFormat()),
+			false);
+
+		// Seven lines: six changed and the one tag somebody typed by hand.
+		REQUIRE(plan.entries.count() == 7);
+		REQUIRE(plan.changeCount() == 6);
+		REQUIRE(plan.frozenCount() == 1);
+
+		REQUIRE(ProjectRenumberer::applyPlan(components, plan) == 6);
+		INFO(firstLabelThatMoved(before, labelsOf(on_the_rail)).toStdString());
+		REQUIRE_FALSE(labelsOf(on_the_rail) == before);
+	}
+
+	SECTION("marcado como montado, só os dois componentes novos são numerados")
+	{
+		scratch->undoStack()->push(new AssemblyStateCommand(
+			scratch.project(),
+			AssemblyStateCommand::photograph(scratch.project(),
+							 AssemblyStage::Assembled)));
+
+		// The photograph, counted both ways: five components in it, and five
+		// items in it altogether. The sheet draws no wire, so the two
+		// numbers agree here - and saying only one of them would hide the
+		// day they stop agreeing. The terminal block is not a component the
+		// renumbering tags, and is in neither count.
+		const AssemblyState state = scratch->assemblyState();
+		REQUIRE(state.components.size() == 5);
+		REQUIRE(state.frozenCount() == 5);
+
+		REQUIRE(addControlCircuit(sheet, "KA"));
+		const QList<Element *> components =
+			ProjectRenumberer::components(scratch.project());
+		REQUIRE(components.count() == 7);
+
+		Element *new_left = elementAt(sheet, 100, 300);
+		Element *new_right = elementAt(sheet, 300, 300);
+		REQUIRE(new_left != nullptr);
+		REQUIRE(new_right != nullptr);
+		REQUIRE_FALSE(state.holdsComponent(new_left->uuid().toString()));
+
+		const RenumberPlan plan = Renumberer::plan(
+			ProjectRenumberer::inputsFor(catalog, components, sequentialFormat()),
+			false);
+
+		// Groups and total, both said: five left alone, two renumbered, and
+		// seven lines in the table. The sum is asserted as well, so that an
+		// entry which is neither - passed over without being reported - has
+		// nowhere to hide inside a plausible pair of numbers.
+		REQUIRE(plan.frozenCount() == 5);
+		REQUIRE(plan.changeCount() == 2);
+		REQUIRE(plan.skippedCount() == 0);
+		REQUIRE(plan.entries.count() == 7);
+		REQUIRE(plan.entries.count() == plan.frozenCount() + plan.changeCount());
+		REQUIRE_FALSE(plan.hasDuplicates());
+
+		REQUIRE(ProjectRenumberer::applyPlan(components, plan) == 2);
+
+		// The whole point of the task, in one line.
+		INFO(firstLabelThatMoved(before, labelsOf(on_the_rail)).toStdString());
+		REQUIRE(labelsOf(on_the_rail) == before);
+
+		REQUIRE(labelOf(new_left) == QStringLiteral("KA1"));
+		REQUIRE(labelOf(new_right) == QStringLiteral("KA2"));
+	}
+
+	SECTION("o travamento é derivado da fotografia, e não gravado no componente")
+	{
+		/*
+			Decision P85, seen from the renumbering side rather than from the
+			marking side. A component of the panel answers "frozen" while
+			carrying no lock of its own, and that is what lets the marking be
+			taken back later without freeing the one tag the draughtsman
+			locked by hand.
+		*/
+		const QStringList locked_before =
+			UiBench::information(sheet, QStringLiteral("auto_num_locked"));
+		REQUIRE(locked_before.count(QStringLiteral("true")) == 1);
+		REQUIRE_FALSE(ProjectRenumberer::isFrozen(top_left));
+
+		scratch->undoStack()->push(new AssemblyStateCommand(
+			scratch.project(),
+			AssemblyStateCommand::photograph(scratch.project(),
+							 AssemblyStage::Assembled)));
+
+		REQUIRE(ProjectRenumberer::isFrozen(top_left));
+		REQUIRE(top_left->elementInformations()
+			.value(QStringLiteral("auto_num_locked")).toString().isEmpty());
+		REQUIRE(UiBench::information(sheet, QStringLiteral("auto_num_locked"))
+			== locked_before);
+	}
+}
+
+TEST_CASE("T29 — desmarcar devolve a folha à automação, e o contador não reserva o que congelou",
+	  "[uibench][renumber][assembly]")
+{
+	/*
+		Two things measured on the same fixture, because both of them are
+		about what the freezing does *not* do.
+
+		The first is the half of taking the marking back that this step can
+		answer: the freezing is derived, so unmarking frees what the machine
+		froze and leaves alone what somebody locked by hand. The window that
+		offers the unmarking is another step, and the case number belongs to
+		it.
+
+		The second is a gap, written down here rather than left to be found on
+		a bench. A frozen line of the plan does not consume a number of its
+		counter, so a component drawn after the marking, under the root of a
+		part that is already screwed down, is handed a number that part is
+		wearing. The plan reports it as a duplicate instead of writing it -
+		which is the difference between an awkward answer and a wrong one -
+		but reserving the numbers of the photograph is not part of this step,
+		and the day it is, this case is what says what changed.
+	*/
+	Catalog catalog;
+	QString catalog_error;
+	const bool catalog_open = catalog.openInMemory(&catalog_error);
+	INFO(catalog_error.toStdString());
+	REQUIRE(catalog_open);
+
+	UiBench::ScratchProject scratch(sheetXml(), QStringLiteral("assembled.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+	Diagram *sheet = scratch.diagram(0);
+	REQUIRE(sheet != nullptr);
+
+	Element *top_left = elementAt(sheet, 100, 100);
+	Element *typed_by_hand = elementAt(sheet, 150, 400);
+	REQUIRE(top_left != nullptr);
+	REQUIRE(typed_by_hand != nullptr);
+
+	SECTION("desmarcar libera o que a fotografia congelou e não o que foi travado à mão")
+	{
+		const int steps_before = scratch->undoStack()->index();
+		scratch->undoStack()->push(new AssemblyStateCommand(
+			scratch.project(),
+			AssemblyStateCommand::photograph(scratch.project(),
+							 AssemblyStage::Assembled)));
+		REQUIRE(addControlCircuit(sheet, "KA"));
+		REQUIRE(ProjectRenumberer::isFrozen(top_left));
+
+		// The circuit was drawn without going through the stack, so the one
+		// step this takes back is the marking and nothing else.
+		REQUIRE(scratch->undoStack()->index() == steps_before + 1);
+		scratch->undoStack()->undo();
+		REQUIRE(scratch->undoStack()->index() == steps_before);
+
+		REQUIRE_FALSE(scratch->assemblyState().isFrozen());
+		REQUIRE_FALSE(ProjectRenumberer::isFrozen(top_left));
+		REQUIRE(ProjectRenumberer::isFrozen(typed_by_hand));
+
+		const QList<Element *> components =
+			ProjectRenumberer::components(scratch.project());
+		const RenumberPlan plan = Renumberer::plan(
+			ProjectRenumberer::inputsFor(catalog, components, sequentialFormat()),
+			false);
+
+		REQUIRE(plan.entries.count() == 7);
+		REQUIRE(plan.frozenCount() == 1);
+		REQUIRE(plan.changeCount() == 6);
+	}
+
+	SECTION("componente novo sob a raiz de um congelado recebe número repetido, e o plano acusa")
+	{
+		scratch->undoStack()->push(new AssemblyStateCommand(
+			scratch.project(),
+			AssemblyStateCommand::photograph(scratch.project(),
+							 AssemblyStage::Assembled)));
+		REQUIRE(addControlCircuit(sheet, "K"));
+
+		const QList<Element *> components =
+			ProjectRenumberer::components(scratch.project());
+		const RenumberPlan plan = Renumberer::plan(
+			ProjectRenumberer::inputsFor(catalog, components, sequentialFormat()),
+			false);
+
+		REQUIRE(plan.frozenCount() == 5);
+		REQUIRE(plan.changeCount() == 2);
+		REQUIRE(plan.entries.count() == 7);
+
+		// Measured, not supposed: the counter of the K bucket starts at one
+		// because the five frozen lines never touched it, so the two new
+		// contactors are offered K1 and K2 - tags that are printed and stuck
+		// on two parts of the panel.
+		const QStringList colliding = {QStringLiteral("K1"), QStringLiteral("K2")};
+		REQUIRE(plan.duplicates() == colliding);
+		REQUIRE(plan.hasDuplicates());
 	}
 }

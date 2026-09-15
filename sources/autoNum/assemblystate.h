@@ -143,6 +143,24 @@ class AssemblyState
 		bool holdsComponent(const QString &uuid) const;
 		bool holdsConductor(const QString &uuid) const;
 
+		/**
+			@param uuid of a component
+			@return true when the automation has to leave the tag of this
+			component where it is.
+
+			Both halves, and neither of them alone: the stage says the panel
+			exists as printed matter stuck on a rail, and the photograph says
+			this component is one of the ones that got a label. A photograph
+			left over from a marking that was taken back therefore freezes
+			nothing, which is the half a reader drops first - holdsComponent()
+			reads like the whole answer on its own, and it is not one.
+
+			The conductor twin of this is not here yet: wire numbering has no
+			notion of a lock at all today, so giving it one is a step of its
+			own rather than a line added here with no caller.
+		*/
+		bool freezesComponent(const QString &uuid) const;
+
 		/// The label the component carried when marked, empty when it is not
 		/// in the photograph at all.
 		QString componentLabel(const QString &uuid) const;

@@ -25,6 +25,7 @@
 #include "../qetinformation.h"
 #include "../qetproject.h"
 #include "../undocommand/renumbercommand.h"
+#include "assemblystate.h"
 #include "iecstructure.h"
 
 #include <QUndoStack>
@@ -152,15 +153,50 @@ QString ProjectRenumberer::rootFor(const Catalog &catalog, const Element *elemen
 /**
 	@brief ProjectRenumberer::isFrozen
 	@param element
-	@return true when this component was numbered by hand
+	@return true when this component must be left where it is
+
+	The assembly state comes from the sheet the component is drawn on. A
+	component with no sheet keeps the answer it always had - the tick alone -
+	because a component outside any project is in no photograph either.
 */
 bool ProjectRenumberer::isFrozen(const Element *element)
 {
 	if (!element) {
 		return false;
 	}
-	return element->elementInformations()
-		.value(QStringLiteral("auto_num_locked")).toBool();
+
+	Diagram *diagram = element->diagram();
+	QETProject *project = diagram ? diagram->project() : nullptr;
+	if (!project) {
+		return isFrozen(element, AssemblyState());
+	}
+	return isFrozen(element, project->assemblyState());
+}
+
+/**
+	@brief ProjectRenumberer::isFrozen
+	@param element
+	@param state
+	@return true when this component must be left where it is
+*/
+bool ProjectRenumberer::isFrozen(const Element *element, const AssemblyState &state)
+{
+	if (!element) {
+		return false;
+	}
+
+		//1. The tick of the information panel: this one was numbered by hand,
+		//and it survives the project being marked and unmarked because nothing
+		//here ever writes it.
+	if (element->elementInformations()
+			.value(QStringLiteral("auto_num_locked")).toBool()) {
+		return true;
+	}
+
+		//2. The photograph taken when the panel was marked as built: this
+		//component was already drawn, so its tag is a sticker on a part
+		//screwed to a rail. Read, never written back.
+	return state.freezesComponent(element->uuid().toString());
 }
 
 /**

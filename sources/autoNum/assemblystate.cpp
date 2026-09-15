@@ -137,6 +137,16 @@ bool AssemblyState::holdsConductor(const QString &uuid) const
 }
 
 /**
+	@brief AssemblyState::freezesComponent
+	@param uuid
+	@return whether the automation has to leave the tag of this component alone
+*/
+bool AssemblyState::freezesComponent(const QString &uuid) const
+{
+	return isFrozen() && holdsComponent(uuid);
+}
+
+/**
 	@brief AssemblyState::componentLabel
 	@param uuid
 	@return the tag this component carried when the project was marked

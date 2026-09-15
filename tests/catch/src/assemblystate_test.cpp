@@ -301,3 +301,84 @@ TEST_CASE("T29 — congelado é o estágio, e vazio é o que não precisa ser gr
 		REQUIRE_FALSE(state.holdsComponent(conductor_uuid));
 	}
 }
+
+TEST_CASE("T29 — congelar um componente pede as duas metades: o estágio e a fotografia",
+	  "[assembly][autonum]")
+{
+	/*
+		The rule the renumbering asks this class for, and the reason it is a
+		function here rather than two calls at the call site: the two halves
+		are easy to write down separately and easy to forget to put back
+		together. holdsComponent() on its own reads like the whole answer,
+		and a photograph that outlived the marking that took it would then go
+		on freezing a project nobody marked.
+
+		What is not here is the other reason a component can be frozen - the
+		tick somebody put on it by hand. That one is a key of a DiagramContext
+		on the component itself, so it needs an Element, and it is proved in
+		src/ui/renumberproject_test.cpp with a project open.
+	*/
+	const QString drawn_before =
+		QStringLiteral("{decaf000-0000-4000-8000-000000000001}");
+	const QString drawn_after =
+		QStringLiteral("{decaf000-0000-4000-8000-000000000042}");
+
+	SECTION("marcado, o que estava desenhado congela e o que veio depois não")
+	{
+		const AssemblyState state = markedState();
+		REQUIRE(state.freezesComponent(drawn_before));
+		REQUIRE_FALSE(state.freezesComponent(drawn_after));
+	}
+
+	SECTION("a fotografia que sobrou de uma marcação desfeita não congela nada")
+	{
+		/*
+			The half a reader drops first. Unmarking empties the photograph,
+			so this state does not arise from the command as it stands - but
+			the answer has to be right anyway, because it is the answer that
+			makes unmarking reversible, and a later step that keeps the
+			photograph around to compute the "what changed since" report
+			would otherwise freeze a project that is back on the drawing
+			board.
+		*/
+		AssemblyState state = markedState();
+		state.stage = AssemblyStage::InProject;
+
+		REQUIRE(state.holdsComponent(drawn_before));
+		REQUIRE_FALSE(state.isFrozen());
+		REQUIRE_FALSE(state.freezesComponent(drawn_before));
+	}
+
+	SECTION("em campo congela igual: o que muda de estágio para estágio não é isto")
+	{
+		AssemblyState state = markedState();
+		state.stage = AssemblyStage::InField;
+		REQUIRE(state.freezesComponent(drawn_before));
+	}
+
+	SECTION("marcado sem fotografia não congela componente nenhum")
+	{
+		// The other control: the stage alone freezes nothing, or every
+		// component ever drawn would be frozen by a marking taken on an
+		// empty project.
+		AssemblyState state;
+		state.stage = AssemblyStage::Assembled;
+
+		REQUIRE(state.isFrozen());
+		REQUIRE_FALSE(state.freezesComponent(drawn_before));
+	}
+
+	SECTION("um uuid de condutor não congela como se fosse componente")
+	{
+		const AssemblyState state = markedState();
+		REQUIRE(state.holdsConductor(
+				QStringLiteral("{beef0000-0000-4000-8000-000000000001}")));
+		REQUIRE_FALSE(state.freezesComponent(
+				QStringLiteral("{beef0000-0000-4000-8000-000000000001}")));
+	}
+
+	SECTION("uuid vazio nunca congela")
+	{
+		REQUIRE_FALSE(markedState().freezesComponent(QString()));
+	}
+}
