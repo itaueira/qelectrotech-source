@@ -144,26 +144,41 @@ TEST_CASE("T34 — deux fois la même voie dans un connecteur reste un doublon")
 {
 		//The other half of the rule above, and the reason it is a group and
 		//not a switch that turns the check off: inside one connector a
-		//repeated way is exactly the mistake the warning exists for. Here a
-		//way numbered by hand as 1 meets the 1 the counter is about to hand
-		//out, because an object numbered by hand keeps its tag without
-		//spending a number.
+		//repeated way is exactly the mistake the warning exists for.
+		//
+		//The double used to be made by the counter itself - a way numbered by
+		//hand as 1 met the 1 the counter was about to hand out - and it
+		//cannot be made that way any more, because a frozen way now reserves
+		//the number it carries (P126). So what is measured here is the double
+		//renumbering cannot repair, since neither side of it may move: two
+		//ways of CN1 typed 1 by hand. The way 1 of CN2 sits beside them and
+		//is not part of it.
 	QList<RenumberInput> inputs;
 	RenumberInput fixed = pin(QStringLiteral("fixed"), QStringLiteral("CN1"),
 				  100, QStringLiteral("1"));
+	RenumberInput again = pin(QStringLiteral("again"), QStringLiteral("CN1"),
+				  140, QStringLiteral("1"));
 	fixed.frozen = true;
-	inputs << fixed
-	       << pin(QStringLiteral("a"), QStringLiteral("CN1"), 140)
-	       << pin(QStringLiteral("far"), QStringLiteral("CN2"), 180);
+	again.frozen = true;
+	inputs << fixed << again
+	       << pin(QStringLiteral("a"), QStringLiteral("CN1"), 180)
+	       << pin(QStringLiteral("far"), QStringLiteral("CN2"), 220);
 
 	const RenumberPlan plan = Renumberer::plan(inputs, byConnector());
-	CHECK(plan.labelFor(QStringLiteral("a")) == QStringLiteral("1"));
+
+		//The free way of CN1 is offered 2 and not 1: the reservation is what
+		//keeps the counter from adding a third 1 to a connector that already
+		//carries two of them.
+	CHECK(plan.labelFor(QStringLiteral("a")) == QStringLiteral("2"));
 	CHECK(plan.labelFor(QStringLiteral("far")) == QStringLiteral("1"));
 
 		//Reported once, and only because of CN1: the way 1 of CN2 is not part
 		//of it.
 	CHECK(plan.hasDuplicates());
 	CHECK(plan.duplicates() == QStringList({QStringLiteral("1")}));
+	CHECK(plan.frozenCount() == 2);
+	CHECK(plan.changeCount() == 2);
+	REQUIRE(plan.entries.size() == 4);
 }
 
 TEST_CASE("T34 — trois broches effacées au milieu : renuméroter ferme le trou")
@@ -364,27 +379,50 @@ TEST_CASE("T34 — %{connector} écrit le nom du premier, pas la graphie de chac
 	}
 }
 
-TEST_CASE("T34 — une voie numérotée à la main garde son numéro et n'en consomme pas")
+TEST_CASE("T34 — une voie numérotée à la main garde son numéro et le réserve")
 {
 		//Same rule as everywhere else in the renumbering, said here because a
 		//connector is where it is most often needed: the way that goes to a
 		//particular terminal of a machine is fixed by the machine, and the
 		//rest of the connector has to be numbered around it.
+		//
+		//Around it, and not away from it: the ways below 7 are handed out as
+		//usual, and only the 7 itself is stepped over (P126). Eight pins are
+		//drawn rather than three, so the counter is made to walk right
+		//through the reserved number - with three the answer would be the
+		//same whether anything had been reserved or not, which is what the
+		//older shape of this case could not tell apart.
 	QList<RenumberInput> inputs;
 	RenumberInput fixed = pin(QStringLiteral("fixed"), QStringLiteral("CN1"),
 				  100, QStringLiteral("7"));
 	fixed.frozen = true;
-	inputs << fixed
-	       << pin(QStringLiteral("a"), QStringLiteral("CN1"), 140)
-	       << pin(QStringLiteral("b"), QStringLiteral("CN1"), 180);
+	inputs << fixed;
+	for (int index = 0 ; index < 7 ; ++index)
+	{
+		inputs << pin(QStringLiteral("way-") + QString::number(index),
+			      QStringLiteral("CN1"), 140 + (index * 40));
+	}
 
 	const RenumberPlan plan = Renumberer::plan(inputs, byConnector());
 	CHECK(plan.labelFor(QStringLiteral("fixed")) == QStringLiteral("7"));
 	CHECK(entryOf(plan, QStringLiteral("fixed")).frozen);
 	CHECK_FALSE(entryOf(plan, QStringLiteral("fixed")).skipped);
-	CHECK(plan.labelFor(QStringLiteral("a")) == QStringLiteral("1"));
-	CHECK(plan.labelFor(QStringLiteral("b")) == QStringLiteral("2"));
+
+		//The whole list, and not a spot check: "7 appears once" would also be
+		//true of a plan that had renumbered the fixed way itself.
+	CHECK(labelsOf(plan) == QStringList({ QStringLiteral("7"),
+					      QStringLiteral("1"),
+					      QStringLiteral("2"),
+					      QStringLiteral("3"),
+					      QStringLiteral("4"),
+					      QStringLiteral("5"),
+					      QStringLiteral("6"),
+					      QStringLiteral("8") }));
+	REQUIRE(plan.entries.size() == 8);
 	CHECK(plan.frozenCount() == 1);
+	CHECK(plan.changeCount() == 7);
+	CHECK(plan.entries.size() == plan.frozenCount() + plan.changeCount());
+	CHECK_FALSE(plan.hasDuplicates());
 }
 
 TEST_CASE("T34 — un format qui ne compte pas par connecteur ignore le champ")

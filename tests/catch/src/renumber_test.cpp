@@ -217,8 +217,137 @@ TEST_CASE("CU-07.5 — un numéro mis à la main n'est jamais renuméroté")
 	CHECK_FALSE(plan.entries.at(1).changed);
 
 	// And it does not eat a number: the two that are renumbered are W1 and W2.
+	//
+	// It does reserve the tag it carries, since P126 - but "24 Vcc" is not a
+	// tag any counter of this format ever renders, so there is nothing here
+	// for the reservation to block. That case is measured on purpose in the
+	// last section of the T29 case below.
 	CHECK(plan.labelFor(QStringLiteral("a")) == QStringLiteral("W1"));
 	CHECK(plan.labelFor(QStringLiteral("c")) == QStringLiteral("W2"));
+}
+
+TEST_CASE("T29 — un repère gelé réserve son numéro, et les trous se remplissent")
+{
+	/*
+		P126, answered: a frozen tag is a label printed and stuck on a part
+		that is screwed to a rail, so nothing drawn afterwards may be offered
+		it. The sequence is allowed to gain holes; a second part wearing a tag
+		the panel already wears is what it may not produce.
+
+		Pure here, on inputs built by hand, and measured through a real panel
+		in tests/catch/src/ui/renumberproject_test.cpp. This is the
+		arithmetic; that one is the drawing.
+	*/
+	SECTION("deux contacteurs gelés en K1 et K2 : le circuit neuf commence à K3")
+	{
+		QList<RenumberInput> inputs;
+		RenumberInput first = object(QStringLiteral("mounted-1"), QStringLiteral("K"),
+					     0, 100, 100, QStringLiteral("K1"));
+		RenumberInput second = object(QStringLiteral("mounted-2"), QStringLiteral("K"),
+					      0, 100, 200, QStringLiteral("K2"));
+		first.frozen = true;
+		second.frozen = true;
+		inputs << first << second
+		       << object(QStringLiteral("new-1"), QStringLiteral("K"), 0, 100, 300)
+		       << object(QStringLiteral("new-2"), QStringLiteral("K"), 0, 100, 400);
+
+		const RenumberPlan plan = Renumberer::plan(
+			inputs, formatNamed(QStringLiteral("Séquentiel")));
+
+		// The wrong answer, named: K1 and K2 is what the counter offered
+		// before a frozen line reserved anything, and both of them are stuck
+		// on a part that is bolted down.
+		CHECK(plan.labelFor(QStringLiteral("new-1")) == QStringLiteral("K3"));
+		CHECK(plan.labelFor(QStringLiteral("new-2")) == QStringLiteral("K4"));
+
+		// Counted and totalled: four lines, two left alone, two renumbered,
+		// and the sum said as well, so that a line which is neither has
+		// nowhere to hide inside a plausible pair of numbers.
+		REQUIRE(plan.entries.size() == 4);
+		CHECK(plan.frozenCount() == 2);
+		CHECK(plan.changeCount() == 2);
+		CHECK(plan.entries.size() == plan.frozenCount() + plan.changeCount());
+		CHECK(plan.duplicates() == QStringList());
+		CHECK_FALSE(plan.hasDuplicates());
+	}
+
+	SECTION("un seul gelé en K7 : les numéros libres avant lui servent quand même")
+	{
+		/*
+			The half of the decision that is not obvious. A component frozen
+			as K7 in a project holding nothing between 1 and 6 reserves the 7
+			and nothing else: the next free tag is K1, not K8.
+
+			Starting past the highest frozen number is the other policy, and
+			it is the wrong answer this section names - it reads as the
+			natural one, and it would put six tags that nothing is wearing out
+			of use for ever.
+
+			Eight components and not two, so the counter is made to walk right
+			through the reserved number: with two, the answer would be the
+			same whether anything had been reserved or not.
+		*/
+		QList<RenumberInput> inputs;
+		RenumberInput mounted = object(QStringLiteral("mounted"), QStringLiteral("K"),
+					       0, 100, 100, QStringLiteral("K7"));
+		mounted.frozen = true;
+		inputs << mounted;
+		for (int index = 0 ; index < 7 ; ++index)
+		{
+			inputs << object(QStringLiteral("new-") + QString::number(index),
+					 QStringLiteral("K"), 0, 100, 200 + (index * 100));
+		}
+
+		const RenumberPlan plan = Renumberer::plan(
+			inputs, formatNamed(QStringLiteral("Séquentiel")));
+
+		// The whole list rather than a spot check: "K7 appears once" would
+		// also be true of a plan that had renumbered the frozen component.
+		CHECK(labelsOf(plan) == QStringList({ QStringLiteral("K7"),
+						      QStringLiteral("K1"),
+						      QStringLiteral("K2"),
+						      QStringLiteral("K3"),
+						      QStringLiteral("K4"),
+						      QStringLiteral("K5"),
+						      QStringLiteral("K6"),
+						      QStringLiteral("K8") }));
+		REQUIRE(plan.entries.size() == 8);
+		CHECK(plan.frozenCount() == 1);
+		CHECK(plan.changeCount() == 7);
+		CHECK(plan.entries.size() == plan.frozenCount() + plan.changeCount());
+		CHECK_FALSE(plan.hasDuplicates());
+	}
+
+	SECTION("un repère gelé que le motif ne produit jamais ne réserve rien")
+	{
+		/*
+			What a tag blocks is itself, and not a number worked back out of
+			it - which is what makes the rule cost nothing in the case it must
+			not disturb. A wire numbered by hand as "24 Vcc" is frozen like
+			any other, and no counter of %{root}%{n} on the root W ever
+			renders it, so the sequence gains no hole at all.
+
+			This is why hand locking and a mounted panel could be given one
+			rule instead of two: it spends a number only where a number is
+			what is written.
+		*/
+		QList<RenumberInput> inputs;
+		RenumberInput by_hand = object(QStringLiteral("manual"), QStringLiteral("W"),
+					       0, 100, 100, QStringLiteral("24 Vcc"));
+		by_hand.frozen = true;
+		inputs << by_hand
+		       << object(QStringLiteral("a"), QStringLiteral("W"), 0, 100, 200)
+		       << object(QStringLiteral("c"), QStringLiteral("W"), 0, 100, 300);
+
+		const RenumberPlan plan = Renumberer::plan(
+			inputs, formatNamed(QStringLiteral("Séquentiel")));
+
+		CHECK(plan.labelFor(QStringLiteral("manual")) == QStringLiteral("24 Vcc"));
+		CHECK(plan.labelFor(QStringLiteral("a")) == QStringLiteral("W1"));
+		CHECK(plan.labelFor(QStringLiteral("c")) == QStringLiteral("W2"));
+		CHECK(plan.frozenCount() == 1);
+		CHECK(plan.changeCount() == 2);
+	}
 }
 
 TEST_CASE("CU-07.6 — collision : on sait qui a déjà ce repère")

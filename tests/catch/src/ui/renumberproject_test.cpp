@@ -795,12 +795,12 @@ TEST_CASE("CU-29.1 — circuito novo em quadro montado: só o que veio depois é
 	}
 }
 
-TEST_CASE("T29 — desmarcar devolve a folha à automação, e o contador não reserva o que congelou",
+TEST_CASE("T29 — desmarcar devolve a folha à automação, e o contador reserva o que congelou",
 	  "[uibench][renumber][assembly]")
 {
 	/*
 		Two things measured on the same fixture, because both of them are
-		about what the freezing does *not* do.
+		about the edges of the freezing rather than about its middle.
 
 		The first is the half of taking the marking back that this step can
 		answer: the freezing is derived, so unmarking frees what the machine
@@ -808,14 +808,16 @@ TEST_CASE("T29 — desmarcar devolve a folha à automação, e o contador não r
 		offers the unmarking is another step, and the case number belongs to
 		it.
 
-		The second is a gap, written down here rather than left to be found on
-		a bench. A frozen line of the plan does not consume a number of its
-		counter, so a component drawn after the marking, under the root of a
-		part that is already screwed down, is handed a number that part is
-		wearing. The plan reports it as a duplicate instead of writing it -
-		which is the difference between an awkward answer and a wrong one -
-		but reserving the numbers of the photograph is not part of this step,
-		and the day it is, this case is what says what changed.
+		The second was written here as a gap and is now the answer to it
+		(P126). A frozen line used to keep its tag without taking it out of
+		circulation, so a component drawn after the marking, under the root of
+		a part already screwed down, was handed a number that part was
+		wearing; the plan reported the double instead of writing it, which is
+		the difference between an awkward answer and a wrong one, but the
+		number offered on the preview was still one that is printed and stuck
+		on the panel. A frozen tag is now reserved, and what these sections
+		say is which tag the new circuit is offered instead - and that the
+		duplicate check did not go quiet in the process.
 	*/
 	Catalog catalog;
 	QString catalog_error;
@@ -866,13 +868,96 @@ TEST_CASE("T29 — desmarcar devolve a folha à automação, e o contador não r
 		REQUIRE(plan.changeCount() == 6);
 	}
 
-	SECTION("componente novo sob a raiz de um congelado recebe número repetido, e o plano acusa")
+	SECTION("componente novo sob a raiz de um congelado recebe o primeiro número livre")
 	{
 		scratch->undoStack()->push(new AssemblyStateCommand(
 			scratch.project(),
 			AssemblyStateCommand::photograph(scratch.project(),
 							 AssemblyStage::Assembled)));
 		REQUIRE(addControlCircuit(sheet, "K"));
+
+		Element *new_left = elementAt(sheet, 100, 300);
+		Element *new_right = elementAt(sheet, 300, 300);
+		REQUIRE(new_left != nullptr);
+		REQUIRE(new_right != nullptr);
+
+		const QList<Element *> components =
+			ProjectRenumberer::components(scratch.project());
+		const RenumberPlan plan = Renumberer::plan(
+			ProjectRenumberer::inputsFor(catalog, components, sequentialFormat()),
+			false);
+
+		// Groups and total, both said: five left alone, two renumbered, seven
+		// lines, and the sum, so that a line which is neither cannot hide.
+		REQUIRE(plan.frozenCount() == 5);
+		REQUIRE(plan.changeCount() == 2);
+		REQUIRE(plan.entries.count() == 7);
+		REQUIRE(plan.entries.count() == plan.frozenCount() + plan.changeCount());
+
+		/*
+			The panel wears K1, K2, K3 and K7 under this root, so the two new
+			contactors are offered the first two tags nothing is wearing: K4
+			and K5.
+
+			Two wrong answers this fixture would also have fitted, named so
+			that neither can pass unread. K1 and K2 is what the counter
+			offered before a frozen line reserved anything, and both are
+			printed and stuck on a part that is bolted to the rail. K8 and K9
+			is the other policy for the holes - starting past the highest
+			frozen number instead of filling the tags nothing is wearing - and
+			it is the one a reader expects, which is why it is written down
+			here rather than left to be assumed.
+		*/
+		REQUIRE(plan.labelFor(new_left->uuid().toString()) == QStringLiteral("K4"));
+		REQUIRE(plan.labelFor(new_right->uuid().toString()) == QStringLiteral("K5"));
+
+		// Every tag the plan offers, sorted and counted: seven lines and
+		// seven different tags, which says in one line that the five of the
+		// panel are still on the parts wearing them and that nothing was
+		// handed out twice.
+		QStringList offered;
+		for (const RenumberEntry &entry : plan.entries) {
+			offered << entry.to;
+		}
+		offered.sort();
+		const QStringList expected = {QStringLiteral("K1"), QStringLiteral("K2"),
+					      QStringLiteral("K3"), QStringLiteral("K4"),
+					      QStringLiteral("K5"), QStringLiteral("K7"),
+					      QStringLiteral("Q9")};
+		REQUIRE(offered == expected);
+
+		REQUIRE(plan.duplicates() == QStringList());
+		REQUIRE_FALSE(plan.hasDuplicates());
+	}
+
+	SECTION("controle negativo — duas etiquetas iguais no quadro continuam sendo acusadas")
+	{
+		/*
+			The reservation takes away the double the counter used to make; it
+			must not take away the check that finds a double the counter never
+			made. Two parts on the rail carrying the same tag is the
+			draughtsman having typed it twice, and renumbering cannot repair
+			it - neither of them may move - so the plan has to go on saying
+			it.
+
+			Without this section the one above would pass on a program that
+			had simply stopped counting duplicates, and "no repeated tag"
+			would be the report of a check that answers nothing.
+		*/
+		DiagramContext repeated = typed_by_hand->elementInformations();
+		repeated.addValue(QStringLiteral("label"), QStringLiteral("K3"));
+		typed_by_hand->setElementInformations(repeated);
+
+		scratch->undoStack()->push(new AssemblyStateCommand(
+			scratch.project(),
+			AssemblyStateCommand::photograph(scratch.project(),
+							 AssemblyStage::Assembled)));
+		REQUIRE(addControlCircuit(sheet, "K"));
+
+		Element *new_left = elementAt(sheet, 100, 300);
+		Element *new_right = elementAt(sheet, 300, 300);
+		REQUIRE(new_left != nullptr);
+		REQUIRE(new_right != nullptr);
 
 		const QList<Element *> components =
 			ProjectRenumberer::components(scratch.project());
@@ -884,12 +969,12 @@ TEST_CASE("T29 — desmarcar devolve a folha à automação, e o contador não r
 		REQUIRE(plan.changeCount() == 2);
 		REQUIRE(plan.entries.count() == 7);
 
-		// Measured, not supposed: the counter of the K bucket starts at one
-		// because the five frozen lines never touched it, so the two new
-		// contactors are offered K1 and K2 - tags that are printed and stuck
-		// on two parts of the panel.
-		const QStringList colliding = {QStringLiteral("K1"), QStringLiteral("K2")};
-		REQUIRE(plan.duplicates() == colliding);
+		// Reported once, and it is the tag two frozen parts share. The new
+		// circuit is not part of it: K3 being taken twice does not stop the
+		// counter finding K4 and K5 free.
+		REQUIRE(plan.duplicates() == QStringList({QStringLiteral("K3")}));
 		REQUIRE(plan.hasDuplicates());
+		REQUIRE(plan.labelFor(new_left->uuid().toString()) == QStringLiteral("K4"));
+		REQUIRE(plan.labelFor(new_right->uuid().toString()) == QStringLiteral("K5"));
 	}
 }

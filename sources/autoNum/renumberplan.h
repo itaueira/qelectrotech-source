@@ -96,7 +96,18 @@ class RenumberEntry
 			them to click through the one warning that matters.
 		*/
 		QString group;
-		bool frozen = false;    ///< left alone because it was set by hand
+		/**
+			Left alone: set by hand, or already drawn when the panel was marked
+			as built.
+
+			The tag it carries is reserved as well as kept, so that no other
+			object is offered it (P126). A frozen tag is a label printed and
+			stuck on a part that is screwed to a rail, and the renumbering
+			cannot be allowed to offer that same tag to something drawn
+			afterwards - the sequence may gain holes, the panel may not gain a
+			second part wearing one tag.
+		*/
+		bool frozen = false;
 		/**
 			Left alone because the format had nothing to say about it: numbering
 			by connector met a component that belongs to no connector (T34).
@@ -195,7 +206,8 @@ class Renumberer
 
 			An object that was numbered by hand keeps its label and appears in
 			the plan marked frozen: the user has to see that it was skipped,
-			not wonder why it did not change.
+			not wonder why it did not change. Its tag is also taken out of
+			circulation - see RenumberEntry::frozen.
 		*/
 		static RenumberPlan plan(const QList<RenumberInput> &inputs,
 					 bool columns_first = false);

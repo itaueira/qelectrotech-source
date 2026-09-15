@@ -17,6 +17,8 @@
 */
 #include "renumberplan.h"
 
+#include <QSet>
+
 #include <algorithm>
 
 namespace
@@ -38,6 +40,24 @@ namespace
 	bool sameBand(qreal first, qreal second)
 	{
 		return qAbs(first - second) <= ORDERING_TOLERANCE;
+	}
+
+	/**
+		The identity space a tag lives in - see RenumberEntry::group.
+
+		Written once and called from two places on purpose: the tags a frozen
+		line already holds are gathered in one pass and consulted in another,
+		and the two have to agree on what "the same tag" means. Two copies of
+		this rule that drifted apart would reserve a tag in one space and hand
+		it out in another, which is the very thing the reservation exists to
+		stop.
+	*/
+	QString groupOf(const RenumberInput &input)
+	{
+		if (input.format.scope != NumberingScope::Connector) {
+			return QString();
+		}
+		return Renumberer::connectorKey(input.connector);
 	}
 }
 
@@ -169,6 +189,29 @@ RenumberPlan Renumberer::plan(const QList<RenumberInput> &inputs, bool columns_f
 		}
 	}
 
+	// The tags the frozen lines are already wearing, in the identity space the
+	// duplicate check counts in (RenumberEntry::group).
+	//
+	// Gathered before anything is numbered, and that ordering is the whole
+	// reason it is a pass of its own: a frozen component may be drawn below
+	// the ones being renumbered, so a tag locked at the bottom of the sheet
+	// has to be out of reach of a counter that starts at the top. Built as the
+	// loop went, it would only protect what had already been met.
+	//
+	// What it is for (P126): a frozen tag is a label printed and stuck on a
+	// part screwed to a rail. Offering it to a component drawn afterwards
+	// hands the user a tag the panel is already wearing, and the plan
+	// reporting the double afterwards does not undo that - the number has
+	// already been read off the preview.
+	QHash<QString, QSet<QString>> frozen_tags;
+	for (const RenumberInput &input : ordered)
+	{
+		if (!input.frozen || input.current.isEmpty()) {
+			continue;
+		}
+		frozen_tags[groupOf(input)].insert(input.current);
+	}
+
 	// One counter per scope bucket. A project scope has a single bucket, a
 	// folio scope one per folio, and so on - which is the whole difference
 	// between M1, M2, M3 and M201, M202.
@@ -179,14 +222,11 @@ RenumberPlan Renumberer::plan(const QList<RenumberInput> &inputs, bool columns_f
 		RenumberEntry entry;
 		entry.uuid = input.uuid;
 		entry.from = input.current;
-		if (input.format.scope == NumberingScope::Connector)
-		{
-			// Set before the two branches below, so that a way numbered by hand
-			// and a way passed over are compared inside their own connector as
-			// well - a hand written 3 colliding with a computed 3 is a real
-			// double, and it is one only within the connector.
-			entry.group = connectorKey(input.connector);
-		}
+		// Set before the two branches below, so that a way numbered by hand
+		// and a way passed over are compared inside their own connector as
+		// well - a hand written 3 colliding with a computed 3 is a real
+		// double, and it is one only within the connector.
+		entry.group = groupOf(input);
 
 		if (input.frozen)
 		{
@@ -256,10 +296,41 @@ RenumberPlan Renumberer::plan(const QList<RenumberInput> &inputs, bool columns_f
 			       connector_names.value(connectorKey(input.connector),
 						     input.connector.trimmed()));
 
-		const int counter = counters.value(bucket, 0);
+		int counter = counters.value(bucket, 0);
+		QString label = input.format.render(input.root, counter, context);
+
+		// Step over what the frozen lines hold. What blocks a counter is the
+		// rendered tag and not arithmetic on the number, and that is what
+		// keeps the rule cheap in the case it must not disturb: a way locked
+		// by hand as "24 Vcc" blocks nothing, because no counter of a
+		// %{root}%{n} format ever renders it.
+		//
+		// Holes are filled rather than jumped over: a panel wearing K1, K2 and
+		// K7 offers the next component K3, not K8. The only tags a new part
+		// may not be given are the ones something is wearing; a hole is by
+		// definition a tag nothing is wearing, freed when whatever held it
+		// left the drawing. The sequence is allowed to gain holes, which is
+		// what the frozen tags themselves become - it is not asked to
+		// manufacture more of them.
+		const auto held = frozen_tags.constFind(entry.group);
+		if (held != frozen_tags.constEnd())
+		{
+			// Bounded by how many tags are blocked rather than run until a
+			// free one turns up: a format saved without %{n} renders the same
+			// tag for every counter, and an unbounded search would hang the
+			// preview instead of showing the double the way it did before.
+			int attempts = static_cast<int>(held->size());
+			while (attempts > 0 && held->contains(label))
+			{
+				++counter;
+				label = input.format.render(input.root, counter, context);
+				--attempts;
+			}
+		}
+
 		counters.insert(bucket, counter + 1);
 
-		entry.to = input.format.render(input.root, counter, context);
+		entry.to = label;
 		entry.changed = entry.to != entry.from;
 		result.entries.append(entry);
 	}
