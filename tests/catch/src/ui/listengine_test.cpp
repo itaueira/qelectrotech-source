@@ -21,9 +21,13 @@
 
 #include "../../../../sources/dataBase/projectdatabase.h"
 #include "../../../../sources/dataBase/ui/elementquerywidget.h"
+#include "../../../../sources/diagram.h"
+#include "../../../../sources/label/componentlabelquery.h"
 #include "../../../../sources/qetgraphicsitem/ViewItem/projectdbmodel.h"
 #include "../../../../sources/qetgraphicsitem/ViewItem/qetgraphicsheaderitem.h"
 #include "../../../../sources/qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
+#include "../../../../sources/qetgraphicsitem/element.h"
+#include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetinformation.h"
 #include "../../../../sources/qetproject.h"
 
@@ -35,6 +39,7 @@
 #include <QSqlRecord>
 #include <QString>
 #include <QStringList>
+#include <QUndoStack>
 
 /*
 	A list that could not be established, and the day it stopped looking like
@@ -539,4 +544,347 @@ TEST_CASE("T16 — a visão do banco nasce da lista canônica, e publica o que p
 		}
 		CHECK(info_columns == QETInformation::elementInfoKeys().count());
 	}
+}
+
+TEST_CASE("T16 — a visão de folhas nasce da mesma lista, e recupera as duas chaves que faltavam",
+	  "[uibench][listengine][database]")
+{
+	/*
+		The sibling of the case above, one table over. project_summary_view was
+		written out by hand too, and it published seven of the nine keys that
+		QETInformation::diagramInfoKeys() declares: filename and display_folio
+		were missing, and had been since the view was first written. The table
+		diagram_info they would be read from does carry them - it is generated
+		from that same list - so the data was there and the view could not
+		reach it.
+
+		What had to be proved before generating it is not that the new columns
+		arrive, but that the old ones do not leave: every caller selects by
+		name, and a name that moved or vanished takes a folio table with it.
+		So the set below is the one the hand-written view published, read off
+		the previous revision of projectdatabase.cpp and not off the new
+		output - copying the new output would only prove the generator agrees
+		with itself.
+
+		One of the two recovered columns is empty today, and this says so
+		rather than hiding it: nothing in the program writes display_folio into
+		the title block context, so the column exists and reads back null. That
+		is a gap in whoever fills the context, not in this view, and the view
+		carrying the column is what lets it be filled without a second repair
+		here.
+	*/
+	UiBench::Project project(reference_example);
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+	REQUIRE(project.project()->dataBase() != nullptr);
+
+		//The 8 columns project_summary_view published while it was written
+		//out by hand, in the order it wrote them.
+	const QStringList published_before = {
+		QStringLiteral("title"), QStringLiteral("author"),
+		QStringLiteral("folio"), QStringLiteral("plant"),
+		QStringLiteral("locmach"), QStringLiteral("indexrev"),
+		QStringLiteral("date"), QStringLiteral("pos")};
+
+	const QStringList published_now =
+			viewColumns(project.project(),
+				    QStringLiteral("project_summary_view"));
+	REQUIRE_FALSE(published_now.isEmpty());
+
+	SECTION("nenhuma coluna publicada antes sumiu nem mudou de nome")
+	{
+		QStringList lost;
+		for (const QString &column : published_before) {
+			if (!published_now.contains(column)) {
+				lost << column;
+			}
+		}
+
+			//Named and not counted: a total says one column is gone and
+			//does not say which, and the two that were added would hide
+			//one that left.
+		INFO("columns the generated view stopped publishing: "
+		     << lost.join(QStringLiteral(", ")).toStdString());
+		CHECK(lost.isEmpty());
+	}
+
+	SECTION("as colunas a mais são exatamente as duas que faltavam")
+	{
+		QStringList added;
+		for (const QString &column : published_now) {
+			if (!published_before.contains(column)) {
+				added << column;
+			}
+		}
+
+			//Checked by name and in order, so that a third unplanned
+			//column cannot ride in on a count that happens to match.
+		INFO("columns the generated view added: "
+		     << added.join(QStringLiteral(", ")).toStdString());
+		CHECK(added == QStringList({QStringLiteral("filename"),
+					    QStringLiteral("display_folio")}));
+	}
+
+	SECTION("toda chave de folha é selecionável, sem exceção")
+	{
+		QStringList unselectable;
+		const QStringList keys = QETInformation::diagramInfoKeys();
+		REQUIRE(keys.count() == 9);
+
+		for (const QString &key : keys)
+		{
+			QSqlQuery query = project.project()->dataBase()->newQuery(
+					QStringLiteral("SELECT %1 FROM project_summary_view"
+						       " LIMIT 1").arg(key));
+			if (!query.exec()) {
+				unselectable << key;
+			}
+		}
+
+		INFO("keys project_summary_view cannot select: "
+		     << unselectable.join(QStringLiteral(", ")).toStdString());
+		CHECK(unselectable.isEmpty());
+
+			//The probe can still fail: without this, a view that answered
+			//every question would pass the loop above for the wrong
+			//reason.
+		QSqlQuery absent = project.project()->dataBase()->newQuery(
+				QStringLiteral("SELECT no_such_column"
+					       " FROM project_summary_view LIMIT 1"));
+		CHECK_FALSE(absent.exec());
+	}
+
+	SECTION("a ordem publicada é a da lista canônica, e a posição da folha ao fim")
+	{
+		/*
+			The order did change, and this pins it rather than hides it:
+			filename now sits between author and folio, and display_folio
+			between date and pos, because that is where diagramInfoKeys()
+			puts them. Every query in the program and in the tests names
+			the columns it wants, so no caller can see the difference -
+			but the next reordering should be a decision and not a
+			surprise.
+		*/
+		QStringList expected = QETInformation::diagramInfoKeys();
+		expected << QStringLiteral("pos");
+
+		CHECK(published_now == expected);
+	}
+
+	SECTION("a consulta que lê por posição continua lendo as mesmas duas colunas")
+	{
+		/*
+			The one consumer that reads this view by column number rather
+			than by name: the label collector takes value(0) as the sheet
+			position and value(1) as its revision index. That is safe only
+			because the numbers are positions in its own SELECT list and
+			not in the view, and widening a view is exactly the change
+			that would break it if it were not. So the property is stated
+			here instead of being reasoned about: two columns, pos then
+			indexrev, whatever the view publishes around them.
+		*/
+		QSqlQuery query = project.project()->dataBase()->newQuery(
+				ComponentLabelQuery::folioRevisionStatement());
+		REQUIRE(query.exec());
+
+		const QSqlRecord record_ = query.record();
+		REQUIRE(record_.count() == 2);
+		CHECK(record_.fieldName(0) == QStringLiteral("pos"));
+		CHECK(record_.fieldName(1) == QStringLiteral("indexrev"));
+	}
+}
+
+/*
+	Editing a cell of a list, and the one thing it must never do.
+
+	The data base this model reads is derived: it is emptied and filled again
+	from the sheets of the project. So a value written straight into it draws
+	a list holding something the drawing does not hold, and loses it at the
+	next fill - a parts list that says one thing on screen, another thing on
+	the folio, and a third thing tomorrow. Every path out of a cell therefore
+	goes through the undo command of the component, and it is the component
+	that tells the base.
+
+	What is measured below is that round trip, and the three places a cell has
+	to refuse before it reaches it: a column no component stores, a row no
+	single component answers for, and a label a formula drives.
+*/
+
+namespace {
+
+	struct EditComponent
+	{
+		int x;
+		const char *label;
+		const char *designation;
+		const char *comment;
+		const char *formula;
+		const char *location_path;
+	};
+
+	/**
+		Five components on one sheet, and each is there for a question.
+
+		K1 and K2 are ordinary: a label of their own, a designation, a
+		comment, and nothing else claiming any of them. K1 also carries a
+		location path, which is the one information stored in a form
+		different from the form it is drawn in.
+
+		Q1 carries a formula, so the label column of its row holds what
+		the formula makes and not what the component stores.
+
+		The last two are written the same way in every column: same label,
+		same designation, same comment. Two rows the reader cannot tell
+		apart, which is the case the model has to answer nullptr to rather
+		than pick one of them.
+	*/
+	QString editFixtureXml()
+	{
+		const EditComponent components[] = {
+			{200, "K1", "LC1D09",    "principal",  "",   "QCM1/PORTE"},
+			{320, "K2", "LC1D12",    "auxiliaire", "",   ""},
+			{440, "Q1", "GV2ME",     "moteur",     "Q1", ""},
+			{560, "T1", "IDENTIQUE", "jumeau",     "",   ""},
+			{680, "T1", "IDENTIQUE", "jumeau",     "",   ""}};
+
+			//The docking point of a terminal, which is what the
+			//instance stores.
+		const qreal east_dock = 10. - Terminal::terminalSize;
+		const qreal west_dock = -10. + Terminal::terminalSize;
+
+		QString instances;
+		int index = 0;
+		for (const EditComponent &component : components)
+		{
+			QString informations;
+			informations += QStringLiteral(
+						"<elementInformation show=\"1\" name=\"label\">%1"
+						"</elementInformation>")
+					.arg(QLatin1String(component.label));
+			informations += QStringLiteral(
+						"<elementInformation show=\"1\" name=\"designation\">%1"
+						"</elementInformation>")
+					.arg(QLatin1String(component.designation));
+			informations += QStringLiteral(
+						"<elementInformation show=\"1\" name=\"comment\">%1"
+						"</elementInformation>")
+					.arg(QLatin1String(component.comment));
+			if (component.formula[0] != '\0') {
+				informations += QStringLiteral(
+							"<elementInformation show=\"1\" name=\"formula\">%1"
+							"</elementInformation>")
+						.arg(QLatin1String(component.formula));
+			}
+			if (component.location_path[0] != '\0') {
+				informations += QStringLiteral(
+							"<elementInformation show=\"1\" name=\"location_path\">%1"
+							"</elementInformation>")
+						.arg(QLatin1String(component.location_path));
+			}
+
+			instances += QStringLiteral(
+					     "<element x=\"%1\" y=\"200\" z=\"10\" prefix=\"\""
+					     " freezeLabel=\"false\" orientation=\"0\""
+					     " type=\"embed://bench/box.elmt\""
+					     " uuid=\"{c0ffee00-0000-4000-8000-00000000000%2}\">"
+					     "<terminals>"
+					     "<terminal x=\"%3\" y=\"0\" orientation=\"1\" id=\"%4\"/>"
+					     "<terminal x=\"%5\" y=\"0\" orientation=\"3\" id=\"%6\"/>"
+					     "</terminals>"
+					     "<inputs/>"
+					     "<elementInformations>%7</elementInformations>"
+					     "<dynamic_texts/><texts_groups/>"
+					     "</element>")
+				     .arg(component.x)
+				     .arg(index)
+				     .arg(east_dock)
+				     .arg(index * 2)
+				     .arg(west_dock)
+				     .arg(index * 2 + 1)
+				     .arg(informations);
+			++index;
+		}
+
+		return QStringLiteral(
+			       "<project title=\"bench\" version=\"0.80\">"
+			       "<collection>"
+			       "<category name=\"bench\">"
+			       "<element name=\"box.elmt\">"
+			       "<definition type=\"element\" version=\"0.80\""
+			       " width=\"30\" height=\"20\""
+			       " hotspot_x=\"15\" hotspot_y=\"10\""
+			       " orientation=\"dnnn\" link_type=\"simple\">"
+			       "<names><name lang=\"en\">Box</name></names>"
+			       "<description>"
+			       "<rect x=\"-8\" y=\"-8\" width=\"16\" height=\"16\""
+			       " antialias=\"false\""
+			       " style=\"line-style:normal;line-weight:normal;"
+			       "filling:none;color:black\"/>"
+			       "<terminal x=\"10\" y=\"0\" orientation=\"e\" name=\"1\"/>"
+			       "<terminal x=\"-10\" y=\"0\" orientation=\"w\" name=\"2\"/>"
+			       "</description>"
+			       "</definition>"
+			       "</element>"
+			       "</category>"
+			       "</collection>"
+			       "<diagram title=\"Bench\" order=\"1\" height=\"600\""
+			       " cols=\"17\" colsize=\"50\" rows=\"8\" rowsize=\"80\""
+			       " displaycols=\"true\" displayrows=\"true\">"
+			       "<elements>%1</elements>"
+			       "<inputs/>"
+			       "<conductors/>"
+			       "</diagram>"
+			       "</project>")
+		       .arg(instances);
+	}
+
+	/// Where the query put the column named @a name, or -1.
+	int columnOf(const ProjectDBModel &model, const QString &name)
+	{
+		return model.columnNames().indexOf(name);
+	}
+
+	/**
+		Every row whose label cell reads @a label.
+
+		Rows are looked for and never counted on: the order of a query is
+		the data base's business, and a case that writes a row number down
+		measures that order instead of what it meant to measure.
+	*/
+	QList<int> rowsWithLabel(const ProjectDBModel &model, const QString &label)
+	{
+		QList<int> rows;
+		const int column = columnOf(model, QETInformation::ELMT_LABEL);
+		if (column < 0) {
+			return rows;
+		}
+
+		for (int row = 0 ; row < model.rowCount() ; ++row)
+		{
+			if (model.index(row, column).data().toString() == label) {
+				rows << row;
+			}
+		}
+		return rows;
+	}
+
+	/// The value the list shows for the component labelled @a label, in @a column.
+	QString shownValue(QETProject *project,
+			   const QString &query,
+			   const QString &label,
+			   const QString &column)
+	{
+		ProjectDBModel model(project);
+		model.setQuery(query);
+		const QList<int> rows = rowsWithLabel(model, label);
+		if (rows.count() != 1) {
+			return QStringLiteral("<%1 rows>").arg(rows.count());
+		}
+		return model.index(rows.first(), columnOf(model, column)).data().toString();
+	}
+
+	/// The columns the cases below ask for, in one place.
+	const QString edit_query = QStringLiteral(
+		"SELECT label, designation, comment, location_path, part_code, folio"
+		" FROM element_nomenclature_view ORDER BY label, designation");
 }

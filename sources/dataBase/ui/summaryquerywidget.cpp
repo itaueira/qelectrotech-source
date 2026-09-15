@@ -132,7 +132,23 @@ void SummaryQueryWidget::setUpItems()
 {
 	for (auto key : QETInformation::diagramInfoKeys())
 	{
-		if (key == "filename" || key == "display_folio") {
+			//display_folio is hidden, and filename is not.
+			//
+			//Both were hidden by the same commit that wrote the summary view
+			//without them, which is why nobody noticed the view was short of
+			//two columns: the picker compensated for the gap instead of the
+			//gap being closed. The view now carries both.
+			//
+			//They part company here because only one of them has anything to
+			//show. "filename" is written by the title block
+			//(BorderTitleBlock::updateDiagramContextForTitleBlock) and has a
+			//translated name, so hiding it only kept a real column out of
+			//reach.
+			//"display_folio" is declared and never written by anything in this
+			//program, and translatedInfoKey() has no case for it either -- it
+			//would offer a blank-named column that is always empty. It stays
+			//out until something fills it.
+		if (key == QETInformation::DIA_DISPLAY_FOLIO) {
 			continue;
 		}
 		auto item = new QListWidgetItem(QETInformation::translatedInfoKey(key), ui->m_available_list);

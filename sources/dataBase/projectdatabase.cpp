@@ -717,20 +717,52 @@ void projectDataBase::createElementLabelView()
 
 /**
 	@brief projectDataBase::createSummaryView
+	One row per sheet: everything the title block of that sheet holds, plus
+	the place the sheet occupies in the project.
+
+	The information columns are generated from
+	QETInformation::diagramInfoKeys() rather than written out, for the reason
+	elementViewBody() records above. That list already creates the columns of
+	diagram_info and already drives the insert; a view that repeats it by hand
+	is a second list, and a second list has to be remembered.
+
+	It was not. The hand-written form published seven of the nine keys,
+	leaving out filename and display_folio, and it had been that way since
+	the commit that first wrote the view. That same commit taught the column
+	picker to skip those two keys, which is why the gap never showed as an
+	error: the picker compensated for it instead of it being closed, and a
+	column the data base held could not be asked for from anywhere.
+
+	It is the divergence the element views carried, arriving from the other
+	side. There the picker offered a key the query could not answer, and the
+	table came back empty on the folio; here the picker offered less than the
+	data base held, and nothing came back at all because nothing was asked.
+	The first form is silent, the second is invisible, and both were one list
+	written twice.
+
+	There is no second list left to forget. What the picker offers is its own
+	decision and is stated there, not here: this view answers for every key,
+	and which of them are worth showing is a question about the window.
 */
 void projectDataBase::createSummaryView()
 {
-	QString create_view ("CREATE VIEW project_summary_view AS SELECT "
-						 "di.title AS title,"
-						 "di.author AS author,"
-						 "di.folio AS folio,"
-						 "di.plant AS plant,"
-						 "di.locmach AS locmach,"
-						 "di.indexrev AS indexrev,"
-						 "di.date AS date,"
-						 "d.pos AS pos"
-						 " FROM diagram_info di, diagram d"
-						 " WHERE di.diagram_uuid = d.uuid");
+	QString create_view(QStringLiteral("CREATE VIEW project_summary_view AS SELECT "));
+	for (const QString &key : QETInformation::diagramInfoKeys())
+	{
+			//Aliased to its own name on purpose: the callers select by
+			//column name, so the name an information key carries in
+			//diagram_info is the name it has to carry here.
+		create_view += QStringLiteral("di.") + key
+			+ QStringLiteral(" AS ") + key
+			+ QStringLiteral(",");
+	}
+
+		//What no list of information keys can produce: the rank of the sheet
+		//is a property of the project and not of the title block, so it
+		//stays written out, and so does the join it arrives through.
+	create_view += QStringLiteral("d.pos AS pos"
+			      " FROM diagram_info di, diagram d"
+			      " WHERE di.diagram_uuid = d.uuid");
 
 	QSqlQuery query(m_data_base);
 	if (!query.exec(create_view)) {
