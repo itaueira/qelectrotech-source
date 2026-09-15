@@ -690,6 +690,8 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/properties/elementdata.cpp
   ${QET_DIR}/sources/properties/elementdata.h
+  ${QET_DIR}/sources/properties/projectrevision.cpp
+  ${QET_DIR}/sources/properties/projectrevision.h
   ${QET_DIR}/sources/properties/propertiesinterface.cpp
   ${QET_DIR}/sources/properties/propertiesinterface.h
   ${QET_DIR}/sources/properties/reportproperties.cpp

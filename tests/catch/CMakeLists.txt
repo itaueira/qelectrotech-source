@@ -150,6 +150,7 @@ add_executable(
     src/connectorways_test.cpp
     src/connectorswap_test.cpp
     src/csvwriter_test.cpp
+    src/projectrevision_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -476,6 +477,25 @@ add_executable(
     ${QET_DIR}/sources/label/componentlabelquery.cpp
     ${QET_DIR}/sources/label/componentlabelquery.h
     ${QET_DIR}/sources/label/labelentry.h
+    # Which revision a project is in, and whether it is still open (T25).
+    # Five fields and a date that is stamped by closing and by nothing
+    # else: QString, QDate and QDomElement, no project and no title block,
+    # which is what lets the round trip through the project file be pinned
+    # before a single command is written against it. The failures it
+    # prevents are all silent - an open revision coming back carrying a
+    # date, a closed one coming back open, an accent lost in a description
+    # - and a silent failure on an emitted drawing is found by the
+    # customer. What closes a revision, what locks the project and what
+    # draws the revision cloud all need a project open and stay out.
+    #
+    # PropertiesInterface comes with it: the class implements it, so the
+    # constructor and the destructor of the base have to be linked. It is
+    # two empty bodies over QSettings and QDomElement, and it arrives in
+    # this list for the first time with this file.
+    ${QET_DIR}/sources/properties/projectrevision.cpp
+    ${QET_DIR}/sources/properties/projectrevision.h
+    ${QET_DIR}/sources/properties/propertiesinterface.cpp
+    ${QET_DIR}/sources/properties/propertiesinterface.h
     )
 
 if(NOT BUILD_WITH_KF)
