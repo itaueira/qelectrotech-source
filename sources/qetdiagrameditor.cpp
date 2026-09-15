@@ -1924,7 +1924,21 @@ void QETDiagramEditor::putMountingLayoutOnFolio()
 		//the drawing overruns the folio. The number is read from the item
 		//and never written here twice: a sentence quoting a default that
 		//has since changed is worse than no sentence.
-	const qreal proposed = MountingLayoutViewItem::defaultDrawingScale();
+		//
+		//The box opens on the largest step at which this plate fits on
+		//this folio, and not on a constant. A constant is right for one
+		//plate size and shrinks every other one for nothing, and a plate
+		//shrunk for nothing prints labels too small to read - measured
+		//on 15/09/2026, a 4 mm label prints about 0.8 mm on A3 at 0.5
+		//and about 1.9 mm at 1.2.
+	const QRectF folio_area =
+			diagram_->border_and_titleblock.insideBorderRect();
+	const qreal proposed =
+			face.area.isValid()
+			? MountingLayoutViewItem::scaleThatFits(face.area.width,
+								face.area.height,
+								folio_area)
+			: MountingLayoutViewItem::defaultDrawingScale();
 	const QString scale_hint =
 			face.area.isValid()
 			? tr("Unités de folio par millimètre. À %1, une platine "

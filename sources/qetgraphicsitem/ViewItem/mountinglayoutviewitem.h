@@ -226,6 +226,31 @@ class MountingLayoutViewItem : public QetGraphicsItem
 		static qreal minimumDrawingScale();
 		static qreal maximumDrawingScale();
 
+		/**
+			@brief scaleThatFits
+			@param plate_width  millimetre, the useful width of the face
+			@param plate_height millimetre, its useful height
+			@param folio the area the drawing has to fit inside, in folio
+			units - normally the inside of the border
+			@return the largest scale at which the plate fits, rounded
+			down to a step a person would say out loud, or
+			defaultDrawingScale() when there is nothing to measure
+
+			Why this exists rather than the constant above: the constant
+			is right for one plate and wrong for the next, and the one it
+			is right for is the large one. Measured on 15/09/2026, the
+			label on a part is 4 mm tall on the plate, so at 0.5 it prints
+			about 0.8 mm on A3 and nobody reads it, while at 1.2 it prints
+			about 1.9 mm and it reads. A small plate held at 0.5 was being
+			shrunk for no reason; a plate that truly needs 0.5 to fit is
+			one whose labels were never going to be readable on that
+			sheet, which is worth learning when it is put down and not
+			after it is printed.
+		*/
+		static qreal scaleThatFits(qreal plate_width,
+					   qreal plate_height,
+					   const QRectF &folio);
+
 	private:
 		void reload();
 		void rebuild();

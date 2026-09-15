@@ -822,3 +822,59 @@ qreal MountingLayoutViewItem::maximumDrawingScale()
 {
 	return 1000.0;
 }
+
+/**
+	@brief MountingLayoutViewItem::scaleThatFits
+	@param plate_width  millimetre
+	@param plate_height millimetre
+	@param folio the area the drawing has to fit inside, folio units
+	@return the largest scale at which the plate fits, rounded down to a
+	step a person would say out loud
+
+	Rounding down, and to a coarse step, is the whole point of the
+	function. The exact ratio of two measurements is a number like
+	1.0666666, and a drawing handed to a workshop at 1.0666666 folio units
+	per millimetre is a drawing nobody can check with a rule. The steps
+	below are the ones a person reads off a scale bar, and the answer is
+	always the largest of them that still fits - never a value between
+	two.
+
+	A plate too large for even the smallest step still gets that smallest
+	step, and will hang off the folio. Refusing to answer would be worse:
+	the person put the plate down on purpose, and a drawing that overruns
+	the border is visible, while a dialog that declines is a dead end.
+*/
+qreal MountingLayoutViewItem::scaleThatFits(qreal plate_width,
+					    qreal plate_height,
+					    const QRectF &folio)
+{
+		//Nothing measured on one side or the other: there is no ratio to
+		//take, and the default is the honest answer.
+	if (plate_width <= 0.0 || plate_height <= 0.0
+	    || folio.width() <= 0.0 || folio.height() <= 0.0)
+	{
+		return defaultDrawingScale();
+	}
+
+		//The steps, largest first. Reading order is the search order:
+		//the first one that fits is the answer.
+	static const qreal steps[] =
+		{4.0, 3.0, 2.0, 1.5, 1.2, 1.0, 0.8, 0.75, 0.6, 0.5,
+		 0.4, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05};
+
+		//Room is left around the drawing, because a plate that ends
+		//exactly on the border reads as a plate that was cut off by it.
+	const qreal usable_width = folio.width() * 0.95;
+	const qreal usable_height = folio.height() * 0.95;
+
+	for (const qreal step : steps)
+	{
+		if (plate_width * step <= usable_width
+		    && plate_height * step <= usable_height)
+		{
+			return step;
+		}
+	}
+
+	return steps[sizeof(steps) / sizeof(steps[0]) - 1];
+}

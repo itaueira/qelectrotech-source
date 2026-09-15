@@ -464,3 +464,94 @@ TEST_CASE("T19 — a platine entra numa folha do projeto",
 		CHECK(vistaDaFolha(scratch.diagram(0)) == nullptr);
 	}
 }
+
+/*
+	The scale the dialog opens on. It is regra pura - two measurements and a
+	rectangle in, one number out - but it lives here because the header it
+	belongs to is one the C_unittests list does not carry.
+*/
+TEST_CASE("T19 — a escala proposta é a maior que cabe na folha",
+	  "[layout][folio][escala]")
+{
+		//The drawable area of a folio of the standard size here.
+	const QRectF folio(0.0, 0.0, 1020.0, 640.0);
+
+	SECTION("uma placa pequena entra grande, e não encolhida por um padrão")
+	{
+			//400 x 500 mm. At 1.2 it is drawn 480 x 600, which fits
+			//inside 95% of 1020 x 640 - and it is the largest step
+			//that does: 1.5 would be 600 x 750, taller than the folio.
+		const qreal escala = MountingLayoutViewItem::scaleThatFits(
+					400.0, 500.0, folio);
+		CHECK(escala == Approx(1.2));
+		CHECK(400.0 * escala <= folio.width() * 0.95);
+		CHECK(500.0 * escala <= folio.height() * 0.95);
+
+			//The point of the whole function: the old constant would
+			//have shrunk this plate to less than half of what fits.
+		CHECK(escala > MountingLayoutViewItem::defaultDrawingScale());
+	}
+
+	SECTION("a placa de 600 x 800 é a que a altura do folio limita")
+	{
+			//800 mm against 640 folio units tall is what decides it,
+			//and not the width: at 0.75 the drawing would be 600 tall
+			//against 608 usable, which fits, while 0.8 would be 640.
+		const qreal escala = MountingLayoutViewItem::scaleThatFits(
+					600.0, 800.0, folio);
+		CHECK(800.0 * escala <= folio.height() * 0.95);
+		CHECK(escala == Approx(0.75));
+	}
+
+	SECTION("o resultado é sempre um passo que se diz em voz alta")
+	{
+			//A ratio of two measurements is a number like 1.0666666,
+			//and a drawing handed over at 1.0666666 units per
+			//millimetre cannot be checked with a rule. Whatever the
+			//plate, the answer has to be one of the steps.
+		const QList<qreal> passos = {4.0, 3.0, 2.0, 1.5, 1.2, 1.0, 0.8,
+					     0.75, 0.6, 0.5, 0.4, 0.3, 0.25,
+					     0.2, 0.15, 0.1, 0.05};
+		for (int largura = 50 ; largura <= 2000 ; largura += 37)
+		{
+			for (int altura = 50 ; altura <= 2000 ; altura += 53)
+			{
+				const qreal escala =
+						MountingLayoutViewItem::scaleThatFits(
+							largura, altura, folio);
+				bool e_um_passo = false;
+				for (const qreal passo : passos) {
+					if (qFuzzyCompare(escala, passo)) {
+						e_um_passo = true;
+						break;
+					}
+				}
+				INFO("placa " << largura << " x " << altura
+				     << " devolveu " << escala);
+				REQUIRE(e_um_passo);
+			}
+		}
+	}
+
+	SECTION("placa não medida cai no padrão, porque não há razão a tomar")
+	{
+		CHECK(MountingLayoutViewItem::scaleThatFits(0.0, 500.0, folio)
+		      == Approx(MountingLayoutViewItem::defaultDrawingScale()));
+		CHECK(MountingLayoutViewItem::scaleThatFits(400.0, 0.0, folio)
+		      == Approx(MountingLayoutViewItem::defaultDrawingScale()));
+		CHECK(MountingLayoutViewItem::scaleThatFits(400.0, 500.0, QRectF())
+		      == Approx(MountingLayoutViewItem::defaultDrawingScale()));
+	}
+
+	SECTION("placa grande demais recebe o menor passo, e não uma recusa")
+	{
+			//Twenty metres of plate is nonsense, and the function
+			//still answers: the person put it down on purpose, and a
+			//drawing that overruns the border is visible while a
+			//dialog that declines is a dead end.
+		const qreal escala = MountingLayoutViewItem::scaleThatFits(
+					20000.0, 20000.0, folio);
+		CHECK(escala == Approx(0.05));
+		CHECK(escala >= MountingLayoutViewItem::minimumDrawingScale());
+	}
+}
