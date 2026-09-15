@@ -18,14 +18,35 @@
 #include "projectdbmodel.h"
 
 #include "../../dataBase/projectdatabase.h"
+#include "../../diagram.h"
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
 #include "../../qetproject.h"
 #include "../../qetxml.h"
+#include "../../undocommand/changeelementinformationcommand.h"
 #include "../../utils/qetutils.h"
+#include "../element.h"
 
+#include <QSet>
 #include <QSqlError>
 #include <QSqlRecord>
+#include <QUndoCommand>
+#include <QUndoStack>
+#include <QUuid>
+
+namespace
+{
+	/**
+		What joins the values of a row into one lookup key.
+
+		0x1F is a control character, and XML 1.0 admits none below 0x20
+		but tab, line feed and carriage return : a value carrying one
+		could not be written into a .qet at all. So no value read back
+		from a project holds this character, and two different tuples
+		cannot fold into the same key.
+	*/
+	const QChar identity_separator(QLatin1Char('\x1f'));
+}
 
 /**
 	@brief ProjectDBModel::ProjectDBModel
@@ -176,19 +197,95 @@ QVariant ProjectDBModel::headerData(int section, Qt::Orientation orientation, in
 
 /**
 	@brief ProjectDBModel::setData
-	Only store the data for the index 0.0
+	An edit of a cell goes to the component the row stands for ; any other
+	role is the styling of the whole table, which is carried by the cell
+	(0,0) and stored nowhere else.
 	@param index
 	@param value
 	@param role
 	@return
+
+	@par Editing never writes into the data base
+	The base is derived from the project : it is emptied and filled again
+	from the sheets. A value written straight into it would draw a list
+	holding something the drawing does not hold, and would vanish the next
+	time the base is filled - which is the one failure this whole path
+	exists to make impossible. What happens instead is the ordinary round
+	trip : the command writes the component, the component tells the base,
+	and the base tells this model to fill itself again. Nothing is written
+	into m_record here either, for the same reason : the value shown comes
+	back from the project or it does not come back at all.
 */
 bool ProjectDBModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
+	if (index.isValid() &&
+	    role == Qt::EditRole &&
+	    flags(index).testFlag(Qt::ItemIsEditable)) {
+		return writeInformation(index, value.toString());
+	}
+
+		//The styling of the table - its font, its alignment, its margins -
+		//is read and written on the cell (0,0), with roles that are never
+		//the edit role : the editor of the table item writes Qt::FontRole,
+		//Qt::TextAlignmentRole and Qt::UserRole+1 there, and toXml() saves
+		//those three. So the branch above cannot shadow this one.
 	if (!index.isValid() || index.row() != 0 || index.column() != 0) {
 		return false;
 	}
 	m_index_0_0_data.insert(role, value);
 	emit dataChanged(index, index, {role});
+	return true;
+}
+
+/**
+	@brief ProjectDBModel::writeInformation
+	Push the change of one information of one component onto the undo stack
+	of the project.
+	@param index : the cell being edited
+	@param value : what the reader typed
+	@return true when a command was pushed
+
+	@par Why the command is wrapped instead of pushed on its own
+	ChangeElementInformationCommand answers 1 to id() and merges with any
+	other command of its kind touching the same component, which is what a
+	properties dialogue wants : a dozen fields applied at once are one undo
+	step. A table is edited one cell at a time, and that same merge would
+	fold an edit of the designation and an edit of the comment into a single
+	step - one undo, two cells back, with nothing on screen to say so. The
+	wrapper is a plain QUndoCommand, whose id() is -1 and which therefore
+	never merges ; the work is still done by the command of the object,
+	which is its child, and QUndoCommand::redo() runs it.
+*/
+bool ProjectDBModel::writeInformation(const QModelIndex &index, const QString &value)
+{
+	Element *element_ = elementForRow(index.row());
+	if (!element_ || !element_->diagram()) {
+		return false;
+	}
+
+	const QString key_ = m_column_names.at(index.column());
+	const DiagramContext old_information = element_->elementInformations();
+	if (old_information.value(key_).toString() == value) {
+			//Nothing to undo : a reader who opens a cell and closes it
+			//without typing must not leave a step on the stack.
+		return false;
+	}
+
+	DiagramContext new_information = old_information;
+	new_information.addValue(key_, value);
+
+	QString name_ = QETInformation::translatedInfoKey(key_);
+	if (name_.isEmpty()) {
+		name_ = key_;
+	}
+
+	auto *undo_ = new QUndoCommand(tr("Modifier %1 de l'élément : %2")
+				       .arg(name_, element_->name()));
+	new ChangeElementInformationCommand(element_,
+					    old_information,
+					    new_information,
+					    undo_);
+	element_->diagram()->undoStack().push(undo_);
 	return true;
 }
 
@@ -203,6 +300,29 @@ QVariant ProjectDBModel::data(const QModelIndex &index, int role) const
 {
 	if (!index.isValid())
 		return QVariant();
+	
+		//Answered before the styling of the cell (0,0) below, and the
+		//order is the point : a view opens its editor with the value of
+		//the edit role, and (0,0) answers every role but the display one
+		//out of the hash carrying the font and the margins of the table.
+		//Left after it, the first cell of the list would open an editor
+		//holding nothing, and a reader who pressed Enter without typing
+		//would write that nothing over the value.
+		//And it is the stored string, not the drawn one : a location path
+		//is stored as the tree writes it and drawn as the norm writes it,
+		//and any value a variant reads as a date is drawn in the locale of
+		//the machine. Handing the drawn form to an editor makes a reader
+		//who opens a cell and closes it write something else than what was
+		//there.
+	if (role == Qt::EditRole)
+	{
+		const int identity_ = m_identity_of_column.value(index.column(), -1);
+		if (identity_ >= 0 &&
+			index.row() < m_row_identity.count() &&
+			identity_ < m_row_identity.at(index.row()).count()) {
+			return m_row_identity.at(index.row()).at(identity_);
+		}
+	}
 	
 	if (index.row() == 0 &&
 		index.column() == 0 &&
@@ -226,6 +346,232 @@ QVariant ProjectDBModel::data(const QModelIndex &index, int role) const
 	}
 	
 	return QVariant();
+}
+
+/**
+	@brief ProjectDBModel::readOnlyInfoKeys
+	@return the element information keys a cell of this table must not
+	write, and the reason each of them is on the list.
+
+	Every other key of QETInformation::elementInfoKeys() is free text the
+	reader types about a component, and a cell writes it whole. These are
+	the ones a cell cannot write whole :
+
+	- exclude_from_bom is not a sentence but a flag, and the nomenclature
+	  view filters on it. A row that reaches this table is by construction
+	  a row whose flag is off, so the only edit a reader could make here is
+	  the one that deletes the row from under the cursor. It has a check box
+	  of its own in the properties of the component, and the same reason is
+	  written down where that dialogue leaves it out of its rows.
+
+	- location_path is stored as the location tree writes it and drawn as
+	  the norm writes it, so what the cell shows is not what the project
+	  holds, and it belongs to the tree rather than to the component : a
+	  path typed here would name no node.
+
+	- part_code and part_revision are written by the assignment of a
+	  catalogue part, together with everything else that describes the
+	  part. A code typed on its own would name no part, and would leave the
+	  designation, the manufacturer and the reference describing another
+	  one.
+
+	- none of the plc_ keys is free text, and they are not all on this list
+	  for the same reason. plc_type, plc_address, plc_function, plc_comment
+	  and plc_crossref are copied from the input or output the component is
+	  linked to and written again every time that link is made or remade,
+	  so anything typed here is overwritten without a word. plc_bus is a
+	  mark taken from a fixed set of values, picked from a menu ; a sentence
+	  typed in its place names no rail. plc_unit names the card a point
+	  belongs to, and the tree of inputs and outputs is built on it.
+
+	label is not on this list because it is not read only everywhere : it
+	is read only on the rows whose component carries a formula, which is a
+	question about a row and is asked in flags().
+*/
+QStringList ProjectDBModel::readOnlyInfoKeys()
+{
+	return QStringList{QStringLiteral("exclude_from_bom"),
+			   QETInformation::ELMT_LOCATION_PATH,
+			   QETInformation::ELMT_PART_CODE,
+			   QETInformation::ELMT_PART_REVISION,
+			   QETInformation::ELMT_PLC_TYPE,
+			   QETInformation::ELMT_PLC_ADDRESS,
+			   QETInformation::ELMT_PLC_FUNCTION,
+			   QETInformation::ELMT_PLC_COMMENT,
+			   QETInformation::ELMT_PLC_CROSSREF,
+			   QETInformation::ELMT_PLC_UNIT,
+			   QETInformation::ELMT_PLC_BUS};
+}
+
+/**
+	@brief ProjectDBModel::isEditableColumn
+	@param column
+	@return whether writing this column means writing one information of one
+	component, and nothing else.
+
+	A column that is not an element information key answers no, and that is
+	what keeps every derived column out without naming any of them : the six
+	columns of the join the view adds - the sheet, its title, the position -
+	are not information keys, and neither is the alias a query invents for a
+	total, such as the COUNT a bill of materials groups by. There is nothing
+	for a cell of those to write to.
+*/
+bool ProjectDBModel::isEditableColumn(int column) const
+{
+	if (column < 0 || column >= m_column_names.count()) {
+		return false;
+	}
+	if (m_identity_of_column.value(column, -1) < 0) {
+		return false;
+	}
+	return !readOnlyInfoKeys().contains(m_column_names.at(column));
+}
+
+/**
+	@brief ProjectDBModel::flags
+	Reimplemented from QAbstractTableModel.
+	@param index
+	@return
+
+	@par A cell is editable only when it is known what it would write on
+	Besides the column being one a cell may write, the row has to stand for
+	exactly one component : a row that stands for none - or for several, as
+	every row of a grouped list does - has no component to push a command
+	against. Asked here rather than only in setData(), so that no editor
+	opens on a cell that would refuse the text afterwards ; a reader who
+	types into a cell and loses what was typed has no way to tell that from
+	a program that lost it.
+
+	And the label of a component is editable only while no formula drives
+	it. The column carries Element::actualLabel(), which is the result of
+	the formula when there is one, and setElementInformations() writes that
+	result back over anything put in its place - so the edit would be
+	accepted, the undo step would be on the stack, and the cell would go
+	back to saying what it said before.
+*/
+Qt::ItemFlags ProjectDBModel::flags(const QModelIndex &index) const
+{
+	const Qt::ItemFlags flags_ = QAbstractTableModel::flags(index);
+	if (!index.isValid() || !isEditableColumn(index.column())) {
+		return flags_;
+	}
+
+	Element *element_ = elementForRow(index.row());
+	if (!element_ || !element_->diagram()) {
+		return flags_;
+	}
+
+	if (m_column_names.at(index.column()) == QETInformation::ELMT_LABEL &&
+		!element_->elementInformations()
+			.value(QETInformation::ELMT_FORMULA).toString().isEmpty()) {
+		return flags_;
+	}
+
+	return flags_ | Qt::ItemIsEditable;
+}
+
+/**
+	@brief ProjectDBModel::elementForRow
+	@param row
+	@return the one component the row stands for, or nullptr.
+*/
+Element *ProjectDBModel::elementForRow(int row) const
+{
+	if (row < 0 || row >= m_record.count()) {
+		return nullptr;
+	}
+	if (!m_rows_resolved) {
+		resolveRowElements();
+	}
+	return row < m_row_element.count() ? m_row_element.at(row).data()
+					   : nullptr;
+}
+
+/**
+	@brief ProjectDBModel::resolveRowElements
+	Trace every row back to the component it stands for, once, for the whole
+	table.
+
+	@par Why by value and not by key
+	element_nomenclature_view publishes what
+	QETInformation::elementInfoKeys() declares plus six columns of the join,
+	and the uuid of the component is in neither set : there is no key to
+	carry. So the information columns the query happens to select are read
+	back out of element_info - the very table the view is built from, which
+	is what keeps a value and its copy from drifting apart - and a row
+	belongs to a component when that component is the only one answering to
+	all of them at once.
+
+	@par What it refuses, and why refusing is the answer
+	Two components written the same way in every column the list shows are
+	two components a reader cannot tell apart either ; both rows answer
+	nullptr and neither is editable. A grouped list falls out of the same
+	rule without being named : its row stands for the whole group, the group
+	holds several components, and the tuple matches all of them.
+	The refusal is wider than it has to be, and knowingly : element_info
+	holds every component of the project, while the query may have filtered
+	the list down to a few, so a tuple shared with a component the list does
+	not show refuses a row that was unambiguous on screen. Read only is the
+	safe end of that mistake.
+*/
+void ProjectDBModel::resolveRowElements() const
+{
+	m_rows_resolved = true;
+	m_row_element = QVector<QPointer<Element>>(m_record.count());
+
+	if (m_identity_columns.isEmpty() || m_record.isEmpty() || !m_project) {
+		return;
+	}
+
+		//Built out of names this program owns and nothing else :
+		//fillValue() only keeps a column name that is in
+		//QETInformation::elementInfoKeys(), so nothing a project or a
+		//reader wrote reaches this statement.
+	QSqlQuery query_ = m_project->dataBase()->newQuery(
+				QStringLiteral("SELECT element_uuid,")
+				+ m_identity_columns.join(QLatin1Char(','))
+				+ QStringLiteral(" FROM element_info"));
+	if (!query_.isActive()) {
+		return;
+	}
+
+	QHash<QString, QUuid> uuid_of_tuple;
+	QSet<QString> shared_tuples;
+	while (query_.next())
+	{
+		QStringList tuple_;
+		for (int i = 0 ; i < m_identity_columns.count() ; ++i) {
+			tuple_ << query_.value(i + 1).toString();
+		}
+
+		const QString key_ = tuple_.join(identity_separator);
+		if (uuid_of_tuple.contains(key_)) {
+			shared_tuples.insert(key_);
+			continue;
+		}
+		uuid_of_tuple.insert(key_, QUuid(query_.value(0).toString()));
+	}
+
+	QHash<QUuid, Element *> element_of_uuid;
+	const QList<Diagram *> diagrams_ = m_project->diagrams();
+	for (Diagram *diagram_ : diagrams_)
+	{
+		const QList<Element *> elements_ = diagram_->elements();
+		for (Element *element_ : elements_) {
+			element_of_uuid.insert(element_->uuid(), element_);
+		}
+	}
+
+	for (int row = 0 ;
+	     row < m_row_identity.count() && row < m_row_element.count() ;
+	     ++row)
+	{
+		const QString key_ = m_row_identity.at(row).join(identity_separator);
+		if (shared_tuples.contains(key_)) {
+			continue;
+		}
+		m_row_element[row] = element_of_uuid.value(uuid_of_tuple.value(key_));
+	}
 }
 
 /**
@@ -386,6 +732,14 @@ void ProjectDBModel::dataBaseUpdated()
 		
 		emit dataChanged(this->index(0,0), this->index(row-1, col-1), {Qt::DisplayRole});
 	}
+
+		//fillValue() above dropped the cache of row -> component, and
+		//then the record it is indexed by was swapped twice. Dropping it
+		//again here is what makes that juggling invisible to it : whoever
+		//asks next rebuilds it against the record that is finally in
+		//place, and not against the one that was held for two statements.
+	m_rows_resolved = false;
+	m_row_element.clear();
 }
 
 void ProjectDBModel::setHeaderString()
@@ -428,6 +782,11 @@ void ProjectDBModel::fillValue()
 {
 	m_record.clear();
 	m_column_names.clear();
+	m_identity_columns.clear();
+	m_identity_of_column.clear();
+	m_row_identity.clear();
+	m_row_element.clear();
+	m_rows_resolved = false;
 	
 	if (m_query.trimmed().isEmpty())
 	{
@@ -464,13 +823,35 @@ void ProjectDBModel::fillValue()
 		//outside the row loop: the query is fixed for the whole pass, only
 		//the row moves.
 	const auto fields_ = query_.record();
-	for (auto i=0 ; i<fields_.count() ; ++i) {
-		m_column_names << fields_.fieldName(i);
+		//Which of those columns are element information, and where the
+		//value of each one sits in the tuple that identifies a row.
+		//Worked out here, once for the whole pass, because it is asked
+		//again for every cell of every row.
+	const QStringList info_keys = QETInformation::elementInfoKeys();
+	for (auto i=0 ; i<fields_.count() ; ++i)
+	{
+		const QString field_name = fields_.fieldName(i);
+		m_column_names << field_name;
+
+		if (info_keys.contains(field_name))
+		{
+			m_identity_of_column << m_identity_columns.count();
+			m_identity_columns << field_name;
+		}
+		else
+		{
+				//A column of the join, or an alias a query
+				//invented for a total : it holds no information
+				//of a component, so it identifies none and
+				//writes to none.
+			m_identity_of_column << -1;
+		}
 	}
 
 	while (query_.next())
 	{
 		QStringList record_;
+		QStringList identity_;
 			//One value per column of the query, so that a row can
 			//never come back shorter than the table is wide - which
 			//is what columnCount() now answers. The former form
@@ -483,10 +864,18 @@ void ProjectDBModel::fillValue()
 			//rows - and the guarantee is what columnCount() rests on.
 		for (auto i=0 ; i<fields_.count() ; ++i)
 		{
+			const QVariant value_ = query_.value(i);
 			record_ << QETInformation::displayedInfoValue(fields_.fieldName(i),
-								     query_.value(i));
+								     value_);
+				//Kept as it is stored, beside the form that is
+				//drawn : this is what traces the row back to a
+				//component, and what an editor is opened with.
+			if (m_identity_of_column.at(i) >= 0) {
+				identity_ << value_.toString();
+			}
 		}
 		m_record << record_;
+		m_row_identity << identity_;
 	}
 }
 

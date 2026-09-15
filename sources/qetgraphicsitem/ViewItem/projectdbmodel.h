@@ -22,6 +22,7 @@
 #include <QPointer>
 #include <QDomElement>
 
+class Element;
 class QETProject;
 
 /**
@@ -62,6 +63,7 @@ class ProjectDBModel : public QAbstractTableModel
 			     int role = Qt::EditRole) override;
 		QVariant data(const QModelIndex &index,
 			      int role = Qt::DisplayRole) const override;
+		Qt::ItemFlags flags(const QModelIndex &index) const override;
 		void setQuery(const QString &setQuery);
 		QString queryString() const;
 		QETProject *project() const;
@@ -82,6 +84,25 @@ class ProjectDBModel : public QAbstractTableModel
 		*/
 		QString lastError() const {return m_last_error;}
 
+		/**
+			The one component the row @a row stands for, or nullptr
+			when the row stands for no component or for more than
+			one.
+
+			The row is traced back by value and not by key, because
+			element_nomenclature_view publishes no key : it carries
+			QETInformation::elementInfoKeys() and six columns of the
+			join, and the uuid of the component is in none of them.
+			So the information columns the query happens to select
+			are read back out of element_info, and a row is
+			identified when exactly one component answers to all of
+			them at once. Two components that are written the same
+			way in every column the list shows are two components
+			the reader cannot tell apart either, and this answers
+			nullptr for both rather than guessing one.
+		*/
+		Element *elementForRow(int row) const;
+
 		QDomElement toXml(QDomDocument &document) const;
 		void fromXml(const QDomElement &element);
 		void setIdentifier(const QString &identifier);
@@ -100,12 +121,33 @@ class ProjectDBModel : public QAbstractTableModel
 		void setHeaderString();
 		void fillValue();
 		void setLastError(const QString &error);
+		bool isEditableColumn(int column) const;
+		bool writeInformation(const QModelIndex &index, const QString &value);
+		void resolveRowElements() const;
+		static QStringList readOnlyInfoKeys();
 
 	private:
 		QPointer<QETProject> m_project;
 		QString m_query;
 		QVector<QStringList> m_record;
 		QStringList m_column_names;
+			//The columns of the current query that are element
+			//information keys, in the order the query returns them,
+			//and their stored - not drawn - value on each row. This
+			//is what traces a row back to the component it stands
+			//for, and what an editor is opened with : the drawn form
+			//and the stored form are not always the same string.
+		QStringList m_identity_columns;
+			//Per column of the query : where its value sits in the
+			//tuples of m_row_identity, or -1 when the column is not
+			//an information key.
+		QVector<int> m_identity_of_column;
+		QVector<QStringList> m_row_identity;
+			//Worked out on demand and kept until the next fill : the
+			//table drawn on a folio never asks for it, and only a
+			//view that lets the reader type does.
+		mutable QVector<QPointer<Element>> m_row_element;
+		mutable bool m_rows_resolved = false;
 		QString m_last_error;
 		//First int = section, second int = Qt::role, QVariant = value
 		QHash<int, QHash<int, QVariant>> m_header_data;

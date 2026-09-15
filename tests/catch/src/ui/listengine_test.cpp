@@ -888,3 +888,243 @@ namespace {
 		"SELECT label, designation, comment, location_path, part_code, folio"
 		" FROM element_nomenclature_view ORDER BY label, designation");
 }
+
+TEST_CASE("T16 — editar uma célula da lista passa pelo desfazer do componente",
+	  "[uibench][listengine]")
+{
+	UiBench::ScratchProject scratch(editFixtureXml(), QStringLiteral("listedit.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+	Diagram *sheet = scratch.diagram(0);
+	REQUIRE(sheet != nullptr);
+	REQUIRE(sheet->elements().count() == 5);
+
+	QUndoStack *stack = scratch.project()->undoStack();
+	REQUIRE(stack != nullptr);
+
+	ProjectDBModel model(scratch.project());
+	model.setQuery(edit_query);
+	INFO(model.lastError().toStdString());
+	REQUIRE(model.lastError().isEmpty());
+	REQUIRE(model.rowCount() == 5);
+	REQUIRE(model.columnCount() == 6);
+
+	SECTION("é editável a coluna que o componente guarda, e nenhuma outra")
+	{
+		const QList<int> found = rowsWithLabel(model, QStringLiteral("K1"));
+		REQUIRE(found.count() == 1);
+		const int row = found.first();
+		REQUIRE(model.elementForRow(row) != nullptr);
+
+			//Free text the reader types about a component, and the
+			//command that writes it already exists.
+		for (const QString &column : {QETInformation::ELMT_LABEL,
+					      QETInformation::ELMT_DESIGNATION,
+					      QETInformation::ELMT_COMMENT})
+		{
+			INFO("column " << column.toStdString());
+			REQUIRE(columnOf(model, column) >= 0);
+			CHECK(model.flags(model.index(row, columnOf(model, column)))
+			      .testFlag(Qt::ItemIsEditable));
+		}
+
+			//location_path belongs to the location tree and is drawn
+			//in a form it is not stored in; part_code is written by
+			//the assignment of a catalogue part, with everything else
+			//that describes that part; folio is a column of the join
+			//and is no information of a component at all - there is
+			//nothing for a cell of it to write to.
+		for (const QString &column : {QETInformation::ELMT_LOCATION_PATH,
+					      QETInformation::ELMT_PART_CODE,
+					      QStringLiteral("folio")})
+		{
+			INFO("column " << column.toStdString());
+			REQUIRE(columnOf(model, column) >= 0);
+			CHECK_FALSE(model.flags(model.index(row, columnOf(model, column)))
+				    .testFlag(Qt::ItemIsEditable));
+		}
+	}
+
+	SECTION("o editor abre com o valor guardado, e não com o que a célula desenha")
+	{
+		const QList<int> found = rowsWithLabel(model, QStringLiteral("K1"));
+		REQUIRE(found.count() == 1);
+		const QModelIndex cell =
+				model.index(found.first(),
+					    columnOf(model, QETInformation::ELMT_LOCATION_PATH));
+
+		INFO("drawn: " << cell.data(Qt::DisplayRole).toString().toStdString());
+		INFO("stored: " << cell.data(Qt::EditRole).toString().toStdString());
+
+			//The two forms of the same value, and the reason the edit
+			//role cannot be left to answer the drawn one: a reader who
+			//opens this cell and closes it without typing would write
+			//the drawn form over the stored one.
+		CHECK(cell.data(Qt::EditRole).toString() == QStringLiteral("QCM1/PORTE"));
+		CHECK(cell.data(Qt::DisplayRole).toString()
+		      != cell.data(Qt::EditRole).toString());
+	}
+
+	SECTION("a célula editada muda o componente, e a lista vem de volta do projeto")
+	{
+		const QList<int> found = rowsWithLabel(model, QStringLiteral("K1"));
+		REQUIRE(found.count() == 1);
+		const int column = columnOf(model, QETInformation::ELMT_DESIGNATION);
+		Element *component = model.elementForRow(found.first());
+		REQUIRE(component != nullptr);
+		REQUIRE(component->elementInformations()
+			.value(QETInformation::ELMT_DESIGNATION).toString()
+			== QStringLiteral("LC1D09"));
+
+		const int steps_before = stack->count();
+		REQUIRE(model.setData(model.index(found.first(), column),
+				      QStringLiteral("LC1D18"),
+				      Qt::EditRole));
+
+			//One step for one cell. The command of the object merges
+			//with its own kind by design, which is what a properties
+			//dialogue wants and what a table must not have: two cells
+			//edited in a row would be one undo.
+		CHECK(stack->count() == steps_before + 1);
+		CHECK(component->elementInformations()
+		      .value(QETInformation::ELMT_DESIGNATION).toString()
+		      == QStringLiteral("LC1D18"));
+
+			//And the list says it too - said by a second model built
+			//from nothing, so that what is read is the project and
+			//not a value this model wrote into its own record. Had the
+			//cell written into the data base or into the record, this
+			//witness would read the old value back.
+		CHECK(shownValue(scratch.project(), edit_query,
+				 QStringLiteral("K1"), QETInformation::ELMT_DESIGNATION)
+		      == QStringLiteral("LC1D18"));
+
+		stack->undo();
+		CHECK(component->elementInformations()
+		      .value(QETInformation::ELMT_DESIGNATION).toString()
+		      == QStringLiteral("LC1D09"));
+		CHECK(shownValue(scratch.project(), edit_query,
+				 QStringLiteral("K1"), QETInformation::ELMT_DESIGNATION)
+		      == QStringLiteral("LC1D09"));
+	}
+
+	SECTION("fechar a célula sem mudar nada não deixa passo nenhum na pilha")
+	{
+		const QList<int> found = rowsWithLabel(model, QStringLiteral("K2"));
+		REQUIRE(found.count() == 1);
+		const int column = columnOf(model, QETInformation::ELMT_DESIGNATION);
+		const int steps_before = stack->count();
+
+		CHECK_FALSE(model.setData(model.index(found.first(), column),
+					  QStringLiteral("LC1D12"),
+					  Qt::EditRole));
+		CHECK(stack->count() == steps_before);
+	}
+
+	SECTION("a linha que nenhum componente reivindica sozinho não é editável")
+	{
+		const QList<int> twins = rowsWithLabel(model, QStringLiteral("T1"));
+		REQUIRE(twins.count() == 2);
+		const int column = columnOf(model, QETInformation::ELMT_DESIGNATION);
+		const int steps_before = stack->count();
+
+		for (int row : twins)
+		{
+			INFO("row " << row);
+				//Two components written the same way in every
+				//column the list shows are two components the
+				//reader cannot tell apart either. Picking one of
+				//them would write on a component nobody chose.
+			CHECK(model.elementForRow(row) == nullptr);
+			CHECK_FALSE(model.flags(model.index(row, column))
+				    .testFlag(Qt::ItemIsEditable));
+			CHECK_FALSE(model.setData(model.index(row, column),
+						  QStringLiteral("CHOISI"),
+						  Qt::EditRole));
+		}
+
+		CHECK(stack->count() == steps_before);
+	}
+
+	SECTION("o rótulo que uma fórmula escreve não é editável; o resto da linha é")
+	{
+		const QList<int> found = rowsWithLabel(model, QStringLiteral("Q1"));
+		REQUIRE(found.count() == 1);
+		const int row = found.first();
+		REQUIRE(model.elementForRow(row) != nullptr);
+
+			//The column carries what the formula makes, and
+			//setElementInformations() writes that back over anything
+			//put in its place: the edit would be taken, the undo step
+			//would be on the stack, and the cell would go back to
+			//saying what it said before.
+		CHECK_FALSE(model.flags(model.index(row, columnOf(model, QETInformation::ELMT_LABEL)))
+			    .testFlag(Qt::ItemIsEditable));
+
+			//Measured beside it so that the refusal above is read as
+			//being about the label and not about the row.
+		CHECK(model.flags(model.index(row, columnOf(model, QETInformation::ELMT_DESIGNATION)))
+		      .testFlag(Qt::ItemIsEditable));
+	}
+
+	SECTION("na lista agrupada, o total é somente leitura e o grupo de vários não é editável")
+	{
+		ProjectDBModel grouped(scratch.project());
+		grouped.setQuery(QStringLiteral(
+			"SELECT designation, COUNT(*) AS designation_qty"
+			" FROM element_nomenclature_view GROUP BY designation"
+			" ORDER BY designation"));
+		INFO(grouped.lastError().toStdString());
+		REQUIRE(grouped.lastError().isEmpty());
+		REQUIRE(grouped.columnCount() == 2);
+		REQUIRE(grouped.rowCount() == 4);
+
+		int row_of_two = -1;
+		int row_of_one = -1;
+		for (int row = 0 ; row < grouped.rowCount() ; ++row)
+		{
+			const QString designation = grouped.index(row, 0).data().toString();
+			if (designation == QStringLiteral("IDENTIQUE")) {
+				row_of_two = row;
+			} else if (designation == QStringLiteral("LC1D09")) {
+				row_of_one = row;
+			}
+		}
+		REQUIRE(row_of_two >= 0);
+		REQUIRE(row_of_one >= 0);
+		REQUIRE(grouped.index(row_of_two, 1).data().toString()
+			== QStringLiteral("2"));
+
+			//A row standing for two components has no component to
+			//push a command against.
+		CHECK(grouped.elementForRow(row_of_two) == nullptr);
+		CHECK_FALSE(grouped.flags(grouped.index(row_of_two, 0))
+			    .testFlag(Qt::ItemIsEditable));
+
+			//A group of one does stand for one component, and its
+			//designation is editable - which is what makes the next
+			//assertion say something: the total beside it is read
+			//only because it is a total, and not because the row
+			//could not be traced back.
+		CHECK(grouped.elementForRow(row_of_one) != nullptr);
+		CHECK(grouped.flags(grouped.index(row_of_one, 0))
+		      .testFlag(Qt::ItemIsEditable));
+		CHECK_FALSE(grouped.flags(grouped.index(row_of_one, 1))
+			    .testFlag(Qt::ItemIsEditable));
+	}
+
+	SECTION("o estilo do tabuleiro continua sendo lido e escrito na célula (0,0)")
+	{
+			//The roles the editor of the folio table writes there,
+			//and which toXml() saves. The edit role now has a meaning
+			//of its own on that very cell, so the two have to be
+			//measured together or the next reader will not know they
+			//coexist.
+		const QModelIndex first = model.index(0, 0);
+		REQUIRE(model.setData(first, QVariant(int(Qt::AlignRight)),
+				      Qt::TextAlignmentRole));
+		CHECK(first.data(Qt::TextAlignmentRole).toInt() == int(Qt::AlignRight));
+		CHECK_FALSE(first.data(Qt::DisplayRole).toString().isEmpty());
+	}
+}
