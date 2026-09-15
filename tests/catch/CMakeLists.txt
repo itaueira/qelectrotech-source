@@ -140,6 +140,7 @@ add_executable(
     src/mountingpartview_test.cpp
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
+    src/option_test.cpp
     src/terminalstripstructure_test.cpp
     src/terminalmove_test.cpp
     src/collectionloadgate_test.cpp
@@ -243,6 +244,18 @@ add_executable(
     ${QET_DIR}/sources/location/locationtree.h
     ${QET_DIR}/sources/location/projectlocation.cpp
     ${QET_DIR}/sources/location/projectlocation.h
+    # A árvore de opções está aqui pela mesma razão que a de localizações:
+    # ela é aritmética de QString e de QDomDocument, e nada mais. Nem folha,
+    # nem elemento, nem projeto — o que é justamente o que permite provar
+    # sem tela que ligar uma opção não é o mesmo que ela valer, e que um
+    # arquivo estragado (pai que não existe, laço, dois nomes iguais) é
+    # consertado na leitura em vez de recusado. O que liga a árvore ao
+    # projeto são duas linhas do QETProject, e essas ficam de fora daqui:
+    # estão provadas em src/ui/projectoptions_test.cpp, do C_uitests.
+    ${QET_DIR}/sources/options/optiontree.cpp
+    ${QET_DIR}/sources/options/optiontree.h
+    ${QET_DIR}/sources/options/projectoption.cpp
+    ${QET_DIR}/sources/options/projectoption.h
     # The containment rule knows nothing but QRectF and QString, which is
     # what lets CU-32.2 - six push buttons, one dragged out, one dragged
     # in - be proved here instead of on a screen. What draws the rectangle
@@ -638,6 +651,12 @@ if(TARGET qet_core)
         src/ui/elementtable_test.cpp
         src/ui/componentlabel_test.cpp
         src/ui/mountinglayoutsave_test.cpp
+        # O modelo de configuração escrito no .qet e lido de volta. Precisa de
+        # projeto aberto porque o que se prova são as duas linhas do
+        # QETProject que gravam e leem a árvore — a aritmética dela fica um
+        # andar abaixo, em option_test.cpp do C_unittests, e não se repete
+        # aqui.
+        src/ui/projectoptions_test.cpp
         src/ui/connectorlink_test.cpp
         src/ui/connectorrenumber_test.cpp
         # Which connectors of an open project nobody can count the ways of,

@@ -1112,6 +1112,20 @@ QDomDocument QETProject::toXml()
 		project_root.appendChild(m_mounting_layout.toXml(xml_doc));
 	}
 
+		//The configurations this project can be built in, by the same
+		//rule and for a reason that is worth one more line here: a
+		//program that knows nothing of options ignores this element,
+		//draws the base state, and - on the next save - writes the
+		//file back without it. The model of configuration is lost with
+		//no warning at all. That is accepted, on purpose, and the
+		//alternative was measured: the number written into the .qet is
+		//the version of the program itself, so raising it would make
+		//every project saved from now on warn in every older build,
+		//including the projects that have no option at all.
+	if (!m_option_tree.isEmpty()) {
+		project_root.appendChild(m_option_tree.toXml(xml_doc));
+	}
+
 	// titleblock templates, if any
 	if (m_titleblocks_collection.templates().count()) {
 		QDomElement titleblocktemplates_elmt = xml_doc.createElement("titleblocktemplates");
@@ -1762,6 +1776,12 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 		//written before this existed stands.
 	m_mounting_layout.fromXml(xml_project.documentElement().firstChildElement(
 					  MountingLayout::tagName()));
+
+		//The configurations. Tolerant the same way: no element means no
+		//option, which is the state of every project ever written until
+		//now and of every project that is not the template of a family.
+	m_option_tree.fromXml(xml_project.documentElement().firstChildElement(
+				      OptionTree::tagName()));
 
 		//Load the project-wide properties
 	readProjectPropertiesXml(xml_project);
@@ -2508,6 +2528,50 @@ void QETProject::setMountingLayout(const MountingLayout &layout)
 	}
 	m_mounting_layout = layout;
 	setModified(true);
+}
+
+/**
+	@brief QETProject::optionTree
+	@return the configurations this project can be built in, empty when it
+	is not the template of a family
+*/
+OptionTree QETProject::optionTree() const
+{
+	return m_option_tree;
+}
+
+/**
+	@brief QETProject::setOptionTree
+	@param tree
+
+	Guarded on equality for the reason setLocationTree is: a panel opened
+	and closed without a change must not leave the project asking to be
+	saved. The guard covers the switches too - the tree compares its
+	options one by one, and whether an option is on is one of the fields
+	compared - so turning an option off and on again lands back on the
+	tree that was there and marks nothing.
+*/
+void QETProject::setOptionTree(const OptionTree &tree)
+{
+	if (m_option_tree == tree) {
+		return;
+	}
+	m_option_tree = tree;
+	setModified(true);
+}
+
+/**
+	@brief QETProject::hasOptions
+	@return true when this project has a configuration model at all
+
+	The question the panel of options asks itself when a project is opened,
+	and it is here rather than at the window because the window is not the
+	only one who will ask it: exporting from the command line has to know
+	whether there is a configuration to pick before it draws anything.
+*/
+bool QETProject::hasOptions() const
+{
+	return !m_option_tree.isEmpty();
 }
 
 /**

@@ -31,6 +31,7 @@
 #include "plc/iolist.h"
 #include "location/locationtree.h"
 #include "location/mountinglayout.h"
+#include "options/optiontree.h"
 #include "properties/reportproperties.h"
 #include "properties/xrefproperties.h"
 #include "titleblock/templatescollection.h"
@@ -347,6 +348,30 @@ class QETProject : public QObject
 		*/
 		MountingLayout mountingLayout() const;
 		void setMountingLayout(const MountingLayout &layout);
+
+		/**
+			@brief In which configurations this project can be built,
+			and which of them it is in right now.
+
+			A template project of a family of panels holds one tree of
+			options; every other project holds an empty one, and an
+			empty one is written nowhere. So a project that never
+			created an option keeps opening in an unmodified
+			QElectroTech - and, for the same reason, a project that did
+			create one opens there too, drawing its base state.
+
+			Not the same thing as projectOptionsWereModified()
+			above, whose options are the settings of the project:
+			its title, its properties. These options are
+			configurations of a family of panels, and none of them
+			is a setting.
+		*/
+		OptionTree optionTree() const;
+		void setOptionTree(const OptionTree &tree);
+
+			/// @return true when this project has a configuration model at all
+		bool hasOptions() const;
+
 		/**
 			@brief Make every component say the text of its tag again.
 			The composed tag is built when the text is drawn, so a change of the
@@ -502,6 +527,7 @@ class QETProject : public QObject
 		IoList m_io_list;
 		LocationTree m_location_tree;
 		MountingLayout m_mounting_layout;
+		OptionTree m_option_tree;
 		bool m_freeze_new_conductors = false;
 		QTimer m_save_backup_timer,
 			   m_autosave_timer;

@@ -454,6 +454,11 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.cpp
   ${QET_DIR}/sources/macro/ui/macroparametersdialog.h
 
+  ${QET_DIR}/sources/options/optiontree.cpp
+  ${QET_DIR}/sources/options/optiontree.h
+  ${QET_DIR}/sources/options/projectoption.cpp
+  ${QET_DIR}/sources/options/projectoption.h
+
   ${QET_DIR}/sources/plc/ioassignment.cpp
   ${QET_DIR}/sources/plc/ioassignment.h
   ${QET_DIR}/sources/plc/iocircuit.cpp
