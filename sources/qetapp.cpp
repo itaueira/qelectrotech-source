@@ -46,6 +46,7 @@
 #include "TerminalStrip/ui/terminalstripeditorwindow.h"
 #include "qetversion.h"
 #include "logging/qetlogger.h"
+#include "location/layout/mountinglayouteditor.h"
 #include "logging/ui/diagnosticsreportdialog.h"
 
 #include <cstdlib>
@@ -1670,6 +1671,46 @@ QList<QETTitleBlockTemplateEditor *> QETApp::titleBlockTemplateEditors(
 		 titleBlockTemplateEditors()) {
 		if (tbt_editor -> location().parentProject() == project) {
 			editors << tbt_editor;
+		}
+	}
+
+	return(editors);
+}
+
+/**
+	@brief QETApp::mountingLayoutEditors
+	@return the windows a panel is being laid out in
+
+	Found the way every other editor of the program is found: among the top
+	level widgets. That is the whole of what registering a window costs
+	here, and it is the reason a layout editor is given no parent - a window
+	with a parent is a window this list cannot see.
+*/
+QList<MountingLayoutEditor *> QETApp::mountingLayoutEditors()
+{
+	return(QETApp::instance() -> detectWindows<MountingLayoutEditor>());
+}
+
+/**
+	@brief QETApp::mountingLayoutEditors
+	@param project Opened project object.
+	@return the windows currently laying out a panel of @a project
+
+	One window per project is what the caller wants, and asking for the list
+	is how it finds the one that is already open instead of opening a
+	second. Two windows over the same layout would both write it, and the
+	last drag to happen would be the whole truth.
+*/
+QList<MountingLayoutEditor *> QETApp::mountingLayoutEditors(QETProject *project)
+{
+	QList<MountingLayoutEditor *> editors;
+	if (!project) return(editors);
+
+	const QList<MountingLayoutEditor *> opened = mountingLayoutEditors();
+	for (MountingLayoutEditor *editor : opened)
+	{
+		if (editor -> project() == project) {
+			editors << editor;
 		}
 	}
 

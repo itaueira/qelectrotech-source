@@ -53,6 +53,7 @@
 #include "diagramview.h"
 #include "elementspanelwidget.h"
 #include "factory/qetgraphicstablefactory.h"
+#include "location/layout/mountinglayouteditor.h"
 #include "location/ui/locationbomdialog.h"
 #include "location/ui/locationmanagerdialog.h"
 #include "location/ui/locationreportdialog.h"
@@ -983,6 +984,15 @@ void QETDiagramEditor::setUpActions()
 	connect(m_location_bom, &QAction::triggered,
 		this, &QETDiagramEditor::showLocationBom);
 
+	m_mounting_layout = new QAction(
+				tr("Calepinage de l'armoire…"), this);
+	m_mounting_layout->setToolTip(tr(
+				  "Implante la platine en millimètre : ce qui est "
+				  "vissé dessus, et où. Se glisse à la souris."));
+	m_mounting_layout->setStatusTip(m_mounting_layout->toolTip());
+	connect(m_mounting_layout, &QAction::triggered,
+		this, &QETDiagramEditor::showMountingLayout);
+
 
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
@@ -1798,6 +1808,40 @@ void QETDiagramEditor::showLocationBom()
 }
 
 /**
+	@brief QETDiagramEditor::showMountingLayout
+	Open the window a panel is laid out in: one face of one enclosure, drawn
+	in millimetre, with what is screwed to it.
+*/
+void QETDiagramEditor::showMountingLayout()
+{
+	QETProject *project = currentProject();
+	if (!project) {
+		return;
+	}
+
+		//One window per project, and here it is not a convenience: two
+		//windows over the same layout would both write it back, and the
+		//last drag to happen anywhere would become the whole truth. The
+		//list is asked of the application and not of this widget,
+		//because a layout editor has no parent - that is what puts it
+		//in the window list of the program.
+	const QList<MountingLayoutEditor *> opened =
+			QETApp::mountingLayoutEditors(project);
+	if (!opened.isEmpty())
+	{
+		MountingLayoutEditor *editor = opened.first();
+		editor->show();
+		editor->raise();
+		editor->activateWindow();
+		return;
+	}
+
+	MountingLayoutEditor *editor = new MountingLayoutEditor(project);
+	editor->setAttribute(Qt::WA_DeleteOnClose);
+	editor->show();
+}
+
+/**
 	@brief QETDiagramEditor::goToElement
 	@param element
 	Bring forward the folio the component is drawn on, then select it and
@@ -2526,6 +2570,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addAction(m_location_manager);
 	menu_project -> addAction(m_location_report);
 	menu_project -> addAction(m_location_bom);
+	menu_project -> addAction(m_mounting_layout);
 	menu_project -> addAction(m_replace_part);
 #ifdef QET_EXPORT_PROJECT_DB
 	menu_project -> addSeparator();
@@ -3572,6 +3617,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_location_manager            -> setEnabled(editable_project);
 	m_location_report             -> setEnabled(editable_project);
 	m_location_bom                -> setEnabled(opened_project);
+	m_mounting_layout             -> setEnabled(editable_project);
 	m_create_symbol               -> setEnabled(editable_project);
 	m_generate_pinout             -> setEnabled(editable_project);
 	m_generate_circuits           -> setEnabled(editable_project);

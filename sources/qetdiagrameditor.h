@@ -200,6 +200,7 @@ class QETDiagramEditor : public QETMainWindow
 		void showLocationManager();
 		void showLocationReport();
 		void showLocationBom();
+		void showMountingLayout();
 		void goToElement(Element *element);
 		void insertNomenclature(const QString &query);
 		void markIoBus();
@@ -291,6 +292,7 @@ class QETDiagramEditor : public QETMainWindow
 	*m_location_manager = nullptr,  ///< Action to manage the enclosures of the project
 		*m_location_report = nullptr,   ///< Action to list the components that are nowhere
 		*m_location_bom = nullptr,      ///< Action to list what to pick for one enclosure
+		*m_mounting_layout = nullptr,   ///< Action to lay the panel of an enclosure out, in millimetre
 		*m_explode_element = nullptr,   ///< Action to turn a placed symbol back into drawing
 		*m_replace_part = nullptr,      ///< Action to swap a catalog part across the project
 		*m_show_fine_grid = nullptr,    ///< Action to draw the finer grid

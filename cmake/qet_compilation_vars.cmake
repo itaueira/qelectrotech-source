@@ -407,8 +407,12 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/enclosuretransfer.h
   ${QET_DIR}/sources/location/layout/mountedpartitem.cpp
   ${QET_DIR}/sources/location/layout/mountedpartitem.h
+  ${QET_DIR}/sources/location/layout/mountinglayouteditor.cpp
+  ${QET_DIR}/sources/location/layout/mountinglayouteditor.h
   ${QET_DIR}/sources/location/layout/mountingscene.cpp
   ${QET_DIR}/sources/location/layout/mountingscene.h
+  ${QET_DIR}/sources/location/layout/mountingview.cpp
+  ${QET_DIR}/sources/location/layout/mountingview.h
   ${QET_DIR}/sources/location/locatableelement.h
   ${QET_DIR}/sources/location/locationboundary.cpp
   ${QET_DIR}/sources/location/locationboundary.h

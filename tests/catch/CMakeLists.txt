@@ -658,6 +658,14 @@ if(TARGET qet_core)
         # regras se calculam sem cena nenhuma. A aritmética da placa fica um
         # andar abaixo, em mountinglayout_test.cpp, e não se repete aqui.
         src/ui/mountingscene_test.cpp
+        # O fio entre a cena e o projeto: a janela que lê a face do
+        # QETProject ao abrir e a grava de volta a cada passo. Precisa de
+        # projeto aberto porque é exatamente isso que se prova — que o
+        # arraste chega ao arquivo e volta dele. A cena sozinha fica um
+        # arquivo acima, em mountingscene_test.cpp, e não se repete aqui;
+        # a janela como o olho a vê não está em suíte nenhuma, e continua
+        # sendo roteiro manual.
+        src/ui/mountinglayouteditor_test.cpp
         # O modelo de configuração escrito no .qet e lido de volta. Precisa de
         # projeto aberto porque o que se prova são as duas linhas do
         # QETProject que gravam e leem a árvore — a aritmética dela fica um

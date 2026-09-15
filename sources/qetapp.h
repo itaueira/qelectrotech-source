@@ -41,6 +41,7 @@ class QETDiagramEditor;
 class QETElementEditor;
 class Catalog;
 class ElementsCollectionCache;
+class MountingLayoutEditor;
 class TitleBlockTemplate;
 class TitleBlockTemplatesCollection;
 class TitleBlockTemplatesFilesCollection;
@@ -205,6 +206,8 @@ class QETApp : public QObject
 		static QList<QETElementEditor *> elementEditors(QETProject *);
 		static QList<QETTitleBlockTemplateEditor *> titleBlockTemplateEditors();
 		static QList<QETTitleBlockTemplateEditor *> titleBlockTemplateEditors(QETProject *);
+		static QList<MountingLayoutEditor *> mountingLayoutEditors();
+		static QList<MountingLayoutEditor *> mountingLayoutEditors(QETProject *);
 		static QTextOrientationSpinBoxWidget *createTextOrientationSpinBoxWidget();
 		static TitleBlockTemplate *defaultTitleBlockTemplate();
 	
