@@ -26,6 +26,7 @@
 #include "diagramposition.h"
 #include "factory/elementfactory.h"
 #include "qetapp.h"
+#include "qetgraphicsitem/ViewItem/mountinglayoutviewitem.h"
 #include "qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/conductortextitem.h"
@@ -1035,6 +1036,7 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 	QVector<LocationAreaItem *> list_location_areas;
 	QVector<QetGraphicsTableItem *> table_vector;
 	QVector<TerminalStripItem *> strip_vector;
+	QVector<MountingLayoutViewItem *> layout_view_vector;
 
 	//Ckeck graphics item to "XMLise"
 	for(QGraphicsItem *qgi : items())
@@ -1100,6 +1102,13 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 				const auto strip = static_cast<TerminalStripItem *>(qgi);
 				if (whole_content || strip->isSelected()) {
 					strip_vector << strip;
+				}
+				break;
+			}
+			case MountingLayoutViewItem::Type: {
+				const auto layout_view = static_cast<MountingLayoutViewItem *>(qgi);
+				if (whole_content || layout_view->isSelected()) {
+					layout_view_vector << layout_view;
 				}
 				break;
 			}
@@ -1178,6 +1187,21 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 
 	if (!strip_vector.isEmpty()) {
 		dom_root.appendChild(TerminalStripItemXml::toXml(strip_vector, document));
+	}
+
+		//The views of the mounting layout go under a tag of their own, for
+		//the reason the location areas do: an older version of the program
+		//finds a section it does not know and leaves it alone, rather than
+		//reading these as something else and writing them back that way.
+		//Not one millimetre of the panel is written here - only which face
+		//is shown, where it sits on the sheet and at which scale. The
+		//layout itself is written once, by the project.
+	if (!layout_view_vector.isEmpty()) {
+		auto dom_layout_views = document.createElement(QStringLiteral("mounting_layout_views"));
+		for (auto layout_view : layout_view_vector) {
+			dom_layout_views.appendChild(layout_view->toXml(document));
+		}
+		dom_root.appendChild(dom_layout_views);
 	}
 
 
@@ -1614,6 +1638,27 @@ bool Diagram::fromXml(QDomElement &document,
 		added_tables << table;
 	}
 
+		//Load the views of the mounting layout
+		//
+		//The item is put on the folio before it is read, the way a table
+		//is, because reading it means asking the folio which project it
+		//belongs to. The project has already read its layout by the time
+		//the folios are read - readProjectXml does the layout before
+		//readDiagramsXml - so the face named here is found on the first
+		//try, and nothing has to be resolved in a second pass.
+	QVector<MountingLayoutViewItem *> added_layout_views;
+	for (const auto &dom_layout_view : QETXML::subChild(
+				root,
+				QStringLiteral("mounting_layout_views"),
+				MountingLayoutViewItem::tagName()))
+	{
+		auto layout_view = new MountingLayoutViewItem();
+		addItem(layout_view);
+		layout_view->setProject(project());
+		layout_view->fromXml(dom_layout_view);
+		added_layout_views << layout_view;
+	}
+
 		//Load terminal strip item
 	QVector<TerminalStripItem *> added_strips { TerminalStripItemXml::fromXml(this, root) };
 
@@ -1628,6 +1673,7 @@ bool Diagram::fromXml(QDomElement &document,
 		for (auto image   : std::as_const(added_images     )) added_items << image;
 		for (auto table   : std::as_const(added_tables     )) added_items << table;
 		for (const auto &strip : std::as_const(added_strips)) added_items << strip;
+		for (auto layout_view : std::as_const(added_layout_views)) added_items << layout_view;
 
 		//Get the top left corner of the rectangle that contain all added items
 		QRectF items_rect;

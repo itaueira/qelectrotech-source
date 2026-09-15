@@ -36,6 +36,7 @@ class DiagramTextItem;
 class QetGraphicsTableItem;
 class TerminalStripItem;
 class LocationAreaItem;
+class MountingLayoutViewItem;
 
 /**
 	This class provides a container that makes the transmission of diagram content
@@ -74,8 +75,14 @@ class DiagramContent
 			//of the three is an enclosure, and a caption that names the
 			//wrong thing is how a delete goes unnoticed.
 			LocationAreas = 2048,
-			All = 4095,
-			SelectedOnly = 4096
+			//A view of the mounting layout is not drawing content
+			//either: it is one object that stands for a whole plate,
+			//so it gets a bit of its own for the reason above. Folded
+			//into Shapes or Tables, a caption would say "2 tables"
+			//when one of the two is a panel.
+			LayoutViews = 4096,
+			All = 8191,
+			SelectedOnly = 8192
 		};
 		
 		QList<Element *> m_elements;
@@ -93,6 +100,7 @@ class DiagramContent
 		QVector<TerminalStripItem *> m_terminal_strip;
 		QVector<QPointer<TerminalElement>> m_terminal_elements;
 		QSet<LocationAreaItem *> m_location_areas;
+		QVector<MountingLayoutViewItem *> m_layout_views;
 
 		
 		QList<DiagramTextItem *> selectedTexts() const;

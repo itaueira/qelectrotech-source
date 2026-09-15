@@ -437,6 +437,12 @@ class QETProject : public QObject
 		void folioAutoNumRemoved();
 		void defaultTitleBlockPropertiesChanged();
 		void conductorAutoNumChanged();
+			/// What is mounted on a face of this project changed. The one
+			/// thing a view of the layout posed on a folio needs: without
+			/// it such a view is a photograph of the plate as it stood the
+			/// afternoon somebody posed it, and the project then holds two
+			/// answers about one panel.
+		void mountingLayoutChanged(QETProject *);
 
 	private slots:
 		void updateDiagramsFolioData();

@@ -773,6 +773,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/qetgraphicsitem/terminalelement.h
   ${QET_DIR}/sources/qetgraphicsitem/terminal.h
 
+  ${QET_DIR}/sources/qetgraphicsitem/ViewItem/mountinglayoutviewitem.cpp
+  ${QET_DIR}/sources/qetgraphicsitem/ViewItem/mountinglayoutviewitem.h
   ${QET_DIR}/sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp
   ${QET_DIR}/sources/qetgraphicsitem/ViewItem/projectdbmodel.h
   ${QET_DIR}/sources/qetgraphicsitem/ViewItem/qetgraphicsheaderitem.cpp

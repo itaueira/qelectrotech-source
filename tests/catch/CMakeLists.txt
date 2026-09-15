@@ -706,6 +706,15 @@ if(TARGET qet_core)
         # aritmética do perfil fica um andar abaixo, em mountingprofile_test.cpp
         # do C_unittests, e não se repete aqui.
         src/ui/mountedprofileitem_test.cpp
+        # A platine desenhada numa folha do projeto: o que o item lê do
+        # QETProject, o que ele redesenha sozinho quando a placa muda, e o
+        # que ele nunca escreve de volta. Precisa de projeto aberto porque o
+        # fio que se prova e exatamente esse -- um sinal do projeto chegando
+        # a um item de folha, e o item sobrevivendo a salvar e reabrir. A
+        # aritmetica da placa fica em mountinglayout_test.cpp do
+        # C_unittests, e a cena em milimetro em mountingscene_test.cpp;
+        # nenhuma das duas se repete aqui.
+        src/ui/mountinglayoutview_test.cpp
         # O modelo de configuração escrito no .qet e lido de volta. Precisa de
         # projeto aberto porque o que se prova são as duas linhas do
         # QETProject que gravam e leem a árvore — a aritmética dela fica um

@@ -27,6 +27,7 @@
 #include "qetgraphicsitem/elementtextitemgroup.h"
 #include "qetgraphicsitem/independenttextitem.h"
 #include "qetgraphicsitem/locationareaitem.h"
+#include "qetgraphicsitem/ViewItem/mountinglayoutviewitem.h"
 #include "qetgraphicsitem/qetshapeitem.h"
 #include "qetgraphicsitem/terminal.h"
 #include "TerminalStrip/GraphicsItem/terminalstripitem.h"
@@ -103,6 +104,7 @@ DiagramContent::DiagramContent(Diagram *diagram, bool selected) :
 			}
 			case QetGraphicsTableItem::Type: { m_tables << qgraphicsitem_cast<QetGraphicsTableItem *>(item); break;}
 			case TerminalStripItem::Type : {m_terminal_strip << qgraphicsitem_cast<TerminalStripItem *>(item); break;}
+			case MountingLayoutViewItem::Type: { m_layout_views << qgraphicsitem_cast<MountingLayoutViewItem *>(item); break;}
 		}
 	}
 		
@@ -217,7 +219,8 @@ bool DiagramContent::hasDeletableItems() const
 			|| qgi->type() == DynamicElementTextItem::Type
 			|| qgi->type() == QetGraphicsTableItem::Type
 			|| qgi->type() == TerminalStripItem::Type
-			|| qgi->type() == LocationAreaItem::Type)
+			|| qgi->type() == LocationAreaItem::Type
+			|| qgi->type() == MountingLayoutViewItem::Type)
 			return true;
 		if(qgi->type() == QGraphicsItemGroup::Type)
 			if(dynamic_cast<ElementTextItemGroup *>(qgi))
@@ -260,6 +263,7 @@ void DiagramContent::clear()
 	m_tables.clear();
 	m_terminal_strip.clear();
 	m_location_areas.clear();
+	m_layout_views.clear();
 }
 
 /**
@@ -364,6 +368,10 @@ DiagramContent &DiagramContent::operator+=(const DiagramContent &other)
 	for (auto table : other.m_tables)
 		if (!m_tables.contains(table))
 			m_tables << table;
+
+	for (auto layout_view : other.m_layout_views)
+		if (!m_layout_views.contains(layout_view))
+			m_layout_views << layout_view;
 	
 	return *this;
 }
@@ -421,6 +429,7 @@ QList<QGraphicsItem *> DiagramContent::items(int filter) const
 	if (filter & Tables)            for(auto qgi : m_tables)        items_list << qgi;
 	if (filter & TerminalStrip)     for(const auto qgi : std::as_const(m_terminal_strip)) items_list << qgi;
 	if (filter & LocationAreas)     for(auto qgi : m_location_areas) items_list << qgi;
+	if (filter & LayoutViews)       for(auto qgi : std::as_const(m_layout_views)) items_list << qgi;
 
 	if (filter & SelectedOnly) {
 		for(const auto &qgi : std::as_const(items_list)) {
@@ -451,6 +460,7 @@ int DiagramContent::count(int filter) const
 		if (filter & Tables)             for(auto table     : m_tables)               { if (table     -> isSelected()) ++ count;  }
 		if (filter & TerminalStrip)      for(const auto &strip : std::as_const(m_terminal_strip)) {if (strip->isSelected()) ++ count;}
 		if (filter & LocationAreas)      for(auto area      : m_location_areas)       { if (area      -> isSelected()) ++ count; }
+		if (filter & LayoutViews)        for(const auto view : std::as_const(m_layout_views)) { if (view -> isSelected()) ++ count; }
 	}
 	else {
 		if (filter & Elements)           count += m_elements.count();
@@ -465,6 +475,7 @@ int DiagramContent::count(int filter) const
 		if (filter & Tables)             count += m_tables.count();
 		if (filter & TerminalStrip)      count += m_terminal_strip.count();
 		if (filter & LocationAreas)      count += m_location_areas.count();
+		if (filter & LayoutViews)        count += m_layout_views.count();
 	}
 	return(count);
 }
@@ -487,6 +498,7 @@ QString DiagramContent::sentence(int filter) const
 	int tables_count     = (filter & Tables) ? m_tables.count() : 0;
 	const int strip_count = (filter & TerminalStrip) ? m_terminal_strip.count() : 0;
 	const int location_areas_count = (filter & LocationAreas) ? m_location_areas.count() : 0;
+	const int layout_views_count = (filter & LayoutViews) ? m_layout_views.count() : 0;
 	return(
 		QET::ElementsAndConductorsSentence(
 			elements_count,
@@ -497,7 +509,8 @@ QString DiagramContent::sentence(int filter) const
 			elmt_text_count,
 			tables_count,
 			strip_count,
-			location_areas_count
+			location_areas_count,
+			layout_views_count
 		)
 	);
 }

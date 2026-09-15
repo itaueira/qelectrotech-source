@@ -25,6 +25,7 @@
 #include "autoNum/ui/iecstructuredialog.h"
 #include "autoNum/ui/renumberdialog.h"
 #include "catalog/ui/catalogbrowserdialog.h"
+#include "undocommand/addgraphicsobjectcommand.h"
 #include "undocommand/explodeelementcommand.h"
 #include "undocommand/conductortextcommand.h"
 #include "catalog/ui/catalogreplacedialog.h"
@@ -66,6 +67,7 @@
 #include "project/projecttemplate.h"
 #include "projectview.h"
 #include "qetproject.h"
+#include "qetgraphicsitem/ViewItem/mountinglayoutviewitem.h"
 #include "qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
 #include "qetgraphicsitem/conductortextitem.h"
 #include "qetgraphicsitem/dynamicelementtextitem.h"
@@ -993,6 +995,15 @@ void QETDiagramEditor::setUpActions()
 	connect(m_mounting_layout, &QAction::triggered,
 		this, &QETDiagramEditor::showMountingLayout);
 
+	m_put_mounting_layout = new QAction(
+				tr("Poser le calepinage sur le folio…"), this);
+	m_put_mounting_layout->setToolTip(tr(
+				  "Dessine une platine du projet sur le folio courant, "
+				  "à l'échelle choisie. Le dessin suit la platine."));
+	m_put_mounting_layout->setStatusTip(m_put_mounting_layout->toolTip());
+	connect(m_put_mounting_layout, &QAction::triggered,
+		this, &QETDiagramEditor::putMountingLayoutOnFolio);
+
 
 		//Launch the plugin of terminal generator
 	m_project_terminalBloc = new QAction(QET::Icons::TerminalStrip, tr("Lancer le plugin de création de borniers"), this);
@@ -1842,6 +1853,120 @@ void QETDiagramEditor::showMountingLayout()
 }
 
 /**
+	@brief QETDiagramEditor::putMountingLayoutOnFolio
+	Pose a view of one mounting plate on the folio in front, at a scale the
+	person chooses.
+
+	Two questions and no dialog of its own, on purpose. Which face, because a
+	project has several and the program must not pick; and at which scale,
+	because that decision has not been taken anywhere yet - the workshop has
+	not said what scale it wants its drawings at, nor whether they go on a
+	sheet of their own. Until it does, the scale is a property of the item,
+	typed in by hand, and the second question is where the hand goes.
+
+	What is posed is a view and not a copy: it holds the identifier of the
+	face, reads everything else out of the project, and redraws itself when
+	the plate changes. Nothing it draws can be written back.
+*/
+void QETDiagramEditor::putMountingLayoutOnFolio()
+{
+	DiagramView *diagram_view = currentDiagramView();
+	if (!diagram_view || !diagram_view->diagram()) {
+		return;
+	}
+
+	Diagram *diagram_ = diagram_view->diagram();
+	QETProject *project = diagram_->project();
+	if (!project || project->isReadOnly()) {
+		return;
+	}
+
+	const MountingLayout layout = project->mountingLayout();
+	const QStringList faces = layout.surfaceUuids();
+
+	if (faces.isEmpty())
+	{
+		QET::QetMessageBox::information(
+				this,
+				tr("Poser le calepinage sur le folio"),
+				tr("Ce projet n'a encore aucune platine. Ouvrez "
+				   "« Calepinage de l'armoire… » pour en créer une."));
+		return;
+	}
+
+		//The person chooses by the name of the face and never by its
+		//identifier : designation() is what the layout window shows, so
+		//the two lists read the same.
+	QStringList labels;
+	for (const QString &face : faces) {
+		labels << layout.surface(face).designation();
+	}
+
+	bool chosen = false;
+	const QString picked = QInputDialog::getItem(
+				this,
+				tr("Poser le calepinage sur le folio"),
+				tr("Quelle platine dessiner sur ce folio ?"),
+				labels, 0, false, &chosen);
+	if (!chosen) {
+		return;
+	}
+
+	const int index = labels.indexOf(picked);
+	if (index < 0) {
+		return;
+	}
+
+	const MountingSurface face = layout.surface(faces.at(index));
+
+		//What the plate would measure on the sheet at the value the box
+		//opens on, said out loud rather than left to be discovered after
+		//the drawing overruns the folio. The number is read from the item
+		//and never written here twice: a sentence quoting a default that
+		//has since changed is worse than no sentence.
+	const qreal proposed = MountingLayoutViewItem::defaultDrawingScale();
+	const QString scale_hint =
+			face.area.isValid()
+			? tr("Unités de folio par millimètre. À %1, une platine "
+			     "de %2 × %3 mm est dessinée %4 × %5.")
+			  .arg(QString::number(proposed, 'g', 4),
+			       QString::number(face.area.width, 'g', 6),
+			       QString::number(face.area.height, 'g', 6),
+			       QString::number(face.area.width * proposed, 'g', 6),
+			       QString::number(face.area.height * proposed, 'g', 6))
+			: tr("Unités de folio par millimètre. Cette platine n'est "
+			     "pas mesurée : seuls ses composants seront dessinés.");
+
+	bool accepted = false;
+	const double scale_ = QInputDialog::getDouble(
+				this,
+				tr("Échelle du calepinage"),
+				scale_hint,
+				proposed,
+				MountingLayoutViewItem::minimumDrawingScale(),
+				MountingLayoutViewItem::maximumDrawingScale(),
+				4,
+				&accepted);
+	if (!accepted) {
+		return;
+	}
+
+	auto *view_item = new MountingLayoutViewItem();
+	view_item->setProject(project);
+	view_item->setSurfaceUuid(face.uuid);
+	view_item->setDrawingScale(qreal(scale_));
+
+		//Undoable, because posing a plate on a folio is a change to the
+		//folio like any other. The command owns the item until it is
+		//undone away, which is what the generic one already does for
+		//every other object added to a folio.
+	diagram_->undoStack().push(
+				new AddGraphicsObjectCommand(view_item,
+							     diagram_,
+							     QPointF(50, 50)));
+}
+
+/**
 	@brief QETDiagramEditor::goToElement
 	@param element
 	Bring forward the folio the component is drawn on, then select it and
@@ -2571,6 +2696,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addAction(m_location_report);
 	menu_project -> addAction(m_location_bom);
 	menu_project -> addAction(m_mounting_layout);
+	menu_project -> addAction(m_put_mounting_layout);
 	menu_project -> addAction(m_replace_part);
 #ifdef QET_EXPORT_PROJECT_DB
 	menu_project -> addSeparator();
@@ -3618,6 +3744,10 @@ void QETDiagramEditor::slot_updateActions()
 	m_location_report             -> setEnabled(editable_project);
 	m_location_bom                -> setEnabled(opened_project);
 	m_mounting_layout             -> setEnabled(editable_project);
+		//Posing a plate writes on a folio, so it needs one open on top of
+		//an editable project - which is one condition more than opening the
+		//layout window needs.
+	m_put_mounting_layout         -> setEnabled(editable_project && opened_diagram);
 	m_create_symbol               -> setEnabled(editable_project);
 	m_generate_pinout             -> setEnabled(editable_project);
 	m_generate_circuits           -> setEnabled(editable_project);

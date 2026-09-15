@@ -267,7 +267,8 @@ QString QET::ElementsAndConductorsSentence(
 		int element_text_count,
 		int tables_count,
 		int terminal_strip_count,
-		int location_areas_count)
+		int location_areas_count,
+		int layout_views_count)
 {
 	QString text;
 	if (elements_count) {
@@ -344,6 +345,14 @@ QString QET::ElementsAndConductorsSentence(
 					"%n zone(s) de localisation",
 					"part of a sentence listing the content of a diagram",
 					location_areas_count);
+	}
+
+	if (layout_views_count) {
+		if (!text.isEmpty()) text += ", ";
+		text += QObject::tr(
+					"%n calepinage(s)",
+					"part of a sentence listing the content of a diagram",
+					layout_views_count);
 	}
 
 	return(text);

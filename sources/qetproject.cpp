@@ -2520,6 +2520,13 @@ MountingLayout QETProject::mountingLayout() const
 	saved. The comparison behind the guard allows a nanometre of slack on
 	every length, so a layout that went through the file and came back is
 	the layout that went in.
+
+	The signal is emitted behind the same guard, and that is what lets a view
+	of the layout posed on a folio redraw itself without being told. Emitting
+	it unconditionally would make every close of the layout window repaint
+	every folio that shows a plate, which is work nobody asked for; emitting
+	it only here, after the value really changed, is the whole contract those
+	views rely on.
 */
 void QETProject::setMountingLayout(const MountingLayout &layout)
 {
@@ -2528,6 +2535,7 @@ void QETProject::setMountingLayout(const MountingLayout &layout)
 	}
 	m_mounting_layout = layout;
 	setModified(true);
+	emit mountingLayoutChanged(this);
 }
 
 /**
