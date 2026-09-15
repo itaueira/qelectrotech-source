@@ -28,7 +28,63 @@
 #include "../terminalstrip.h"
 #include "../../qetinformation.h"
 
+#include <QObject>
 #include <QUuid>
+
+namespace
+{
+	/**
+		The label of @a real_terminal as this tree has to show it: what the
+		terminal carries, or, when it carries nothing, where it is drawn.
+
+		A terminal with no label is not a misreading. End stops and spare
+		terminals go on the rail without a number, and the field is simply
+		empty in the project file - measured on a delivered project of 434
+		components: of its 118 terminals, 61 carry no label at all, every one
+		of those 61 is an end stop, and their whole elementInformations node
+		is empty. Nothing is lost on the way here either, and that is worth
+		writing down because it is the first suspicion: both branches of this
+		tree read the same Element::actualLabel(), through
+		RealTerminal::label(), so a label that reaches one of them reaches
+		the other.
+
+		What is a defect is a tree that shows those terminals as nothing at
+		all. Rows all blank, none of them tellable from the next, in a tree
+		whose only job is to have one of them picked - and the button that
+		moves a terminal into a strip asks for exactly that pick.
+
+		So the stand in carries the cross reference, and it carries it
+		because that is the string the free terminal table already shows in a
+		column of its own: a row of this tree and a row of that table are
+		then recognisably the same terminal, which is what the move needs.
+
+		It is written between parentheses and says in words that there is no
+		label. A bare "3-B4" would read as a label, be looked for on the
+		sheet, and not be there - a name that the drawing does not carry
+		costs more than the blank row did.
+
+		Display only, on purpose. RealTerminal::label() is what the strip
+		drawing, the sorting and the undo texts read, and it goes on
+		answering empty: a stand in printed on the rail would be a lie on
+		paper.
+	*/
+	QString listLabel(const QSharedPointer<RealTerminal> &real_terminal)
+	{
+		if (real_terminal.isNull()) {
+			return QObject::tr("(sans repère)");
+		}
+
+		const auto label_ = real_terminal->label();
+		if (!label_.isEmpty()) {
+			return label_;
+		}
+
+		const auto xref_ = real_terminal->Xref();
+		return xref_.isEmpty()
+				? QObject::tr("(sans repère)")
+				: QObject::tr("(sans repère — %1)").arg(xref_);
+	}
+}
 
 TerminalStripTreeDockWidget::TerminalStripTreeDockWidget(QETProject *project, QWidget *parent) :
 	QDockWidget(parent),
@@ -62,7 +118,16 @@ void TerminalStripTreeDockWidget::setProject(QETProject *project)
     }
     m_project = project;
     if (m_project) {
-        m_project_destroy_connection = connect(m_project, &QObject::destroyed, [this](){
+            //`this` is passed as the context object, and it is not
+            //decoration. Without it the connection belongs to the sender
+            //alone and outlives this widget: a dock destroyed before the
+            //project it watches - which is what closing the manager window
+            //and then closing the project does - leaves the lambda holding a
+            //dangling `this`, and destroyed() then calls reload() through
+            //freed memory. With the context object Qt drops the connection
+            //when the dock dies. FreeTerminalModel::setProject() next door
+            //always passed its context; this one did not.
+        m_project_destroy_connection = connect(m_project, &QObject::destroyed, this, [this](){
             this->m_current_strip.clear();
             this->reload();
         });
@@ -306,9 +371,9 @@ QTreeWidgetItem* TerminalStripTreeDockWidget::addTerminalStrip(TerminalStrip *te
 			for (const auto &real_t : phy_t->realTerminals())
 			{
 				if (text_.isEmpty())
-					text_ = real_t->label();
+					text_ = listLabel(real_t);
 				else
-					text_.append(QStringLiteral(", ")).append(real_t->label());
+					text_.append(QStringLiteral(", ")).append(listLabel(real_t));
 			}
 			const auto real_t = phy_t->realTerminals().at(0);
 			auto terminal_item = new QTreeWidgetItem(strip_item, QStringList(text_), Terminal);
@@ -336,12 +401,55 @@ void TerminalStripTreeDockWidget::addFreeTerminal()
 		return;
 	}
 
-		//Sort the terminal element by label
-	std::sort(vector_.begin(), vector_.end(), [](TerminalElement *a, TerminalElement *b)
+		//What each of them is going to be listed as, worked out once.
+		//Once because the stand in of a terminal with no label asks the
+		//folio where the terminal is drawn, which is not free, and a
+		//comparison function is called a good many more times than there
+		//are terminals.
+	QHash<TerminalElement *, QString> shown_;
+	for (const auto terminal : std::as_const(vector_)) {
+		shown_.insert(terminal, listLabel(terminal->realTerminal()));
+	}
+
+		//Sort the terminal element by what the tree shows of it.
+		//Sorting on the stored label instead leaves every terminal that has
+		//none under the same key, and std::sort is free to order equal keys
+		//as it likes: the unlabelled ones would come back in a different
+		//order from one opening of this dock to the next, which is no way to
+		//point at one of them twice. Sorting on the displayed string keeps
+		//the labelled terminals exactly where they were - for them the two
+		//strings are the same - and settles the others by folio and
+		//position.
+		//
+		//The displayed string is not enough on its own, and measuring said
+		//so: the cross reference names a cell of the folio grid, and the
+		//terminals of one rail are drawn closer together than a cell is
+		//wide - as many as four of them under one and the same string on a
+		//delivered project. So equal strings are settled the way the sheet
+		//draws them, top to bottom then left to right, and what is still
+		//equal after that by the uuid, which does not move between
+		//sessions. The lines of such a group go on reading alike, which is
+		//the cross reference talking and not the sorting; what this buys is
+		//that the second line of the group is the same terminal every time
+		//the dock is opened.
+	std::sort(vector_.begin(), vector_.end(), [&shown_](TerminalElement *a, TerminalElement *b)
 	{
-		return a->elementData().m_informations.value(QETInformation::ELMT_LABEL).toString()
-				<
-				b->elementData().m_informations.value(QETInformation::ELMT_LABEL).toString();
+		const auto label_a = shown_.value(a);
+		const auto label_b = shown_.value(b);
+		if (label_a != label_b) {
+			return label_a < label_b;
+		}
+
+		const auto pos_a = a->scenePos();
+		const auto pos_b = b->scenePos();
+		if (pos_a.y() != pos_b.y()) {
+			return pos_a.y() < pos_b.y();
+		}
+		if (pos_a.x() != pos_b.x()) {
+			return pos_a.x() < pos_b.x();
+		}
+
+		return a->uuid() < b->uuid();
 	});
 
 	auto free_terminal_item = ui->m_tree_view->topLevelItem(1);
@@ -349,7 +457,7 @@ void TerminalStripTreeDockWidget::addFreeTerminal()
 	for (const auto terminal : std::as_const(vector_))
 	{
 		QUuid uuid_ = terminal->uuid();
-		QStringList strl{terminal->actualLabel()};
+		QStringList strl{shown_.value(terminal)};
 		auto item = new QTreeWidgetItem(free_terminal_item, strl, Terminal);
 		item->setData(0, UUID_USER_ROLE, uuid_.toString());
 		item->setIcon(0, QET::Icons::ElementTerminal);

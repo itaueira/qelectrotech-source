@@ -626,7 +626,15 @@ if(TARGET qet_core)
         # que o botão de mover depende: a lista de destinos guarda uuid,
         # e não ponteiro. A frase que a recusa diz é um andar abaixo, em
         # terminalmove_test.cpp do C_unittests.
-        src/ui/terminalstripidentity_test.cpp)
+        src/ui/terminalstripidentity_test.cpp
+        # O que a árvore do gerenciador de réguas escreve em cada linha.
+        # Precisa de projeto aberto porque o que se prova é o texto que o
+        # QTreeWidgetItem recebe de um QETProject carregado, e porque o
+        # recuo do borne sem rótulo é a posição dele na folha -- sem folha
+        # não há o que mostrar. A linha em branco não era defeito de
+        # leitura: o dado está vazio no arquivo, e o caso mede as duas
+        # coisas de uma vez.
+        src/ui/terminalstriptree_test.cpp
 
     target_link_libraries(
         C_uitests
