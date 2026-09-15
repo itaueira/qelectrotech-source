@@ -275,6 +275,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_catalog_missing = nullptr,   ///< Action to report the components with no part
 		*m_catalog_no_physical_view = nullptr, ///< Action to report the parts nobody measured
 		*m_connector_check = nullptr,   ///< Action to check the connectors of the project
+		*m_drc_check = nullptr,         ///< Action to run the design rule check on the project
 		*m_environment = nullptr,       ///< Action to see and change the work environment
 		*m_catalog_import = nullptr,    ///< Action to import parts from a spreadsheet
 		*m_catalog_repository = nullptr,///< Action to browse the shared part repository
@@ -290,6 +291,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_save_group = nullptr,        ///< Action to file the selection as a graphic grouping
 		*m_insert_group = nullptr,      ///< Action to insert a graphic grouping
 		*m_iec_structure = nullptr,     ///< Action to turn the IEC 81346 structure on for this project
+		*m_assembly_state = nullptr,    ///< Action to say the panel is wired, and to take that back
 	*m_location_manager = nullptr,  ///< Action to manage the enclosures of the project
 		*m_location_report = nullptr,   ///< Action to list the components that are nowhere
 		*m_location_bom = nullptr,      ///< Action to list what to pick for one enclosure

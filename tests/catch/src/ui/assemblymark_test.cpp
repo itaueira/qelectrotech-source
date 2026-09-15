@@ -27,11 +27,15 @@
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/ui/assemblystatedialog.h"
 #include "../../../../sources/undocommand/assemblystatecommand.h"
 
 #include <catch2/catch.hpp>
 
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDomDocument>
+#include <QPushButton>
 #include <QUndoStack>
 
 /*
@@ -512,5 +516,167 @@ TEST_CASE("T29 — o estado atravessa salvar e reabrir, e um projeto não marcad
 			REQUIRE_FALSE(piece.hasAttribute(QStringLiteral("assembly_state")));
 			REQUIRE_FALSE(piece.hasAttribute(QStringLiteral("assembled")));
 		}
+	}
+}
+
+TEST_CASE("T29 — a janela de montagem conta antes de agir, empilha um comando "
+	  "só, e cancelar não deixa rastro",
+	  "[uibench][assembly]")
+{
+	/*
+		The engine of this task was complete and nothing called it: the
+		state, the photograph, the undo command and a renumbering that reads
+		them were all delivered and had no control anywhere in the program.
+		What is measured here is the control - that it offers the current
+		state, that the number it shows is the number it applies, and that
+		saying no leaves the project exactly as it was.
+
+		Everything the command itself does is proved above and is not
+		repeated: this file already pins the photograph, the stack it lands
+		on and what the .qet ends up holding.
+	*/
+	UiBench::ScratchProject scratch(fixtureXml(), QStringLiteral("assembly.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+	Diagram *sheet = scratch.diagram(0);
+	REQUIRE(sheet != nullptr);
+	REQUIRE(sheet->elements().count() == 3);
+	REQUIRE(sheet->conductors().count() == 1);
+
+	auto press = [](AssemblyStateDialog &dialog,
+			QDialogButtonBox::StandardButton which) -> bool
+	{
+		QDialogButtonBox *box = dialog.findChild<QDialogButtonBox *>();
+		if (!box) {
+			return false;
+		}
+		QPushButton *pushed = box->button(which);
+		if (!pushed) {
+			return false;
+		}
+		pushed->click();
+		return true;
+	};
+
+	SECTION("a janela abre no estado em que o projeto está")
+	{
+		AssemblyStateDialog dialog(scratch.project());
+		CHECK(dialog.chosenStage() == AssemblyStage::InProject);
+	}
+
+	SECTION("ela conta o que vai congelar antes de o botão ser apertado")
+	{
+		AssemblyStateDialog dialog(scratch.project());
+		dialog.setChosenStage(AssemblyStage::Assembled);
+
+		CHECK(dialog.photographedComponents() == 3);
+		CHECK(dialog.photographedConductors() == 1);
+	}
+
+	SECTION("voltar para em estudo não fotografa nada")
+	{
+		AssemblyStateDialog dialog(scratch.project());
+		dialog.setChosenStage(AssemblyStage::Assembled);
+		REQUIRE(dialog.photographedComponents() == 3);
+
+		dialog.setChosenStage(AssemblyStage::InProject);
+		CHECK(dialog.photographedComponents() == 0);
+		CHECK(dialog.photographedConductors() == 0);
+	}
+
+	SECTION("cancelar não empilha nada e não marca")
+	{
+		const int before = scratch->undoStack()->count();
+
+		AssemblyStateDialog dialog(scratch.project());
+		dialog.setChosenStage(AssemblyStage::Assembled);
+		REQUIRE(press(dialog, QDialogButtonBox::Cancel));
+
+		CHECK(dialog.result() == QDialog::Rejected);
+		CHECK(scratch->undoStack()->count() == before);
+		CHECK_FALSE(scratch->assemblyState().isFrozen());
+	}
+
+	SECTION("confirmar empilha um comando, e um Ctrl+Z o desfaz")
+	{
+		const int before = scratch->undoStack()->count();
+
+		AssemblyStateDialog dialog(scratch.project());
+		dialog.setChosenStage(AssemblyStage::Assembled);
+		REQUIRE(press(dialog, QDialogButtonBox::Ok));
+
+		CHECK(dialog.result() == QDialog::Accepted);
+		REQUIRE(scratch->undoStack()->count() == before + 1);
+		REQUIRE(scratch->assemblyState().isFrozen());
+		CHECK(scratch->assemblyState().stage == AssemblyStage::Assembled);
+		CHECK(scratch->assemblyState().frozenCount() == 4);
+
+		scratch->undoStack()->undo();
+		CHECK_FALSE(scratch->assemblyState().isFrozen());
+	}
+
+	SECTION("o número que a janela mostrou é o que o comando aplicou")
+	{
+			//Not the same walk twice: the window photographs once, shows
+			//what it photographed, and pushes that very state. Counting
+			//again at confirmation time would let the figure on screen and
+			//the figure in the project disagree without anybody seeing it.
+		AssemblyStateDialog dialog(scratch.project());
+		dialog.setChosenStage(AssemblyStage::InField);
+
+		const int components = dialog.photographedComponents();
+		const int conductors = dialog.photographedConductors();
+		REQUIRE(press(dialog, QDialogButtonBox::Ok));
+
+		const AssemblyState applied = scratch->assemblyState();
+		CHECK(applied.stage == AssemblyStage::InField);
+		CHECK(applied.components.count() == components);
+		CHECK(applied.conductors.count() == conductors);
+	}
+
+	SECTION("desmarcar apaga a fotografia, e também é desfazível")
+	{
+		{
+			AssemblyStateDialog marking(scratch.project());
+			marking.setChosenStage(AssemblyStage::Assembled);
+			REQUIRE(press(marking, QDialogButtonBox::Ok));
+		}
+		REQUIRE(scratch->assemblyState().isFrozen());
+
+		AssemblyStateDialog unmarking(scratch.project());
+		REQUIRE(unmarking.chosenStage() == AssemblyStage::Assembled);
+		unmarking.setChosenStage(AssemblyStage::InProject);
+		REQUIRE(press(unmarking, QDialogButtonBox::Ok));
+
+		CHECK_FALSE(scratch->assemblyState().isFrozen());
+		CHECK(scratch->assemblyState().isEmpty());
+
+		scratch->undoStack()->undo();
+		CHECK(scratch->assemblyState().isFrozen());
+	}
+
+	SECTION("confirmar sem ter mudado nada não enche a pilha de desfazer")
+	{
+			//Opening the window to look and pressing Ok is not an error, and
+			//it has no business leaving a step that undoes nothing: the next
+			//Ctrl+Z would then appear to do nothing at all.
+		const int before = scratch->undoStack()->count();
+
+		AssemblyStateDialog dialog(scratch.project());
+		REQUIRE(dialog.chosenStage() == AssemblyStage::InProject);
+		REQUIRE(press(dialog, QDialogButtonBox::Ok));
+
+		CHECK(dialog.result() == QDialog::Accepted);
+		CHECK(scratch->undoStack()->count() == before);
+		CHECK_FALSE(scratch->assemblyState().isFrozen());
+	}
+
+	SECTION("sem projeto a janela não estoura, e não aceita nada")
+	{
+		AssemblyStateDialog dialog(nullptr);
+		CHECK(dialog.photographedComponents() == 0);
+		REQUIRE(press(dialog, QDialogButtonBox::Ok));
+		CHECK(dialog.result() == QDialog::Rejected);
 	}
 }

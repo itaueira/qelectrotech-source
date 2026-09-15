@@ -20,6 +20,7 @@
 
 #include <QSharedPointer>
 #include <QDomElement>
+#include <QStringList>
 #include "../properties/elementdata.h"
 
 class TerminalStrip;
@@ -63,8 +64,47 @@ class RealTerminal
 		int level() const;
 		QString label() const;
 		QString Xref() const;
+
+		/**
+			@return the label of every cable one of the conductors of this
+			terminal belongs to, once each, in the order the conductors are
+			docked.
+
+			Empty for a terminal no cable reaches, which is the common case
+			and the honest answer: a project without cables has nothing to
+			say here.
+		*/
+		QStringList cables() const;
+
+		/**
+			@return how each conductor of this terminal is identified inside
+			its cable - the colour of the wire, its number failing that - one
+			entry per conductor that a cable carries, in the same order.
+
+			Colour first and number second because a cable is one or the
+			other and not both: a manufacturer either colours the wires or
+			numbers them, which is what the column of the strip manager says
+			with its own name.
+		*/
+		QStringList cableWires() const;
+
+		/**
+			@return the number of every conductor docked to this terminal, in
+			the order they are docked - top to bottom, left to right, as
+			Element::conductors() gives them.
+
+			One entry per conductor, including one that carries no number:
+			dropping it would be the very thing this answer exists against,
+			and a count that does not match the drawing is worse than an
+			entry with nothing in it.
+		*/
+		QStringList conductors() const;
+
+		/// @return cables(), written for a single cell
 		QString cable() const;
+		/// @return cableWires(), written for a single cell
 		QString cableWire() const;
+		/// @return conductors(), written for a single cell
 		QString conductor() const;
 
 		ElementData::TerminalType type() const;

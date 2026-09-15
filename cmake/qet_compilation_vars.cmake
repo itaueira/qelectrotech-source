@@ -229,6 +229,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/exportproperties.h
   ${QET_DIR}/sources/exportpropertieswidget.cpp
   ${QET_DIR}/sources/exportpropertieswidget.h
+  ${QET_DIR}/sources/foliovariables.cpp
+  ${QET_DIR}/sources/foliovariables.h
   ${QET_DIR}/sources/genericpanel.cpp
   ${QET_DIR}/sources/genericpanel.h
   ${QET_DIR}/sources/lastusedstyle.cpp
@@ -382,10 +384,20 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/connector/ui/connectorreportdialog.cpp
   ${QET_DIR}/sources/connector/ui/connectorreportdialog.h
 
+  ${QET_DIR}/sources/drc/drcfinding.cpp
+  ${QET_DIR}/sources/drc/drcfinding.h
+  ${QET_DIR}/sources/drc/drclinkrules.cpp
+  ${QET_DIR}/sources/drc/drclinkrules.h
   ${QET_DIR}/sources/drc/drcrule.cpp
   ${QET_DIR}/sources/drc/drcrule.h
   ${QET_DIR}/sources/drc/drcruleset.cpp
   ${QET_DIR}/sources/drc/drcruleset.h
+  ${QET_DIR}/sources/drc/drcscanengine.cpp
+  ${QET_DIR}/sources/drc/drcscanengine.h
+  ${QET_DIR}/sources/drc/ui/drcpanel.cpp
+  ${QET_DIR}/sources/drc/ui/drcpanel.h
+  ${QET_DIR}/sources/drc/ui/drcprojectactions.cpp
+  ${QET_DIR}/sources/drc/ui/drcprojectactions.h
 
   ${QET_DIR}/sources/environment/filediskstate.h
   ${QET_DIR}/sources/environment/projectlock.cpp
@@ -438,12 +450,16 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/mountingprofile.h
   ${QET_DIR}/sources/location/projectlocation.cpp
   ${QET_DIR}/sources/location/projectlocation.h
+  ${QET_DIR}/sources/location/ui/drillingtabledialog.cpp
+  ${QET_DIR}/sources/location/ui/drillingtabledialog.h
   ${QET_DIR}/sources/location/ui/locationbomdialog.cpp
   ${QET_DIR}/sources/location/ui/locationbomdialog.h
   ${QET_DIR}/sources/location/ui/locationmanagerdialog.cpp
   ${QET_DIR}/sources/location/ui/locationmanagerdialog.h
   ${QET_DIR}/sources/location/ui/locationreportdialog.cpp
   ${QET_DIR}/sources/location/ui/locationreportdialog.h
+  ${QET_DIR}/sources/location/ui/mountingcheckdialog.cpp
+  ${QET_DIR}/sources/location/ui/mountingcheckdialog.h
 
   ${QET_DIR}/sources/macro/circuitclipboard.cpp
   ${QET_DIR}/sources/macro/circuitclipboard.h
@@ -974,6 +990,10 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ui/importelementtextpatterndialog.h
   ${QET_DIR}/sources/ui/jumptoelementdialog.cpp
   ${QET_DIR}/sources/ui/jumptoelementdialog.h
+  ${QET_DIR}/sources/ui/navigatechoicedialog.cpp
+  ${QET_DIR}/sources/ui/navigatechoicedialog.h
+  ${QET_DIR}/sources/ui/assemblystatedialog.cpp
+  ${QET_DIR}/sources/ui/assemblystatedialog.h
   ${QET_DIR}/sources/ui/inditextpropertieswidget.cpp
   ${QET_DIR}/sources/ui/inditextpropertieswidget.h
   ${QET_DIR}/sources/ui/linksingleelementwidget.cpp
@@ -1075,6 +1095,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/stretchmountedprofilecommand.cpp
   ${QET_DIR}/sources/undocommand/stretchmountedprofilecommand.h
 
+  ${QET_DIR}/sources/utils/apppreferences.cpp
+  ${QET_DIR}/sources/utils/apppreferences.h
   ${QET_DIR}/sources/utils/conductorcreator.cpp
   ${QET_DIR}/sources/utils/conductorcreator.h
   ${QET_DIR}/sources/utils/csvwriter.cpp

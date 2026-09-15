@@ -151,13 +151,24 @@ add_executable(
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
     src/drcrule_test.cpp
+    src/drcfinding_test.cpp
     src/connectorways_test.cpp
     src/connectorswap_test.cpp
     src/csvwriter_test.cpp
+    src/foliovariables_test.cpp
     src/projectrevision_test.cpp
+    src/apppreferences_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
+    # A substituição que transforma o modelo de folio ("%id/%total") no número
+    # de página que se lê. Ela depende só de QString, e é por isso que cabe
+    # aqui: o dono dela seria o BorderTitleBlock, que é um QGraphicsItem e
+    # arrastaria o renderizador de carimbo e o programa atrás. O segundo leitor
+    # — a lista de fiação exportada — não tem cena nenhuma para abrir, e foi
+    # exatamente por não poder chamar o carimbo que ele imprimia o modelo.
+    ${QET_DIR}/sources/foliovariables.cpp
+    ${QET_DIR}/sources/foliovariables.h
     # O saco de chave/valor que o carimbo, o folio e o componente usam para
     # guardar informação. Entra para que a leitura da estrutura IEC possa ser
     # testada contra a DiagramContext DE VERDADE, e não contra um dublê que
@@ -363,6 +374,26 @@ add_executable(
     # need a project open and stay out.
     ${QET_DIR}/sources/utils/csvwriter.cpp
     ${QET_DIR}/sources/utils/csvwriter.h
+    # The preferences of the workstation: what an omitted key means, and the
+    # three states of the backup copy question. QSettings and QString, no
+    # QETApp and no project - which is what lets the defect it was written
+    # against be pinned without opening a window. That defect is silent: the
+    # preference page read border-columns_0 with an omitted value of its own
+    # while the four consumers read it with another, and since the page
+    # writes the key on every visit, opening the preferences once renumbered
+    # the columns of every folio. Nothing but a bench catches that, because
+    # the program behaves impeccably while doing it.
+    ${QET_DIR}/sources/utils/apppreferences.cpp
+    ${QET_DIR}/sources/utils/apppreferences.h
+    # And the dialogue that asks the question, which is here for the same
+    # reason the symbol preview is: a widget can be built and clicked without
+    # a screen (QT_QPA_PLATFORM=offscreen in main.cpp). It depends on nothing
+    # but Qt - no QETApp, no project - and what it does not do is decide: it
+    # reports the tick, and the rule above turns the tick and the answer into
+    # a stored policy. Who calls it is QETDiagramEditor, which needs a
+    # project open and stays out.
+    ${QET_DIR}/sources/ui/backupdialog.cpp
+    ${QET_DIR}/sources/ui/backupdialog.h
     # What a design rule declares about itself, and the register that holds
     # the rules. QString and QHash, and QCoreApplication only for the word
     # the panel shows: no project, no data base, no folio - which is what
@@ -374,6 +405,17 @@ add_executable(
     ${QET_DIR}/sources/drc/drcrule.h
     ${QET_DIR}/sources/drc/drcruleset.cpp
     ${QET_DIR}/sources/drc/drcruleset.h
+    # And what a rule hands back when it finds something. It is here, and
+    # not next to the engines, because the case that matters most has no
+    # project in it: a rule that speaks about the project as a whole has
+    # no component and no folio to point at, and what it must not do is
+    # hand back folio 1. Storing the three kinds of target as forward
+    # declared pointers is what keeps this file free of Element, Conductor
+    # and Diagram - so the pure suite can settle "there is nowhere to go"
+    # without linking the program. The walk that fills those pointers with
+    # real objects needs a QETProject and stays out, in C_uitests.
+    ${QET_DIR}/sources/drc/drcfinding.cpp
+    ${QET_DIR}/sources/drc/drcfinding.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
@@ -674,6 +716,24 @@ if(TARGET qet_core)
         src/ui/csvexport_test.cpp
         src/ui/titleblockeditor_test.cpp
         src/ui/navigate_test.cpp
+        # Which strip a terminal of the schematic belongs to - the half of
+        # the double click a bench can ask. It needs a project open because
+        # a strip is made of terminal elements of real folios; the window
+        # the click opens needs a QETApp and stays out, which is why the
+        # click itself is only sent where it has to do nothing.
+        src/ui/terminalnavigate_test.cpp
+        # Where a double click on a search result lands. It needs a project
+        # open because what is proved is the selection of a real folio after
+        # the answer was pointed at; the tree that holds the results is
+        # filled from a QETDiagramEditor and stays out, so what is asked is
+        # the function the slot calls.
+        src/ui/searchresult_test.cpp
+        # What a folio reference says is waiting on the other side. It
+        # needs a project open because the answer is a walk over the wires
+        # of the paired arrow, on another folio; the tooltip it feeds is
+        # under a mouse pointer and stays for a person to judge.
+        src/ui/reportreferenced_test.cpp
+        src/ui/nameslocale_test.cpp
         src/ui/dbnotify_test.cpp
         # Quais das coisas que a folha desenha entram nas tabelas de elemento,
         # e quais delas uma lista mostra -- que não são o mesmo conjunto.
@@ -682,6 +742,13 @@ if(TARGET qet_core)
         # e porque a metade que não pode mudar só é legível num projeto com
         # duzentas setas de folio dentro.
         src/ui/elementtable_test.cpp
+        # O que o plano de fiação exportado diz sobre cada fio, célula por
+        # célula. Precisa de projeto aberto porque o que se prova é o texto
+        # escrito a partir de um .qet de verdade — e porque a metade que
+        # importa é a coluna Página, que só existe depois de um projeto ter
+        # folhas numeradas. A substituição em si fica um andar abaixo, em
+        # foliovariables_test.cpp do C_unittests, e não se repete aqui.
+        src/ui/wiringlist_test.cpp
         src/ui/componentlabel_test.cpp
         src/ui/mountinglayoutsave_test.cpp
         # A cena em milímetro da placa de montagem: o que ela conta, o que
@@ -715,6 +782,21 @@ if(TARGET qet_core)
         # C_unittests, e a cena em milimetro em mountingscene_test.cpp;
         # nenhuma das duas se repete aqui.
         src/ui/mountinglayoutview_test.cpp
+        # A tabela de furos como janela: que ela lista a face que o projeto
+        # guarda, que as colunas da tela sao as colunas do arquivo, que a
+        # frase do canto de medicao e a mesma nos dois, e que o filtro
+        # estreita o que se olha e nunca o que se entrega. Precisa de projeto
+        # aberto porque e a face do QETProject que ela le; a aritmetica da
+        # tabela fica um andar abaixo, em drillingtable_test.cpp e
+        # drillingorigin_test.cpp do C_unittests, e nao se repete aqui.
+        src/ui/drillingtabledialog_test.cpp
+        # O painel que mostra o que nao cabe: quantas reclamacoes a regra
+        # achou e quantas linhas a janela desenhou, as quatro respostas de
+        # MountingFit como quatro frases, e a lista que se refaz quando a
+        # peca e arrastada. Precisa de projeto aberto porque e o sinal do
+        # projeto que a refaz; a aritmetica fica em mountingcheck_test.cpp do
+        # C_unittests, e nao se repete aqui.
+        src/ui/mountingcheckdialog_test.cpp
         # O modelo de configuração escrito no .qet e lido de volta. Precisa de
         # projeto aberto porque o que se prova são as duas linhas do
         # QETProject que gravam e leem a árvore — a aritmética dela fica um
@@ -758,6 +840,15 @@ if(TARGET qet_core)
         # leitura: o dado está vazio no arquivo, e o caso mede as duas
         # coisas de uma vez.
         src/ui/terminalstriptree_test.cpp
+        # O que as colunas de cabo, de via e de condutor da régua escrevem em
+        # cada linha. Precisa de projeto aberto porque as três respostas saem
+        # de um condutor desenhado numa folha e de um cabo que pertence ao
+        # projeto -- sem folha não há condutor, e sem projeto não há cabo a
+        # que ele pertença. As duas primeiras colunas saíam vazias para todo
+        # borne de todo projeto, e vazio não se distingue de "este borne não
+        # está em cabo nenhum": é por isso que o caso mede o conteúdo de cada
+        # célula e guarda os dois vazios legítimos.
+        src/ui/terminalstripcable_test.cpp
         # O motor da rota SQL da verificacao de projeto: o que ele
         # pergunta ao banco do projeto, o que ele se recusa a perguntar,
         # e como ele distingue uma consulta que quebrou de uma que nao
@@ -765,7 +856,38 @@ if(TARGET qet_core)
         # uma pergunta feita a um banco com linhas dentro; o contrato de
         # regra, que e aritmetica sobre uma lista, fica um andar abaixo
         # em drcrule_test.cpp do C_unittests e nao se repete aqui.
-        src/ui/drcsql_test.cpp)
+        src/ui/drcsql_test.cpp
+        # As tres primeiras regras escritas contra o contrato -- bobina sem
+        # contato, contato sem bobina, borne fora de regua -- mais o motor
+        # da rota de varredura que as roda e o painel que leva da linha ao
+        # componente. Precisa de projeto aberto por medicao, e nao por
+        # gosto: o contato escravo nao tem linha em tabela nenhuma do banco
+        # do projeto, e o borne so chega a tabela dele depois que alguem
+        # desenha um condutor -- qualquer uma das tres escrita em SQL
+        # devolveria lista vazia e declararia o projeto limpo. Cada regra
+        # traz as duas metades, a que acusa e a que se cala de proposito,
+        # sobre a mesma bancada antes e depois do vinculo.
+        src/ui/drclinkrules_test.cpp
+        # Quantas etiquetas a lista de numeros de fio manda imprimir, e
+        # para qual numero. Precisa de projeto aberto porque a regra le
+        # duas coisas que so o desenho decide -- o texto do condutor e o
+        # tipo de elemento em que cada ponta esta encaixada --, e
+        # condutores montados em memoria deixariam o caso escolher as
+        # duas, que e afirmar a regra contra ela mesma.
+        src/ui/wirenumberlist_test.cpp
+        # Por quantos itens uma linha da lista de compra pode responder.
+        # Precisa de projeto aberto porque o que se prova e o agrupamento
+        # de uma consulta sobre o banco do projeto, com codigo de peca,
+        # revisao e designacao dentro; a citacao de celula, que e regra
+        # sobre duas strings, fica em csvwriter_test.cpp do C_unittests e
+        # a saida citada em csvexport_test.cpp, e nenhuma se repete aqui.
+        src/ui/bomgrouping_test.cpp
+        # O apostrofo no nome de uma localizacao e a consulta que o bloco
+        # da folha guarda dentro do projeto. Precisa de projeto aberto
+        # porque a prova nao e o texto da consulta e sim a execucao dela
+        # contra o banco de onde ela foi escrita: antes do conserto ela
+        # nao roda, e ninguem era avisado.
+        src/ui/locationbomquery_test.cpp)
 
     target_link_libraries(
         C_uitests

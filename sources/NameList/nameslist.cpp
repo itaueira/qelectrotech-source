@@ -246,6 +246,24 @@ bool NamesList::operator==(const NamesList &nl) const
 }
 
 /**
+ * @brief NamesList::caseInsensitiveName
+ * The name stored under @a language_code, compared without regard to case.
+ * Kept apart from name() so both the regional and the base-language lookups can
+ * use it without repeating the walk, and so a test can reach it directly.
+ * @param language_code
+ * @return the matching name, or an empty string when there is none
+ */
+QString NamesList::caseInsensitiveName(const QString &language_code) const
+{
+	for (auto it = map_names.constBegin() ; it != map_names.constEnd() ; ++it) {
+		if (it.key().compare(language_code, Qt::CaseInsensitive) == 0
+			&& ! it.value().isEmpty())
+			return (it.value());
+	}
+	return (QString());
+}
+
+/**
  * @brief NamesList::name
  * Return the adequate name regarding the current system locale.
  * By order of preference, this function chooses:
@@ -263,6 +281,17 @@ QString NamesList::name(const QString &fallback_name) const
 	QString system_language = QETApp::langFromSetting();
 	if (! map_names[system_language].isEmpty())
 		return (map_names[system_language]);
+	// The settings keep the locale the way the language selector wrote it, which is
+	// lower case ("pt_br"), while every collection file keys its names the way the
+	// locale is spelled ("pt_BR").  QMap compares case-sensitively, so the two never
+	// met: measured on the shipped collection, 8704 of its 9904 symbols carried a
+	// pt_BR name that could not be reached and were shown in English instead, with
+	// the translation sitting right there in the file.  Match case-insensitively
+	// before giving up on the REGIONAL name - doing it after the base-language step
+	// below would turn every "pt_BR" into "pt", which is a different language.
+	if (const QString regional = caseInsensitiveName(system_language);
+		! regional.isEmpty())
+		return (regional);
 	// langFromSetting() may return a full locale (e.g. "de_DE") while element
 	// and folder names are keyed by the 2-letter language code ("de"). Try the
 	// base language before falling back to English, mirroring what setLanguage()
@@ -270,6 +299,11 @@ QString NamesList::name(const QString &fallback_name) const
 	const QString base_language = system_language.section('_', 0, 0);
 	if (base_language != system_language && ! map_names[base_language].isEmpty())
 		return (map_names[base_language]);
+	if (base_language != system_language) {
+		if (const QString base = caseInsensitiveName(base_language);
+			! base.isEmpty())
+			return (base);
+	}
 	if (! map_names["en"].isEmpty()) return (map_names["en"]);
 	if (! fallback_name.isEmpty()) return (fallback_name);
 	if (map_names.count()) return (map_names.begin().value());

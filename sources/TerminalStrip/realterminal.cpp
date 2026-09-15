@@ -20,6 +20,127 @@
 #include "../qetgraphicsitem/terminalelement.h"
 #include "physicalterminal.h"
 #include "../qetgraphicsitem/conductor.h"
+#include "../cable/cable.h"
+#include "../diagram.h"
+#include "../qetproject.h"
+
+#include <QHash>
+#include <QVector>
+
+namespace
+{
+		/**
+			What a cell writes for something that is there and carries no
+			name of its own.
+
+			An empty entry is dropped by the eye at the very place the column
+			exists to be read: a cell reading "W1, " looks like a stray
+			separator, and a terminal whose only conductor has no number
+			would read exactly like a terminal with no conductor at all.
+			Telling those two apart is the whole point of listing them.
+		*/
+	QString unnamedEntry()
+	{
+		return QStringLiteral("?");
+	}
+
+		/// How several entries share one cell of the strip manager
+	QString entrySeparator()
+	{
+		return QStringLiteral(", ");
+	}
+
+		/// One cell out of @a entries, an unnamed one written rather than dropped
+	QString joinedCell(const QStringList &entries)
+	{
+		QStringList written;
+		written.reserve(entries.count());
+
+		for (const QString &entry : entries) {
+			written << (entry.isEmpty() ? unnamedEntry() : entry);
+		}
+
+		return written.join(entrySeparator());
+	}
+
+		/// A wire of a cable, and the cable it is a wire of
+	struct CarriedWire
+	{
+		Cable *cable = nullptr;
+		CableWire wire;
+	};
+
+	/**
+		@brief The cable wires that carry the conductors of @a element.
+
+		@return one entry per conductor of @a element that a wire of a cable
+		of the project names, in the order Element::conductors() gives them -
+		docked top to bottom and left to right, which does not move between
+		runs.
+
+		Matched by uuid and never by the resolved pointer, on purpose: a wire
+		read from a file knows its conductor by uuid alone until somebody
+		calls Cable::resolve(), and a strip asked before that resolution has
+		to answer the same thing as one asked after it. Conductor::fromXml()
+		mints a uuid for a conductor that has none, so there is always one to
+		match against.
+
+		The index is built once per call rather than the cables being walked
+		again for every conductor. Two wires naming the same conductor is a
+		project already broken - Cable::resolve() counts it as a duplicate -
+		and here the first one answers, which is a choice and not an
+		accident.
+	*/
+	QVector<CarriedWire> carriedWiresOf(const Element *element)
+	{
+		QVector<CarriedWire> carried;
+
+		if (!element ||
+			!element->diagram() ||
+			!element->diagram()->project()) {
+			return carried;
+		}
+
+		const auto cables = element->diagram()->project()->cables();
+		if (cables.isEmpty()) {
+			return carried;
+		}
+
+		QHash<QUuid, CarriedWire> by_conductor;
+		for (Cable *cable : cables)
+		{
+			if (!cable) {
+				continue;
+			}
+
+			const auto wires = cable->wires();
+			for (const CableWire &wire : wires)
+			{
+				if (wire.conductorUuid().isNull() ||
+					by_conductor.contains(wire.conductorUuid())) {
+					continue;
+				}
+
+				by_conductor.insert(wire.conductorUuid(),
+						    CarriedWire{cable, wire});
+			}
+		}
+
+		const auto conductors = element->conductors();
+		for (const Conductor *conductor : conductors)
+		{
+			const auto uuid = conductor->uuid();
+			if (uuid.isNull() ||
+				!by_conductor.contains(uuid)) {
+				continue;
+			}
+
+			carried.append(by_conductor.value(uuid));
+		}
+
+		return carried;
+	}
+}
 
 /**
  * @brief RealTerminal
@@ -156,11 +277,103 @@ QString RealTerminal::Xref() const
 }
 
 /**
+ * @brief RealTerminal::cables
+ * @return the label of every cable reaching this terminal, once each.
+ *
+ * Once each because a cable that carries two conductors of the same terminal
+ * is still one cable, and a column reading "W1, W1" says nothing the column
+ * reading "W1" did not already say.
+ *
+ * A cable nobody named answers the unnamed mark rather than an empty string:
+ * the terminal is in a cable either way, and a blank cell would say the
+ * opposite.
+ */
+QStringList RealTerminal::cables() const
+{
+	QStringList list_;
+
+	const auto carried = carriedWiresOf(m_element.data());
+	for (const CarriedWire &entry : carried)
+	{
+		const auto label = entry.cable->label().isEmpty()
+				   ? unnamedEntry()
+				   : entry.cable->label();
+
+		if (!list_.contains(label)) {
+			list_ << label;
+		}
+	}
+
+	return list_;
+}
+
+/**
+ * @brief RealTerminal::cableWires
+ * @return how each conductor of this terminal is identified inside its cable.
+ *
+ * The colour of the wire, its number failing that. A cable is coloured or
+ * numbered and not both - there are manufacturers of each kind - which is why
+ * the two share one column instead of having one each.
+ *
+ * A wire with neither answers the unnamed mark, so that the entry keeps its
+ * place beside the conductor it belongs to: the entries of this list and the
+ * conductors a cable carries are meant to be read side by side, and a dropped
+ * entry would shift every one after it.
+ */
+QStringList RealTerminal::cableWires() const
+{
+	QStringList list_;
+
+	const auto carried = carriedWiresOf(m_element.data());
+	for (const CarriedWire &entry : carried)
+	{
+		const auto written = entry.wire.color().isEmpty()
+				     ? entry.wire.number()
+				     : entry.wire.color();
+
+		list_ << (written.isEmpty() ? unnamedEntry() : written);
+	}
+
+	return list_;
+}
+
+/**
+ * @brief RealTerminal::conductors
+ * @return the number of every conductor docked to this terminal.
+ *
+ * Every one of them, and in the order Element::conductors() gives them, which
+ * is the order they are docked: top to bottom, left to right. A terminal
+ * carrying two wires used to answer for the first one alone, and the second
+ * went missing from every list with nothing said - a terminal with one wire
+ * and a terminal with two read exactly alike.
+ *
+ * A conductor with no number is kept as an empty entry rather than left out.
+ * The count of this list is the count of the conductors on the drawing, and
+ * a caller that shows the entries is free to mark the empty ones; a caller
+ * that never saw them could not.
+ */
+QStringList RealTerminal::conductors() const
+{
+	QStringList list_;
+
+	if (m_element.isNull()) {
+		return list_;
+	}
+
+	const auto conductors_ = m_element->conductors();
+	for (const Conductor *conductor_ : conductors_) {
+		list_ << conductor_->properties().text;
+	}
+
+	return list_;
+}
+
+/**
  * @brief RealTerminal::cable
  * @return
  */
 QString RealTerminal::cable() const {
-	return QString();
+	return joinedCell(cables());
 }
 
 /**
@@ -168,7 +381,7 @@ QString RealTerminal::cable() const {
  * @return
  */
 QString RealTerminal::cableWire() const {
-	return QString();
+	return joinedCell(cableWires());
 }
 
 /**
@@ -176,14 +389,7 @@ QString RealTerminal::cableWire() const {
  * @return
  */
 QString RealTerminal::conductor() const {
-	if (m_element)
-	{
-		const auto conductors_{m_element->conductors()};
-		if (conductors_.size()) {
-			return conductors_.first()->properties().text;
-		}
-	}
-	return QString();
+	return joinedCell(conductors());
 }
 
 /**

@@ -61,6 +61,7 @@ class NamesList {
 	bool operator!=(const NamesList &) const;
 	bool operator==(const NamesList &) const;
 	QString name(const QString & = QString()) const;
+	QString caseInsensitiveName(const QString &language_code) const;
 	
 	// methods relatives a XML
 	void fromXml(const QDomElement &, const QHash<QString, QString> & = QHash<QString, QString>());

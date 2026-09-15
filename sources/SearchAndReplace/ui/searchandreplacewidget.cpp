@@ -36,6 +36,7 @@
 #include "replacefoliowidget.h"
 #include "ui_searchandreplacewidget.h"
 
+#include <QGraphicsView>
 #include <QSettings>
 
 /**
@@ -945,6 +946,42 @@ void SearchAndReplaceWidget::on_m_advanced_pb_toggled(bool checked) {
 	setHideAdvanced(!checked);
 }
 
+/**
+	@brief SearchAndReplaceWidget::showResult
+	See the documentation of the declaration.
+	@param item : what the search found; may be nullptr
+*/
+void SearchAndReplaceWidget::showResult(QGraphicsItem *item)
+{
+	if (!item) {
+		return;
+	}
+
+	if (auto *qet_item = dynamic_cast<QetGraphicsItem *>(item))
+	{
+		QetGraphicsItem::showItem(qet_item);
+		return;
+	}
+
+	Diagram *diagram = qobject_cast<Diagram *>(item->scene());
+	if (!diagram) {
+		return;
+	}
+
+	diagram->showMe();
+	diagram->clearSelection();
+	item->setSelected(true);
+
+		//Zoom to the item
+	const QList<QGraphicsView *> views = diagram->views();
+	for (QGraphicsView *view : views)
+	{
+		QRectF fit = item->sceneBoundingRect();
+		fit.adjust(-200, -200, 200, 200);
+		view->fitInView(fit, Qt::KeepAspectRatioByExpanding);
+	}
+}
+
 void SearchAndReplaceWidget::on_m_tree_widget_itemDoubleClicked(
 		QTreeWidgetItem *item,
 		int column)
@@ -953,6 +990,8 @@ void SearchAndReplaceWidget::on_m_tree_widget_itemDoubleClicked(
 
 	if (m_diagram_hash.contains(item))
 	{
+			//A folio has nothing inside it to point at: showing it is the
+			//whole answer, and this is the one branch that stays as it was.
 		QPointer<Diagram> diagram = m_diagram_hash.value(item);
 		if(diagram) {
 			diagram.data()->showMe();
@@ -961,23 +1000,17 @@ void SearchAndReplaceWidget::on_m_tree_widget_itemDoubleClicked(
 	else if (m_element_hash.contains(item))
 	{
 		QPointer<Element> elmt = m_element_hash.value(item);
-		if (elmt && elmt->diagram()) {
-			elmt.data()->diagram()->showMe();
-		}
+		showResult(elmt.data());
 	}
 	else if (m_text_hash.contains(item))
 	{
 		QPointer<IndependentTextItem> text = m_text_hash.value(item);
-		if (text && text->diagram()) {
-			text.data()->diagram()->showMe();
-		}
+		showResult(text.data());
 	}
 	else if (m_conductor_hash.contains(item))
 	{
 		QPointer<Conductor> cond = m_conductor_hash.value(item);
-		if (cond && cond->diagram()) {
-			cond.data()->diagram()->showMe();
-		}
+		showResult(cond.data());
 	}
 }
 

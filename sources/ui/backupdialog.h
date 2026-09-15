@@ -21,12 +21,32 @@
 
 #include <QDialog>
 
+class QCheckBox;
+
+/**
+	The question asked when a project is opened: make a backup copy of the
+	file or not.
+
+	It carries a "do not ask again" box, and that box is only half of an
+	answer. What should happen in place of the question is the other half,
+	and it comes from the answer being given at the same moment - which is
+	why the box cannot store a preference by itself. AppPreferences holds the
+	three states and the rule that puts the two halves together; this
+	dialogue only says whether the box was ticked.
+
+	@sa AppPreferences::BackupPolicy, AppPreferences::policyForAnswer
+*/
 class BackupDialog : public QDialog
 {
 	Q_OBJECT
 	public:
 		explicit BackupDialog(QWidget *parent = nullptr);
 		~BackupDialog() override;
+
+		bool rememberChoice() const;
+
+	private:
+		QCheckBox *m_remember_cb = nullptr;
 };
 
 #endif // BACKUPDIALOG_H

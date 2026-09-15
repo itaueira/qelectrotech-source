@@ -25,6 +25,7 @@
 class Conductor;
 class Diagram;
 class Element;
+class TerminalStrip;
 
 
 /**
@@ -85,6 +86,7 @@ class Terminal : public QGraphicsObject
 		/// the other connection point this one forms a contact with
 		QString   contactPair         () const;
 		TerminalData::Type terminalType() const;
+		TerminalStrip *parentTerminalStrip() const;
 		bool useMasterLabel() const { return d->m_use_master_label; }
 		void setUseMasterLabel(bool use);
 		int masterLabelIndex() const { return d->m_master_label_index; }
@@ -110,6 +112,7 @@ class Terminal : public QGraphicsObject
 		void mousePressEvent  (QGraphicsSceneMouseEvent *) override;
 		void mouseMoveEvent   (QGraphicsSceneMouseEvent *) override;
 		void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
+		void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *) override;
 
 	// attributes
 	public:

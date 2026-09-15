@@ -95,17 +95,33 @@ namespace
 
 	/**
 		@param text
-		@return @a text ready to sit between two single quotes in SQL
+		@return @a text with its apostrophes doubled, ready to sit
+		between two single quotes in SQL
+
 		Location codes are typed by a person. Nothing in the sanitizer
-		forbids an apostrophe in a name, and a name that ends the string
-		early would not fail loudly - it would quietly list the wrong
-		material.
+		forbids an apostrophe in a name - what it refuses are the four
+		prefixes of IEC 81346 and the character that joins two codes into
+		a path, and the apostrophe is none of them - so "Painel d'Água"
+		is a legitimate name. Interpolated raw it ends the string literal
+		early, and what is left does not parse; a statement that does not
+		parse does not fail loudly here, it gives back an empty list with
+		nothing said.
 	*/
-	QString quoted(const QString &text)
+	QString escapedForSql(const QString &text)
 	{
 		QString escaped = text;
 		escaped.replace(QStringLiteral("'"), QStringLiteral("''"));
-		return QStringLiteral("'") + escaped + QStringLiteral("'");
+		return escaped;
+	}
+
+	/**
+		@param text
+		@return @a text as an SQL string literal, its quotes included
+	*/
+	QString quoted(const QString &text)
+	{
+		return QStringLiteral("'") + escapedForSql(text)
+				+ QStringLiteral("'");
 	}
 
 	/// @return the part code with its revision, as it is ordered
@@ -725,6 +741,35 @@ void LocationBomDialog::exportCsv()
 	change, it prints, and the standard properties dialog can still edit it.
 	A frozen copy of what this window shows today would be wrong by the end
 	of the week.
+
+	@par Why the value is escaped and not bound
+	A bound parameter is the right answer everywhere a statement is
+	prepared and executed, and this is not one of those places. Nothing
+	here runs the query: it leaves by insertTable(), the table factory
+	builds a nomenclature block from it, and the block keeps the query as
+	text inside the project file and runs it again on every opening. A
+	placeholder has no value to carry across a save, so what has to be
+	written is a literal, and a literal has to be escaped. That is what
+	escapedForSql() is for, and it is the same function the live query of
+	fillComponents() already went through.
+
+	@par And why the shape of the filter may not change
+	ElementQueryWidget parses a query back into its controls rather than
+	storing it, and it does so with fixed patterns - a column, an equals
+	sign, a value between apostrophes; or a column, LIKE, and a value
+	between two per cent signs. That is why the two branches below are
+	written exactly like that. Doubling the apostrophes keeps the match,
+	because the pattern takes everything between the outer quotes: the
+	statement stays valid and the filter survives the round trip, at the
+	price of the doubled apostrophe showing in the widget's own text box.
+	What does not fit is an ESCAPE clause, which is the only way to stop a
+	per cent sign or an underscore inside a location code from acting as a
+	wildcard. Adding one would take the filter outside the patterns above,
+	and a filter the widget fails to parse is a filter it drops on the next
+	OK - turning the block on the folio into the nomenclature of the whole
+	project, silently. A widened match is the smaller of the two errors and
+	is left standing, named here so that the next reader does not mistake
+	it for an oversight.
 */
 void LocationBomDialog::insertOnFolio()
 {
@@ -765,11 +810,24 @@ void LocationBomDialog::insertOnFolio()
 			//containment instead: leaving the sub-locations out would
 			//leave material out of the list, which is the worse of the
 			//two mistakes.
-		filter = has_children
-			 ? QStringLiteral(" AND location_path LIKE'%")
-					+ scope + QStringLiteral("%'")
-			 : QStringLiteral(" AND location_path='")
-					+ scope + QStringLiteral("'");
+			//
+			//The path goes in escaped, and it went in raw: a location
+			//named "Painel d'Água" - which the sanitizer allows, see
+			//escapedForSql() above - closed the string literal in the
+			//middle of the filter and left a statement that does not
+			//parse. Nobody saw an error, because nothing on this path
+			//reports one: the block landed on the folio empty.
+		if (has_children)
+		{
+			filter = QStringLiteral(" AND location_path LIKE'%")
+				 + escapedForSql(scope)
+				 + QStringLiteral("%'");
+		}
+		else
+		{
+			filter = QStringLiteral(" AND location_path=")
+				 + quoted(scope);
+		}
 	}
 
 	const QString query = QStringLiteral("SELECT ") + columns

@@ -66,7 +66,18 @@ private:
     QWidget *m_parent;
 
     QString normalizeUuid(const QString &u) const;
-    QString findDiagramFolio(const QDomElement &diagramElem) const;
+    /**
+	The page number of a sheet, as the title block of that sheet draws it.
+
+	@param diagramElem : the <diagram> element of the project document
+	@param total_diagrams : how many sheets the document holds, which is
+	the caller's job to count once rather than this one's to count per
+	conductor. Zero or less means "not known", and the folio is then given
+	back as it is stored.
+    */
+    QString findDiagramFolio(const QDomElement &diagramElem, int total_diagrams) const;
+    int diagramCount(const QDomElement &root) const;
+    int diagramIndex(const QDomElement &diagramElem) const;
     QDomElement climbToDiagram(QDomNode node) const;
 
     QMap<QString, ElementInfo> collectElementsInfo(const QDomElement &root) const;

@@ -26,6 +26,9 @@
 #include "../mountinglayout.h"
 #include "../mountingmeasure.h"
 #include "../mountingpartview.h"
+#include "../ui/drillingtabledialog.h"
+#include "../ui/mountingcheckdialog.h"
+#include "mountedpartitem.h"
 #include "mountingscene.h"
 #include "mountingview.h"
 
@@ -768,6 +771,111 @@ void MountingLayoutEditor::zoomTold(qreal pixels_per_millimetre)
 }
 
 /**
+	@brief MountingLayoutEditor::openDrillingTable
+	@return the drilling table of the face being laid out
+
+	Not modal, kept in a guarded pointer and asked for again rather than
+	built again: a second copy of the same worklist on top of the first is
+	two documents that disagree the moment a part moves.
+
+	The plate is written into the project before the window is given
+	anything, because that is where the window reads from. Everything this
+	editor does reaches the project already - after every step of the
+	stack - so in the ordinary case this finds nothing to write; it is here
+	for the case where it does.
+*/
+DrillingTableDialog *MountingLayoutEditor::openDrillingTable()
+{
+	commitToProject();
+
+	if (!m_drilling_dialog)
+	{
+		m_drilling_dialog = new DrillingTableDialog(m_project.data(),
+							   this);
+		m_drilling_dialog->setAttribute(Qt::WA_DeleteOnClose);
+		connect(m_drilling_dialog.data(),
+			&DrillingTableDialog::goToComponent,
+			this, &MountingLayoutEditor::pointAtItem);
+	}
+
+	m_drilling_dialog->showSurface(m_shown);
+	m_drilling_dialog->show();
+	m_drilling_dialog->raise();
+	m_drilling_dialog->activateWindow();
+
+	return m_drilling_dialog.data();
+}
+
+/**
+	@brief MountingLayoutEditor::openPlateCheck
+	@return the check of the face being laid out
+*/
+MountingCheckDialog *MountingLayoutEditor::openPlateCheck()
+{
+	commitToProject();
+
+	if (!m_check_dialog)
+	{
+		m_check_dialog = new MountingCheckDialog(m_project.data(),
+							 QETApp::catalog(),
+							 this);
+		m_check_dialog->setAttribute(Qt::WA_DeleteOnClose);
+		connect(m_check_dialog.data(), &MountingCheckDialog::goToItem,
+			this, &MountingLayoutEditor::pointAtItem);
+	}
+
+	m_check_dialog->showSurface(m_shown);
+	m_check_dialog->show();
+	m_check_dialog->raise();
+	m_check_dialog->activateWindow();
+
+	return m_check_dialog.data();
+}
+
+/**
+	@brief MountingLayoutEditor::pointAtItem
+	@param item_uuid which part
+
+	The face is changed first when the part is on another one. A report
+	that named a part and left the drawing showing a different plate would
+	be sending a person to look for something that is not on the screen,
+	which is worse than saying nothing: the part is there, on the plate
+	being shown, and it is not.
+*/
+void MountingLayoutEditor::pointAtItem(const QString &item_uuid)
+{
+	if (item_uuid.isEmpty()) {
+		return;
+	}
+
+	if (m_project)
+	{
+		const QString face = m_project->mountingLayout()
+				     .surfaceOfItem(item_uuid);
+		if (!face.isEmpty() && face != m_shown) {
+			showSurface(face);
+		}
+	}
+
+	MountedPartItem *part = m_scene->partItem(item_uuid);
+	if (!part)
+	{
+			//Said rather than passed over. The identity came from a
+			//list built out of this very project, so a part that
+			//cannot be found is news - about a hole whose component
+			//was never mounted, most likely - and swallowing it
+			//would leave a double click that does nothing at all.
+		say(tr("That part is not mounted on any plate of this "
+		       "project."), true);
+		return;
+	}
+
+	m_scene->clearSelection();
+	part->setSelected(true);
+	m_view->centerOn(part);
+}
+
+/**
 	@brief MountingLayoutEditor::buildActions
 */
 void MountingLayoutEditor::buildActions()
@@ -819,6 +927,22 @@ void MountingLayoutEditor::buildActions()
 	connect(m_zoom_actual, &QAction::triggered,
 		m_view, &MountingView::zoomActualSize);
 
+	m_check_plate = new QAction(tr("Check the plate…"), this);
+	m_check_plate->setStatusTip(tr("What is wrong with this face before a "
+				       "hole is drilled in it: two parts in "
+				       "the same room, air a part asked for, "
+				       "parts off the plate."));
+	connect(m_check_plate, &QAction::triggered,
+		this, &MountingLayoutEditor::openPlateCheck);
+
+	m_drilling_table = new QAction(tr("Drilling table…"), this);
+	m_drilling_table->setStatusTip(tr("The holes of this face as the "
+					  "worklist the bench drills from, "
+					  "with the corner they are measured "
+					  "from written at the head of it."));
+	connect(m_drilling_table, &QAction::triggered,
+		this, &MountingLayoutEditor::openDrillingTable);
+
 	m_close = new QAction(tr("Fermer"), this);
 	m_close->setShortcuts(QKeySequence::Close);
 	connect(m_close, &QAction::triggered, this, &QWidget::close);
@@ -844,6 +968,9 @@ void MountingLayoutEditor::buildWidgets()
 	layout_menu->addAction(m_add_part);
 	layout_menu->addAction(m_add_profile);
 	layout_menu->addSeparator();
+	layout_menu->addAction(m_check_plate);
+	layout_menu->addAction(m_drilling_table);
+	layout_menu->addSeparator();
 	layout_menu->addAction(m_close);
 
 	QMenu *edit_menu = menuBar()->addMenu(tr("&Édition"));
@@ -864,6 +991,9 @@ void MountingLayoutEditor::buildWidgets()
 	bar->addAction(m_new_surface);
 	bar->addAction(m_add_part);
 	bar->addAction(m_add_profile);
+	bar->addSeparator();
+	bar->addAction(m_check_plate);
+	bar->addAction(m_drilling_table);
 	bar->addSeparator();
 	bar->addAction(m_undo);
 	bar->addAction(m_redo);
@@ -951,6 +1081,14 @@ void MountingLayoutEditor::updateActions()
 	m_new_surface->setEnabled(editable);
 	m_add_part->setEnabled(editable && !m_shown.isEmpty());
 	m_add_profile->setEnabled(editable && !m_shown.isEmpty());
+
+		//Reading, not writing: a project open read only is exactly the
+		//project somebody opens to check a plate against, and refusing
+		//to say what is wrong with it because it cannot be edited
+		//would be refusing the only thing that can still be done with
+		//it.
+	m_check_plate->setEnabled(!m_shown.isEmpty());
+	m_drilling_table->setEnabled(!m_shown.isEmpty());
 
 	const int index = m_surface_box->findData(m_shown);
 	if (index >= 0 && index != m_surface_box->currentIndex())

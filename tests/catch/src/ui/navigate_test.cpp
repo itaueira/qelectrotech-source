@@ -20,6 +20,7 @@
 #include "../qt_catch_tostring.h"
 
 #include "../../../../sources/diagram.h"
+#include "../../../../sources/diagramposition.h"
 #include "../../../../sources/qetdiagrameditor.h"
 #include "../../../../sources/qetgraphicsitem/crossrefitem.h"
 #include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
@@ -27,19 +28,24 @@
 #include "../../../../sources/qetgraphicsitem/elementtextitemgroup.h"
 #include "../../../../sources/qetgraphicsitem/qetgraphicsitem.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/ui/navigatechoicedialog.h"
 
 #include <catch2/catch.hpp>
 
 #include <QCoreApplication>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QEvent>
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsTextItem>
 #include <QList>
+#include <QListWidget>
 #include <QMultiMap>
 #include <QPainter>
 #include <QPoint>
 #include <QPointF>
+#include <QPushButton>
 #include <QRectF>
 #include <QString>
 #include <QStyleOptionGraphicsItem>
@@ -790,5 +796,163 @@ TEST_CASE("T31 — o comando Navegar sabe para onde ir, e se cala quando são "
 	SECTION("uma folha que não existe responde vazio, e não estoura")
 	{
 		CHECK(QETDiagramEditor::navigationTargets(nullptr).isEmpty());
+	}
+}
+
+TEST_CASE("T31 — com vários destinos a escolha é oferecida, uma linha por "
+	  "destino, e o salto é o que foi escolhido",
+	  "[uibench][navigate]")
+{
+	/*
+		The case the command was greyed out on until now: a component that
+		answers with more than one place. What is proved here is the window
+		that asks - how many lines it offers, what each line says, and that
+		nothing is picked when the reader says no.
+
+		The jump itself is not repeated here: QetGraphicsItem::showItem has
+		its own cases above, and this window does not jump, it answers with
+		a component. That separation is the point of chosenTarget() being a
+		getter instead of the dialog navigating on its own.
+	*/
+	UiBench::Project project(linked_example);
+	{
+		INFO(project.error().toStdString());
+		REQUIRE(project.isOpen());
+	}
+
+	Element *several = firstLinkedToSeveral(project.project(), 2);
+	{
+		INFO("nenhum componente ligado a dois ou mais em " << linked_example
+		     << ": sem ele este caso não olha escolha nenhuma");
+		REQUIRE(several != nullptr);
+	}
+
+	Diagram *asked_from = several->diagram();
+	REQUIRE(asked_from != nullptr);
+
+	const QList<Diagram *> folios = project.diagrams();
+	for (Diagram *folio : folios) {
+		folio->clearSelection();
+	}
+	several->setSelected(true);
+
+	const QList<Element *> targets =
+			QETDiagramEditor::navigationTargets(asked_from);
+	REQUIRE(targets.count() >= 2);
+
+	const QList<Element *> ordered =
+			NavigateChoiceDialog::inReadingOrder(targets);
+
+	SECTION("uma linha por destino, e nenhuma a mais")
+	{
+		NavigateChoiceDialog dialog(targets);
+		CHECK(dialog.targetCount() == targets.count());
+
+		QListWidget *list = dialog.findChild<QListWidget *>();
+		REQUIRE(list != nullptr);
+		CHECK(list->count() == targets.count());
+
+			//Something is always highlighted, so Enter has an answer the
+			//moment the window opens: a list that starts on nothing makes
+			//the keyboard route a two step one for no reason.
+		CHECK(list->currentRow() == 0);
+	}
+
+	SECTION("cada linha termina na coordenada da borda daquela folha")
+	{
+			//Asserted on the coordinate and not on the wording around it:
+			//what the reader needs from the line is where the thing is, and
+			//a case that spelled the French sentence out would break on the
+			//day somebody rewrites the sentence without changing the answer.
+		for (Element *target : ordered)
+		{
+			Diagram *sheet = target->diagram();
+			REQUIRE(sheet != nullptr);
+
+			const QString line = NavigateChoiceDialog::describe(target);
+			DiagramPosition where =
+					sheet->convertPosition(target->scenePos());
+
+			INFO(line.toStdString());
+			CHECK(line.endsWith(QStringLiteral("(") + where.toString()
+					    + QStringLiteral(")")));
+			CHECK(line.contains(
+				      QString::number(sheet->folioIndex() + 1)));
+
+			const QString label = target->elementInformations()
+					      .value(QStringLiteral("label")).toString();
+			if (!label.isEmpty()) {
+				CHECK(line.startsWith(label));
+			}
+		}
+	}
+
+	SECTION("a ordem é a da leitura, e não a ordem em que a folha "
+		"entregou os itens")
+	{
+		int previous_folio = -2;
+		for (Element *target : ordered)
+		{
+			const int folio = target->diagram()
+					? target->diagram()->folioIndex() : -1;
+			CHECK(folio >= previous_folio);
+			previous_folio = folio;
+		}
+
+			//The same destinations asked for backwards come out the same
+			//way round. Without this the list would be whatever order the
+			//scene happened to hand its items over in, which is not the
+			//same twice on the same project.
+		QList<Element *> backwards = targets;
+		std::reverse(backwards.begin(), backwards.end());
+		CHECK(NavigateChoiceDialog::inReadingOrder(backwards) == ordered);
+	}
+
+	SECTION("cancelar não escolhe nada")
+	{
+		NavigateChoiceDialog dialog(targets);
+
+		QDialogButtonBox *box = dialog.findChild<QDialogButtonBox *>();
+		REQUIRE(box != nullptr);
+		QPushButton *cancel = box->button(QDialogButtonBox::Cancel);
+		REQUIRE(cancel != nullptr);
+
+		cancel->click();
+
+		CHECK(dialog.result() == QDialog::Rejected);
+		CHECK(dialog.chosenTarget() == nullptr);
+	}
+
+	SECTION("confirmar devolve a linha destacada, e não a primeira")
+	{
+		NavigateChoiceDialog dialog(targets);
+
+		QListWidget *list = dialog.findChild<QListWidget *>();
+		REQUIRE(list != nullptr);
+		REQUIRE(list->count() >= 2);
+		list->setCurrentRow(1);
+
+		QDialogButtonBox *box = dialog.findChild<QDialogButtonBox *>();
+		REQUIRE(box != nullptr);
+		QPushButton *ok = box->button(QDialogButtonBox::Ok);
+		REQUIRE(ok != nullptr);
+
+		ok->click();
+
+		CHECK(dialog.result() == QDialog::Accepted);
+		CHECK(dialog.chosenTarget() == ordered.at(1));
+	}
+
+	SECTION("um destino que já não existe não vira linha")
+	{
+			//navigationTargets answers with pointers, and the list is built
+			//from them; a null one in the middle of it would be a line that
+			//goes nowhere.
+		QList<Element *> with_a_hole = targets;
+		with_a_hole << nullptr;
+
+		NavigateChoiceDialog dialog(with_a_hole);
+		CHECK(dialog.targetCount() == targets.count());
+		CHECK(NavigateChoiceDialog::describe(nullptr).isEmpty());
 	}
 }

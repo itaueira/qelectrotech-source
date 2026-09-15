@@ -30,6 +30,7 @@
 #include "undocommand/conductortextcommand.h"
 #include "catalog/ui/catalogreplacedialog.h"
 #include "catalog/ui/catalogimportdialog.h"
+#include "drc/ui/drcprojectactions.h"
 #include "catalog/ui/catalogrepositorydialog.h"
 #include "crashrecovery.h"
 #include "environment/projectlock.h"
@@ -80,10 +81,13 @@
 #include "shortcutmanager.h"
 #include "ui/bomexportdialog.h"
 #include "ui/jumptoelementdialog.h"
+#include "ui/navigatechoicedialog.h"
+#include "ui/assemblystatedialog.h"
 #include "ui/diagrampropertieseditordockwidget.h"
 #include "ui/backupdialog.h"
 #include "ui/dialogwaiting.h"
 #include "undocommand/addelementtextcommand.h"
+#include "utils/apppreferences.h"
 #include "utils/qetutils.h"
 #include "undocommand/rotateselectioncommand.h"
 #include "undocommand/rotatetextscommand.h"
@@ -613,6 +617,18 @@ void QETDiagramEditor::setUpActions()
 		ConnectorCheck::showReport(this->currentProject(), this);
 	});
 
+	m_drc_check = new QAction(QET::Icons::TableOfContent,
+				  tr("Contrôle du projet"), this);
+	m_drc_check->setToolTip(tr(
+				  "Vérifie le projet : bobine sans contact, contact sans "
+				  "bobine, borne hors bornier. La liste reste affichée et "
+				  "mène au composant."));
+	m_drc_check->setStatusTip(m_drc_check->toolTip());
+	connect(m_drc_check, &QAction::triggered, this, [this]()
+	{
+		DrcProjectActions::showCheckReport(this->currentProject(), this);
+	});
+
 	m_environment = new QAction(QET::Icons::Configure, tr("Environnement de travail"), this);
 	connect(m_environment, &QAction::triggered, this, [this]()
 	{
@@ -954,6 +970,22 @@ void QETDiagramEditor::setUpActions()
 		if (QETProject *project = this->currentProject())
 		{
 			IecStructureDialog dialog(project, this);
+			dialog.exec();
+		}
+	});
+
+	m_assembly_state = new QAction(
+				tr("État de montage du projet…"), this);
+	m_assembly_state->setToolTip(tr(
+				   "Fige ce qui est déjà câblé et étiqueté : "
+				   "l'automatisation ne numérote plus que ce qui sera "
+				   "dessiné après."));
+	m_assembly_state->setStatusTip(m_assembly_state->toolTip());
+	connect(m_assembly_state, &QAction::triggered, this, [this]()
+	{
+		if (QETProject *project = this->currentProject())
+		{
+			AssemblyStateDialog dialog(project, this);
 			dialog.exec();
 		}
 	});
@@ -2077,11 +2109,16 @@ QList<Element *> QETDiagramEditor::navigationTargets(Diagram *diagram)
 	@brief QETDiagramEditor::navigateToReference
 	Go to the other representation of what is selected.
 
-	Only when there is exactly one, which is also the only case the action is
-	enabled in - the test is repeated here rather than trusted, because a
-	shortcut fires whatever the menu is showing. Silently picking one of
+	One destination goes straight there; several ask. Silently picking one of
 	several would be a reference that points somewhere the reader did not
-	choose, which is the one thing this task exists to make impossible.
+	choose, which is the one thing this task exists to make impossible - but
+	refusing to move at all was not better, and that is what this used to do:
+	a coil answered by three contacts is the ordinary shape of a real project,
+	not an exception, so the command was greyed out on exactly the drawings it
+	was written for.
+
+	The count is asked again here rather than trusted from the enabled state,
+	because a shortcut fires whatever the menu happens to be showing.
 */
 void QETDiagramEditor::navigateToReference()
 {
@@ -2091,11 +2128,25 @@ void QETDiagramEditor::navigateToReference()
 	}
 
 	const QList<Element *> targets = navigationTargets(dv->diagram());
-	if (targets.count() != 1) {
+	if (targets.isEmpty()) {
 		return;
 	}
 
-	QetGraphicsItem::showItem(targets.first());
+	if (targets.count() == 1) {
+		QetGraphicsItem::showItem(targets.first());
+		return;
+	}
+
+	NavigateChoiceDialog dialog(targets, this);
+	if (dialog.exec() != QDialog::Accepted) {
+			//Escape leaves the reader where they were, folio and selection
+			//untouched: nothing was shown yet, so there is nothing to undo.
+		return;
+	}
+
+	if (Element *chosen = dialog.chosenTarget()) {
+		QetGraphicsItem::showItem(chosen);
+	}
 }
 
 /**
@@ -2706,12 +2757,14 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addAction(m_terminal_numbering);
 	menu_project -> addAction(m_renumber_components);
 	menu_project -> addAction(m_iec_structure);
+	menu_project -> addAction(m_assembly_state);
 	menu_project -> addAction(m_location_manager);
 	menu_project -> addAction(m_location_report);
 	menu_project -> addAction(m_location_bom);
 	menu_project -> addAction(m_mounting_layout);
 	menu_project -> addAction(m_put_mounting_layout);
 	menu_project -> addAction(m_replace_part);
+	menu_project -> addAction(m_drc_check);
 #ifdef QET_EXPORT_PROJECT_DB
 	menu_project -> addSeparator();
 	menu_project -> addAction(m_export_project_db);
@@ -3292,8 +3345,28 @@ bool QETDiagramEditor::openAndAddProject(
 		);
 	}
 
-	BackupDialog backup_dialog(this);
-	if (backup_dialog.exec() == QDialog::Accepted)
+		//Whether a backup copy is made is a preference of the workstation and
+		//not a property of the project: two people opening the same project
+		//do not have to agree about it, so it lives in QSettings and nothing
+		//of it is written into the .qet.
+		//
+		//The question used to be asked on every single open and the answer
+		//was never kept. It is kept now when the user ticks the box, and
+		//because "do not ask again" alone does not say what to do in place of
+		//the question, the stored preference has three states. The way back
+		//is Settings > General > Projects.
+	const AppPreferences::BackupPolicy backup_policy = AppPreferences::backupPolicy();
+	bool make_backup = (backup_policy == AppPreferences::BackupPolicy::Always);
+	if (backup_policy == AppPreferences::BackupPolicy::Ask)
+	{
+		BackupDialog backup_dialog(this);
+		make_backup = (backup_dialog.exec() == QDialog::Accepted);
+		AppPreferences::setBackupPolicy(
+			AppPreferences::policyForAnswer(make_backup,
+							backup_dialog.rememberChoice(),
+							backup_policy));
+	}
+	if (make_backup)
 	{
 		QString backup_path = filepath_info.absolutePath() + QDir::separator() +
 			QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm") + "_" +
@@ -3754,6 +3827,10 @@ void QETDiagramEditor::slot_updateActions()
 	m_terminal_numbering          -> setEnabled(editable_project);
 	m_renumber_components         -> setEnabled(editable_project);
 	m_iec_structure               -> setEnabled(editable_project);
+		//Marking is a change to the project like any other - it goes on the
+		//undo stack and is written to the file - so a project opened read
+		//only has no business being marked.
+	m_assembly_state              -> setEnabled(editable_project);
 	m_location_manager            -> setEnabled(editable_project);
 	m_location_report             -> setEnabled(editable_project);
 	m_location_bom                -> setEnabled(opened_project);
@@ -3793,6 +3870,7 @@ void QETDiagramEditor::slot_updateActions()
 		//reading what a project still needs is worth doing on a project
 		//nobody can write to.
 	m_connector_check             -> setEnabled(opened_project);
+	m_drc_check                   -> setEnabled(opened_project);
 		//The environment belongs to the station, not to a project.
 	m_environment                 -> setEnabled(true);
 	m_catalog_import              -> setEnabled(true);
@@ -3870,12 +3948,13 @@ void QETDiagramEditor::slot_updateComplexActions()
 	int selected_elements_count = dc.count(DiagramContent::Elements);
 	m_find_element->setEnabled(selected_elements_count == 1);
 
-		//Navigating answers « where is the other one », so it is offered when
-		//there is exactly one other one. Several is a question this cannot
-		//answer without choosing for the reader, and the choice list is what
-		//will lift the restriction; until then the entry stays away rather
-		//than picking. Read-only has no say: going somewhere writes nothing.
-	m_navigate->setEnabled(navigationTargets(diagram_).count() == 1);
+		//Navigating answers « where is the other one », so it is offered as
+		//soon as there is one. Several used to keep the entry away - the
+		//command could not choose for the reader - and that made it greyed
+		//out on the ordinary case, a coil answered by three contacts; the
+		//choice list now asks instead, so the count only has to be non zero.
+		//Read-only has no say: going somewhere writes nothing.
+	m_navigate->setEnabled(!navigationTargets(diagram_).isEmpty());
 
 	//Actions that need items (elements, conductors, texts...) selected, to be enabled
 	bool copiable_items  = dc.hasCopiableItems();

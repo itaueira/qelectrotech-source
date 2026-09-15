@@ -23,6 +23,7 @@
 #include "qetapp.h"
 #include "qetproject.h"
 #include "singleapplication.h"
+#include "utils/apppreferences.h"
 #include "utils/qetsettings.h"
 
 #include <QApplication>
@@ -182,25 +183,26 @@ QGuiApplication::setHighDpiScaleFactorRoundingPolicy(QetSettings::hdpiScaleFacto
 
 	// Appearance. The workstations here run Windows in dark mode, and the
 	// QElectroTech icons are drawn for a light background: on a dark palette
-	// the element panel and the toolbars become nearly unreadable. So the
-	// light scheme is forced, and the setting below is the way out until the
-	// appearance preference of T40 exists.
+	// the element panel and the toolbars become nearly unreadable. So light
+	// is the factory default, and the selector in Settings > General >
+	// Appearance is what changes it.
 	//
-	// Set here, before QETApp is constructed, because QETApp::initStyle()
+	// Read here, before QETApp is constructed, because QETApp::initStyle()
 	// captures qApp->palette() as the palette it will restore, and it has to
-	// capture the light one.
+	// capture the one the preference asked for. It is also why the choice
+	// applies at the next start rather than on the spot.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+	switch (AppPreferences::colorScheme())
 	{
-		QSettings appearance_settings;
-		const QString scheme =
-			appearance_settings.value(QStringLiteral("appearance/color-scheme"),
-						  QStringLiteral("light")).toString();
-		if (scheme == QLatin1String("light")) {
+		case AppPreferences::ColorScheme::Light:
 			app.styleHints()->setColorScheme(Qt::ColorScheme::Light);
-		} else if (scheme == QLatin1String("dark")) {
+			break;
+		case AppPreferences::ColorScheme::Dark:
 			app.styleHints()->setColorScheme(Qt::ColorScheme::Dark);
-		}
-		// Anything else, "system" included, leaves the desktop in charge.
+			break;
+		case AppPreferences::ColorScheme::System:
+			// Nothing to force: the desktop stays in charge.
+			break;
 	}
 #endif
 #ifdef Q_OS_MACOS

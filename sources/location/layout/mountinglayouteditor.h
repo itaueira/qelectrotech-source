@@ -26,7 +26,9 @@
 #include <QSizeF>
 #include <QString>
 
+class DrillingTableDialog;
 class MountedItem;
+class MountingCheckDialog;
 class MountingScene;
 class MountingView;
 class QAction;
@@ -187,6 +189,41 @@ class MountingLayoutEditor : public QMainWindow
 				   MountingRun run,
 				   QString *error = nullptr);
 
+		/**
+			@brief Show the drilling table of the face being laid
+			out.
+			@return the window, the one that was already open when
+			there was one
+
+			Not modal, and that is the decision rather than an
+			oversight: a worklist is read while the plate is being
+			rearranged, and a window that had to be closed before
+			the next part could be moved would be read once and
+			never again. It follows the face this editor shows, and
+			it is given nothing to draw that this editor does not
+			already hold.
+
+			Returned rather than only shown, so that what it lists
+			can be asked for without a person clicking - the whole
+			of what this window promises today is its form, its
+			header and its export, and none of the three is worth
+			anything if it can only be checked by looking.
+		*/
+		DrillingTableDialog *openDrillingTable();
+
+		/**
+			@brief Show what is wrong with the face being laid out.
+			@return the window, the one that was already open when
+			there was one
+
+			Not modal, for a stronger reason than the drilling
+			table: this one is meant to be open while parts are
+			dragged. It follows the undo stack of the layout
+			through the project, so an overlap dragged away leaves
+			the list as the part is dropped.
+		*/
+		MountingCheckDialog *openPlateCheck();
+
 	protected:
 		void closeEvent(QCloseEvent *event) override;
 
@@ -198,6 +235,18 @@ class MountingLayoutEditor : public QMainWindow
 		void newProfile();
 		void pointedAt(const QPointF &position_mm);
 		void zoomTold(qreal pixels_per_millimetre);
+
+		/**
+			@brief Select the part of @a item_uuid and bring it into
+			view.
+			@param item_uuid which part
+
+			What a report window asks for. The report says which
+			part; where it is on the screen and how to get there is
+			this window's business, which is why the report emits a
+			signal instead of knowing what a view is.
+		*/
+		void pointAtItem(const QString &item_uuid);
 
 	private:
 		void buildActions();
@@ -266,7 +315,18 @@ class MountingLayoutEditor : public QMainWindow
 		QAction *m_zoom_out = nullptr;
 		QAction *m_zoom_fit = nullptr;
 		QAction *m_zoom_actual = nullptr;
+		QAction *m_drilling_table = nullptr;
+		QAction *m_check_plate = nullptr;
 		QAction *m_close = nullptr;
+
+		/**
+			The two report windows, guarded because they delete
+			themselves when they are closed. Kept so that asking for
+			one twice raises the one that is open instead of
+			stacking a second copy of the same list on top of it.
+		*/
+		QPointer<DrillingTableDialog> m_drilling_dialog;
+		QPointer<MountingCheckDialog> m_check_dialog;
 };
 
 #endif // MOUNTINGLAYOUTEDITOR_H

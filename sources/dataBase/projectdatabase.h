@@ -36,6 +36,7 @@ class Element;
 class QETProject;
 class Diagram;
 class Conductor;
+class ConductorProperties;
 class Terminal;
 class sqlite3;
 
@@ -171,6 +172,17 @@ class projectDataBase : public QObject
 		static void bindElementValues(QSqlQuery &query, Element *element, Diagram *diagram);
 		static void bindElementInfoValues(QSqlQuery &query, Element *element);
 		void bindConductorValues(QSqlQuery &query, Conductor *conductor, Diagram *diagram);
+		/**
+			Bind the columns of the conductor table that can change while
+			the conductor stays the same one.
+
+			Shared by the insert and by the update so that the two cannot
+			describe a wire differently -- the same reason
+			bindConductorValues() exists for both insert paths. Whoever
+			adds a column here adds it to both prepared statements in
+			prepareQuery(), or the bind is silently dropped.
+		*/
+		static void bindConductorProperties(QSqlQuery &query, const ConductorProperties &properties);
 		void watchConductor(Conductor *conductor);
 		void insertTerminal(Terminal *terminal);
 		void prepareQuery();

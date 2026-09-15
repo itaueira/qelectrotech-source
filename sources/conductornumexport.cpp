@@ -255,6 +255,35 @@ QString ConductorNumExport::wiresNum() const
 /**
 	@brief ConductorNumExport::fillHash
 	make/fill of m_hash
+
+	@par One wire, one count - not one count per end
+	What stood here incremented the number of a conductor once for each of
+	its two ends that was not a folio report. An ordinary wire has both
+	ends on real terminals, so it counted twice, and every common wire
+	number came out of wiresNum() doubled: the workshop was handed two
+	labels to print where the drawing holds one wire. A wire crossing
+	folios counted once, because the end sitting on the report arrow was
+	skipped, so the list was not uniformly doubled either - it was doubled
+	for the ordinary wires and right for the crossing ones, which is the
+	shape of error that survives a glance at the file. Measured on the
+	rule as it was written, ten ordinary wires and two crossing ones added
+	up to 22 where the drawing holds 12.
+
+	@par The report guard stays, and what it now decides
+	Both ends are still looked at, but they no longer each contribute a
+	count: they decide together whether this conductor is a wire at all. A
+	folio report terminal is the drawing of a link between two folios and
+	not a real terminal - which is what the guard has always said - so a
+	conductor with nothing but reports on both of its ends is not a wire
+	and is not counted. One end on a report is enough to make the
+	conductor a wire, because the other end is a terminal somebody has to
+	land a labelled wire on.
+
+	The price is that a wire drawn across two folios, which is two
+	conductors each with one end on a report arrow, counts twice: once on
+	each folio. That is deliberate and it is what CU-17.9 asks for - the
+	two halves are two lengths of wire, cut and labelled separately, even
+	though the potential they carry is one.
 */
 void ConductorNumExport::fillHash()
 {
@@ -270,19 +299,18 @@ void ConductorNumExport::fillHash()
 				continue;
 			}
 
-			//We must define if the connected terminal is a folio report, if it is the case
-			//we don't add the num to the hash because the terminal doesn't represent a real terminal.
-			if(!(c->terminal1->parentElement()->linkType() & Element::AllReport))
-			{
-				int value = m_hash.value(num, 0);
-				++value;
-				m_hash.insert(num, value);
-			}
-			if(!(c->terminal2->parentElement()->linkType() & Element::AllReport))
-			{
-				int value = m_hash.value(num, 0);
-				++value;
-				m_hash.insert(num, value);
+				//A folio report terminal does not represent a real
+				//terminal, so a conductor whose two ends are both
+				//report arrows is not a wire and is not counted.
+				//Anything else is one wire, and one wire is one
+				//count - see the note above this function for why
+				//it used to be one count per end.
+			const bool ends_on_a_real_terminal =
+				!(c->terminal1->parentElement()->linkType() & Element::AllReport)
+				|| !(c->terminal2->parentElement()->linkType() & Element::AllReport);
+
+			if (ends_on_a_real_terminal) {
+				m_hash.insert(num, m_hash.value(num, 0) + 1);
 			}
 		}
 	}

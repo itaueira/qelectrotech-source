@@ -20,6 +20,7 @@
 #include "createdxf.h"
 #include "diagram.h"
 #include "diagramposition.h"
+#include "foliovariables.h"
 #include "math.h"
 #include "qetapp.h"
 #include "qetversion.h"
@@ -986,14 +987,19 @@ void BorderTitleBlock::setFolioData(
 
 	// regenerate the content of the folio field
 	// regenere le contenu du champ folio
+	//
+	// The substitution itself lives in FolioVariables, not here, because
+	// this is not the only reader of a folio template: an exported list
+	// has to print the same page number this draws, and it cannot reach a
+	// QGraphicsItem to ask. Two copies of the rule would drift, and the
+	// one that drifted would be the one nobody looks at.
 	btb_final_folio_ = btb_folio_;
 
 	if (btb_final_folio_.contains("%autonum")){
-		btb_final_folio_.replace("%autonum", autonum);
+		btb_final_folio_ = FolioVariables::resolveAutonum(btb_final_folio_, autonum);
 		btb_folio_ = btb_final_folio_;
 	}
-	btb_final_folio_.replace("%id",    QString::number(folio_index_));
-	btb_final_folio_.replace("%total", QString::number(folio_total_));
+	btb_final_folio_ = FolioVariables::resolveIndex(btb_final_folio_, folio_index_, folio_total_);
 
 	updateDiagramContextForTitleBlock(project_properties);
 }

@@ -47,7 +47,33 @@ class SearchAndReplaceWidget : public QWidget
 		bool event(QEvent *event) override;
 		void clear();
 		void setEditor(QETDiagramEditor *editor);
-	
+
+		/**
+			@brief Point at what a search found.
+
+			Raise the folio of @a item, leave @a item as the only selected
+			item of that folio, and zoom every view of the folio onto it.
+			Finding and not showing is half an answer: on a crowded folio,
+			opening the right folio still leaves the reader looking for the
+			thing with their eyes.
+
+			QetGraphicsItem::showItem is what does it, and is called
+			unchanged for everything that derives from it - every
+			component. A conductor is a QGraphicsObject and an independent
+			text is a QGraphicsTextItem: neither one is a QetGraphicsItem,
+			and a search that found a wire number has nothing to point at
+			without the lines below. They are the same three steps written
+			against QGraphicsItem, and the delegation above is what keeps
+			the two from ever answering differently for a component. The
+			day showItem takes a QGraphicsItem, this becomes a forward.
+
+			Does nothing when @a item is null or is not on a folio, so a
+			caller holding a QPointer that went stale needs no guard of its
+			own.
+		*/
+		static void showResult(QGraphicsItem *item);
+
+
 	private:
 		void setUpTreeItems();
 		void setHideAdvanced(bool hide);

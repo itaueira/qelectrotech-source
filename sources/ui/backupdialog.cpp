@@ -18,6 +18,7 @@
 
 #include "backupdialog.h"
 
+#include <QCheckBox>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -31,7 +32,9 @@ BackupDialog::BackupDialog(QWidget *parent) :
 	QDialog(parent)
 {
 	setWindowTitle(tr("Créer une copie de sauvegarde ?", "window title"));
-	setFixedSize(450, 100);
+		//Not a fixed height any more: the check box below has to fit, and a
+		//fixed height clips whatever the translation of it happens to need.
+	setMinimumWidth(450);
 
 	auto main_layout = new QVBoxLayout(this);
 
@@ -40,6 +43,21 @@ BackupDialog::BackupDialog(QWidget *parent) :
 		   "dialog message"));
 	label->setWordWrap(true);
 	main_layout->addWidget(label);
+
+		//The box does not answer the question, it says the answer is to be
+		//kept - and the answer clicked right after is what says whether the
+		//copy is made from now on or never is. Left unticked, nothing is
+		//stored and the question comes back next time, which is the state a
+		//fresh profile is in.
+	m_remember_cb = new QCheckBox(
+		tr("Do not ask again, and keep this answer",
+		   "check box, backup copy question"));
+	m_remember_cb->setToolTip(
+		tr("The choice is kept for this workstation and can be changed in "
+		   "Settings > General > Projects. It is never written into the "
+		   "project file.",
+		   "check box tool tip, backup copy question"));
+	main_layout->addWidget(m_remember_cb);
 
 	main_layout->addStretch();
 
@@ -55,6 +73,18 @@ BackupDialog::BackupDialog(QWidget *parent) :
 
 	connect(yes_button, &QPushButton::clicked, this, &QDialog::accept);
 	connect(no_button, &QPushButton::clicked, this, &QDialog::reject);
+}
+
+/**
+	@brief BackupDialog::rememberChoice
+	@return true when the user asked for the answer he is giving to be kept.
+	What that answer then means for the stored preference is
+	AppPreferences::policyForAnswer(), and not this class: the dialogue
+	reports, it does not decide.
+*/
+bool BackupDialog::rememberChoice() const
+{
+	return m_remember_cb && m_remember_cb->isChecked();
 }
 
 /**

@@ -28,6 +28,117 @@
 #include <QSqlError>
 #include <QSqlRecord>
 
+namespace
+{
+	/**
+		@param query a query built by ElementQueryWidget
+		@return the columns it publishes, in order, or an empty list
+
+		Read back from the tail of the query rather than asked of the
+		widget, and the reason is that the widget does not offer them: the
+		list of chosen keys is a private slot of ElementQueryWidget, and
+		this dialogue only ever receives the finished string. The tail is
+		the safe end to read it from - ElementQueryWidget writes the very
+		same comma separated list twice, once after SELECT and once after
+		ORDER BY, but the first copy carries the count column and its
+		alias, and the second carries nothing but the keys.
+
+		An empty list comes back for the cases that must not be rewritten
+		from here: a query the user typed himself, which the widget hands
+		over whole and in which no GROUP BY of ours takes part, and
+		anything whose shape is not the one described above. The caller
+		falls back on the part identity alone, which is still an answer.
+	*/
+	QStringList publishedColumns(const QString &query)
+	{
+		const QString marker = QStringLiteral(" ORDER BY ");
+			//auto and not int: the index is qsizetype in Qt6 and int
+			//in Qt5, and this file has to compile under both.
+		const auto at = query.lastIndexOf(marker);
+		if (at < 0) {
+			return QStringList();
+		}
+
+		QStringList columns;
+		const QStringList parts =
+			query.mid(at + marker.size()).split(QLatin1Char(','));
+		for (const QString &part : parts)
+		{
+			const QString column = part.trimmed();
+				//A column name and nothing else. Anything holding a
+				//space or a parenthesis is a function, an alias or a
+				//sort direction, and none of those belong in a GROUP
+				//BY written from here.
+			if (column.isEmpty()
+			    || column.contains(QLatin1Char(' '))
+			    || column.contains(QLatin1Char('('))) {
+				return QStringList();
+			}
+			columns << column;
+		}
+		return columns;
+	}
+
+	/**
+		@param query the query the widget has just built
+		@return what the bill of materials has to group by
+
+		The two columns that identify a part - its code, and the revision
+		of that code - plus every column the list publishes without
+		summing it.
+
+		The part identity is there because grouping by the designation
+		merges two different parts that were described with the same
+		words, and whoever reads the purchase list has no way of seeing
+		that it happened: one line, one quantity, one of the two codes,
+		and the wrong item ordered. It cuts the other way too - the same
+		part described twice was split into two lines that are bought
+		twice.
+
+		The rest of the published columns are there because a column that
+		is neither grouped nor aggregated is answered by SQLite from
+		whichever row of the group it likes, so a quantity that is right
+		can sit beside a manufacturer reference belonging to another item
+		of the same group. Grouping by all of them makes that
+		unrepresentable, which is how the list by location already does
+		it.
+
+		@par The component with no part assigned
+		Nothing special, and that is the decision rather than an
+		oversight. Its part code is empty or null, and SQLite groups
+		nulls together, so such components fall into one bucket per
+		distinct set of published columns - which for a purchase list
+		means grouped by their designation, because with no code the
+		designation is the only identity they have. That is the same
+		answer as before this change, for exactly the components this
+		change has nothing better to say about.
+
+		@par What this can and cannot do to a list that exists today
+		It only ever splits. Every column that decided a group before
+		still decides it, and two were added, so two rows that are
+		separate today can never merge; rows that were merged and should
+		not have been come apart. The sum of the quantity column over the
+		whole list is therefore unchanged - it is still one per component
+		- and only the number of lines moves.
+	*/
+	QString bomGroupBy(const QString &query)
+	{
+		QStringList columns;
+		columns << QETInformation::ELMT_PART_CODE
+			<< QETInformation::ELMT_PART_REVISION;
+
+		const QStringList published = publishedColumns(query);
+		for (const QString &column : published)
+		{
+			if (!columns.contains(column)) {
+				columns << column;
+			}
+		}
+
+		return columns.join(QStringLiteral(", "));
+	}
+}
+
 /**
 	@brief BOMExportDialog::BOMExportDialog
 	@param project
@@ -260,9 +371,23 @@ int BOMExportDialog::exec()
 	would split the write path that the previous commit spent its whole
 	argument bringing together. The three belong in one change, with the
 	flush before commit written into it.
+
+	@par The grouping is settled here and not only when the box was ticked
+	@c on_m_format_as_bom_clicked() runs when the person ticks the box, and
+	the columns of the list are chosen after that, in the widget above it.
+	A grouping written once at tick time is therefore the grouping of a
+	column set that no longer exists by the time the list is built: a
+	column added afterwards would be neither grouped nor summed, and
+	SQLite would answer it from any row of the group without saying so.
+	Settling it here, against the query that is about to run, is what keeps
+	the two in step. It costs one rebuild of a string per export.
 */
 QString BOMExportDialog::getBom()
 {
+	if (ui->m_format_as_bom->isChecked()) {
+		m_query_widget->setGroupBy(bomGroupBy(m_query_widget->queryStr()));
+	}
+
 	m_project->dataBase()->updateDB();
 	auto query_ = m_project->dataBase()->newQuery(m_query_widget->queryStr());
 	QString return_string;
@@ -357,8 +482,22 @@ QString BOMExportDialog::getBom()
 /**
 	@brief BOMExportDialog::on_m_format_as_bom_clicked
 	@param checked
+
+	@par The alias of the count keeps its old name
+	@c designation_qty no longer says what the count counts, and it is kept
+	all the same. A nomenclature table drawn on a folio stores the query
+	that built it, word for word, inside the project; the header of the
+	quantity column is then named by matching that alias further up this
+	file. Renaming it would leave every table already on a folio with a
+	column headed by a raw field key, in every project saved before this
+	change, and it would buy nothing a reader of this file cannot see in
+	one line.
 */
 void BOMExportDialog::on_m_format_as_bom_clicked(bool checked) {
-	m_query_widget->setGroupBy("designation", checked);
 	m_query_widget->setCount("COUNT(*) AS designation_qty", checked);
+		//Set after the count, and read from the query the widget has by
+		//then built: the count is part of that query, and the grouping is
+		//derived from it.
+	m_query_widget->setGroupBy(bomGroupBy(m_query_widget->queryStr()),
+				   checked);
 }

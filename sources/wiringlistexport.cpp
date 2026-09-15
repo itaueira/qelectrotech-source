@@ -1,4 +1,5 @@
 #include "wiringlistexport.h"
+#include "foliovariables.h"
 #include "qetproject.h"
 #include "utils/csvwriter.h"
 #include <QFileDialog>
@@ -22,10 +23,87 @@ QString WiringListExport::normalizeUuid(const QString &u) const
     return res.trimmed().toLower();
 }
 
-QString WiringListExport::findDiagramFolio(const QDomElement &diagramElem) const
+/**
+	@brief WiringListExport::diagramCount
+	@param root : the <project> element of the project document
+	@return how many sheets it holds, which is what %total stands for.
+
+	Counted here rather than asked of the QETProject on purpose: every
+	other cell of every row is read out of this same document, and a page
+	number counted against a different state of the project is a cell that
+	disagrees with the row it sits in. Tag name compared case-insensitively
+	for the same reason climbToDiagram() does it.
+*/
+int WiringListExport::diagramCount(const QDomElement &root) const
+{
+    int count = 0;
+    for (QDomElement child = root.firstChildElement(); !child.isNull(); child = child.nextSiblingElement()) {
+        if (child.tagName().toLower() == QLatin1String("diagram")) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+/**
+	@brief WiringListExport::diagramIndex
+	@param diagramElem : a <diagram> element of the project document
+	@return its position among the sheets, counted from 1, which is what
+	%id stands for; 0 when it cannot be told.
+
+	QETProject::toXml() numbers the sheets as it writes them, in the order
+	of the project, so the attribute is the answer and the walk below is
+	only for a document that came from somewhere else. Zero is given back
+	rather than a guess: a page number that is wrong reads exactly like a
+	page number that is right.
+*/
+int WiringListExport::diagramIndex(const QDomElement &diagramElem) const
+{
+    bool ok = false;
+    const int order = diagramElem.attribute("order").toInt(&ok);
+    if (ok && order > 0) return order;
+
+    int index = 1;
+    for (QDomElement sibling = diagramElem.parentNode().firstChildElement(); !sibling.isNull(); sibling = sibling.nextSiblingElement()) {
+        if (sibling == diagramElem) return index;
+        if (sibling.tagName().toLower() == QLatin1String("diagram")) ++index;
+    }
+    return 0;
+}
+
+/**
+	@brief WiringListExport::findDiagramFolio
+
+	@par The stored folio is a template, not a page number
+
+	The folio attribute of a sheet holds what the designer typed into the
+	title block, and the value TitleBlockProperties seeds it with is
+	"%id/%total". Reading the attribute and printing it - which is what
+	this function did - filled the Page column of every row of the list
+	with that literal. Measured on a real project of fourteen sheets: 250
+	rows of cable, 250 of them reading "%id/%total", in the one column that
+	tells the bench which drawing to open. Every example project shipped
+	with QElectroTech carries the same template, so this was not one
+	project's habit.
+
+	The substitution is FolioVariables', which is also what
+	BorderTitleBlock::setFolioData() calls to produce the number drawn on
+	the sheet - one rule, so the list and the drawing cannot disagree.
+	%autonum is not substituted here and does not need to be: the title
+	block resolves it into the stored template itself, before any save.
+*/
+QString WiringListExport::findDiagramFolio(const QDomElement &diagramElem, int total_diagrams) const
 {
     if (diagramElem.isNull()) return "";
-    if (diagramElem.hasAttribute("folio")) return diagramElem.attribute("folio");
+    if (diagramElem.hasAttribute("folio")) {
+        const QString folio = diagramElem.attribute("folio");
+        const int index = diagramIndex(diagramElem);
+            //The same refusal BorderTitleBlock::setFolioData() makes: with
+            //no position to stand on, the template is handed over as it is
+            //rather than resolved against a number nobody measured.
+        if (index < 1 || total_diagrams < 1) return folio;
+        return FolioVariables::resolveIndex(folio, index, total_diagrams);
+    }
     if (diagramElem.hasAttribute("title")) return diagramElem.attribute("title");
     return "";
 }
@@ -44,6 +122,7 @@ QDomElement WiringListExport::climbToDiagram(QDomNode node) const
 QMap<QString, ElementInfo> WiringListExport::collectElementsInfo(const QDomElement &root) const
 {
     QMap<QString, ElementInfo> infoMap;
+    const int total_diagrams = diagramCount(root);
 
     QSet<QString> placeholderTypes;
     QDomElement collection = root.firstChildElement("collection");
@@ -71,7 +150,7 @@ QMap<QString, ElementInfo> WiringListExport::collectElementsInfo(const QDomEleme
         if (uuid.isEmpty()) continue;
 
         ElementInfo info;
-        info.folio = findDiagramFolio(climbToDiagram(el));
+        info.folio = findDiagramFolio(climbToDiagram(el), total_diagrams);
 
         QDomElement linksNode = el.firstChildElement("links_uuids");
         if (!linksNode.isNull()) {
@@ -110,6 +189,7 @@ QMap<QString, ElementInfo> WiringListExport::collectElementsInfo(const QDomEleme
 QList<ConductorData> WiringListExport::collectConductors(const QDomElement &root) const
 {
     QList<ConductorData> conductors;
+    const int total_diagrams = diagramCount(root);
     QDomNodeList conductorNodes = root.elementsByTagName("conductor");
 
     for (int i = 0; i < conductorNodes.size(); ++i) {
@@ -140,7 +220,7 @@ QList<ConductorData> WiringListExport::collectConductors(const QDomElement &root
         data.function = cond.attribute("function");
 
         QDomElement diag = climbToDiagram(cond);
-        data.folio = findDiagramFolio(diag);
+        data.folio = findDiagramFolio(diag, total_diagrams);
         if (data.folio.isEmpty()) data.folio = cond.attribute("folio", cond.attribute("page", ""));
 
         conductors.append(data);

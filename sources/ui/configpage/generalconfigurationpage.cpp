@@ -20,6 +20,7 @@
 #include "../../qetapp.h"
 #include "../../qeticons.h"
 #include "ui_generalconfigurationpage.h"
+#include "../../utils/apppreferences.h"
 #include "../../utils/qetsettings.h"
 #include "../../utils/qetutils.h"
 #include "../../qetmessagebox.h"
@@ -63,6 +64,32 @@ GeneralConfigurationPage::GeneralConfigurationPage(QWidget *parent) :
 			break;
 	}
 
+		//Colour scheme. The key is read by main.cpp before the first window
+		//exists, which is why it is only written here: applying it to a
+		//running program would leave the icons and the folio, which are drawn
+		//for a light background, half swapped.
+	ui->m_color_scheme_cb->addItem(tr("Light", "colour scheme"),
+				       AppPreferences::colorSchemeToString(AppPreferences::ColorScheme::Light));
+	ui->m_color_scheme_cb->addItem(tr("Dark", "colour scheme"),
+				       AppPreferences::colorSchemeToString(AppPreferences::ColorScheme::Dark));
+	ui->m_color_scheme_cb->addItem(tr("From the system", "colour scheme"),
+				       AppPreferences::colorSchemeToString(AppPreferences::ColorScheme::System));
+	ui->m_color_scheme_cb->setCurrentIndex(
+		ui->m_color_scheme_cb->findData(
+			AppPreferences::colorSchemeToString(
+				AppPreferences::colorScheme(settings))));
+#if QT_VERSION < QT_VERSION_CHECK(6, 8, 0)
+		//QStyleHints::setColorScheme does not exist before Qt 6.8, so there
+		//is nothing to honour the choice with. The control says so instead of
+		//storing a preference that would be silently ignored.
+	ui->m_color_scheme_cb->setEnabled(false);
+	ui->m_color_scheme_label->setEnabled(false);
+	ui->m_color_scheme_cb->setToolTip(
+		tr("This version of Qt cannot choose the colour scheme; the one of "
+		   "the system applies.",
+		   "colour scheme, tool tip"));
+#endif
+
 	ui->grid_startup_cb->setChecked(settings.value("diagrameditor/grid_display_startup", true).toBool());
 	ui->guides_startup_cb->setChecked(settings.value("diagrameditor/guides_display_startup", false).toBool());
 	ui->DiagramEditor_xGrid_sb->setValue(settings.value("diagrameditor/Xgrid", 10).toInt());
@@ -83,8 +110,28 @@ GeneralConfigurationPage::GeneralConfigurationPage(QWidget *parent) :
 	ui->m_use_gesture_trackpad->setChecked(settings.value("diagramview/gestures", false).toBool());
 	ui->m_save_label_paste->setChecked(settings.value("diagramcommands/erase-label-on-copy", true).toBool());
 	ui->m_use_folio_label->setChecked(settings.value("genericpanel/folio", true).toBool());
-	ui->m_border_0->setChecked(settings.value("border-columns_0", false).toBool());
+		//Read with the same omitted value the four consumers of the key read
+		//with, and not with a literal of its own: this box used to be shown
+		//unticked on a fresh profile while BorderTitleBlock, DiagramPosition
+		//and assignVariables all behaved as if it were ticked - and because
+		//applyConf() writes the key on every visit, merely opening this page
+		//once renumbered the columns of every folio.
+	ui->m_border_0->setChecked(AppPreferences::borderColumnsFromZero(settings));
 	ui->m_autosave_sb->setValue(settings.value("diagrameditor/autosave-interval", 0).toInt());
+
+		//The backup copy question of a project being opened. Three states,
+		//because "do not ask again" alone does not say what to do in place
+		//of the question.
+	ui->m_backup_policy_cb->addItem(tr("Ask every time", "backup copy policy"),
+					AppPreferences::backupPolicyToString(AppPreferences::BackupPolicy::Ask));
+	ui->m_backup_policy_cb->addItem(tr("Always make the copy", "backup copy policy"),
+					AppPreferences::backupPolicyToString(AppPreferences::BackupPolicy::Always));
+	ui->m_backup_policy_cb->addItem(tr("Never make the copy", "backup copy policy"),
+					AppPreferences::backupPolicyToString(AppPreferences::BackupPolicy::Never));
+	ui->m_backup_policy_cb->setCurrentIndex(
+		ui->m_backup_policy_cb->findData(
+			AppPreferences::backupPolicyToString(
+				AppPreferences::backupPolicy(settings))));
 	
 	QString fontInfos = settings.value("diagramitemfont", "Liberation Sans").toString() + " " +
 			settings.value("diagramitemsize", "9").toString() + " (" +
@@ -208,8 +255,21 @@ void GeneralConfigurationPage::applyConf()
 	if (was_using_system_colors != must_use_system_colors) {
 		QETApp::instance()->useSystemPalette(must_use_system_colors);
 	}
-	settings.setValue("border-columns_0",ui->m_border_0->isChecked());
+	AppPreferences::setBorderColumnsFromZero(settings, ui->m_border_0->isChecked());
 	settings.setValue("lang", ui->m_lang_cb->itemData(ui->m_lang_cb->currentIndex()).toString());
+
+		//APPLICATION PREFERENCES
+		//Written through AppPreferences so that the omitted value of each key
+		//is declared in one place and cannot drift away from the one its
+		//consumers read with.
+	AppPreferences::setColorScheme(
+		settings,
+		AppPreferences::colorSchemeFromString(
+			ui->m_color_scheme_cb->currentData().toString()));
+	AppPreferences::setBackupPolicy(
+		settings,
+		AppPreferences::backupPolicyFromString(
+			ui->m_backup_policy_cb->currentData().toString()));
 
 		//hdpi
 	QetSettings::setHdpiScaleFactorRoundingPolicy(ui->m_hdpi_round_policy_cb->currentData().toString());

@@ -17,12 +17,19 @@
 */
 #include "../qetgraphicsitem/terminal.h"
 #include "../qetproject.h"
+#include "../TerminalStrip/terminalstrip.h"
+#include "../TerminalStrip/ui/terminalstripeditorwindow.h"
 #include "../conductorautonumerotation.h"
 #include "../diagram.h"
+#include "../qetapp.h"
+//For the complete QETDiagramEditor the strip window takes as its parent:
+//QETApp only forward declares it.
+#include "../qetdiagrameditor.h"
 #include "../undocommand/addgraphicsobjectcommand.h"
 #include "../properties/terminaldata.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qetgraphicsitem/terminalelement.h"
 #include "conductortextitem.h"
 
 #include <utility>
@@ -655,6 +662,55 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 }
 
 /**
+	@brief Terminal::mouseDoubleClickEvent
+	Open the terminal strip manager on the strip this terminal belongs to.
+
+	A terminal of the schematic and a line of the strip manager are the same
+	object seen twice, and until now the reader could only walk from the
+	manager to the schematic - TerminalStripEditor does that on a double
+	click of its cross reference column. The way back did not exist: from a
+	terminal drawn on a folio there was no path at all to the strip it is
+	part of.
+
+	Double click is the gesture tried without reading anything, so it is the
+	one that answers. Nothing else is taken away by this: a terminal of any
+	other element - a coil, a contact, a motor - is left to the base class,
+	which hands the double click back to mousePressEvent and starts a
+	conductor exactly as before.
+
+	@param event the double click, handed to the base class when this
+	terminal has no strip to show
+*/
+void Terminal::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+	TerminalStrip *strip = parentTerminalStrip();
+	QETProject *project = strip ? strip->project() : nullptr;
+
+	if (!project)
+	{
+			//Not a terminal, or a terminal nobody put on a strip yet:
+			//there is nothing to show, and inventing a window for it
+			//would answer a question that was not asked.
+		QGraphicsObject::mouseDoubleClickEvent(event);
+		return;
+	}
+
+		/* TerminalStripEditorWindow::edit() does the same three lines, and
+		 * is not called here for one reason: it cannot raise a window that
+		 * is already open behind the editor, and asking instance() a second
+		 * time to get the pointer back would run setProject() again, which
+		 * sends the editor page back to no strip at all. */
+	auto *window = TerminalStripEditorWindow::instance(
+				project, QETApp::diagramEditor(project));
+	window->setCurrentStrip(strip);
+	window->show();
+	window->raise();
+	window->activateWindow();
+
+	event->accept();
+}
+
+/**
 	@brief Terminal::updateConductor
 	Update the path of conductor docked to this terminal
 */
@@ -831,6 +887,29 @@ Diagram *Terminal::diagram() const
 Element *Terminal::parentElement() const
 {
 	return(parent_element_);
+}
+
+/**
+	@brief Terminal::parentTerminalStrip
+	@return the terminal strip this terminal is part of, nullptr when the
+	element it belongs to is not a terminal, or is a terminal no strip has
+	taken yet.
+
+	Written apart from the double click on purpose: where the click goes is
+	a question about the project, and the window it opens is a question
+	about the application. A bench has a project and has no application, so
+	only the first half can be proved without a screen - and it is the half
+	that can silently answer the wrong strip.
+*/
+TerminalStrip *Terminal::parentTerminalStrip() const
+{
+		//dynamic_cast and not the link type: only the factory builds a
+		//TerminalElement, and a wrong cast here would be read as a strip.
+	if (auto *terminal_element = dynamic_cast<TerminalElement *>(parent_element_)) {
+		return terminal_element->parentTerminalStrip();
+	}
+
+	return nullptr;
 }
 
 QUuid Terminal::uuid() const

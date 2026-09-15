@@ -397,10 +397,17 @@ void projectDataBase::removeConductor(Conductor *conductor)
 	@brief projectDataBase::updateConductor
 	Refresh the mutable columns of an already-inserted conductor.
 
-	Only the text (the wire number) can change without the conductor being
-	removed and re-added: its endpoints are fixed for its lifetime. Without
-	this, renaming a wire left the database holding the old number and the
-	wiring list showed a stale value until the next full repopulate.
+	Everything a conductor carries can change without the conductor being
+	removed and re-added -- the wire number, its section, its colour, its
+	function, its voltage and whether it is drawn as one wire or as a
+	multi-conductor line. Only its endpoints are fixed for its lifetime.
+	Without this, renaming a wire left the database holding the old number
+	and the wiring list showed a stale value until the next full repopulate.
+
+	The hook that brings the change here is watchConductor(), which has
+	been listening to Conductor::propertiesChange the whole time: until the
+	columns existed, this method was handed a full set of properties and
+	wrote one of them down.
 	@param conductor
 */
 void projectDataBase::updateConductor(Conductor *conductor)
@@ -410,7 +417,7 @@ void projectDataBase::updateConductor(Conductor *conductor)
 	}
 
 	m_update_conductor_query.bindValue(QStringLiteral(":uuid"), conductor->uuid().toString());
-	m_update_conductor_query.bindValue(QStringLiteral(":text"), conductor->properties().text);
+	bindConductorProperties(m_update_conductor_query, conductor->properties());
 	if (!m_update_conductor_query.exec()) {
 		qDebug() << "projectDataBase::updateConductor update error : " << m_update_conductor_query.lastError();
 		return;
@@ -610,7 +617,31 @@ void projectDataBase::bindConductorValues(QSqlQuery &query, Conductor *conductor
 	query.bindValue(QStringLiteral(":terminal1_element_uuid"), conductor->terminal1->parentElement()->uuid().toString());
 	query.bindValue(QStringLiteral(":terminal2_uuid"), conductor->terminal2->stableUuid().toString());
 	query.bindValue(QStringLiteral(":terminal2_element_uuid"), conductor->terminal2->parentElement()->uuid().toString());
-	query.bindValue(QStringLiteral(":text"), conductor->properties().text);
+	bindConductorProperties(query, conductor->properties());
+}
+
+/**
+	@brief projectDataBase::bindConductorProperties
+	@param query : a statement holding every placeholder named below
+	@param properties : the properties of the conductor being written
+
+	@par Why the type is stored as the file stores it
+
+	ConductorProperties::typeToString() gives back "single" or "multi",
+	untranslated, and that is what goes in the column. The enumerated value
+	would be a number whose meaning lives in a header, and the translated
+	word would change with the interface language of whoever last opened
+	the project -- neither can be compared against a project exported on
+	another machine.
+*/
+void projectDataBase::bindConductorProperties(QSqlQuery &query, const ConductorProperties &properties)
+{
+	query.bindValue(QStringLiteral(":text"), properties.text);
+	query.bindValue(QStringLiteral(":conductor_section"), properties.m_wire_section);
+	query.bindValue(QStringLiteral(":conductor_color"), properties.m_wire_color);
+	query.bindValue(QStringLiteral(":function"), properties.m_function);
+	query.bindValue(QStringLiteral(":tension_protocol"), properties.m_tension_protocol);
+	query.bindValue(QStringLiteral(":conductor_type"), ConductorProperties::typeToString(properties.type));
 }
 
 /**
@@ -709,7 +740,23 @@ bool projectDataBase::createDataBase()
 		qDebug() << "terminal_table query : "<< query_.lastError();
 	}
 
-	//Create the conductor table
+		//Create the conductor table
+		//
+		//The five columns after text are what a wiring list is about, and
+		//they were not here: the table carried the two endpoints and the
+		//wire number, so a list built on it could say which terminals a wire
+		//joins and nothing about the wire. Section, colour, function and
+		//voltage are properties a designer fills in on the folio and which
+		//the project file has always stored; type says whether the line
+		//drawn is one conductor or a multi-conductor symbol, which is what
+		//decides whether a row belongs to a wiring list or to a cable list.
+		//
+		//They are declared as text, including the section. A section is
+		//written the way the designer writes it -- "1,5", "1.5 mm2", "AWG
+		//14" -- and turning that into a number here would either refuse
+		//what people type or quietly round it. Whoever groups by section
+		//groups by the catalogue reference, which is the rule T17 settled
+		//on, and that is a join and not a cast.
 	QString conductor_table("CREATE TABLE conductor"
 						  "( "
 						  "uuid VARCHAR(50) PRIMARY KEY NOT NULL, "
@@ -719,6 +766,11 @@ bool projectDataBase::createDataBase()
 						  "terminal2_uuid VARCHAR(50) NOT NULL,"
 						  "terminal2_element_uuid VARCHAR(50) NOT NULL,"
 						  "text VARCHAR(100),"
+						  "conductor_section VARCHAR(50),"
+						  "conductor_color VARCHAR(50),"
+						  "function VARCHAR(100),"
+						  "tension_protocol VARCHAR(100),"
+						  "conductor_type VARCHAR(10),"
 						  "FOREIGN KEY (diagram_uuid) REFERENCES diagram (uuid),"
 						  "FOREIGN KEY (terminal1_uuid, terminal1_element_uuid) REFERENCES terminal (uuid, element_uuid),"
 						  "FOREIGN KEY (terminal2_uuid, terminal2_element_uuid) REFERENCES terminal (uuid, element_uuid)"
@@ -1153,12 +1205,26 @@ void projectDataBase::prepareQuery()
 
 		//INSERT CONDUCTOR
 	m_insert_conductor_query = QSqlQuery(m_data_base);
-	m_insert_conductor_query.prepare("INSERT INTO conductor (uuid, diagram_uuid, terminal1_uuid, terminal1_element_uuid, terminal2_uuid, terminal2_element_uuid, text) "
-					  "VALUES (:uuid, :diagram_uuid, :terminal1_uuid, :terminal1_element_uuid, :terminal2_uuid, :terminal2_element_uuid, :text)");
+	m_insert_conductor_query.prepare("INSERT INTO conductor (uuid, diagram_uuid, terminal1_uuid, terminal1_element_uuid, terminal2_uuid, terminal2_element_uuid, "
+					  "text, conductor_section, conductor_color, function, tension_protocol, conductor_type) "
+					  "VALUES (:uuid, :diagram_uuid, :terminal1_uuid, :terminal1_element_uuid, :terminal2_uuid, :terminal2_element_uuid, "
+					  ":text, :conductor_section, :conductor_color, :function, :tension_protocol, :conductor_type)");
 
 		//UPDATE CONDUCTOR
+		//
+		//The same five columns as the insert, and they have to be the same
+		//five: the endpoints of a conductor are fixed for its lifetime, so
+		//everything else about it can only reach the table through here.
+		//A column present in the insert and missing from this statement is
+		//the worst shape of the bug -- the row is right when the project is
+		//opened and goes stale the first time somebody edits the wire, with
+		//nothing to say so.
 	m_update_conductor_query = QSqlQuery(m_data_base);
-	m_update_conductor_query.prepare(QStringLiteral("UPDATE conductor SET text = :text WHERE uuid = :uuid"));
+	m_update_conductor_query.prepare(QStringLiteral(
+					  "UPDATE conductor SET text = :text, conductor_section = :conductor_section, "
+					  "conductor_color = :conductor_color, function = :function, "
+					  "tension_protocol = :tension_protocol, conductor_type = :conductor_type "
+					  "WHERE uuid = :uuid"));
 
 		//REMOVE CONDUCTOR
 	m_remove_conductor_query = QSqlQuery(m_data_base);
