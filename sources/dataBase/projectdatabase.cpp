@@ -112,8 +112,110 @@ QSqlQuery projectDataBase::newQuery(const QString &query) {
 }
 
 /**
+	@brief projectDataBase::populatedElementTypes
+	See the header: the record of the project, wider than any list.
+*/
+ElementData::Types projectDataBase::populatedElementTypes()
+{
+	return ElementData::Simple
+			| ElementData::Terminal
+			| ElementData::Master
+			| ElementData::Thumbnail
+			| ElementData::Slave
+			| ElementData::NextReport
+			| ElementData::PreviousReport;
+}
+
+/**
+	@brief projectDataBase::publishedElementTypes
+	See the header: what a person reads, unchanged by the widening above.
+*/
+ElementData::Types projectDataBase::publishedElementTypes()
+{
+	return ElementData::Simple
+			| ElementData::Terminal
+			| ElementData::Master
+			| ElementData::Thumbnail;
+}
+
+/**
+	@brief projectDataBase::elementTypeClause
+	@param types : the kinds of element the caller keeps
+	@param column : the column of the element table holding the kind
+	@return the SQL that keeps those kinds and nothing else, ready to be
+	appended to a WHERE that already has a condition in it.
+
+	Written out of ElementData::typeToString() rather than by hand, for the
+	reason elementViewBody() records about the information keys: the strings
+	in the table are the ones that function produces, so producing the
+	strings of the clause the same way is what keeps a renamed kind from
+	silently matching nothing. A clause of hand-written literals would go on
+	parsing, go on running, and quietly answer with no row.
+*/
+QString projectDataBase::elementTypeClause(ElementData::Types types,
+					   const QString &column)
+{
+		//Every kind the enumeration declares, so that a kind added later is
+		//covered by whichever of the two sets names it, without a second
+		//list to remember.
+	static const QVector<ElementData::Type> all_types {
+		ElementData::Simple,
+		ElementData::NextReport,
+		ElementData::PreviousReport,
+		ElementData::Master,
+		ElementData::Slave,
+		ElementData::Terminal,
+		ElementData::Thumbnail,
+		ElementData::ConductorDefinition};
+
+	QStringList names;
+	for (const ElementData::Type type : all_types)
+	{
+		if (types.testFlag(type)) {
+			names << QStringLiteral("'")
+				 + ElementData::typeToString(type)
+				 + QStringLiteral("'");
+		}
+	}
+
+		//A set that keeps nothing would produce "IN ()", which SQLite
+		//rejects: the view would not be created at all and every list would
+		//come back empty. Saying so with a condition that is false is the
+		//legible end of that mistake.
+	if (names.isEmpty()) {
+		return QStringLiteral(" AND 0");
+	}
+
+	return QStringLiteral(" AND ") + column
+			+ QStringLiteral(" IN (")
+			+ names.join(QLatin1Char(','))
+			+ QStringLiteral(")");
+}
+
+/**
 	@brief projectDataBase::addElement
 	@param element
+
+	The kinds it takes are populatedElementTypes(), which is the set the
+	repopulation uses. It used to take every kind, and the disagreement was
+	invisible in the one direction that matters: an element the repopulation
+	would refuse was inserted here, lived in the table for as long as the
+	project stayed open, and was gone the next time the file was opened.
+
+	sub_type is written the way the repopulation writes it, and that is the
+	second half of the same disagreement. This used to bind the kindInformation
+	named "type", which is the master kind only for a master: for a terminal
+	it is the kind of terminal, and for a relay contact the kind of contact.
+	So a terminal drawn today answered 'generic' in element_sub_type and
+	answered nothing at all once the project had been saved and opened again -
+	the column the parts list and the material list filter on, changing under a
+	list that nobody had touched.
+
+	Both halves are closed the same way, and it is the way bindConductorValues()
+	was already closed for the wires: the columns are written once, in
+	bindElementValues() and bindElementInfoValues(), and both paths call them.
+	The comment on bindConductorValues() said that binder existed for elements
+	too. It did not - and what was missing is exactly what drifted.
 */
 void projectDataBase::addElement(Element *element)
 {
@@ -122,23 +224,16 @@ void projectDataBase::addElement(Element *element)
 		return;
 	}
 
-	m_insert_elements_query.bindValue(":uuid", element->uuid().toString());
-	m_insert_elements_query.bindValue(":diagram_uuid", element->diagram()->uuid().toString());
-	m_insert_elements_query.bindValue(":pos", element->diagram()->convertPosition(element->scenePos()).toString());
-	m_insert_elements_query.bindValue(":type", element->elementData().typeToString());
-	m_insert_elements_query.bindValue(":sub_type", element->kindInformations()["type"].toString());
+	if (!populatedElementTypes().testFlag(element->elementData().m_type)) {
+		return;
+	}
+
+	bindElementValues(m_insert_elements_query, element, element->diagram());
 	if (!m_insert_elements_query.exec()) {
 		qDebug() << "projectDataBase::addElement insert element error : " << m_insert_elements_query.lastError();
 	}
 
-	m_insert_element_info_query.bindValue(":uuid", element->uuid().toString());
-	auto hash = elementInfoToString(element);
-	for (auto key : hash.keys())
-	{
-		QString value = hash.value(key);
-		QString bind = key.prepend(":");
-		m_insert_element_info_query.bindValue(bind, value);
-	}
+	bindElementInfoValues(m_insert_element_info_query, element);
 
 	if (!m_insert_element_info_query.exec()) {
 		qDebug() << "projectDataBase::addElement insert element info error : " << m_insert_element_info_query.lastError();
@@ -450,6 +545,55 @@ projectDataBase::Operation::~Operation()
 }
 
 /**
+	@brief projectDataBase::bindElementValues
+	One binder for both insert paths of the element table, so an element
+	added to a live diagram and one read from a file can never drift apart.
+
+	It is the binder the comment on bindConductorValues() below claimed
+	already existed. It did not, and the two paths had drifted in the only
+	column they could: sub_type was the master kind on one side and the
+	kindInformation named "type" on the other, which for a terminal is the
+	kind of terminal and for a relay contact the kind of contact.
+
+	@param query
+	@param element
+	@param diagram : the diagram the element is drawn on
+*/
+void projectDataBase::bindElementValues(QSqlQuery &query, Element *element, Diagram *diagram)
+{
+	const ElementData element_data = element->elementData();
+	query.bindValue(QStringLiteral(":uuid"), element->uuid().toString());
+	query.bindValue(QStringLiteral(":diagram_uuid"), diagram->uuid().toString());
+	query.bindValue(QStringLiteral(":pos"), diagram->convertPosition(element->scenePos()).toString());
+	query.bindValue(QStringLiteral(":type"), element_data.typeToString());
+	query.bindValue(QStringLiteral(":sub_type"), element_data.masterTypeToString());
+}
+
+/**
+	@brief projectDataBase::bindElementInfoValues
+	The same, for the information table.
+
+	Over QETInformation::elementInfoKeys() and not over the keys the hash
+	happens to hold: the queries are members and are reused from one element
+	to the next, so a key left unbound would keep the value the element
+	before it had. elementInfoToString() fills every key, so the two are the
+	same set today - binding the canonical list is what keeps them the same
+	set the day it stops filling one.
+
+	@param query
+	@param element
+*/
+void projectDataBase::bindElementInfoValues(QSqlQuery &query, Element *element)
+{
+	query.bindValue(QStringLiteral(":uuid"), element->uuid().toString());
+
+	const QHash<QString, QString> hash = elementInfoToString(element);
+	for (const QString &key : QETInformation::elementInfoKeys()) {
+		query.bindValue(QStringLiteral(":") + key, hash.value(key));
+	}
+}
+
+/**
 	@brief projectDataBase::bindConductorValues
 	One binder for both insert paths, so a conductor added to a live diagram
 	and one read from a file can never drift apart -- the same reason
@@ -612,9 +756,25 @@ bool projectDataBase::createDataBase()
 /**
 	@brief projectDataBase::elementViewBody
 	The SELECT the two element views share: every column an element row
-	carries, and the join that ties an element to the sheet it is drawn on.
-	It stops short of any filtering, so each caller states on its own what it
-	leaves out.
+	carries, the join that ties an element to the sheet it is drawn on, and
+	the kinds of element a list is about.
+
+	The kinds are here and not in each view, and that is the one filtering
+	this body does. What a caller states on its own is what it drops for a
+	reason of its own - the bill of materials drops what the user ticked out
+	of the purchase list - and that stays below. Which kinds of drawn thing
+	are components at all is not a question either view answers differently,
+	so writing it once is what keeps the two from drifting; written twice, a
+	kind added to one of them would show up in the parts list and not on the
+	label roll, or the reverse, and neither is an error anybody sees.
+
+	It matters more since the tables underneath grew. element and
+	element_info now hold every element the sheets draw - relay contacts and
+	folio reference arrows included - because a wire that ends on one of them
+	has to find a row for it. None of that reaches a person: the clause below
+	keeps the views publishing the four kinds they have always published, so
+	the parts list, the nomenclature, the label roll and the tables drawn on
+	a folio answer exactly what they answered before.
 
 	Shared rather than copied, for the reason the comment inside it already
 	records: the two views below differ by one clause and by nothing else, so
@@ -659,6 +819,10 @@ QString projectDataBase::elementViewBody()
 			       " WHERE ei.element_uuid = e.uuid"
 			       " AND e.diagram_uuid = d.uuid"
 			       " AND di.diagram_uuid = d.uuid");
+
+		//The kinds, stated once for both views - see above.
+	body += elementTypeClause(publishedElementTypes(),
+				  QStringLiteral("e.type"));
 
 	return body;
 }
@@ -788,6 +952,10 @@ void projectDataBase::populateDiagramTable()
 /**
 	@brief projectDataBase::populateElementTable
 	Populate the element table
+
+	With populatedElementTypes(), which is the same set addElement() takes:
+	what the file holds and what the table holds are then the same thing,
+	rather than two answers that agree until the project is saved.
 */
 void projectDataBase::populateElementTable()
 {
@@ -797,16 +965,11 @@ void projectDataBase::populateElementTable()
 	for (auto diagram : m_project->diagrams())
 	{
 		const ElementProvider ep(diagram);
-		const auto elmt_vector = ep.find(ElementData::Simple | ElementData::Terminal | ElementData::Master | ElementData::Thumbnail);
+		const auto elmt_vector = ep.find(populatedElementTypes());
 			//Insert all values into the database
 		for (const auto &elmt : elmt_vector)
 		{
-			const auto elmt_data = elmt->elementData();
-			m_insert_elements_query.bindValue(":uuid", elmt->uuid().toString());
-			m_insert_elements_query.bindValue(":diagram_uuid", diagram->uuid().toString());
-			m_insert_elements_query.bindValue(":pos", diagram->convertPosition(elmt->scenePos()).toString());
-			m_insert_elements_query.bindValue(":type", elmt_data.typeToString());
-			m_insert_elements_query.bindValue(":sub_type", elmt_data.masterTypeToString());
+			bindElementValues(m_insert_elements_query, elmt, diagram);
 			if (!m_insert_elements_query.exec()) {
 				qDebug() << "projectDataBase::populateElementTable insert error : " << m_insert_elements_query.lastError();
 			}
@@ -817,6 +980,10 @@ void projectDataBase::populateElementTable()
 /**
 	@brief projectDataBase::populateElementInfoTable
 	Populate the element info table
+
+	The same set as the table above, and it has to be the same one: a row in
+	element with no row in element_info is a component the views cannot
+	reach, because the body of both of them joins the two.
 */
 void projectDataBase::populateElementInfoTable()
 {
@@ -826,19 +993,12 @@ void projectDataBase::populateElementInfoTable()
 	for (const auto &diagram : m_project->diagrams())
 	{
 		const ElementProvider ep(diagram);
-		const auto elmt_vector = ep.find(ElementData::Simple | ElementData::Terminal | ElementData::Master | ElementData::Thumbnail);
+		const auto elmt_vector = ep.find(populatedElementTypes());
 
 			//Insert all values into the database
 		for (const auto &elmt : elmt_vector)
 		{
-			m_insert_element_info_query.bindValue(QStringLiteral(":uuid"), elmt->uuid().toString());
-			const auto hash = elementInfoToString(elmt);
-			for (const auto &key : hash.keys())
-			{
-				QString value = hash.value(key);
-				QString bind = QStringLiteral(":") + key;
-				m_insert_element_info_query.bindValue(bind, value);
-			}
+			bindElementInfoValues(m_insert_element_info_query, elmt);
 
 			if (!m_insert_element_info_query.exec()) {
 				qDebug() << "projectDataBase::populateElementInfoTable insert error : " << m_insert_element_info_query.lastError();

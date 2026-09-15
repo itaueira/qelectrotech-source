@@ -629,6 +629,13 @@ if(TARGET qet_core)
         src/ui/titleblockeditor_test.cpp
         src/ui/navigate_test.cpp
         src/ui/dbnotify_test.cpp
+        # Quais das coisas que a folha desenha entram nas tabelas de elemento,
+        # e quais delas uma lista mostra -- que não são o mesmo conjunto.
+        # Precisa de projeto aberto porque o que se prova é um banco povoado
+        # duas vezes, pelo caminho do desenho e pelo da releitura do arquivo,
+        # e porque a metade que não pode mudar só é legível num projeto com
+        # duzentas setas de folio dentro.
+        src/ui/elementtable_test.cpp
         src/ui/componentlabel_test.cpp
         src/ui/mountinglayoutsave_test.cpp
         src/ui/connectorlink_test.cpp
