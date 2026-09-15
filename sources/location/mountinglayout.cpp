@@ -19,8 +19,10 @@
 
 #include <QDomDocument>
 #include <QDomElement>
+#include <QHash>
 #include <QUuid>
 
+#include <algorithm>
 #include <cmath>
 
 namespace
@@ -144,10 +146,39 @@ namespace
 		return before.uuid == after.uuid
 		       && before.label == after.label
 		       && before.part_code == after.part_code
+		       && before.profile == after.profile
+		       && before.run == after.run
 		       && sameLength(before.position.x(), after.position.x())
 		       && sameLength(before.position.y(), after.position.y())
 		       && sameMeasure(before.size.width(), after.size.width())
 		       && sameMeasure(before.size.height(), after.size.height());
+	}
+
+	/// @return the token the file writes for @a run
+	QString runToken(MountingRun run)
+	{
+		return run == MountingRun::Down ? QStringLiteral("down")
+						: QStringLiteral("across");
+	}
+
+	/**
+		@brief runFromToken
+		@param token a run as a file holds it
+		@return which way the piece runs
+
+		Anything but the one token that means otherwise reads as across,
+		including an absent one. That is what makes a file written before
+		profiles existed read as it always did, and it is the tolerant
+		half of the rule: a piece whose direction the file garbled is
+		drawn lying down, where it can be seen and turned, rather than
+		refused.
+	*/
+	MountingRun runFromToken(const QString &token)
+	{
+		return token.trimmed().compare(QStringLiteral("down"),
+					       Qt::CaseInsensitive) == 0
+		       ? MountingRun::Down
+		       : MountingRun::Across;
 	}
 
 	/// @return one mounted item as the file holds it
@@ -183,6 +214,27 @@ namespace
 					     num(item.size.height()));
 		}
 
+			//The bar a cut piece came from, and which way it was
+			//laid. Written only for a piece that was cut: a breaker
+			//is bought as a piece, and an attribute saying so on
+			//every item of every file would be a word repeated
+			//thousands of times to say the ordinary.
+		if (item.isCutToLength())
+		{
+			element.setAttribute(QStringLiteral("profile"),
+					     item.profile.kind.trimmed());
+			if (item.profile.hasSection()) {
+				element.setAttribute(QStringLiteral("section"),
+						     num(item.profile.section));
+			}
+			if (isUsableLength(item.profile.depth)) {
+				element.setAttribute(QStringLiteral("depth"),
+						     num(item.profile.depth));
+			}
+			element.setAttribute(QStringLiteral("run"),
+					     runToken(item.run));
+		}
+
 		return element;
 	}
 
@@ -197,6 +249,19 @@ namespace
 					 length(element.attribute(QStringLiteral("y"))));
 		item.size      = QSizeF(length(element.attribute(QStringLiteral("width"))),
 					length(element.attribute(QStringLiteral("height"))));
+
+			//Whatever the file calls the bar is kept, spelling
+			//included. A kind this version cannot name is still
+			//drawn, still listed and still written back the way it
+			//arrived - a profile nobody here can name is a profile
+			//somebody cut, and reading it as an ordinary part would
+			//lose it on the next save.
+		item.profile = MountingProfile(
+				element.attribute(QStringLiteral("profile")),
+				length(element.attribute(QStringLiteral("section"))),
+				length(element.attribute(QStringLiteral("depth"))));
+		item.run = runFromToken(element.attribute(QStringLiteral("run")));
+
 		return item;
 	}
 }
@@ -301,6 +366,68 @@ QString MountingSurface::designation() const
 		return uuid;
 	}
 	return tr("une surface de montage sans repère");
+}
+
+/**
+	@brief MountingSurface::profileTotals
+	@return one line per bar cut on this face, millimetre
+
+	Grouped by the key of the profile and never by its name: the name is
+	translated, and a project opened in another language would otherwise
+	split one bar into two lines. Ordered by that same key so that two runs
+	of this over the same face hand back the same list in the same order -
+	a report whose lines move about is a report nobody can compare with the
+	one printed yesterday.
+*/
+QList<MountingProfileTotal> MountingSurface::profileTotals() const
+{
+	QList<MountingProfileTotal> totals;
+	QHash<QString, int> line_of_key;
+
+	for (const MountedItem &item : items)
+	{
+			//Not the same guard MountedItem::cutLength holds, and
+			//neither one is redundant: that one keeps a part bought
+			//as a piece from answering a length at all, this one
+			//keeps it from becoming a line of the list - a line with
+			//no profile, keyed on nothing, counting breakers.
+		if (!item.isCutToLength()) {
+			continue;
+		}
+
+		const QString key = item.profile.key();
+		if (!line_of_key.contains(key))
+		{
+			MountingProfileTotal line;
+			line.profile = item.profile;
+			line_of_key.insert(key, int(totals.count()));
+			totals.append(line);
+		}
+
+		MountingProfileTotal &line = totals[line_of_key.value(key)];
+		const qreal cut = item.cutLength();
+
+		line.pieces += 1;
+		if (isUsableLength(cut)) {
+			line.length += cut;
+		}
+		else {
+				//Counted as a piece and added into no length. A
+				//bar nobody has cut yet is a bar somebody will
+				//have to cut, and a total that quietly took it
+				//as zero metres would order short.
+			line.uncut += 1;
+		}
+	}
+
+	std::sort(totals.begin(), totals.end(),
+		  [](const MountingProfileTotal &first,
+		     const MountingProfileTotal &second)
+		  {
+			  return first.profile.key() < second.profile.key();
+		  });
+
+	return totals;
 }
 
 /**
@@ -881,6 +1008,53 @@ EnclosureTransferPlan MountingLayout::planForSurface(const QString &surface_uuid
 					       new_area);
 	}
 	return m_surfaces.at(index).planFor(new_area);
+}
+
+/**
+	@brief MountingLayout::profileTotals
+	@return one line per bar cut anywhere in the project, millimetre
+
+	The faces added up, face by face, through the answer each of them
+	already gives. Written this way rather than as a second loop over every
+	item, so that the day a face starts counting something differently -
+	a piece that belongs to another face, a piece counted twice - the whole
+	project counts it the same way, because there is only one place that
+	counts.
+*/
+QList<MountingProfileTotal> MountingLayout::profileTotals() const
+{
+	QList<MountingProfileTotal> totals;
+	QHash<QString, int> line_of_key;
+
+	for (const MountingSurface &surface : m_surfaces)
+	{
+		const QList<MountingProfileTotal> face = surface.profileTotals();
+		for (const MountingProfileTotal &line : face)
+		{
+			const QString key = line.profile.key();
+			if (!line_of_key.contains(key))
+			{
+				MountingProfileTotal added;
+				added.profile = line.profile;
+				line_of_key.insert(key, int(totals.count()));
+				totals.append(added);
+			}
+
+			MountingProfileTotal &total = totals[line_of_key.value(key)];
+			total.length += line.length;
+			total.pieces += line.pieces;
+			total.uncut  += line.uncut;
+		}
+	}
+
+	std::sort(totals.begin(), totals.end(),
+		  [](const MountingProfileTotal &first,
+		     const MountingProfileTotal &second)
+		  {
+			  return first.profile.key() < second.profile.key();
+		  });
+
+	return totals;
 }
 
 /**

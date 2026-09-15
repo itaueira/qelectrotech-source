@@ -18,6 +18,8 @@
 #ifndef ENCLOSURETRANSFER_H
 #define ENCLOSURETRANSFER_H
 
+#include "mountingprofile.h"
+
 #include <QCoreApplication>
 #include <QList>
 #include <QPointF>
@@ -148,6 +150,17 @@ class MountingArea
 	warning has to be able to name an item that was never named. label is
 	what the sheet shows, -Q1; part_code is the product; uuid is what the
 	caller stitches the answer back onto.
+
+	profile and run are the two fields the same item carries when it was not
+	bought as a piece but cut to length - a rail, a cable duct. They change
+	nothing about the rule: a cut piece takes a rectangle of room like
+	everything else, and it collides, fits and travels between enclosures by
+	the same arithmetic. What they buy is the two questions a rectangle
+	alone cannot answer - which bar the piece was cut from, so that the
+	material list adds up one line per bar and not one per piece, and which
+	of the two dimensions is the cut, so that pulling a duct longer does not
+	make it wider. An item with no profile is a part bought as a piece,
+	which is the default and stays the default.
 */
 class MountedItem
 {
@@ -179,6 +192,29 @@ class MountedItem
 			/// @return the room it takes where it sits now
 		QRectF footprint() const;
 
+			/// @return true when this was cut to length, not bought as a piece
+		bool isCutToLength() const;
+
+		/**
+			@return how long the piece is, millimetre; zero when
+			nobody has cut it yet, and zero for anything that was
+			never cut at all.
+
+			Read along its run and never across it, which is the
+			whole reason run is stored: the same 600 by 60 rectangle
+			is six hundred millimetres of duct lying down and sixty
+			standing up, and a material list that took the wider of
+			the two would order ten times what a vertical duct needs.
+
+			A part bought as a piece answers zero, and the guard that
+			makes it do so is in here and not in whoever asks.
+			Everything mounted has a rectangle, so a reading that
+			began at the rectangle would hand a breaker of 22,5 mm
+			back as 22,5 mm of rail to buy - and it would do it in
+			every caller that forgot to ask first.
+		*/
+		qreal cutLength() const;
+
 		/**
 			@return how to call this item out loud: its label, failing
 			that its part, failing that its identifier, failing all three
@@ -197,6 +233,10 @@ class MountedItem
 		QPointF position;
 			/// the room it takes on the surface, millimetre
 		QSizeF size;
+			/// the bar it was cut from, null for a part bought as a piece
+		MountingProfile profile;
+			/// which way a cut piece runs; meaningless for anything else
+		MountingRun run = MountingRun::Across;
 };
 
 /**

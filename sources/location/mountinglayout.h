@@ -100,6 +100,25 @@ class MountingSurface
 		*/
 		QString designation() const;
 
+		/**
+			@return one line per bar of rail or duct cut on this
+			face, millimetre, ordered by the key of the profile.
+
+			The answer the house asked for when it said rail and duct
+			are cut to size: what the material list needs of them is
+			the total length used, and not a reference. Three pieces
+			of one bar are one line here, and two bars of the same
+			width and different depth are two - because they are two
+			bars on the shelf.
+
+			A piece nobody has given a length to is counted in the
+			line and added into no length, which is the one thing a
+			sum must not decide on its own. What a part bought as a
+			piece does is not this function's business: it is counted,
+			by whoever counts.
+		*/
+		QList<MountingProfileTotal> profileTotals() const;
+
 		QDomElement toXml(QDomDocument &document) const;
 		bool fromXml(const QDomElement &element);
 
@@ -288,6 +307,20 @@ class MountingLayout
 		*/
 		EnclosureTransferPlan planForSurface(const QString &surface_uuid,
 						     const MountingArea &new_area) const;
+
+		/**
+			@return one line per bar of rail or duct cut anywhere in
+			the project, millimetre, ordered by the key of the
+			profile.
+
+			The faces added up, and added up here rather than by the
+			caller: a panel is laid out face by face and bought in one
+			go, so the bar cut for the plate and the bar cut for the
+			door are one line of the order. Adding them up in the
+			window that happens to be open would give a different
+			total to whoever looked at a different window.
+		*/
+		QList<MountingProfileTotal> profileTotals() const;
 
 		/**
 			@brief Change the room one face has, and keep what is on it.

@@ -407,6 +407,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/enclosuretransfer.h
   ${QET_DIR}/sources/location/layout/mountedpartitem.cpp
   ${QET_DIR}/sources/location/layout/mountedpartitem.h
+  ${QET_DIR}/sources/location/layout/mountedprofileitem.cpp
+  ${QET_DIR}/sources/location/layout/mountedprofileitem.h
   ${QET_DIR}/sources/location/layout/mountinglayouteditor.cpp
   ${QET_DIR}/sources/location/layout/mountinglayouteditor.h
   ${QET_DIR}/sources/location/layout/mountingscene.cpp
@@ -428,6 +430,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/mountingmeasure.h
   ${QET_DIR}/sources/location/mountingpartview.cpp
   ${QET_DIR}/sources/location/mountingpartview.h
+  ${QET_DIR}/sources/location/mountingprofile.cpp
+  ${QET_DIR}/sources/location/mountingprofile.h
   ${QET_DIR}/sources/location/projectlocation.cpp
   ${QET_DIR}/sources/location/projectlocation.h
   ${QET_DIR}/sources/location/ui/locationbomdialog.cpp
@@ -1060,6 +1064,10 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/movegraphicsitemcommand.h
   ${QET_DIR}/sources/undocommand/movemountedpartcommand.cpp
   ${QET_DIR}/sources/undocommand/movemountedpartcommand.h
+  ${QET_DIR}/sources/undocommand/mountpartcommand.cpp
+  ${QET_DIR}/sources/undocommand/mountpartcommand.h
+  ${QET_DIR}/sources/undocommand/stretchmountedprofilecommand.cpp
+  ${QET_DIR}/sources/undocommand/stretchmountedprofilecommand.h
 
   ${QET_DIR}/sources/utils/conductorcreator.cpp
   ${QET_DIR}/sources/utils/conductorcreator.h

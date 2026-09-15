@@ -24,6 +24,7 @@
 #include "../../qeticons.h"
 #include "../../qetproject.h"
 #include "../mountinglayout.h"
+#include "../mountingmeasure.h"
 #include "../mountingpartview.h"
 #include "mountingscene.h"
 #include "mountingview.h"
@@ -463,35 +464,25 @@ void MountingLayoutEditor::addPart()
 							      part.code,
 							      freePosition());
 
-	MountingLayout layout = m_project->mountingLayout();
+		/*
+			Laid on the drawing and not written into the project
+			here. The scene takes one part in without rebuilding
+			itself, so the undo stack survives adding something -
+			and the step it pushes is what carries the part into the
+			project, down the same wire every drag already goes.
+
+			It used to be the other way round: the project was
+			written first and the whole face redrawn from it, which
+			dropped the stack every time somebody added a part.
+		*/
 	QString error;
-	const QString mounted = layout.mountItem(m_shown, item, &error);
+	const QString mounted = mountOnShownSurface(item, &error);
 
 	if (mounted.isEmpty())
 	{
 		say(error, true);
 		return;
 	}
-
-	m_project->setMountingLayout(layout);
-
-		/*
-			Drawn again from the project, and deliberately not
-			through showSurface: that one writes the face it is
-			leaving back first, and the face it would be leaving is
-			this one *without* the part that has just been mounted -
-			so it would unmount it again on the way out.
-
-			The scene has no way of taking one part in, which is why
-			the whole face is rebuilt here; and rebuilding drops the
-			undo stack, which is why mounting a part is not a step
-			that can be undone. Both are the same missing thing, and
-			it is the first thing the next step has to mend.
-		*/
-	m_scene->setSurface(layout.surface(m_shown));
-	refreshSurfaceList();
-	updateTitle();
-	updateActions();
 
 	if (!m_scene->mountedItem(mounted).hasDeclaredSize())
 	{
@@ -502,6 +493,257 @@ void MountingLayoutEditor::addPart()
 	else {
 		say(tr("« %1 » est posé sur la platine.").arg(part.code));
 	}
+}
+
+/**
+	@brief MountingLayoutEditor::newProfile
+	Ask for a piece of rail or of duct and lay it on the plate.
+
+	The box opens where the last one was left, profile and length included,
+	because nobody lays a panel out with four different rails: the second
+	one is almost always the first one again. The very first one starts on
+	the standard rail of every panel and as long as the plate is wide, which
+	are the two numbers somebody would have typed anyway - and both are in
+	front of them, in a box, to be changed.
+*/
+void MountingLayoutEditor::newProfile()
+{
+	if (!isEditable() || m_shown.isEmpty()) {
+		return;
+	}
+
+	const QList<MountingProfile> rails = MountingProfile::standardRails();
+
+	QDialog dialog(this);
+	dialog.setWindowTitle(tr("Poser un rail ou une goulotte"));
+
+	QComboBox *standard_box = new QComboBox(&dialog);
+	for (int index = 0 ; index < rails.count() ; ++ index) {
+		standard_box->addItem(rails.at(index).designation(), index);
+	}
+	standard_box->addItem(tr("Autre (à préciser ci-dessous)"), -1);
+
+	QComboBox *kind_box = new QComboBox(&dialog);
+	kind_box->addItem(tr("Rail"), MountingProfile::railKind());
+	kind_box->addItem(tr("Goulotte"), MountingProfile::ductKind());
+
+	QDoubleSpinBox *section_box = new QDoubleSpinBox(&dialog);
+	section_box->setRange(0.0, 1000.0);
+	section_box->setDecimals(1);
+	section_box->setSuffix(tr(" mm"));
+	section_box->setToolTip(tr("La largeur que le profilé occupe sur la "
+				   "platine, en travers de sa longueur."));
+
+	QDoubleSpinBox *depth_box = new QDoubleSpinBox(&dialog);
+	depth_box->setRange(0.0, 1000.0);
+	depth_box->setDecimals(1);
+	depth_box->setSuffix(tr(" mm"));
+	depth_box->setSpecialValueText(tr("non mesurée"));
+	depth_box->setToolTip(tr("La hauteur du profilé au-dessus de la "
+				 "platine. Elle ne se dessine pas ici, elle "
+				 "compte pour la porte."));
+
+	QDoubleSpinBox *length_box = new QDoubleSpinBox(&dialog);
+	length_box->setRange(0.0, 10000.0);
+	length_box->setDecimals(1);
+	length_box->setSuffix(tr(" mm"));
+
+	QComboBox *run_box = new QComboBox(&dialog);
+	run_box->addItem(tr("Horizontal"), 0);
+	run_box->addItem(tr("Vertical"), 1);
+
+		//Where the box opens. The last piece if there was one, the
+		//standard rail of every panel if there was not.
+	const MountingProfile opening = m_last_profile.isNull()
+					? (rails.isEmpty() ? MountingProfile()
+							   : rails.first())
+					: m_last_profile;
+
+	kind_box->setCurrentIndex(opening.isDuct() ? 1 : 0);
+	section_box->setValue(opening.section);
+	depth_box->setValue(opening.depth);
+	run_box->setCurrentIndex(m_last_run == MountingRun::Down ? 1 : 0);
+
+	const int known = standard_box->findText(opening.designation());
+	standard_box->setCurrentIndex(known >= 0 ? known
+						 : standard_box->count() - 1);
+
+		//As long as the plate is wide, less the margin the first part
+		//is dropped at on each side. It is a number in front of
+		//somebody, in a box, and not a measurement invented behind
+		//their back - and a plate nobody has measured proposes nothing
+		//of the sort.
+	const qreal proposed = m_last_length > 0.0
+			       ? m_last_length
+			       : (m_scene->isAreaMeasured()
+				  ? qMax(MountingProfile::minimumLength(),
+					 m_scene->area().width - 2.0 * FIRST_DROP)
+				  : 0.0);
+	length_box->setValue(proposed);
+
+	connect(standard_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		&dialog, [&](int index)
+	{
+		const int chosen = standard_box->itemData(index).toInt();
+		if (chosen < 0 || chosen >= rails.count()) {
+			return;
+		}
+
+		kind_box->setCurrentIndex(0);
+		section_box->setValue(rails.at(chosen).section);
+		depth_box->setValue(rails.at(chosen).depth);
+	});
+
+	QDialogButtonBox *buttons = new QDialogButtonBox(
+				QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+				&dialog);
+	connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+	connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+	QFormLayout *form = new QFormLayout(&dialog);
+	form->addRow(tr("Profilé courant :"), standard_box);
+	form->addRow(tr("Type :"), kind_box);
+	form->addRow(tr("Largeur :"), section_box);
+	form->addRow(tr("Hauteur :"), depth_box);
+	form->addRow(tr("Longueur coupée :"), length_box);
+	form->addRow(tr("Sens :"), run_box);
+	form->addRow(buttons);
+
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+	const MountingProfile profile(kind_box->currentData().toString(),
+				      section_box->value(),
+				      depth_box->value());
+	const MountingRun run = run_box->currentData().toInt() == 1
+				? MountingRun::Down
+				: MountingRun::Across;
+
+	QString error;
+	const QString laid = addProfile(profile, length_box->value(), run,
+					&error);
+
+	if (laid.isEmpty()) {
+		say(error, true);
+	}
+	else {
+		say(tr("%1 posé sur la platine.").arg(profile.designation()));
+	}
+}
+
+/**
+	@brief MountingLayoutEditor::addProfile
+	@param profile the bar the piece is cut from
+	@param length_mm how long the piece is, millimetre
+	@param run which way it runs
+	@param error filled with why nothing was laid
+	@return the identifier of the piece, empty when refused
+*/
+QString MountingLayoutEditor::addProfile(const MountingProfile &profile,
+					 qreal length_mm,
+					 MountingRun run,
+					 QString *error)
+{
+	if (error) {
+		error->clear();
+	}
+
+	if (profile.isNull())
+	{
+		if (error) {
+			*error = tr("Dites si c'est un rail ou une goulotte : "
+				    "un profilé sans type ne se pose pas.");
+		}
+		return QString();
+	}
+
+	if (!profile.hasSection())
+	{
+			//Refused, and it is one of the few places this family
+			//refuses a missing measurement rather than reporting it.
+			//The reason is that this one has nothing to report with:
+			//a piece of no width is a piece nothing is drawn of, and
+			//an invisible piece on a plate is worse than no piece.
+		if (error) {
+			*error = tr("Un profilé a besoin de sa largeur : sans "
+				    "elle, rien ne se dessine sur la platine.");
+		}
+		return QString();
+	}
+
+	if (!MountingMeasure::isLength(length_mm)
+	    || MountingMeasure::isSameLength(length_mm, 0.0))
+	{
+		if (error) {
+			*error = tr("Une longueur de coupe est un nombre de "
+				    "millimètres.");
+		}
+		return QString();
+	}
+
+	MountedItem item;
+	item.profile  = profile;
+	item.run      = run;
+	item.position = freePosition();
+	item.size     = profile.sizeFor(length_mm, run);
+
+	const QString laid = mountOnShownSurface(item, error);
+
+	if (!laid.isEmpty())
+	{
+		m_last_profile = profile;
+		m_last_length  = length_mm;
+		m_last_run     = run;
+	}
+
+	return laid;
+}
+
+/**
+	@brief MountingLayoutEditor::mountOnShownSurface
+	@param item what is mounted, identity optional
+	@param error filled with why nothing was mounted
+	@return the identifier of what was mounted, empty when refused
+
+	The identity is handed out here, by the layout and not by the drawing:
+	MountingLayout::newId is what the whole project uses, and a window that
+	made its own would be a second source of identity for the same kind of
+	thing.
+
+	Nothing is written into the project from here. The step pushed on the
+	stack is what does that, through stepApplied - which is the same wire a
+	drag goes down, and having one wire is what makes a part that was laid
+	reach the file exactly as surely as a part that was moved.
+*/
+QString MountingLayoutEditor::mountOnShownSurface(MountedItem item,
+						  QString *error)
+{
+	if (error) {
+		error->clear();
+	}
+
+	if (!isEditable() || m_shown.isEmpty())
+	{
+		if (error) {
+			*error = tr("Ce projet ne se modifie pas.");
+		}
+		return QString();
+	}
+
+	if (item.uuid.isEmpty()) {
+		item.uuid = MountingLayout::newId();
+	}
+
+	if (!m_scene->mountItem(item, error)) {
+		return QString();
+	}
+
+	refreshSurfaceList();
+	updateTitle();
+	updateActions();
+
+	return item.uuid;
 }
 
 /**
@@ -542,6 +784,13 @@ void MountingLayoutEditor::buildActions()
 				    "platine, à la mesure du catalogue."));
 	connect(m_add_part, &QAction::triggered,
 		this, &MountingLayoutEditor::addPart);
+
+	m_add_profile = new QAction(tr("Ajouter un rail ou une goulotte…"), this);
+	m_add_profile->setStatusTip(tr("Pose un profilé coupé à la longueur "
+				       "voulue. Une fois posé, il se rallonge "
+				       "et se raccourcit par ses extrémités."));
+	connect(m_add_profile, &QAction::triggered,
+		this, &MountingLayoutEditor::newProfile);
 
 	m_undo = m_scene->undoStack().createUndoAction(this, tr("Annuler"));
 	m_undo->setIcon(QET::Icons::EditUndo);
@@ -593,6 +842,7 @@ void MountingLayoutEditor::buildWidgets()
 	QMenu *layout_menu = menuBar()->addMenu(tr("&Calepinage"));
 	layout_menu->addAction(m_new_surface);
 	layout_menu->addAction(m_add_part);
+	layout_menu->addAction(m_add_profile);
 	layout_menu->addSeparator();
 	layout_menu->addAction(m_close);
 
@@ -613,6 +863,7 @@ void MountingLayoutEditor::buildWidgets()
 	bar->addSeparator();
 	bar->addAction(m_new_surface);
 	bar->addAction(m_add_part);
+	bar->addAction(m_add_profile);
 	bar->addSeparator();
 	bar->addAction(m_undo);
 	bar->addAction(m_redo);
@@ -699,6 +950,7 @@ void MountingLayoutEditor::updateActions()
 
 	m_new_surface->setEnabled(editable);
 	m_add_part->setEnabled(editable && !m_shown.isEmpty());
+	m_add_profile->setEnabled(editable && !m_shown.isEmpty());
 
 	const int index = m_surface_box->findData(m_shown);
 	if (index >= 0 && index != m_surface_box->currentIndex())

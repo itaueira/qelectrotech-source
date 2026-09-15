@@ -18,12 +18,15 @@
 #ifndef MOUNTINGLAYOUTEDITOR_H
 #define MOUNTINGLAYOUTEDITOR_H
 
+#include "../mountingprofile.h"
+
 #include <QMainWindow>
 #include <QPointF>
 #include <QPointer>
 #include <QSizeF>
 #include <QString>
 
+class MountedItem;
 class MountingScene;
 class MountingView;
 class QAction;
@@ -81,19 +84,24 @@ class QLabel;
 	modified. That is not a courtesy: a program that asks to save a project
 	nobody edited teaches people to answer "no" to that question.
 
-	@par What is not on the undo stack, and why
+	@par What is on the undo stack, and what is not
 
-	The moves are; adding a face and mounting a part are not. The stack
-	belongs to the scene and the scene drops it whenever another face is
-	shown - which it must, because a step that moves a part of the previous
-	face has nothing left to move. So a step that added a face would
-	disappear from the stack the first time somebody looked at another face,
-	and an undo that is there sometimes is worse than an undo that is never
-	there. Making the composition of a face undoable needs a scene that can
-	mount and unmount one part without rebuilding itself, which it cannot
-	do yet. Until then the refusal happens before the fact: a face with no
-	location or no kind is refused with the reason, and a face added by
-	mistake is an empty face in a list rather than anything lost.
+	Everything that happens to what is mounted is: moving a part, laying one
+	on the plate, taking one off, cutting a rail to another length. That is
+	the half the first version of this window could not do - it rebuilt the
+	whole drawing to take one part in, which dropped the stack every time
+	somebody added something - and the scene learned to mount and unmount
+	one part for exactly this.
+
+	Adding a face is still not a step, and that one is not an omission. The
+	stack belongs to the scene and the scene drops it whenever another face
+	is shown, which it must: a step that moves a part of the previous face
+	has nothing left to move. So a step that added a face would disappear
+	from the stack the first time somebody looked at another face, and an
+	undo that is there sometimes is worse than an undo that is never there.
+	The refusal happens before the fact instead: a face with no location or
+	no kind is refused with the reason, and a face added by mistake is an
+	empty face in a list rather than anything lost.
 */
 class MountingLayoutEditor : public QMainWindow
 {
@@ -152,6 +160,33 @@ class MountingLayoutEditor : public QMainWindow
 				   const QSizeF &area,
 				   QString *error = nullptr);
 
+		/**
+			@brief Cut a piece of rail or of duct and lay it on the
+			face being shown.
+			@param profile the bar it is cut from
+			@param length_mm how long the piece is, millimetre
+			@param run which way it runs
+			@param error filled with why nothing was laid
+			@return the identifier of the piece, empty when refused
+
+			The way in that is not a dialogue, and it is separate
+			from the dialogue for the reason addSurface is: what can
+			be got wrong here - the refusals, the millimetre, the
+			step on the stack - is provable without a window, and a
+			rule that can only be exercised by clicking is a rule
+			nobody checks twice.
+
+			A length is not refused for being short or for being
+			longer than the plate. Too long is a report the check
+			already knows how to make, and a piece somebody typed a
+			small number into is a piece somebody typed a small
+			number into.
+		*/
+		QString addProfile(const MountingProfile &profile,
+				   qreal length_mm,
+				   MountingRun run,
+				   QString *error = nullptr);
+
 	protected:
 		void closeEvent(QCloseEvent *event) override;
 
@@ -160,6 +195,7 @@ class MountingLayoutEditor : public QMainWindow
 		void surfaceChosen(int index);
 		void newSurface();
 		void addPart();
+		void newProfile();
 		void pointedAt(const QPointF &position_mm);
 		void zoomTold(qreal pixels_per_millimetre);
 
@@ -170,6 +206,23 @@ class MountingLayoutEditor : public QMainWindow
 		void updateTitle();
 		void updateActions();
 		void say(const QString &message, bool problem = false);
+
+		/**
+			@brief Put one thing on the face being shown, undoably.
+			@param item what is mounted, identity optional
+			@param error filled with why nothing was mounted
+			@return the identifier of what was mounted, empty when
+			refused
+
+			The one door into the drawing, for a catalogue part and
+			for a cut piece alike, and the one place an identity is
+			handed out. Two doors would be two chances to forget the
+			identity, and a part without one is a part no undo step
+			can name.
+		*/
+		QString mountOnShownSurface(MountedItem item,
+					    QString *error = nullptr);
+
 		QPointF freePosition() const;
 		bool isEditable() const;
 		void readSettings();
@@ -187,8 +240,26 @@ class MountingLayoutEditor : public QMainWindow
 		/// true while the list is being filled, so filling it chooses nothing
 		bool m_filling = false;
 
+		/**
+			The bar the last piece was cut from, and how it was cut.
+			Kept because nobody lays a panel out with rails of four
+			different profiles: the second rail of a plate is almost
+			always the first one again, and a box that opens where
+			the last one was left is the difference between laying
+			out a plate and filling in a form twelve times. It is
+			kept for as long as the window is open and written down
+			nowhere - it is a convenience, not a decision about the
+			project.
+		*/
+		MountingProfile m_last_profile;
+		/// how long the last piece was cut, millimetre, 0 when there was none
+		qreal m_last_length = 0.0;
+		/// which way the last piece was laid
+		MountingRun m_last_run = MountingRun::Across;
+
 		QAction *m_new_surface = nullptr;
 		QAction *m_add_part = nullptr;
+		QAction *m_add_profile = nullptr;
 		QAction *m_undo = nullptr;
 		QAction *m_redo = nullptr;
 		QAction *m_zoom_in = nullptr;

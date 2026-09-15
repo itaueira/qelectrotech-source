@@ -92,8 +92,15 @@ class MountedPartItem : public QGraphicsObject
 			The position travels with it: what the caller hands in is
 			where the item goes, which is what makes this the one
 			entry point an undo command needs.
+
+			Virtual because the size travels with it too, and an item
+			that draws handles on its own ends has to move them when
+			it is resized. The framework does not help there: a
+			stretch that leaves the top left corner where it was
+			changes no position, so ItemPositionHasChanged never
+			fires and the handles would stay behind the drawing.
 		*/
-		void setMountedItem(const MountedItem &mounted_item);
+		virtual void setMountedItem(const MountedItem &mounted_item);
 
 			/// @return true when both dimensions of the part are known
 		bool hasDeclaredSize() const;

@@ -241,8 +241,52 @@ QRectF MountedItem::footprint() const
 }
 
 /**
+	@brief MountedItem::isCutToLength
+	@return true when this was cut to length and not bought as a piece
+*/
+bool MountedItem::isCutToLength() const
+{
+	return !profile.isNull();
+}
+
+/**
+	@brief MountedItem::cutLength
+	@return how long the piece is, millimetre, zero when nobody cut it
+
+	Whether this was cut at all is asked before its geometry is read, and
+	that order is the whole of the function. Everything mounted has a
+	rectangle, so reading one side of it as a length of bar answers a length
+	for a breaker as readily as for a rail - and a breaker of 22,5 mm then
+	arrives in the material list as 22,5 mm of rail to buy. A rectangle
+	cannot say which of the two it belongs to; only the profile can, so only
+	the profile is asked.
+
+	It is the exact mirror of the rule the totals hold on the other side: a
+	piece nobody has measured must not read as zero metres, and a part
+	nobody cut must not read as any metres at all. The first makes a list
+	order short; the second makes it order what is already screwed to the
+	plate.
+*/
+qreal MountedItem::cutLength() const
+{
+	if (!isCutToLength()) {
+		return 0.0;
+	}
+
+	const qreal cut = MountingProfile::lengthOf(declaredSize(), run);
+
+	return isUsableLength(cut) ? cut : 0.0;
+}
+
+/**
 	@brief MountedItem::designation
 	@return how to call this item out loud, never empty
+
+	The profile comes after the two marks a person writes and before the
+	identifier, and that order is the point: a rail is normally cut without
+	anybody labelling it, so the fallback that used to answer for it was a
+	string of thirty two hexadecimal characters. "Rail 35 × 7,5 mm" in an
+	undo caption is worth the three lines it costs.
 */
 QString MountedItem::designation() const
 {
@@ -251,6 +295,9 @@ QString MountedItem::designation() const
 	}
 	if (!part_code.isEmpty()) {
 		return part_code;
+	}
+	if (isCutToLength()) {
+		return profile.designation();
 	}
 	if (!uuid.isEmpty()) {
 		return uuid;

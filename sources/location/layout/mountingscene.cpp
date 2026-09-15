@@ -17,8 +17,11 @@
 */
 #include "mountingscene.h"
 
+#include "../../undocommand/mountpartcommand.h"
 #include "../../undocommand/movemountedpartcommand.h"
+#include "../../undocommand/stretchmountedprofilecommand.h"
 #include "mountedpartitem.h"
+#include "mountedprofileitem.h"
 
 #include <QColor>
 #include <QPainter>
@@ -53,6 +56,24 @@ namespace
 	{
 		return std::isfinite(position.x()) && std::isfinite(position.y());
 	}
+
+	/**
+		@brief isAFootprint
+		@param footprint the room something takes, millimetre
+		@return true when all four numbers are numbers
+
+		A size of zero passes, and that is not an oversight: a piece
+		nobody has cut yet takes no room, and the rules underneath
+		already read that as "not measured". What is refused here is a
+		number that is not one.
+	*/
+	bool isAFootprint(const QRectF &footprint)
+	{
+		return std::isfinite(footprint.x())
+		       && std::isfinite(footprint.y())
+		       && std::isfinite(footprint.width())
+		       && std::isfinite(footprint.height());
+	}
 }
 
 /**
@@ -86,8 +107,22 @@ void MountingScene::setSurface(const MountingSurface &surface)
 	@return the face as it now stands, positions read off the drawing
 
 	Read off the items and not off the copy kept here, so that what this
-	answers is what a person is looking at - the middle of a drag included.
-	Two truths about where a part is would be one truth too many.
+	answers is what a person is looking at - the middle of a drag or of a
+	cut included. Two truths about where a part is would be one truth too
+	many.
+
+	The size is taken from the drawing as well as the corner, and that is
+	what makes a piece in the middle of being cut read as the length it is
+	being cut to. It is the size of the MODEL the item carries and never the
+	rectangle it paints - the hatched square of a part nobody has measured
+	stays on the screen, and the size in the file stays absent.
+
+	The rest of the item is left alone on purpose. Two entries of one list
+	may name the same identity - a file built by hand can say so, and the
+	read repairs rather than refuses - and one item drawn for both of them
+	would then answer for both. Overwriting the two entries whole would make
+	the second one lose its mark and its profile; overwriting the geometry
+	only keeps the damage where it already was.
 */
 MountingSurface MountingScene::surface() const
 {
@@ -96,8 +131,10 @@ MountingSurface MountingScene::surface() const
 	for (int index = 0 ; index < surface.items.size() ; ++ index)
 	{
 		MountedPartItem *part = partItem(surface.items.at(index).uuid);
-		if (part) {
+		if (part)
+		{
 			surface.items[index].position = part->millimetrePosition();
+			surface.items[index].size = part->mountedItem().size;
 		}
 	}
 
@@ -174,6 +211,174 @@ MountedItem MountingScene::mountedItem(const QString &item_uuid) const
 	MountedPartItem *part = partItem(item_uuid);
 
 	return part ? part->mountedItem() : MountedItem();
+}
+
+/**
+	@brief MountingScene::indexOfItem
+	@param item_uuid which part
+	@return where it sits in the face, -1 when it is not on it
+*/
+int MountingScene::indexOfItem(const QString &item_uuid) const
+{
+	return m_surface.indexOfItem(item_uuid);
+}
+
+/**
+	@brief MountingScene::mountItem
+	@param item what is mounted, millimetre
+	@param error filled with why nothing was mounted
+	@return true when a step was pushed on the stack
+*/
+bool MountingScene::mountItem(const MountedItem &item, QString *error)
+{
+	if (error) {
+		error->clear();
+	}
+
+	if (item.uuid.isEmpty())
+	{
+			//Refused rather than given one here. The identity is
+			//what the whole layout stitches a component to, and a
+			//drawing that made one up would be handing out a second
+			//identity for a part that already has one somewhere
+			//else in the project.
+		if (error) {
+			*error = tr("Un composant posé sur une platine a besoin "
+				    "d'un identifiant.");
+		}
+		return false;
+	}
+
+	if (m_items.contains(item.uuid))
+	{
+		if (error) {
+			*error = tr("« %1 » est déjà posé sur cette platine.")
+				 .arg(item.designation());
+		}
+		return false;
+	}
+
+	if (!isAPosition(item.position))
+	{
+		if (error) {
+			*error = tr("Une position est deux nombres en "
+				    "millimètre");
+		}
+		return false;
+	}
+
+	MountPartCommand *command =
+			new MountPartCommand(this, item, MountPartCommand::Mount);
+
+	if (command->isNull())
+	{
+		delete command;
+		return false;
+	}
+
+	m_undo_stack.push(command);
+	return true;
+}
+
+/**
+	@brief MountingScene::unmountItem
+	@param item_uuid which part
+	@param error filled with why nothing was taken off
+	@return true when a step was pushed on the stack
+*/
+bool MountingScene::unmountItem(const QString &item_uuid, QString *error)
+{
+	if (error) {
+		error->clear();
+	}
+
+	MountedPartItem *part = partItem(item_uuid);
+	if (!part)
+	{
+		if (error) {
+			*error = tr("Aucun composant de cet identifiant sur "
+				    "cette platine");
+		}
+		return false;
+	}
+
+	MountPartCommand *command =
+			new MountPartCommand(this, part->mountedItem(),
+					     MountPartCommand::Unmount,
+					     indexOfItem(item_uuid));
+
+	if (command->isNull())
+	{
+		delete command;
+		return false;
+	}
+
+	m_undo_stack.push(command);
+	return true;
+}
+
+/**
+	@brief MountingScene::stretchItem
+	@param item_uuid which piece
+	@param footprint_mm the room it takes afterwards, millimetre
+	@param error filled with why nothing was cut
+	@return true when a step was pushed on the stack
+*/
+bool MountingScene::stretchItem(const QString &item_uuid,
+				const QRectF &footprint_mm,
+				QString *error)
+{
+	if (error) {
+		error->clear();
+	}
+
+	MountedPartItem *part = partItem(item_uuid);
+	if (!part)
+	{
+		if (error) {
+			*error = tr("Aucun composant de cet identifiant sur "
+				    "cette platine");
+		}
+		return false;
+	}
+
+	const MountedItem mounted = part->mountedItem();
+	if (!mounted.isCutToLength())
+	{
+			//A bought part is the size the catalogue says it is.
+			//Letting a drawing change that would make the plate and
+			//the product disagree, and the plate is not the one the
+			//workshop unpacks.
+		if (error) {
+			*error = tr("« %1 » est un article du catalogue : il se "
+				    "pose, il ne se coupe pas.")
+				 .arg(mounted.designation());
+		}
+		return false;
+	}
+
+	if (!isAFootprint(footprint_mm))
+	{
+		if (error) {
+			*error = tr("Une coupe est quatre nombres en "
+				    "millimètre");
+		}
+		return false;
+	}
+
+	StretchMountedProfileCommand *command =
+			new StretchMountedProfileCommand(this, item_uuid,
+							 mounted.footprint(),
+							 footprint_mm);
+
+	if (command->isNull())
+	{
+		delete command;
+		return false;
+	}
+
+	m_undo_stack.push(command);
+	return true;
 }
 
 /**
@@ -262,6 +467,98 @@ bool MountingScene::applyItemPosition(const QString &item_uuid,
 
 	updateSceneRect();
 	emit itemMoved(item_uuid);
+	emit surfaceChanged();
+
+	return true;
+}
+
+/**
+	@brief MountingScene::applyItemMounting
+	@param item what is mounted, millimetre
+	@param index where it goes in the list of the face, -1 for the end
+	@return true when it was drawn
+*/
+bool MountingScene::applyItemMounting(const MountedItem &item, int index)
+{
+	if (item.uuid.isEmpty() || m_items.contains(item.uuid)) {
+		return false;
+	}
+
+	const int count = int(m_surface.items.count());
+	const int at = (index >= 0 && index <= count) ? index : count;
+
+	m_surface.items.insert(at, item);
+	drawItem(item);
+
+	updateSceneRect();
+	emit itemMounted(item.uuid);
+	emit surfaceChanged();
+
+	return true;
+}
+
+/**
+	@brief MountingScene::applyItemUnmounting
+	@param item_uuid which part
+	@return true when there was such a part
+
+	Taken off the scene before it is deleted, and not the other way round:
+	leaving the scene is what makes the item drop anything it had drawn
+	beside itself - the handles of a piece that was selected - and a handle
+	left behind on a scene whose item has gone is a blue dot nothing can
+	select and nothing can delete.
+*/
+bool MountingScene::applyItemUnmounting(const QString &item_uuid)
+{
+	MountedPartItem *part = m_items.value(item_uuid, nullptr);
+	if (!part) {
+		return false;
+	}
+
+	m_items.remove(item_uuid);
+	removeItem(part);
+	delete part;
+
+	const int index = m_surface.indexOfItem(item_uuid);
+	if (index >= 0) {
+		m_surface.items.removeAt(index);
+	}
+
+	updateSceneRect();
+	emit itemUnmounted(item_uuid);
+	emit surfaceChanged();
+
+	return true;
+}
+
+/**
+	@brief MountingScene::applyItemGeometry
+	@param item_uuid which part
+	@param footprint_mm the room it takes, millimetre
+	@return true when there was such a part
+*/
+bool MountingScene::applyItemGeometry(const QString &item_uuid,
+				      const QRectF &footprint_mm)
+{
+	MountedPartItem *part = partItem(item_uuid);
+	if (!part || !isAFootprint(footprint_mm)) {
+		return false;
+	}
+
+	const QRectF piece = footprint_mm.normalized();
+
+	MountedItem item = part->mountedItem();
+	item.position = piece.topLeft();
+	item.size     = piece.size();
+	part->setMountedItem(item);
+
+	const int index = m_surface.indexOfItem(item_uuid);
+	if (index >= 0) {
+		m_surface.items[index] = part->mountedItem();
+	}
+
+	updateSceneRect();
+	emit itemStretched(item_uuid);
 	emit surfaceChanged();
 
 	return true;
@@ -388,21 +685,56 @@ void MountingScene::rebuild()
 	clear();
 	m_items.clear();
 
-	for (const MountedItem &item : std::as_const(m_surface.items))
-	{
-		MountedPartItem *part = new MountedPartItem(item);
-		addItem(part);
-
-		if (!item.uuid.isEmpty() && !m_items.contains(item.uuid)) {
-			m_items.insert(item.uuid, part);
-		}
-
-		connect(part, &MountedPartItem::dragged, this,
-			[this, part](const QPointF &previous_position_mm)
-			{
-				endDrag(part, previous_position_mm);
-			});
+	for (const MountedItem &item : std::as_const(m_surface.items)) {
+		drawItem(item);
 	}
+}
+
+/**
+	@brief MountingScene::drawItem
+	@param item what is mounted, millimetre
+	@return the item drawn for it
+
+	The one place a mounted thing becomes a drawing, and the one place that
+	decides which kind of drawing it is: a piece cut to length gets the item
+	that can be cut again, everything else gets the plain part. Deciding it
+	here rather than in each caller is what keeps a rail mounted by an undo
+	step identical to a rail mounted by a person - the day the two differed,
+	one of them would have no handles and nobody would know why.
+*/
+MountedPartItem *MountingScene::drawItem(const MountedItem &item)
+{
+	MountedPartItem *part = nullptr;
+
+	if (item.isCutToLength())
+	{
+		MountedProfileItem *piece = new MountedProfileItem(item);
+
+		connect(piece, &MountedProfileItem::stretched, this,
+			[this, piece](const QRectF &previous_footprint_mm)
+			{
+				endStretch(piece, previous_footprint_mm);
+			});
+
+		part = piece;
+	}
+	else {
+		part = new MountedPartItem(item);
+	}
+
+	addItem(part);
+
+	if (!item.uuid.isEmpty() && !m_items.contains(item.uuid)) {
+		m_items.insert(item.uuid, part);
+	}
+
+	connect(part, &MountedPartItem::dragged, this,
+		[this, part](const QPointF &previous_position_mm)
+		{
+			endDrag(part, previous_position_mm);
+		});
+
+	return part;
 }
 
 /**
@@ -455,4 +787,41 @@ void MountingScene::endDrag(MountedPartItem *part,
 	}
 
 	pushMove(item_uuid, previous_position_mm, part->millimetrePosition());
+}
+
+/**
+	@brief MountingScene::endStretch
+	@param piece the piece somebody has just finished cutting
+	@param previous_footprint_mm the room it took when the gesture began
+
+	The same shape as the end of a drag, and for the same reason: the piece
+	has already been cut by the time the mouse is let go, so the step pushed
+	here is the one that takes the cut back. A piece with no identity is left
+	as it was cut and no step is pushed - there is nothing to address it by,
+	and a step that cannot name what it changed cannot undo it either.
+*/
+void MountingScene::endStretch(MountedProfileItem *piece,
+			       const QRectF &previous_footprint_mm)
+{
+	if (!piece) {
+		return;
+	}
+
+	const QString item_uuid = piece->uuid();
+	if (item_uuid.isEmpty() || !m_items.contains(item_uuid)) {
+		return;
+	}
+
+	StretchMountedProfileCommand *command =
+			new StretchMountedProfileCommand(this, item_uuid,
+							 previous_footprint_mm,
+							 piece->footprintRect());
+
+	if (command->isNull())
+	{
+		delete command;
+		return;
+	}
+
+	m_undo_stack.push(command);
 }

@@ -138,6 +138,7 @@ add_executable(
     src/mountingcheck_test.cpp
     src/mountingmeasure_test.cpp
     src/mountingpartview_test.cpp
+    src/mountingprofile_test.cpp
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
     src/option_test.cpp
@@ -315,6 +316,16 @@ add_executable(
     # exercised against a real catalog and not against a hash somebody typed.
     ${QET_DIR}/sources/location/mountingpartview.cpp
     ${QET_DIR}/sources/location/mountingpartview.h
+    # What a rail or a duct is for a shop that cuts its own: a section, a
+    # depth and a token, with the length on the piece and not on the bar.
+    # Two numbers and a rectangle, no scene and no catalogue - which is what
+    # lets "pulling one end does not move the other", "a duct pulled longer
+    # does not get wider" and "three pieces of one bar are one line of the
+    # list" be settled here rather than by dragging something. What draws the
+    # piece and what pushes the undo command stay out, in sources/location/layout
+    # and sources/undocommand.
+    ${QET_DIR}/sources/location/mountingprofile.cpp
+    ${QET_DIR}/sources/location/mountingprofile.h
     # When a project database change is announced. As pure as the collection
     # gate rule: a counter and a flag, no Qt at all. What emits the signal is
     # projectDataBase, which needs an open project and therefore lives in
@@ -666,6 +677,13 @@ if(TARGET qet_core)
         # a janela como o olho a vê não está em suíte nenhuma, e continua
         # sendo roteiro manual.
         src/ui/mountinglayouteditor_test.cpp
+        # O trilho e a canaleta no desenho: montar e desmontar sem reconstruir
+        # a placa, esticar a peça, e o que cada gesto deixa na pilha de
+        # desfazer — mais a ponta que leva o perfil ao projeto e o traz de
+        # volta do arquivo. Precisa de cena instanciada e de projeto aberto; a
+        # aritmética do perfil fica um andar abaixo, em mountingprofile_test.cpp
+        # do C_unittests, e não se repete aqui.
+        src/ui/mountedprofileitem_test.cpp
         # O modelo de configuração escrito no .qet e lido de volta. Precisa de
         # projeto aberto porque o que se prova são as duas linhas do
         # QETProject que gravam e leem a árvore — a aritmética dela fica um

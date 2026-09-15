@@ -22,10 +22,12 @@
 
 #include <QGraphicsScene>
 #include <QHash>
+#include <QRectF>
 #include <QStringList>
 #include <QUndoStack>
 
 class MountedPartItem;
+class MountedProfileItem;
 class QPainter;
 
 /**
@@ -68,6 +70,21 @@ class QPainter;
 	reported is always what is on the screen, drag in progress included. Who
 	writes that into the project, and which undo stack that write goes
 	through, is the business of whoever hosts this scene.
+
+	@par Three things are steps, and setting the face is not one
+
+	Moving a part, putting one on and taking one off are steps of the stack.
+	Setting the face is not: it draws another surface, and a step that moved
+	a part of the previous one has nothing left to move - so the stack is
+	dropped there, and only there.
+
+	That distinction is the whole reason mounting is a method of this class
+	and not of the window above. The first half of this editor rebuilt the
+	whole drawing to take one part in, which dropped the stack every time
+	somebody added something: an undo that is there sometimes is worse than
+	an undo that is never there. Taking one part in and out without touching
+	the rest is what makes the composition of a face undoable, and what lets
+	a rail be drawn by a gesture that can be taken back.
 */
 class MountingScene : public QGraphicsScene
 {
@@ -106,6 +123,62 @@ class MountingScene : public QGraphicsScene
 		MountedPartItem *partItem(const QString &item_uuid) const;
 			/// @return what is mounted under @a item_uuid, a default one when nothing is
 		MountedItem mountedItem(const QString &item_uuid) const;
+			/// @return where @a item_uuid sits in the face, -1 when it is not on it
+		int indexOfItem(const QString &item_uuid) const;
+
+		/**
+			@brief Screw a part onto this face, undoably.
+			@param item what is mounted, position and size in
+			millimetre
+			@param error filled with why nothing was mounted
+			@return true when a step was pushed on the stack
+
+			Refused, with the reason, for a part with no identity and
+			for one already on this face. The first is what an undo
+			step could never take back, and the second is the
+			invariant the layout holds for the whole project - one
+			identity, one place - said again here, because the
+			drawing must not be able to show what the file cannot
+			hold.
+
+			The identity is not given out here. This is a drawing,
+			and MountingLayout is what hands out identities; a scene
+			that made them up would put two of them on one part the
+			first time somebody drew the same rail on two faces.
+		*/
+		bool mountItem(const MountedItem &item, QString *error = nullptr);
+
+		/**
+			@brief Take a part off this face, undoably.
+			@param item_uuid which part
+			@param error filled with why nothing was taken off
+			@return true when a step was pushed on the stack
+
+			The face stops saying where that part is screwed, and
+			nothing else happens to it: what becomes of the component
+			belongs to whoever owns it, which is the rule the layout
+			already states for a face that is deleted.
+		*/
+		bool unmountItem(const QString &item_uuid, QString *error = nullptr);
+
+		/**
+			@brief Cut a piece to another length, undoably.
+			@param item_uuid which piece
+			@param footprint_mm the room it takes afterwards,
+			millimetre
+			@param error filled with why nothing was cut
+			@return true when a step was pushed on the stack
+
+			A rectangle and not a length, because one end of a piece
+			can be pulled as well as the other and that moves its
+			corner. Refused for a part that was bought as a piece:
+			a breaker is the size the catalogue says it is, and a
+			drawing that let somebody stretch one would be a drawing
+			disagreeing with the product.
+		*/
+		bool stretchItem(const QString &item_uuid,
+				 const QRectF &footprint_mm,
+				 QString *error = nullptr);
 
 		/**
 			@brief Move a part, undoably.
@@ -137,6 +210,45 @@ class MountingScene : public QGraphicsScene
 		bool applyItemPosition(const QString &item_uuid,
 				       const QPointF &position_mm);
 
+		/**
+			@brief Draw a part at a place in the list, without
+			touching the undo stack.
+			@param item what is mounted, millimetre
+			@param index where it goes in the list of the face, -1
+			for the end of it
+			@return true when it was drawn
+
+			The hand of the undo command. The index is carried
+			because the order of the list is compared when the
+			project decides whether it has anything to save: a part
+			taken off and put back at the end would make a face that
+			is identical to itself ask to be saved.
+		*/
+		bool applyItemMounting(const MountedItem &item, int index = -1);
+
+		/**
+			@brief Take a part off the drawing, without touching the
+			undo stack.
+			@param item_uuid which part
+			@return true when there was such a part
+		*/
+		bool applyItemUnmounting(const QString &item_uuid);
+
+		/**
+			@brief Give a part another rectangle, without touching
+			the undo stack.
+			@param item_uuid which part
+			@param footprint_mm the room it takes, millimetre
+			@return true when there was such a part
+
+			The corner and the size at once, because a stretch from
+			the far end is both of them, and writing one after the
+			other would draw a piece that existed at no moment of the
+			gesture.
+		*/
+		bool applyItemGeometry(const QString &item_uuid,
+				       const QRectF &footprint_mm);
+
 			/// @return the stack the moves of this surface are on
 		QUndoStack &undoStack();
 
@@ -167,6 +279,12 @@ class MountingScene : public QGraphicsScene
 	signals:
 			/// @brief Emitted after a part has been put somewhere else
 		void itemMoved(const QString &item_uuid);
+			/// @brief Emitted after a part has been screwed onto the face
+		void itemMounted(const QString &item_uuid);
+			/// @brief Emitted after a part has been taken off the face
+		void itemUnmounted(const QString &item_uuid);
+			/// @brief Emitted after a piece has been cut to another length
+		void itemStretched(const QString &item_uuid);
 			/// @brief Emitted whenever what surface() would answer changed
 		void surfaceChanged();
 
@@ -176,11 +294,14 @@ class MountingScene : public QGraphicsScene
 	private:
 		void rebuild();
 		void updateSceneRect();
+		MountedPartItem *drawItem(const MountedItem &item);
 		bool pushMove(const QString &item_uuid,
 			      const QPointF &before_mm,
 			      const QPointF &after_mm);
 		void endDrag(MountedPartItem *part,
 			     const QPointF &previous_position_mm);
+		void endStretch(MountedProfileItem *piece,
+				const QRectF &previous_footprint_mm);
 
 		MountingSurface m_surface;
 		QHash<QString, MountedPartItem *> m_items;
