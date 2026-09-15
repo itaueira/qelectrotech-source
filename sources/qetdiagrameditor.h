@@ -71,6 +71,24 @@ class QETDiagramEditor : public QETMainWindow
 		QETProject *currentProject() const;
 		bool drawGrid() const;
 
+		/**
+			The components a Navigate over the selection of @a diagram would
+			take the reader to, each named once and never the selection itself.
+
+			Static, and asking nothing of a window, because what is navigable
+			is a question about a folio: the editor only decides what to do
+			with the answer. It is also what lets the rule be read without
+			opening a main window, which no test can do.
+
+			A component answers with the components it is linked to - a master
+			with its contacts, a contact with its coil, a folio arrow with the
+			arrow at the other end. A selected label answers for the component
+			carrying it: clicking a cross reference selects the text and not
+			the component under it, so refusing there would mean the command
+			works everywhere except on the very thing it is named after.
+		*/
+		static QList<Element *> navigationTargets(Diagram *diagram);
+
 	  protected:
 		bool event(QEvent *) override;
 	private:
@@ -191,6 +209,7 @@ class QETDiagramEditor : public QETMainWindow
 		void explodeSelection();
 		void setConductorTextVisible(bool visible);
 		void alignConductorTexts();
+		void navigateToReference();
 
 	public:
 		QAction
@@ -202,7 +221,8 @@ class QETDiagramEditor : public QETMainWindow
 			//DiagramView::contextMenuActions() offers it on the folio. This
 			//short public block is the list of actions the context menu is
 			//allowed to reach - everything else stays private.
-		*m_catalog_assign = nullptr;///< Assign a catalog part to the selected components
+		*m_catalog_assign = nullptr,///< Assign a catalog part to the selected components
+		*m_navigate = nullptr;      ///< Go to the other representation of the selected object
 		
 		QActionGroup
 		m_row_column_actions_group, /// Action related to add/remove rows/column in diagram

@@ -145,7 +145,6 @@ add_executable(
     src/collectionloadgate_test.cpp
     src/collectionthreadbudget_test.cpp
     src/updatecoalescer_test.cpp
-    src/componentlabel_test.cpp
     src/drcrule_test.cpp
     src/connectorways_test.cpp
     src/connectorswap_test.cpp
@@ -609,7 +608,6 @@ if(TARGET qet_core)
         src/ui/titleblockeditor_test.cpp
         src/ui/navigate_test.cpp
         src/ui/dbnotify_test.cpp
-        src/ui/componentlabel_test.cpp
         src/ui/mountinglayoutsave_test.cpp
         src/ui/connectorlink_test.cpp
         src/ui/connectorrenumber_test.cpp

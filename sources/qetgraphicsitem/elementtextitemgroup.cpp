@@ -25,6 +25,7 @@
 #include "dynamicelementtextitem.h"
 #include "element.h"
 #include "masterelement.h"
+#include "qetgraphicsitem.h"
 #include "qgraphicsitemutility.h"
 
 #include <QGraphicsSceneMouseEvent>
@@ -667,12 +668,44 @@ void ElementTextItemGroup::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 		QGraphicsItemGroup::mouseReleaseEvent(event);
 }
 
+/**
+	@brief ElementTextItemGroup::mouseDoubleClickEvent
+	A double click on the cross reference of a slave goes to its master.
+
+	The going is QetGraphicsItem::showItem and not a sequence written again
+	here: raising the folio, clearing it, selecting and zooming is one
+	behaviour, and it was spelled out in four places that had already drifted
+	apart - this one selected without clearing, so the reader arrived at a
+	folio holding the answer and whatever had been selected before, both
+	highlighted the same way. DynamicElementTextItem::zoomToLinkedElement and
+	TerminalStripItem::mouseDoubleClickEvent call the primitive exactly like
+	this, deselection included.
+
+	The deselection and the ungrab stay here because they are about this
+	group, not about the destination: showItem clears the folio it lands on,
+	which is not this one when the master is on another folio, and a group
+	left holding the mouse would drag itself on the next move.
+
+	The hit test reads the scene position and not the event position -
+	see the comment on it. That is the one line of this function that is
+	not the old one moved: read the wrong way, the test answered no to
+	every click, so what is below it had no way of running at all.
+	@param event
+*/
 void ElementTextItemGroup::mouseDoubleClickEvent(
 		QGraphicsSceneMouseEvent *event)
 {
 	if(m_slave_Xref_item)
 	{
-		if(m_slave_Xref_item->boundingRect().contains(mapToItem(m_slave_Xref_item, event->pos())))
+			//scenePos() and not pos(): a group handles the events of its
+			//children (QGraphicsItemGroup turns that on), so pos() is in
+			//the coordinates of the child the mouse is over, not in this
+			//group's - hoverEnterEvent below and mouseMoveEvent above both
+			//go through the scene for exactly that reason. Read as group
+			//coordinates, the point lands outside the cross reference and
+			//the double click answers nothing. Scene coordinates are the
+			//same point whichever item was handed the event.
+		if(m_slave_Xref_item->boundingRect().contains(m_slave_Xref_item->mapFromScene(event->scenePos())))
 		{
 			if(parentElement()->linkType() == Element::Slave && !parentElement()->linkedElements().isEmpty())
 			{
@@ -684,17 +717,7 @@ void ElementTextItemGroup::mouseDoubleClickEvent(
 				setSelected(false);
 				ungrabMouse();
 				
-				if(scene() != elmt->scene())
-					elmt->diagram()->showMe();
-				elmt->setSelected(true);
-				
-					//Zoom to the element
-				for(QGraphicsView *view : elmt->scene()->views())
-				{
-					QRectF fit = elmt->sceneBoundingRect();
-					fit.adjust(-200, -200, 200, 200);
-					view->fitInView(fit, Qt::KeepAspectRatioByExpanding);
-				}
+				QetGraphicsItem::showItem(elmt);
 			}
 		}
 	}

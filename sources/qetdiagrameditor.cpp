@@ -69,6 +69,8 @@
 #include "qetgraphicsitem/conductortextitem.h"
 #include "qetgraphicsitem/dynamicelementtextitem.h"
 #include "qetgraphicsitem/element.h"
+#include "qetgraphicsitem/elementtextitemgroup.h"
+#include "qetgraphicsitem/qetgraphicsitem.h"
 #include "qeticons.h"
 #include "qetmessagebox.h"
 #include "recentfiles.h"
@@ -98,6 +100,8 @@
 #include <QFileInfo>
 #include <QInputDialog>
 #include <QLocale>
+#include <utility>
+
 #ifdef BUILD_WITHOUT_KF
 #	include "ui/nokde/kautosavefile.h"
 #else
@@ -1294,6 +1298,16 @@ void QETDiagramEditor::setUpActions()
 		JumpToElementDialog dialog(diagram_view->diagram(), this);
 		dialog.exec();
 	});
+
+		//Navigate is a third way of doing what a double click on a cross
+		//reference already does, and that is the whole point: the double
+		//click only exists on the label itself, which the reader has to find
+		//first. The menu, the right click and the key work on the component,
+		//and they are what a project of eighty folios is read with.
+	m_navigate = new QAction(QET::Icons::FolioXrefComing, tr("Naviguer vers la référence"), this);
+	ShortcutManager::instance().registerAction(m_navigate, "diagrameditor.navigate", tr("Éditeur de schémas"), Qt::Key_F12);
+	m_navigate->setStatusTip(tr("Atteint l'autre représentation de l'objet sélectionné", "status bar tip"));
+	connect(m_navigate, &QAction::triggered, this, &QETDiagramEditor::navigateToReference);
 }
 
 /**
@@ -1813,6 +1827,92 @@ void QETDiagramEditor::goToElement(Element *element)
 	diagram->clearSelection();
 	element->setSelected(true);
 	element->ensureVisible();
+}
+
+/**
+	@brief QETDiagramEditor::navigationTargets
+	@param diagram the folio whose selection is being asked about
+	@return the components a Navigate would take the reader to
+
+	Written once, read twice: the command uses it to know where to go, and
+	DiagramView::contextMenuActions() uses it - through the enabled state of
+	the action - to know whether to offer the entry at all. Two ways of
+	answering "is there anywhere to go from here" would drift apart, and the
+	drift shows up as a menu entry that does nothing when clicked.
+
+	Nothing is chosen here. A component that is linked to three others
+	answers with three, and it is the caller that decides what to do with a
+	list of more than one.
+*/
+QList<Element *> QETDiagramEditor::navigationTargets(Diagram *diagram)
+{
+	QList<Element *> targets;
+	if (!diagram) {
+		return targets;
+	}
+
+	DiagramContent content(diagram);
+	QList<Element *> asked = content.m_elements;
+
+		//A label is a legitimate place to ask from, and the usual one:
+		//clicking a cross reference selects the text, never the component
+		//drawn under it. Both kinds are taken, because a label of a component
+		//is either a text of its own or a member of a group of them.
+	const QSet<DynamicElementTextItem *> texts = content.m_element_texts;
+	for (DynamicElementTextItem *text : texts)
+	{
+		if (Element *owner = text->parentElement()) {
+			asked << owner;
+		}
+	}
+
+	const QSet<ElementTextItemGroup *> groups = content.m_texts_groups;
+	for (ElementTextItemGroup *group : groups)
+	{
+		if (Element *owner = group->parentElement()) {
+			asked << owner;
+		}
+	}
+
+	for (Element *element : std::as_const(asked))
+	{
+			//Sorted by position, and the order matters: it is what makes the
+			//answer the same on two runs of the same project.
+		const QList<Element *> linked = element->linkedElements();
+		for (Element *target : linked)
+		{
+			if (target && target != element && !targets.contains(target)) {
+				targets << target;
+			}
+		}
+	}
+
+	return targets;
+}
+
+/**
+	@brief QETDiagramEditor::navigateToReference
+	Go to the other representation of what is selected.
+
+	Only when there is exactly one, which is also the only case the action is
+	enabled in - the test is repeated here rather than trusted, because a
+	shortcut fires whatever the menu is showing. Silently picking one of
+	several would be a reference that points somewhere the reader did not
+	choose, which is the one thing this task exists to make impossible.
+*/
+void QETDiagramEditor::navigateToReference()
+{
+	DiagramView *dv = currentDiagramView();
+	if (!dv) {
+		return;
+	}
+
+	const QList<Element *> targets = navigationTargets(dv->diagram());
+	if (targets.count() != 1) {
+		return;
+	}
+
+	QetGraphicsItem::showItem(targets.first());
 }
 
 /**
@@ -2403,6 +2503,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_find);
 	menu_edition -> addAction(m_jump_to_element);
+	menu_edition -> addAction(m_navigate);
 
 	// menu Projet
 	menu_project -> addAction(m_project_edit_properties);
@@ -3552,6 +3653,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 		QList <QAction *> action_list;
 		action_list << m_conductor_reset
 			    << m_find_element
+			    << m_navigate
 			    << m_cut
 			    << m_copy
 			    << m_delete_selection
@@ -3577,6 +3679,13 @@ void QETDiagramEditor::slot_updateComplexActions()
 	// number of selected elements
 	int selected_elements_count = dc.count(DiagramContent::Elements);
 	m_find_element->setEnabled(selected_elements_count == 1);
+
+		//Navigating answers « where is the other one », so it is offered when
+		//there is exactly one other one. Several is a question this cannot
+		//answer without choosing for the reader, and the choice list is what
+		//will lift the restriction; until then the entry stays away rather
+		//than picking. Read-only has no say: going somewhere writes nothing.
+	m_navigate->setEnabled(navigationTargets(diagram_).count() == 1);
 
 	//Actions that need items (elements, conductors, texts...) selected, to be enabled
 	bool copiable_items  = dc.hasCopiableItems();

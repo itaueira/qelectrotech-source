@@ -20,8 +20,11 @@
 #include "../qt_catch_tostring.h"
 
 #include "../../../../sources/diagram.h"
+#include "../../../../sources/qetdiagrameditor.h"
 #include "../../../../sources/qetgraphicsitem/crossrefitem.h"
+#include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
+#include "../../../../sources/qetgraphicsitem/elementtextitemgroup.h"
 #include "../../../../sources/qetgraphicsitem/qetgraphicsitem.h"
 #include "../../../../sources/qetproject.h"
 
@@ -31,6 +34,7 @@
 #include <QEvent>
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
+#include <QGraphicsTextItem>
 #include <QList>
 #include <QMultiMap>
 #include <QPainter>
@@ -221,6 +225,217 @@ namespace
 
 		QCoreApplication::sendEvent(folio, &event);
 	}
+
+		/// The example that ships links and labels together: twelve folios,
+		/// seventy links already made, and one coil answered by four
+		/// contacts. perceuse.qet above has six links and every one of them
+		/// is a pair, so it cannot say anything about the several case.
+	const char *linked_example = "affuteuse_250h.qet";
+
+	/**
+		A contact of @a project that knows its coil and draws its own label.
+
+		The three go together because the group needs the three: a slave
+		answers a double click only when it is linked, and it only builds a
+		cross reference when it holds a text taken from the label of the
+		component.
+	*/
+	struct SlaveWithLabel
+	{
+		Element                *slave = nullptr;
+		Element                *master = nullptr;
+		DynamicElementTextItem *label = nullptr;
+	};
+
+	/**
+		All of them, in an order that does not move between runs: folios in
+		project order, components sorted by uuid inside each.
+
+		A list and not the first one, because the case that clicks has one
+		more condition to check and can only check it after building the
+		group - see slaveXrefToClick().
+	*/
+	QList<SlaveWithLabel> slavesWithLabel(QETProject *project)
+	{
+		QList<SlaveWithLabel> found;
+
+		const QList<Diagram *> folios = project->diagrams();
+		for (Diagram *folio : folios)
+		{
+			const QList<Element *> elements = sortedElements(folio);
+			for (Element *element : elements)
+			{
+					//setSelected() refuses a hidden or disabled item without
+					//saying so, and a case built on one would look like a
+					//rule that answers nothing.
+				if (!element->isVisible() || !element->isEnabled()) {
+					continue;
+				}
+				if (element->linkType() != Element::Slave) {
+					continue;
+				}
+
+					//Exactly one, because that is what these cases are
+					//about: a contact that answers one coil is the paired
+					//case the command already handles, and a count of one is
+					//then an assertion and not a hope.
+				const QList<Element *> linked = element->linkedElements();
+				if (linked.count() != 1 || !linked.first()) {
+					continue;
+				}
+
+				const QList<DynamicElementTextItem *> texts =
+						element->dynamicTextItems();
+				for (DynamicElementTextItem *text : texts)
+				{
+					if (text->textFrom()
+					    != DynamicElementTextItem::ElementInfo) {
+						continue;
+					}
+					if (text->infoName() != QStringLiteral("label")) {
+						continue;
+					}
+					if (!text->isVisible() || !text->isEnabled()) {
+						continue;
+					}
+
+					SlaveWithLabel one;
+					one.slave = element;
+					one.master = linked.first();
+					one.label = text;
+					found << one;
+					break;
+				}
+			}
+		}
+
+		return found;
+	}
+
+	/**
+		A cross reference of a slave that a double click would actually reach.
+
+		The group is built here - with the two public functions the program
+		calls when a person groups a label - because no example ships one. The
+		group then builds the cross reference itself, which is the item the
+		click has to land on.
+
+		"Would actually reach" is the part that needs looking for rather than
+		assuming: the cross reference is laid out just under the label, which
+		on a schematic is where conductors and neighbours are, and a click on
+		a point covered by something else goes to that something else. So the
+		candidates are tried in order and the first uncovered one is taken.
+		Groups left on the ones passed over stay in memory and are dropped
+		with the project; nothing is written to the file.
+	*/
+	struct ClickableSlaveXref
+	{
+		SlaveWithLabel        link;
+		ElementTextItemGroup *group = nullptr;
+		QGraphicsTextItem    *xref = nullptr;
+		QPointF               scene_pos;
+	};
+
+	ClickableSlaveXref slaveXrefToClick(const QList<SlaveWithLabel> &candidates)
+	{
+		ClickableSlaveXref found;
+
+		for (const SlaveWithLabel &candidate : candidates)
+		{
+			Diagram *folio = candidate.slave->diagram();
+			if (!folio) {
+				continue;
+			}
+
+			ElementTextItemGroup *group =
+					candidate.slave->addTextGroup(QStringLiteral("bench"));
+			if (!group
+			    || !candidate.slave->addTextToGroup(candidate.label, group)) {
+				continue;
+			}
+
+			QGraphicsTextItem *xref = group->slaveXrefItem();
+			if (!xref || xref->boundingRect().isEmpty()) {
+				continue;
+			}
+
+			const QPointF pos =
+					xref->mapToScene(xref->boundingRect().center());
+				//items() answers topmost first: anything else there would
+				//take the click, and the case would be measuring something
+				//other than what it says.
+			if (folio->items(pos).value(0) != xref) {
+				continue;
+			}
+
+			found.link = candidate;
+			found.group = group;
+			found.xref = xref;
+			found.scene_pos = pos;
+			break;
+		}
+
+		return found;
+	}
+
+	/// The first component of @a project linked to at least @a least others.
+	Element *firstLinkedToSeveral(QETProject *project, int least)
+	{
+		const QList<Diagram *> folios = project->diagrams();
+		for (Diagram *folio : folios)
+		{
+			const QList<Element *> elements = sortedElements(folio);
+			for (Element *element : elements)
+			{
+				if (!element->isVisible() || !element->isEnabled()) {
+					continue;
+				}
+				if (element->linkedElements().count() >= least) {
+					return element;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
+	/// The first component of @a project that is linked to nothing at all.
+	Element *firstUnlinked(QETProject *project)
+	{
+		const QList<Diagram *> folios = project->diagrams();
+		for (Diagram *folio : folios)
+		{
+			const QList<Element *> elements = sortedElements(folio);
+			for (Element *element : elements)
+			{
+				if (!element->isVisible() || !element->isEnabled()) {
+					continue;
+				}
+				if (element->linkedElements().isEmpty()) {
+					return element;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
+	/// A component of @a folio that is neither @a one nor @a other.
+	Element *someOtherElement(Diagram *folio, Element *one, Element *other)
+	{
+		const QList<Element *> elements = sortedElements(folio);
+		for (Element *element : elements)
+		{
+			if (!element->isVisible() || !element->isEnabled()) {
+				continue;
+			}
+			if (element != one && element != other) {
+				return element;
+			}
+		}
+
+		return nullptr;
+	}
 }
 
 TEST_CASE("T31 — o destaque de navegação deixa a folha com um item selecionado, "
@@ -394,4 +609,186 @@ TEST_CASE("T31 — o duplo clique numa referência cruzada real passa por showIt
 	CHECK(xref.target->isSelected());
 	CHECK_FALSE(stale->isSelected());
 	CHECK(target_folio->selectedItems().count() == 1);
+}
+
+TEST_CASE("T31 — o duplo clique no rótulo de um escravo passa pelo mesmo "
+	  "primitivo, e não por uma cópia dele",
+	  "[uibench][navigate]")
+{
+	/*
+		The group used to spell the going out again - deselect, ungrab, raise
+		the folio, select, zoom - instead of calling the primitive, and the
+		copy had already drifted: it selected without clearing, which is the
+		very defect the primitive was fixed for. Handing it the primitive is
+		an extraction and not a rewrite, so what is asserted here is that the
+		reader lands exactly where the copy landed, plus the one thing the fix
+		added: nothing else left highlighted.
+	*/
+	UiBench::Project project(linked_example);
+	{
+		INFO(project.error().toStdString());
+		REQUIRE(project.isOpen());
+	}
+
+	const QList<SlaveWithLabel> candidates =
+			slavesWithLabel(project.project());
+	const ClickableSlaveXref clickable = slaveXrefToClick(candidates);
+	{
+		INFO("nenhuma referência de escravo clicável em " << linked_example
+		     << ": foram tentados " << candidates.count()
+		     << " contatos ligados, e passar seria pior que falhar");
+		REQUIRE(clickable.group != nullptr);
+		REQUIRE(clickable.xref != nullptr);
+	}
+
+	Element *slave = clickable.link.slave;
+	Element *master = clickable.link.master;
+	Diagram *slave_folio = slave->diagram();
+	Diagram *master_folio = master->diagram();
+	REQUIRE(slave_folio != nullptr);
+	REQUIRE(master_folio != nullptr);
+
+		//Something else already selected where the click is going to land,
+		//and the group itself selected: the two things the copy got wrong.
+	Element *stale = someOtherElement(master_folio, master, slave);
+	REQUIRE(stale != nullptr);
+
+	const QList<Diagram *> folios = project.diagrams();
+	for (Diagram *folio : folios) {
+		folio->clearSelection();
+	}
+	stale->setSelected(true);
+	clickable.group->setSelected(true);
+	REQUIRE(clickable.group->isSelected());
+
+	doubleClickAt(slave_folio, clickable.scene_pos);
+
+	CHECK(master->isSelected());
+	CHECK_FALSE(stale->isSelected());
+	CHECK(master_folio->selectedItems().count() == 1);
+
+		//The group lets go of the selection and of the mouse whether or not
+		//the coil is on its folio - that part stayed where it was, because it
+		//is about the group and not about the destination.
+	CHECK_FALSE(clickable.group->isSelected());
+}
+
+TEST_CASE("T31 — o comando Navegar sabe para onde ir, e se cala quando são "
+	  "vários",
+	  "[uibench][navigate]")
+{
+	/*
+		QETDiagramEditor::navigationTargets is what the command uses to know
+		where to go, and what the context menu uses - through the enabled
+		state of the action - to know whether to offer the entry at all. It is
+		asked here directly: the action, the key and the menu entry need a
+		main window, which no case in this suite opens, but the answer all
+		three rest on does not.
+	*/
+	UiBench::Project project(linked_example);
+	{
+		INFO(project.error().toStdString());
+		REQUIRE(project.isOpen());
+	}
+
+	const SlaveWithLabel found =
+			slavesWithLabel(project.project()).value(0);
+	{
+		INFO("nenhum contato ligado com rótulo próprio em " << linked_example
+		     << ": sem ele este caso não olha ligação nenhuma");
+		REQUIRE(found.slave != nullptr);
+		REQUIRE(found.master != nullptr);
+		REQUIRE(found.label != nullptr);
+	}
+
+	Diagram *slave_folio = found.slave->diagram();
+	REQUIRE(slave_folio != nullptr);
+
+	const QList<Diagram *> folios = project.diagrams();
+	for (Diagram *folio : folios) {
+		folio->clearSelection();
+	}
+
+	SECTION("sem seleção não há para onde ir")
+	{
+		CHECK(QETDiagramEditor::navigationTargets(slave_folio).isEmpty());
+	}
+
+	SECTION("um contato selecionado responde a bobina dele, uma vez só")
+	{
+		found.slave->setSelected(true);
+
+		const QList<Element *> targets =
+				QETDiagramEditor::navigationTargets(slave_folio);
+		REQUIRE(targets.count() == 1);
+		CHECK(targets.first() == found.master);
+	}
+
+	SECTION("o rótulo responde pelo componente que o carrega")
+	{
+			//The usual way of asking, and the reason a label is not refused:
+			//clicking a cross reference selects the text drawn there, never
+			//the component under it. A command that worked on everything
+			//except the label would be a command that does not work where it
+			//is used.
+		found.label->setSelected(true);
+		REQUIRE_FALSE(found.slave->isSelected());
+
+		const QList<Element *> targets =
+				QETDiagramEditor::navigationTargets(slave_folio);
+		REQUIRE(targets.count() == 1);
+		CHECK(targets.first() == found.master);
+	}
+
+	SECTION("o componente e o rótulo dele juntos não contam o destino "
+		"duas vezes")
+	{
+		found.slave->setSelected(true);
+		found.label->setSelected(true);
+
+		const QList<Element *> targets =
+				QETDiagramEditor::navigationTargets(slave_folio);
+		CHECK(targets.count() == 1);
+	}
+
+	SECTION("vários destinos continuam vários: a escolha não se faz aqui")
+	{
+			//A coil answered by several contacts. The command refuses to act
+			//on this - it is enabled on a count of one - and the choice list
+			//is what will lift the refusal. The count is what the refusal is
+			//made of: going silently to one of four would be a reference
+			//pointing somewhere the reader did not choose.
+		Element *several = firstLinkedToSeveral(project.project(), 2);
+		{
+			INFO("nenhum componente ligado a dois ou mais em "
+			     << linked_example << ": sem ele este trecho não olha nada");
+			REQUIRE(several != nullptr);
+		}
+
+		Diagram *folio = several->diagram();
+		REQUIRE(folio != nullptr);
+		several->setSelected(true);
+
+		const QList<Element *> targets =
+				QETDiagramEditor::navigationTargets(folio);
+		CHECK(targets.count() >= 2);
+		CHECK_FALSE(targets.contains(several));
+	}
+
+	SECTION("um componente sem ligação não responde nada")
+	{
+		Element *alone = firstUnlinked(project.project());
+		REQUIRE(alone != nullptr);
+
+		Diagram *folio = alone->diagram();
+		REQUIRE(folio != nullptr);
+		alone->setSelected(true);
+
+		CHECK(QETDiagramEditor::navigationTargets(folio).isEmpty());
+	}
+
+	SECTION("uma folha que não existe responde vazio, e não estoura")
+	{
+		CHECK(QETDiagramEditor::navigationTargets(nullptr).isEmpty());
+	}
 }

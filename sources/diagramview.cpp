@@ -1196,6 +1196,15 @@ QList<QAction *> DiagramView::contextMenuActions() const
 			list << qde->m_copy;
 			list << m_multi_paste;
 			list << m_separators.at(0);
+				//Going to the other representation of what is under the
+				//cursor is the gesture a schematic is read with, so it is
+				//offered here and not only in the Edition menu. No test of
+				//the selection is written here on purpose: the action is
+				//enabled exactly when there is somewhere to go
+				//(QETDiagramEditor::navigationTargets), and the loop below
+				//drops it when there is not. Asking the question a second
+				//way would be a second answer to keep in step.
+			list << qde->m_navigate;
 			list << m_create_template; // Add the create template action
 			list << qde->m_conductor_reset;
 				//Assigning a catalog part is offered here, and not only in the
