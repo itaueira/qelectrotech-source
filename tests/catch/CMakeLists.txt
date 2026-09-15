@@ -137,6 +137,7 @@ add_executable(
     src/mountinglayout_test.cpp
     src/mountingcheck_test.cpp
     src/mountingmeasure_test.cpp
+    src/drillingtable_test.cpp
     src/mountingpartview_test.cpp
     src/mountingprofile_test.cpp
     src/locationboundary_test.cpp
@@ -306,6 +307,17 @@ add_executable(
     # sources/qetgraphicsitem and sources/undocommand.
     ${QET_DIR}/sources/location/mountingmeasure.cpp
     ${QET_DIR}/sources/location/mountingmeasure.h
+    # What the workshop is handed to drill from: where each hole is, how big,
+    # what for, and whose. A record and the delimited text it goes out as -
+    # no sheet metal drawn, no project open - which is what lets the defect
+    # this file exists against be pinned before there is a drilling view to
+    # produce one. That defect is silent: a destination holding the
+    # separator shifts every column of its row, and the shifted row opens in
+    # a spreadsheet looking exactly as well formed as a right one. The
+    # quoting itself is not here, it is csvwriter below; what is here is
+    # that this table goes through it.
+    ${QET_DIR}/sources/location/drillingtable.cpp
+    ${QET_DIR}/sources/location/drillingtable.h
     # The road from a product code to the body of the part: how big it is, how
     # much air it wants, where its axis is. It is the one file of the layout
     # that opens the catalog, and it is here because both of its ends already
