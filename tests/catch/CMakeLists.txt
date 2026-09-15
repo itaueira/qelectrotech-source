@@ -657,6 +657,13 @@ if(TARGET qet_core)
         # andar abaixo, em option_test.cpp do C_unittests, e não se repete
         # aqui.
         src/ui/projectoptions_test.cpp
+        # Os cinco gestos sobre a árvore de opções como passos da pilha do
+        # projeto: quantos passos cada um deixa, como o menu Desfazer os chama,
+        # e que a operação que não muda nada não deixa passo nenhum. Precisa de
+        # projeto aberto porque a pilha é do projeto — a aritmética da árvore
+        # fica um andar abaixo, em option_test.cpp do C_unittests, e não se
+        # repete aqui.
+        src/ui/optionundo_test.cpp
         src/ui/connectorlink_test.cpp
         src/ui/connectorrenumber_test.cpp
         # Which connectors of an open project nobody can count the ways of,

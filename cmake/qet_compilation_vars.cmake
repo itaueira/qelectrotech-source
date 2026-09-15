@@ -1026,6 +1026,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/editiopointcommand.h
   ${QET_DIR}/sources/undocommand/editlocationtreecommand.cpp
   ${QET_DIR}/sources/undocommand/editlocationtreecommand.h
+  ${QET_DIR}/sources/undocommand/editoptiontreecommand.cpp
+  ${QET_DIR}/sources/undocommand/editoptiontreecommand.h
   ${QET_DIR}/sources/undocommand/explodeelementcommand.cpp
   ${QET_DIR}/sources/undocommand/explodeelementcommand.h
   ${QET_DIR}/sources/undocommand/groupedupdatecommand.cpp
