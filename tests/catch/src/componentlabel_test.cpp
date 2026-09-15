@@ -19,6 +19,8 @@
 
 #include "qt_catch_tostring.h"
 
+#include "../../../sources/autoNum/iecstructure.h"
+#include "../../../sources/diagramcontext.h"
 #include "../../../sources/label/componentlabelquery.h"
 
 /*
@@ -62,6 +64,23 @@ namespace {
 			r.insert(QStringLiteral("exclude_from_bom"), excluded);
 		}
 		return r;
+	}
+
+	/**
+		One entry, read by a project that never turned the identification
+		structure on - which is the default, and the state of every project
+		delivered so far.
+
+		The cases that use it say more than they did before the composition
+		was wired in: each of them now also states that with the structure
+		off the tag on the tape is the stored field, character for
+		character. That is the promise the switch is worth having for, and
+		it is checked here on every row a case builds rather than once.
+	*/
+	LabelEntry entryWithStructureOff(const QHash<QString, QString> &r)
+	{
+		return ComponentLabelQuery::entryFromRow(
+				r, IecStructureSettings(), DiagramContext());
 	}
 }
 
@@ -122,7 +141,7 @@ TEST_CASE("T21 — a component row becomes a label, and empty fields take no lin
 	r.insert(QStringLiteral("location_path"), QStringLiteral("CT1/QCM"));
 	r.insert(QStringLiteral("folio"), QStringLiteral("4"));
 
-	const LabelEntry entry = ComponentLabelQuery::entryFromRow(r);
+	const LabelEntry entry = entryWithStructureOff(r);
 
 	CHECK(entry.primary_text == QStringLiteral("KM1"));
 	CHECK(entry.source == LabelSource::Component);
@@ -151,25 +170,25 @@ TEST_CASE("T21 — the location falls back to the plain field when there is no p
 	r.insert(QStringLiteral("location_path"), QString());
 	r.insert(QStringLiteral("location"), QStringLiteral("QCM"));
 
-	CHECK(ComponentLabelQuery::entryFromRow(r).location
+	CHECK(entryWithStructureOff(r).location
 	      == QStringLiteral("QCM"));
 }
 
 TEST_CASE("T21 — an item kept out of the parts list still becomes a label",
 	  "[t21][label]")
 {
-	const LabelEntry excluded = ComponentLabelQuery::entryFromRow(
+	const LabelEntry excluded = entryWithStructureOff(
 			row(QStringLiteral("X1"), 2, QStringLiteral("true")));
 	CHECK(excluded.primary_text == QStringLiteral("X1"));
 	CHECK(excluded.excluded_from_bom);
 
-	const LabelEntry ordinary = ComponentLabelQuery::entryFromRow(
+	const LabelEntry ordinary = entryWithStructureOff(
 			row(QStringLiteral("X2"), 2, QStringLiteral("false")));
 	CHECK_FALSE(ordinary.excluded_from_bom);
 
 		//A row that never carried the field at all - an older project, or
 		//a component the box was never shown for - is not excluded either.
-	CHECK_FALSE(ComponentLabelQuery::entryFromRow(
+	CHECK_FALSE(entryWithStructureOff(
 			row(QStringLiteral("X3"), 2)).excluded_from_bom);
 }
 
@@ -177,9 +196,9 @@ TEST_CASE("T21 — each label carries the revision of its own sheet",
 	  "[t21][label]")
 {
 	LabelEntryList entries;
-	entries << ComponentLabelQuery::entryFromRow(row(QStringLiteral("KM1"), 1))
-		<< ComponentLabelQuery::entryFromRow(row(QStringLiteral("KM2"), 2))
-		<< ComponentLabelQuery::entryFromRow(row(QStringLiteral("KM3"), 1));
+	entries << entryWithStructureOff(row(QStringLiteral("KM1"), 1))
+		<< entryWithStructureOff(row(QStringLiteral("KM2"), 2))
+		<< entryWithStructureOff(row(QStringLiteral("KM3"), 1));
 
 	QHash<int, QString> revisions;
 	revisions.insert(1, QStringLiteral("A"));
@@ -200,8 +219,8 @@ TEST_CASE("T21 — a sheet with no revision does not borrow one",
 	  "[t21][label]")
 {
 	LabelEntryList entries;
-	entries << ComponentLabelQuery::entryFromRow(row(QStringLiteral("KM1"), 1))
-		<< ComponentLabelQuery::entryFromRow(row(QStringLiteral("KM2"), 7));
+	entries << entryWithStructureOff(row(QStringLiteral("KM1"), 1))
+		<< entryWithStructureOff(row(QStringLiteral("KM2"), 7));
 
 	QHash<int, QString> revisions;
 	revisions.insert(1, QStringLiteral("A"));
@@ -221,9 +240,179 @@ TEST_CASE("T21 — a sheet with no revision does not borrow one",
 	QHash<QString, QString> broken;
 	broken.insert(QStringLiteral("label"), QStringLiteral("KM9"));
 	broken.insert(QStringLiteral("diagram_position"), QStringLiteral("--"));
-	unplaced << ComponentLabelQuery::entryFromRow(broken);
+	unplaced << entryWithStructureOff(broken);
 	CHECK(unplaced.at(0).folio_position == -1);
 
 	ComponentLabelQuery::applyFolioRevisions(unplaced, revisions);
 	CHECK(unplaced.at(0).revision.isEmpty());
+}
+
+TEST_CASE("T21 — the tag of a row is composed, never the stored field",
+	  "[t21][label][iec]")
+{
+	/*
+		The gap this closes, measured on the fork: no export applied the
+		identification structure. The data base keeps
+		Element::actualLabel() in the `label` column, so a tape printed
+		from that column names a component the folio beside it does not
+		name - K3 on the tape, =CT1+QCM-K3 on the sheet - and nobody sees
+		it until the two are held together at the bench.
+	*/
+	const DiagramContext folio = ComponentLabelQuery::folioInformation(
+			QStringLiteral("CT1"), QStringLiteral("QCM"));
+
+	IecStructureSettings settings;
+	settings.enabled = true;
+
+	SECTION("what the folio says is inherited by the tag on the tape")
+	{
+		settings.display = IecTagDisplay::Full;
+		CHECK(ComponentLabelQuery::entryFromRow(
+			      row(QStringLiteral("K3"), 1), settings, folio)
+		      .primary_text == QStringLiteral("=CT1+QCM-K3"));
+
+		settings.display = IecTagDisplay::Short;
+		CHECK(ComponentLabelQuery::entryFromRow(
+			      row(QStringLiteral("K3"), 1), settings, folio)
+		      .primary_text == QStringLiteral("-K3"));
+	}
+
+	SECTION("what the row carries itself wins, field by field")
+	{
+		settings.display = IecTagDisplay::Full;
+
+		QHash<QString, QString> r = row(QStringLiteral("K3"), 1);
+		r.insert(IecStructure::plantKey(), QStringLiteral("CT2"));
+		CHECK(ComponentLabelQuery::entryFromRow(r, settings, folio)
+		      .primary_text == QStringLiteral("=CT2+QCM-K3"));
+
+			//The place assigned from the tree of the project, which is
+			//the preferred source of the `+` and is read whatever the
+			//project said about the free text field.
+		QHash<QString, QString> placed = row(QStringLiteral("K3"), 1);
+		placed.insert(IecStructure::locationPathKey(),
+			      QStringLiteral("QCP1"));
+		CHECK(ComponentLabelQuery::entryFromRow(placed, settings, folio)
+		      .primary_text == QStringLiteral("=CT1+QCP1-K3"));
+	}
+
+	SECTION("the free text switch of the project reaches the row")
+	{
+			//It is read off the settings that were handed in, and not
+			//decided here: were the composition rebuilding its own
+			//settings, the second check would come back with +QCM.
+		settings.display = IecTagDisplay::Full;
+
+		QHash<QString, QString> r = row(QStringLiteral("K3"), 1);
+		r.insert(IecStructure::locationKey(), QStringLiteral("QCP"));
+
+		CHECK(ComponentLabelQuery::entryFromRow(r, settings, folio)
+		      .primary_text == QStringLiteral("=CT1+QCM-K3"));
+
+		settings.location_from_element = true;
+		CHECK(ComponentLabelQuery::entryFromRow(r, settings, folio)
+		      .primary_text == QStringLiteral("=CT1+QCP-K3"));
+	}
+
+	SECTION("a terminal number is a connection, in whichever form")
+	{
+			//The common case of a label, and the one a composition can
+			//most easily spoil: a strip of forty terminals whose tape
+			//reads -7 instead of 7 is forty wrong labels.
+		settings.display = IecTagDisplay::Short;
+		CHECK(ComponentLabelQuery::entryFromRow(
+			      row(QStringLiteral("7"), 1), settings, folio)
+		      .primary_text == QStringLiteral("7"));
+
+			//The full form is not the same string, and the tape has to
+			//follow the folio into it: the number is the connection of
+			//the norm, written after the colon, with no product invented
+			//to carry a dash. CU-10.10 is where the drawing settled it.
+		settings.display = IecTagDisplay::Full;
+		CHECK(ComponentLabelQuery::entryFromRow(
+			      row(QStringLiteral("7"), 1), settings, folio)
+		      .primary_text == QStringLiteral("=CT1+QCM:7"));
+	}
+
+	SECTION("composing the tag does not touch the other fields of the entry")
+	{
+			//The location stays as it was stored: writing it the way the
+			//standard writes it is the step that applies
+			//displayedInfoValue(), and it is not this one. Said with an
+			//assertion because doing it here, in passing, is exactly the
+			//shortcut that would put a second copy of that rule in the
+			//code.
+		settings.display = IecTagDisplay::Full;
+
+		QHash<QString, QString> r = row(QStringLiteral("K3"), 4);
+		r.insert(IecStructure::locationPathKey(),
+			 QStringLiteral("CT1/QCM"));
+		r.insert(QStringLiteral("designation"), QStringLiteral("LC1D09"));
+
+		const LabelEntry entry =
+				ComponentLabelQuery::entryFromRow(r, settings, folio);
+
+		CHECK(entry.location == QStringLiteral("CT1/QCM"));
+		REQUIRE(entry.secondary_texts.count() == 1);
+		CHECK(entry.secondary_texts.at(0) == QStringLiteral("LC1D09"));
+		CHECK(entry.folio_position == 4);
+	}
+}
+
+TEST_CASE("T21 — the columns the composition needs are the ones selected",
+	  "[t21][label][iec]")
+{
+	/*
+		A tag composed from a row is only as good as the row. The three
+		keys the composition reads have to be in the SELECT, and they are
+		asked for by the name IecStructure gives them rather than by a
+		literal written twice - a column renamed on one side and not the
+		other would compose against empty fields and print a short tag
+		that looks perfectly reasonable.
+	*/
+	const QStringList columns = ComponentLabelQuery::columns();
+
+	CHECK(columns.contains(IecStructure::plantKey()));
+	CHECK(columns.contains(IecStructure::locationKey()));
+	CHECK(columns.contains(IecStructure::locationPathKey()));
+
+		//And they reach the statement, which is what the collector reads
+		//by index.
+	const QString statement = ComponentLabelQuery::selectStatement();
+	for (const QString &key : {IecStructure::plantKey(),
+				   IecStructure::locationKey(),
+				   IecStructure::locationPathKey()})
+	{
+		INFO("missing column: " << key.toStdString());
+		CHECK(statement.contains(key));
+	}
+}
+
+TEST_CASE("T21 — the folio question asks for what the norm inherits",
+	  "[t21][label][iec]")
+{
+	const QString statement = ComponentLabelQuery::folioStructureStatement();
+
+	CHECK(statement.contains(QStringLiteral("project_summary_view")));
+	CHECK(statement.contains(IecStructure::plantKey()));
+
+		//The folio keeps its location under a name of its own, which is the
+		//one asymmetry between a folio and a component. Asking for the
+		//component's name here would answer nothing, and answer it quietly.
+	CHECK(statement.contains(IecStructure::folioLocationKey()));
+	CHECK_FALSE(statement.contains(IecStructure::locationPathKey()));
+
+		//By sheet position, the same key the revisions come back by.
+	CHECK(statement.contains(QStringLiteral("pos")));
+
+	SECTION("and the two values become the information a sheet hands down")
+	{
+		const DiagramContext info = ComponentLabelQuery::folioInformation(
+				QStringLiteral("CT1"), QStringLiteral("QCM"));
+
+		const IecStructure folio =
+				IecStructure::fromFolioInformation(info);
+		CHECK(folio.plant    == QStringLiteral("CT1"));
+		CHECK(folio.location == QStringLiteral("QCM"));
+	}
 }

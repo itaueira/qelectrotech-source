@@ -1226,3 +1226,145 @@ TEST_CASE("a repeated prefix is one location, read back as it was written",
 		}
 	}
 }
+
+/*
+	The composition as one function, reachable without a drawing.
+
+	It used to live inside Element::composedLabel(), and the consequence was
+	not an aesthetic one: an export has no Element to ask, so every export -
+	the parts list, the wiring list, the command line - wrote the stored field
+	and the norm reached the sheet and stopped there. The cases below are the
+	net under moving it out: they fix what the old chain answered, so that a
+	composition that starts answering something else is a red case and not a
+	drawing somebody notices later.
+
+	The drawing itself is held by tests/catch/src/ui/iecoff_test.cpp, which
+	asks Element::displayedLabel() for K1, -K1 and =CT1+A1-K1 with a project
+	open. This file cannot: it has no Element. The two together are what the
+	move is checked by, and neither of them alone.
+*/
+TEST_CASE("T21 — the composition is one function, and it answers as it did",
+	  "[iec][t21]")
+{
+	DiagramContext folio;
+	folio.addValue(QStringLiteral("plant"),   QStringLiteral("CT1"));
+	folio.addValue(QStringLiteral("locmach"), QStringLiteral("QCM"));
+
+	DiagramContext element;   // inherits everything from the folio
+
+	SECTION("off, the stored tag comes back byte for byte")
+	{
+		IecStructureSettings off;
+		REQUIRE(off.enabled == false);
+
+		for (const QString &tag : {QStringLiteral("K3"),
+					   QStringLiteral("=CT1+A1-K3"),
+					   QStringLiteral("Nota 1"),
+					   QStringLiteral("10A / 3P / F"),
+					   QStringLiteral("7"),
+					   QString()})
+		{
+			CHECK(off.composedTag(tag, element, folio) == tag);
+		}
+	}
+
+	SECTION("and that is not the off branch of displayedTag")
+	{
+		// The one case where the two differ, and the reason composedTag
+		// returns early instead of leaning on displayedTag: that branch
+		// takes a tag apart and puts it back together, so a structure
+		// somebody typed by hand comes back without it. Right for the
+		// preview of the dialog, which shows what the tag looks like
+		// today; wrong for a project that has to open unchanged.
+		IecStructureSettings off;
+		const QString typed = QStringLiteral("=CT1+A1-K3");
+
+		CHECK(off.displayedTag(
+			      IecStructure::fromFolioInformation(folio),
+			      IecStructure::fromElementInformation(typed, element))
+		      == QStringLiteral("K3"));
+
+		CHECK(off.composedTag(typed, element, folio) == typed);
+	}
+
+	SECTION("on, it is the chain the drawing walked, step for step")
+	{
+		IecStructureSettings settings;
+		settings.enabled = true;
+
+		settings.display = IecTagDisplay::Short;
+		CHECK(settings.composedTag(QStringLiteral("K3"), element, folio)
+		      == QStringLiteral("-K3"));
+
+		settings.display = IecTagDisplay::Full;
+		CHECK(settings.composedTag(QStringLiteral("K3"), element, folio)
+		      == QStringLiteral("=CT1+QCM-K3"));
+
+		// Written out the way Element::composedLabel() used to write it,
+		// and compared: this is the assertion that says the extraction
+		// moved the chain rather than rewrote it.
+		CHECK(settings.composedTag(QStringLiteral("K3"), element, folio)
+		      == settings.displayedTag(
+				 IecStructure::fromFolioInformation(folio),
+				 IecStructure::fromElementInformation(
+					 QStringLiteral("K3"), element,
+					 settings.location_from_element)));
+	}
+
+	SECTION("the switch of the free text field is carried, not dropped")
+	{
+		// composedTag takes no such parameter: it reads it off the
+		// settings, as the drawing did. Were it hard coded to false, the
+		// second check below would come back without the +QCP.
+		DiagramContext typed_place;
+		typed_place.addValue(QStringLiteral("location"),
+				     QStringLiteral("QCP"));
+
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Full;
+
+		CHECK(settings.composedTag(QStringLiteral("K3"), typed_place, folio)
+		      == QStringLiteral("=CT1+QCM-K3"));
+
+		settings.location_from_element = true;
+		CHECK(settings.composedTag(QStringLiteral("K3"), typed_place, folio)
+		      == QStringLiteral("=CT1+QCP-K3"));
+	}
+
+	SECTION("a terminal number is a connection, and the two forms differ")
+	{
+		// 173 of the 230 composed labels of the measured project are
+		// this, so it is the common case and not the corner: the dash of
+		// the norm marks a product, and a number is a connection.
+		//
+		// The two forms do not agree here, and that is the rule of
+		// CU-10.10 rather than an accident. The short form leaves the
+		// number alone; the full form says everything it knows - plant,
+		// location, connection - and invents no product in between. Both
+		// are checked, because a case that measured only the first one
+		// reads as though the number were never composed, and an export
+		// written on that belief prints a tag the sheet does not draw.
+		IecStructureSettings settings;
+		settings.enabled = true;
+
+		settings.display = IecTagDisplay::Short;
+		CHECK(settings.composedTag(QStringLiteral("7"), element, folio)
+		      == QStringLiteral("7"));
+
+		settings.display = IecTagDisplay::Full;
+		CHECK(settings.composedTag(QStringLiteral("7"), element, folio)
+		      == QStringLiteral("=CT1+QCM:7"));
+
+			// And no dash glued to the number in either form.
+		for (IecTagDisplay display : {IecTagDisplay::Short,
+					      IecTagDisplay::Context,
+					      IecTagDisplay::Full})
+		{
+			settings.display = display;
+			CHECK_FALSE(settings
+				    .composedTag(QStringLiteral("7"), element, folio)
+				    .contains(QStringLiteral("-7")));
+		}
+	}
+}

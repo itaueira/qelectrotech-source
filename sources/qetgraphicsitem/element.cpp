@@ -1813,6 +1813,13 @@ QString Element::displayedLabel()
 	somebody typed, so turning the structure off puts the drawing back with
 	nothing to undo. Storing the composition would have made the switch a one
 	way door.
+
+	The composition itself is IecStructureSettings::composedTag(), and what is
+	left here is what only an element can answer: which project the settings
+	come from, and which folio hands the inheritance down. It moved there so
+	that an export could reach it - a label printed for the workshop has no
+	Element to ask, and while this was the only way in, every export wrote the
+	stored field and the norm never left the sheet.
 */
 QString Element::composedLabel(const QString &label)
 {
@@ -1824,22 +1831,11 @@ QString Element::composedLabel(const QString &label)
 	if (!project) {
 		return label;
 	}
-	const IecStructureSettings settings = project->iecSettings();
-	if (!settings.enabled) {
-		return label;
-	}
 
-		//Read in IecStructure and not here: the dialog of the settings shows
-		//a preview of this very composition, and a second copy of the reading
-		//is a preview free to stop matching the drawing.
-	const IecStructure element_structure =
-			IecStructure::fromElementInformation(label, m_data.m_informations,
-							     settings.location_from_element);
-	const IecStructure folio_structure =
-			IecStructure::fromFolioInformation(
-				diagram_->border_and_titleblock.titleblockInformation());
-
-	return settings.displayedTag(folio_structure, element_structure);
+	return project->iecSettings().composedTag(
+			label,
+			m_data.m_informations,
+			diagram_->border_and_titleblock.titleblockInformation());
 }
 
 /**

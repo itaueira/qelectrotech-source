@@ -580,6 +580,38 @@ QString IecStructureSettings::displayedTag(const IecStructure &folio,
 	return full.toShortTag();
 }
 
+/**
+	@brief IecStructureSettings::composedTag
+	@param label
+	@param element_info
+	@param folio_info
+	@return the tag to write for that component
+
+	The chain the drawing walks, with nothing of the drawing in it: the two
+	readings, then displayedTag(). Element::composedLabel() is this plus the
+	project the settings come from, and a label export is this plus a query -
+	neither of them a second copy of the chain.
+
+	The early return is not the same answer as the off branch of
+	displayedTag(), and it is the reason this function exists rather than the
+	callers doing the two readings themselves: with the structure off the
+	stored tag is given back untouched, which is the promise a delivered
+	project is opened on.
+*/
+QString IecStructureSettings::composedTag(const QString &label,
+					  const DiagramContext &element_info,
+					  const DiagramContext &folio_info) const
+{
+	if (!enabled) {
+		return label;
+	}
+
+	return displayedTag(
+			IecStructure::fromFolioInformation(folio_info),
+			IecStructure::fromElementInformation(label, element_info,
+							     location_from_element));
+}
+
 bool IecStructureSettings::operator==(const IecStructureSettings &other) const
 {
 	return enabled == other.enabled && display == other.display

@@ -17,6 +17,7 @@
 */
 #include "componentlabelcollector.h"
 
+#include "../autoNum/iecstructure.h"
 #include "../dataBase/projectdatabase.h"
 #include "../qetproject.h"
 #include "componentlabelquery.h"
@@ -50,6 +51,14 @@ LabelEntryList ComponentLabelCollector::collect()
 		//export does the same before its own query, for the same reason.
 	data_base->updateDB();
 
+		//The identification structure of the project, read once for the whole
+		//run: it is what decides whether the tag of a row is composed at all,
+		//and it cannot change while the rows are being read.
+	const IecStructureSettings settings = m_project->iecSettings();
+	const QHash<int, DiagramContext> folio_information =
+			settings.enabled ? folioInformation()
+					 : QHash<int, DiagramContext>();
+
 	const QStringList columns = ComponentLabelQuery::columns();
 	QSqlQuery query =
 			data_base->newQuery(ComponentLabelQuery::selectStatement());
@@ -64,7 +73,18 @@ LabelEntryList ComponentLabelCollector::collect()
 		for (int i = 0 ; i < columns.size() ; ++i) {
 			row.insert(columns.at(i), query.value(i).toString());
 		}
-		entries << ComponentLabelQuery::entryFromRow(row);
+
+			//The sheet of this row, so that the tag inherits from the folio
+			//it is drawn on and not from some other one. A row whose sheet
+			//is not in the map - a position that would not read as a number
+			//- is composed against an empty folio, which inherits nothing
+			//and invents nothing.
+		const int folio_position =
+				row.value(QStringLiteral("diagram_position")).toInt();
+
+		entries << ComponentLabelQuery::entryFromRow(
+				row, settings,
+				folio_information.value(folio_position));
 	}
 
 		//Second query, and the reason it is one is written where the
@@ -74,6 +94,42 @@ LabelEntryList ComponentLabelCollector::collect()
 	ComponentLabelQuery::applyFolioRevisions(entries, folioRevisions());
 
 	return entries;
+}
+
+QHash<int, DiagramContext> ComponentLabelCollector::folioInformation()
+{
+	QHash<int, DiagramContext> information;
+
+	if (m_project.isNull()) {
+		return information;
+	}
+	projectDataBase *data_base = m_project->dataBase();
+	if (!data_base) {
+		return information;
+	}
+
+	QSqlQuery query =
+			data_base->newQuery(
+				ComponentLabelQuery::folioStructureStatement());
+	if (!query.exec())
+	{
+			//Reported, and the run goes on with nothing inherited. The
+			//alternative would be a run of tags composed against a folio
+			//nobody read, which is worse than short tags: it would print
+			//the norm with the inherited parts missing and look right.
+		m_error = query.lastError().text();
+		return information;
+	}
+
+	while (query.next())
+	{
+		information.insert(
+				query.value(0).toInt(),
+				ComponentLabelQuery::folioInformation(
+					query.value(1).toString(),
+					query.value(2).toString()));
+	}
+	return information;
 }
 
 QHash<int, QString> ComponentLabelCollector::folioRevisions()

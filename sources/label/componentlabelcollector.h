@@ -20,6 +20,8 @@
 
 #include "labelentry.h"
 
+#include "../diagramcontext.h"
+
 #include <QHash>
 #include <QPointer>
 #include <QString>
@@ -42,10 +44,16 @@ class QETProject;
 	collecting before formatting rather than the other way round.
 
 	@par What this does not do yet
-	The texts come out as they are stored. Composing the tag from the
-	standard's structure, and writing a location the way the standard writes
-	it, are separate steps and are not applied here; until they are, a label
-	carries the plain stored label and the stored location path.
+	The location comes out as it is stored: writing it the way the standard
+	writes it is the step that applies QETInformation::displayedInfoValue(),
+	and it is not applied here.
+
+	The tag no longer comes out that way. It is composed through
+	IecStructureSettings::composedTag(), the function the sheet itself draws
+	with, so a project with the identification structure on prints the
+	structured tag rather than the stored field. With the structure off - the
+	default - the composition gives that field straight back, so nothing
+	changes for a project that never turned it on.
 */
 class ComponentLabelCollector
 {
@@ -67,6 +75,16 @@ class ComponentLabelCollector
 
 	private:
 		QHash<int, QString> folioRevisions();
+
+		/**
+			What each sheet hands down to the tags read from it, by sheet
+			position: its function and its location.
+
+			Asked only when the project has the structure on. A project
+			with it off inherits nothing, so the question has no answer to
+			give and is not put.
+		*/
+		QHash<int, DiagramContext> folioInformation();
 
 		QPointer<QETProject> m_project;
 		QString m_error;

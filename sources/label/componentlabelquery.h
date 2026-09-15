@@ -20,9 +20,13 @@
 
 #include "labelentry.h"
 
+#include "../diagramcontext.h"
+
 #include <QHash>
 #include <QString>
 #include <QStringList>
+
+class IecStructureSettings;
 
 /**
 	@brief What a component label asks the project data base, and what it
@@ -78,6 +82,35 @@ namespace ComponentLabelQuery
 	QString folioRevisionStatement();
 
 	/**
+		The function and the location each sheet carries, by sheet position:
+		what a component inherits from the folio it is drawn on.
+
+		A second question to the same view as the revision, and asked apart
+		for a reason that shows on the clock: with the structure off - the
+		default, and the state of every project delivered so far - it is not
+		asked at all, because nothing is inherited. Folded into the revision
+		statement it would be paid for by every export, to compose nothing.
+	*/
+	QString folioStructureStatement();
+
+	/**
+		The information of one sheet, as the composition of a tag reads it,
+		built from a row of folioStructureStatement().
+
+		@param plant the `=` the title block carries
+		@param locmach the `+` the title block carries
+
+		It is a DiagramContext and not the two strings because that is what
+		the drawing hands over - BorderTitleBlock::titleblockInformation() -
+		and the composition has to be given the same shape from both sides.
+		The keys are asked of IecStructure, which is where the asymmetry
+		between a folio and a component lives: the folio keeps its location
+		under another name.
+	*/
+	DiagramContext folioInformation(const QString &plant,
+					const QString &locmach);
+
+	/**
 		One entry built from one row of selectStatement(), the row given as
 		column name to value.
 
@@ -85,8 +118,27 @@ namespace ComponentLabelQuery
 		this row - it comes from the sheet - and filling it in needs the
 		second query, so a caller that forgets applyFolioRevisions() gets
 		labels with no revision rather than labels with a wrong one.
+
+		@param settings the identification structure of the project
+		@param folio_info what the sheet of this row hands down, from
+		folioInformation()
+
+		The text that goes on the tape is composed through
+		IecStructureSettings::composedTag(), the same function the sheet
+		draws with - never the `label` column on its own. That column is the
+		stored field, and a tape printed from it names a component the sheet
+		beside it does not name. The two are asked for rather than defaulted
+		on purpose: a collector that has not got them yet does not compile,
+		which is the one way to keep the raw field from reaching the tape by
+		omission.
+
+		With the structure off, which is what a default constructed
+		@a settings says, the composition gives the stored tag back
+		untouched.
 	*/
-	LabelEntry entryFromRow(const QHash<QString, QString> &row);
+	LabelEntry entryFromRow(const QHash<QString, QString> &row,
+				const IecStructureSettings &settings,
+				const DiagramContext &folio_info);
 
 	/**
 		Carry the revision of each sheet onto the entries read from it.

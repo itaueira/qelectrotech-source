@@ -291,6 +291,40 @@ class IecStructureSettings
 		QString displayedTag(const IecStructure &folio,
 				     const IecStructure &element) const;
 
+		/**
+			@brief The whole composition of a tag, from what the component
+			and its folio carry.
+			@param label : the tag the component carries, the formula already
+			resolved - Element::actualLabel(), or the `label` column of the
+			project data base, which holds the same thing
+			@param element_info : the information of the component
+			@param folio_info : the information of the title block of the
+			sheet it is drawn on
+			@return with the structure off, @a label untouched. With it on,
+			the tag the two readings and displayedTag() produce together.
+
+			The only entry point to the composition that does not need a
+			drawing, and that is what it is for. Element::composedLabel() is
+			this function plus the lookup of the project of the item; an
+			export is this function plus a query. While it did not exist the
+			composition was reachable through an Element and nowhere else, so
+			every export wrote the stored field: the norm reached the sheet
+			and stopped there, and a tape and a sheet named the same
+			component differently.
+
+			Note what the structure off returns: @a label itself, and not the
+			off branch of displayedTag(). The two are not the same string.
+			That branch takes the tag apart and puts it back together, so a
+			`=CT1+A1-K3` somebody typed by hand comes back as `K3`; it reads
+			that way for the preview of the dialog, which shows what the tag
+			looks like today. Everywhere else the promise is that a delivered
+			project reads exactly as it was delivered, and "exactly" is byte
+			for byte.
+		*/
+		QString composedTag(const QString &label,
+				    const DiagramContext &element_info,
+				    const DiagramContext &folio_info) const;
+
 		bool operator==(const IecStructureSettings &other) const;
 		bool operator!=(const IecStructureSettings &other) const;
 

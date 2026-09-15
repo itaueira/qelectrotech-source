@@ -17,8 +17,38 @@
 */
 #include "componentlabelquery.h"
 
+#include "../autoNum/iecstructure.h"
+#include "../diagramcontext.h"
+
 namespace ComponentLabelQuery
 {
+
+namespace {
+
+/**
+	@param row : one row of selectStatement()
+	@return the component information the composition of the tag reads
+
+	Three keys and not the whole row: these are the ones
+	IecStructure::fromElementInformation() looks for, and they are named by
+	the class that reads them rather than written out here, so a key that
+	moves does not quietly stop arriving. The tag itself is not among them -
+	it is passed to the composition as the label, exactly as the drawing
+	passes Element::actualLabel().
+*/
+DiagramContext elementInformation(const QHash<QString, QString> &row)
+{
+	DiagramContext info;
+	info.addValue(IecStructure::plantKey(),
+		      row.value(IecStructure::plantKey()));
+	info.addValue(IecStructure::locationKey(),
+		      row.value(IecStructure::locationKey()));
+	info.addValue(IecStructure::locationPathKey(),
+		      row.value(IecStructure::locationPathKey()));
+	return info;
+}
+
+} // namespace
 
 QString viewName()
 {
@@ -29,7 +59,11 @@ QStringList columns()
 {
 		//label first because it is the one line that has to be legible on
 		//the tape; the four that follow are what a fitter reads next, in
-		//that order. The last four are not printed as such: they say which
+		//that order. Then the three the composition of the tag reads, which
+		//are asked for by the name IecStructure gives them: the column of
+		//the view **is** the element information key, so taking the name
+		//from there is what keeps the column and its reader from drifting
+		//apart. The last three are not printed as such: they say which
 		//sheet the row came from and whether the user kept it off the
 		//purchase list.
 	static const QStringList list {
@@ -38,8 +72,9 @@ QStringList columns()
 		QStringLiteral("manufacturer"),
 		QStringLiteral("manufacturer_reference"),
 		QStringLiteral("function"),
-		QStringLiteral("location"),
-		QStringLiteral("location_path"),
+		IecStructure::plantKey(),
+		IecStructure::locationKey(),
+		IecStructure::locationPathKey(),
 		QStringLiteral("folio"),
 		QStringLiteral("diagram_position"),
 		QStringLiteral("exclude_from_bom")
@@ -65,11 +100,44 @@ QString folioRevisionStatement()
 			"SELECT pos, indexrev FROM project_summary_view ORDER BY pos");
 }
 
-LabelEntry entryFromRow(const QHash<QString, QString> &row)
+QString folioStructureStatement()
+{
+		//The same view and the same key as the revision, and the two columns
+		//the norm inherits from a sheet. Written out rather than taken from
+		//IecStructure like the element ones are: those are element
+		//information keys and these are diagram information keys, and the
+		//folio keeps its location under a name of its own.
+	return QStringLiteral(
+			"SELECT pos, plant, locmach FROM project_summary_view"
+			" ORDER BY pos");
+}
+
+DiagramContext folioInformation(const QString &plant, const QString &locmach)
+{
+	DiagramContext info;
+	info.addValue(IecStructure::plantKey(), plant);
+	info.addValue(IecStructure::folioLocationKey(), locmach);
+	return info;
+}
+
+LabelEntry entryFromRow(const QHash<QString, QString> &row,
+			const IecStructureSettings &settings,
+			const DiagramContext &folio_info)
 {
 	LabelEntry entry;
 	entry.source = LabelSource::Component;
-	entry.primary_text = row.value(QStringLiteral("label"));
+
+		//Composed, never the column on its own. The `label` column holds
+		//Element::actualLabel() - what somebody typed, or what a formula
+		//produced - and that is the data, not the tag the sheet shows. With
+		//the structure on, a tape printed from the column names a component
+		//the folio beside it does not name; with it off, composedTag() gives
+		//the very same string back, so this costs nothing where nothing is
+		//asked of it.
+	entry.primary_text = settings.composedTag(
+			row.value(QStringLiteral("label")),
+			elementInformation(row),
+			folio_info);
 
 		//Empty fields are dropped rather than printed as blank lines: tape
 		//is a fixed width and a blank line is a line of it wasted. The price
@@ -93,8 +161,8 @@ LabelEntry entryFromRow(const QHash<QString, QString> &row)
 		//kept as they were stored, and turning them into the mark the
 		//standard writes is the job of the step that applies
 		//QETInformation::displayedInfoValue().
-	const QString path = row.value(QStringLiteral("location_path"));
-	entry.location = path.isEmpty() ? row.value(QStringLiteral("location"))
+	const QString path = row.value(IecStructure::locationPathKey());
+	entry.location = path.isEmpty() ? row.value(IecStructure::locationKey())
 					: path;
 
 	entry.folio = row.value(QStringLiteral("folio"));
