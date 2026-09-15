@@ -516,6 +516,77 @@
     </message>
 </context>
 <context>
+    <name>AssemblyStateDialog</name>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="35"/>
+        <source>État de montage du projet</source>
+        <comment>window title</comment>
+        <translation>Estado de montagem do projeto</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="94"/>
+        <source>Une fois le châssis câblé, les repères sont imprimés et collés sur les appareils : les renuméroter ne coûte pas un clic, cela coûte une visite avec une étiqueteuse. Marquer le projet comme monté prend une photographie de ce qui existe à cet instant, et l&apos;automatisation ne numérote plus que ce qui sera dessiné après.</source>
+        <translation>Uma vez que o quadro está cabeado, as tags são impressas e coladas nos aparelhos: renumerá-las não custa um clique, custa uma visita com etiquetadora. Marcar o projeto como montado tira uma fotografia do que existe neste instante, e a automação só numera mais o que for desenhado depois.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="114"/>
+        <source>État du projet :</source>
+        <translation>Estado do projeto:</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="167"/>
+        <source>État actuel : %1, %n élément(s) figé(s).</source>
+        <translation>
+            <numerusform>Estado atual: %1, %n elemento congelado.</numerusform>
+            <numerusform>Estado atual: %1, %n elementos congelados.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="171"/>
+        <source>État actuel : %1, rien n&apos;est figé.</source>
+        <translation>Estado atual: %1, nada está congelado.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="181"/>
+        <source>%n composant(s)</source>
+        <translation>
+            <numerusform>%n componente</numerusform>
+            <numerusform>%n componentes</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="183"/>
+        <source>%n conducteur(s)</source>
+        <translation>
+            <numerusform>%n condutor</numerusform>
+            <numerusform>%n condutores</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="187"/>
+        <source>Confirmer fige le repère de %1 : la renumérotation automatique les saute et n&apos;offre plus leur repère à un composant dessiné après.
+
+Le texte de %2 est également photographié, pour la numérotation des potentiels — qui ne sait pas encore lire cette photographie et continue donc de numéroter comme aujourd&apos;hui.</source>
+        <translation>Confirmar congela a tag de %1: a renumeração automática os pula e não oferece mais a tag deles a um componente desenhado depois.
+
+O texto de %2 também é fotografado, para a numeração de potenciais — que ainda não sabe ler essa fotografia e por isso continua numerando como hoje.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="199"/>
+        <source>Le projet revient en étude : la photographie est effacée et l&apos;automatisation retrouve l&apos;ensemble du dessin.
+
+Les verrous posés à la main sur un composant ne sont pas touchés — ils n&apos;ont jamais fait partie de la photographie, et survivent donc au retour en étude.</source>
+        <translation>O projeto volta para o estudo: a fotografia é apagada e a automação recupera o desenho inteiro.
+
+Os travamentos feitos manualmente num componente não são afetados — eles nunca fizeram parte da fotografia, e por isso sobrevivem à volta para o estudo.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="208"/>
+        <source>Ce projet a des modifications non enregistrées : comme tout le reste, la marque ne sera dans le fichier qu&apos;après l&apos;enregistrement.</source>
+        <translation>Este projeto tem alterações não salvas: como todo o resto, a marca só estará no arquivo depois de salvar.</translation>
+    </message>
+</context>
+<context>
     <name>AutoNumberingDockWidget</name>
     <message>
         <location filename="../sources/autoNum/ui/autonumberingdockwidget.ui" line="14"/>
@@ -730,7 +801,7 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
 <context>
     <name>BOMExportDialog</name>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="274"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="399"/>
         <source>La nomenclature n&apos;a pas pu être extraite du projet.</source>
         <translation>A lista de material não pôde ser extraída do projeto.</translation>
     </message>
@@ -755,43 +826,43 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
         <translation>Formatar como lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="136"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="247"/>
         <source>nomenclature_</source>
         <translation>lista_de_material_</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="137"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="248"/>
         <source>Enregister sous... </source>
         <translation>Salvar como... </translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="137"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="248"/>
         <source>Fichiers csv (*.csv)</source>
         <translation>Arquivos csv (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="153"/>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="273"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="264"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="398"/>
         <source>Erreur</source>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="154"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="265"/>
         <source>Le fichier « %1 » n&apos;a pas pu être écrit.</source>
         <translation>O arquivo « %1 » não pôde ser escrito.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="302"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="427"/>
         <source>Position</source>
         <translation>Posição</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="304"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="429"/>
         <source>Position du folio</source>
         <translation>Posição da folha</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="306"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="431"/>
         <source>Quantité numéro d&apos;article</source>
         <comment>Special field with name : designation quantity</comment>
         <translatorcomment>Campo especial com nome: quantidade de designação</translatorcomment>
@@ -801,25 +872,37 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
 <context>
     <name>BackupDialog</name>
     <message>
-        <location filename="../sources/ui/backupdialog.cpp" line="33"/>
+        <location filename="../sources/ui/backupdialog.cpp" line="34"/>
         <source>Créer une copie de sauvegarde ?</source>
         <comment>window title</comment>
         <translation>Criar uma cópia de segurança?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/backupdialog.cpp" line="39"/>
+        <location filename="../sources/ui/backupdialog.cpp" line="42"/>
         <source>Souhaitez-vous créer une copie de sauvegarde ?</source>
         <comment>dialog message</comment>
         <translation>Deseja criar uma cópia de segurança?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/backupdialog.cpp" line="49"/>
+        <location filename="../sources/ui/backupdialog.cpp" line="53"/>
+        <source>Do not ask again, and keep this answer</source>
+        <comment>check box, backup copy question</comment>
+        <translation>Não perguntar de novo, e manter esta resposta</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/backupdialog.cpp" line="56"/>
+        <source>The choice is kept for this workstation and can be changed in Settings &gt; General &gt; Projects. It is never written into the project file.</source>
+        <comment>check box tool tip, backup copy question</comment>
+        <translation>A escolha fica guardada para esta estação de trabalho e pode ser mudada em Configurações &gt; Geral &gt; Projetos. Ela nunca é gravada no arquivo do projeto.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/backupdialog.cpp" line="67"/>
         <source>Oui</source>
         <comment>yes button</comment>
         <translation>Sim</translation>
     </message>
     <message>
-        <location filename="../sources/ui/backupdialog.cpp" line="50"/>
+        <location filename="../sources/ui/backupdialog.cpp" line="68"/>
         <source>Non</source>
         <comment>no button</comment>
         <translation>Não</translation>
@@ -4892,6 +4975,118 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
     </message>
 </context>
 <context>
+    <name>DrcFinding</name>
+    <message>
+        <location filename="../sources/drc/drcfinding.cpp" line="173"/>
+        <source>folio %1, repère %2</source>
+        <translation>folha %1, tag %2</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcfinding.cpp" line="179"/>
+        <source>folio %1</source>
+        <translation>folha %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcfinding.cpp" line="184"/>
+        <source>repère %1</source>
+        <translation>tag %1</translation>
+    </message>
+</context>
+<context>
+    <name>DrcLinkRules</name>
+    <message>
+        <location filename="../sources/drc/drclinkrules.cpp" line="52"/>
+        <source>(sans repère)</source>
+        <translation>(sem tag)</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drclinkrules.cpp" line="140"/>
+        <source>L&apos;élément maître %1 n&apos;a aucun contact esclave : sa référence croisée ne renvoie nulle part.</source>
+        <translation>O elemento mestre %1 não tem nenhum contato escravo: a referência cruzada dele não aponta para lugar nenhum.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drclinkrules.cpp" line="157"/>
+        <source>Le contact esclave %1 n&apos;est rattaché à aucun élément maître : il n&apos;apparaît sur la référence croisée d&apos;aucune bobine.</source>
+        <translation>O contato escravo %1 não está vinculado a nenhum elemento mestre: ele não aparece na referência cruzada de nenhuma bobina.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drclinkrules.cpp" line="181"/>
+        <source>La borne %1 n&apos;appartient à aucun bornier : elle ne figurera sur aucun plan de bornier.</source>
+        <translation>O borne %1 não pertence a nenhuma régua de bornes: ele não vai aparecer em nenhum plano de régua de bornes.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drclinkrules.cpp" line="223"/>
+        <source>Élément maître sans aucun contact esclave</source>
+        <translation>Elemento mestre sem nenhum contato escravo</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drclinkrules.cpp" line="235"/>
+        <source>Contact esclave rattaché à aucun élément maître</source>
+        <translation>Contato escravo não vinculado a nenhum elemento mestre</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drclinkrules.cpp" line="247"/>
+        <source>Borne dessinée hors de tout bornier</source>
+        <translation>Borne desenhado fora de qualquer régua de bornes</translation>
+    </message>
+</context>
+<context>
+    <name>DrcPanel</name>
+    <message>
+        <location filename="../sources/drc/ui/drcpanel.cpp" line="41"/>
+        <source>Gravité</source>
+        <translation>Gravidade</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/ui/drcpanel.cpp" line="42"/>
+        <source>Folio</source>
+        <translation>Folha</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/ui/drcpanel.cpp" line="43"/>
+        <source>Repère</source>
+        <translation>Tag</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/ui/drcpanel.cpp" line="44"/>
+        <source>Constat</source>
+        <translation>Ocorrência</translation>
+    </message>
+</context>
+<context>
+    <name>DrcProjectActions</name>
+    <message>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="113"/>
+        <source>Aucune règle activée : rien n&apos;a été vérifié. Un projet sans constat n&apos;est pas pour autant un projet sans défaut.</source>
+        <translation>Nenhuma regra ativada: nada foi verificado. Um projeto sem ocorrência não é, por isso, um projeto sem defeito.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="120"/>
+        <source>%1 règle(s) exécutée(s) : parcours %2 ms, requêtes %3 ms.</source>
+        <translation>%1 regra(s) executada(s): percurso %2 ms, consultas %3 ms.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="129"/>
+        <source>%1 règle(s) n&apos;ont pas pu être exécutées : leur résultat est inconnu, et non vide.</source>
+        <translation>%1 regra(s) não puderam ser executadas: o resultado delas é desconhecido, e não vazio.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="137"/>
+        <source>Aucun constat.</source>
+        <translation>Nenhuma ocorrência.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="146"/>
+        <source>%1 constat(s), dont %2 erreur(s). Double-cliquez une ligne, ou appuyez sur Entrée, pour aller au constat.</source>
+        <translation>%1 ocorrência(s), sendo %2 erro(s). Dê duplo clique numa linha, ou pressione Enter, para ir até a ocorrência.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="309"/>
+        <source>Contrôle du projet</source>
+        <translation>Verificação do projeto</translation>
+    </message>
+</context>
+<context>
     <name>DrcRule</name>
     <message>
         <location filename="../sources/drc/drcrule.cpp" line="162"/>
@@ -5055,6 +5250,167 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
         <location filename="../sources/location/drillingtable.cpp" line="493"/>
         <source>%1 x %2</source>
         <translation>%1 x %2</translation>
+    </message>
+</context>
+<context>
+    <name>DrillingTableDialog</name>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="104"/>
+        <source>This project has no plate yet. A drilling table is the worklist of one face, and there is no face to list.</source>
+        <translation>Este projeto ainda não tem placa. Uma tabela de furação é a lista de trabalho de uma face, e não há face para listar.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="338"/>
+        <source>Drilling table</source>
+        <translation>Tabela de furação</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="342"/>
+        <source>The face whose holes are listed. One list is one plate, because one plate is what is taken to the drill.</source>
+        <translation>A face cujos furos estão listados. Uma lista é uma placa, porque uma placa é o que se leva até a furadeira.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="351"/>
+        <source>Filter by mark, size or purpose…</source>
+        <translation>Filtrar por tag, tamanho ou finalidade…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="386"/>
+        <source>Tool</source>
+        <translation>Ferramenta</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="387"/>
+        <source>Size</source>
+        <translation>Tamanho</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="388"/>
+        <source>Holes</source>
+        <translation>Furos</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="394"/>
+        <source>Which bits to fit, and how many times each. The counts add up to the number of holes: a hole lost between two groups leaves the number of groups exactly as it was.</source>
+        <translation>Quais brocas usar, e quantas vezes cada uma. As contagens somam o número de furos: um furo perdido entre dois grupos deixa o número de grupos exatamente como estava.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="399"/>
+        <source>Copy</source>
+        <translation>Copiar</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="400"/>
+        <source>Copy the whole list, tab separated, whatever the filter shows.</source>
+        <translation>Copiar a lista inteira, separada por tabulação, independente do que o filtro mostra.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="402"/>
+        <source>Export…</source>
+        <translation>Exportar…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="403"/>
+        <source>Write the whole list to a delimited file, whatever the filter shows.</source>
+        <translation>Gravar a lista inteira num arquivo delimitado, independente do que o filtro mostra.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="421"/>
+        <source>Plate:</source>
+        <translation>Placa:</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="427"/>
+        <source>Filter:</source>
+        <translation>Filtro:</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="462"/>
+        <source>(no plate)</source>
+        <translation>(sem placa)</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="522"/>
+        <source>This hole is bigger than the whole plate.</source>
+        <translation>Este furo é maior que a placa inteira.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="524"/>
+        <source>This hole is off the plate where it stands.</source>
+        <translation>Este furo está fora da placa onde se encontra.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="541"/>
+        <source>Drilled</source>
+        <translation>Furado</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="541"/>
+        <source>Cut out</source>
+        <translation>Recortado</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="576"/>
+        <source>No plate is listed.</source>
+        <translation>Nenhuma placa está listada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="586"/>
+        <source>No hole on this plate. The form, the reference frame and the export are ready; nothing produces holes yet.</source>
+        <translation>Nenhum furo nesta placa. O formulário, o referencial e a exportação estão prontos; nada ainda produz furo.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="598"/>
+        <source>%1 hole(s), %2 tool(s).</source>
+        <translation>%1 furo(s), %2 ferramenta(s).</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="605"/>
+        <source>This plate is not measured: no hole can be said to be in the metal or off it.</source>
+        <translation>Esta placa não está medida: nenhum furo pode ser dito dentro da chapa ou fora dela.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="613"/>
+        <source>%n of them is not in the metal.</source>
+        <translation>
+            <numerusform>%n deles não está na chapa.</numerusform>
+            <numerusform>%n deles não estão na chapa.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="709"/>
+        <source>This hole belongs to no component: a gland, or a fixing hole for something cut on the bench.</source>
+        <translation>Este furo não pertence a nenhum componente: um prensa-cabo, ou um furo de fixação de algo cortado na bancada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="724"/>
+        <source>The whole list of this plate was copied, the filter included.</source>
+        <translation>A lista inteira desta placa foi copiada, o filtro incluído.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="738"/>
+        <source>Export the drilling table</source>
+        <translation>Exportar a tabela de furação</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="740"/>
+        <source>CSV file (*.csv)</source>
+        <translation>Arquivo CSV (*.csv)</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="748"/>
+        <source>The file &quot;%1&quot; could not be written.</source>
+        <translation>O arquivo &quot;%1&quot; não pôde ser gravado.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="760"/>
+        <source>The whole list of this plate was written to &quot;%1&quot;, the filter included.</source>
+        <translation>A lista inteira desta placa foi gravada em &quot;%1&quot;, o filtro incluído.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/drillingtabledialog.cpp" line="781"/>
+        <source>The plate that was listed is no longer in the project.</source>
+        <translation>A placa que estava listada não está mais no projeto.</translation>
     </message>
 </context>
 <context>
@@ -7759,43 +8115,43 @@ que você cria. Entradas de texto e números
         <translation>Aparência</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="30"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="58"/>
         <source>Utiliser les couleurs du système</source>
         <translation>Utilizar as cores do sistema</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="163"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="191"/>
         <source>Projets</source>
         <translation>Projetos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="169"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="197"/>
         <source>Utiliser les numéros de folio à la place de leur position dans le projet</source>
         <translation>Use números de folha em vez de sua posição no projeto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="238"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="276"/>
         <source>Numéroter les colonnes de cartouche à partir de 0 (1 sinon)</source>
         <extracomment>Choix de l&apos;increment de depart 1 ou 0</extracomment>
         <translation>Numere as colunas na malha começando por 0 (1 caso contrário)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="176"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="204"/>
         <source>Sauvegarde automatique des projets (appliqué au prochain lancement de QElectroTech)</source>
         <translation>Backup automático de projetos (aplicado no próximo lançamento do QElectroTech)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="44"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="72"/>
         <source>Utiliser les gestes du pavé tactile</source>
         <translation>Utilizar gestos do touch pad</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="205"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="233"/>
         <source>Ne pas conserver les labels des éléments lors des copier coller</source>
         <translation>Não manter rótulos de elementos ao copiar e colar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="51"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="79"/>
         <source>Autoriser le dézoom au delà du folio</source>
         <translation>Permitir zoom além da folha</translation>
     </message>
@@ -7805,492 +8161,544 @@ que você cria. Entradas de texto e números
         <translation>Formulário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="501"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="561"/>
         <source>Chemin de la collection utilisateur</source>
         <translation>Endereço de usuário coletados</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="473"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="533"/>
         <source>Chemin de la collection commune</source>
         <translation>Endereço de coletados comuns</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="272"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="286"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="314"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="342"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="356"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="377"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="310"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="324"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="352"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="380"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="394"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="415"/>
         <source>Par defaut</source>
         <translation>Por padrão</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="277"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="291"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="319"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="347"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="361"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="382"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="315"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="329"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="357"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="385"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="399"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="420"/>
         <source>Parcourir...</source>
         <translation>Navegar...</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="390"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="428"/>
         <source>(Recharger les collections d&apos;éléments pour appliquer les changements)</source>
         <translation>(Recarregue as coleções dos elementos para aplicar as mudanças)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="186"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="214"/>
         <source>Désactivé</source>
         <translation>Desativado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="192"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="220"/>
         <source> min</source>
         <comment>minute</comment>
         <translation> min</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="246"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="284"/>
         <source>Collections</source>
         <translation>Coleções</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="252"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="290"/>
         <source>Accès aux collections</source>
         <translation>Acesso a coleções</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="299"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="337"/>
         <source>Répertoire de la collection commune</source>
         <translation>Local da coleção padrão</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="327"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="365"/>
         <source>Répertoire de la collection utilisateur</source>
         <translation>Local da coleção do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="369"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="407"/>
         <source>Répertoire des cartouches utilisateur</source>
         <translation>Local dos blocos de legenda do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="400"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="438"/>
         <source>Gestion des éléments</source>
         <translation>Gestão de elementos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="409"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="447"/>
         <source>Mettre en valeur dans le panel les éléments fraîchement intégrés</source>
         <translation>Destacar no painel os elementos recém integrados</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="416"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="454"/>
         <source>Chaque élément embarque des informations sur ses auteurs, sa licence, ou tout autre renseignement que vous jugerez utile dans un champ libre.
 Vous pouvez spécifier ici la valeur par défaut de ce champ pour les éléments que vous créerez :</source>
         <translation>Cada elemento inclui informações sobre seus autores, licença ou qualquer outra informação que você considera útil em um campo livre.
 Aqui você pode especificar o valor padrão deste campo para os elementos que você irá criar:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="453"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="491"/>
         <source>Appliqué au prochain lancement de QElectroTech</source>
         <translation>Aplicado ao próximo lançamento do QElectroTech</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="493"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="531"/>
         <source>Vous pouvez définir ici l&apos;apparence par defaut des differents textes de QElectroTech</source>
         <translation>Aqui você pode definir a aparência padrão de diferentes textos QElectroTech</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="676"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="714"/>
         <source>Grille + Clavier</source>
         <translation>Grade + Teclado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="682"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="720"/>
         <source>Grille : 1 - 30</source>
         <translation>Grade: 1 - 30</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="749"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="787"/>
         <source>DiagramEditor xGrid</source>
         <translation>Editor de diagrama  Grade X</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="716"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="754"/>
         <source>DiagramEditor yGrid</source>
         <translation>Editor de diagrama  Grade Y</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="65"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="45"/>
+        <source>Colour scheme (applied at the next start of QElectroTech):</source>
+        <translation>Esquema de cores (aplicado na próxima inicialização do QElectroTech):</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="93"/>
         <source>Afficher la grille par défaut (appliqué au prochain lancement)</source>
         <translation>Exibir a grade por padrão (aplicado na próxima inicialização)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="72"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="100"/>
         <source>Afficher les guides par défaut (appliqué au prochain lancement)</source>
         <translation>Exibir as guias por padrão (aplicado na próxima inicialização)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="86"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="114"/>
         <source>Utiliser des fen&amp;êtres (appliqué au prochain lancement de QElectroTech)</source>
         <translation>Usar as ja&amp;nelas (aplicado ao próximo lançamento do QElectroTech)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="93"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="121"/>
         <source>Utiliser des onglets (appliqué au prochain lance&amp;ment de QElectroTech)</source>
         <translation>Usar as guias (aplicadas ao próximo lança&amp;mento da QElectroTech)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="132"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="160"/>
         <source>Méthode de mise à l&apos;echelle des écrans à haute densité de pixels (hdpi) (appliqué au prochain lancement de QElectroTech) :</source>
         <translation>Método de dimensionamento para exibições de alta densidade de pixels (hdpi) (aplicado ao próximo lançamento do QElectroTech):</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="264"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="240"/>
+        <source>Backup copy when a project is opened</source>
+        <translation>Cópia de segurança ao abrir um projeto</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="302"/>
         <source>Répertoire de la collection company</source>
         <translation>Local da coleção da empresa</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="306"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="344"/>
         <source>Répertoire des cartouches company</source>
         <translation>Local dos blocos de legenda da empresa</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="334"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="372"/>
         <source>Répertoire des Macros utilisateur</source>
         <translation>Diretório de macros do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="444"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="482"/>
         <source>Langues</source>
         <translation>Idioma</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="487"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="525"/>
         <source>Textes</source>
         <translation>Textos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="507"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="545"/>
         <source>Textes d&apos;éléments</source>
         <translation>Textos dos elementos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="520"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="586"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="632"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="558"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="624"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="670"/>
         <source>Police :</source>
         <translation>Fonte:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="530"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="593"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="568"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="631"/>
         <source>°</source>
         <translation>°</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="540"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="578"/>
         <source>Longueur :</source>
         <translation>Comprimento:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="550"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="579"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="588"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="617"/>
         <source>Rotation :</source>
         <translation>Rotação:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="573"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="611"/>
         <source>Textes indépendants</source>
         <translation>Textos independentes</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="626"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="664"/>
         <source>Autres textes</source>
         <translation>Outros textos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="723"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="761"/>
         <source>La Grille doite etre active pour pouvoir voir les modifications.</source>
         <translation>A Grade deve estar ativa para poder ver as modificações.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="772"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="810"/>
         <source>Déplacement au clavier : 1 - 30</source>
         <translation>Movimento do teclado: 1 - 30</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="822"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="860"/>
         <source>DiagramEditor (touche :   gauche / droite)  xGrid</source>
         <translation>Editor de diagrama (tecla: esquerda / direita) XGrade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="829"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="867"/>
         <source>DiagramEditor (touche :   haut / bas)  yGrid</source>
         <translation>Editor de diagrama (tecla: cima / baixo) YGrade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="852"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="890"/>
         <source>Déplacement au clavier avec la touche ALT : 1 - 9</source>
         <translation>Movimento do teclado com a tecla ALT: 1 - 9</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="858"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="896"/>
         <source>DiagramEditor (touche :   gauche / droite ) xGrid</source>
         <translation>Editor de diagrama (tecla: esquerda / direita) XGrade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="887"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="925"/>
         <source>DiagramEditor (touche :  haut / bas)  yGrid</source>
         <translation>Editor de diagrama (tecla: cima / baixo) YGrade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="932"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="970"/>
         <source>Affichage Grille</source>
         <translation>Exibição da grade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1029"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1036"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1067"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1074"/>
         <source>max:</source>
         <translation>máx:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="990"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1028"/>
         <source>Taille des points de la grille de Diagram-Editor : 1 - 5</source>
         <translation>Tamanho dos pontos da grade do editor de esquemas: 1 a 5</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="938"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1043"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="976"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1081"/>
         <source>min:</source>
         <translation>mín:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1050"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1088"/>
         <source>Taille des points de la grille de l&apos;éditeur d&apos;éléments : 1 - 5</source>
         <translation>Tamanho dos pontos da grade do editor de elementos: 1 - 5</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1074"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1112"/>
         <source>Editor</source>
         <translation>Editor</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1082"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1120"/>
         <source>Max. parts in Element Editor List</source>
         <translation>Máx. de peças na lista do editor de elementos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="43"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="44"/>
         <source>Arrondi supérieur pour 0.5 et plus</source>
         <translation>Arredondar para 0,5 e mais</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="44"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="45"/>
         <source>Toujours arrondi supérieur</source>
         <translation>Sempre arredondar para cima</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="45"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="46"/>
         <source>Toujours arrondi inférieur</source>
         <translation>Sempre arredondar para baixo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="46"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="47"/>
         <source>Arrondi supérieur pour 0.75 et plus</source>
         <translation>Arredondar para 0,75 e mais</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="47"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="48"/>
         <source>Pas d&apos;arrondi</source>
         <translation>Sem arredondamento</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="356"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="71"/>
+        <source>Light</source>
+        <comment>colour scheme</comment>
+        <translation>Claro</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="73"/>
+        <source>Dark</source>
+        <comment>colour scheme</comment>
+        <translation>Escuro</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="75"/>
+        <source>From the system</source>
+        <comment>colour scheme</comment>
+        <translation>Do sistema</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="88"/>
+        <source>This version of Qt cannot choose the colour scheme; the one of the system applies.</source>
+        <comment>colour scheme, tool tip</comment>
+        <translation>Esta versão do Qt não pode escolher o esquema de cores; vale o do sistema.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="125"/>
+        <source>Ask every time</source>
+        <comment>backup copy policy</comment>
+        <translation>Perguntar sempre</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="127"/>
+        <source>Always make the copy</source>
+        <comment>backup copy policy</comment>
+        <translation>Sempre fazer a cópia</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="129"/>
+        <source>Never make the copy</source>
+        <comment>backup copy policy</comment>
+        <translation>Nunca fazer a cópia</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="416"/>
         <source>Général</source>
         <comment>configuration page title</comment>
         <translation>Geral</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="374"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="434"/>
         <source>Système</source>
         <translation>Sistema</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="378"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="438"/>
         <source>Arabe</source>
         <translation>Árabe</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="379"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="439"/>
         <source>Brézilien</source>
         <translation>Português BR</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="380"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="440"/>
         <source>Catalan</source>
         <translation>Catalão</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="381"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="441"/>
         <source>Tchèque</source>
         <translation>Checo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="382"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="442"/>
         <source>Allemand</source>
         <translation>Alemão</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="383"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="443"/>
         <source>Danois</source>
         <translation>Dinamarquês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="384"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="444"/>
         <source>Grec</source>
         <translation>Grego</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="385"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="445"/>
         <source>Anglais</source>
         <translation>Inglês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="386"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="446"/>
         <source>Espagnol</source>
         <translation>Espanhol</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="387"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="447"/>
         <source>Français</source>
         <translation>Francês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="388"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="448"/>
         <source>Croate</source>
         <translation>Croata</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="389"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="449"/>
         <source>Italien</source>
         <translation>Italiano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="390"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="450"/>
         <source>Japonais</source>
         <translation>Japonês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="391"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="451"/>
         <source>Coréen</source>
         <translation>Coreano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="392"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="452"/>
         <source>Polonais</source>
         <translation>Polonês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="393"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="453"/>
         <source>Portugais</source>
         <translation>Português</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="394"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="454"/>
         <source>Roumains</source>
         <translation>Romeno</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="395"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="455"/>
         <source>Russe</source>
         <translation>Russo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="396"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="456"/>
         <source>Slovène</source>
         <translation>Esloveno</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="397"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="457"/>
         <source>Pays-Bas</source>
         <translation>Holandês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="398"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="458"/>
         <source>Norvege</source>
         <translation>Noruega</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="399"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="459"/>
         <source>Belgique-Flemish</source>
         <translation>Belgo-Flamengo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="400"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="460"/>
         <source>Turc</source>
         <translation>Turco</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="401"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="461"/>
         <source>Hongrois</source>
         <translation>Húngaro</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="402"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="462"/>
         <source>Mongol</source>
         <translation>Mongol</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="403"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="463"/>
         <source>Ukrainien</source>
         <translation>Ucraniano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="404"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="464"/>
         <source>Chinois</source>
         <translation>Chinês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="405"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="465"/>
         <source>Suédois</source>
         <translation>Sueco</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="487"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="547"/>
         <source>Chemin de la collection company</source>
         <translation>Caminho da coleção da empresa</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="515"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="575"/>
         <source>Chemin des cartouches company</source>
         <translation>Caminho dos blocos de legenda da empresa</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="529"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="589"/>
         <source>Chemin des cartouches utilisateur</source>
         <translation>Caminho dos blocos de legenda do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="543"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="603"/>
         <source>Chemin des macros utilisateur</source>
         <translation>Caminho das macros do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="573"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="633"/>
         <source>To high values might lead to crashes of the application.</source>
         <translation>Valores altos podem causar travamentos do aplicativo.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="608"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="668"/>
         <source>Fonctionnalité expérimental</source>
         <translation>Funcionalidade experimental</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="609"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="669"/>
         <source>AVERTISSEMENT :
 Toutes valeurs autre que ‘Pas d’arrondi’ peut causer des erreurs de rendu du projet en fonction de :
 
@@ -9873,7 +10281,7 @@ Por favor, use o editor avançado para isso.</translation>
     <message>
         <location filename="../sources/ui/linksingleelementwidget.cpp" line="217"/>
         <source>Report de folio</source>
-        <translation>Relatório da folha</translation>
+        <translation>Remissão de folha</translation>
     </message>
     <message>
         <location filename="../sources/ui/linksingleelementwidget.cpp" line="219"/>
@@ -10015,98 +10423,98 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
 <context>
     <name>LocationBomDialog</name>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="166"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="182"/>
         <source>Liste de matériel par localisation</source>
         <translation>Lista de material por localização</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="171"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="187"/>
         <source>Localisation :</source>
         <translation>Localização:</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="174"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="190"/>
         <source>Ce qu&apos;il faut sortir du magasin pour cette localisation, sous-localisations comprises.</source>
         <translation>O que é preciso retirar do estoque para esta localização, sublocalizações incluídas.</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="183"/>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="652"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="199"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="668"/>
         <source>Qté</source>
         <translation>Qtd.</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="184"/>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="653"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="200"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="669"/>
         <source>Pièce</source>
         <translation>Peça</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="185"/>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="654"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="201"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="670"/>
         <source>Désignation</source>
         <translation>Designação</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="186"/>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="655"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="202"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="671"/>
         <source>Fabricant</source>
         <translation>Fabricante</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="187"/>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="656"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="203"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="672"/>
         <source>Référence</source>
         <translation>Código</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="188"/>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="657"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="204"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="673"/>
         <source>Localisation</source>
         <translation>Localização</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="207"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="223"/>
         <source>Copier</source>
         <translation>Copiar</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="208"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="224"/>
         <source>Copier la liste dans le presse-papiers, colonnes séparées par une tabulation.</source>
         <translation>Copiar a lista para a área de transferência, colunas separadas por tabulação.</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="210"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="226"/>
         <source>Exporter en CSV…</source>
         <translation>Exportar em CSV…</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="211"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="227"/>
         <source>Insérer dans le folio…</source>
         <translation>Inserir na folha…</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="212"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="228"/>
         <source>Poser sur le folio courant un tableau de nomenclature limité à cette localisation. Le tableau suit le projet : il se met à jour tout seul.</source>
         <translation>Colocar na folha atual uma tabela com a lista de material limitada a esta localização. A tabela acompanha o projeto: ela se atualiza sozinha.</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="253"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="269"/>
         <source>(toutes les localisations)</source>
         <translation>(todas as localizações)</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="277"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="293"/>
         <source>Hors localisation (chantier)</source>
         <translation>Fora de localização (campo)</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="350"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="366"/>
         <source>Rien à sortir du magasin pour cette localisation.</source>
         <translation>Nada a retirar do estoque para esta localização.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="355"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="371"/>
         <source>%n article(s) à sortir du magasin.</source>
         <translation>
             <numerusform>%n item a retirar do estoque.</numerusform>
@@ -10114,57 +10522,57 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
         </translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="451"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="467"/>
         <source>Armoires et supports</source>
         <translation>Painéis e suportes</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="570"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="586"/>
         <source>La liste des composants n&apos;a pas pu être établie : %1</source>
         <translation>A lista de componentes não pôde ser montada: %1</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="591"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="607"/>
         <source>Composants</source>
         <translation>Componentes</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="615"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="631"/>
         <source>Chantier</source>
         <translation>Campo</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="651"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="667"/>
         <source>Groupe</source>
         <translation>Grupo</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="684"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="700"/>
         <source>Liste copiée dans le presse-papiers.</source>
         <translation>Lista copiada para a área de transferência.</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="694"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="710"/>
         <source>Exporter la liste de matériel</source>
         <translation>Exportar a lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="696"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="712"/>
         <source>Fichier CSV (*.csv)</source>
         <translation>Arquivo CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="704"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="720"/>
         <source>Le fichier « %1 » n&apos;a pas pu être écrit.</source>
         <translation>O arquivo « %1 » não pôde ser escrito.</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="716"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="732"/>
         <source>Liste exportée dans « %1 ».</source>
         <translation>Lista exportada para « %1 ».</translation>
     </message>
     <message>
-        <location filename="../sources/location/ui/locationbomdialog.cpp" line="782"/>
+        <location filename="../sources/location/ui/locationbomdialog.cpp" line="840"/>
         <source>Tableau proposé pour le folio courant.</source>
         <translation>Tabela proposta para a folha atual.</translation>
     </message>
@@ -10968,6 +11376,188 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     </message>
 </context>
 <context>
+    <name>MountingCheckDialog</name>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="110"/>
+        <source>This project has no plate yet, so there is nothing to check.</source>
+        <translation>Este projeto ainda não tem placa, então não há nada para verificar.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="212"/>
+        <source>Where it can be.</source>
+        <translation>Onde ela pode estar.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="214"/>
+        <source>Off the plate where it stands — drag it back on.</source>
+        <translation>Fora da placa onde está — arraste de volta para dentro.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="217"/>
+        <source>Bigger than the whole plate — no position on this face holds it.</source>
+        <translation>Maior que a placa inteira — nenhuma posição desta face a comporta.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="220"/>
+        <source>This plate has no usable dimensions, so nothing can be said about where this part sits.</source>
+        <translation>Esta placa não tem dimensões utilizáveis, então nada pode ser dito sobre onde esta peça está.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="257"/>
+        <source>Plate check</source>
+        <translation>Verificação da placa</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="261"/>
+        <source>The face being checked.</source>
+        <translation>A face sendo verificada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="266"/>
+        <source>Check again</source>
+        <translation>Verificar novamente</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="267"/>
+        <source>Ask the rule again. It is asked by itself after every step of the layout; this is for when the catalogue changed underneath.</source>
+        <translation>Pergunta a regra de novo. Ela se pergunta sozinha depois de cada passo do layout; isto é para quando o catálogo mudou por baixo.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="276"/>
+        <source>What</source>
+        <translation>O quê</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="277"/>
+        <source>Parts</source>
+        <translation>Peças</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="278"/>
+        <source>How far</source>
+        <translation>Quanto</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="312"/>
+        <source>Plate:</source>
+        <translation>Placa:</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="340"/>
+        <source>(no plate)</source>
+        <translation>(sem placa)</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="392"/>
+        <source>Two parts in the same room</source>
+        <translation>Duas peças no mesmo espaço</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="397"/>
+        <source>Overlap</source>
+        <translation>Sobreposição</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="398"/>
+        <source>%1 and %2</source>
+        <translation>%1 e %2</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="403"/>
+        <source>The shorter way out: how far either of the two has to be pushed, along one axis, for the room to be free.</source>
+        <translation>O caminho mais curto: até onde qualquer uma das duas precisa ser empurrada, ao longo de um eixo, para que o espaço fique livre.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="419"/>
+        <source>Air a part asked for and does not have</source>
+        <translation>Folga que uma peça pediu e não tem</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="424"/>
+        <source>Clearance</source>
+        <translation>Folga</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="425"/>
+        <source>%1 stands in the air %2 asked for</source>
+        <translation>%1 está na folga que %2 pediu</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="431"/>
+        <source>How much air is missing: how far the intruder has to be pushed for the requirement to be met.</source>
+        <translation>Quanto de folga está faltando: até onde o intruso precisa ser empurrado para que a exigência seja atendida.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="448"/>
+        <source>Parts that are not on the plate</source>
+        <translation>Peças que não estão na placa</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="460"/>
+        <source>Nobody typed this part&apos;s dimensions, so it was judged on its corner alone.</source>
+        <translation>Ninguém digitou as dimensões desta peça, então ela foi julgada só pelo canto dela.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="475"/>
+        <source>No plate is checked.</source>
+        <translation>Nenhuma placa está sendo verificada.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="482"/>
+        <source>Nothing found against this plate: %n part(s) checked.</source>
+        <translation>
+            <numerusform>Nada encontrado contra esta placa: %n peça verificada.</numerusform>
+            <numerusform>Nada encontrado contra esta placa: %n peças verificadas.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="493"/>
+        <source>%1 problem(s) on this plate: %2 overlap(s), %3 clearance(s), %4 part(s) off the plate — out of %5 part(s) checked.</source>
+        <translation>%1 problema(s) nesta placa: %2 sobreposição(ões), %3 folga(s), %4 peça(s) fora da placa — de %5 peça(s) verificada(s).</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="508"/>
+        <source>Every part of this answer rests on a measurement somebody took.</source>
+        <translation>Cada parte desta resposta se apoia numa medida que alguém tirou.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="515"/>
+        <source>the plate itself is not measured</source>
+        <translation>a própria placa não está medida</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="519"/>
+        <source>%n part(s) have no dimensions</source>
+        <translation>
+            <numerusform>%n peça não tem dimensões</numerusform>
+            <numerusform>%n peças não têm dimensões</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="524"/>
+        <source>%n part(s) were checked against no clearance at all</source>
+        <translation>
+            <numerusform>%n peça foi verificada sem nenhuma folga exigida</numerusform>
+            <numerusform>%n peças foram verificadas sem nenhuma folga exigida</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="529"/>
+        <source>Read this beside what it does not know: %1. A part with no dimensions cannot be shown to collide with anything.</source>
+        <translation>Leia isto ao lado do que não se sabe: %1. Uma peça sem dimensões não pode ser mostrada colidindo com nada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="667"/>
+        <source>The plate that was checked is no longer in the project.</source>
+        <translation>A placa que foi verificada não está mais no projeto.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/ui/mountingcheckdialog.cpp" line="678"/>
+        <source>Checked again.</source>
+        <translation>Verificada novamente.</translation>
+    </message>
+</context>
+<context>
     <name>MountingLayout</name>
     <message>
         <location filename="../sources/location/mountinglayout.cpp" line="714"/>
@@ -11016,330 +11606,355 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
 <context>
     <name>MountingLayoutEditor</name>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="121"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="124"/>
         <source>Ce projet n&apos;a pas encore de platine. « Nouvelle platine… » en déclare une pour une localisation existante.</source>
         <translation>Este projeto ainda não tem placa. « Nova placa… » declara uma para uma localização existente.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="133"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="136"/>
         <source>Projet en lecture seule : le calepinage se regarde, il ne se modifie pas.</source>
         <translation>Projeto somente leitura: o layout se olha, não se modifica.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="214"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="217"/>
         <source>Cette platine n&apos;est pas mesurée : ses composants sont dessinés, la tôle sous eux ne l&apos;est pas.</source>
         <translation>Esta placa não está medida: os componentes dela estão desenhados, a chapa sob eles não.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="276"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="729"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="279"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="732"/>
         <source>Ce projet ne se modifie pas.</source>
         <translation>Este projeto não se modifica.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="362"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="371"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="365"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="374"/>
         <source>Nouvelle platine</source>
         <translation>Nova placa</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="363"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="366"/>
         <source>Une platine appartient à une localisation du projet, et ce projet n&apos;en a aucune. Faites l&apos;armoire dans « Armoires et localisations… », puis revenez ici.</source>
         <translation>Uma placa pertence a uma localização do projeto, e este projeto não tem nenhuma. Faça o painel em « Painéis e localizações… », depois volte aqui.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="379"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="382"/>
         <source>Platine (fond d&apos;armoire)</source>
         <translation>Placa (fundo do painel)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="381"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="384"/>
         <source>Porte</source>
         <translation>Porta</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="382"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="385"/>
         <source>Joue (flanc)</source>
         <translation>Lateral (flanco)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="385"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="388"/>
         <source>Platine principale</source>
         <translation>Placa principal</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="390"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="396"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="533"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="540"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="549"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="393"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="399"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="536"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="543"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="552"/>
         <source> mm</source>
         <translation> mm</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="391"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="397"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="541"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="394"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="400"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="544"/>
         <source>non mesurée</source>
         <translation>não medida</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="406"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="409"/>
         <source>Localisation :</source>
         <translation>Localização:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="407"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="410"/>
         <source>Face :</source>
         <translation>Face:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="408"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="411"/>
         <source>Nom :</source>
         <translation>Nome:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="409"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="412"/>
         <source>Largeur utile :</source>
         <translation>Largura útil:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="410"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="413"/>
         <source>Hauteur utile :</source>
         <translation>Altura útil:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="429"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="432"/>
         <source>Platine ajoutée.</source>
         <translation>Placa adicionada.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="489"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="492"/>
         <source>« %1 » est posé, mais le catalogue ne dit pas ce qu&apos;il mesure : il est dessiné comme non mesuré.</source>
         <translation>« %1 » está posto, mas o catálogo não diz o que ele mede: está desenhado como não medido.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="494"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="497"/>
         <source>« %1 » est posé sur la platine.</source>
         <translation>« %1 » está posto na placa.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="518"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="521"/>
         <source>Poser un rail ou une goulotte</source>
         <translation>Pôr um trilho ou uma canaleta</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="524"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="527"/>
         <source>Autre (à préciser ci-dessous)</source>
         <translation>Outro (a especificar abaixo)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="527"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="530"/>
         <source>Rail</source>
         <translation>Trilho</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="528"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="531"/>
         <source>Goulotte</source>
         <translation>Canaleta</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="534"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="537"/>
         <source>La largeur que le profilé occupe sur la platine, en travers de sa longueur.</source>
         <translation>A largura que o perfil ocupa na placa, através do seu comprimento.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="542"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="545"/>
         <source>La hauteur du profilé au-dessus de la platine. Elle ne se dessine pas ici, elle compte pour la porte.</source>
         <translation>A altura do perfil acima da placa. Ela não se desenha aqui, mas conta para a porta.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="552"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="555"/>
         <source>Horizontal</source>
         <translation>Horizontal</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="553"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="556"/>
         <source>Vertical</source>
         <translation>Vertical</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="604"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="607"/>
         <source>Profilé courant :</source>
         <translation>Perfil atual:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="605"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="608"/>
         <source>Type :</source>
         <translation>Tipo:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="606"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="609"/>
         <source>Largeur :</source>
         <translation>Largura:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="607"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="610"/>
         <source>Hauteur :</source>
         <translation>Altura:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="608"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="611"/>
         <source>Longueur coupée :</source>
         <translation>Comprimento cortado:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="609"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="612"/>
         <source>Sens :</source>
         <translation>Sentido:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="631"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="634"/>
         <source>%1 posé sur la platine.</source>
         <translation>%1 posto na placa.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="655"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="658"/>
         <source>Dites si c&apos;est un rail ou une goulotte : un profilé sans type ne se pose pas.</source>
         <translation>Diga se é um trilho ou uma canaleta: um perfil sem tipo não se põe.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="669"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="672"/>
         <source>Un profilé a besoin de sa largeur : sans elle, rien ne se dessine sur la platine.</source>
         <translation>Um perfil precisa da largura dele: sem ela, nada se desenha na placa.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="679"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="682"/>
         <source>Une longueur de coupe est un nombre de millimètres.</source>
         <translation>Um comprimento de corte é um número de milímetros.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="755"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="758"/>
         <source>X : %1 mm    Y : %2 mm</source>
         <translation>X: %1 mm    Y: %2 mm</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="766"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="769"/>
         <source>1 mm = %1 px</source>
         <translation>1 mm = %1 px</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="776"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="868"/>
+        <source>That part is not mounted on any plate of this project.</source>
+        <translation>Esta peça não está montada em nenhuma placa deste projeto.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="884"/>
         <source>Nouvelle platine…</source>
         <translation>Nova placa…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="777"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="885"/>
         <source>Déclare une face à implanter pour une localisation du projet.</source>
         <translation>Declara uma face a implantar para uma localização do projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="782"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="890"/>
         <source>Ajouter un composant…</source>
         <translation>Adicionar um componente…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="783"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="891"/>
         <source>Pose un article du catalogue sur la platine, à la mesure du catalogue.</source>
         <translation>Põe um artigo do catálogo na placa, na medida do catálogo.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="788"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="896"/>
         <source>Ajouter un rail ou une goulotte…</source>
         <translation>Adicionar um trilho ou uma canaleta…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="789"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="897"/>
         <source>Pose un profilé coupé à la longueur voulue. Une fois posé, il se rallonge et se raccourcit par ses extrémités.</source>
         <translation>Põe um perfil cortado no comprimento desejado. Uma vez posto, ele se alonga e se encurta pelas extremidades.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="795"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="903"/>
         <source>Annuler</source>
         <translation>Desfazer</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="799"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="907"/>
         <source>Rétablir</source>
         <translation>Refazer</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="803"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="911"/>
         <source>Zoom avant</source>
         <translation>Aumentar Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="807"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="915"/>
         <source>Zoom arrière</source>
         <translation>Diminuir Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="812"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="920"/>
         <source>Ajuster à la platine</source>
         <translation>Ajustar à placa</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="817"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="925"/>
         <source>Échelle 1:1 (1 mm = 1 px)</source>
         <translation>Escala 1:1 (1 mm = 1 px)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="822"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="930"/>
+        <source>Check the plate…</source>
+        <translation>Verificar a placa…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="931"/>
+        <source>What is wrong with this face before a hole is drilled in it: two parts in the same room, air a part asked for, parts off the plate.</source>
+        <translation>O que está errado nesta face antes de um furo ser feito nela: duas peças no mesmo espaço, folga que uma peça pediu, peças fora da placa.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="938"/>
+        <source>Drilling table…</source>
+        <translation>Tabela de furação…</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="939"/>
+        <source>The holes of this face as the worklist the bench drills from, with the corner they are measured from written at the head of it.</source>
+        <translation>Os furos desta face como a lista de trabalho de onde a bancada fura, com o canto de onde são medidos escrito no topo dela.</translation>
+    </message>
+    <message>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="946"/>
         <source>Fermer</source>
         <translation>Fechar</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="837"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="961"/>
         <source>La face implantée</source>
         <translation>A face implantada</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="842"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="966"/>
         <source>&amp;Calepinage</source>
         <translation>&amp;Layout</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="849"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="976"/>
         <source>&amp;Édition</source>
         <translation>&amp;Editar</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="853"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="980"/>
         <source>&amp;Affichage</source>
         <translation>&amp;Exibir</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="859"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="986"/>
         <source>Calepinage</source>
         <translation>Layout</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="861"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="988"/>
         <source>Platine : </source>
         <translation>Placa: </translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="905"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1035"/>
         <source>(aucune platine)</source>
         <translation>(nenhuma placa)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="911"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1041"/>
         <source>%1 — %2 composant(s)</source>
         <translation>%1 — %2 componente(s)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="931"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1061"/>
         <source>projet sans titre</source>
         <translation>projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="936"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1066"/>
         <source>Calepinage — %1</source>
         <translation>Layout — %1</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="940"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1070"/>
         <source>Calepinage : %1 — %2</source>
         <translation>Layout: %1 — %2</translation>
     </message>
@@ -11595,6 +12210,35 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     </message>
 </context>
 <context>
+    <name>NavigateChoiceDialog</name>
+    <message>
+        <location filename="../sources/ui/navigatechoicedialog.cpp" line="46"/>
+        <source>Naviguer : choisir la destination</source>
+        <comment>window title</comment>
+        <translation>Navegar: escolher o destino</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/navigatechoicedialog.cpp" line="52"/>
+        <source>Cet objet est représenté à plusieurs endroits du projet. Choisissez où aller : Échap reste ici.</source>
+        <translation>Este objeto está representado em vários lugares do projeto. Escolha para onde ir: Esc permanece aqui.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/navigatechoicedialog.cpp" line="221"/>
+        <source>folio %1</source>
+        <translation>folha %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/navigatechoicedialog.cpp" line="222"/>
+        <source>folio %1 « %2 »</source>
+        <translation>folha %1 « %2 »</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/navigatechoicedialog.cpp" line="229"/>
+        <source>%1 — %2 (%3)</source>
+        <translation>%1 — %2 (%3)</translation>
+    </message>
+</context>
+<context>
     <name>NewDiagramPage</name>
     <message>
         <location filename="../sources/ui/configpage/configpages.cpp" line="124"/>
@@ -11609,7 +12253,7 @@ Defina uma no gerenciador de localizações antes de desenhar uma zona.</transla
     <message>
         <location filename="../sources/ui/configpage/configpages.cpp" line="126"/>
         <source>Reports de folio</source>
-        <translation>Relatórios da folha</translation>
+        <translation>Remissões de folha</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/configpages.cpp" line="127"/>
@@ -13648,913 +14292,933 @@ Opções disponíveis:
 <context>
     <name>QETDiagramEditor</name>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="160"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4710"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4713"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="164"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4803"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4806"/>
         <source>QElectroTech</source>
         <comment>window title</comment>
         <translation>QElectroTech</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="162"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="166"/>
         <source>QElectroTech</source>
         <comment>status bar message</comment>
         <translation>QElectroTech</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="214"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="218"/>
         <source>Projets</source>
         <comment>dock title</comment>
         <translation>Projetos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="249"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="253"/>
         <source>Collections</source>
         <translation>Coleções</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="273"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="277"/>
         <source>Aucune modification</source>
         <translation>Sem modificações</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="274"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="278"/>
         <source>Cliquez sur une action pour revenir en arrière dans l&apos;édition de votre schéma</source>
         <comment>Status tip</comment>
         <translation>Clique sobre uma ação para desfazer as alterações que você efetuou no seu esquema</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="275"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="279"/>
         <source>Ce panneau liste les différentes actions effectuées sur le folio courant. Cliquer sur une action permet de revenir à l&apos;état du schéma juste après son application.</source>
         <comment>&quot;What&apos;s this&quot; tip</comment>
         <translation>Este painel lista as diferentes ações efetuadas sobre a folha atual. Clicar sobre uma ação permite retornar ao estado do esquema logo após sua aplicação.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="277"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="281"/>
         <source>Annulations</source>
         <comment>dock title</comment>
         <translation>Desfazer</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="324"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="328"/>
         <source>E&amp;xporter</source>
         <translation>E&amp;xportar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="335"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="339"/>
         <source>Imprimer</source>
         <translation>Imprimir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="356"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="360"/>
         <source>&amp;Quitter</source>
         <translation>Sai&amp;r</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="362"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="366"/>
         <source>Annuler</source>
         <translation>Desfazer</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="367"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="371"/>
         <source>Refaire</source>
         <translation>Refazer</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="365"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="369"/>
         <source>Annule l&apos;action précédente</source>
         <comment>status bar tip</comment>
         <translation>Desfaz a ação anterior</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="370"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="374"/>
         <source>Restaure l&apos;action annulée</source>
         <comment>status bar tip</comment>
         <translation>Refaz a ação anulada</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="373"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="377"/>
         <source>Co&amp;uper</source>
         <translation>Cor&amp;tar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="374"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="378"/>
         <source>Cop&amp;ier</source>
         <translation>Co&amp;piar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="375"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="379"/>
         <source>C&amp;oller</source>
         <translation>C&amp;olar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="381"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="385"/>
         <source>Transfère les éléments sélectionnés dans le presse-papier</source>
         <comment>status bar tip</comment>
         <translation>Transfere os elementos selecionados para a área de transferência</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="382"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="386"/>
         <source>Copie les éléments sélectionnés dans le presse-papier</source>
         <comment>status bar tip</comment>
         <translation>Copia os elementos selecionados para a área de transferência</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="383"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="387"/>
         <source>Place les éléments du presse-papier sur le folio</source>
         <comment>status bar tip</comment>
         <translation>Cola os elementos da área de transferência na folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="399"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="403"/>
         <source>Réinitialiser les conducteurs</source>
         <translation>Reinicializar os condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="408"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="412"/>
         <source>Création automatique de conducteur(s)</source>
         <comment>Tool tip of auto conductor</comment>
         <translation>Criação automática de condutor(es)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="409"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="413"/>
         <source>Utiliser la création automatique de conducteur(s) quand cela est possible</source>
         <comment>Status tip of auto conductor</comment>
         <translation>Utilizar a criação automática de fios quando possível</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="432"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="436"/>
         <source>Couleur de fond blanc/gris</source>
         <comment>Tool tip of white/grey background button</comment>
         <translation>Cor de fundo branco/cinza</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="433"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="437"/>
         <source>Affiche la couleur de fond du folio en blanc ou en gris</source>
         <comment>Status tip of white/grey background button</comment>
         <translation>Exibe a cor de fundo da folha em branco ou cinza</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="442"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="446"/>
         <source>Afficher la grille</source>
         <translation>Exibir a grade</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="443"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="447"/>
         <source>Affiche ou masque la grille des folios</source>
         <translation>Mostrar ou ocultar a grade das folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="468"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="472"/>
         <source>Propriétés du folio</source>
         <translation>Propriedades da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="480"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="484"/>
         <source>Propriétés du projet</source>
         <translation>Propriedades do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="486"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="490"/>
         <source>Ajouter un folio</source>
         <translation>Acrescentar uma folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="495"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4412"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4435"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="499"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4505"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4528"/>
         <source>Supprimer le folio</source>
         <translation>Excluir esta folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="499"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="503"/>
         <source>Nettoyer le projet</source>
         <translation>Limpar o projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="524"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="528"/>
         <source>Ajouter un sommaire</source>
         <translation>Adicionar um resumo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1045"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1077"/>
         <source>en utilisant des onglets</source>
         <translation>Usando abas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1050"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1082"/>
         <source>en utilisant des fenêtres</source>
         <translation>Usando janelas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1069"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1101"/>
         <source>Mode Selection</source>
         <translation>Modo de seleção</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1081"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1113"/>
         <source>Mode Visualisation</source>
         <translation>Modo de visualização</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1060"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1092"/>
         <source>&amp;Mosaïque</source>
         <translation>&amp;Mosaico</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="325"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="336"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="357"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="364"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="369"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="377"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="378"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="379"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="400"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="469"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="487"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="566"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1099"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1104"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1115"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1116"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1117"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1118"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1119"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1176"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1177"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1178"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1179"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1180"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1203"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1204"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1205"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1225"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1226"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1227"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1228"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1229"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1300"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1311"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1329"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="329"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="340"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="361"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="368"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="373"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="381"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="382"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="383"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="404"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="473"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="491"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="570"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1131"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1136"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1147"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1148"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1149"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1150"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1151"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1208"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1209"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1210"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1211"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1212"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1235"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1236"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1237"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1257"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1258"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1259"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1260"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1261"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1332"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1343"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1361"/>
         <source>Éditeur de schémas</source>
         <translation>Editor de esquemas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="346"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="350"/>
         <source>Exporter en pdf</source>
         <translation>Exportar em pdf</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="347"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="351"/>
         <source>Exporte un ou plusieurs folios du projet courant</source>
         <comment>status bar tip</comment>
         <translation>Exportar uma ou mais folhas do projeto atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="417"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="421"/>
         <source>Coupure automatique de conducteur(s)</source>
         <comment>Tool tip of auto break conductor</comment>
         <translation>Corte automático de condutor(es)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="418"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="422"/>
         <source>Couper automatiquement les conducteurs existants lors du placement d&apos;un élément</source>
         <comment>Status tip of auto break conductor</comment>
         <translation>Cortar automaticamente os condutores existentes ao posicionar um elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="456"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="460"/>
         <source>Afficher les guides</source>
         <translation>Exibir as guias</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="457"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="461"/>
         <source>Affiche ou masque les guides</source>
         <translation>Exibe ou oculta as guias</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="509"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="513"/>
         <source>Exporter au format CSV</source>
         <translation>Exportar em formato CSV</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="531"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="535"/>
         <source>Gestionnaire de borniers (DEV)</source>
         <translation>Gerenciador de régua de bornes (DEV)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="672"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="621"/>
+        <source>Contrôle du projet</source>
+        <translation>Verificar projeto</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="622"/>
+        <source>Vérifie le projet : bobine sans contact, contact sans bobine, borne hors bornier. La liste reste affichée et mène au composant.</source>
+        <translation>Verifica o projeto: bobina sem contato, contato sem bobina, borne fora de régua de bornes. A lista permanece exibida e leva até o componente.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="688"/>
         <source>Générer des blocs de brochage…</source>
         <translation>Gerar blocos de pinagem…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="674"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="690"/>
         <source>Dessine le symbole d&apos;une pièce à partir du brochage que le catalogue connaît, en un bloc ou en plusieurs.</source>
         <translation>Desenha o símbolo de uma peça a partir da pinagem que o catálogo conhece, em um bloco ou em vários.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="686"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="702"/>
         <source>Générer des circuits par table…</source>
         <translation>Gerar circuitos por tabela…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="688"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="704"/>
         <source>Dessine d&apos;un coup les circuits d&apos;une table : une ligne par circuit, un macro et ses valeurs.</source>
         <translation>Desenha de uma vez os circuitos de uma tabela: uma linha por circuito, uma macro e os valores dela.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="700"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="716"/>
         <source>Importer une liste d&apos;E/S…</source>
         <translation>Importar uma lista de E/S…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="702"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="718"/>
         <source>Lit une feuille de calcul d&apos;entrées / sorties et la fond avec celle du projet, sans rien effacer de ce qui est déjà placé.</source>
         <translation>Lê uma planilha de entradas / saídas e a funde com a do projeto, sem apagar nada do que já está posto.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="711"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="727"/>
         <source>Affecter des E/S à une carte…</source>
         <translation>Atribuir E/S a um cartão…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="713"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="729"/>
         <source>Place les points d&apos;entrées / sorties déjà importés dans les voies libres d&apos;une carte d&apos;automate, et les en retire.</source>
         <translation>Põe os pontos de entradas / saídas já importados nos canais livres de um cartão de CLP, e os retira da lista.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="722"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="738"/>
         <source>Liste des E/S…</source>
         <translation>Lista de E/S…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="724"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="740"/>
         <source>Montre les entrées / sorties du projet, les automates et leurs cartes au-dessus, et laisse les corriger sur place.</source>
         <translation>Mostra as entradas / saídas do projeto, os CLPs e os cartões deles acima, e permite corrigi-las ali mesmo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="733"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="749"/>
         <source>Marquer comme barre par défaut…</source>
         <translation>Marcar como barra padrão…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="735"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="751"/>
         <source>Dit que les éléments sélectionnés servent de barre d&apos;alimentation ou de retour pour les communs.</source>
         <translation>Diz que os elementos selecionados servem de barra de alimentação ou de retorno para os comuns.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="742"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="758"/>
         <source>Raccorder les communs…</source>
         <translation>Ligar os comuns…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="744"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="760"/>
         <source>Tire d&apos;un coup les fils entre les communs des cartes et les barres marquées de leur folio.</source>
         <translation>Puxa de uma vez os fios entre os comuns dos cartões e as barras marcadas na folha delas.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="990"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="978"/>
+        <source>État de montage du projet…</source>
+        <translation>Estado de montagem do projeto…</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="979"/>
+        <source>Fige ce qui est déjà câblé et étiqueté : l&apos;automatisation ne numérote plus que ce qui sera dessiné après.</source>
+        <translation>Congela o que já está cabeado e etiquetado: a automação só numera mais o que for desenhado depois.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1022"/>
         <source>Calepinage de l&apos;armoire…</source>
         <translation>Layout do painel…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="991"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1023"/>
         <source>Implante la platine en millimètre : ce qui est vissé dessus, et où. Se glisse à la souris.</source>
         <translation>Implanta a placa em milímetro: o que está parafusado nela, e onde. Arrasta-se com o mouse.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="999"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1031"/>
         <source>Poser le calepinage sur le folio…</source>
         <translation>Pôr o layout na folha…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1000"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1032"/>
         <source>Dessine une platine du projet sur le folio courant, à l&apos;échelle choisie. Le dessin suit la platine.</source>
         <translation>Desenha uma placa do projeto na folha atual, na escala escolhida. O desenho acompanha a placa.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1009"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1041"/>
         <source>Lancer le plugin de création de borniers</source>
         <translation>Iniciar o plugin de criação de réguas de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1013"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1045"/>
         <source>Exporter la liste des noms de conducteurs</source>
         <translation>Exportar a lista de nomes dos condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1023"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1055"/>
         <source>Exporter le plan de câblage</source>
         <translation>Exportar o plano de fiação</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1034"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1066"/>
         <source>Numérotation automatique des bornes</source>
         <translation>Numeração automática dos bornes</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1038"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1070"/>
         <source>Exporter la base de donnée interne du projet</source>
         <translation>Exportar o banco de dados interno do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1064"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1096"/>
         <source>&amp;Cascade</source>
         <translation>&amp;Cascata</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1098"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1130"/>
         <source>Projet suivant</source>
         <translation>Projeto seguinte</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1103"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1135"/>
         <source>Projet précédent</source>
         <translation>Projeto anterior</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1109"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1141"/>
         <source>&amp;Nouveau</source>
         <translation>&amp;Novo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1110"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1142"/>
         <source>&amp;Ouvrir</source>
         <translation>&amp;Abrir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1111"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1143"/>
         <source>&amp;Enregistrer</source>
         <translation>&amp;Salvar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1112"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1144"/>
         <source>Enregistrer sous</source>
         <translation>Salvar como</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1113"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1145"/>
         <source>&amp;Fermer</source>
         <translation>&amp;Fechar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1121"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1153"/>
         <source>Crée un nouveau projet</source>
         <comment>status bar tip</comment>
         <translation>Cria um novo projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1122"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1154"/>
         <source>Ouvre un projet existant</source>
         <comment>status bar tip</comment>
         <translation>Abre um projeto existente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1123"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1155"/>
         <source>Ferme le projet courant</source>
         <comment>status bar tip</comment>
         <translation>Fecha o projeto atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1124"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1156"/>
         <source>Enregistre le projet courant et tous ses folios</source>
         <comment>status bar tip</comment>
         <translation>Salva o projeto atual e todas as suas folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1125"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1157"/>
         <source>Enregistre le projet courant avec un autre nom de fichier</source>
         <comment>status bar tip</comment>
         <translation>Salva o projeto atual com outro nome de arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1150"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1182"/>
         <source>Ajouter une colonne</source>
         <translation>Adicionar uma coluna</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1151"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1183"/>
         <source>Enlever une colonne</source>
         <translation>Eliminar uma coluna</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1152"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1184"/>
         <source>Ajouter une ligne</source>
         <comment>Add row</comment>
         <translation>Adicionar uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1153"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1185"/>
         <source>Enlever une ligne</source>
         <comment>Remove row</comment>
         <translation>Excluir uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1155"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1187"/>
         <source>Ajoute une colonne au folio</source>
         <comment>status bar tip</comment>
         <translation>Adiciona uma coluna à folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1156"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1188"/>
         <source>Enlève une colonne au folio</source>
         <comment>status bar tip</comment>
         <translation>Elimina uma coluna da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1157"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1189"/>
         <source>Agrandit le folio en hauteur</source>
         <comment>status bar tip</comment>
         <translation>Aumenta a altura da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1158"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1190"/>
         <source>Rétrécit le folio en hauteur</source>
         <comment>status bar tip</comment>
         <translation>Diminui a altura da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1168"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1200"/>
         <source>Supprimer</source>
         <translation>Excluir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1169"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1201"/>
         <source>Pivoter</source>
         <translation>Girar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1170"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1202"/>
         <source>Pivoter le groupe</source>
         <translation>Girar o grupo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1171"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1203"/>
         <source>Orienter les textes</source>
         <translation>Escolha a orientação dos textos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1172"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1204"/>
         <source>Retrouver dans le panel</source>
         <translation>Procurar no painel</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1173"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1205"/>
         <source>Éditer l&apos;item sélectionné</source>
         <translation>Editar o item selecionado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1182"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1214"/>
         <source>Enlève les éléments sélectionnés du folio</source>
         <comment>status bar tip</comment>
         <translation>Remove os elementos selecionados da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1183"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1215"/>
         <source>Pivote les éléments et textes sélectionnés</source>
         <comment>status bar tip</comment>
         <translation>Gira os elementos e textos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1184"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1216"/>
         <source>Pivote la sélection comme un groupe autour de son centre, au lieu de chaque élément sur place</source>
         <comment>status bar tip</comment>
         <translation>Gira a seleção como um grupo em torno do seu centro, em vez de cada elemento no próprio lugar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1185"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1217"/>
         <source>Pivote les textes sélectionnés à un angle précis</source>
         <comment>status bar tip</comment>
         <translation>Gira os textos selecionados para um ângulo definido</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1186"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1218"/>
         <source>Retrouve l&apos;élément sélectionné dans le panel</source>
         <comment>status bar tip</comment>
         <translation>Procurar o elemento selecionado no painel</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1199"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1231"/>
         <source>Tout sélectionner</source>
         <translation>Selecionar tudo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1200"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1232"/>
         <source>Désélectionner tout</source>
         <translation>Desmarcar todos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1201"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1233"/>
         <source>Inverser la sélection</source>
         <translation>Inverter a seleção</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1207"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1239"/>
         <source>Sélectionne tous les éléments du folio</source>
         <comment>status bar tip</comment>
         <translation>Seleciona todos os elementos da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1208"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1240"/>
         <source>Désélectionne tous les éléments du folio</source>
         <comment>status bar tip</comment>
         <translation>Desmarca todos os elementos da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1209"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1241"/>
         <source>Désélectionne les éléments sélectionnés et sélectionne les éléments non sélectionnés</source>
         <comment>status bar tip</comment>
         <translation>Alterna a seleção dos elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1218"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1250"/>
         <source>Zoom avant</source>
         <translation>Aumentar Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1219"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1251"/>
         <source>Zoom arrière</source>
         <translation>Diminuir Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1220"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1252"/>
         <source>Zoom sur le contenu</source>
         <translation>Zoom sobre o conteúdo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1221"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1253"/>
         <source>Zoom adapté</source>
         <translation>Ajustar à janela</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1222"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1254"/>
         <source>Pas de zoom</source>
         <translation>Restaurar zoom</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1231"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1263"/>
         <source>Agrandit le folio</source>
         <comment>status bar tip</comment>
         <translation>Aumenta a folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1232"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1264"/>
         <source>Rétrécit le folio</source>
         <comment>status bar tip</comment>
         <translation>Diminui a folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1233"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1265"/>
         <source>Adapte le zoom de façon à afficher tout le contenu du folio indépendamment du cadre</source>
         <translation>Ajusta o zoom para exibir toda a folha independentemente das bordas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1234"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1266"/>
         <source>Adapte le zoom exactement sur le cadre du folio</source>
         <comment>status bar tip</comment>
         <translation>Ajusta o zoom exatamente sobre as bordas da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1235"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1267"/>
         <source>Restaure le zoom par défaut</source>
         <comment>status bar tip</comment>
         <translation>Restaura o zoom padrão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1246"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1278"/>
         <source>Ajouter un champ de texte</source>
         <translation>Adicionar um campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1247"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1279"/>
         <source>Ajouter une image</source>
         <translation>Adicionar uma imagem</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1249"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1281"/>
         <source>Ajouter un PDF</source>
         <translation>Adicionar um PDF</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1251"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1283"/>
         <source>Ajouter une ligne</source>
         <comment>Draw line</comment>
         <translation>Adicionar uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1252"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1284"/>
         <source>Ajouter un rectangle</source>
         <translation>Adicionar um retângulo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1253"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1285"/>
         <source>Ajouter une ellipse</source>
         <translation>Adicionar uma elipse</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1254"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1286"/>
         <source>Ajouter une polyligne</source>
         <translation>Adicionar uma linha poligonal</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1255"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1287"/>
         <source>Ajouter une zone de localisation</source>
         <translation>Adicionar uma zona de localização</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="326"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="330"/>
         <source>Exporte le folio courant dans un autre format</source>
         <comment>status bar tip</comment>
         <translation>Exportar a folha atual em outro formato</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="337"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="341"/>
         <source>Imprime un ou plusieurs folios du projet courant</source>
         <comment>status bar tip</comment>
         <translation>Imprimir uma ou mais folhas do projeto atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="358"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="362"/>
         <source>Ferme l&apos;application QElectroTech</source>
         <comment>status bar tip</comment>
         <translation>Fechar o aplicativo QElectroTech</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="401"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="405"/>
         <source>Recalcule les chemins des conducteurs sans tenir compte des modifications</source>
         <comment>status bar tip</comment>
         <translation>Redefinir os caminhos dos condutores ignorando as modificações do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="470"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="474"/>
         <source>Édite les propriétés du folio (dimensions, informations du cartouche, propriétés des conducteurs...)</source>
         <comment>status bar tip</comment>
         <translation>Edite as propriedades da folha (dimensões, informações do bloco de legenda, propriedades dos condutores...)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1051"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1083"/>
         <source>Présente les différents projets ouverts dans des sous-fenêtres</source>
         <comment>status bar tip</comment>
         <translation>Exibe os vários projetos abertos em janelas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1046"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1078"/>
         <source>Présente les différents projets ouverts des onglets</source>
         <comment>status bar tip</comment>
         <translation>Exibe os vários projetos abertos em abas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1070"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1102"/>
         <source>Permet de sélectionner les éléments</source>
         <comment>status bar tip</comment>
         <translation>Permite selecionar elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1082"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1114"/>
         <source>Permet de visualiser le folio sans pouvoir le modifier</source>
         <comment>status bar tip</comment>
         <translation>Permite visualizar a folha, porém sem poder editá-la</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1061"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1093"/>
         <source>Dispose les fenêtres en mosaïque</source>
         <comment>status bar tip</comment>
         <translation>Dispõe as janelas lado a lado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="516"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="520"/>
         <source>Ajouter une nomenclature</source>
         <translation>Adicionar lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1065"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1097"/>
         <source>Dispose les fenêtres en cascade</source>
         <comment>status bar tip</comment>
         <translation>Dispõe as janelas em cascata</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1100"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1132"/>
         <source>Active le projet suivant</source>
         <comment>status bar tip</comment>
         <translation>Ativa o próximo projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1105"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1137"/>
         <source>Active le projet précédent</source>
         <comment>status bar tip</comment>
         <translation>Ativa o projeto anterior</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1174"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1206"/>
         <source>Grouper les textes sélectionnés</source>
         <translation>Agrupar textos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1256"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1288"/>
         <source>Ajouter un plan de bornes</source>
         <translation>Adicionar um plano de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1258"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1290"/>
         <source>Ajoute un champ de texte sur le folio actuel</source>
         <translation>Adiciona um campo de texto à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1259"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1291"/>
         <source>Ajoute une image sur le folio actuel</source>
         <translation>Adiciona uma imagem à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1261"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1293"/>
         <source>Ajoute une page PDF sur le folio actuel</source>
         <translation>Adiciona uma página do PDF na folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1263"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1295"/>
         <source>Ajoute une ligne sur le folio actuel</source>
         <translation>Adiciona uma linha à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1264"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1296"/>
         <source>Ajoute un rectangle sur le folio actuel</source>
         <translation>Adiciona um retângulo à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1265"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1297"/>
         <source>Ajoute une ellipse sur le folio actuel</source>
         <translation>Adiciona uma elipse à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1266"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1298"/>
         <source>Ajoute une polyligne sur le folio actuel</source>
         <translation>Adiciona uma polilinha na folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1267"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1299"/>
         <source>Dessine sur le folio actuel une zone qui affecte les composants qu&apos;elle contient</source>
         <translation>Desenha na folha atual uma zona que atribui a localização aos componentes que ela contém</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1268"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1300"/>
         <source>Ajoute un plan de bornier sur le folio actuel</source>
         <translation>Adiciona um plano de régua de bornes na folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1299"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1331"/>
         <source>Chercher/remplacer</source>
         <translation>Localizar / substituir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1310"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1342"/>
         <source>Atteindre un élément</source>
         <translation>Ir para um elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1312"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1344"/>
         <source>Recherche et sélectionne rapidement un élément du folio</source>
         <comment>status bar tip</comment>
         <translation>Procura e seleciona rapidamente um elemento da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1328"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1360"/>
         <source>Naviguer vers la référence</source>
         <translation>Navegar até a referência</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1330"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1362"/>
         <source>Atteint l&apos;autre représentation de l&apos;objet sélectionné</source>
         <comment>status bar tip</comment>
         <translation>Vai até a outra representação do objeto selecionado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1339"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1371"/>
         <source>Outils</source>
         <translation>Ferramentas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1342"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1374"/>
         <source>Affichage</source>
         <translation>Exibir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1345"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1377"/>
         <source>Schéma</source>
         <translation>Esquema</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1379"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1411"/>
         <source>Ajouter</source>
         <translation>Adicionar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1383"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1415"/>
         <source>Profondeur</source>
         <comment>toolbar title</comment>
         <translation>Profundidade</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="1613"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1645"/>
         <source>%n bloc(s) enregistré(s) dans la bibliothèque.</source>
         <translation>
             <numerusform>%n bloco salvo na biblioteca.</numerusform>
@@ -14562,204 +15226,204 @@ Opções disponíveis:
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1891"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1908"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1923"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1940"/>
         <source>Poser le calepinage sur le folio</source>
         <translation>Pôr o layout na folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1892"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1924"/>
         <source>Ce projet n&apos;a encore aucune platine. Ouvrez « Calepinage de l&apos;armoire… » pour en créer une.</source>
         <translation>Este projeto ainda não tem nenhuma placa. Abra « Layout do painel… » para criar uma.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1909"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1941"/>
         <source>Quelle platine dessiner sur ce folio ?</source>
         <translation>Qual placa desenhar nesta folha?</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1930"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1976"/>
         <source>Unités de folio par millimètre. À %1, une platine de %2 × %3 mm est dessinée %4 × %5.</source>
         <translation>Unidades de folha por milímetro. Em %1, uma placa de %2 × %3 mm é desenhada em %4 × %5.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1937"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1983"/>
         <source>Unités de folio par millimètre. Cette platine n&apos;est pas mesurée : seuls ses composants seront dessinés.</source>
         <translation>Unidades de folha por milímetro. Esta placa não está medida: somente seus componentes serão desenhados.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1943"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1989"/>
         <source>Échelle du calepinage</source>
         <translation>Escala do layout</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2129"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2194"/>
         <source>Aucun élément sélectionné</source>
         <translation>Nenhum elemento selecionado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2130"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2195"/>
         <source>Sélectionnez le ou les éléments qui font office de barre sur leur folio.</source>
         <translation>Selecione o elemento ou os elementos que servem de barra na folha deles.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2138"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2203"/>
         <source>Aucune</source>
         <translation>Nenhuma</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2153"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2218"/>
         <source>Barre par défaut</source>
         <translation>Barra padrão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2154"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2219"/>
         <source>Ces éléments servent de barre pour :</source>
         <translation>Estes elementos servem de barra para:</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2189"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2254"/>
         <source>Ces éléments portaient déjà cette marque.</source>
         <translation>Estes elementos já tinham esta marca.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2197"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2262"/>
         <source>%1 élément(s) ne servent plus de barre.</source>
         <translation>%1 elemento(s) não servem mais de barra.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2199"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2264"/>
         <source>%1 élément(s) marqués comme barre « %2 ».</source>
         <translation>%1 elemento(s) marcado(s) como barra « %2 ».</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2257"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2322"/>
         <source>Aucune carte</source>
         <translation>Nenhum cartão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2258"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2323"/>
         <source>Ce projet ne contient aucune carte d&apos;automate. Sélectionnez les éléments dont les communs sont à raccorder.</source>
         <translation>Este projeto não contém nenhum cartão de CLP. Selecione os elementos cujos comuns devem ser ligados.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2277"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2282"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2342"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2347"/>
         <source>Raccorder les communs</source>
         <translation>Ligar os comuns</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2590"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2655"/>
         <source>&amp;Fichier</source>
         <translation>Ar&amp;quivo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2591"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2656"/>
         <source>&amp;Édition</source>
         <translation>&amp;Editar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2592"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2657"/>
         <source>&amp;Projet</source>
         <translation>&amp;Projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2594"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2659"/>
         <source>Afficha&amp;ge</source>
         <translation>E&amp;xibir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2596"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2661"/>
         <source>Fe&amp;nêtres</source>
         <translation>Ja&amp;nelas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2614"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2679"/>
         <source>&amp;Récemment ouverts</source>
         <translation>Abertos &amp;recentemente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2724"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2791"/>
         <source>Affiche ou non la barre d&apos;outils principale</source>
         <translation>Alterna a exibição da barra de ferramentas &quot;Principal&quot;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2725"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2792"/>
         <source>Affiche ou non la barre d&apos;outils Affichage</source>
         <translation>Alterna a exibição da barra de ferramentas &quot;Exibir&quot;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2726"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2793"/>
         <source>Affiche ou non la barre d&apos;outils Schéma</source>
         <translation>Alterna a exibição da barra de ferramentas &quot;Esquema&quot;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2727"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2794"/>
         <source>Affiche ou non le panel d&apos;appareils</source>
         <translation>Alterna a exibição do painel de elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2728"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2795"/>
         <source>Affiche ou non la liste des modifications</source>
         <translation>Alterna a exibição da lista de alterações</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2732"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2799"/>
         <source>Afficher les projets</source>
         <translation>Exibir os projetos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2862"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2885"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2929"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2952"/>
         <source>Projet %1 enregistré dans le repertoire: %2.</source>
         <translation>Projeto %1 salvo na pasta: %2.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2992"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3059"/>
         <source>Ouvrir un fichier</source>
         <translation>Abrir um arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2994"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3061"/>
         <source>Projets QElectroTech (*.qet);;Fichiers XML (*.xml);;Tous les fichiers (*)</source>
         <translation>Projetos QElectroTech (*.qet);;Arquivos XML (*.xml);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3077"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3093"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3144"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3160"/>
         <source>Impossible d&apos;ouvrir le fichier</source>
         <comment>message box title</comment>
         <translation>Não é possível abrir o arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3079"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3146"/>
         <source>Il semblerait que le fichier %1 que vous essayez d&apos;ouvrir n&apos;existe pas ou plus.</source>
         <translation>Aparentemente o arquivo %1 que você está tentando abrir não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3094"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3161"/>
         <source>Il semblerait que le fichier que vous essayez d&apos;ouvrir ne soit pas accessible en lecture. Il est donc impossible de l&apos;ouvrir. Veuillez vérifier les permissions du fichier.</source>
         <translation>Aparentemente o arquivo que você está tentando abrir não é acessível para leitura. Portanto, é impossível abri-lo. Por favor, verifique as permissões do arquivo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3108"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3175"/>
         <source>Ouverture du projet en lecture seule</source>
         <comment>message box title</comment>
         <translation>Abrir o projeto em modo somente de leitura</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3109"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3176"/>
         <source>Il semblerait que le projet que vous essayez d&apos;ouvrir ne soit pas accessible en écriture. Il sera donc ouvert en lecture seule.</source>
         <translation>Aparentemente o projeto que você está tentando abrir não é acessível para escrita. Portanto ele será aberto em modo somente de leitura.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3161"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3228"/>
         <source>Fichier de restauration</source>
         <comment>message box title</comment>
         <translation>Arquivo de restauração</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3162"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3229"/>
         <source>QElectroTech s&apos;est arrêté brutalement alors que ce projet était ouvert. Une copie de restauration du %1 a été conservée.
 
 Voulez-vous ouvrir cette copie plutôt que le fichier enregistré ?</source>
@@ -14769,19 +15433,19 @@ Voulez-vous ouvrir cette copie plutôt que le fichier enregistré ?</source>
 Deseja abrir essa cópia, mais recente e com o que ainda não tinha sido salvo, em vez do arquivo salvo? O arquivo salvo não é apagado: ele continua no disco como está.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3210"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3277"/>
         <source>Échec de l&apos;ouverture du projet</source>
         <comment>message box title</comment>
         <translation>Não é possível abrir o projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3212"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3279"/>
         <source>Il semblerait que le fichier %1 ne soit pas un fichier projet QElectroTech. Il ne peut donc être ouvert.</source>
         <comment>message box content</comment>
         <translation>Parece que o arquivo %1 não é um arquivo de projeto QElectroTech. Portanto, ele não pode ser aberto.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3260"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3327"/>
         <source>%n description(s) de police écrite(s) dans un format étranger ou corrompu ont été restaurée(s). Elles seront réécrites dans un format stable au prochain enregistrement du projet.</source>
         <comment>message box content</comment>
         <translation>
@@ -14790,7 +15454,7 @@ Deseja abrir essa cópia, mais recente e com o que ainda não tinha sido salvo, 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3268"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3335"/>
         <source>%n description(s) de police n&apos;ont pas pu être lue(s) ; la police par défaut sera utilisée pour ces textes.</source>
         <comment>message box content</comment>
         <translation>
@@ -14799,64 +15463,64 @@ Deseja abrir essa cópia, mais recente e com o que ainda não tinha sido salvo, 
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3276"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3343"/>
         <source>Polices du projet</source>
         <comment>message box title</comment>
         <translation>Fontes do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3563"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3650"/>
         <source>Double-click pour terminer la forme, Click droit pour annuler le dernier point</source>
         <translation>Clique duas vezes para completar a forma, clique com o botão direito para cancelar o último ponto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3571"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3658"/>
         <source>Cliquez-glissez, ou cliquez les deux coins, pour dessiner la zone. Click droit pour annuler</source>
         <translation>Clique e arraste, ou clique nos dois cantos, para desenhar a zona. Clique com o botão direito para cancelar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3638"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3725"/>
         <source>Suppression de borne impossible</source>
         <translation>Não é possível apagar o borne</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3639"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3726"/>
         <source>La suppression ne peut être effectué car la selection possède une ou plusieurs bornes ponté et/ou appartenant à une borne à niveau multiple.
 Déponter et/ou supprimer les niveaux des bornes concerné afin de pouvoir les supprimer</source>
         <translation>Não dá para apagar porque a seleção tem um ou mais bornes em ponte, ou que pertencem a um borne de vários níveis.
 Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-los</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3673"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3760"/>
         <source>Groupe</source>
         <translation>Grupo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3927"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4020"/>
         <source>Éditer l&apos;élement</source>
         <comment>edit element</comment>
         <translation>Editar o elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3934"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4027"/>
         <source>Éditer le champ de texte</source>
         <comment>edit text field</comment>
         <translation>Editar o campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3941"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4034"/>
         <source>Éditer l&apos;image</source>
         <comment>edit image</comment>
         <translation>Editar a imagem</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3948"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4041"/>
         <source>Éditer le conducteur</source>
         <comment>edit conductor</comment>
         <translation>Editar o condutor</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3956"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4049"/>
         <source>Éditer l&apos;objet sélectionné</source>
         <comment>edit selected item</comment>
         <translation>Editar o objeto selecionado</translation>
@@ -14867,84 +15531,84 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         <translation type="vanished">Ocorreu um erro ao abrir o arquivo %1.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4189"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4282"/>
         <source>Active le projet « %1 »</source>
         <translation>Ativar o projeto « %1 »</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4413"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4506"/>
         <source>Êtes-vous sûr de vouloir supprimer ce folio ?</source>
         <translation>Tem certeza de que quer apagar esta folha?</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4418"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4511"/>
         <source>Supprimer les folios</source>
         <translation>Apagar as folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4419"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4512"/>
         <source>Êtes-vous sûr de vouloir supprimer les %1 folios sélectionnés ?</source>
         <translation>Tem certeza de que quer apagar as %1 folhas selecionadas?</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4436"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4529"/>
         <source>Supprimer %1 folios</source>
         <translation>Apagar %1 folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4474"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4492"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4510"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4528"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4546"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4564"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4582"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4567"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4585"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4603"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4621"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4639"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4657"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4675"/>
         <source>Déplacer les folios</source>
         <translation>Mover as folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4650"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4743"/>
         <source>Erreur</source>
         <comment>message box title</comment>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="543"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="547"/>
         <source>Classes et propriétés du catalogue</source>
         <translation>Classes e propriedades do catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="550"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="554"/>
         <source>Parcourir le catalogue</source>
         <translation>Percorrer o catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="577"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="581"/>
         <source>Composants sans pièce</source>
         <translation>Componentes sem peça</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="588"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="592"/>
         <source>Pièces sans vue physique</source>
         <translation>Peças sem vista física</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="589"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="593"/>
         <source>Liste les composants dont la pièce n&apos;a ni largeur ni hauteur au catalogue : ce qui reste à mesurer avant de dessiner une implantation.</source>
         <translation>Lista os componentes cuja peça não tem largura nem altura no catálogo: o que falta medir antes de desenhar a disposição física do painel.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="616"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="632"/>
         <source>Environnement de travail</source>
         <translation>Ambiente de trabalho</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="760"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="776"/>
         <source>Insérer un groupement…</source>
         <translation>Inserir um agrupamento…</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="795"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="811"/>
         <source>%n composant(s) ont changé de pièce. Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>
             <numerusform>%n componente mudou de peça. Ctrl+Z desfaz tudo de uma vez.</numerusform>
@@ -14952,54 +15616,54 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="814"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="830"/>
         <source>La grille fine sert au dessin ; les points de raccordement, eux, doivent rester sur la grille principale.</source>
         <translation>A grade fina serve para o desenho; os pontos de ligação, esses, têm de ficar na grade principal.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="839"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="855"/>
         <source>À laisser désactivé pour le travail courant : un point visible est un point qu&apos;on déplace par accident.</source>
         <translation>Deixe desligado no trabalho do dia a dia: um ponto visível é um ponto que se arrasta sem querer.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="902"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="918"/>
         <source>Remplace le fait de déplacer chaque texte à la main.</source>
         <translation>Substitui arrastar cada texto à mão.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="928"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="936"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="944"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="952"/>
         <source>Lier un accessoire</source>
         <translation>Vincular um acessório</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="929"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="945"/>
         <source>Sélectionnez un seul accessoire.</source>
         <translation>Selecione um acessório só.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="937"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="953"/>
         <source>Sélectionnez l&apos;accessoire à rattacher.</source>
         <translation>Selecione o acessório a vincular.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="942"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="958"/>
         <source>Accessoire rattaché. Ctrl+Z annule.</source>
         <translation>Acessório vinculado. Ctrl+Z desfaz.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1429"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1483"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1461"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1515"/>
         <source>Aucun composant sélectionné</source>
         <translation>Nenhum componente selecionado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1430"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1462"/>
         <source>Sélectionnez le ou les composants qui doivent recevoir la pièce.</source>
         <translation>Selecione o componente, ou os componentes, que devem receber a peça.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="1452"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1484"/>
         <source>Pièce %1 attribuée à %n composant(s).</source>
         <translation>
             <numerusform>Peça %1 atribuída a %n componente.</numerusform>
@@ -15007,12 +15671,12 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1484"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1516"/>
         <source>Sélectionnez les symboles du composant — la bobine et tous ses contacts — avant d&apos;enregistrer la pièce.</source>
         <translation>Selecione os símbolos do componente — a bobina e todos os contatos dele — antes de salvar a peça.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="1501"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1533"/>
         <source>Pièce %1 enregistrée et attribuée à %n composant(s).</source>
         <translation>
             <numerusform>Peça %1 salva e atribuída a %n componente.</numerusform>
@@ -15020,7 +15684,7 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="1542"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1574"/>
         <source>%n composant(s) renuméroté(s). Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>
             <numerusform>%n componente renumerado. Ctrl+Z desfaz tudo de uma vez.</numerusform>
@@ -15028,47 +15692,47 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1567"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1599"/>
         <source>Créer un symbole</source>
         <translation>Criar um símbolo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1587"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1619"/>
         <source>Symbole enregistré : %1</source>
         <translation>Símbolo gravado: %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2305"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2370"/>
         <source>Enregistrer un groupement</source>
         <translation>Gravar um agrupamento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2306"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2371"/>
         <source>Rien n&apos;est sélectionné. Sélectionnez le morceau de schéma à enregistrer.</source>
         <translation>Nada está selecionado. Selecione o pedaço de esquema a gravar.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2319"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2384"/>
         <source>Groupement enregistré : %1</source>
         <translation>Agrupamento gravado: %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2358"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2423"/>
         <source>Insérer un groupement</source>
         <translation>Inserir um agrupamento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2359"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2424"/>
         <source>« %1 » n&apos;a rien apporté sur la folio.</source>
         <translation>« %1 » não trouxe nada para a folha.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2370"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2435"/>
         <source>« %1 » inséré. Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>« %1 » inserido. Ctrl+Z desfaz tudo de uma vez.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2374"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2439"/>
         <source>« %1 » inséré avec %n pièce(s) déjà attribuée(s). Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>
             <numerusform>« %1 » inserido com %n peça já atribuída. Ctrl+Z desfaz tudo de uma vez.</numerusform>
@@ -15076,25 +15740,25 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="773"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2402"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2423"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2445"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="789"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2467"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2488"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2510"/>
         <source>Éclater le symbole</source>
         <translation>Explodir o símbolo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2403"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2468"/>
         <source>Sélectionnez le ou les symboles à éclater.</source>
         <translation>Selecione o símbolo, ou os símbolos, a explodir.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2425"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2490"/>
         <source>Aucun des symboles sélectionnés n&apos;a pu être éclaté.</source>
         <translation>Nenhum dos símbolos selecionados pôde ser explodido.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2435"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2500"/>
         <source>%n symbole(s) éclaté(s) en %1 formes et textes. Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>
             <numerusform>%n símbolo explodido em %1 formas e textos. Ctrl+Z desfaz tudo de uma vez.</numerusform>
@@ -15102,7 +15766,7 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2440"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2505"/>
         <source>%n symbole(s) refusé(s).</source>
         <translation>
             <numerusform>%n símbolo recusado.</numerusform>
@@ -15110,22 +15774,22 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2467"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2532"/>
         <source>Numéro des conducteurs</source>
         <translation>Número dos condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2468"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2533"/>
         <source>Sélectionnez les conducteurs dont le numéro doit être affiché ou masqué.</source>
         <translation>Selecione os condutores cujo número deve ser exibido ou ocultado.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2478"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2543"/>
         <source>Les conducteurs sélectionnés sont déjà comme ça.</source>
         <translation>Os condutores selecionados já estão assim.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2487"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2552"/>
         <source>Numéro affiché sur %n conducteur(s). Le numéro lui-même n&apos;a pas changé.</source>
         <translation>
             <numerusform>Número exibido em %n condutor. O número em si não mudou.</numerusform>
@@ -15133,7 +15797,7 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2489"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2554"/>
         <source>Numéro masqué sur %n conducteur(s). Le numéro lui-même n&apos;a pas changé.</source>
         <translation>
             <numerusform>Número ocultado em %n condutor. O número em si não mudou.</numerusform>
@@ -15141,188 +15805,188 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="896"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2524"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="912"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2589"/>
         <source>Aligner les numéros</source>
         <translation>Alinhar os números</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="560"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="564"/>
         <source>Attribuer une pièce</source>
         <translation>Atribuir uma peça</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="561"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="565"/>
         <source>Attribue une pièce du catalogue aux composants sélectionnés : informations, numéros de bornes et accessoires suivent.</source>
         <translation>Atribui uma peça do catálogo aos componentes selecionados: informações, números de bornes e acessórios acompanham.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="570"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="574"/>
         <source>Enregistrer une pièce</source>
         <translation>Cadastrar uma peça</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="571"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="575"/>
         <source>Crée une pièce du catalogue à partir des composants sélectionnés, avec une broche par borne.</source>
         <translation>Cria uma peça do catálogo a partir dos componentes selecionados, com um pino por borne.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="623"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="639"/>
         <source>Importer des pièces…</source>
         <translation>Importar peças…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="624"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="640"/>
         <source>Importe des pièces depuis un fichier .csv ou .xlsx, avec un rapport de ce qui est entré et de ce qui a été refusé.</source>
         <translation>Importa peças de um arquivo .csv ou .xlsx, com relatório do que entrou e do que foi recusado.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="634"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="650"/>
         <source>Répertoire partagé…</source>
         <translation>Repositório compartilhado…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="635"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="651"/>
         <source>Cherche et publie des pièces dans le répertoire partagé du bureau.</source>
         <translation>Procura e publica peças no repositório compartilhado do escritório.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="645"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="661"/>
         <source>Renuméroter…</source>
         <translation>Renumerar…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="646"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="662"/>
         <source>Renumérote les composants du projet, avec la table « de → vers » affichée avant d&apos;appliquer.</source>
         <translation>Renumera os componentes do projeto, com a tabela « de → para » exibida antes de aplicar.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="658"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="674"/>
         <source>Créer un symbole…</source>
         <translation>Criar um símbolo…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="660"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="676"/>
         <source>Transforme le dessin sélectionné en symbole de la bibliothèque : les points de raccordement sont déduits des bouts libres du dessin.</source>
         <translation>Transforma o desenho selecionado em símbolo da biblioteca: os pontos de ligação são deduzidos das pontas livres do desenho.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="751"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="767"/>
         <source>Enregistrer un groupement…</source>
         <translation>Gravar um agrupamento…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="753"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="769"/>
         <source>Garde le morceau de schéma sélectionné dans la bibliothèque, avec les pièces déjà attribuées.</source>
         <translation>Guarda o pedaço de esquema selecionado na biblioteca, com as peças já atribuídas.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="761"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="777"/>
         <source>Insère un morceau de schéma de la bibliothèque, pièces comprises.</source>
         <translation>Insere um pedaço de esquema da biblioteca, peças incluídas.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="774"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="790"/>
         <source>Rend le composant sélectionné à ses lignes et ses textes, pour les reprendre et refaire le bloc.</source>
         <translation>Devolve o componente selecionado às linhas e aos textos dele, para retocar e refazer o bloco.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="782"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="798"/>
         <source>Remplacer une pièce…</source>
         <translation>Substituir uma peça…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="783"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="799"/>
         <source>Échange une pièce contre une autre sur tous les composants du projet, en une seule fois annulable.</source>
         <translation>Troca uma peça por outra em todos os componentes do projeto, de uma vez e desfazível.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="805"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="821"/>
         <source>Grille fine</source>
         <translation>Grade fina</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="806"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="822"/>
         <source>Affiche la grille fine sous la principale. Elle sert au dessin ; les points de raccordement, eux, doivent rester sur la principale.</source>
         <translation>Exibe a grade fina sob a principal. Ela serve para o desenho; os pontos de ligação, esses, têm de ficar na principal.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="830"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="846"/>
         <source>Points de raccordement</source>
         <translation>Pontos de ligação</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="831"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="847"/>
         <source>Garde tous les points de raccordement visibles. À laisser désactivé pour le travail courant : un point visible est un point qu&apos;on déplace par accident.</source>
         <translation>Mantém todos os pontos de ligação visíveis. Deixe desligado no trabalho do dia a dia: um ponto visível é um ponto que se arrasta sem querer.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="854"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="870"/>
         <source>Attributs vides</source>
         <translation>Atributos vazios</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="855"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="871"/>
         <source>Montre en gris les champs de texte qui n&apos;ont pas encore de valeur, pour pouvoir les placer.</source>
         <translation>Mostra em cinza os campos de texto que ainda não têm valor, para dar para posicioná-los.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="878"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="894"/>
         <source>Afficher le numéro</source>
         <translation>Exibir o número</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="879"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="895"/>
         <source>Réaffiche le numéro sur les conducteurs sélectionnés. Le numéro lui-même ne change pas.</source>
         <translation>Exibe de novo o número nos condutores selecionados. O número em si não muda.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="887"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="903"/>
         <source>Masquer le numéro</source>
         <translation>Ocultar o número</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="888"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="904"/>
         <source>Cache le numéro sur les conducteurs sélectionnés. Le numéro lui-même ne change pas : il reste dans la liste de câblage.</source>
         <translation>Esconde o número nos condutores selecionados. O número em si não muda: continua na lista de fiação.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="897"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="913"/>
         <source>Aligne sur un même axe le numéro des conducteurs sélectionnés. Remplace le fait de déplacer chaque texte à la main.</source>
         <translation>Alinha num mesmo eixo o número dos condutores selecionados. Substitui arrastar cada texto à mão.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="910"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="926"/>
         <source>Lier un accessoire…</source>
         <translation>Vincular um acessório…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="911"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="927"/>
         <source>Dit à quel composant appartient l&apos;accessoire sélectionné.</source>
         <translation>Diz a qual componente pertence o acessório selecionado.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="947"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="963"/>
         <source>Structure CEI 81346…</source>
         <translation>Estrutura IEC 81346…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="948"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="964"/>
         <source>Active la structure d&apos;identification de la norme pour ce projet, et choisit ce qui est écrit sur le dessin.</source>
         <translation>Liga a estrutura de identificação da norma neste projeto, e escolhe o que é escrito no desenho.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2525"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2590"/>
         <source>Sélectionnez au moins deux conducteurs dont le numéro est affiché.</source>
         <translation>Selecione pelo menos dois condutores com o número exibido.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2576"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2641"/>
         <source>Les numéros sont déjà alignés.</source>
         <translation>Os números já estão alinhados.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2581"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2646"/>
         <source>%n numéro(s) alignés sur un même axe.</source>
         <translation>
             <numerusform>%n número alinhado num mesmo eixo.</numerusform>
@@ -15330,18 +15994,18 @@ Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2593"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2658"/>
         <source>&amp;Catalogue</source>
         <translation>&amp;Catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2839"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2906"/>
         <source>Le fichier a changé entre-temps</source>
         <comment>message box title</comment>
         <translation>O arquivo mudou nesse meio-tempo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2840"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2907"/>
         <source>%1 a été modifié par quelqu&apos;un d&apos;autre depuis que vous l&apos;avez ouvert.
 
 L&apos;enregistrer par-dessus effacerait ce travail. Enregistrez plutôt une copie, puis comparez les deux.</source>
@@ -15350,13 +16014,13 @@ L&apos;enregistrer par-dessus effacerait ce travail. Enregistrez plutôt une cop
 Salvar por cima apagaria aquele trabalho. Salve uma cópia e compare as duas.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3127"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3194"/>
         <source>Projet déjà ouvert ailleurs</source>
         <comment>message box title</comment>
         <translation>Projeto já aberto em outro lugar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3128"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3195"/>
         <source>Ce projet est ouvert par %1.
 
 Ouvrir en lecture seule est le choix sûr : vous verrez le dessin, sans risque d&apos;écraser son travail. Forcer l&apos;ouverture en écriture n&apos;a de sens que si vous savez que cette session n&apos;existe plus.</source>
@@ -15365,70 +16029,70 @@ Ouvrir en lecture seule est le choix sûr : vous verrez le dessin, sans risque d
 Abrir em modo somente leitura é a escolha segura: você vê o desenho, sem risco de apagar o trabalho dele. Forçar a abertura em escrita só faz sentido se você sabe que aquela sessão não existe mais.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="962"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="994"/>
         <source>Armoires et localisations…</source>
         <translation>Painéis e localizações…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="963"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="995"/>
         <source>Fait les armoires du projet, les emboîte, et met la sélection dans l&apos;une d&apos;elles en un geste.</source>
         <translation>Faz os painéis do projeto, encaixa um dentro do outro, e põe a seleção em um deles num só gesto.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="971"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1003"/>
         <source>Composants sans localisation…</source>
         <translation>Componentes sem localização…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="972"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1004"/>
         <source>Liste ce qui n&apos;est encore dans aucune armoire, folio par folio, et permet de les y mettre.</source>
         <translation>Lista o que ainda não está em nenhum painel, folha por folha, e permite colocá-los em um painel.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="980"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1012"/>
         <source>Liste de matériel par localisation…</source>
         <translation>Lista de material por localização…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="981"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1013"/>
         <source>Ce qu&apos;il faut sortir du magasin pour une armoire, sous-localisations comprises. S&apos;exporte, et se pose sur le folio.</source>
         <translation>O que é preciso retirar do estoque para um painel, sublocalizações incluídas. A lista se exporta, e se põe na folha.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="604"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="608"/>
         <source>Contrôle des connecteurs</source>
         <translation>Conferência dos conectores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="605"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="609"/>
         <source>Liste les connecteurs dont le nombre de voies ne peut pas être établi et les broches qui n&apos;appartiennent à aucun connecteur, et permet d&apos;y remédier depuis la liste.</source>
         <translation>Lista os conectores cujo número de vias não dá para estabelecer e os pinos que não pertencem a conector nenhum, e deixa corrigir isso a partir da lista.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1133"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1165"/>
         <source>Nouveau à partir d&apos;un modèle…</source>
         <translation>Novo a partir de um modelo…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1135"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1167"/>
         <source>Crée un projet à partir d&apos;un projet modèle, sans toucher au modèle</source>
         <comment>status bar tip</comment>
         <translation>Cria um projeto a partir de um projeto modelo, sem tocar no modelo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2924"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2991"/>
         <source>Nouveau projet à partir d&apos;un modèle</source>
         <comment>dialog title</comment>
         <translation>Novo projeto a partir de um modelo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2952"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3019"/>
         <source>Impossible d&apos;ouvrir le modèle</source>
         <comment>message box title</comment>
         <translation>Não foi possível abrir o modelo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2961"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3028"/>
         <source>Nouveau projet créé à partir du modèle %1. Il n&apos;a pas encore de fichier : « Enregistrer » demandera où le ranger.</source>
         <translation>Novo projeto criado a partir do modelo %1. Ele ainda não tem arquivo: «Salvar» vai perguntar onde guardá-lo.</translation>
     </message>
@@ -17351,7 +18015,7 @@ O que você deseja fazer?</translation>
         <translation>Aviso: o elemento foi salvo por uma versão mais recente do QElectroTech.</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminal.cpp" line="70"/>
+        <location filename="../sources/qetgraphicsitem/terminal.cpp" line="77"/>
         <source>Borne</source>
         <comment>tooltip</comment>
         <translation>Terminal</translation>
@@ -18174,22 +18838,22 @@ Deseja substituí-lo?</translation>
         <translation>Criação do condutor</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4791"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4884"/>
         <source>To install the plugin qet_tb_generator&lt;br&gt;Visit :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;Requires python 3.5 or above.&lt;br&gt;&lt;B&gt;&lt;U&gt; First install on Windows&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. Install, if required, python 3.5 or above&lt;br&gt; Visit :&lt;br&gt;&lt;a href=&apos;https://www.python.org/downloads/&apos;&gt;python.org&lt;/a&gt;&lt;br&gt;2. pip install qet_tb_generator&lt;br&gt;&lt;B&gt;&lt;U&gt; Update on Windows&lt;/B&gt;&lt;/U&gt;&lt;br&gt;python -m pip install --upgrade qet_tb_generator&lt;br&gt;&gt;&gt;user could launch in a terminal this script in this directory&lt;br&gt; C:\users\XXXX\AppData\Local\Programs\Python\Python36-32\Scripts   &lt;br&gt;</source>
         <translation>Para instalar o plugin qet_tb_generator - Visite :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;Requer python 3.5 ou superior.&lt;br&gt;&lt;B&gt;&lt;U&gt; Primeira instalação no Windows&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. Instale, se necessário, python 3.5 ou superior&lt;br&gt;Visite :&lt;br&gt;&lt;a href=&apos;https://www.python.org/downloads/&apos;&gt;python.org&lt;/a&gt;&lt;br&gt;2. pip install qet_tb_generator&lt;br&gt;&lt;B&gt;&lt;U&gt;Atualização no Windows&lt;/B&gt;&lt;/U&gt; &lt;br&gt;python -m pip install --upgrade qet_tb_generator&lt;br&gt;&gt;&gt; o usuário pode iniciar em um terminal esse script neste diretório &lt;br&gt;C: \ users \ XXXX \ AppData \ Local \ Programas \ Python \ Python36-32 \ Scripts&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4811"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4904"/>
         <source>To install the plugin qet_tb_generator&lt;br&gt;Visit  :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; First install on macOSX&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. Install, if required, python 3.11 bundle only, &lt;a href=&apos;https://www.python.org/ftp/python/3.11.2/python-3.11.2-macos11.pkg&apos;&gt;python-3.11.2-macos11.pkg&lt;/a&gt;&lt;br&gt;2 Run Profile.command script&lt;br&gt;because program use hardcoded PATH for localise qet-tb-generator plugin &lt;br&gt; Visit :&lt;br&gt;&lt;a href=&apos;https://qelectrotech.org/forum/viewtopic.php?pid=5674#p5674&apos;&gt;howto&lt;/a&gt;&lt;br&gt;2. pip3 install qet_tb_generator&lt;br&gt;&lt;B&gt;&lt;U&gt; Update on macOSX&lt;/B&gt;&lt;/U&gt;&lt;br&gt; pip3 install --upgrade qet_tb_generator&lt;br&gt;</source>
         <translation>Para instalar o plug-in qet_tb_generator&lt;br&gt;Acesse  :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; Primeira instalação no macOSX&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. Instale, se necessário, apenas o pacote python 3.11, &lt;a href=&apos;https://www.python.org/ftp/python/3.11.2/python-3.11.2-macos11.pkg&apos;&gt;python-3.11.2- macos11.pkg&lt;/a&gt;&lt;br&gt;2 Execute o script Profile.command&lt;br&gt;porque o programa usa PATH codificado para localização Plug-in qet-tb-generator &lt;br&gt; Visite:&lt;br&gt;&lt;a href=&apos;https://qelectrotech.org/forum/viewtopic.php?pid=5674#p5674&apos;&gt;como fazer&lt;/a&gt;&lt;br&gt;2. pip3 install qet_tb_generator&lt;br&gt;&lt;B&gt;&lt;U&gt; Atualização no macOSX&lt;/B&gt;&lt;/U&gt;&lt;br&gt; pip3 install --upgrade qet_tb_generator&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4830"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4923"/>
         <source>To install the plugin qet_tb_generator&lt;br&gt;Visit :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;&lt;br&gt;Requires python 3.5 or above.&lt;br&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; First install on Linux&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. check you have pip3 installed: pip3 --version&lt;br&gt;If not install with: sudo apt-get install python3-pip&lt;br&gt;2. Install the program: sudo pip3 install qet_tb_generator&lt;br&gt;3. Run the program: qet_tb_generator&lt;br&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; Update on Linux&lt;/B&gt;&lt;/U&gt;&lt;br&gt;sudo pip3 install --upgrade qet_tb_generator&lt;br&gt;</source>
         <translation>Para instalar o plugin qet_tb_generator&lt;br&gt;Visite :&lt;br&gt;&lt;a&gt; href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;&lt;br&gt;Requer python 3.5 ou superior.&lt;br&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; Primeira instalação no Linux&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. verifique se o pip3 está instalado: pip3 --version&lt;br&gt;Se não for instalado com: sudo apt-get install python3-pip&lt;br&gt;2. Instale o programa: sudo pip3 install qet_tb_generator&lt;br&gt;3. Execute o programa: qet_tb_generator&lt;br&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt;Atualizar no Linux&lt;/B&gt;&lt;/U&gt;&lt;br&gt;sudo pip3 install --upgrade qet_tb_generator&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4850"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4943"/>
         <source>Error launching qet_tb_generator plugin</source>
         <translation>Erro ao abrir qet_tb_generator plugin</translation>
     </message>
@@ -18217,7 +18881,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/SearchAndReplace/searchandreplaceworker.cpp" line="474"/>
         <location filename="../sources/SearchAndReplace/searchandreplaceworker.cpp" line="509"/>
         <location filename="../sources/SearchAndReplace/searchandreplaceworker.cpp" line="538"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="425"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="426"/>
         <location filename="../sources/titleblock/templatelocation.cpp" line="114"/>
         <source>this is an error in the code</source>
         <translation>este é um erro no código</translation>
@@ -19816,6 +20480,49 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
     </message>
 </context>
 <context>
+    <name>ReportElement</name>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reportelement.cpp" line="196"/>
+        <source>Report vers un câble</source>
+        <translation>Remissão para um cabo</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reportelement.cpp" line="197"/>
+        <source>Report vers le câble %1</source>
+        <translation>Remissão para o cabo %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reportelement.cpp" line="200"/>
+        <source>Report vers une borne</source>
+        <translation>Remissão para um borne</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reportelement.cpp" line="201"/>
+        <source>Report vers la borne %1</source>
+        <translation>Remissão para o borne %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reportelement.cpp" line="204"/>
+        <source>Report vers un composant</source>
+        <translation>Remissão para um componente</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reportelement.cpp" line="205"/>
+        <source>Report vers %1</source>
+        <translation>Remissão para %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reportelement.cpp" line="207"/>
+        <source>Report vers un conducteur</source>
+        <translation>Remissão para um condutor</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reportelement.cpp" line="212"/>
+        <source>Report non relié</source>
+        <translation>Remissão não vinculada</translation>
+    </message>
+</context>
+<context>
     <name>ReportPropertieWidget</name>
     <message>
         <location filename="../sources/ui/reportpropertiewidget.ui" line="14"/>
@@ -19825,19 +20532,19 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
     <message>
         <location filename="../sources/ui/reportpropertiewidget.ui" line="20"/>
         <source>Label de report de folio</source>
-        <translation>Legenda do relatório de folha</translation>
+        <translation>Legenda da remissão de folha</translation>
     </message>
     <message>
         <location filename="../sources/ui/reportpropertiewidget.ui" line="35"/>
         <source>Vous pouvez définir un label personnalisé pour les reports de folio.
 Créer votre propre texte en vous aidant des variables suivantes :
-%f : la position du folio dans le projet 
+%f : la position du folio dans le projet
 %F : le numéro de folio
 %M :  l&apos;installation
 %LM : la localisation
 %l : le numéro de ligne
 %c : le numéro de colonne</source>
-        <translation>Você pode definir um rótulo personalizado para relatórios de folhas.
+        <translation>Você pode definir um rótulo personalizado para remissões de folha.
 Crie seu próprio texto usando as seguintes variáveis:
 %f : a posição da folha no projeto
 %F : o número da folha
@@ -19970,100 +20677,100 @@ Crie seu próprio texto usando as seguintes variáveis:
         <translation>Atualizar</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="159"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="160"/>
         <source>Correspondance :</source>
         <translation>Correspondência:</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="165"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="166"/>
         <source>Folios</source>
         <translation>Folhas</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="171"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="172"/>
         <source>Champs texte</source>
         <translation>Campos do texto</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="177"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="178"/>
         <source>Eléments</source>
         <translation>Elementos</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="182"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="183"/>
         <source>Eléments simple</source>
         <translation>Elementos simples</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="188"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="189"/>
         <source>Eléments maître</source>
         <translation>Elemento mestre</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="194"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="195"/>
         <source>Eléments esclave</source>
         <translation>Elemento escravo</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="200"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="201"/>
         <source>Eléments report de folio</source>
         <translation>Elementos de transporte de folha</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="206"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="207"/>
         <source>Eléments bornier</source>
         <translation>Elementos de régua de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="462"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="463"/>
         <source>Sélectionner les éléments de ce folio</source>
         <translation>Selecione os elementos desta folha</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="463"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="464"/>
         <source>Sélectionner les conducteurs de ce folio</source>
         <translation>Selecione os condutores desta folha</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="464"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="465"/>
         <source>Sélectionner les textes de ce folio</source>
         <translation>Selecione os textos desta folha</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1118"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1119"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1128"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1129"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1149"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1157"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1176"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1186"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1240"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1243"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1250"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1253"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1280"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1281"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1289"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1290"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1333"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1334"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1342"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1343"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1365"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1151"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1152"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1161"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1162"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1182"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1190"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1209"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1219"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1273"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1276"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1283"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1286"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1313"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1314"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1322"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1323"/>
         <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1366"/>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1374"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1367"/>
         <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1375"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1376"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1398"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1399"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1407"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="1408"/>
         <source> [édité]</source>
         <translation> [editado]</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="214"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="215"/>
         <source>Conducteurs</source>
         <translation>Condutores</translation>
     </message>
     <message>
-        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="363"/>
+        <location filename="../sources/SearchAndReplace/ui/searchandreplacewidget.cpp" line="364"/>
         <source>Inconnue</source>
         <translation>Desconhecido</translation>
     </message>
@@ -24494,92 +25201,92 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 <context>
     <name>WiringListExport</name>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="210"/>
-        <location filename="../sources/wiringlistexport.cpp" line="225"/>
+        <location filename="../sources/wiringlistexport.cpp" line="290"/>
+        <location filename="../sources/wiringlistexport.cpp" line="305"/>
         <source>Erreur</source>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="210"/>
+        <location filename="../sources/wiringlistexport.cpp" line="290"/>
         <source>Impossible de lire la structure en mémoire du projet.</source>
         <translation>Não foi possível ler a estrutura do projeto na memória.</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="216"/>
+        <location filename="../sources/wiringlistexport.cpp" line="296"/>
         <source>Exporter le plan de câblage</source>
         <translation>Exportar o plano de fiação</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="218"/>
+        <location filename="../sources/wiringlistexport.cpp" line="298"/>
         <source>Fichiers CSV (*.csv)</source>
         <translation>Arquivos CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="225"/>
+        <location filename="../sources/wiringlistexport.cpp" line="305"/>
         <source>Impossible d&apos;ouvrir le fichier pour l&apos;écriture.</source>
         <translation>Não foi possível abrir o arquivo para gravação.</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="469"/>
+        <location filename="../sources/wiringlistexport.cpp" line="549"/>
         <source>Page</source>
         <comment>Wiring list CSV header</comment>
         <translation>Página</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="470"/>
+        <location filename="../sources/wiringlistexport.cpp" line="550"/>
         <source>Composant 1</source>
         <comment>Wiring list CSV header</comment>
         <translation>Componente 1</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="471"/>
+        <location filename="../sources/wiringlistexport.cpp" line="551"/>
         <source>Borne 1</source>
         <comment>Wiring list CSV header</comment>
         <translation>Borne 1</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="472"/>
+        <location filename="../sources/wiringlistexport.cpp" line="552"/>
         <source>Composant 2</source>
         <comment>Wiring list CSV header</comment>
         <translation>Componente 2</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="473"/>
+        <location filename="../sources/wiringlistexport.cpp" line="553"/>
         <source>Borne 2</source>
         <comment>Wiring list CSV header</comment>
         <translation>Borne 2</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="474"/>
+        <location filename="../sources/wiringlistexport.cpp" line="554"/>
         <source>Tension / Protocole</source>
         <comment>Wiring list CSV header</comment>
         <translation>Tensão / Protocolo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="475"/>
+        <location filename="../sources/wiringlistexport.cpp" line="555"/>
         <source>Couleur du fil</source>
         <comment>Wiring list CSV header</comment>
         <translation>Cor do cabo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="476"/>
+        <location filename="../sources/wiringlistexport.cpp" line="556"/>
         <source>Section du fil</source>
         <comment>Wiring list CSV header</comment>
         <translation>Seção do cabo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="477"/>
+        <location filename="../sources/wiringlistexport.cpp" line="557"/>
         <source>Fonction</source>
         <comment>Wiring list CSV header</comment>
         <translation>Função</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="231"/>
+        <location filename="../sources/wiringlistexport.cpp" line="311"/>
         <source>Export réussi</source>
         <translation>Exportação concluída</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="231"/>
+        <location filename="../sources/wiringlistexport.cpp" line="311"/>
         <source>Le plan de câblage a été exporté avec succès !</source>
         <translation>O plano de fiação foi exportado com sucesso!</translation>
     </message>
@@ -24772,12 +25479,12 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 <context>
     <name>projectDataBase</name>
     <message>
-        <location filename="../sources/dataBase/projectdatabase.cpp" line="1242"/>
+        <location filename="../sources/dataBase/projectdatabase.cpp" line="1308"/>
         <source>Exporter la base de données interne du projet</source>
         <translation>Exportar o banco de dados interno do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/dataBase/projectdatabase.cpp" line="1249"/>
+        <location filename="../sources/dataBase/projectdatabase.cpp" line="1315"/>
         <source>sans_nom</source>
         <translation>Sem Nome</translation>
     </message>
