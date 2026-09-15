@@ -29,6 +29,7 @@
 #include <QDomImplementation>
 #include <QSettings>
 #include <QStyleHints>
+#include <QTranslator>
 
 #include <QStyleFactory>
 #include <QtConcurrentRun>
@@ -125,6 +126,30 @@ QGuiApplication::setHighDpiScaleFactorRoundingPolicy(QetSettings::hdpiScaleFacto
 			raw_args << QString::fromLocal8Bit(argv[i]);
 		if (CLIExport::isExportRequest(raw_args)) {
 			QApplication export_app(argc, argv);
+			/* The drawing carries translated text of its own - the
+			 * mounting layout caption, the wiring table headers, the
+			 * outline of the exported PDF - and this branch returns
+			 * before QETApp is ever constructed, which is the only
+			 * place that installs a translator. So the same folio came
+			 * out in French from the command line and translated from
+			 * the GUI, and the difference was written down nowhere.
+			 *
+			 * Only the QET catalogue is loaded here, and not the Qt
+			 * one: the Qt catalogue translates standard dialog
+			 * buttons, and a headless export opens no dialog.
+			 */
+			QTranslator cli_translator;
+			const QString cli_language = QETApp::langFromSetting();
+			const QString cli_base = cli_language.section('_', 0, 0);
+			const QString cli_languages_path = QETApp::languagesPath();
+			if (cli_translator.load(QStringLiteral("qet_") + cli_language,
+						cli_languages_path)
+			    || (cli_base != cli_language
+				&& cli_translator.load(QStringLiteral("qet_") + cli_base,
+						       cli_languages_path)))
+			{
+				export_app.installTranslator(&cli_translator);
+			}
 			// No crash-recovery backups in one-shot CLI mode: the backup write
 			// runs on a background thread referencing the project and races the
 			// process exit (intermittent segfault in QET::writeToFile).
