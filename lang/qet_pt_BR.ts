@@ -12200,27 +12200,32 @@ As seguintes variáveis ​​são incompatíveis:
 <context>
     <name>ProjectDBModel</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="402"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="282"/>
+        <source>Modifier %1 de l&apos;élément : %2</source>
+        <translation>Alterar %1 do componente: %2</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="756"/>
         <source>Position</source>
         <translation>Posição</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="404"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="758"/>
         <source>Position du folio</source>
         <translation>Posição da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="437"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="796"/>
         <source>Aucune colonne n&apos;a été choisie : il n&apos;y a rien à afficher.</source>
         <translation>Nenhuma coluna foi escolhida: não há nada para exibir.</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="455"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="814"/>
         <source>La liste n&apos;a pas pu être établie.</source>
         <translation>A lista não pôde ser estabelecida.</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="456"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="815"/>
         <source>La liste n&apos;a pas pu être établie : %1</source>
         <translation>A lista não pôde ser estabelecida: %1</translation>
     </message>
@@ -12531,17 +12536,17 @@ As seguintes variáveis ​​são incompatíveis:
         <translation>Layout (não disponível no Windows para exportação em PDF)</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.cpp" line="582"/>
+        <location filename="../sources/print/projectprintwindow.cpp" line="598"/>
         <source>Folio sans titre</source>
         <translation>Folha sem título</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.cpp" line="755"/>
+        <location filename="../sources/print/projectprintwindow.cpp" line="771"/>
         <source>Exporter sous : </source>
         <translation>Exportar como: </translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.cpp" line="755"/>
+        <location filename="../sources/print/projectprintwindow.cpp" line="771"/>
         <source>Fichier (*.pdf)</source>
         <translation>Arquivo (*.pdf)</translation>
     </message>
@@ -17923,6 +17928,8 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="737"/>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="956"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="52"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="74"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="84"/>
         <source>(sans repère)</source>
         <translation>(sem tag)</translation>
     </message>
@@ -18246,6 +18253,11 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="370"/>
         <source>Affecter à un connecteur</source>
         <translation>Atribuir a um conector</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="85"/>
+        <source>(sans repère — %1)</source>
+        <translation>(sem tag — %1)</translation>
     </message>
 </context>
 <context>
@@ -21705,7 +21717,7 @@ Os outros campos não são usados.</translation>
         <translation>Consulta SQL:</translation>
     </message>
     <message>
-        <location filename="../sources/dataBase/ui/summaryquerywidget.cpp" line="142"/>
+        <location filename="../sources/dataBase/ui/summaryquerywidget.cpp" line="158"/>
         <source>Position</source>
         <translation>Posição</translation>
     </message>
@@ -22784,12 +22796,12 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
         <translation>Explorador de réguas de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="233"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="298"/>
         <source>Projet sans titre</source>
         <translation>Projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="239"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="304"/>
         <source>Bornes indépendante</source>
         <translation>Bornes independentes</translation>
     </message>
@@ -23936,12 +23948,12 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 <context>
     <name>projectDataBase</name>
     <message>
-        <location filename="../sources/dataBase/projectdatabase.cpp" line="1050"/>
+        <location filename="../sources/dataBase/projectdatabase.cpp" line="1082"/>
         <source>Exporter la base de données interne du projet</source>
         <translation>Exportar o banco de dados interno do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/dataBase/projectdatabase.cpp" line="1057"/>
+        <location filename="../sources/dataBase/projectdatabase.cpp" line="1089"/>
         <source>sans_nom</source>
         <translation>Sem Nome</translation>
     </message>
