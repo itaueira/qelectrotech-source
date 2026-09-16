@@ -627,6 +627,14 @@ int LocationTree::indexOfBomLine(const QList<BomLine> &lines,
 	the layout inside one, and it is the layout that knows how much of a
 	bar a face used. What this function guarantees is that the line those
 	metres will land on already has room for them.
+
+	A location nobody assigned a part to still gets a line here, and every
+	such location lands on the same one, because they all key on an empty
+	code. That is the right answer for a window showing what a project is
+	made of, and the wrong one for a list somebody orders from: an order
+	line with no code cannot be filled. BomCollector::collect is where the
+	two part company - it turns that one line back into one pendency per
+	place, so the report says three cabinets have no part rather than one.
 */
 QList<LocationTree::BomLine> LocationTree::bomLines() const
 {

@@ -17,6 +17,8 @@
 */
 #include "bomexportdialog.h"
 
+#include "../dataBase/bomquery.h"
+#include "../dataBase/projectdatabase.h"
 #include "../dataBase/ui/elementquerywidget.h"
 #include "../qetapp.h"
 #include "../qetinformation.h"
@@ -32,110 +34,18 @@ namespace
 {
 	/**
 		@param query a query built by ElementQueryWidget
-		@return the columns it publishes, in order, or an empty list
-
-		Read back from the tail of the query rather than asked of the
-		widget, and the reason is that the widget does not offer them: the
-		list of chosen keys is a private slot of ElementQueryWidget, and
-		this dialogue only ever receives the finished string. The tail is
-		the safe end to read it from - ElementQueryWidget writes the very
-		same comma separated list twice, once after SELECT and once after
-		ORDER BY, but the first copy carries the count column and its
-		alias, and the second carries nothing but the keys.
-
-		An empty list comes back for the cases that must not be rewritten
-		from here: a query the user typed himself, which the widget hands
-		over whole and in which no GROUP BY of ours takes part, and
-		anything whose shape is not the one described above. The caller
-		falls back on the part identity alone, which is still an answer.
-	*/
-	QStringList publishedColumns(const QString &query)
-	{
-		const QString marker = QStringLiteral(" ORDER BY ");
-			//auto and not int: the index is qsizetype in Qt6 and int
-			//in Qt5, and this file has to compile under both.
-		const auto at = query.lastIndexOf(marker);
-		if (at < 0) {
-			return QStringList();
-		}
-
-		QStringList columns;
-		const QStringList parts =
-			query.mid(at + marker.size()).split(QLatin1Char(','));
-		for (const QString &part : parts)
-		{
-			const QString column = part.trimmed();
-				//A column name and nothing else. Anything holding a
-				//space or a parenthesis is a function, an alias or a
-				//sort direction, and none of those belong in a GROUP
-				//BY written from here.
-			if (column.isEmpty()
-			    || column.contains(QLatin1Char(' '))
-			    || column.contains(QLatin1Char('('))) {
-				return QStringList();
-			}
-			columns << column;
-		}
-		return columns;
-	}
-
-	/**
-		@param query the query the widget has just built
 		@return what the bill of materials has to group by
 
-		The two columns that identify a part - its code, and the revision
-		of that code - plus every column the list publishes without
-		summing it.
-
-		The part identity is there because grouping by the designation
-		merges two different parts that were described with the same
-		words, and whoever reads the purchase list has no way of seeing
-		that it happened: one line, one quantity, one of the two codes,
-		and the wrong item ordered. It cuts the other way too - the same
-		part described twice was split into two lines that are bought
-		twice.
-
-		The rest of the published columns are there because a column that
-		is neither grouped nor aggregated is answered by SQLite from
-		whichever row of the group it likes, so a quantity that is right
-		can sit beside a manufacturer reference belonging to another item
-		of the same group. Grouping by all of them makes that
-		unrepresentable, which is how the list by location already does
-		it.
-
-		@par The component with no part assigned
-		Nothing special, and that is the decision rather than an
-		oversight. Its part code is empty or null, and SQLite groups
-		nulls together, so such components fall into one bucket per
-		distinct set of published columns - which for a purchase list
-		means grouped by their designation, because with no code the
-		designation is the only identity they have. That is the same
-		answer as before this change, for exactly the components this
-		change has nothing better to say about.
-
-		@par What this can and cannot do to a list that exists today
-		It only ever splits. Every column that decided a group before
-		still decides it, and two were added, so two rows that are
-		separate today can never merge; rows that were merged and should
-		not have been come apart. The sum of the quantity column over the
-		whole list is therefore unchanged - it is still one per component
-		- and only the number of lines moves.
+		The rule itself moved to sources/dataBase/bomquery.h, where the
+		command line export now reads it too: --export-bom published a
+		quantity the designer types and this window published a count, for
+		the same project, and the only way two roads to one list stay in
+		step is to have one rule between them. This stays as the local
+		spelling of "grouped the way this window groups".
 	*/
 	QString bomGroupBy(const QString &query)
 	{
-		QStringList columns;
-		columns << QETInformation::ELMT_PART_CODE
-			<< QETInformation::ELMT_PART_REVISION;
-
-		const QStringList published = publishedColumns(query);
-		for (const QString &column : published)
-		{
-			if (!columns.contains(column)) {
-				columns << column;
-			}
-		}
-
-		return columns.join(QStringLiteral(", "));
+		return QETBom::groupBy(query);
 	}
 }
 
@@ -271,6 +181,37 @@ int BOMExportDialog::exec()
 				//nothing is appended after it.
 			QTextStream stream(&file);
 			stream << bom;
+
+				/*
+					And what the list does not hold, said out loud.
+
+					element_nomenclature_view withholds the components
+					carrying nothing in any of their information columns -
+					see createElementNomenclatureView() for the rule and for
+					the two opposite mistakes it sits between. The drop is
+					the right one and it is invisible: the file is shorter
+					and nothing in it says why, so a project whose
+					components were never filled in reads exactly like a
+					project with fewer components.
+
+					Conditional, so the ordinary export is unchanged: a
+					project where every component names something never sees
+					this box. The price is one extra click for the project
+					where some do not, which is the project that has
+					something to be told.
+				*/
+			const int nameless =
+				m_project->dataBase()->namelessComponentCount();
+			if (nameless > 0)
+			{
+				QMessageBox::information(
+					this, tr("Nomenclature"),
+					tr("%1 composant(s) ne portent aucune information et "
+					   "ne figurent pas dans la liste.\n\n"
+					   "Il suffit de renseigner un seul champ — label, "
+					   "numéro d'article, fabricant — pour qu'un composant "
+					   "y revienne.").arg(nameless));
+			}
 		}
 	}
 	return r;

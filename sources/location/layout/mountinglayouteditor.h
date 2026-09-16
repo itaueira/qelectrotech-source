@@ -233,6 +233,26 @@ class MountingLayoutEditor : public QMainWindow
 		void newSurface();
 		void addPart();
 		void newProfile();
+
+		/**
+			@brief Line the selected components up on their left
+			edges.
+
+			Four gestures and not six, and the four are the ones a
+			panel is laid out with: a column of contactors brought
+			onto one edge, a row brought onto one top, and the two
+			ways of leaving the same air between them. The other two
+			alignments the rule knows how to do - centring on an axis
+			- have no button yet, because nothing in a panel is
+			measured from the middle of a part.
+		*/
+		void alignLeft();
+			/// @brief Line the selected components up on their top edges
+		void alignTop();
+			/// @brief Leave the same air between them, left to right
+		void spreadAcross();
+			/// @brief Leave the same air between them, top to bottom
+		void spreadDown();
 		void pointedAt(const QPointF &position_mm);
 		void zoomTold(qreal pixels_per_millimetre);
 
@@ -252,6 +272,26 @@ class MountingLayoutEditor : public QMainWindow
 		void buildActions();
 		void buildWidgets();
 		void refreshSurfaceList();
+
+		/**
+			@brief Tell the drawing where the axis of each product it
+			holds sits inside the body of that product.
+
+			The one thing the scene cannot find out for itself: it
+			draws rectangles and the axis of a part is a row of the
+			catalogue. Without it, a part clipped onto a rail is
+			lined up by the corner of its box instead of by the point
+			it actually hangs from, and a fuse holder whose axis sits
+			twelve millimetres above centre puts a whole row out of
+			line.
+
+			Called whenever what is drawn changes, and cheap when
+			nothing did: the catalogue is read once per product code
+			and not once per part, so a plate of forty breakers of
+			one reference is one row read.
+		*/
+		void refreshPartAxes();
+
 		void updateTitle();
 		void updateActions();
 		void say(const QString &message, bool problem = false);
@@ -271,6 +311,24 @@ class MountingLayoutEditor : public QMainWindow
 		*/
 		QString mountOnShownSurface(MountedItem item,
 					    QString *error = nullptr);
+
+		/**
+			@brief Apply a gesture to what is selected, and say what
+			came of it.
+			@param done true when a step was pushed
+			@param error what the scene refused with, empty when it
+			refused nothing
+			@param nothing_to_do what to say when the scene did
+			nothing and gave no reason
+
+			The one place the four gestures above turn into a
+			sentence in the status bar. Without it, "they were
+			already aligned" and "there is nothing selected" would
+			both be silence, and silence is what a person reads as a
+			broken button.
+		*/
+		void sayGesture(bool done, const QString &error,
+				const QString &nothing_to_do);
 
 		QPointF freePosition() const;
 		bool isEditable() const;
@@ -309,6 +367,10 @@ class MountingLayoutEditor : public QMainWindow
 		QAction *m_new_surface = nullptr;
 		QAction *m_add_part = nullptr;
 		QAction *m_add_profile = nullptr;
+		QAction *m_align_left = nullptr;
+		QAction *m_align_top = nullptr;
+		QAction *m_spread_across = nullptr;
+		QAction *m_spread_down = nullptr;
 		QAction *m_undo = nullptr;
 		QAction *m_redo = nullptr;
 		QAction *m_zoom_in = nullptr;

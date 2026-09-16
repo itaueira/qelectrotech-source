@@ -17,6 +17,7 @@
 */
 #include "projectdatabase.h"
 
+#include "bomquery.h"
 #include "../diagram.h"
 #include "../diagramposition.h"
 #include "../elementprovider.h"
@@ -109,6 +110,36 @@ QETProject *projectDataBase::project() const
 */
 QSqlQuery projectDataBase::newQuery(const QString &query) {
 	return QSqlQuery(query, m_data_base);
+}
+
+/**
+	@brief projectDataBase::namelessComponentCount
+	See the header: the rows the parts list withholds, as a number.
+*/
+int projectDataBase::namelessComponentCount()
+{
+	const QString statement =
+		QStringLiteral("SELECT COUNT(*) FROM element_label_view"
+			       " WHERE (exclude_from_bom IS NOT 'true')"
+			       " AND NOT ")
+		+ QETBom::informationPresentCondition(
+			QString(), QETInformation::elementInfoKeys());
+
+	QSqlQuery query = newQuery(statement);
+		//No alias, because the view already publishes the information
+		//columns under their own names; the "ei." of the view body
+		//belongs to the table underneath it and would name nothing here.
+	if (!query.exec() || !query.next())
+	{
+			//Zero, and not a fault code. The caller reports this beside
+			//a list it has already written, and a report that cannot be
+			//produced must not turn a finished export into a failure.
+		qDebug() << "projectDataBase::namelessComponentCount :"
+			 << query.lastError();
+		return 0;
+	}
+
+	return query.value(0).toInt();
 }
 
 /**
@@ -882,13 +913,67 @@ QString projectDataBase::elementViewBody()
 /**
 	@brief projectDataBase::createElementNomenclatureView
 	The bill of materials view: the shared body, minus the rows the user
-	asked to keep out of the parts list.
+	asked to keep out of the parts list, and minus the rows that name
+	nothing.
+
+	@par The second clause, and the two opposite mistakes it sits between
+	Measured on a project of fourteen folios : a hundred of its three
+	hundred and fifty four lines carried nothing but the title and the
+	number of the sheet they were drawn on. Seventy one of them came from
+	the folio of the terminal strips, and the kinds of drawn thing behind
+	them were end caps and rail stops - a drawn marker that says where a
+	strip finishes, not a thing anybody buys.
+
+	Neither the kind of element nor the shape of the drawing tells those
+	apart from a component, and that was measured before this clause was
+	written rather than assumed :
+
+	- an end cap is a Terminal, exactly like the terminal block beside it,
+	  so elementTypeClause() cannot separate them and must not be asked to.
+	  A terminal block is bought, and a list that lost it would be wrong in
+	  the one place a cabinet shop reads first;
+
+	- "no wire ends on it" separates them on that project and destroys
+	  another one : in the examples shipped with the program it withholds
+	  nine circuit breakers of photovoltaique.qet and ten of
+	  tableau_domestique.qet, drawn without conductors and bought all the
+	  same.
+
+	What is left is what the row itself says. A row with nothing in any of
+	its information columns has no label to find it by, no designation, no
+	manufacturer, no reference and no part code : there is nothing on it to
+	order and nothing to mark. The rule is stated in
+	QETBom::informationPresentCondition(), with the reason
+	@c exclude_from_bom is not one of those columns.
+
+	@par The price, measured and not estimated
+	It is paid by the project where nobody ever filled a component in.
+	perceuse.qet, shipped with the program, draws five hundred and fifty
+	two components of which five hundred and forty carry no information at
+	all, so its parts list goes from five hundred and fifty two nameless
+	lines to twelve named ones. Neither list can be ordered from; this one
+	does not pretend. What keeps the loss from being silent is
+	namelessComponentCount(), which the two bills of material report beside
+	the list they wrote - and typing one character into any field of a
+	component brings its line straight back.
+
+	@par Here, and not in the shared body
+	element_label_view keeps every drawn thing, and that is the whole
+	reason it exists : an item kept out of the purchase list still has to
+	be marked on the rail, and a collector reading a filtered view would
+	leave holes in the marking that nobody notices until assembly. The body
+	says what an element row is; each view says what it drops, and this is
+	a drop the bill of materials makes for a reason of its own.
 */
 void projectDataBase::createElementNomenclatureView()
 {
 	const QString create_view = QStringLiteral("CREATE VIEW element_nomenclature_view AS ")
 				+ elementViewBody()
-				+ QStringLiteral(" AND (ei.exclude_from_bom IS NOT 'true')");
+				+ QStringLiteral(" AND (ei.exclude_from_bom IS NOT 'true')")
+				+ QStringLiteral(" AND ")
+				+ QETBom::informationPresentCondition(
+					QStringLiteral("ei."),
+					QETInformation::elementInfoKeys());
 
 	QSqlQuery query(m_data_base);
 	if (!query.exec(create_view)) {

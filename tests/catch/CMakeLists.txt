@@ -132,6 +132,7 @@ add_executable(
     src/iotree_test.cpp
     src/location_test.cpp
     src/bommeasure_test.cpp
+    src/bomcollector_test.cpp
     src/locationcontainment_test.cpp
     src/enclosuretransfer_test.cpp
     src/mountinglayout_test.cpp
@@ -141,6 +142,8 @@ add_executable(
     src/drillingorigin_test.cpp
     src/mountingpartview_test.cpp
     src/mountingprofile_test.cpp
+    src/mountingclip_test.cpp
+    src/mountingalign_test.cpp
     src/locationboundary_test.cpp
     src/locationvariable_test.cpp
     src/option_test.cpp
@@ -155,6 +158,7 @@ add_executable(
     src/connectorways_test.cpp
     src/connectorswap_test.cpp
     src/csvwriter_test.cpp
+    src/bomquery_test.cpp
     src/foliovariables_test.cpp
     src/projectrevision_test.cpp
     src/apppreferences_test.cpp
@@ -250,6 +254,15 @@ add_executable(
     # here. Who fills the length in is the layout, and it stays out.
     ${QET_DIR}/sources/location/bommeasure.cpp
     ${QET_DIR}/sources/location/bommeasure.h
+    # As duas metades do que um quadro custa, somadas numa lista so: o
+    # componente desenhado e o involucro que ninguem desenha. E regra pura --
+    # listas de struct entrando, linhas somadas e pendencias contadas saindo,
+    # sem banco e sem projeto --, e e por isso que cabe aqui: a falha que ela
+    # existe para impedir e silenciosa, uma planilha de compra sem armario que
+    # nao tem nada de errado na cara. Quem executa a consulta e escreve o
+    # arquivo precisa de projeto aberto e fica fora.
+    ${QET_DIR}/sources/location/bomcollector.cpp
+    ${QET_DIR}/sources/location/bomcollector.h
     # A arvore de localizacoes nao conhece nada alem de QString e QDomDocument,
     # de proposito: ela e aritmetica de caminho, e a aritmetica e o que
     # precisa de bancada. O que a liga a folha fica em sources/undocommand
@@ -359,6 +372,25 @@ add_executable(
     # and sources/undocommand.
     ${QET_DIR}/sources/location/mountingprofile.cpp
     ${QET_DIR}/sources/location/mountingprofile.h
+    # O que está clipsado em qual trilho, e onde a peça para quando encaixa.
+    # Retângulo e milímetro, sem cena e sem catálogo -- e está aqui porque o
+    # defeito que ela evita só aparece na oficina: um trilho arrastado que
+    # deixa os disjuntores para trás produz uma chapa furada onde nada
+    # segura doze peças, e nada na tela disse isso. Uma regra de geometria
+    # que só se exercita arrastando alguma coisa é uma regra que ninguém
+    # confere duas vezes. O gesto -- soltar, arrastar, desfazer -- precisa de
+    # cena e fica em src/ui/mountingclipscene_test.cpp, no C_uitests.
+    ${QET_DIR}/sources/location/mountingclip.cpp
+    ${QET_DIR}/sources/location/mountingclip.h
+    # Alinhar e distribuir: média, mínimo e divisão sobre uma lista de
+    # retângulos. Está aqui pelo mesmo motivo -- é conta, e conta se confere
+    # por número. A que mais erra é a do espaçamento: o vão é a sobra
+    # dividida pelo número de ESPAÇOS, que é um a menos que o de peças, e
+    # essa diferença de um só aparece quando se soma o resultado. O gesto
+    # (qual seleção, qual passo de desfazer) precisa de cena e fica em
+    # src/ui/mountingalignscene_test.cpp, no C_uitests.
+    ${QET_DIR}/sources/location/mountingalign.cpp
+    ${QET_DIR}/sources/location/mountingalign.h
     # When a project database change is announced. As pure as the collection
     # gate rule: a counter and a flag, no Qt at all. What emits the signal is
     # projectDataBase, which needs an open project and therefore lives in
@@ -374,6 +406,16 @@ add_executable(
     # need a project open and stay out.
     ${QET_DIR}/sources/utils/csvwriter.cpp
     ${QET_DIR}/sources/utils/csvwriter.h
+    # The rules a bill of materials is made of, as text: which rows of the
+    # element tables name something, what a purchase list groups by, and
+    # which columns a query built by the export window publishes. Three
+    # string rules and no SQLite at all - which is what lets the one that
+    # matters be pinned here: exclude_from_bom is in the list of information
+    # keys and must never count as information, and a condition that counted
+    # it would work on one project and silently stop working on the next.
+    # The queries made of them need a project open and stay out.
+    ${QET_DIR}/sources/dataBase/bomquery.cpp
+    ${QET_DIR}/sources/dataBase/bomquery.h
     # The preferences of the workstation: what an omitted key means, and the
     # three states of the backup copy question. QSettings and QString, no
     # QETApp and no project - which is what lets the defect it was written
@@ -773,6 +815,20 @@ if(TARGET qet_core)
         # aritmética do perfil fica um andar abaixo, em mountingprofile_test.cpp
         # do C_unittests, e não se repete aqui.
         src/ui/mountedprofileitem_test.cpp
+        # O encaixe como gesto: soltar um componente sobre um trilho, arrastar
+        # o trilho e levar os doze disjuntores num passo só, e desfazer
+        # devolvendo todos. Precisa de cena instanciada porque o que se prova é
+        # o que uma lista de retângulos não tem — o sinal do arraste chegando à
+        # cena e o passo que ele deixa na pilha. A geometria do encaixe fica um
+        # andar abaixo, em mountingclip_test.cpp do C_unittests, e não se
+        # repete aqui.
+        src/ui/mountingclipscene_test.cpp
+        # Alinhar e distribuir como gesto: o que a seleção entrega, o que a
+        # cena recusa e com que motivo, e que seis peças alinhadas são um
+        # passo de desfazer e não seis. Precisa de cena porque é a seleção
+        # dela que se lê; a aritmética fica um andar abaixo, em
+        # mountingalign_test.cpp do C_unittests, e não se repete aqui.
+        src/ui/mountingalignscene_test.cpp
         # A platine desenhada numa folha do projeto: o que o item lê do
         # QETProject, o que ele redesenha sozinho quando a placa muda, e o
         # que ele nunca escreve de volta. Precisa de projeto aberto porque o
@@ -882,6 +938,14 @@ if(TARGET qet_core)
         # sobre duas strings, fica em csvwriter_test.cpp do C_unittests e
         # a saida citada em csvexport_test.cpp, e nenhuma se repete aqui.
         src/ui/bomgrouping_test.cpp
+        # Qual linha da lista de material nomeia alguma coisa, e qual delas e
+        # marcador desenhado. Precisa de projeto aberto porque o que se prova
+        # e a visao do banco aplicada a uma folha de verdade -- o marcador de
+        # fim de regua e do mesmo tipo Terminal que o borne ao lado dele, e
+        # separar os dois so e demonstravel sobre elementos carregados. A
+        # condicao em si, que e regra sobre strings, fica em bomquery_test.cpp
+        # do C_unittests e nao se repete aqui.
+        src/ui/bomnameless_test.cpp
         # O apostrofo no nome de uma localizacao e a consulta que o bloco
         # da folha guarda dentro do projeto. Precisa de projeto aberto
         # porque a prova nao e o texto da consulta e sim a execucao dela

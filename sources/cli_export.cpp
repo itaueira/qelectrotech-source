@@ -20,6 +20,7 @@
 #include "bordertitleblock.h"
 #include "conductornumexport.h"
 #include "conductorproperties.h"
+#include "dataBase/bomquery.h"
 #include "dataBase/projectdatabase.h"
 #include "diagram.h"
 #include "diagramcontext.h"
@@ -27,6 +28,7 @@
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/terminal.h"
+#include "qetinformation.h"
 #include "qetproject.h"
 #include "titleblockproperties.h"
 #include "utils/csvwriter.h"
@@ -529,35 +531,111 @@ QString csvField(const QString &value)
 	return QETCsv::field(value);
 }
 
-/// Bill of materials: one row per element, key component-data fields.
-/// Pulls from QET's own project database (the same source as the GUI BOM
-/// export), so the output matches what the editor produces.
+/// Bill of materials: one line per part, from QET's own project database -
+/// the same source, the same grouping and the same written values as the
+/// export window, so the two roads to this list answer the same thing.
+///
+/// @par What was wrong, and it was silent
+/// This function published the @c quantity column. That column is not a
+/// count: it is a property the designer types into a component, and it is
+/// empty in every row of every project where nobody types it - all three
+/// hundred and fifty four rows of the project this was measured on.
+/// Meanwhile the window counts the group and publishes the count. So
+/// whoever generated a purchase list from a script received a quantity
+/// column with nothing in it, and whoever generated the same list from the
+/// window received the real numbers, for the same project, on the same
+/// day. Neither route said it disagreed with the other.
+///
+/// The count is now here too, under the very alias the window gives it, and
+/// the grouping under it comes from QETBom::groupByColumns() rather than
+/// from a second copy written here - which is the point: one rule, two
+/// callers, no way for them to drift apart again.
+///
+/// @par The typed quantity stays, beside the count
+/// It is not the count and it is not noise: a rail or a duct is bought by
+/// the metre, and the metre is typed, with @c unity beside it saying what
+/// the number means. Dropping the column would lose that, so both are
+/// published and both are part of the group - two components whose typed
+/// quantities differ are two lines, which is the only honest way to sum
+/// them.
+///
+/// @par The two sheet columns are aggregated, not grouped
+/// @c title and @c folio say where the parts of a line are drawn. Grouping
+/// by them would split the purchase line once per sheet, which is the
+/// opposite of what a purchase list is for; leaving them out of both the
+/// grouping and the aggregation would let SQLite answer them from whichever
+/// row of the group it likes, so a part drawn on four sheets would name one
+/// of the four and read as if it were only there. They are therefore
+/// group_concat of the distinct values: the line names every sheet its
+/// parts are on.
 int exportBom(QETProject &project, const QString &output)
 {
 	// The project database is built lazily; force a (re)build before querying.
 	project.dataBase()->updateDB();
 
+	// The element information columns of the assembly bill of materials.
 	static const QStringList columns {
-		"label", "designation", "manufacturer", "manufacturer_reference",
-		"quantity", "location", "function", "title", "folio"
+		QStringLiteral("label"),
+		QStringLiteral("designation"),
+		QStringLiteral("manufacturer"),
+		QStringLiteral("manufacturer_reference"),
+		QStringLiteral("quantity"),
+		QStringLiteral("unity"),
+		QStringLiteral("location"),
+		QStringLiteral("location_path"),
+		QStringLiteral("function")
 	};
 
-	QSqlQuery query = project.dataBase()->newQuery(
-		"SELECT " % columns.join(", ") %
-		" FROM element_nomenclature_view ORDER BY label");
+	// The alias of the count, spelled the way the window spells it: a
+	// nomenclature table drawn on a folio stores the query that built it
+	// word for word, and that alias is how its header is named.
+	static const QString count_alias = QStringLiteral("designation_qty");
+
+	// The columns of the file, in order. The information columns first,
+	// then the count, then the two that say where the line is drawn.
+	QStringList headers = columns;
+	headers << count_alias << QStringLiteral("title")
+		<< QStringLiteral("folio");
+
+	const QString statement =
+		QStringLiteral("SELECT ") % columns.join(QStringLiteral(", "))
+		% QStringLiteral(", COUNT(*) AS ") % count_alias
+		% QStringLiteral(", GROUP_CONCAT(DISTINCT title) AS title")
+		% QStringLiteral(", GROUP_CONCAT(DISTINCT folio) AS folio")
+		% QStringLiteral(" FROM element_nomenclature_view GROUP BY ")
+		% QETBom::groupByColumns(columns).join(QStringLiteral(", "))
+		% QStringLiteral(" ORDER BY label");
+
+	QSqlQuery query = project.dataBase()->newQuery(statement);
 	if (!query.exec()) {
 		err << "BOM query failed: " << query.lastError().text() << "\n";
 		return 1;
 	}
 
-	QString csv = columns.join(";") % "\n";
+	QString csv = QETCsv::row(headers) % "\n";
 	int rows = 0;
+	int parts = 0;
 	while (query.next()) {
 		QStringList values;
-		for (int i = 0; i < columns.size(); ++i)
-			values << query.value(i).toString();
+		for (int i = 0; i < headers.size(); ++i) {
+			// displayedInfoValue() over the information columns only,
+			// which is where the window applies it: it answers how a
+			// person reads a given information key - a location path is
+			// stored as the location tree writes it and read as the norm
+			// writes it - and the three columns after them are not
+			// information keys but numbers this query computes. Asking it
+			// about a sheet title would be asking the wrong question, and
+			// a sheet titled like a date would come back reformatted.
+			values << (i < columns.size()
+				   ? QETInformation::displayedInfoValue(
+					     headers.at(i), query.value(i))
+				   : query.value(i).toString());
+		}
 		csv += QETCsv::row(values) % "\n";
 		++rows;
+		// The invariant a line count cannot give: every component is
+		// counted exactly once, whatever the grouping does.
+		parts += query.value(int(columns.size())).toInt();
 	}
 
 	QFile file(output);
@@ -568,7 +646,21 @@ int exportBom(QETProject &project, const QString &output)
 	QTextStream fout(&file);
 	fout << csv;
 	file.close();
-	out << "Exported " << rows << " component(s) -> " << output << "\n";
+	out << "Exported " << rows << " line(s), " << parts
+	    << " component(s) -> " << output << "\n";
+
+	// And what the list does not hold. element_nomenclature_view withholds
+	// the components carrying nothing in any of their information columns
+	// - see createElementNomenclatureView() for the rule - and a script
+	// reading only the file has no way of telling a project with fewer
+	// parts from a project whose parts were never filled in. It is a note
+	// on stdout and not on stderr, and it does not change the exit code:
+	// an unfilled component is an outcome, not a fault.
+	const int nameless = project.dataBase()->namelessComponentCount();
+	if (nameless > 0) {
+		out << nameless << " component(s) carry no information at all"
+		       " and are not listed.\n";
+	}
 	return 0;
 }
 

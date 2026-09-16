@@ -17,17 +17,24 @@
 */
 #include "mountingscene.h"
 
+#include "../../undocommand/alignmountedpartscommand.h"
 #include "../../undocommand/mountpartcommand.h"
 #include "../../undocommand/movemountedpartcommand.h"
+#include "../../undocommand/movemountedrailcommand.h"
 #include "../../undocommand/stretchmountedprofilecommand.h"
+#include "../mountingclip.h"
+#include "../mountingmeasure.h"
 #include "mountedpartitem.h"
 #include "mountedprofileitem.h"
 
 #include <QColor>
+#include <QGraphicsItem>
 #include <QPainter>
 #include <QPen>
+#include <QUndoCommand>
 
 #include <cmath>
+#include <limits>
 #include <utility>
 
 namespace
@@ -415,6 +422,411 @@ bool MountingScene::moveItem(const QString &item_uuid,
 }
 
 /**
+	@brief MountingScene::setPartAxes
+	@param axis_by_part_code the axis offset of each product code, millimetre
+*/
+void MountingScene::setPartAxes(const QHash<QString, QPointF> &axis_by_part_code)
+{
+	m_axes = axis_by_part_code;
+}
+
+/**
+	@brief MountingScene::partAxes
+	@return where the axis of each product sits inside its own body
+*/
+QHash<QString, QPointF> MountingScene::partAxes() const
+{
+	return m_axes;
+}
+
+/**
+	@brief MountingScene::carrierOf
+	@param item_uuid which part
+	@return the identity of the rail that carries it, empty when none does
+
+	The part is looked up before the question is asked, and that guard is
+	not decoration: an identity nothing is drawn for reads back as an empty
+	MountedItem, which sits at the origin - and the origin is a place a rail
+	can very well be. Without the guard, asking about a part that is not
+	there would name whatever rail passes through the top left corner of the
+	plate.
+*/
+QString MountingScene::carrierOf(const QString &item_uuid) const
+{
+	if (!partItem(item_uuid)) {
+		return QString();
+	}
+
+	return MountingClip::carrierOf(mountedItem(item_uuid),
+				       itemsWith(QString(), QPointF()),
+				       m_axes);
+}
+
+/**
+	@brief MountingScene::carriedBy
+	@param rail_uuid which rail
+	@return what it carries where it stands, in order along it
+*/
+QStringList MountingScene::carriedBy(const QString &rail_uuid) const
+{
+	MountedPartItem *rail = partItem(rail_uuid);
+	if (!rail) {
+		return QStringList();
+	}
+
+	return carriedBy(rail_uuid, rail->millimetrePosition());
+}
+
+/**
+	@brief MountingScene::carriedBy
+	@param rail_uuid which rail
+	@param rail_position_mm where its top left corner would be, millimetre
+	@return what it would carry from there, in order along it
+*/
+QStringList MountingScene::carriedBy(const QString &rail_uuid,
+				     const QPointF &rail_position_mm) const
+{
+	if (!partItem(rail_uuid) || !isAPosition(rail_position_mm)) {
+		return QStringList();
+	}
+
+	return MountingClip::carried(rail_uuid,
+				     itemsWith(rail_uuid, rail_position_mm),
+				     m_axes);
+}
+
+/**
+	@brief MountingScene::clipTarget
+	@param item_uuid which part
+	@return where it would land if it were clipped where it stands
+*/
+QPointF MountingScene::clipTarget(const QString &item_uuid) const
+{
+	if (!partItem(item_uuid))
+	{
+		const qreal not_a_number =
+				std::numeric_limits<qreal>::quiet_NaN();
+
+		return QPointF(not_a_number, not_a_number);
+	}
+
+	return MountingClip::clippedPosition(mountedItem(item_uuid),
+					     itemsWith(QString(), QPointF()),
+					     m_axes);
+}
+
+/**
+	@brief MountingScene::clipItem
+	@param item_uuid which part
+	@param error filled with why nothing was clipped
+	@return true when a step was pushed on the stack
+*/
+bool MountingScene::clipItem(const QString &item_uuid, QString *error)
+{
+		//Emptied first, so that "false with no reason" is a state a
+		//caller can read rather than a sentence in a comment: what is
+		//left in there otherwise is whatever the caller last asked
+		//about.
+	if (error) {
+		error->clear();
+	}
+
+	MountedPartItem *part = partItem(item_uuid);
+	if (!part)
+	{
+		if (error) {
+			*error = tr("Aucun composant de cet identifiant sur "
+				    "cette platine");
+		}
+		return false;
+	}
+
+	if (carrierOf(item_uuid).isEmpty())
+	{
+		if (error) {
+			*error = tr("Aucun rail ne passe sous ce composant");
+		}
+		return false;
+	}
+
+		//No reason given when this returns false from here on: the part
+		//is already where the rail holds it, which is the same "nothing
+		//to do" moveItem reports with an empty error.
+	return pushMove(item_uuid, part->millimetrePosition(),
+			clipTarget(item_uuid));
+}
+
+/**
+	@brief MountingScene::selectedUuids
+	@return the identity of every part selected on this scene
+*/
+QStringList MountingScene::selectedUuids() const
+{
+	QStringList uuids;
+
+	const QList<QGraphicsItem *> chosen = selectedItems();
+
+	for (QGraphicsItem *item : chosen)
+	{
+			//Both type numbers, and not qgraphicsitem_cast to the
+			//base: that cast compares the type number for equality,
+			//so a piece cut to length - which IS a MountedPartItem,
+			//with a type number of its own - would come back null
+			//and every rail would silently drop out of the
+			//selection. Whether a rail takes part in a gesture is
+			//the rule's decision, and it cannot make it about a
+			//rail it was never given.
+		if (!item || (item->type() != MountedPartItem::Type
+			      && item->type() != MountedProfileItem::Type)) {
+			continue;
+		}
+
+		MountedPartItem *part = static_cast<MountedPartItem *>(item);
+
+		if (!part->uuid().isEmpty()) {
+			uuids << part->uuid();
+		}
+	}
+
+	return uuids;
+}
+
+/**
+	@brief MountingScene::alignItems
+	@param item_uuids which parts
+	@param alignment which line they end up sharing
+	@param error filled with why nothing was lined up
+	@return true when a step was pushed on the stack
+*/
+bool MountingScene::alignItems(const QStringList &item_uuids,
+			       MountingAlignment alignment,
+			       QString *error)
+{
+	if (error) {
+		error->clear();
+	}
+
+	const QList<MountedItem> chosen = itemsOf(item_uuids);
+	const QStringList movable = MountingAlign::movableUuids(chosen);
+
+	if (movable.count() < 2)
+	{
+		if (error) {
+			*error = tr("Il faut au moins deux composants pour les "
+				    "aligner ; les rails et les goulottes n'en "
+				    "sont pas.");
+		}
+		return false;
+	}
+
+	const QHash<QString, QPointF> targets =
+			MountingAlign::aligned(chosen, alignment);
+
+		//Empty and no reason: they were all on the line already, which
+		//is not a failure and must not leave a step on the stack.
+	if (targets.isEmpty()) {
+		return false;
+	}
+
+	AlignMountedPartsCommand *command =
+			new AlignMountedPartsCommand(this, targets,
+						     alignCaption(alignment,
+								  targets.count()));
+
+	if (command->isNull())
+	{
+		delete command;
+		return false;
+	}
+
+	m_undo_stack.push(command);
+	return true;
+}
+
+/**
+	@brief MountingScene::distributeItems
+	@param item_uuids which parts
+	@param run along which axis they are spread
+	@param error filled with why nothing was spread
+	@return true when a step was pushed on the stack
+*/
+bool MountingScene::distributeItems(const QStringList &item_uuids,
+				    MountingRun run,
+				    QString *error)
+{
+	if (error) {
+		error->clear();
+	}
+
+	const QList<MountedItem> chosen = itemsOf(item_uuids);
+	const QStringList movable = MountingAlign::movableUuids(chosen);
+
+	if (movable.count() < 3)
+	{
+		if (error) {
+			*error = tr("Il faut au moins trois composants pour les "
+				    "répartir : les deux du bout ne bougent "
+				    "pas.");
+		}
+		return false;
+	}
+
+	const qreal gap = MountingAlign::spreadGap(chosen, run);
+
+		//The arithmetic has an answer for a row that does not fit - an
+		//evenly overlapping one - and that answer is refused here
+		//rather than shown. A uniform overlap is the one wrong drawing
+		//that looks deliberate.
+	if (!std::isfinite(gap))
+	{
+		if (error) {
+			*error = tr("Ces composants ne se répartissent pas : "
+				    "l'un d'eux n'est pas à une position "
+				    "mesurable.");
+		}
+		return false;
+	}
+
+	if (gap < 0.0)
+	{
+			//How much room is missing, and not how negative the gap
+			//is: what a person can act on is the millimetre they
+			//have to make, and that is the gap times the number of
+			//spaces there are between the parts.
+		const qreal missing = -gap * qreal(movable.count() - 1);
+
+		if (error) {
+			*error = tr("Ces composants ne tiennent pas dans la "
+				    "place qu'ils occupent : il manque %1 mm.")
+				 .arg(missing, 0, 'f', 1);
+		}
+		return false;
+	}
+
+	const QHash<QString, QPointF> targets =
+			MountingAlign::spread(chosen, run);
+
+	if (targets.isEmpty()) {
+		return false;
+	}
+
+	AlignMountedPartsCommand *command =
+			new AlignMountedPartsCommand(this, targets,
+						     spreadCaption(run,
+								   targets.count()));
+
+	if (command->isNull())
+	{
+		delete command;
+		return false;
+	}
+
+	m_undo_stack.push(command);
+	return true;
+}
+
+/**
+	@brief MountingScene::itemsOf
+	@param item_uuids which parts
+	@return what is drawn for each of them, read off the drawing
+
+	Silently short of what was asked for when an identity names nothing:
+	the rules underneath count what they were given, and a default item
+	standing in for a part that is not there would be counted as a part at
+	the origin.
+*/
+QList<MountedItem> MountingScene::itemsOf(const QStringList &item_uuids) const
+{
+	QList<MountedItem> chosen;
+	QStringList taken;
+
+	for (const QString &item_uuid : item_uuids)
+	{
+		if (item_uuid.isEmpty() || taken.contains(item_uuid)
+		    || !partItem(item_uuid)) {
+			continue;
+		}
+
+		taken << item_uuid;
+		chosen << mountedItem(item_uuid);
+	}
+
+	return chosen;
+}
+
+/**
+	@brief MountingScene::alignCaption
+	@param alignment which line the parts end up sharing
+	@param count how many of them move
+	@return what the person reads in the undo list
+*/
+QString MountingScene::alignCaption(MountingAlignment alignment,
+				    int count) const
+{
+	switch (alignment)
+	{
+		case MountingAlignment::LeftEdges:
+			return tr("Aligner %1 composant(s) à gauche")
+			       .arg(count);
+		case MountingAlignment::RightEdges:
+			return tr("Aligner %1 composant(s) à droite")
+			       .arg(count);
+		case MountingAlignment::TopEdges:
+			return tr("Aligner %1 composant(s) en haut").arg(count);
+		case MountingAlignment::BottomEdges:
+			return tr("Aligner %1 composant(s) en bas").arg(count);
+		case MountingAlignment::VerticalAxes:
+			return tr("Centrer %1 composant(s) verticalement")
+			       .arg(count);
+		case MountingAlignment::HorizontalAxes:
+			return tr("Centrer %1 composant(s) horizontalement")
+			       .arg(count);
+	}
+
+	return tr("Aligner %1 composant(s) sur la platine").arg(count);
+}
+
+/**
+	@brief MountingScene::spreadCaption
+	@param run along which axis the parts are spread
+	@param count how many of them move
+	@return what the person reads in the undo list
+*/
+QString MountingScene::spreadCaption(MountingRun run, int count) const
+{
+	if (run == MountingRun::Down) {
+		return tr("Répartir %1 composant(s) verticalement").arg(count);
+	}
+
+	return tr("Répartir %1 composant(s) horizontalement").arg(count);
+}
+
+/**
+	@brief MountingScene::itemsWith
+	@param moved_uuid which part is displaced, empty for none
+	@param position_mm where its top left corner is put, millimetre
+	@return everything on the face, read off the drawing
+*/
+QList<MountedItem> MountingScene::itemsWith(const QString &moved_uuid,
+					    const QPointF &position_mm) const
+{
+	QList<MountedItem> items = surface().items;
+
+	if (moved_uuid.isEmpty()) {
+		return items;
+	}
+
+	for (int index = 0 ; index < items.size() ; ++ index)
+	{
+		if (items.at(index).uuid == moved_uuid) {
+			items[index].position = position_mm;
+		}
+	}
+
+	return items;
+}
+
+/**
 	@brief MountingScene::pushMove
 	@param item_uuid which part
 	@param before_mm where it was, millimetre
@@ -425,19 +837,49 @@ bool MountingScene::moveItem(const QString &item_uuid,
 	from a number. What counts as no move at all is asked of the command
 	itself: two places deciding that would be two places to keep in step,
 	and the day they disagree the stack grows a step that undoes nothing.
+
+	It is also the one place a rail is told apart from everything else, and
+	that is why the two paths - a number typed and a mouse let go - can
+	never disagree about whether the breakers travelled. What the rail
+	carries is asked of where it WAS: by the time a drag ends, the rail is
+	already at its new place and covers nothing it left behind.
 */
 bool MountingScene::pushMove(const QString &item_uuid,
 			     const QPointF &before_mm,
 			     const QPointF &after_mm)
 {
-	MoveMountedPartCommand *command =
-			new MoveMountedPartCommand(this, item_uuid,
-						   before_mm, after_mm);
+	const QStringList carried = carriedBy(item_uuid, before_mm);
 
-	if (command->isNull())
+	QUndoCommand *command = nullptr;
+
+	if (carried.isEmpty())
 	{
-		delete command;
-		return false;
+		MoveMountedPartCommand *move =
+				new MoveMountedPartCommand(this, item_uuid,
+							   before_mm, after_mm);
+
+		if (move->isNull())
+		{
+			delete move;
+			return false;
+		}
+
+		command = move;
+	}
+	else
+	{
+		MoveMountedRailCommand *move =
+				new MoveMountedRailCommand(this, item_uuid,
+							   before_mm, after_mm,
+							   carried);
+
+		if (move->isNull())
+		{
+			delete move;
+			return false;
+		}
+
+		command = move;
 	}
 
 	m_undo_stack.push(command);
@@ -773,6 +1215,18 @@ void MountingScene::updateSceneRect()
 	that takes it back. A part with no identity is left where it was
 	dropped and no step is pushed: there is nothing to address it by, and a
 	step that cannot name what it moves cannot undo it either.
+
+	Letting go over a rail is what clips a part onto it, so where the drag
+	ends and where the part is put are two different places, and the step
+	pushed is the one that goes to the second. One step and not two: a drag
+	followed by a clip would take two undos to get back from, and the person
+	made one gesture.
+
+	A drag that ends a nanometre from where it began pushes nothing - there
+	would be nothing to undo - and the clip still has to happen, because a
+	part released over a rail has to end up on it whether or not the stack
+	has anything to say about it. That is the branch below, and it is the
+	one nobody would write from the drawing alone.
 */
 void MountingScene::endDrag(MountedPartItem *part,
 			    const QPointF &previous_position_mm)
@@ -786,7 +1240,17 @@ void MountingScene::endDrag(MountedPartItem *part,
 		return;
 	}
 
-	pushMove(item_uuid, previous_position_mm, part->millimetrePosition());
+	const QPointF dropped = part->millimetrePosition();
+	const QPointF target = clipTarget(item_uuid);
+
+	if (pushMove(item_uuid, previous_position_mm, target)) {
+		return;
+	}
+
+	if (!MountingMeasure::isSameLength(target.x(), dropped.x())
+	    || !MountingMeasure::isSameLength(target.y(), dropped.y())) {
+		applyItemPosition(item_uuid, target);
+	}
 }
 
 /**

@@ -39,12 +39,14 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QHash>
 #include <QKeySequence>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPointF>
 #include <QSettings>
 #include <QStatusBar>
 #include <QToolBar>
@@ -89,6 +91,16 @@ MountingLayoutEditor::MountingLayoutEditor(QETProject *project,
 
 	connect(&m_scene->undoStack(), &QUndoStack::indexChanged,
 		this, &MountingLayoutEditor::stepApplied);
+
+		//The gestures over a selection are the only things in this
+		//window whose availability changes without anything being
+		//done: choosing a second component is what turns "align" from
+		//grey to black. Without this, the buttons would only wake up
+		//at the next undo step, which is exactly the step they are
+		//supposed to produce.
+	connect(m_scene, &QGraphicsScene::selectionChanged,
+		this, &MountingLayoutEditor::updateActions);
+
 	connect(m_view, &MountingView::pointed,
 		this, &MountingLayoutEditor::pointedAt);
 	connect(m_view, &MountingView::zoomChanged,
@@ -207,6 +219,7 @@ bool MountingLayoutEditor::showSurface(const QString &surface_uuid)
 
 	m_shown = index >= 0 ? surface_uuid : QString();
 	m_scene->setSurface(index >= 0 ? layout.at(index) : MountingSurface());
+	refreshPartAxes();
 
 	m_view->zoomFit();
 	updateTitle();
@@ -742,11 +755,100 @@ QString MountingLayoutEditor::mountOnShownSurface(MountedItem item,
 		return QString();
 	}
 
+		//A product that was not on this face a moment ago may be one
+		//whose axis the catalogue knows, and the drawing has to be told
+		//before the first time somebody drops that part on a rail.
+	refreshPartAxes();
+
 	refreshSurfaceList();
 	updateTitle();
 	updateActions();
 
 	return item.uuid;
+}
+
+/**
+	@brief MountingLayoutEditor::alignLeft
+	Line the selected components up on their left edges.
+*/
+void MountingLayoutEditor::alignLeft()
+{
+	QString error;
+	const bool done = m_scene->alignItems(m_scene->selectedUuids(),
+					      MountingAlignment::LeftEdges,
+					      &error);
+
+	sayGesture(done, error,
+		   tr("Ces composants sont déjà alignés à gauche."));
+}
+
+/**
+	@brief MountingLayoutEditor::alignTop
+	Line the selected components up on their top edges.
+*/
+void MountingLayoutEditor::alignTop()
+{
+	QString error;
+	const bool done = m_scene->alignItems(m_scene->selectedUuids(),
+					      MountingAlignment::TopEdges,
+					      &error);
+
+	sayGesture(done, error, tr("Ces composants sont déjà alignés en haut."));
+}
+
+/**
+	@brief MountingLayoutEditor::spreadAcross
+	Leave the same air between the selected components, left to right.
+*/
+void MountingLayoutEditor::spreadAcross()
+{
+	QString error;
+	const bool done = m_scene->distributeItems(m_scene->selectedUuids(),
+						   MountingRun::Across, &error);
+
+	sayGesture(done, error,
+		   tr("Ces composants sont déjà également espacés."));
+}
+
+/**
+	@brief MountingLayoutEditor::spreadDown
+	Leave the same air between the selected components, top to bottom.
+*/
+void MountingLayoutEditor::spreadDown()
+{
+	QString error;
+	const bool done = m_scene->distributeItems(m_scene->selectedUuids(),
+						   MountingRun::Down, &error);
+
+	sayGesture(done, error,
+		   tr("Ces composants sont déjà également espacés."));
+}
+
+/**
+	@brief MountingLayoutEditor::sayGesture
+	@param done true when a step was pushed
+	@param error what the scene refused with, empty when it refused nothing
+	@param nothing_to_do what to say when the scene did nothing and gave no
+	reason
+
+	Nothing is said when it worked: the drawing has already moved and the
+	undo list already names what happened, and a window that congratulates
+	itself on every button is a window people stop reading.
+*/
+void MountingLayoutEditor::sayGesture(bool done, const QString &error,
+				      const QString &nothing_to_do)
+{
+	if (done) {
+		return;
+	}
+
+	if (!error.isEmpty())
+	{
+		say(error, true);
+		return;
+	}
+
+	say(nothing_to_do);
 }
 
 /**
@@ -927,6 +1029,36 @@ void MountingLayoutEditor::buildActions()
 	connect(m_zoom_actual, &QAction::triggered,
 		m_view, &MountingView::zoomActualSize);
 
+	m_align_left = new QAction(tr("Aligner à gauche"), this);
+	m_align_left->setStatusTip(tr("Amène les composants sélectionnés sur "
+				      "le bord gauche du plus à gauche "
+				      "d'entre eux."));
+	connect(m_align_left, &QAction::triggered,
+		this, &MountingLayoutEditor::alignLeft);
+
+	m_align_top = new QAction(tr("Aligner en haut"), this);
+	m_align_top->setStatusTip(tr("Amène les composants sélectionnés sur le "
+				     "bord supérieur du plus haut d'entre "
+				     "eux."));
+	connect(m_align_top, &QAction::triggered,
+		this, &MountingLayoutEditor::alignTop);
+
+	m_spread_across = new QAction(tr("Répartir horizontalement"), this);
+	m_spread_across->setStatusTip(tr("Laisse le même espace entre les "
+					 "composants sélectionnés, de gauche à "
+					 "droite ; ceux des deux bouts ne "
+					 "bougent pas."));
+	connect(m_spread_across, &QAction::triggered,
+		this, &MountingLayoutEditor::spreadAcross);
+
+	m_spread_down = new QAction(tr("Répartir verticalement"), this);
+	m_spread_down->setStatusTip(tr("Laisse le même espace entre les "
+				       "composants sélectionnés, de haut en "
+				       "bas ; ceux des deux bouts ne bougent "
+				       "pas."));
+	connect(m_spread_down, &QAction::triggered,
+		this, &MountingLayoutEditor::spreadDown);
+
 	m_check_plate = new QAction(tr("Check the plate…"), this);
 	m_check_plate->setStatusTip(tr("What is wrong with this face before a "
 				       "hole is drilled in it: two parts in "
@@ -968,6 +1100,11 @@ void MountingLayoutEditor::buildWidgets()
 	layout_menu->addAction(m_add_part);
 	layout_menu->addAction(m_add_profile);
 	layout_menu->addSeparator();
+	layout_menu->addAction(m_align_left);
+	layout_menu->addAction(m_align_top);
+	layout_menu->addAction(m_spread_across);
+	layout_menu->addAction(m_spread_down);
+	layout_menu->addSeparator();
 	layout_menu->addAction(m_check_plate);
 	layout_menu->addAction(m_drilling_table);
 	layout_menu->addSeparator();
@@ -991,6 +1128,11 @@ void MountingLayoutEditor::buildWidgets()
 	bar->addAction(m_new_surface);
 	bar->addAction(m_add_part);
 	bar->addAction(m_add_profile);
+	bar->addSeparator();
+	bar->addAction(m_align_left);
+	bar->addAction(m_align_top);
+	bar->addAction(m_spread_across);
+	bar->addAction(m_spread_down);
 	bar->addSeparator();
 	bar->addAction(m_check_plate);
 	bar->addAction(m_drilling_table);
@@ -1053,6 +1195,48 @@ void MountingLayoutEditor::refreshSurfaceList()
 }
 
 /**
+	@brief MountingLayoutEditor::refreshPartAxes
+	Tell the drawing where the axis of each product sits inside its body.
+
+	Only the products whose axis the catalogue really holds are handed over.
+	An entry of (0, 0) and a missing entry would clip a part to exactly the
+	same place - the corner of its box on the centre line of the rail - but
+	they do not mean the same thing, and the day the drawing shows which
+	parts are lined up by a measurement and which by a default, that
+	difference is the one it will need. Leaving them out keeps the table the
+	size of what somebody actually measured.
+*/
+void MountingLayoutEditor::refreshPartAxes()
+{
+	if (!m_scene) {
+		return;
+	}
+
+	Catalog *catalog = QETApp::catalog();
+	if (!catalog)
+	{
+		m_scene->setPartAxes(QHash<QString, QPointF>());
+		return;
+	}
+
+	const QStringList codes =
+			MountingPartReader::partCodesOf(m_scene->surface());
+	const QHash<QString, MountingPartView> views =
+			MountingPartReader::viewsOf(*catalog, codes);
+
+	QHash<QString, QPointF> axes;
+
+	for (auto view = views.cbegin() ; view != views.cend() ; ++ view)
+	{
+		if (view.value().hasInsertion()) {
+			axes.insert(view.key(), view.value().insertionOffset());
+		}
+	}
+
+	m_scene->setPartAxes(axes);
+}
+
+/**
 	@brief MountingLayoutEditor::updateTitle
 */
 void MountingLayoutEditor::updateTitle()
@@ -1081,6 +1265,21 @@ void MountingLayoutEditor::updateActions()
 	m_new_surface->setEnabled(editable);
 	m_add_part->setEnabled(editable && !m_shown.isEmpty());
 	m_add_profile->setEnabled(editable && !m_shown.isEmpty());
+
+		//Two to line up, three to spread: with two, both of them are
+		//at an end of the row and there is nothing in between to
+		//share the air out between. The count is of what is selected
+		//and not of what will move - a selection of two rails lights
+		//the button and the gesture then says why it will not do it,
+		//which is more useful than a button that is grey for a reason
+		//nobody can see.
+	const int selected = m_scene->selectedUuids().count();
+	const bool on_face = editable && !m_shown.isEmpty();
+
+	m_align_left->setEnabled(on_face && selected >= 2);
+	m_align_top->setEnabled(on_face && selected >= 2);
+	m_spread_across->setEnabled(on_face && selected >= 3);
+	m_spread_down->setEnabled(on_face && selected >= 3);
 
 		//Reading, not writing: a project open read only is exactly the
 		//project somebody opens to check a plate against, and refusing

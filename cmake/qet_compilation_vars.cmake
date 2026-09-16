@@ -413,6 +413,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/label/componentlabelquery.h
   ${QET_DIR}/sources/label/labelentry.h
 
+  ${QET_DIR}/sources/location/bomcollector.cpp
+  ${QET_DIR}/sources/location/bomcollector.h
   ${QET_DIR}/sources/location/bommeasure.cpp
   ${QET_DIR}/sources/location/bommeasure.h
   ${QET_DIR}/sources/location/drillingorigin.cpp
@@ -438,8 +440,12 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/locationcontainment.h
   ${QET_DIR}/sources/location/locationtree.cpp
   ${QET_DIR}/sources/location/locationtree.h
+  ${QET_DIR}/sources/location/mountingalign.cpp
+  ${QET_DIR}/sources/location/mountingalign.h
   ${QET_DIR}/sources/location/mountingcheck.cpp
   ${QET_DIR}/sources/location/mountingcheck.h
+  ${QET_DIR}/sources/location/mountingclip.cpp
+  ${QET_DIR}/sources/location/mountingclip.h
   ${QET_DIR}/sources/location/mountinglayout.cpp
   ${QET_DIR}/sources/location/mountinglayout.h
   ${QET_DIR}/sources/location/mountingmeasure.cpp
@@ -521,6 +527,12 @@ set(QET_SRC_FILES
   # the project XML. It sits here and not beside the rule contract of
   # sources/drc/ because it is the only part of the checker that knows
   # the schema; the walk over the objects knows none of it.
+  # The rules a bill of materials is made of, as text: which rows name
+  # something, what a purchase list groups by, which columns a built query
+  # publishes. No project, no data base, no window - which is what lets the
+  # export window and --export-bom share them instead of each holding a copy.
+  ${QET_DIR}/sources/dataBase/bomquery.cpp
+  ${QET_DIR}/sources/dataBase/bomquery.h
   ${QET_DIR}/sources/dataBase/drcsqlengine.cpp
   ${QET_DIR}/sources/dataBase/drcsqlengine.h
   ${QET_DIR}/sources/dataBase/projectdatabase.cpp
@@ -1038,6 +1050,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/adddiagramcommand.h
   ${QET_DIR}/sources/undocommand/adddiagramcontentcommand.cpp
   ${QET_DIR}/sources/undocommand/adddiagramcontentcommand.h
+  ${QET_DIR}/sources/undocommand/alignmountedpartscommand.cpp
+  ${QET_DIR}/sources/undocommand/alignmountedpartscommand.h
   ${QET_DIR}/sources/undocommand/assemblystatecommand.cpp
   ${QET_DIR}/sources/undocommand/assemblystatecommand.h
   ${QET_DIR}/sources/undocommand/assigncatalogpartcommand.cpp
@@ -1090,6 +1104,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/movegraphicsitemcommand.h
   ${QET_DIR}/sources/undocommand/movemountedpartcommand.cpp
   ${QET_DIR}/sources/undocommand/movemountedpartcommand.h
+  ${QET_DIR}/sources/undocommand/movemountedrailcommand.cpp
+  ${QET_DIR}/sources/undocommand/movemountedrailcommand.h
   ${QET_DIR}/sources/undocommand/mountpartcommand.cpp
   ${QET_DIR}/sources/undocommand/mountpartcommand.h
   ${QET_DIR}/sources/undocommand/stretchmountedprofilecommand.cpp

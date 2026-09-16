@@ -60,6 +60,32 @@ class projectDataBase : public QObject
 		QSqlQuery newQuery(const QString &query = QString());
 
 		/**
+			@brief How many components the parts list withholds because
+			they name nothing.
+			@return the count, and 0 when the question cannot be asked
+
+			The other half of the clause createElementNomenclatureView()
+			documents. That clause drops the rows carrying nothing in any
+			of their information columns, and a drop nobody can see is
+			the failure this project spends most of its comments on : the
+			list would simply come back shorter, and the reader would have
+			no way of telling a project with fewer parts from a project
+			whose parts were never filled in.
+
+			So the number is available, and the two bills of material
+			report it beside the list they wrote. It is a count and not a
+			list on purpose - naming the withheld rows would mean naming
+			rows that have no name, which is the sentence the count says
+			in one number.
+
+			Counted over element_label_view, which is the same body
+			without the parts list filters, so the flag is applied here
+			and the condition is inverted here : asking the nomenclature
+			view would be asking the rows that are gone.
+		*/
+		int namelessComponentCount();
+
+		/**
 			Which drawn elements reach the element and element_info tables.
 
 			Everything a sheet draws that stands for a piece of the circuit,

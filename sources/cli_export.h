@@ -64,7 +64,8 @@ namespace CLIExport {
 		PNG/SVG: one file per diagram, named <output_dir>/<NN>_<title>.<ext>.
 		cables: wiring list (one row per conductor) as CSV.
 		wires: list of distinct wire numbers as CSV.
-		bom: bill of materials (one row per element) as CSV.
+		bom: bill of materials as CSV -- one row per part, grouped and
+		     counted the way the export window groups and counts it.
 		nets: electrical nets (connected-terminal groups) as JSON.
 		links: element cross-references (coil/contact) as CSV, with
 		       unresolved links flagged.

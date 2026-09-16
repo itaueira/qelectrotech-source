@@ -18,10 +18,13 @@
 #ifndef MOUNTINGSCENE_H
 #define MOUNTINGSCENE_H
 
+#include "../mountingalign.h"
 #include "../mountinglayout.h"
 
 #include <QGraphicsScene>
 #include <QHash>
+#include <QList>
+#include <QPointF>
 #include <QRectF>
 #include <QStringList>
 #include <QUndoStack>
@@ -85,6 +88,21 @@ class QPainter;
 	an undo that is never there. Taking one part in and out without touching
 	the rest is what makes the composition of a face undoable, and what lets
 	a rail be drawn by a gesture that can be taken back.
+
+	@par A rail moves with what is clipped onto it, in one step
+
+	Dragging a rail takes the parts clipped onto it along, and that is one
+	step of the stack and not thirteen: the person did one thing, and an
+	undo giving the rail back while leaving the breakers where the drag put
+	them would leave a drawing nobody can return to a known state. Which
+	parts travel is read off the geometry - MountingClip, and nothing is
+	stored anywhere - and it is read at the position the rail had when the
+	gesture began, since a rail that has already moved covers nothing it
+	left behind.
+
+	Clipping itself is a gesture and not a rule over every position this
+	scene writes. A number typed into a box goes where it was typed; a part
+	let go over a rail is caught by it. See clipItem.
 */
 class MountingScene : public QGraphicsScene
 {
@@ -197,6 +215,165 @@ class MountingScene : public QGraphicsScene
 			      QString *error = nullptr);
 
 		/**
+			@brief Say where the axis of each product sits inside its
+			own body.
+			@param axis_by_part_code the offset from the top left
+			corner of the body, millimetre, keyed by product code
+
+			What a part hangs by when it is clipped onto a rail: the
+			axis of a breaker is not the corner of its box, and a row
+			lined up by its corners is a row out of line by however
+			far the two differ. A product code that is not in the
+			table is a product the catalogue was never told about,
+			and its parts line up by the corner - visibly, on the
+			drawing, which is the point.
+
+			It is handed in rather than read here because this is a
+			drawing and a catalogue is a data base. The scene knows
+			what it draws and nothing about products; whoever hosts
+			it has a catalogue open and fills this in.
+
+			Kept across a change of face on purpose: it says what
+			products are, not what is on a plate.
+		*/
+		void setPartAxes(const QHash<QString, QPointF> &axis_by_part_code);
+			/// @return where the axis of each product sits, millimetre
+		QHash<QString, QPointF> partAxes() const;
+
+		/**
+			@brief Which rail carries a part.
+			@param item_uuid which part
+			@return the identity of the rail, empty when none does
+			and when there is no such part
+
+			Read off the geometry every time it is asked and never
+			stored - see MountingClip, where the reasons are.
+		*/
+		QString carrierOf(const QString &item_uuid) const;
+
+		/**
+			@brief What a rail carries where it stands.
+			@param rail_uuid which rail
+			@return the identity of each part, in the order it stands
+			along the rail
+		*/
+		QStringList carriedBy(const QString &rail_uuid) const;
+
+		/**
+			@brief What a rail would carry if it stood somewhere
+			else.
+			@param rail_uuid which rail
+			@param rail_position_mm where its top left corner would
+			be, millimetre
+			@return the identity of each part, in order along the
+			rail
+
+			The overload a move needs, and the reason it exists is
+			the defect this step is written against: a rail that has
+			already been dragged fifty millimetres no longer covers
+			the breakers it left behind, so asking it what it carries
+			AFTER the drag answers nothing at all. What has to be
+			asked is what it carried where the gesture began.
+		*/
+		QStringList carriedBy(const QString &rail_uuid,
+				      const QPointF &rail_position_mm) const;
+
+		/**
+			@brief Where a part would land if it were clipped where
+			it stands.
+			@param item_uuid which part
+			@return the top left corner it would take, millimetre
+
+			Its own position when no rail is under it, and a position
+			that is not one when there is no such part - so that the
+			two answers cannot be mistaken for one another.
+		*/
+		QPointF clipTarget(const QString &item_uuid) const;
+
+		/**
+			@brief Clip a part onto the rail under it, undoably.
+			@param item_uuid which part
+			@param error filled with why nothing was clipped
+			@return true when a step was pushed on the stack
+
+			False with a reason when there is no such part and when
+			nothing is under it; false with no reason when it is
+			already where a clip would put it, which is the contract
+			moveItem already has - a step that changes nothing must
+			not reach the stack.
+
+			It is a gesture, and not a rule applied to every position
+			this scene writes, and that distinction is deliberate. A
+			number typed into a box is honoured: moveItem puts a part
+			exactly where it is told, because a drawing that quietly
+			moves a part somewhere else is a drawing answering a
+			question nobody asked. Letting go of a part over a rail
+			is the gesture that means "hold it there", and that one
+			clips.
+		*/
+		bool clipItem(const QString &item_uuid, QString *error = nullptr);
+
+		/**
+			@return the identity of every part selected on this
+			scene, in no special order.
+
+			The one thing a window above this needs to turn "what the
+			person is pointing at" into a gesture, and it is here
+			because the scene is what holds the selection. Anything
+			selected that is not a part of this face - there is
+			nothing else on this scene today - is left out rather
+			than handed back as an empty identity.
+		*/
+		QStringList selectedUuids() const;
+
+		/**
+			@brief Line parts up on one edge, undoably.
+			@param item_uuids which parts
+			@param alignment which line they end up sharing
+			@param error filled with why nothing was lined up
+			@return true when a step was pushed on the stack
+
+			One step for all of them, because it is one gesture. The
+			line is taken from the parts themselves - see
+			MountingAlign - so the outermost one stays where it is
+			and the others come to it.
+
+			Refused, with the reason, for fewer than two parts that
+			can be moved. False with no reason when they were all on
+			the line already: a step that moves nothing must not
+			reach the stack.
+
+			A rail or a duct in the selection is not moved, and that
+			is deliberate rather than an oversight: a rail is what
+			other parts are clipped onto, and moving it is the
+			gesture that carries them with it. Whoever offers this
+			can say so by comparing what it was given with
+			MountingAlign::movableUuids.
+		*/
+		bool alignItems(const QStringList &item_uuids,
+				MountingAlignment alignment,
+				QString *error = nullptr);
+
+		/**
+			@brief Leave the same air between parts, undoably.
+			@param item_uuids which parts
+			@param run along which axis they are spread
+			@param error filled with why nothing was spread
+			@return true when a step was pushed on the stack
+
+			Equal gaps between bodies, the two outermost parts left
+			where they are. Refused, with the reason, for fewer than
+			three parts that can be moved, and refused when they do
+			not fit in the room they already stand in - spreading
+			them then would leave a row of parts evenly overlapping,
+			which looks deliberate and is the one answer nobody
+			wants.
+		*/
+		bool distributeItems(const QStringList &item_uuids,
+				     MountingRun run,
+				     QString *error = nullptr);
+
+		/**
 			@brief Put a part at @a position_mm without touching the
 			undo stack.
 			@param item_uuid which part
@@ -295,6 +472,33 @@ class MountingScene : public QGraphicsScene
 		void rebuild();
 		void updateSceneRect();
 		MountedPartItem *drawItem(const MountedItem &item);
+
+		/**
+			@brief Everything on the face, with one part put
+			somewhere else.
+			@param moved_uuid which part is displaced, empty for none
+			@param position_mm where its top left corner is put,
+			millimetre
+			@return the list, read off the drawing
+
+			The input every question about clipping is asked over,
+			and the displacement is what lets it be asked about a
+			moment other than now: a move has to know what a rail
+			carried where the gesture began, and by then the rail is
+			already somewhere else.
+		*/
+		QList<MountedItem> itemsWith(const QString &moved_uuid,
+					     const QPointF &position_mm) const;
+
+			/// @return what is drawn for each of @a item_uuids, in that order
+		QList<MountedItem> itemsOf(const QStringList &item_uuids) const;
+
+			/// @return what the undo list says about an alignment of @a count parts
+		QString alignCaption(MountingAlignment alignment,
+				     int count) const;
+			/// @return what it says about spreading @a count parts
+		QString spreadCaption(MountingRun run, int count) const;
+
 		bool pushMove(const QString &item_uuid,
 			      const QPointF &before_mm,
 			      const QPointF &after_mm);
@@ -305,6 +509,8 @@ class MountingScene : public QGraphicsScene
 
 		MountingSurface m_surface;
 		QHash<QString, MountedPartItem *> m_items;
+		/// where the axis of each product sits inside its own body, millimetre
+		QHash<QString, QPointF> m_axes;
 		QUndoStack m_undo_stack;
 };
 
