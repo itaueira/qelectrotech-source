@@ -26,7 +26,9 @@
 #include "autoNum/numerotationcontextcommands.h"
 #include "cable/cable.h"
 #include "crashrecovery.h"
+#include "autoNum/renumberelementscommand.h"
 #include "diagram.h"
+#include "qetgraphicsitem/element.h"
 #include "qetapp.h"
 #include "qetmessagebox.h"
 #include "qetresult.h"
@@ -44,7 +46,30 @@
 #include <QHash>
 #include <QTimer>
 #include <QtConcurrentRun>
+
+namespace {
+
+/**
+ * @brief Reset numeric fields of a NumerotationContext so renumbering starts at 1.
+ * Keeps non-numeric parts (string/idfolio/folio/plant/locmach/elementline/elementcolumn/elementprefix) unchanged.
+ */
+NumerotationContext resetContextForRenumber(const NumerotationContext &tmpl)
+{
+	NumerotationContext out = tmpl;
+	for (int i = 0; i < out.size(); ++i) {
+		const QStringList parts = out.itemAt(i);
+		if (parts.isEmpty()) continue;
+		const QString type = parts.at(0);
+		if (out.keyIsNumber(type)) {
+			out.replaceValue(i, QStringLiteral("1"));
+		}
+	}
+	return out;
+}
+
+} // namespace
 #include <QtDebug>
+#include <algorithm>
 #include <utility>
 
 static int BACKUP_INTERVAL = 1200000; //interval in ms of backup = 20min
@@ -87,6 +112,30 @@ m_project_properties_handler{this}
 		m_default_guides.append(g);
 	}
 	settings.endArray();
+
+		//Load global auto-numbering defaults from QSettings
+	{
+		auto conductorData = NumerotationContext::loadFromSettings(settings, QStringLiteral("autonum/conductor"));
+		for (auto it = conductorData.first.constBegin(); it != conductorData.first.constEnd(); ++it) {
+			addConductorAutoNum(it.key(), it.value());
+		}
+		if (!conductorData.second.isEmpty()) {
+			setCurrentConductorAutoNum(conductorData.second);
+		}
+
+		auto elementData = NumerotationContext::loadFromSettings(settings, QStringLiteral("autonum/element"));
+		for (auto it = elementData.first.constBegin(); it != elementData.first.constEnd(); ++it) {
+			addElementAutoNum(it.key(), it.value());
+		}
+		if (!elementData.second.isEmpty()) {
+			setCurrrentElementAutonum(elementData.second);
+		}
+
+		auto folioData = NumerotationContext::loadFromSettings(settings, QStringLiteral("autonum/folio"));
+		for (auto it = folioData.first.constBegin(); it != folioData.first.constEnd(); ++it) {
+			addFolioAutoNum(it.key(), it.value());
+		}
+	}
 }
 
 ProjectPropertiesHandler &QETProject::projectPropertiesHandler()
@@ -116,6 +165,9 @@ QETProject::QETProject(const QString &path, QObject *parent) :
 	// somebody else wrote to it meanwhile.
 	captureDiskState();
 
+		//The file just read already holds everything a crash could lose, so
+		//there is nothing to back up until the project is changed.
+	m_backup_needed = false;
 	init();
 }
 
@@ -191,6 +243,11 @@ QETProject::~QETProject()
 		//We block database signal to avoid hundreds of unnecessary emitted signal
 		//due to deletion (diagram, item, etc...) and as much update made in the not yet deleted things.
 	m_data_base.blockSignals(true);
+		//Same reasoning for the rebuild itself : destroying a table relinks
+		//the tables that were chained to it, which re-queries the database,
+		//which rebuilds it completely -- for a project that is on its way out.
+		//Nothing can observe the result : the database is destroyed with it.
+	m_data_base.setUpdateBlocked(true);
 
 		//Each time a diagram is deleted we also remove it from m_diagram_list
 		//because a lot of thing append during the destructor of a diagram class
@@ -250,6 +307,42 @@ QUuid QETProject::uuid() const
 }
 
 /**
+	@brief QETProject::derivedItemUuid
+	A uuid for an item of this project that was saved without one, the same
+	on every load of the same file.
+	@p key describes the item by what it is, never by its place in the file
+	or its folio's index: inserting or moving a folio must not change it.
+	Items with the same @p kind and @p key anywhere in the project (a copied
+	folio, two identical symbols stacked on one spot) are told apart by a
+	counter, in load order among those items alone.
+
+	A derived uuid is never one the file already carries: an item saved with
+	a derived uuid and then moved or re-connected keeps it, so a newcomer
+	later taking its old place or ends would otherwise derive the same one.
+	The file's saved uuids are collected before any folio loads
+	(readDiagramsXml()), so the result still depends on the file alone.
+
+	uuids are unique within one project; copies of a project share them, as
+	they share every saved uuid. Anything bringing items in from another
+	project must renew them, as paste does.
+	@return a UUID v5, which cannot collide with the v4 uuids given to new
+	items
+*/
+QUuid QETProject::derivedItemUuid(const QString &kind, const QString &key)
+{
+	static const QUuid derived_ns(QStringLiteral("{7d1e9c3a-5b2f-4e8a-9c61-2f4b8d0e6a17}"));
+	const QString full = kind + QLatin1Char('\n') + key;
+	int &n = m_derived_uuid_keys[full];
+	QUuid uuid;
+	do {
+		uuid = QUuid::createUuidV5(derived_ns,
+								   n ? full + QLatin1Char('\n') + QString::number(n) : full);
+		++n;
+	} while (m_saved_item_uuids.contains(uuid));
+	return uuid;
+}
+
+/**
 	@brief QETProject::init
 */
 void QETProject::init()
@@ -265,6 +358,19 @@ void QETProject::init()
 		//edit of a session goes unannounced - which is exactly the state
 		//writeBackup() must not mistake for an untouched project.
 	connect(m_undo_stack, &QUndoStack::indexChanged, this, &QETProject::markContentChanged);
+
+		//What counts as a change for writeBackup(): the undo stack moving,
+		//setModified(true), and the embedded collections, which can change
+		//without going through either.
+	const auto backup_needed = [this]() { m_backup_needed = true; markContentChanged(); };
+	connect(m_undo_stack, &QUndoStack::indexChanged, this, backup_needed);
+	connect(&m_titleblocks_collection, &TitleBlockTemplatesCollection::changed, this, backup_needed);
+	connect(&m_titleblocks_collection, &TitleBlockTemplatesCollection::aboutToRemove, this, backup_needed);
+	connect(m_elements_collection, &XmlElementCollection::elementAdded, this, backup_needed);
+	connect(m_elements_collection, &XmlElementCollection::elementChanged, this, backup_needed);
+	connect(m_elements_collection, &XmlElementCollection::elementRemoved, this, backup_needed);
+	connect(m_elements_collection, &XmlElementCollection::directorieAdded, this, backup_needed);
+	connect(m_elements_collection, &XmlElementCollection::directoryRemoved, this, backup_needed);
 
 	m_save_backup_timer.setInterval(BACKUP_INTERVAL);
 	connect(&m_save_backup_timer, &QTimer::timeout, this, &QETProject::writeBackup);
@@ -288,6 +394,38 @@ void QETProject::init()
 }
 
 /**
+	@brief QETProject::derivedUuid
+	Name-based (version 5) uuid for a project file that has no uuid yet,
+	because it was written before the uuid was persisted.
+
+	A random uuid would do as an identity, but it would make saving an
+	unmodified legacy project non-reproducible : every load would invent a
+	different one and write it out (see #754). The uuid is therefore derived
+	from the content of the file, so the same file always yields the same
+	uuid, while two different projects practically never share one.
+	Carriage returns are dropped first, so that a checkout with CRLF line
+	endings (Windows, git autocrlf) gives the same uuid as one with LF.
+
+	It is computed once, when the file is loaded, and saved from then on :
+	editing, renaming or moving the project later does not change it.
+	@param content : the raw content of the project file
+	@return the derived uuid
+*/
+QUuid QETProject::derivedUuid(const QByteArray &content)
+{
+		//Fixed namespace for QElectroTech project uuids, never change it :
+		//doing so would change the uuid given to every legacy project.
+	static const QUuid project_namespace(
+				QStringLiteral("{c8c75719-0fea-4b1c-9f4b-2dd179fb2f0c}"));
+
+	QByteArray normalized(content);
+	normalized.replace('\r', QByteArray());
+	return QUuid::createUuidV5(project_namespace,
+							   QByteArrayLiteral("qet-project-legacy\n")
+							   + normalized);
+}
+
+/**
 	@brief QETProject::openFile
 	@param file
 	@return
@@ -306,9 +444,28 @@ QETProject::ProjectState QETProject::openFile(QFile *file)
 	QFileInfo fi(*file);
 	setFilePath(fi.absoluteFilePath());
 
-		//Extract the content of the xml
+		//Extract the content of the xml. The raw bytes are kept : a project
+		//file without a persisted uuid derives its uuid from them.
+	const QByteArray content = file->readAll();
 	QDomDocument xml_project;
-	if (!xml_project.setContent(file))
+	// PreserveSpacingOnlyNodes: without it, a text node that is entirely
+	// whitespace -- e.g. a title-block custom variable deliberately set to
+	// a single space, the only way to give it a value other than blank
+	// (bugtracker #973) -- is silently dropped by Qt's default parsing,
+	// and QDomElement::text() then returns "" for it exactly as if it had
+	// never been set. Confirmed in isolation: <a> </a> parses to text()=="",
+	// this option makes it text()==" ". Every place in this codebase that
+	// walks a QDomNode's children already filters on isElement() (see
+	// QET::findInDomElement()), so the extra whitespace-only text nodes
+	// this keeps around are inert everywhere but the two elements that
+	// call .text() on themselves -- which is exactly where the bug was.
+	// The option exists since Qt 6.5; older Qt always drops such nodes,
+	// so there an all-whitespace value still reloads as "".
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+	if (!xml_project.setContent(content, QDomDocument::ParseOption::PreserveSpacingOnlyNodes))
+#else
+	if (!xml_project.setContent(content))
+#endif
 	{
 		if(opened_here) {
 			file->close();
@@ -316,6 +473,17 @@ QETProject::ProjectState QETProject::openFile(QFile *file)
 		return XmlParsingFailed;
 	}
 	const qint64 xml_parse_ms = load_timer.elapsed();
+
+		//Restore the persisted project uuid before anything else is built
+		//from the file. The project database already got its connection name
+		//from the uuid created at construction, it does not depend on this.
+	const QDomElement root_elmt = xml_project.documentElement();
+	if (root_elmt.tagName() == QLatin1String("project"))
+	{
+		const QUuid persisted_uuid(root_elmt.attribute(QStringLiteral("uuid")));
+		m_uuid = persisted_uuid.isNull() ? derivedUuid(content)
+										 : persisted_uuid;
+	}
 
 		//Build the project from the xml
 	readProjectXml(xml_project);
@@ -521,7 +689,9 @@ QString QETProject::pathNameTitle() const
 			)
 		).arg(final_title);
 	}
-	if (m_modified) {
+	// Same condition as projectWasModified(): project-options changeg (m_modified) OR the undo stack sitting away from
+	// its clean index. 
+	if (m_modified || !m_undo_stack->isClean()) {
 		final_title = QString(
 			tr(
 				"%1 [modifié]",
@@ -741,6 +911,109 @@ QString QETProject::elementCurrentAutoNum () const
 */
 void QETProject::setCurrrentElementAutonum(QString autoNum) {
 	m_current_element_autonum = std::move(autoNum);
+}
+
+/**
+	@brief QETProject::renumberElementsBySchemeTitle
+	Renumber existing elements by element autonumbering scheme title.
+
+	Elements do not store the scheme title; they store a "formula" (elementInformations["formula"]).
+	This method matches elements to schemes by comparing the stored formula with the formula derived
+	from each scheme's NumerotationContext.
+
+	If scheme_title is empty, all schemes are renumbered. Otherwise only that scheme is renumbered.
+	The operation is undoable.
+*/
+void QETProject::renumberElementsBySchemeTitle(const QString &scheme_title)
+{
+	if (!m_undo_stack) return;
+	if (isReadOnly()) return;
+
+	// Build map: scheme title -> canonical formula
+	QHash<QString, QString> scheme_formula;
+	for (const QString &k : m_element_autonum.keys()) {
+		if (!scheme_title.isEmpty() && k != scheme_title) continue;
+		scheme_formula.insert(k, autonum::numerotationContextToFormula(m_element_autonum.value(k)));
+	}
+	if (scheme_formula.isEmpty()) return;
+
+	// Collect elements per scheme by formula match
+	QHash<QString, QVector<Element*>> by_key;
+	for (Diagram *d : diagrams()) {
+		if (!d) continue;
+		const auto items = d->items();
+		for (QGraphicsItem *it : items) {
+			auto *el = qgraphicsitem_cast<Element*>(it);
+			if (!el) continue;
+			if (el->linkType() == Element::Slave || (el->linkType() & Element::AllReport))
+				continue;
+
+			const QString el_formula = el->elementInformations().value(QStringLiteral("formula")).toString();
+			if (el_formula.isEmpty()) continue;
+
+			QString matched_key;
+			for (auto itf = scheme_formula.constBegin(); itf != scheme_formula.constEnd(); ++itf) {
+				if (itf.value() == el_formula) { matched_key = itf.key(); break; }
+			}
+			if (matched_key.isEmpty()) continue;
+			by_key[matched_key].append(el);
+		}
+	}
+	if (by_key.isEmpty()) return;
+
+	QVector<RenumberElementsCommand::ElementChange> changes;
+	QHash<QString, NumerotationContext> old_ctx;
+	QHash<QString, NumerotationContext> new_ctx;
+
+	for (auto it = by_key.constBegin(); it != by_key.constEnd(); ++it) {
+		old_ctx.insert(it.key(), m_element_autonum.value(it.key()));
+	}
+
+	for (auto it = by_key.begin(); it != by_key.end(); ++it) {
+		const QString key = it.key();
+		auto &elements = it.value();
+		std::sort(elements.begin(), elements.end(), [](Element *a, Element *b){ return comparPos(a, b); });
+
+		NumerotationContext base_tmpl = m_element_autonum.value(key);
+		NumerotationContext nc = resetContextForRenumber(base_tmpl);
+		NumerotationContextCommands ncc(nc);
+
+		for (Element *el : elements) {
+			RenumberElementsCommand::ElementChange ch;
+			ch.element = el;
+			ch.old_infos = el->elementInformations();
+			ch.old_seq = el->sequenceStruct();
+			ch.old_frozen = el->isFreezeLabel();
+			ch.new_frozen = ch.old_frozen; // preserve frozen state
+
+			const QString formula = ch.old_infos.value(QStringLiteral("formula")).toString();
+			autonum::sequentialNumbers new_seq;
+			new_seq.clear();
+			autonum::setSequential(formula, new_seq, nc, el->diagram(), key);
+
+			DiagramContext new_infos = ch.old_infos;
+			new_infos.addValue(QStringLiteral("label"), autonum::AssignVariables::formulaToLabel(formula, new_seq, el->diagram(), el, nullptr));
+			ch.new_infos = new_infos;
+			ch.new_seq = new_seq;
+			changes.append(ch);
+
+			// advance
+			nc = ncc.next();
+			ncc = NumerotationContextCommands(nc);
+		}
+
+		new_ctx.insert(key, nc);
+	}
+
+	if (changes.isEmpty()) return;
+
+	auto *cmd = new RenumberElementsCommand(
+			this,
+			changes,
+			old_ctx,
+			new_ctx,
+			scheme_title.isEmpty() ? tr("Renumber elements") : tr("Renumber elements (%1)").arg(scheme_title));
+	m_undo_stack->push(cmd);
 }
 
 /**
@@ -1070,6 +1343,11 @@ QDomDocument QETProject::toXml()
 		setTitle(QFileInfo(m_file_path).completeBaseName());
 	}
 	project_root.setAttribute("title", project_title_);
+		//Persist the project identity, so that the project keeps the same
+		//uuid across save/load. Without it every load invents a new one, and
+		//nothing outside the running instance (version control, a cloud or
+		//key-value store, a lock...) can tell which project a file belongs to.
+	project_root.setAttribute(QStringLiteral("uuid"), m_uuid.toString());
 	xml_doc.appendChild(project_root);
 
 		//The IEC 81346 setting, written only when the structure is on: a
@@ -1129,7 +1407,14 @@ QDomDocument QETProject::toXml()
 	// titleblock templates, if any
 	if (m_titleblocks_collection.templates().count()) {
 		QDomElement titleblocktemplates_elmt = xml_doc.createElement("titleblocktemplates");
-		foreach (QString template_name, m_titleblocks_collection.templates()) {
+			//Sorted, because templates() returns QHash::keys() and Qt
+			//randomises hash order per process. Writing them unsorted put the
+			//<titleblocktemplate> children in a different order on every save,
+			//which is what made a project holding more than one template save
+			//irreproducibly.
+		QStringList template_names = m_titleblocks_collection.templates();
+		template_names.sort();
+		for (const QString &template_name : std::as_const(template_names)) {
 			QDomElement e = m_titleblocks_collection.getTemplateXmlDescription(template_name);
 			titleblocktemplates_elmt.appendChild(xml_doc.importNode(e, true));
 		}
@@ -1433,7 +1718,7 @@ ElementsLocation QETProject::importElement(ElementsLocation &location)
 				// Warn if the new element introduces slave contact groups
 				QDomElement new_kind = location.xml().firstChildElement("kindInformations");
 				if (!new_kind.firstChildElement("slaveContactGroups").isNull()) {
-					QMessageBox::StandardButton answer = QMessageBox::warning(nullptr,
+					QMessageBox::StandardButton answer = QET::QetMessageBox::warning(nullptr,
 						tr("Système de contacts modifié"),
 						tr("Le nouvel élément définit des groupes de contacts esclaves.\n"
 						   "Les éléments esclaves existants ne seront pas automatiquement "
@@ -1655,6 +1940,7 @@ void QETProject::diagramOrderChanged(int old_index, int new_index) {
 void QETProject::setModified(bool modified) {
 	if (modified) {
 		markContentChanged();
+		m_backup_needed = true;
 	}
 	if (m_modified != modified) {
 		m_modified = modified;
@@ -1738,6 +2024,11 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 	}
 
 	m_data_base.blockSignals(true);
+		//Blocking the signals is not enough : every table model built below
+		//re-queries the database, and each of those queries used to trigger a
+		//complete rebuild of it. The content being loaded is the same for all
+		//of them, so a single rebuild once everything is in place is enough.
+	m_data_base.setUpdateBlocked(true);
 
 		//The IEC 81346 setting, read before the folios are built because a
 		//component asks the project for it while it draws its tag. Absent
@@ -1829,6 +2120,7 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 	const qint64 refresh_ms = phase_timer.restart();
 
 	m_data_base.blockSignals(false);
+	m_data_base.setUpdateBlocked(false);
 	m_data_base.updateDB();
 	const qint64 database_ms = phase_timer.elapsed();
 
@@ -1873,6 +2165,18 @@ void QETProject::readDiagramsXml(QDomDocument &xml_project)
 
 	//Search the diagrams in the project
 	QDomNodeList diagram_nodes = xml_project.elementsByTagName(QStringLiteral("diagram"));
+
+		//Every symbol and wire uuid the file already carries, on any folio,
+		//before a folio derives one for an item saved without: see
+		//derivedItemUuid().
+	for (const QString &tag : {QStringLiteral("element"), QStringLiteral("conductor")}) {
+		const QDomNodeList nodes = xml_project.elementsByTagName(tag);
+		for (int i = 0; i < nodes.size(); ++i) {
+			const QUuid saved(nodes.at(i).toElement().attribute(QStringLiteral("uuid")));
+			if (!saved.isNull())
+				m_saved_item_uuids.insert(saved);
+		}
+	}
 
 	if(dlgWaiting)
 		dlgWaiting->setProgressBarRange(0, diagram_nodes.length()*3);
@@ -2171,7 +2475,14 @@ void QETProject::writeDefaultPropertiesXml(QDomElement &xml_element)
 
 		// export default XRef properties
 	QDomElement xrefs_elmt = xml_document.createElement("xrefs");
-	for (QString key : defaultXRefProperties().keys())
+		//Sorted, because defaultXRefProperties() is a QHash and its key order
+		//is randomised per process. Writing it unsorted made two saves of an
+		//unchanged project differ only in the order of these <xref> children,
+		//so a save was not reproducible and diffing two saved files showed
+		//spurious changes.
+	QStringList xref_keys = defaultXRefProperties().keys();
+	xref_keys.sort();
+	for (QString &key : xref_keys)
 	{
 		auto xrp = defaultXRefProperties(key);
 		xrp.setKey(key);
@@ -2185,7 +2496,12 @@ void QETProject::writeDefaultPropertiesXml(QDomElement &xml_element)
 	conductor_autonums.setAttribute("current_autonum", m_current_conductor_autonum);
 	conductor_autonums.setAttribute("freeze_new_conductors", m_freeze_new_conductors ? "true" : "false");
 	conductor_autonums.setAttribute("auto_break_conductors", m_auto_break_conductor ? "true" : "false");
-	foreach (QString key, conductorAutoNum().keys()) {
+		//Sorted for the same reason as the xrefs above: these three
+		//collections are QHash, whose key order is randomised per process,
+		//so an unsorted write reorders these children on every save.
+	QStringList conductor_autonum_keys = conductorAutoNum().keys();
+	conductor_autonum_keys.sort();
+	for (const QString &key : std::as_const(conductor_autonum_keys)) {
 	QDomElement conductor_autonum = conductorAutoNum(key).toXml(xml_document, "conductor_autonum");
 		if (key != "" && conductorAutoNumFormula(key) != "") {
 			conductor_autonum.setAttribute("title", key);
@@ -2197,7 +2513,9 @@ void QETProject::writeDefaultPropertiesXml(QDomElement &xml_element)
 
 	//Export Folio Autonums
 	QDomElement folio_autonums = xml_document.createElement("folio_autonums");
-	foreach (QString key, folioAutoNum().keys()) {
+	QStringList folio_autonum_keys = folioAutoNum().keys();
+	folio_autonum_keys.sort();
+	for (const QString &key : std::as_const(folio_autonum_keys)) {
 	QDomElement folio_autonum = folioAutoNum(key).toXml(xml_document, "folio_autonum");
 		folio_autonum.setAttribute("title", key);
 		folio_autonums.appendChild(folio_autonum);
@@ -2208,7 +2526,9 @@ void QETProject::writeDefaultPropertiesXml(QDomElement &xml_element)
 	QDomElement element_autonums = xml_document.createElement("element_autonums");
 	element_autonums.setAttribute("current_autonum", m_current_element_autonum);
 	element_autonums.setAttribute("freeze_new_elements", m_freeze_new_elements ? "true" : "false");
-	foreach (QString key, elementAutoNum().keys()) {
+	QStringList element_autonum_keys = elementAutoNum().keys();
+	element_autonum_keys.sort();
+	for (const QString &key : std::as_const(element_autonum_keys)) {
 	QDomElement element_autonum = elementAutoNum(key).toXml(xml_document, "element_autonum");
 		if (key != "" && elementAutoNumFormula(key) != "") {
 			element_autonum.setAttribute("title", key);

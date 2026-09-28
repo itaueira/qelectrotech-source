@@ -75,7 +75,7 @@ void PartText::setRotation(qreal angle) {
 	setPos(QTransform().rotate(diffAngle).map(pos()));
 }
 
-void PartText::mirror() {
+void PartText::mirror(qreal axis_x) {
 	// at first: rotate the text:
 	QGraphicsObject::setRotation(QET::correctAngle((360-rotation()), true));
 	// then see, where we need to re-position depending on text, font ...
@@ -86,12 +86,12 @@ void PartText::mirror() {
 	qreal c = qCos(qDegreesToRadians(rot));
 	qreal s = qSin(qDegreesToRadians(rot));
 	// Now: Move!
-	qreal x = (-1) * pos().x() - c * (textwidth);
+	qreal x = 2 * axis_x - pos().x() - c * (textwidth);
 	qreal y = pos().y() - s * (textwidth);
 	setPos(x, y);
 }
 
-void PartText::flip() {
+void PartText::flip(qreal axis_y) {
 	// at first: rotate the text:
 	QGraphicsObject::setRotation(QET::correctAngle((360-rotation()), true));
 	// then see, where we need to re-position depending on text, font ...
@@ -103,7 +103,7 @@ void PartText::flip() {
 	qreal s = qSin(qDegreesToRadians(rot));
 	// Now: Move!
 	qreal x = pos().x() - s * (textheight);
-	qreal y = (-1) * pos().y() + c * (textheight);
+	qreal y = 2 * axis_y - pos().y() + c * (textheight);
 	setPos(x, y);
 }
 
@@ -114,6 +114,11 @@ void PartText::flip() {
 */
 void PartText::fromXml(const QDomElement &xml_element) {
 	bool ok;
+
+	const QUuid uuid(xml_element.attribute(QStringLiteral("uuid")));
+	if (!uuid.isNull()) {
+		m_uuid = uuid;
+	}
 
 	if (xml_element.hasAttribute("size")) {
 		int font_size = xml_element.attribute("size").toInt(&ok);
@@ -169,6 +174,7 @@ const QDomElement PartText::toXml(QDomDocument &xml_document) const
 	xml_element.setAttribute("font", QETUtils::fontToString(font()));
 	xml_element.setAttribute("rotation", QString::number(rot));
 	xml_element.setAttribute("color", defaultTextColor().name());
+	xml_element.setAttribute("uuid", m_uuid.toString());
 
 		// Only written when different from the historical behaviour, so
 		// existing .elmt files round-trip byte-identical.

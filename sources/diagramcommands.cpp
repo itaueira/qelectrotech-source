@@ -19,10 +19,16 @@
 
 #include "dataBase/projectdatabase.h"
 #include "diagram.h"
+#include "itemgroups.h"
 #include "qetgraphicsitem/conductortextitem.h"
+#include "qetgraphicsitem/diagramimageitem.h"
+#include "qetgraphicsitem/dynamicelementtextitem.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/elementtextitemgroup.h"
 #include "qetproject.h"
+#include "qetgraphicsitem/independenttextitem.h"
+#include "qetgraphicsitem/qetshapeitem.h"
+#include "qetinformation.h"
 #include "qgimanager.h"
 
 /**
@@ -91,6 +97,23 @@ void PasteDiagramCommand::redo()
 	{
 		first_redo = false;
 
+		//Resolve a linked master/slave pair pasted together (bugtracker
+		//#607) before anything below renews their uuids: at this exact
+		//moment a pasted element's tmp_uuids_link still holds its
+		//source's original partner uuid, which still equals the
+		//not-yet-renewed uuid of that partner's own pasted copy if it
+		//was carried along in the same batch. Scoped to this batch only
+		//(not a project-wide search), so a pair pasted together links to
+		//each other and not to an original element left elsewhere that
+		//happens to still carry that same soon-to-be-replaced uuid. If
+		//only one half of a linked group was pasted, its link entry
+		//simply finds no match here and is dropped -- same "leave it
+		//unlinked" outcome as always.
+		const QList <Element *> elmts_list = content.m_elements;
+		for (Element *e : elmts_list) {
+			e->initLink(elmts_list);
+		}
+
 		//make new uuid for every pasted conductor, because old uuid are
 		//the uuid of the copied conductor. This is also what keeps a
 		//pasted wire out of the original cable: a cable's wire reaches
@@ -116,13 +139,77 @@ void PasteDiagramCommand::redo()
 				c -> setProperties(cp);
 			}
 		}
+		for (IndependentTextItem *t : std::as_const(content.m_text_fields)) {
+			t -> newUuid();
+		}
+		for (DiagramImageItem *i : std::as_const(content.m_images)) {
+			i -> newUuid();
+		}
+		for (QetShapeItem *s : std::as_const(content.m_shapes)) {
+			s -> newUuid();
+		}
 
 		//this is the first paste, we do some actions for the new element
-		const QList <Element *> elmts_list = content.m_elements;
 		for (Element *e : elmts_list)
 		{
 			//make new uuid, because old uuid are the uuid of the copied element
 			e -> newUuid();
+
+			// PLC slaves carry master-specific data (type, address,
+			// function, cross-ref, etc.) in their elementInformations.
+			// Always clear those on paste so the duplicate starts clean,
+			// regardless of the user's erase-label-on-copy preference.
+			const bool is_slave = (e->linkType() == Element::Slave);
+			if (is_slave) {
+				DiagramContext dc = e->elementInformations();
+				dc.remove(QETInformation::ELMT_PLC_TYPE);
+				dc.remove(QETInformation::ELMT_PLC_ADDRESS);
+				dc.remove(QETInformation::ELMT_PLC_FUNCTION);
+				dc.remove(QETInformation::ELMT_PLC_COMMENT);
+				dc.remove(QETInformation::ELMT_PLC_CROSSREF);
+				dc.remove(QETInformation::ELMT_LABEL);
+				dc.remove(QETInformation::ELMT_PLC_TC);
+				dc.remove(QETInformation::ELMT_PLC_T1);
+				dc.remove(QETInformation::ELMT_PLC_T2);
+				dc.remove(QETInformation::ELMT_PLC_T3);
+				dc.remove(QETInformation::ELMT_PLC_T4);
+				dc.remove(QStringLiteral("xref"));
+
+				// Block alignment before setElementInformations so
+				// that elementInfoChanged() resolves texts without
+				// finishAlignment() shifting right/center-aligned items.
+				for (DynamicElementTextItem *deti : e->dynamicTextItems())
+					deti->m_block_alignment = true;
+				for (auto *group : e->textGroups())
+					group->blockAlignmentUpdate(true);
+
+				e->setElementInformations(dc);
+
+				for (DynamicElementTextItem *deti : e->dynamicTextItems())
+					deti->m_block_alignment = false;
+				for (auto *group : e->textGroups())
+					group->blockAlignmentUpdate(false);
+
+				// After setElementInformations, elementInfoChanged()
+				// resolves composite text with cleaned dc.  Clear
+				// all non-UserText items directly as a safety net.
+				for (DynamicElementTextItem *deti : e->dynamicTextItems()) {
+					if (deti->textFrom() != DynamicElementTextItem::UserText) {
+						deti->m_block_alignment = true;
+						deti->setPlainText(QString());
+						deti->m_block_alignment = false;
+					}
+				}
+				for (auto *group : e->textGroups()) {
+					for (DynamicElementTextItem *deti : group->texts()) {
+						if (deti->textFrom() != DynamicElementTextItem::UserText) {
+							deti->m_block_alignment = true;
+							deti->setPlainText(QString());
+							deti->m_block_alignment = false;
+						}
+					}
+				}
+			}
 
 			if (settings.value("diagramcommands/erase-label-on-copy", true).toBool())
 			{
@@ -132,7 +219,22 @@ void PasteDiagramCommand::redo()
 				dc.addValue("label", "");
 				dc.addValue("comment", "");
 				dc.addValue("location", "");
+
+				// Block alignment during setElementInformations
+				// for non-slaves, same as Element::fromXml() (line 890-896).
+				if (!is_slave) {
+					for (DynamicElementTextItem *deti : e->dynamicTextItems())
+						deti->m_block_alignment = true;
+					for (auto *group : e->textGroups())
+						group->blockAlignmentUpdate(true);
+				}
+
 				e->setElementInformations(dc);
+
+				for (DynamicElementTextItem *deti : e->dynamicTextItems())
+					deti->m_block_alignment = false;
+				for (auto *group : e->textGroups())
+					group->blockAlignmentUpdate(false);
 			}
 		}
 
@@ -164,6 +266,27 @@ void PasteDiagramCommand::redo()
 				cp.text = "";
 				c -> setProperties(cp);
 			}
+		}
+
+			//Pasted groups become new groups: the members of one source
+			//group all get the same new uuid, never the source's, or the
+			//copy would join the original's group. After the elements got
+			//their own uuids: the database row is found by uuid, and before
+			//that it would have been the source element's row.
+		QHash<QUuid, QUuid> renewed_groups;
+		for (QGraphicsItem *item : content.items(DiagramContent::Elements
+												 | DiagramContent::TextFields
+												 | DiagramContent::Images
+												 | DiagramContent::Shapes))
+		{
+			const QUuid source_group = ItemGroups::groupOf(item);
+			if (source_group.isNull()) {
+				continue;
+			}
+			if (!renewed_groups.contains(source_group)) {
+				renewed_groups.insert(source_group, QUuid::createUuid());
+			}
+			diagram -> setItemGroup(item, renewed_groups.value(source_group));
 		}
 	}
 	else

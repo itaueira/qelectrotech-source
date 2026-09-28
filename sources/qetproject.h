@@ -46,6 +46,7 @@
 #include "environment/filediskstate.h"
 
 #include <QHash>
+#include <QSet>
 #include <QFuture>
 
 #include <atomic>
@@ -121,6 +122,7 @@ class QETProject : public QObject
 		ProjectPropertiesHandler& projectPropertiesHandler();
 		projectDataBase *dataBase();
 		QUuid uuid() const;
+		QUuid derivedItemUuid(const QString &kind, const QString &key);
 		ProjectState state() const;
 		QList<Diagram *> diagrams() const;
 		int folioIndex(const Diagram *) const;
@@ -182,6 +184,20 @@ class QETProject : public QObject
 		QString elementAutoNumCurrentFormula() const;
 		QString elementCurrentAutoNum() const;
 		void setCurrrentElementAutonum(QString autoNum);
+
+		/**
+		 * @brief Renumber existing elements by element autonumbering scheme.
+		 *
+		 * Elements do not store the scheme title but they store the corresponding formula.
+		 * This operation matches elements to schemes by comparing the stored formula
+		 * with the formula derived from the scheme's NumerotationContext.
+		 *
+		 * If @p scheme_title is empty, all schemes are renumbered.
+		 * If @p scheme_title is non-empty, only that scheme is renumbered.
+		 *
+		 * The operation is undoable.
+		 */
+		void renumberElementsBySchemeTitle(const QString &scheme_title = QString());
 
 			//Element
 		void freezeExistentElementLabel(bool freeze, int from, int to);
@@ -449,7 +465,27 @@ class QETProject : public QObject
 		void updateDiagramsTitleBlockTemplate(TitleBlockTemplatesCollection *, const QString &);
 		void removeDiagramsTitleBlockTemplate(TitleBlockTemplatesCollection *, const QString &);
 		void usedTitleBlockTemplateChanged(const QString &);
-		void undoStackChanged (bool a) {if (!a) setModified(true);}
+		/* Deliberately does NOT touch m_modified: m_modified /
+		 * setModified() track project-OPTIONS changes only (see
+		 * projectOptionsWereModified()), which have no undo
+		 * entry and so must stay set until an explicit write().
+		 * Diagram-content changes are tracked by the undo
+		 * stack's own clean index instead, and projectWasModified()
+		 * already ORs the two together -- that combined value is
+		 * what actually answers "does this project have unsaved
+		 * changes", so re-derive and broadcast it here on every
+		 * clean/dirty transition (covering, in particular, an
+		 * Undo that walks the stack back to its clean index).
+		 * Latching m_modified itself to the undo stack's dirty
+		 * state, the way this slot did before, is a one-way trap:
+		 * cleanChanged(true) would never come back through here
+		 * to un-set it, so a plain content edit stayed marked as
+		 * unsaved even after being fully undone. */
+		void undoStackChanged (bool /*a*/) {
+			emit projectModified(this, projectWasModified());
+			emit projectInformationsChanged(this);
+		}
+
 			/// Say that what toXml() would write is not what it was: see
 			/// m_content_revision and writeBackup().
 		void markContentChanged() {++m_content_revision;}
@@ -471,12 +507,15 @@ class QETProject : public QObject
 		void detachDiagram(Diagram *diagram);
 		void init();
 		ProjectState openFile(QFile *file);
+		static QUuid derivedUuid(const QByteArray &content);
 		void refresh();
 
 	// attributes
 	private:
 			/// When false, writeBackup() is a no-op (set by the headless CLI)
 		static bool m_backup_enabled;
+			/// Something changed since the last backup, see writeBackup()
+		bool m_backup_needed = true;
 			/// File path this project is saved to
 		QString m_file_path;
 		/// The file as this project last saw it, for the concurrent-save guard
@@ -555,6 +594,8 @@ class QETProject : public QObject
 			/// missing one.
 		std::atomic<quint64> m_backed_up_revision {0};
 		QUuid m_uuid = QUuid::createUuid();
+		QHash<QString, int> m_derived_uuid_keys;
+		QSet<QUuid> m_saved_item_uuids;	//symbol and wire uuids the file carries, see derivedItemUuid()
 		projectDataBase m_data_base;
 		QVector<TerminalStrip *> m_terminal_strip_vector;
 		QVector<Cable *> m_cable_vector;

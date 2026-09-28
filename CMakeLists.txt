@@ -19,7 +19,7 @@ include(cmake/hoto_update_cmake_message.cmake)
 cmake_minimum_required(VERSION 3.5...4.2)
 
 project(qelectrotech
-        VERSION 0.100.1
+        VERSION 0.200.1
         DESCRIPTION "QET is a CAD/CAE editor focusing on schematics drawing features."
         HOMEPAGE_URL "https://qelectrotech.org/"
         LANGUAGES C CXX)
@@ -28,25 +28,6 @@ include(cmake/copyright_message.cmake)
 
 set(QET_DIR ${PROJECT_SOURCE_DIR})
 
-# QT_VERSION_MAJOR is chosen explicitly by whoever configures the build,
-# via -DQT_VERSION_MAJOR=5 or -DQT_VERSION_MAJOR=6.
-# Default to Qt5 (current stable) when not specified, so existing
-# CI/scripts that don't pass this option keep working unchanged.
-# This must happen BEFORE add_subdirectory(tests) and the fetch_*.cmake
-# includes below, so every subdirectory and every FetchContent dependency
-# sees a consistent, already-defined value.
-if(NOT DEFINED QT_VERSION_MAJOR)
-    set(QT_VERSION_MAJOR 5)
-endif()
-
-# Some third-party CMake projects we pull in via FetchContent (e.g.
-# SingleApplication) don't know about QET_VERSION_MAJOR: they follow Qt's
-# own "QT_DEFAULT_MAJOR_VERSION" convention instead, and silently default
-# to Qt5 if it isn't set. Propagate our choice so they stay in sync,
-# otherwise they can end up linked against a different Qt major version
-# than the rest of QET, which breaks AUTOMOC with an
-# INTERFACE_QT_MAJOR_VERSION mismatch at generate time.
-set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR} CACHE STRING "Qt version to use (5 or 6)" FORCE)
 
 include(cmake/paths_compilation_installation.cmake)
 include(cmake/start_options.cmake)
@@ -55,6 +36,7 @@ include(cmake/git_update_submodules.cmake)
 include(cmake/git_last_commit_sha.cmake)
 include(cmake/fetch_singleapplication.cmake)
 include(cmake/fetch_pugixml.cmake)
+include(cmake/find_spacemouse.cmake)
 include(cmake/qet_compilation_vars.cmake)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -65,7 +47,7 @@ SET(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(
-    Qt${QT_VERSION_MAJOR}
+    Qt6
     COMPONENTS
     ${QET_COMPONENTS}
     REQUIRED)
@@ -76,12 +58,9 @@ find_package(
 # and only provide the implicit Qt6::GuiPrivate target created alongside
 # Qt6::Gui. Try the component quietly, then verify the target below so a
 # missing private-headers package fails here instead of at compile time.
-# Qt5 has no such component as its GuiPrivate target always exists once Gui is found.
-if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-    find_package(Qt6 QUIET COMPONENTS GuiPrivate)
-endif()
+find_package(Qt6 QUIET COMPONENTS GuiPrivate)
 
-if(QT_VERSION_MAJOR GREATER_EQUAL 6 AND NOT TARGET Qt6::GuiPrivate)
+if(NOT TARGET Qt6::GuiPrivate)
     message(FATAL_ERROR
         "Qt6::GuiPrivate was not found. It is required for PDF hyperlink "
         "support (<private/qpdf_p.h>). Install the Qt6 private headers "
@@ -98,15 +77,46 @@ endif()
 # see the QT_VERSION_CHECK / QET_HAS_QTPDF guards in diagrameventaddpdf.*
 # and pdfpagesdialog.*.
 set(QET_HAS_QTPDF FALSE)
-if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-    find_package(Qt6 QUIET COMPONENTS Pdf)
-    if(TARGET Qt6::Pdf AND NOT Qt6_VERSION VERSION_LESS 6.4.0)
-        set(QET_HAS_QTPDF TRUE)
-        list(APPEND QET_PRIVATE_LIBRARIES Qt::Pdf)
-        add_compile_definitions(QET_HAS_QTPDF)
-    else()
-        message(STATUS "QtPdf module not available (or Qt < 6.4): PDF page import feature disabled")
-    endif()
+find_package(Qt6 QUIET COMPONENTS Pdf)
+if(TARGET Qt6::Pdf AND NOT Qt6_VERSION VERSION_LESS 6.4.0)
+    set(QET_HAS_QTPDF TRUE)
+    list(APPEND QET_PRIVATE_LIBRARIES Qt::Pdf)
+    add_compile_definitions(QET_HAS_QTPDF)
+else()
+    message(STATUS "QtPdf module not available (or Qt < 6.4): PDF page import feature disabled")
+endif()
+
+# JavaScript scripting (bugtracker #162: `--run script.js`, and later a
+# "Run Script..." menu action) needs QJSEngine, in the Qml module. As with
+# QtPdf above, this is not fatal when missing: some minimal Qt6 packagings
+# may not ship it, and scripting is optional functionality nothing else in
+# the application depends on. When it's missing the feature is silently
+# disabled - see the QET_HAS_SCRIPTING guard in qetscripting.*.
+set(QET_HAS_SCRIPTING FALSE)
+find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS Qml)
+if(TARGET Qt${QT_VERSION_MAJOR}::Qml)
+    set(QET_HAS_SCRIPTING TRUE)
+    list(APPEND QET_PRIVATE_LIBRARIES Qt::Qml)
+    add_compile_definitions(QET_HAS_SCRIPTING)
+else()
+    message(STATUS "Qt Qml module not available: JavaScript scripting (--run) disabled")
+endif()
+
+# The crash handler writes a backtrace into the dump. Detecting this with
+# __has_include(<execinfo.h>) is not enough: the header is present on FreeBSD
+# too, but backtrace() lives in a separate libexecinfo there, so the compile
+# succeeds and the link fails. FindBacktrace resolves both the header and
+# whichever library actually provides the symbol, so gate on it instead - see
+# the QET_CRASH_BACKTRACE guard in sources/logging/crashhandler.cpp.
+find_package(Backtrace QUIET)
+if(Backtrace_FOUND)
+    list(APPEND QET_PRIVATE_LIBRARIES ${Backtrace_LIBRARIES})
+    include_directories(${Backtrace_INCLUDE_DIRS})
+    add_compile_definitions(QET_CRASH_BACKTRACE)
+else()
+    message(STATUS
+        "backtrace() not available: crash dumps will carry the log ring "
+        "without a backtrace")
 endif()
 
 find_package(SQLite3 REQUIRED)
@@ -123,11 +133,6 @@ endif()
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${QET_DIR}/sources/ui)
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    set(KF_MAJOR_VERSION 6)
-else()
-    set(KF_MAJOR_VERSION 5)
-endif()
 include(cmake/fetch_kdeaddons.cmake)
 
 # Add sub directories
@@ -170,6 +175,7 @@ list(REMOVE_ITEM QET_CORE_SRC_FILES ${QET_DIR}/sources/main.cpp)
 add_library(qet_core OBJECT
     ${QET_CORE_SRC_FILES}
     ${QET_DIR}/qelectrotech.qrc
+    ${QET_DIR}/ico/icon-themes.qrc
 )
 
 # On Windows, WIN32 sets /SUBSYSTEM:WINDOWS to suppress the console window.
@@ -199,8 +205,30 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE qet_core)
 
+if(QET_SPACEMOUSE_BACKEND_SPNAV_ENABLED)
+    list(APPEND QET_SPACEMOUSE_LIBRARIES PkgConfig::SPNAV)
+endif()
+if(QET_SPACEMOUSE_BACKEND_HID_ENABLED)
+    list(APPEND QET_SPACEMOUSE_LIBRARIES PkgConfig::HIDAPI)
+endif()
+
 if(APPLE)
-    set_target_properties(${PROJECT_NAME} PROPERTIES MACOSX_BUNDLE TRUE)
+    # CFBundleIdentifier must not be empty. CMake's default Info.plist
+    # template fills it from MACOSX_BUNDLE_GUI_IDENTIFIER; with that unset
+    # the bundle ships an empty identifier, LaunchServices never registers
+    # the .app, and AppKit's open/save panel service (which is keyed on the
+    # client's bundle id) silently presents nothing -- every
+    # QFileDialog::getOpenFileName()/getSaveFileName() call returns an empty
+    # string without a panel ever appearing, so File > Open and File > Save
+    # as do nothing at all.
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER "org.qelectrotech.QElectroTech"
+        MACOSX_BUNDLE_BUNDLE_NAME "QElectroTech"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_COPYRIGHT "Copyright 2006-2026 The QElectroTech Team"
+    )
 endif()
 
 # The default build only compiles the tracked .ts files to .qm (lrelease).
@@ -211,76 +239,21 @@ endif()
 # fail with "Premature end of document".
 set_source_files_properties(
     ${TS_FILES}
-    PROPERTIES OUTPUT_LOCATION "${QET_DIR}/lang"
+    PROPERTIES OUTPUT_LOCATION "lang"
 )
-if(QT_VERSION_MAJOR EQUAL 6)
-    if(Qt6_VERSION VERSION_LESS "6.2")
-        # Qt 6.0–6.1
-        qt6_add_translation(QM_FILES ${TS_FILES})
+if(Qt6_VERSION VERSION_LESS "6.2")
+    # Qt 6.0–6.1
+    qt6_add_translation(QM_FILES ${TS_FILES})
 
-        # qt6_add_translation() only creates custom commands. Something must
-        # depend on their outputs for them to run during the default build.
-        add_custom_target(${PROJECT_NAME}_lrelease ALL
-            DEPENDS ${QM_FILES}
-        )
-
-        add_custom_target(update_translations
-            COMMAND
-                $<TARGET_FILE:Qt6::lupdate>
-                "${CMAKE_SOURCE_DIR}/sources"
-                -ts ${TS_FILES}
-            WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-            COMMENT
-                "Updating .ts files from sources/ (lupdate) - developer target"
-            VERBATIM
-        )
-
-    elseif(Qt6_VERSION VERSION_LESS "6.7")
-        # Qt 6.2–6.6: old target-based signature
-        qt_add_lrelease(
-            ${PROJECT_NAME}
-            TS_FILES ${TS_FILES}
-            QM_FILES_OUTPUT_VARIABLE QM_FILES
-        )
-
-        # Automatically creates the update_translations umbrella target.
-        # qet_core, not the executable: lupdate scans the sources of the target
-        # it is given, and the sources moved.
-        qt_add_lupdate(
-            qet_core
-            TS_FILES ${TS_FILES}
-        )
-
-    else()
-        # Qt 6.7+: new signature
-        qt_add_lrelease(
-            TS_FILES ${TS_FILES}
-            LRELEASE_TARGET ${PROJECT_NAME}_lrelease
-            QM_FILES_OUTPUT_VARIABLE QM_FILES
-        )
-
-        # qet_core, not the executable: that is where the sources are now.
-        qt_add_lupdate(
-            SOURCE_TARGETS qet_core
-            TS_FILES ${TS_FILES}
-            LUPDATE_TARGET update_translations
-            NO_GLOBAL_TARGET
-        )
-    endif()
-
-else()
-    # Qt 5
-    qt5_add_translation(QM_FILES ${TS_FILES})
-
-    # Likewise, qt5_add_translation() needs a target depending on its outputs,
-    # unless QM_FILES are already consumed elsewhere.
+    # qt6_add_translation() only creates custom commands. Something must
+    # depend on their outputs for them to run during the default build.
     add_custom_target(${PROJECT_NAME}_lrelease ALL
         DEPENDS ${QM_FILES}
     )
 
     add_custom_target(update_translations
         COMMAND
-            $<TARGET_FILE:Qt5::lupdate>
+            $<TARGET_FILE:Qt6::lupdate>
             "${CMAKE_SOURCE_DIR}/sources"
             -ts ${TS_FILES}
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
@@ -288,7 +261,40 @@ else()
             "Updating .ts files from sources/ (lupdate) - developer target"
         VERBATIM
     )
+
+elseif(Qt6_VERSION VERSION_LESS "6.7")
+    # Qt 6.2–6.6: old target-based signature
+    qt_add_lrelease(
+        ${PROJECT_NAME}
+        TS_FILES ${TS_FILES}
+        QM_FILES_OUTPUT_VARIABLE QM_FILES
+    )
+
+    # Automatically creates the update_translations umbrella target.
+    # qet_core, not the executable: lupdate scans the sources of the target it
+    # is given, and in this fork the executable holds only main.cpp.
+    qt_add_lupdate(
+        qet_core
+        TS_FILES ${TS_FILES}
+    )
+
+else()
+    # Qt 6.7+: new signature
+    qt_add_lrelease(
+        TS_FILES ${TS_FILES}
+        LRELEASE_TARGET ${PROJECT_NAME}_lrelease
+        QM_FILES_OUTPUT_VARIABLE QM_FILES
+    )
+
+    qt_add_lupdate(
+        # qet_core, not the executable: that is where the sources are.
+        SOURCE_TARGETS qet_core
+        TS_FILES ${TS_FILES}
+        LUPDATE_TARGET update_translations
+        NO_GLOBAL_TARGET
+    )
 endif()
+
 
 # Optional precompiled headers -- see QET_ENABLE_PCH in
 # cmake/developer_options.cmake for what this trades away.
@@ -330,6 +336,7 @@ target_link_libraries(
     SQLite3::SQLite3
     ${KF_PRIVATE_LIBRARIES}
     ${QET_PRIVATE_LIBRARIES}
+    ${QET_SPACEMOUSE_LIBRARIES}
 )
 
 target_include_directories(
@@ -361,12 +368,12 @@ target_include_directories(
     ${QET_DIR}/sources/NameList
     ${QET_DIR}/sources/NameList/ui
     ${QET_DIR}/sources/utils
-    ${QET_DIR}/pugixml/src
     ${QET_DIR}/sources/dataBase
     ${QET_DIR}/sources/dataBase/ui
     ${QET_DIR}/sources/factory/ui
     ${QET_DIR}/sources/print
     ${QET_DIR}/sources/svg
+    ${QET_DIR}/sources/materiallist
 )
 
 if(NOT BUILD_WITH_KF)

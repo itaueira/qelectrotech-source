@@ -47,10 +47,11 @@ FreeTerminalEditor::FreeTerminalEditor(QETProject *project, QWidget *parent) :
         connect(m_project, &QObject::destroyed, this, &FreeTerminalEditor::reload);
     }
 
-		//Disabled the move if the table is currently edited (yellow cell)
-	connect(m_model, &FreeTerminalModel::dataChanged, this, [=] {
-		this->setDisabledMove();
-	});
+		//Disable the move button while cells are edited (yellow), re-evaluate on every change
+	connect(m_model, &FreeTerminalModel::dataChanged, this, &FreeTerminalEditor::selectionChanged);
+
+	connect(ui->m_table_view->selectionModel(), &QItemSelectionModel::selectionChanged,
+			this, &FreeTerminalEditor::selectionChanged);
 
 	connect(ui->m_table_view, &QAbstractItemView::doubleClicked, this, [=](const QModelIndex &index)
 	{
@@ -103,7 +104,7 @@ void FreeTerminalEditor::reload()
 			QString str(strip->installation() + " " + strip->location() + " " + strip->name());
 			ui->m_move_in_cb->addItem(str, strip->uuid());
 		}
-		setDisabledMove(false);
+		selectionChanged();
 	}
 }
 
@@ -296,6 +297,13 @@ void FreeTerminalEditor::on_m_move_pb_clicked()
 							  ui->m_move_in_cb->currentText()));
 
 	reload();
+}
+
+void FreeTerminalEditor::selectionChanged()
+{
+	const bool has_selection = !ui->m_table_view->selectionModel()->selectedIndexes().isEmpty();
+	const bool has_pending   = !m_model->modifiedModelRealTerminalData().isEmpty();
+	setDisabledMove(!has_selection || has_pending);
 }
 
 void FreeTerminalEditor::setDisabledMove(bool b)

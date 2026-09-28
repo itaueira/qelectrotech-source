@@ -125,6 +125,10 @@ void CableWire::setConductor(Conductor *conductor)
 	m_conductor_uuid = conductor->uuid();
 	m_conductor = conductor;
 	m_state = Occupied;
+
+	//From here the wire names this conductor by uuid, so the uuid has to
+	//survive the save. See Conductor::persistUuid().
+	conductor->persistUuid();
 }
 
 Conductor *CableWire::conductor() const

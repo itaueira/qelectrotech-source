@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../qetgraphicsitem/terminal.h"
+#include "../qet.h"
 #include "../qetproject.h"
 #include "../TerminalStrip/terminalstrip.h"
 #include "../TerminalStrip/ui/terminalstripeditorwindow.h"
@@ -32,6 +33,7 @@
 #include "../qetgraphicsitem/terminalelement.h"
 #include "conductortextitem.h"
 
+#include <QtCore/qnumeric.h>
 #include <utility>
 
 QColor Terminal::neutralColor      = QColor(Qt::blue);
@@ -92,7 +94,12 @@ Terminal::Terminal(TerminalData* data, Element* e) :
  * Destruction of the terminal, and also docked conductor
  */
 Terminal::~Terminal() {
-	qDeleteAll(m_conductors_list);
+	// Each conductor's destructor calls removeConductor() on both its
+	// terminals, which mutates m_conductors_list while qDeleteAll() is
+	// still iterating it. Delete from a snapshot so the live list can
+	// change underneath without affecting the iteration.
+	const QList<Conductor *> conductors_to_delete = m_conductors_list;
+	qDeleteAll(conductors_to_delete);
 	delete d;
 }
 
@@ -809,13 +816,17 @@ bool Terminal::valideXml(QDomElement &terminal)
 	if (!terminal.hasAttribute("orientation")) return(false);
 
 	bool conv_ok;
+		//QString::toDouble() accepts "nan"/"inf"/"-inf" and reports a
+		//successful conversion for them, so conv_ok alone doesn't reject a
+		//non-finite coordinate -- see the matching comment in
+		//Element::valideXml().
 	// parse l'abscisse
-	terminal.attribute("x").toDouble(&conv_ok);
-	if (!conv_ok) return(false);
+	double x = terminal.attribute("x").toDouble(&conv_ok);
+	if (!conv_ok || !qIsFinite(x)) return(false);
 
 	// parse l'ordonnee
-	terminal.attribute("y").toDouble(&conv_ok);
-	if (!conv_ok) return(false);
+	double y = terminal.attribute("y").toDouble(&conv_ok);
+	if (!conv_ok || !qIsFinite(y)) return(false);
 
 	// parse l'id
 	terminal.attribute("id").toInt(&conv_ok);
@@ -1126,7 +1137,7 @@ QList<Terminal *> relatedPotentialTerminal (
 	else if (terminal -> parentElement() -> linkType() & Element::Terminale)
 	{
 		// English: Check if the user activated the potential isolation checkbox for this terminal
-		if (terminal->parentElement()->elementInformations().value(QStringLiteral("potential_isolating")).toString() == QLatin1String("true")) {
+		if (QET::infoFlagIsTrue(terminal->parentElement()->elementInformations().value(QStringLiteral("potential_isolating")).toString())) {
 			// English: Potential is isolated. Return an empty list so it does not propagate to the other side.
 			return QList<Terminal *>();
 		}

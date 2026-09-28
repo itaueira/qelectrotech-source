@@ -80,7 +80,20 @@ class Conductor : public QGraphicsObject
 		Diagram *diagram() const;
 		ConductorTextItem *textItem() const;
 		QUuid uuid() const {return m_uuid;}
-		void newUuid() {m_uuid = QUuid::createUuid();}	//create new uuid for this conductor
+		void newUuid() {m_uuid = QUuid::createUuid(); m_persist_uuid = true;}	//create new uuid for this conductor
+		/**
+		@brief persistUuid
+		Say that this conductor identity has to reach the file.
+
+		fromXml() clears m_persist_uuid for a project whose conductors carry
+		no uuid, so that a legacy file is not rewritten with a fresh random
+		one on every load-and-resave (#754). That is right for a conductor
+		nobody names -- and wrong for one a cable wire points at, because
+		the wire records the conductor by uuid: dropped from the file, the
+		conductor comes back with a different identity and the wire that
+		named it is orphaned. Whoever writes the reference says so here.
+		*/
+		void persistUuid() {m_persist_uuid = true;}
 		void updatePath(const QRectF & = QRectF());
 
 		//This method do nothing, it's only made to be used with Q_PROPERTY
@@ -115,6 +128,7 @@ class Conductor : public QGraphicsObject
 	public:
 		QVector <QPointF> handlerPoints() const;
 		const QList<ConductorSegment *> segmentsList() const;
+		bool moveSegment(int index, qreal dx, qreal dy);
 
 		void setPropertyToPotential(
 				const ConductorProperties &property,
@@ -224,6 +238,10 @@ class Conductor : public QGraphicsObject
 		bool m_valid;
 		bool m_freeze_label = false;
 		QUuid m_uuid;
+			/// false when m_uuid was synthesized by fromXml() because the
+			/// file had none -- toXml() must not persist that value, or
+			/// every reload mints and saves a new random one (see #754).
+		bool m_persist_uuid = true;
 
 			/// QPen et QBrush objects used to draw conductors
 		static QPen conductor_pen;

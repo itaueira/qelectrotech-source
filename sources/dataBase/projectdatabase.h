@@ -31,6 +31,9 @@
 #include <QSqlQuery>
 #include <QPointer>
 #include <QFileDialog>
+#include <QHash>
+#include <QSet>
+#include <QUuid>
 
 class Element;
 class QETProject;
@@ -38,7 +41,7 @@ class Diagram;
 class Conductor;
 class ConductorProperties;
 class Terminal;
-class sqlite3;
+class QGraphicsItem;
 
 /**
 	@brief The projectDataBase class
@@ -56,8 +59,42 @@ class projectDataBase : public QObject
 		virtual ~projectDataBase() override;
 
 		void updateDB();
+			/**
+				Suppress the full rebuild performed by updateDB().
+
+				While blocked, updateDB() returns immediately instead of
+				repopulating every table. Meant for bulk operations -- notably
+				loading a project, where each table model re-queries the
+				database as it is built and would otherwise trigger one
+				complete rebuild of it. The caller unblocks and calls
+				updateDB() once when done; @see QETProject::readProjectXml().
+			*/
+		void setUpdateBlocked(bool blocked);
 		QETProject *project() const;
-		QSqlQuery newQuery(const QString &query = QString());
+		QSqlQuery newQuery(const QString &query = QString(), QString *error = nullptr);
+		static bool isReadOnlySelect(const QString &query, QString *error = nullptr);
+
+			/**
+				The most rows any caller reads out of one query result.
+
+				A SELECT is not bounded by how much data the project holds:
+				SQLite produces rows lazily, so a query that never stops
+				producing them makes the loop that reads them never stop
+				either. A recursive CTE does exactly that in one line, and
+				a <graphics_table>'s <query> is stored in the .qet and run
+				on load -- so the text can arrive from a file rather than
+				from the person at the keyboard, and opening that file is
+				the whole attack.
+
+				100000 is far above any real result: the largest table in
+				the shipped examples is 396 rows. It is a backstop, not a
+				page size -- a caller that hits it has almost certainly
+				been handed something it should not run to completion, and
+				says so rather than truncating quietly.
+			*/
+		static constexpr int MaxResultRows = 100000;
+		QSqlDatabase database() const {return m_data_base;}
+		int excludedConductorCount() const;
 
 		/**
 			@brief How many components the parts list withholds because
@@ -171,10 +208,18 @@ class projectDataBase : public QObject
 			private:
 				QPointer<projectDataBase> m_data_base;
 		};
+			//Shapes, independent texts and images: the folio's drawing
+			//furniture. Anything else passed here is ignored.
+		void addDrawingItem     (QGraphicsItem *item);
+		void removeDrawingItem  (QGraphicsItem *item);
+		void itemGroupChanged   (QGraphicsItem *item);
 
 	private slots:
 			//Refresh the sender()'s row after Conductor::setProperties().
 		void conductorPropertiesChanged();
+			//Queue the sender()'s drawing-item row for rewriting.
+		void drawingItemChanged();
+		void drawingItemDestroyed(QObject *object);
 
 	public:
 
@@ -190,6 +235,8 @@ class projectDataBase : public QObject
 		void createElementNomenclatureView();
 		void createElementLabelView();
 		void createSummaryView();
+		void createWiringListView();
+		void createDrawingItemView();
 		void populateDiagramTable();
 		void populateElementTable();
 		void populateElementInfoTable();
@@ -197,6 +244,10 @@ class projectDataBase : public QObject
 		void populateConductorTable();
 		static void bindElementValues(QSqlQuery &query, Element *element, Diagram *diagram);
 		static void bindElementInfoValues(QSqlQuery &query, Element *element);
+		void populateDrawingItemTables();
+		bool writeDrawingItem(QObject *object);
+		void flushDrawingItems();
+		void forgetDrawingItem(QObject *object);
 		void bindConductorValues(QSqlQuery &query, Conductor *conductor, Diagram *diagram);
 		/**
 			Bind the columns of the conductor table that can change while
@@ -220,10 +271,17 @@ class projectDataBase : public QObject
 
 	private:
 		QPointer<QETProject> m_project;
+		bool m_update_blocked = false;
+			//Starts true : the database is empty until the first rebuild.
+			//Set by every method of this class that writes rows, cleared by
+			//updateDB(). Callers reach the database from outside only through
+			//newQuery(), and every such call site reads.
+		bool m_content_changed = true;
 		QSqlDatabase m_data_base;
 		QSqlQuery m_insert_elements_query,
 				  m_insert_element_info_query,
 				  m_remove_element_query,
+				  m_remove_element_info_query,
 				  m_update_element_query,
 				  m_insert_diagram_query,
 				  m_remove_diagram_query,
@@ -234,14 +292,30 @@ class projectDataBase : public QObject
 				  m_insert_terminal_query,
 				  m_insert_conductor_query,
 				  m_update_conductor_query,
-				  m_remove_conductor_query;
+				  m_remove_conductor_query,
+				  m_cascade_remove_element_info_query,
+				  m_cascade_remove_terminal_query,
+				  m_cascade_remove_conductor_query,
+				  m_cascade_remove_element_query,
+				  m_insert_shape_query,
+				  m_insert_independent_text_query,
+				  m_insert_image_query;
+
+			//Which uuid's row each drawing item last wrote, and which item
+			//wrote each row. A pasted copy is added to the folio still
+			//carrying its source's uuid and renewed only afterwards, so two
+			//live items can briefly share one: the row belongs to whichever
+			//wrote it, and the other waits in m_dirty_drawing_items until its
+			//uuid is its own. @see writeDrawingItem().
+		QHash<QObject *, QUuid> m_drawing_item_row;
+		QHash<QUuid, QObject *> m_drawing_row_owner;
+		QSet<QObject *> m_dirty_drawing_items;
 
 		/// Whether a change is announced now or held until the gesture ends.
 		UpdateCoalescer m_coalescer;
 
 #ifdef QET_EXPORT_PROJECT_DB
 	public:
-		static sqlite3 *sqliteHandle(QSqlDatabase *db);
 		static void exportDb(projectDataBase *db,
 				     QWidget *parent = nullptr,
 				     const QString &caption = QString(),

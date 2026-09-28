@@ -17,6 +17,9 @@
 */
 #include "projectdbmodel.h"
 
+#include <algorithm>
+
+#include "../../dataBase/legacyelementtypes.h"
 #include "../../dataBase/projectdatabase.h"
 #include "../../diagram.h"
 #include "../../qetapp.h"
@@ -664,7 +667,13 @@ QDomElement ProjectDBModel::toXml(QDomDocument &document) const
 		//We save all data except the display role, because he was generated in the fly
 		auto list = m_header_data.value(key).keys();
 		list.removeAll(Qt::DisplayRole);
-		
+			//Sorted: m_header_data's inner container is a QHash too, so its
+			//key order is randomised per process. modelHeaderDataToXml()
+			//writes the roles of a section in the order given here, so an
+			//unsorted list reordered the <data> children of that section on
+			//every save and kept the save irreproducible.
+		std::sort(list.begin(), list.end());
+
 		horizontal_.insert(key, list);
 	}
 	
@@ -684,7 +693,9 @@ void ProjectDBModel::fromXml(const QDomElement &element)
 		return;
 	
 	setIdentifier(element.firstChildElement("identifier").text());
-	setQuery(element.firstChildElement("query").text());
+		//A query saved before June 2022 names element types the old way
+	setQuery(LegacyElementTypes::upgradeQuery(
+				 element.firstChildElement("query").text()));
 	
 	//Index 0,0
 	auto index_00 = element.firstChildElement("index00");
@@ -850,6 +861,21 @@ void ProjectDBModel::fillValue()
 
 	while (query_.next())
 	{
+		//This query text comes out of the project file, so its result is
+		//not bounded by anything the project actually contains: a
+		//recursive CTE produces rows for as long as anyone reads them.
+		//Without this, opening such a file hangs QElectroTech at 100% CPU
+		//while m_record grows until memory runs out. @see
+		//projectDataBase::MaxResultRows.
+		if (m_record.size() >= projectDataBase::MaxResultRows) {
+			qWarning().noquote()
+				<< "ProjectDBModel: query stopped after"
+				<< projectDataBase::MaxResultRows
+				<< "rows, which is far more than a folio table can show."
+				<< "The table is incomplete. Query:" << m_query;
+			break;
+		}
+
 		QStringList record_;
 		QStringList identity_;
 			//One value per column of the query, so that a row can

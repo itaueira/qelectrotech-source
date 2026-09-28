@@ -17,10 +17,10 @@
 */
 #include "elementpropertieseditorwidget.h"
 
+#include "../../qet.h"
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
 #include "ui_elementpropertieseditorwidget.h"
-#include "../../qetinformation.h"
 
 #include <QItemDelegate>
 #include <QComboBox>
@@ -45,6 +45,7 @@
 #include <QSplitter>
 #include <QShortcut>
 #include <QMenu>
+#include <QRegularExpressionValidator>
 
 /**
 	@brief The EditorDelegate class
@@ -64,9 +65,20 @@ class EditorDelegate : public QItemDelegate
 	{
 		if(index.column() == 1)
 		{
-			return QItemDelegate::createEditor(parent,
-							   option,
-							   index);
+			const QString key = index.sibling(index.row(), 0)
+									.data(Qt::UserRole).toString();
+
+			if (key == QETInformation::ELMT_WIDTH || key == QETInformation::ELMT_HEIGHT || key == QETInformation::ELMT_DEPTH)
+			{
+				auto *line_edit = new QLineEdit(parent);
+				auto *validator = new QETInformation::NumericInfoValidator(line_edit);
+				line_edit->setValidator(validator);
+				line_edit->setPlaceholderText(tr("ex. 80.5"));
+				line_edit->setToolTip(tr("Nombre décimal avec un point comme séparateur (ex. 80.5)"));
+				return line_edit;
+			}
+
+			return QItemDelegate::createEditor(parent, option, index);
 		}
 		return nullptr;
 	}
@@ -171,7 +183,16 @@ void ElementPropertiesEditorWidget::upDateInterface()
 		ui->m_terminal_func_cb->setCurrentIndex(
 					ui->m_terminal_func_cb->findData(
 						m_data.m_terminal_function));
+
+		const DiagramContext &info = m_data.m_informations;
+		ui->m_auto_num_locked_cb->setChecked(
+			QET::infoFlagIsTrue(info.value(QStringLiteral("auto_num_locked")).toString()));
+		ui->m_potential_isolating_cb->setChecked(
+			QET::infoFlagIsTrue(info.value(QStringLiteral("potential_isolating")).toString()));
 	}
+
+	ui->m_exclude_from_bom_cb->setChecked(
+		QET::infoFlagIsTrue(m_data.m_informations.value(QStringLiteral("exclude_from_bom")).toString()));
 
 	on_m_base_type_cb_currentIndexChanged(ui->m_base_type_cb->currentIndex());
 }
@@ -292,7 +313,7 @@ void ElementPropertiesEditorWidget::updateTree()
 			ui->m_tree->setEnabled(true);
 			break;
 		case ElementData::Slave:
-			ui->m_tree->setDisabled(true);
+			ui->m_tree->setEnabled(true);
 			break;
 		case ElementData::Terminal:
 			ui->m_tree->setEnabled(true);
@@ -366,12 +387,12 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 			m_data.m_slave_type  = ui->m_type_cb->currentData().value<ElementData::SlaveType>();
 		}
 		m_data.m_contact_count = ui->m_number_ctc->value();
-	}
-		else if (m_data.m_type == ElementData::Master) {
+	} else if (m_data.m_type == ElementData::Master)
+	{
 		m_data.m_master_type = ui->m_master_type_cb->currentData().value<ElementData::MasterType>();
 
 		//If the checkbox is checked, save the number; otherwise, -1 (infinity)
-		if (ui->max_slaves_checkbox->isVisible() && ui->max_slaves_checkbox->isChecked()) {
+		if ((m_data.m_master_type == ElementData::Coil || m_data.m_master_type == ElementData::Protection || m_data.m_master_type == ElementData::Commutator) && ui->max_slaves_checkbox->isChecked()) {
 			m_data.m_max_slaves = ui->max_slaves_spinbox->value();
 		} else {
 			m_data.m_max_slaves = -1;
@@ -382,13 +403,12 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 		} else {
 			readSlaveGroupsFromTable();
 		}
-	}
-	else if (m_data.m_type == ElementData::Terminal)
+	} else if (m_data.m_type == ElementData::Terminal)
 	{
 		m_data.m_terminal_type = ui->m_terminal_type_cb->currentData().value<ElementData::TerminalType>();
 		m_data.m_terminal_function = ui->m_terminal_func_cb->currentData().value<ElementData::TerminalFunction>();
 	}
-	
+
 	for (QTreeWidgetItem *qtwi : ui->m_tree->invisibleRootItem()->takeChildren())
 	{
 		QString txt = qtwi->text(1);
@@ -399,7 +419,25 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 		m_data.m_informations.addValue(qtwi->data(0, Qt::UserRole).toString(),
 									   txt);
 	}
-	
+
+	if (m_data.m_type == ElementData::Terminal)
+	{
+		if (ui->m_auto_num_locked_cb->isChecked())
+			m_data.m_informations.addValue(QStringLiteral("auto_num_locked"), QStringLiteral("true"));
+		else
+			m_data.m_informations.remove(QStringLiteral("auto_num_locked"));
+
+		if (ui->m_potential_isolating_cb->isChecked())
+			m_data.m_informations.addValue(QStringLiteral("potential_isolating"), QStringLiteral("true"));
+		else
+			m_data.m_informations.remove(QStringLiteral("potential_isolating"));
+	}
+
+	if (ui->m_exclude_from_bom_cb->isChecked())
+		m_data.m_informations.addValue(QStringLiteral("exclude_from_bom"), QStringLiteral("true"));
+	else
+		m_data.m_informations.remove(QStringLiteral("exclude_from_bom"));
+
 	this->close();
 }
 
@@ -423,9 +461,16 @@ void ElementPropertiesEditorWidget::on_m_base_type_cb_currentIndexChanged(int in
 	ui->m_master_gb->setVisible(master);
 	ui->m_terminal_gb->setVisible(terminal);
 
+		//Every base type whose tree updateTree() enables and whose data
+		//ElementScene::toXml() writes. These three checks were never
+		//reconciled, which is how Terminal and Thumbnail ended up with a
+		//working tree and write path behind a hidden tab.
 	ui->tabWidget->setTabVisible(1,
 								 (type_ == ElementData::Simple ||
-								  type_ == ElementData::Master));
+								  type_ == ElementData::Master ||
+								  type_ == ElementData::Slave ||
+								  type_ == ElementData::Terminal ||
+								  type_ == ElementData::Thumbnail));
 
 	updateTree();
 }
@@ -543,6 +588,29 @@ void ElementPropertiesEditorWidget::populateSlaveGroupsTable()
 		contact_ct->setMaximum(20);
 		contact_ct->setValue(group.contactCount);
 		ui->m_slave_groups_table->setCellWidget(i, 2, contact_ct);
+
+		// When the contact count changes, keep the terminal count in step
+		// with it, otherwise the two drift apart (both are edited
+		// independently): the stored terminals-per-contact ratio is kept,
+		// or the contact type default (2, 3 for a switch) is used when the
+		// stored values don't divide evenly (inconsistent legacy data).
+		const int old_contacts = group.contactCount;
+		const int old_terminals = group.terminalCount;
+		connect(contact_ct, QOverload<int>::of(&QSpinBox::valueChanged),
+			this, [this, i, old_contacts, old_terminals](int val) {
+				if (i < m_data.m_slave_contact_groups.size()) {
+					readSlaveGroupsFromTable();
+					auto &group = m_data.m_slave_contact_groups[i];
+					int per_pole = old_terminals / qMax(1, old_contacts);
+					if (per_pole < 1 || old_terminals % qMax(1, old_contacts) != 0)
+						per_pole = group.type == ElementData::SW ? 3 : 2;
+					else if (group.type == ElementData::SW && per_pole < 3)
+						per_pole = 3; //a switch needs common, NC and NO
+					group.contactCount = val;
+					group.terminalCount = val * per_pole;
+					populateSlaveGroupsTable();
+				}
+		});
 
 		// Terminal count
 		auto *terminal_ct = new QSpinBox(ui->m_slave_groups_table);

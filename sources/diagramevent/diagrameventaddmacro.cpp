@@ -22,6 +22,7 @@
 #include <QStatusBar>
 #include <QPainter>
 #include <QTimer>
+#include <QSettings>
 
 /**
 	@brief DiagramEventAddMacro::DiagramEventAddMacro
@@ -86,6 +87,7 @@ void DiagramEventAddMacro::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
 	if (m_preview_item) {
 		const auto pos_{Diagram::snapToGrid(event->scenePos())};
+
 		m_preview_item->setPos(pos_);
 
 		if (m_status_bar) {

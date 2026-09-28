@@ -40,46 +40,13 @@ if(NOT DEFINED QET_COMPONENTS)
   message(".. QET_COMPONENTS is not set !!! I set them up !!!")
   include(../../cmake/qet_compilation_vars.cmake)
 endif()
-if(NOT DEFINED QT_VERSION_MAJOR)
-  find_package(
-    QT
-   NAMES
-    Qt6
-    Qt5
-   COMPONENTS
-    ${QET_COMPONENTS}
-   REQUIRED
-   )
-endif()
-message(".. QT_VERSION_MAJOR   :" ${QT_VERSION_MAJOR})
 
 find_package(
-  Qt${QT_VERSION_MAJOR}
+ Qt6
  COMPONENTS
  ${QET_COMPONENTS}
  REQUIRED)
 
-# Qt6-only: the tests link ${QET_PRIVATE_LIBRARIES}, which contains
-# Qt::GuiPrivate; Qt6 only creates that target when the component is
-# explicitly requested (Qt5 creates it implicitly and has no such package).
-#
-# Asked with QUIET and checked by target, which is what the root CMakeLists
-# already does for the same question -- and the reason the root configured
-# fine on a runner where this line did not.  Some distributions (Ubuntu
-# 24.04 among them) create the Qt6::GuiPrivate target alongside Gui without
-# shipping a separate Qt6GuiPrivateConfig.cmake, so REQUIRED on the package
-# fails while the target the tests actually link is right there.  The target
-# is still mandatory below; only the way of asking changed.
-if(QT_VERSION_MAJOR GREATER_EQUAL 6)
-  find_package(Qt${QT_VERSION_MAJOR} QUIET COMPONENTS GuiPrivate)
-  if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
-    message(FATAL_ERROR
-      "Qt${QT_VERSION_MAJOR}::GuiPrivate was not found, and the test targets "
-      "link it through QET_PRIVATE_LIBRARIES. Install the Qt6 private headers "
-      "(e.g. 'qt6-base-private-dev' on Debian/Ubuntu) or use a Qt build that "
-      "provides the GuiPrivate component.")
-  endif()
-endif()
 
 # Qt Test, e só no alvo de teste: ele traz o QTest e o QSignalSpy, que são o que
 # permite construir um widget, clicar nele e afirmar sobre o resultado — sem
@@ -186,6 +153,9 @@ add_executable(
     ${QET_DIR}/sources/diagramcontext.cpp
     ${QET_DIR}/sources/diagramcontext.h
     ${QET_DIR}/sources/qet.cpp
+    # O simbolo unico que qet.cpp passou a precisar de QETApp depois do
+    # sync de 28/09/2026 -- ver o comentario no proprio arquivo.
+    src/qetapp_language_stub.cpp
     ${QET_DIR}/sources/qet.h
     ${QET_DIR}/sources/qeticons.cpp
     ${QET_DIR}/sources/qeticons.h

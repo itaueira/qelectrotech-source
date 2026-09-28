@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "cli_export.h"
+#include "bomexport.h"
 
 #include "bordertitleblock.h"
 #include "conductornumexport.h"
@@ -24,8 +25,11 @@
 #include "dataBase/projectdatabase.h"
 #include "diagram.h"
 #include "diagramcontext.h"
+#include "dxfexport.h"
+#include "exportproperties.h"
 #include "pdf_links.h"
 #include "qetgraphicsitem/conductor.h"
+#include "qetgraphicsitem/diagramimageitem.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/terminal.h"
 #include "qetinformation.h"
@@ -42,6 +46,7 @@
 #include <QDomDocument>
 #include <QDate>
 #include <QFile>
+#include <QSaveFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -70,9 +75,11 @@ const QHash<QString, QString> &exportFlags()
 		{"--export-pdf", "pdf"},
 		{"--export-png", "png"},
 		{"--export-svg", "svg"},
+		{"--export-dxf", "dxf"},
 		{"--export-cables", "cables"},
 		{"--export-wires", "wires"},
 		{"--export-bom", "bom"},
+		{"--export-wiring", "wiring"},
 		{"--export-nets", "nets"},
 		{"--export-links", "links"},
 		{"--info", "info"},
@@ -113,7 +120,16 @@ QString diagramStem(Diagram *diagram, int index)
 }
 
 /// Render @p diagram into @p painter, fitting @p target to the page rect.
-void renderDiagram(Diagram *diagram, QPainter &painter, const QRectF &target)
+/// @p showTerminals: paint terminal markers (red stroke + blue docking
+/// dot) and terminal names, as the interactive editor does. Off by
+/// default — Terminal::paint() draws them whenever the diagram's
+/// drawTerminals()/drawTerminalNames() flags are set (default true, so
+/// headless export used to ship them as editor UI); the GUI export
+/// dialog already defaults to clearing them via
+/// Diagram::applyProperties(). Pass true (--show-terminals) to keep
+/// them, e.g. to visually debug an unconnected pin.
+void renderDiagram(Diagram *diagram, QPainter &painter, const QRectF &target,
+					bool showTerminals = false)
 {
 	const QRect source = diagramRect(diagram);
 	// Export without the editor grid: drawBackground() only paints it when
@@ -121,11 +137,17 @@ void renderDiagram(Diagram *diagram, QPainter &painter, const QRectF &target)
 	// and restore it afterwards.
 	const bool was_drawing_grid = diagram->displayGrid();
 	const bool was_drawing_guides = diagram->displayGuides();
+	const bool was_drawing_terminals = diagram->drawTerminals();
+	const bool was_drawing_terminal_names = diagram->drawTerminalNames();
 	diagram->setDisplayGrid(false);
 	diagram->setDisplayGuides(false);
+	diagram->setDrawTerminals(showTerminals);
+	diagram->setDrawTerminalNames(showTerminals);
 	diagram->render(&painter, target, source, Qt::KeepAspectRatio);
 	diagram->setDisplayGrid(was_drawing_grid);
 	diagram->setDisplayGuides(was_drawing_guides);
+	diagram->setDrawTerminals(was_drawing_terminals);
+	diagram->setDrawTerminalNames(was_drawing_terminal_names);
 }
 
 /// Option that narrows an export to a few sheets: "folios=12,13,40".
@@ -209,7 +231,8 @@ bool selectFolios(const QList<Diagram *> &diagrams,
 }
 
 int exportPdf(QETProject &project, const QString &output,
-			  const QStringList &options)
+			  const QStringList &options,
+			  bool showTerminals = false)
 {
 	const QList<Diagram *> all_diagrams = project.diagrams();
 	if (all_diagrams.isEmpty()) {
@@ -265,7 +288,7 @@ int exportPdf(QETProject &project, const QString &output,
 		}
 		const QRectF target(0, 0,
 							writer.width(), writer.height());
-		renderDiagram(diagram, painter, target);
+		renderDiagram(diagram, painter, target, showTerminals);
 
 		// Collected here, and not while the page map was being built, because
 		// the fallback reads the folio string the title block resolves - which
@@ -337,6 +360,7 @@ int exportPdf(QETProject &project, const QString &output,
 	// Rewrite the URI link annotations into native internal GoTo actions, so
 	// the cross-references jump inside the document in any PDF viewer.
 	PdfLinks::convertUriToGoTo(output);
+	PdfLinks::removeUnusedPdfxNamespace(output);
 
 	// And give the reader a navigation panel: one bookmark per emitted
 	// sheet. Last, because it rebuilds the cross-reference table over
@@ -348,7 +372,7 @@ int exportPdf(QETProject &project, const QString &output,
 }
 
 int exportImages(QETProject &project, const QString &format,
-				 const QString &out_dir)
+				 const QString &out_dir, bool showTerminals = false)
 {
 	const QList<Diagram *> diagrams = project.diagrams();
 	if (diagrams.isEmpty()) {
@@ -371,14 +395,16 @@ int exportImages(QETProject &project, const QString &format,
 			gen.setViewBox(QRect(0, 0, r.width(), r.height()));
 			gen.setTitle(diagram->title());
 			QPainter painter(&gen);
-			renderDiagram(diagram, painter, QRectF(QPointF(0, 0), r.size()));
+			renderDiagram(diagram, painter, QRectF(QPointF(0, 0), r.size()),
+						 showTerminals);
 			painter.end();
 		} else { // png
 			QImage image(r.size(), QImage::Format_ARGB32);
 			image.fill(Qt::white);
 			QPainter painter(&image);
 			painter.setRenderHint(QPainter::Antialiasing, true);
-			renderDiagram(diagram, painter, QRectF(QPointF(0, 0), r.size()));
+			renderDiagram(diagram, painter, QRectF(QPointF(0, 0), r.size()),
+						 showTerminals);
 			painter.end();
 			if (!image.save(path)) {
 				err << "Failed to write '" << path << "'.\n";
@@ -485,6 +511,57 @@ int exportImages(QETProject &project, const QString &format,
 	success, which is precisely the failure this function's own exit code
 	was just corrected for.
 */
+/// One DXF file per diagram, written by the same code as the export dialog
+/// (DxfExport) with the dialog's default options -- the export settings of
+/// the preferences -- so both give the same file.
+int exportDxf(QETProject &project, const QString &out_dir, bool showTerminals)
+{
+	const QList<Diagram *> diagrams = project.diagrams();
+	if (diagrams.isEmpty()) {
+		err << "No diagrams to export.\n";
+		return 1;
+	}
+	QDir().mkpath(out_dir);
+
+	ExportProperties properties = ExportProperties::defaultExportProperties();
+	properties.format = QStringLiteral("DXF");
+	if (showTerminals)
+		properties.draw_terminals = true;
+
+	int index = 0;
+	bool has_images = false;
+	for (Diagram *diagram : diagrams) {
+		++index;
+		const QString path = QDir(out_dir).filePath(
+			diagramStem(diagram, index) + ".dxf");
+
+		// Createdxf answers a file it cannot open with a message box and
+		// exit(0), which headless means no message and a success code.
+		QFile probe(path);
+		if (!probe.open(QIODevice::WriteOnly)) {
+			err << "Cannot open '" << path << "' for writing.\n";
+			return 1;
+		}
+		probe.close();
+
+		const QSize size = DxfExport::folioSize(diagram, properties);
+		DxfExport::write(diagram, size.width(), size.height(), path, properties);
+
+		for (QGraphicsItem *item : diagram->items()) {
+			if (qgraphicsitem_cast<DiagramImageItem *>(item)) {
+				has_images = true;
+				break;
+			}
+		}
+		out << "  " << path << "\n";
+	}
+	if (has_images)
+		err << "Note: DXF has no pictures in this format; "
+			   "each picture is exported as an outline box.\n";
+	out << "Exported " << diagrams.size() << " diagram(s) -> " << out_dir << "\n";
+	return 0;
+}
+
 int exportCsv(QETProject &project, const QString &format, const QString &output)
 {
 	QString csv;
@@ -570,7 +647,6 @@ QString csvField(const QString &value)
 /// parts are on.
 int exportBom(QETProject &project, const QString &output)
 {
-	// The project database is built lazily; force a (re)build before querying.
 	project.dataBase()->updateDB();
 
 	// The element information columns of the assembly bill of materials.
@@ -663,6 +739,7 @@ int exportBom(QETProject &project, const QString &output)
 	}
 	return 0;
 }
+
 
 /// Count terminals on @p element that no conductor connects to.
 int freeTerminals(Element *element)
@@ -848,6 +925,70 @@ QHash<Element *, int> folioIndex(QETProject &project)
 			folio.insert(e, index);
 	}
 	return folio;
+}
+
+/// From-to wiring list: one row per conductor, each endpoint resolved to its
+/// element label and terminal name.
+///
+/// Reads wiring_list_view out of the project database. --export-cables produces
+/// the same logical list from the document XML instead, and the two are meant
+/// to agree: running both and diffing them is a direct check that the database
+/// still describes the project, which is otherwise only observable through the
+/// GUI.
+int exportWiring(QETProject &project, const QString &output)
+{
+	// The project database is built lazily; force a (re)build before querying.
+	project.dataBase()->updateDB();
+
+	static const QStringList columns {
+		"wire_number", "from_element_label", "from_terminal",
+		"to_element_label", "to_terminal", "diagram_position", "conductor_uuid"
+	};
+
+	QSqlQuery query = project.dataBase()->newQuery(
+		"SELECT " % columns.join(", ") %
+		" FROM wiring_list_view"
+		//Wire numbers are text, so a plain sort puts "10" before "9".
+		//Numeric ones first, ordered by value; anything non-numeric after,
+		//ordered as text. The trailing wire_number keeps ties stable.
+		" ORDER BY diagram_position,"
+		" CASE WHEN wire_number GLOB '[0-9]*' THEN 0 ELSE 1 END,"
+		" CAST(wire_number AS INTEGER),"
+		" wire_number");
+	if (!query.exec()) {
+		err << "Wiring list query failed: " << query.lastError().text() << "\n";
+		return 1;
+	}
+
+	QString csv = columns.join(";") % "\n";
+	int rows = 0;
+	while (query.next()) {
+		QStringList values;
+		for (int i = 0; i < columns.size(); ++i)
+			values << csvField(query.value(i).toString());
+		csv += values.join(";") % "\n";
+		++rows;
+	}
+
+		//Written through QSaveFile so a failure part-way leaves the previous
+		//file intact rather than a truncated one, and with a UTF-8 byte order
+		//mark: without it Excel opens a .csv as the local 8-bit codepage and
+		//mangles any accented element label. Qt writes UTF-8 by default, so
+		//the bytes were already right -- the mark is what tells Excel so.
+	QSaveFile file(output);
+	if (!file.open(QIODevice::WriteOnly)) {
+		err << "Cannot open '" << output << "' for writing.\n";
+		return 1;
+	}
+	static const char utf8_bom[] = "\xEF\xBB\xBF";
+	file.write(utf8_bom, 3);
+	file.write(csv.toUtf8());
+	if (!file.commit()) {
+		err << "Cannot write '" << output << "': " << file.errorString() << "\n";
+		return 1;
+	}
+	out << "Exported " << rows << " conductor(s) -> " << output << "\n";
+	return 0;
 }
 
 /// Electrical nets: groups of terminals joined into one potential.
@@ -1144,13 +1285,19 @@ bool isExportRequest(const QStringList &args)
 
 int run(const QStringList &args)
 {
+	// --show-terminals is a standalone switch (not tied to a position),
+	// so pull it out before the positional project/output arguments are
+	// collected below.
+	QStringList filtered = args;
+	const bool showTerminals = filtered.removeAll("--show-terminals") > 0;
+
 	QString flag;
 	QStringList rest;
-	for (int i = 0; i < args.size(); ++i) {
-		if (exportFlags().contains(args.at(i))) {
-			flag = args.at(i);
-			for (int j = i + 1; j < args.size(); ++j)
-				rest << args.at(j);
+	for (int i = 0; i < filtered.size(); ++i) {
+		if (exportFlags().contains(filtered.at(i))) {
+			flag = filtered.at(i);
+			for (int j = i + 1; j < filtered.size(); ++j)
+				rest << filtered.at(j);
 			break;
 		}
 	}
@@ -1194,11 +1341,15 @@ int run(const QStringList &args)
 		return 2;
 	}
 	if (format == "pdf")
-		return exportPdf(project, output, rest.mid(2));
+		return exportPdf(project, output, rest.mid(2), showTerminals);
+	if (format == "dxf")
+		return exportDxf(project, output, showTerminals);
 	if (format == "cables" || format == "wires")
 		return exportCsv(project, format, output);
 	if (format == "bom")
 		return exportBom(project, output);
+	if (format == "wiring")
+		return exportWiring(project, output);
 	if (format == "nets")
 		return exportNets(project, output);
 	if (format == "links")
@@ -1209,7 +1360,7 @@ int run(const QStringList &args)
 		return setTitleBlock(project, output, rest.mid(2));
 	if (format == "setiec")
 		return setIecStructure(project, output, rest.mid(2));
-	return exportImages(project, format, output);
+	return exportImages(project, format, output, showTerminals);
 }
 
 } // namespace CLIExport

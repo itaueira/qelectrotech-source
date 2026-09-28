@@ -155,6 +155,10 @@ AssemblyState AssemblyStateCommand::photograph(QETProject *project,
 			if (uuid.isEmpty()) {
 				continue;
 			}
+			//The state names this conductor by uuid and is written to the
+			//project file, so the uuid has to survive the save. See
+			//Conductor::persistUuid().
+			conductor->persistUuid();
 			state.conductors.insert(uuid, conductor->properties().text);
 		}
 	}
