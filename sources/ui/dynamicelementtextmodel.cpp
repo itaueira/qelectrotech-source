@@ -270,8 +270,10 @@ QList<QStandardItem *> DynamicElementTextModel::itemsForText(
 	QStandardItem *color = new QStandardItem(tr("Couleur"));
 	color->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
 
+	// Shown as a swatch next to the value, not as the text color: black
+	// text (the default) is unreadable on a dark palette.
 	QStandardItem *colora = new QStandardItem;
-	colora->setData(deti->color(), Qt::ForegroundRole);
+	colora->setData(deti->color(), Qt::DecorationRole);
 	colora->setData(deti->color(), Qt::EditRole);
 	colora->setData(DynamicElementTextModel::color, Qt::UserRole+1);
 	colora->setFlags(Qt::ItemIsSelectable
@@ -1526,7 +1528,7 @@ void DynamicElementTextModel::updateDataFromText(DynamicElementTextItem *deti,
 		case color:
 		{
 			qsi->child(color_txt_row,1)->setData(deti->color(), Qt::EditRole);
-			qsi->child(color_txt_row,1)->setData(deti->color(), Qt::ForegroundRole);
+			qsi->child(color_txt_row,1)->setData(deti->color(), Qt::DecorationRole);
 			break;
 		}
 		case pos:
@@ -1858,7 +1860,7 @@ void DynamicTextItemDelegate::setModelData(
 					{
 						QColor color = editor->property("color").value<QColor>();
 						qsi->setData(color, Qt::EditRole);
-						qsi->setData(color, Qt::ForegroundRole);
+						qsi->setData(color, Qt::DecorationRole);
 					}
 					return;
 				}

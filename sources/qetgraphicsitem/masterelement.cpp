@@ -111,6 +111,7 @@ void MasterElement::unlinkElement(Element *elmt)
 			ctx.remove(QETInformation::ELMT_PLC_COMMENT);
 			ctx.remove(QETInformation::ELMT_PLC_CROSSREF);
 			ctx.remove(QETInformation::ELMT_LABEL);
+			ctx.remove(QETInformation::ELMT_XREF);
 			elmt->setElementInformations(ctx);
 
 			setGroupIndexForElement(elmt, -1);
@@ -166,6 +167,14 @@ QVariant MasterElement::itemChange(QGraphicsItem::GraphicsItemChange change, con
 			m_Xref_item = new CrossRefItem(this);
 			m_Xref_item->updateLabel();
 		}
+		// Same idea for a master whose contact comb must show every
+		// contact group it defines: the cross ref is expected even
+		// before any slave is linked to it.
+		else if (!m_Xref_item && mustShowXrefWithoutSlave())
+		{
+			m_Xref_item = new CrossRefItem(this);
+			m_Xref_item->updateLabel();
+		}
 	}
 	return Element::itemChange(change, value);
 }
@@ -190,6 +199,26 @@ void MasterElement::xrefPropertiesChanged()
 			m_Xref_item = new CrossRefItem(this);
 	}
 	aboutDeleteXref();
+}
+
+/**
+	@brief MasterElement::mustShowXrefWithoutSlave
+	@return true when the cross ref of this master has to be shown even
+	though no slave is linked to it yet: the user asks the contact comb to
+	display every contact group the master defines, the comb (contacts)
+	display is the one in use, and the cross ref is owned by the element
+	itself (snap to bottom).
+*/
+bool MasterElement::mustShowXrefWithoutSlave() const
+{
+	if (!diagram() || !diagram()->project())
+		return false;
+
+	const XRefProperties xrp = diagram()->project()->defaultXRefProperties(
+				kindInformations()["type"].toString());
+
+	return xrp.snapTo() == XRefProperties::Bottom
+			&& CrossRefItem::showAllConfiguredSlaves(this, xrp);
 }
 
 /**
@@ -219,6 +248,11 @@ void MasterElement::aboutDeleteXref()
 		return;
 	}
 
+	// The contact comb shows the contact groups the master defines, linked
+	// or not: keep the item even when it draws nothing so far.
+	if (mustShowXrefWithoutSlave())
+		return;
+
 	if (m_Xref_item->boundingRect().isNull())
 	{
 		delete m_Xref_item;
@@ -228,11 +262,94 @@ void MasterElement::aboutDeleteXref()
 }
 
 /**
+ * @brief MasterElement::contactUsage
+ * Count the slave contacts currently linked to this master, by type.
+ * This is the single place where that count is worked out: the cross ref
+ * item, the properties dialog and the link widgets all read it from here,
+ * so they cannot disagree with each other.
+ * @return the per type usage
+ */
+namespace {
+
+	/**
+		Map the element data's contact type onto the tally's own, so that
+		the used count and the declared capacity cannot classify the same
+		contact type differently.
+	*/
+	ContactUsage::Type contactType(ElementData::SlaveState state)
+	{
+		switch (state)
+		{
+			case ElementData::NO:    return ContactUsage::NO;
+			case ElementData::NC:    return ContactUsage::NC;
+			case ElementData::SW:    return ContactUsage::SW;
+			case ElementData::Other: break;
+		}
+
+		return ContactUsage::Other;
+	}
+
+}
+
+ContactUsage MasterElement::contactUsage() const
+{
+	ContactUsage usage;
+
+	for (Element *elmt : connected_elements)
+	{
+		if (!elmt) {
+			continue;
+		}
+
+		const ElementData &data = elmt->elementData();
+		usage.addSlave(contactType(data.m_slave_state), data.m_contact_count);
+	}
+
+	return usage;
+}
+
+/**
+ * @brief MasterElement::contactCapacity
+ * The contacts this master declares it provides, by type, summed over its
+ * contact groups. A group stands for contactCount contacts of its type.
+ * Returns an empty tally when the element declares no groups, which is the
+ * case for every element in the standard collection today -- callers use
+ * that to decide whether a capacity is worth showing at all.
+ * @return the per type capacity
+ */
+ContactUsage MasterElement::contactCapacity() const
+{
+	ContactUsage capacity;
+
+	for (const auto &group : m_data.m_slave_contact_groups) {
+		capacity.addSlave(contactType(group.type), group.contactCount);
+	}
+
+	return capacity;
+}
+
+/**
  * @brief MasterElement::isFull
  * @return true if the master has reached its maximum number of slaves
  */
 bool MasterElement::isFull() const
 {
+		//When the element declares contact groups, those groups are the
+		//slots: a slave occupies exactly one, and ContactGroupSelectionDialog
+		//offers exactly these. So the group count is the limit, and it is the
+		//one the user can actually see.
+		//
+		//max_slaves is the fallback for elements which declare no groups. The
+		//element editor keeps the two in step -- max_slaves sizes the group
+		//table -- but nothing reconciles them on load, so a hand written or
+		//generated file can carry five groups and max_slaves=2. Taking
+		//max_slaves there capped linking at two while the dialog still
+		//offered all five, which the user could only read as the dialog
+		//being broken.
+	if (!m_data.m_slave_contact_groups.isEmpty()) {
+		return connected_elements.size() >= m_data.m_slave_contact_groups.size();
+	}
+
 	// Set default value to -1 (unlimited slaves)
 	int max_slaves = -1;
 	QVariant max_slaves_variant = kindInformations().value("max_slaves");
@@ -247,7 +364,10 @@ bool MasterElement::isFull() const
 		return false;
 	}
 
-	// Return true if current connected elements reached or exceeded the limit
+		// max_slaves is a number of slots, not of contacts: it sizes the
+		// element's contact group table, and a slave occupies exactly one
+		// group however many contacts that group stands for. So the slots
+		// in use are the linked elements, not the contacts they carry.
 	return connected_elements.size() >= max_slaves;
 }
 

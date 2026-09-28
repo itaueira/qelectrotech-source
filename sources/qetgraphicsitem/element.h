@@ -83,6 +83,7 @@ class Element : public QetGraphicsItem
 			Element::kind link_type = Element::Simple);
 		~Element() override;
 	private:
+		bool definitionGeometryMatches(const QDomElement &definition) const;
 		Element(const Element &);
 
 		// attributes
@@ -118,6 +119,11 @@ class Element : public QetGraphicsItem
 		QList<Terminal *> terminals() const;
 		QList<Conductor *> conductors() const;
 		QList<QPair<Terminal *,Terminal *>> AlignedFreeTerminals() const;
+
+		void clearPendingLinks() {
+			tmp_uuids_link.clear();
+			m_group_index_map.clear();
+		}
 
 			//METHODS related to information
 		DiagramContext elementInformations()const
@@ -175,6 +181,13 @@ class Element : public QetGraphicsItem
 
 		QString name() const override;
 		ElementsLocation location() const;
+		/// Result of Element::reloadPicture()
+		enum class ReloadPictureResult {
+			Reloaded,          ///< drawing replaced by the current definition
+			Unavailable,       ///< definition missing or unreadable, old drawing kept
+			GeometryChanged    ///< size, hotspot or terminals changed, old drawing kept
+		};
+		ReloadPictureResult reloadPicture();
 		virtual void setHighlighted(bool);
 		void displayHelpLine(bool b = true);
 		QSize size() const;
@@ -216,6 +229,25 @@ class Element : public QetGraphicsItem
 		virtual void unlinkAllElements() {}
 		virtual void unlinkElement(Element *) {}
 		virtual void initLink(QETProject *);
+			/**
+				Resolve tmp_uuids_link against a caller-supplied candidate
+				list instead of a project-wide search (bugtracker #607).
+				Used right after an XML round-trip (paste, folio
+				duplication) and before the pasted/duplicated elements'
+				uuids are renewed: at that moment a copy's tmp_uuids_link
+				still holds its source's original partner uuid, which
+				still matches the not-yet-renewed uuid of that partner's
+				own copy if it was carried along in the same batch.
+				Resolving only within @p candidates -- not the whole
+				project -- is what stops a linked pair pasted together
+				from matching an original element left elsewhere that
+				happens to still carry that same soon-to-be-replaced
+				uuid. If only one half of a linked group is in
+				@p candidates, its entry finds no match and is dropped,
+				same as initLink(QETProject *) leaving an unresolvable
+				link unlinked.
+			*/
+		void initLink(const QList<Element *> &candidates);
 		QList<Element *> linkedElements ();
 
 		int groupIndexForElement(Element *elmt) const;
@@ -235,6 +267,7 @@ class Element : public QetGraphicsItem
 		QString linkTypeToString() const;
 
 		void newUuid() {m_uuid = QUuid::createUuid();} 	//create new uuid for this element
+		void setUuid(const QUuid &uuid) {m_uuid = uuid;}
 
 	protected:
 		void drawAxes(QPainter *, const QStyleOptionGraphicsItem *);
@@ -264,6 +297,7 @@ class Element : public QetGraphicsItem
 				QGraphicsSceneMouseEvent *event) override;
 		void hoverEnterEvent(QGraphicsSceneHoverEvent *) override;
 		void hoverLeaveEvent(QGraphicsSceneHoverEvent *) override;
+		QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 	protected:
 			//ATTRIBUTES related to linked element

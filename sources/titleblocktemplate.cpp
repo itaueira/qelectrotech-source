@@ -19,6 +19,7 @@
 
 #include "NameList/nameslist.h"
 #include "createdxf.h"
+#include "diagram.h"
 #include "qet.h"
 #include "qetapp.h"
 #include "qetinformation.h"
@@ -429,7 +430,9 @@ void TitleBlockTemplate::parseColumns(const QString &cols_string) {
 	rel_col_size_format.setPattern("^([rt])([0-9]+)%$");
 	rel_col_size_format.setPatternOptions(QRegularExpression::CaseInsensitiveOption);
 	bool conv_ok;
+#ifdef TITLEBLOCK_TEMPLATE_DEBUG
 	qDebug() <<"is QRegularExpression ok?";
+#endif
 
 	QStringList cols_descriptions =
 			cols_string.split(QChar(';'), Qt::SkipEmptyParts);
@@ -1588,8 +1591,10 @@ void TitleBlockTemplate::render(QPainter &painter,
 	int titleblock_height = height();
 
 	painter.save();
-		//Setup the QPainter
-	QPen pen(Qt::black);
+		//Setup the QPainter - use a color that contrasts with the background
+	QColor ink = Diagram::background_color.lightness() < 128
+		    ? QColor(Qt::white) : QColor(Qt::black);
+	QPen pen(ink);
 	painter.setPen(pen);
 
 	// draw the titleblock border
@@ -1736,7 +1741,9 @@ void TitleBlockTemplate::renderCell(QPainter &painter,
 {
 	// draw the border rect of the current cell
 	QPen pen(QBrush(), 1, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
-	pen.setColor(Qt::black);
+	QColor ink = Diagram::background_color.lightness() < 128
+		    ? QColor(Qt::white) : QColor(Qt::black);
+	pen.setColor(ink);
 	painter.setPen(pen);
 	painter.drawRect(cell_rect);
 
@@ -1999,32 +2006,58 @@ void TitleBlockTemplate::renderTextCellDxf(
 	}
 
 	//painter.setFont(text_font);
-	qreal ratio = 1.0;
 
-	if (cell.hadjust)
+		//A cell can hold several lines, which the screen shows one under the
+		//other (QPainter::drawText()). A DXF TEXT is a single line, and a line
+		//break inside one breaks the file (FINDINGS F052), so each line gets
+		//its own, stacked as the cell's vertical alignment says: the first at
+		//y1 when aligned to the top, the last at y1 when aligned to the
+		//bottom, the block centred on y1 otherwise. Spacing as the diagram
+		//texts' DXF export: 1.6 times the text height. A single line is
+		//written exactly as before.
+	const QStringList lines = text.split(QRegularExpression(QStringLiteral("\r\n|\r|\n")));
+	const qreal line_spacing = textHeight * Createdxf::yScale * 1.6;
+	const int last = lines.size() - 1;
+	for (int i = 0 ; i < lines.size() ; ++i)
 	{
-	// Scale font width to fit string in cell width w
-	// As DXF font aspect ratio is implementation dependent we add a fudge-factor based on tests with AutoCAD
-		int len = text.length() * textHeight * Createdxf::xScale * 1.2;
+		const QString &line = lines.at(i);
+		if (line.isEmpty()) continue;
 
-		if(len > w)
-			ratio = (w/len);
+		qreal offset; // upward, from y1
+		if (vAlign == 3)
+			offset = -i * line_spacing;
+		else if (vAlign == 2)
+			offset = (last / 2.0 - i) * line_spacing;
+		else
+			offset = (last - i) * line_spacing;
+
+		qreal ratio = 1.0;
+
+		if (cell.hadjust)
+		{
+		// Scale font width to fit string in cell width w
+		// As DXF font aspect ratio is implementation dependent we add a fudge-factor based on tests with AutoCAD
+			int len = line.length() * textHeight * Createdxf::xScale * 1.2;
+
+			if(len > w)
+				ratio = (w/len);
+		}
+
+		// x offset value below currently set heuristically based on appearance...
+		Createdxf::drawTextAligned(
+					file_path,
+					line,
+					x - 2*Createdxf::xScale,
+					y1 + offset,
+					textHeight*Createdxf::yScale,
+					0,
+					0,
+					hAlign,
+					vAlign,
+					x2,
+					ratio,
+					color);
 	}
-
-	// x offset value below currently set heuristically based on appearance...
-	Createdxf::drawTextAligned(
-				file_path,
-				text,
-				x - 2*Createdxf::xScale,
-				y1,
-				textHeight*Createdxf::yScale,
-				0,
-				0,
-				hAlign,
-				vAlign,
-				x2,
-				ratio,
-				color);
 }
 
 /**

@@ -307,15 +307,24 @@ void MasterPropertiesWidget::on_link_button_clicked()
 		int max_slaves = max_slaves_variant.toInt();
 		int current_slaves = ui->m_link_tree_widget->topLevelItemCount();
 
-		// If a limit is set and reached
+			// If a limit is set and reached, say so but let the user decide.
+			// The limit records how many contacts the part is expected to
+			// carry; it is not a rule the drawing has to obey, and refusing
+			// the link obstructs drawing a schematic before the hardware has
+			// been chosen.
 		if (max_slaves != -1 && current_slaves >= max_slaves) {
 
-
 			// Show a message box with the actual window as parent to ensure it's on top
-			QMessageBox::warning(this->window(),
-								 tr("Nombre maximal d'esclaves atteint."),
-								 tr("Cet élément maître ne peut plus accepter aucun nouveau contact esclave, la limite fixée a été atteinte (Limite: %1).").arg(max_slaves));
-			return;
+			const auto answer = QMessageBox::warning(
+						this->window(),
+						tr("Nombre maximal d'esclaves atteint."),
+						tr("La limite fixée pour cet élément maître est atteinte (Limite: %1).\n\n"
+						   "Voulez-vous tout de même lier ce contact esclave ?").arg(max_slaves),
+						QMessageBox::Yes | QMessageBox::No,
+						QMessageBox::Yes);
+			if (answer != QMessageBox::Yes) {
+				return;
+			}
 		}
 	}
 
@@ -530,7 +539,35 @@ void MasterPropertiesWidget::updateUi()
 				tr("Type"), tr("Adresse"), tr("Fonction"),
 				tr("Commentaire"), tr("Réf. croisée"), tr("Bornes")
 			});
-			m_plc_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+			m_plc_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+			m_plc_table->horizontalHeader()->setSectionsMovable(true);
+			m_plc_table->horizontalHeader()->resizeSection(0, 120);
+			m_plc_table->horizontalHeader()->resizeSection(1, 100);
+			m_plc_table->horizontalHeader()->resizeSection(2, 150);
+			m_plc_table->horizontalHeader()->resizeSection(3, 150);
+			m_plc_table->horizontalHeader()->resizeSection(4, 100);
+			m_plc_table->horizontalHeader()->resizeSection(5, 120);
+
+			// Restore a previously saved column layout, if any
+			auto *plc_hdr = m_plc_table->horizontalHeader();
+			QSettings plc_settings;
+			const QVariant plc_hdr_state = plc_settings.value(
+				QStringLiteral("masterpropertieswidget/plc-table-header-state"));
+			if (!plc_hdr_state.isNull())
+				plc_hdr->restoreState(plc_hdr_state.toByteArray());
+
+			// Persist the column layout whenever the user resizes or moves a column
+			auto save_plc_header_state = [plc_hdr]()
+			{
+				QSettings settings;
+				settings.setValue(QStringLiteral("masterpropertieswidget/plc-table-header-state"),
+						  plc_hdr->saveState());
+			};
+			connect(plc_hdr, &QHeaderView::sectionResized,
+				this, save_plc_header_state);
+			connect(plc_hdr, &QHeaderView::sectionMoved,
+				this, save_plc_header_state);
+
 			m_plc_table->setSelectionBehavior(QAbstractItemView::SelectItems);
 			m_plc_table->setSelectionMode(QAbstractItemView::ExtendedSelection);
 			m_plc_table->setMinimumHeight(200);

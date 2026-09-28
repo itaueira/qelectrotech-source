@@ -30,6 +30,7 @@ class CustomElementInfoPartWidget;
 class ChangeElementInformationCommand;
 class QCheckBox;
 class QPushButton;
+struct MaterialRecord;
 
 namespace Ui {
 	class ElementInfoWidget;
@@ -64,6 +65,9 @@ class ElementInfoWidget : public AbstractElementPropertiesEditorWidget
 
 	private:
 		void buildInterface();
+		void setupMaterialButtons();
+		void materialFromFile(int block);
+		void applyMaterialRecord(const MaterialRecord &record, int block);
 		ElementInfoPartWidget *infoPartWidgetForKey(const QString &key) const;
 		/**
 			@brief Say, without stopping anything, that the tag being typed is
@@ -78,6 +82,7 @@ class ElementInfoWidget : public AbstractElementPropertiesEditorWidget
 		*/
 		void warnAboutLabelCollision();
 		QStringList predefinedKeys() const;
+		void updateSuggestions();
 
 	private slots:
 		void firstActivated();

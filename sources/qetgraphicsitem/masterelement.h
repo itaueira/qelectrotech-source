@@ -19,6 +19,7 @@
 #define MASTERELEMENT_H
 
 #include "element.h"
+#include "../contactusage.h"
 #include <QHash>
 #include <QMetaObject>
 
@@ -47,6 +48,8 @@ class MasterElement : public Element
 		void initLink          (QETProject *project) override;
 		QRectF XrefBoundingRect() const;
 
+		ContactUsage contactUsage() const;
+		ContactUsage contactCapacity() const;
 		bool isFull() const; // Check Slave-Limit
 		
 	protected:
@@ -57,6 +60,7 @@ class MasterElement : public Element
 	private:
 		void xrefPropertiesChanged();
 		void aboutDeleteXref ();
+		bool mustShowXrefWithoutSlave() const;
 		void connectSlavePositionUpdates(Element *slave);
 		void disconnectSlavePositionUpdates(Element *slave);
 

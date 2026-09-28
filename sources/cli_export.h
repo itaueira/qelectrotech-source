@@ -42,12 +42,14 @@ namespace CLIExport {
 		@return process exit code (0 on success).
 
 		Usage:
-		  qelectrotech --export-pdf     <project.qet> <output.pdf> [folios=N,N]
-		  qelectrotech --export-png     <project.qet> <output_dir>
-		  qelectrotech --export-svg     <project.qet> <output_dir>
+		  qelectrotech --export-pdf     <project.qet> <output.pdf> [folios=N,N] [--show-terminals]
+		  qelectrotech --export-png     <project.qet> <output_dir> [--show-terminals]
+		  qelectrotech --export-svg     <project.qet> <output_dir> [--show-terminals]
+		  qelectrotech --export-dxf     <project.qet> <output_dir> [--show-terminals]
 		  qelectrotech --export-cables  <project.qet> <output.csv>
 		  qelectrotech --export-wires   <project.qet> <output.csv>
 		  qelectrotech --export-bom     <project.qet> <output.csv>
+		  qelectrotech --export-wiring  <project.qet> <output.csv>
 		  qelectrotech --export-nets    <project.qet> <output.json>
 		  qelectrotech --export-links   <project.qet> <output.csv>
 		  qelectrotech --info           <project.qet> [output.json]
@@ -61,11 +63,23 @@ namespace CLIExport {
 		     (1-based, as the sheet list numbers them); a folio outside
 		     the project, a repeated one or a misspelled option is
 		     refused rather than quietly ignored.
-		PNG/SVG: one file per diagram, named <output_dir>/<NN>_<title>.<ext>.
+		PNG/SVG/DXF: one file per diagram, named <output_dir>/<NN>_<title>.<ext>.
+		DXF: the same file the export dialog writes with its default options
+		      (the export settings of the preferences).
+		--show-terminals: also paint terminal markers (red stroke + blue
+		      docking dot) and terminal names, as the interactive editor
+		      does; off by default, matching the GUI export dialog's
+		      default. For DXF, draws the terminal markers. Has no effect on
+		      the list export modes.
 		cables: wiring list (one row per conductor) as CSV.
 		wires: list of distinct wire numbers as CSV.
 		bom: bill of materials as CSV -- one row per part, grouped and
 		     counted the way the export window groups and counts it.
+		wiring: from-to wiring list (one row per conductor) as CSV, read from
+		        the project database. Same logical list as `cables`, which
+		        reads the document XML instead; the two are meant to agree,
+		        so diffing them checks that the database still describes the
+		        project.
 		nets: electrical nets (connected-terminal groups) as JSON.
 		links: element cross-references (coil/contact) as CSV, with
 		       unresolved links flagged.

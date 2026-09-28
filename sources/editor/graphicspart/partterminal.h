@@ -96,8 +96,8 @@ class PartTerminal : public CustomElementGraphicPart
 
 		void  setRotation(qreal angle);
 		qreal rotation() const;
-		void  flip();
-		void  mirror();
+		void  flip(qreal axis_y = 0);
+		void  mirror(qreal axis_x = 0);
                 void nextOrientation();
                 void previousOrientation();
 
@@ -141,6 +141,9 @@ class PartTerminal : public CustomElementGraphicPart
 		void setMasterLabelIndex(int index);
 
 		void setNewUuid();
+			//The terminal's own uuid, the one saved on <terminal>: hides
+			//CustomElementGraphicPart::uuid(), which a terminal never saves.
+		QUuid uuid() const;
 
 		QRectF labelRect() const;
 
