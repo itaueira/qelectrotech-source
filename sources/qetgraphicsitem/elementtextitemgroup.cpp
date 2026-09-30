@@ -380,6 +380,12 @@ void ElementTextItemGroup::setHoldToBottomPage(bool hold)
 						    this,
 						    &ElementTextItemGroup::autoPos);}
 				);
+				//Hiding the cross reference frees the room this group
+				//was placed under
+			m_xref_hidden_changed = connect(
+						static_cast<MasterElement *>(m_parent_element),
+						&MasterElement::xrefHiddenChanged,
+						this, &ElementTextItemGroup::autoPos);
 		}
 		autoPos();
 	}
@@ -396,6 +402,8 @@ void ElementTextItemGroup::setHoldToBottomPage(bool hold)
 			disconnect(m_linked_changed_timer);
 			if(m_XrefChanged_timer)
 				disconnect(m_XrefChanged_timer);
+			if(m_xref_hidden_changed)
+				disconnect(m_xref_hidden_changed);
 		}
 	}
 	

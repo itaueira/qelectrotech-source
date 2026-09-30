@@ -22,7 +22,9 @@
 #include "../diagramposition.h"
 #include "../elementprovider.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qetgraphicsitem/masterelement.h"
 #include "../undocommand/linkelementcommand.h"
+#include "../QPropertyUndoCommand/qpropertyundocommand.h"
 #include "ui_masterpropertieswidget.h"
 #include "../properties/elementdata.h"
 
@@ -117,6 +119,12 @@ m_project(nullptr)
 		settings.setValue("link-element-widget/master-state", qba);
 	});
 
+	connect(ui->m_hide_xref_cb, &QCheckBox::toggled, this, [this]()
+	{
+		if (m_live_edit)
+			apply();
+	});
+
 	setElement(elmt);
 }
 
@@ -207,12 +215,49 @@ void MasterPropertiesWidget::reset()
 
 /**
  *	@brief MasterPropertiesWidget::associatedUndo
- *	If link between the edited element and other change,
- *	return a QUndoCommand with this change.
+ *	If the links of the edited element or the visibility of its cross
+ *	reference changed, return a QUndoCommand with this change.
  *	If no change return nullptr.
  *	@return
  */
 QUndoCommand* MasterPropertiesWidget::associatedUndo() const
+{
+	if (!xrefHiddenEdited())
+		return linkUndo();
+
+		//The visibility and the links go in one command, so that one undo
+		//gives back what one click on apply did
+	const bool hidden = ui->m_hide_xref_cb->isChecked();
+	auto parent = new QUndoCommand(hidden
+				       ? tr("Masquer la référence croisée")
+				       : tr("Afficher la référence croisée"));
+	new QPropertyUndoCommand(m_element.data(), "xrefHidden",
+				 !hidden, hidden, parent);
+	linkUndo(parent);
+	return parent;
+}
+
+/**
+ *	@brief MasterPropertiesWidget::xrefHiddenEdited
+ *	@return true when the check box asks for another visibility of the
+ *	cross reference than the one the edited element has.
+ */
+bool MasterPropertiesWidget::xrefHiddenEdited() const
+{
+	auto master = qobject_cast<MasterElement *>(m_element.data());
+	return master
+		&& master->isXrefHidden() != ui->m_hide_xref_cb->isChecked();
+}
+
+/**
+ *	@brief MasterPropertiesWidget::linkUndo
+ *	If link between the edited element and other change,
+ *	return a QUndoCommand with this change.
+ *	If no change return nullptr.
+ *	@param parent : the parent command of the returned one, if any
+ *	@return
+ */
+QUndoCommand* MasterPropertiesWidget::linkUndo(QUndoCommand *parent) const
 {
 	// PLC masters manage their slave links via the IO table (setElementData),
 	// not via the link tree widget. The link tree is always empty for PLC
@@ -243,7 +288,7 @@ QUndoCommand* MasterPropertiesWidget::associatedUndo() const
 			return nullptr;
 	}
 
-	LinkElementCommand *undo = new LinkElementCommand(m_element);
+	LinkElementCommand *undo = new LinkElementCommand(m_element, parent);
 
 	if (to_link.isEmpty())
 		undo->unlinkAll();
@@ -494,6 +539,12 @@ void MasterPropertiesWidget::updateUi()
 	ui->m_free_tree_widget->clear();
 	ui->m_link_tree_widget->clear();
 	m_qtwi_hash.clear();
+
+	if (auto master = qobject_cast<MasterElement *>(m_element.data()))
+	{
+		const QSignalBlocker blocker(ui->m_hide_xref_cb);
+		ui->m_hide_xref_cb->setChecked(master->isXrefHidden());
+	}
 
 	// Check if this is a PLC master
 	bool is_plc = m_element &&

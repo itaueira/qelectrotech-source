@@ -231,7 +231,9 @@ void injectCrossRefLinks(QPdfEngine *engine, Diagram *diagram,
 	for (auto *item : diagram->items()) {
 
 		// --- CrossRefItem links ---
-		if (auto *xref = dynamic_cast<CrossRefItem*>(item)) {
+		// A cross reference kept off the folio is not printed, and must not
+		// leave invisible clickable areas where it would have been.
+		if (auto *xref = dynamic_cast<CrossRefItem*>(item); xref && xref->isVisible()) {
 			for (auto it = xref->hoveredContactsMap().begin();
 				 it != xref->hoveredContactsMap().end(); ++it)
 			{

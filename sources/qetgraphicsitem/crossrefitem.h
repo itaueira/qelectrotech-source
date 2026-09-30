@@ -123,6 +123,8 @@ class CrossRefItem : public QGraphicsObject
 
 	private:
 		void linkedChanged();
+		bool isHiddenByMaster() const;
+		void applyVisibility();
 		void buildHeaderContact(QPainter &painter, QPointF no_pos, QPointF nc_pos);
 		void setUpCrossBoundingRect(QPainter &painter);
 		void drawAsCross(QPainter &painter);
@@ -148,6 +150,9 @@ class CrossRefItem : public QGraphicsObject
 		XRefProperties m_properties;
 		int m_drawed_contacts;
 		bool m_update_map = false;
+			//Visible as far as the snap-to setting goes. The item is shown
+			//only when this is true and the master does not hide it.
+		bool m_snap_visible = true;
 		QMultiMap <Element *, QRectF> m_hovered_contacts_map;
 		Element *m_hovered_contact = nullptr;
 		DynamicElementTextItem *m_text = nullptr;

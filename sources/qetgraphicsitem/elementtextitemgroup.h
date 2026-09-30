@@ -124,7 +124,8 @@ class ElementTextItemGroup : public QObject, public  QGraphicsItemGroup
 		QGraphicsTextItem *m_slave_Xref_item = nullptr;
 		QMetaObject::Connection m_project_xref_connection;
 		QMetaObject::Connection m_XrefChanged_timer,
-		m_linked_changed_timer;
+		m_linked_changed_timer,
+		m_xref_hidden_changed;
 };
 
 #endif // ELEMENTTEXTITEMGROUP_H

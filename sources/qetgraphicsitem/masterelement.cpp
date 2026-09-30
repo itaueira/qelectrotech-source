@@ -147,10 +147,61 @@ void MasterElement::initLink(QETProject *project) {
 */
 QRectF MasterElement::XrefBoundingRect() const
 {
-	if(m_Xref_item)
+		//A hidden cross reference takes no room: the texts group placed
+		//under it would otherwise float above an empty gap.
+	if(m_Xref_item && !m_xref_hidden)
 		return m_Xref_item->boundingRect();
 	else
 		return QRectF();
+}
+
+/**
+	@brief MasterElement::setXrefHidden
+	Keep the cross reference of this master off the folio, or show it again.
+	The cross reference items listen to xrefHiddenChanged wherever they are
+	attached (under the element, under its label or under a texts group),
+	and so do the texts groups held to the bottom of the page, which are
+	placed under the room the cross reference takes.
+	@param hidden
+*/
+void MasterElement::setXrefHidden(bool hidden)
+{
+	if (hidden == m_xref_hidden)
+		return;
+
+	m_xref_hidden = hidden;
+	emit xrefHiddenChanged(hidden);
+}
+
+/**
+	@brief MasterElement::fromXml
+	Read the element as Element does, then the xref_hidden attribute.
+	A project written before this attribute existed has none, and its cross
+	references stay shown.
+*/
+bool MasterElement::fromXml(QDomElement &e,
+			    QHash<int, Terminal *> &table_id_adr)
+{
+	const bool ok = Element::fromXml(e, table_id_adr);
+	setXrefHidden(e.attribute(QStringLiteral("xref_hidden"),
+				  QStringLiteral("false")) == QLatin1String("true"));
+	return ok;
+}
+
+/**
+	@brief MasterElement::toXml
+	Write the element as Element does. The xref_hidden attribute is written
+	only when the cross reference is hidden, so that a project that never
+	uses it is saved byte for byte as before.
+*/
+QDomElement MasterElement::toXml(QDomDocument &document,
+				 QHash<Terminal *, int> &table_adr_id) const
+{
+	QDomElement element = Element::toXml(document, table_adr_id);
+	if (m_xref_hidden)
+		element.setAttribute(QStringLiteral("xref_hidden"),
+				     QStringLiteral("true"));
+	return element;
 }
 
 QVariant MasterElement::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value)

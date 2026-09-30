@@ -34,6 +34,7 @@ class CrossRefItem;
 class MasterElement : public Element
 {
 	Q_OBJECT
+	Q_PROPERTY(bool xrefHidden READ isXrefHidden WRITE setXrefHidden NOTIFY xrefHiddenChanged)
 
 	public:
 		explicit MasterElement(
@@ -51,7 +52,24 @@ class MasterElement : public Element
 		ContactUsage contactUsage() const;
 		ContactUsage contactCapacity() const;
 		bool isFull() const; // Check Slave-Limit
-		
+
+		bool fromXml(QDomElement &e,
+			     QHash<int, Terminal *> &table_id_adr) override;
+		QDomElement toXml(QDomDocument &document,
+				  QHash<Terminal *, int> &table_adr_id) const override;
+
+		/**
+			@brief Whether the cross reference of this master is kept off
+			the folio. Hidden is not disabled: the links, the text each
+			slave shows and the navigation are untouched, and the cross
+			reference item keeps existing and following its slaves.
+		*/
+		bool isXrefHidden() const {return m_xref_hidden;}
+		void setXrefHidden(bool hidden);
+
+	signals:
+		void xrefHiddenChanged(bool hidden);
+
 	protected:
 		QVariant itemChange(
 				GraphicsItemChange change,
@@ -67,6 +85,7 @@ class MasterElement : public Element
 	private:
 		CrossRefItem *m_Xref_item = nullptr;
 		bool m_first_scene_change = true;
+		bool m_xref_hidden = false;
 		QHash<Element*, QMetaObject::Connection> m_slave_x_conn;
 		QHash<Element*, QMetaObject::Connection> m_slave_y_conn;
 };

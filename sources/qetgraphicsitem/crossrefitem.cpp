@@ -26,6 +26,7 @@
 #include "dynamicelementtextitem.h"
 #include "element.h"
 #include "elementtextitemgroup.h"
+#include "masterelement.h"
 #include "qgraphicsitemutility.h"
 #include "terminal.h"
 #include "../properties/elementdata.h"
@@ -92,10 +93,46 @@ void CrossRefItem::init()
 	
 	m_properties = m_element->diagram()->project()->defaultXRefProperties(m_element->kindInformations()["type"].toString());
 	setAcceptHoverEvents(true);
-	
+
+	if (auto master = qobject_cast<MasterElement *>(m_element))
+		connect(master, &MasterElement::xrefHiddenChanged,
+			this, &CrossRefItem::applyVisibility);
+	applyVisibility();
+
 	setUpConnection();
 	linkedChanged();
 	updateLabel();
+}
+
+/**
+	@brief CrossRefItem::isHiddenByMaster
+	@return true when the master element asks to keep its cross reference
+	off the folio.
+*/
+bool CrossRefItem::isHiddenByMaster() const
+{
+	auto master = qobject_cast<MasterElement *>(m_element);
+	return master && master->isXrefHidden();
+}
+
+/**
+	@brief CrossRefItem::applyVisibility
+	Show this item only when both the snap-to setting and the master allow
+	it. The two are kept apart so that changing one never undoes the other:
+	updateProperties() used to hide() and show() on its own, which would
+	have brought back a cross reference the user hid.
+	Hidden, the item stops following its slaves (see linkedChanged()), so
+	showing it again rebuilds it from the slaves linked now.
+*/
+void CrossRefItem::applyVisibility()
+{
+	const bool visible = m_snap_visible && !isHiddenByMaster();
+	if (visible == isVisible())
+		return;
+
+	setVisible(visible);
+	if (visible)
+		linkedChanged();
 }
 
 /**
@@ -238,12 +275,13 @@ void CrossRefItem::updateProperties()
 	if (m_properties != xrp)
 	{
 		m_properties = xrp;
-		hide();
+		m_snap_visible = false;
 		if(m_properties.snapTo() == XRefProperties::Label && (m_text || m_group)) //Snap to label and parent is text or group
-			show();
+			m_snap_visible = true;
 		else if((m_properties.snapTo() == XRefProperties::Bottom && !m_text && !m_group)) //Snap to bottom of element is the parent
-			show();
-		
+			m_snap_visible = true;
+		applyVisibility();
+
 		setUpConnection();
 		updateLabel();
 	}

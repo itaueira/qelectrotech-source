@@ -91,6 +91,10 @@ class MasterPropertiesWidget : public AbstractElementPropertiesEditorWidget
 		void plcShowTableContextMenu(const QPoint &pos);
 
 	private:
+		QUndoCommand *linkUndo(QUndoCommand *parent = nullptr) const;
+		bool xrefHiddenEdited() const;
+
+	private:
 	Ui::MasterPropertiesWidget *ui;
 	QHash <QTreeWidgetItem *, Element *> m_qtwi_hash;
 	QMap <Element *, int> m_pending_group_indices;

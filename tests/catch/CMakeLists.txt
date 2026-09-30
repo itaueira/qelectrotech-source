@@ -921,7 +921,13 @@ if(TARGET qet_core)
         # porque a prova nao e o texto da consulta e sim a execucao dela
         # contra o banco de onde ela foi escrita: antes do conserto ela
         # nao roda, e ninguem era avisado.
-        src/ui/locationbomquery_test.cpp)
+        src/ui/locationbomquery_test.cpp
+        # A referencia cruzada do mestre tirada da folha sem ser desligada:
+        # a tabela some, e o vinculo, o texto de cada escravo e a navegacao
+        # ficam. Precisa de projeto aberto porque a tabela so existe presa a
+        # um mestre numa folha, e em tres lugares diferentes conforme a
+        # posicao escolhida no projeto.
+        src/ui/xrefhidden_test.cpp)
 
     target_link_libraries(
         C_uitests

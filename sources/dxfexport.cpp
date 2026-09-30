@@ -153,7 +153,10 @@ void DxfExport::write(Diagram *diagram, int width, int height,
 		} else if (QetGraphicsTableItem *gti = qgraphicsitem_cast<QetGraphicsTableItem *>(qgi)) {
 			list_tables << gti;
 		} else if (CrossRefItem *xref = qgraphicsitem_cast<CrossRefItem *>(qgi)) {
-			list_master_xrefs << xref;
+				//paintForExport() draws whatever the item holds, so a
+				//cross reference kept off the folio is left out here
+			if (xref->isVisible())
+				list_master_xrefs << xref;
 		}
 	}
 

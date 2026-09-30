@@ -155,6 +155,16 @@
      </property>
     </widget>
    </item>
+   <item row="4" column="2" colspan="3">
+    <widget class="QCheckBox" name="m_hide_xref_cb">
+     <property name="toolTip">
+      <string>La référence croisée reste active : les éléments liés, le texte affiché par chaque esclave et la navigation ne changent pas. Seul son dessin est retiré du folio.</string>
+     </property>
+     <property name="text">
+      <string>Masquer la référence croisée sur le folio</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources>
