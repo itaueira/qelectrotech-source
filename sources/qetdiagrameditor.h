@@ -76,6 +76,7 @@ class QETDiagramEditor : public QETMainWindow
 		ProjectView         *viewForFile       (const QString &) const;
 		ProjectView *currentProjectView() const;
 		QETProject *currentProject() const;
+		void templateSaved(const ElementsLocation &location);
 		bool drawGrid() const;
 
 		/**

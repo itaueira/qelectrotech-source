@@ -661,7 +661,7 @@ void QETDiagramEditor::setUpActions()
 
 		//Add a nomenclature item
 	m_add_nomenclature = new QAction(QET::Icons::TableOfContent, tr("Ajouter une nomenclature"), this);
-	connect(m_add_nomenclature, &QAction::triggered, this, [=]() {
+	connect(m_add_nomenclature, &QAction::triggered, this, [this]() {
 		if(this->currentDiagramView()) {
 			QetGraphicsTableFactory::createAndAddNomenclature(this->currentDiagramView()->diagram());
 		}
@@ -669,14 +669,14 @@ void QETDiagramEditor::setUpActions()
 
 		//Add a summary item
 	m_add_summary = new QAction(QET::Icons::TableOfContent, tr("Ajouter un sommaire"), this);
-	connect(m_add_summary, &QAction::triggered, this, [=]() {
+	connect(m_add_summary, &QAction::triggered, this, [this]() {
 		if(this->currentDiagramView()) {
 			QetGraphicsTableFactory::createAndAddSummary(this->currentDiagramView()->diagram());
 		}
 	});
 
 	m_terminal_strip_dialog = new QAction(QET::Icons::TerminalStrip, tr("Gestionnaire de borniers (DEV)"), this);
-	connect(m_terminal_strip_dialog, &QAction::triggered, this, [=]()
+	connect(m_terminal_strip_dialog, &QAction::triggered, this, [this]()
 	{
 		if (auto project = this->currentProject())
 		{
@@ -1495,26 +1495,27 @@ void QETDiagramEditor::setUpActions()
 		//Align actions. No default shortcut: they are reached from the
 		//Edit menu, the selection's context menu and the command search,
 		//and a user can bind one if they want.
-	QAction *snap_to_grid = m_align_actions_group.addAction(tr("Aligner sur la grille"));
+	QAction *snap_to_grid = m_align_actions_group.addAction(QET::Icons::SnapToGrid, tr("Aligner sur la grille"));
 	ShortcutManager::instance().registerAction(snap_to_grid, "diagrameditor.snap_selection_to_grid", tr("Éditeur de schémas"), QKeySequence());
 	snap_to_grid->setStatusTip(tr("Remet les éléments, images et textes sélectionnés sur la grille", "status bar tip"));
 	snap_to_grid->setData("snap_selection_to_grid");
 
 	const struct {
 		const char *id;
+		const QIcon &icon;
 		QString text;
 		QString tip;
 	} align_actions[] = {
-		{"align_left",    tr("Aligner à gauche"),        tr("Aligne les bords gauches des objets sélectionnés", "status bar tip")},
-		{"align_hcenter", tr("Centrer horizontalement"), tr("Aligne les objets sélectionnés sur une même verticale, par leur point d'origine pour les éléments", "status bar tip")},
-		{"align_right",   tr("Aligner à droite"),        tr("Aligne les bords droits des objets sélectionnés", "status bar tip")},
-		{"align_top",     tr("Aligner en haut"),         tr("Aligne les bords supérieurs des objets sélectionnés", "status bar tip")},
-		{"align_vcenter", tr("Centrer verticalement"),   tr("Aligne les objets sélectionnés sur une même horizontale, par leur point d'origine pour les éléments", "status bar tip")},
-		{"align_bottom",  tr("Aligner en bas"),          tr("Aligne les bords inférieurs des objets sélectionnés", "status bar tip")}
+		{"align_left",    QET::Icons::AlignLeft,    tr("Aligner à gauche"),        tr("Aligne les bords gauches des objets sélectionnés", "status bar tip")},
+		{"align_hcenter", QET::Icons::AlignHCenter, tr("Centrer horizontalement"), tr("Aligne les objets sélectionnés sur une même verticale, par leur point d'origine pour les éléments", "status bar tip")},
+		{"align_right",   QET::Icons::AlignRight,   tr("Aligner à droite"),        tr("Aligne les bords droits des objets sélectionnés", "status bar tip")},
+		{"align_top",     QET::Icons::AlignTop,     tr("Aligner en haut"),         tr("Aligne les bords supérieurs des objets sélectionnés", "status bar tip")},
+		{"align_vcenter", QET::Icons::AlignVCenter, tr("Centrer verticalement"),   tr("Aligne les objets sélectionnés sur une même horizontale, par leur point d'origine pour les éléments", "status bar tip")},
+		{"align_bottom",  QET::Icons::AlignBottom,  tr("Aligner en bas"),          tr("Aligne les bords inférieurs des objets sélectionnés", "status bar tip")}
 	};
 	for (const auto &a : align_actions)
 	{
-		QAction *action = m_align_actions_group.addAction(a.text);
+		QAction *action = m_align_actions_group.addAction(a.icon, a.text);
 		ShortcutManager::instance().registerAction(action, QStringLiteral("diagrameditor.") + QLatin1String(a.id), tr("Éditeur de schémas"), QKeySequence());
 		action->setStatusTip(a.tip);
 		action->setData(QString::fromLatin1(a.id));
@@ -3733,6 +3734,34 @@ bool QETDiagramEditor::openAndAddProject(
 		);
 	}
 
+		//Report wires left out of the load because a terminal they join
+		//was not found: they would otherwise vanish on the next save
+		//without the user ever being told.
+	QStringList lost_wires;
+	for (Diagram *diagram : project->diagrams()) {
+		for (const QString &wire : diagram->wiresNotReconnected()) {
+			lost_wires << tr("Folio %1 : %2").arg(diagram->folioIndex() + 1).arg(wire);
+		}
+	}
+	if (interactive && !lost_wires.isEmpty())
+	{
+		QMessageBox box(QMessageBox::Warning,
+						tr("Conducteurs non chargés", "message box title"),
+						tr("%n conducteur(s) n'ont pas pu être reliés à leurs"
+						   " bornes et n'ont pas été chargés. La définition de"
+						   " l'élément dans le projet a probablement été remplacée"
+						   " par une autre dont les bornes diffèrent.\n\n"
+						   "Si vous enregistrez le projet, ces conducteurs"
+						   " disparaîtront du fichier. Fermez-le sans enregistrer pour"
+						   " conserver le fichier tel quel.",
+						   "message box content",
+						   lost_wires.size()),
+						QMessageBox::Ok,
+						this);
+		box.setDetailedText(lost_wires.join(QLatin1Char('\n')));
+		box.exec();
+	}
+
 		//Whether a backup copy is made is a preference of the workstation and
 		//not a property of the project: two people opening the same project
 		//do not have to agree about it, so it lives in QSettings and nothing
@@ -3831,6 +3860,17 @@ ProjectView *QETDiagramEditor::currentProjectView() const
 		return(project_view);
 	}
 	return(nullptr);
+}
+
+/**
+	@brief QETDiagramEditor::templateSaved
+	List a template saved from a folio in this editor's templates tab.
+	@param location : the saved .qetmak file
+*/
+void QETDiagramEditor::templateSaved(const ElementsLocation &location)
+{
+	if (m_element_collection_widget)
+		m_element_collection_widget->addTemplate(location);
 }
 
 /**
@@ -4268,7 +4308,7 @@ void QETDiagramEditor::alignGroupTriggered(QAction *action)
 		if (mode == AlignSelectionCommand::SnapToGrid)
 			message = tr("La sélection est déjà sur la grille");
 		else if (command->itemCount() < 2)
-			message = tr("Sélectionnez au moins deux éléments, images, textes ou groupes non verrouillés");
+			message = tr("Sélectionnez au moins deux éléments, images, textes, formes ou groupes non verrouillés");
 		else
 			message = tr("La sélection est déjà alignée, à la grille près");
 		delete command;
@@ -4604,11 +4644,10 @@ void QETDiagramEditor::slot_updateComplexActions()
 				| DiagramContent::Images);
 	m_depth_action_group->setEnabled(list.isEmpty()? false : true);
 
-		//Align actions: symbols, pictures and free texts take part.
+		//Align actions: symbols, pictures, free texts and shapes take part,
+		//counted the way the command counts them, a group as one.
 		//Snapping needs one of them, lining them up needs two.
-	const int alignable = selected_elements_count
-			      + selected_image
-			      + dc.count(DiagramContent::TextFields);
+	const int alignable = AlignSelectionCommand::unitCount(dc);
 	m_align_actions_group.setEnabled(!ro && alignable);
 	const QList<QAction *> align_actions = m_align_actions_group.actions();
 	for (QAction *action : align_actions.mid(1))
@@ -5269,6 +5308,12 @@ void QETDiagramEditor::diagramWasAdded(DiagramView *dv)
 		this,
 		&QETDiagramEditor::selectionChanged,
 		Qt::DirectConnection);
+		//Grouping leaves the selection as it is, so without this Group
+		//and Ungroup would keep the state from before (#1144)
+	connect(dv->diagram(),
+		&Diagram::itemGroupChanged,
+		this,
+		&QETDiagramEditor::slot_updateComplexActions);
 	connect(dv, &DiagramView::modeChanged, this, &QETDiagramEditor::slot_updateModeActions);
 	connect(dv, &DiagramView::elementPlacementStarted, this, &QETDiagramEditor::rememberPlacedElement);
 }

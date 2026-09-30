@@ -18,6 +18,7 @@
 #include "diagramview.h"
 #include "cellruler.h"
 #include "lastusedstyle.h"
+#include "utils/colordialogdoubleclick.h"
 #include "qetproject.h"
 #include "QPropertyUndoCommand/qpropertyundocommand.h"
 #include "diagramcommands.h"
@@ -46,12 +47,19 @@
 #include "ElementsCollection/xmlelementcollection.h"
 #include "NameList/nameslist.h"
 #include "elementdialog.h"
+#include "qetapp.h"
+#include "qetgraphicsitem/element.h"
+#include "qetinformation.h"
+#include "qetversion.h"
 #include <QApplication>
 #include <QDropEvent>
 #include <QPainter>
 #include <QPointer>
 #include <QSet>
+#include <QUuid>
 #include <algorithm>
+
+static bool hasCabinetInfo(const DiagramContext &infos);
 
 /**
 	Constructeur
@@ -103,6 +111,10 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 	// Setup the action to create a template
 	m_create_template = new QAction(tr("Créer un template", "context menu action"), this);
 	connect(m_create_template, &QAction::triggered, this, &DiagramView::createTemplateFromSelection);
+
+		//Setup the action to generate cabinet placement thumbnails (discussion #602)
+	m_generate_cabinet_thumbnail = new QAction(tr("Générer une vignette d'armoire", "context menu action"), this);
+	connect(m_generate_cabinet_thumbnail, &QAction::triggered, this, &DiagramView::generateCabinetThumbnails);
 
 		//Filled each time the context menu opens, see updateFolioReportMenu()
 	m_folio_report_menu = new QMenu(tr("Renvoi de folio"), this);
@@ -166,6 +178,7 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 		color_dialog -> setWindowFlags(Qt::Sheet);
 #endif
 		color_dialog->setCurrentColor(initial_properties.color);
+		ColorDialogDoubleClick::install(color_dialog);
 
 			// asks the user what color he wishes to apply
 		if (color_dialog->exec() == QDialog::Accepted)
@@ -1753,7 +1766,7 @@ void DiagramView::setEventInterface(DVEventInterface *event_interface)
 {
 	if (m_event_interface) delete m_event_interface;
 	m_event_interface = event_interface;
-	connect(m_event_interface, &DVEventInterface::finish, this, [=](){delete this->m_event_interface; this->m_event_interface = nullptr;}, Qt::QueuedConnection);
+	connect(m_event_interface, &DVEventInterface::finish, this, [this](){delete this->m_event_interface; this->m_event_interface = nullptr;}, Qt::QueuedConnection);
 }
 
 /**
@@ -1766,7 +1779,8 @@ QList<QAction *> DiagramView::contextMenuActions() const
 	QList<QAction *> list;
 	if (QETDiagramEditor *qde = diagramEditor())
 	{
-		if (m_diagram->selectedItems().isEmpty())
+		const QList<QGraphicsItem *> selected_items = m_diagram->selectedItems();
+		if (selected_items.isEmpty())
 		{
 				//Drawing comes first. The row and column actions change
 				//the folio's layout and are rarely wanted, so they sit one
@@ -1796,6 +1810,15 @@ QList<QAction *> DiagramView::contextMenuActions() const
 				//way would be a second answer to keep in step.
 			list << qde->m_navigate;
 			list << m_create_template; // Add the create template action
+				//Disabled, and so left out below, unless a selected element
+				//has both a manufacturer and a manufacturer reference.
+			m_generate_cabinet_thumbnail->setEnabled(std::any_of(
+				selected_items.cbegin(), selected_items.cend(),
+				[](QGraphicsItem *qgi) {
+					const Element *element = qgraphicsitem_cast<Element *>(qgi);
+					return element && hasCabinetInfo(element->elementInformations());
+				}));
+			list << m_generate_cabinet_thumbnail;
 			list << qde->m_conductor_reset;
 				//Assigning a catalog part is offered here, and not only in the
 				//Catalog menu, because the component is already under the
@@ -2115,11 +2138,175 @@ void DiagramView::createTemplateFromSelection()
 		file.close();
 		qDebug() << "Template successfully saved to:" << full_path;
 
+			// List it right away, not only after the collections are reloaded
+		for (QETDiagramEditor *qde : QETApp::diagramEditors())
+			qde->templateSaved(template_location);
+
 		QMessageBox::information(this, tr("Modèle enregistré"),
 								 tr("Le modèle a été enregistré avec succès sous :\n%1").arg(full_path));
 	} else {
 		qDebug() << "Error: Could not open file for writing:" << full_path;
 		QMessageBox::critical(this, tr("Erreur"), tr("Le fichier n'a pas pu être écrit."));
+	}
+}
+
+/**
+	@brief hasCabinetInfo
+	@return true if @a infos has both a manufacturer and a manufacturer
+	reference, the two values a cabinet thumbnail shows.
+*/
+static bool hasCabinetInfo(const DiagramContext &infos)
+{
+	return !infos[QETInformation::ELMT_MANUFACTURER].toString().trimmed().isEmpty()
+		&& !infos[QETInformation::ELMT_MANUFACTURER_REF].toString().trimmed().isEmpty();
+}
+
+/**
+	@brief cabinetThumbnailDefinition
+	@return the definition of a thumbnail element, a 120x30 frame showing
+	the manufacturer and the manufacturer reference in a dynamic text.
+	The two values are also stored in the definition's element
+	information, so the thumbnail shows them as soon as it is placed.
+*/
+static QDomElement cabinetThumbnailDefinition(QDomDocument &doc,
+											  const QString &display_name,
+											  const QString &manufacturer,
+											  const QString &reference)
+{
+	QDomElement definition = doc.createElement(QStringLiteral("definition"));
+	definition.setAttribute(QStringLiteral("version"), QetVersion::currentVersion().toString());
+	definition.setAttribute(QStringLiteral("type"), QStringLiteral("element"));
+	definition.setAttribute(QStringLiteral("link_type"), QStringLiteral("thumbnail"));
+	definition.setAttribute(QStringLiteral("width"), 120);
+	definition.setAttribute(QStringLiteral("height"), 30);
+	definition.setAttribute(QStringLiteral("hotspot_x"), 60);
+	definition.setAttribute(QStringLiteral("hotspot_y"), 15);
+	doc.appendChild(definition);
+
+	QDomElement uuid = doc.createElement(QStringLiteral("uuid"));
+	uuid.setAttribute(QStringLiteral("uuid"), QUuid::createUuid().toString());
+	definition.appendChild(uuid);
+
+	NamesList names;
+	names.addName(QStringLiteral("en"), display_name);
+	definition.appendChild(names.toXml(doc));
+
+	QDomElement informations = doc.createElement(QStringLiteral("elementInformations"));
+	DiagramContext infos;
+	infos.addValue(QETInformation::ELMT_MANUFACTURER, manufacturer);
+	infos.addValue(QETInformation::ELMT_MANUFACTURER_REF, reference);
+	infos.toXml(informations, QStringLiteral("elementInformation"));
+	definition.appendChild(informations);
+
+	QDomElement description = doc.createElement(QStringLiteral("description"));
+
+	QDomElement rect = doc.createElement(QStringLiteral("rect"));
+	rect.setAttribute(QStringLiteral("x"), -60);
+	rect.setAttribute(QStringLiteral("y"), -15);
+	rect.setAttribute(QStringLiteral("width"), 120);
+	rect.setAttribute(QStringLiteral("height"), 30);
+	rect.setAttribute(QStringLiteral("rx"), 0);
+	rect.setAttribute(QStringLiteral("ry"), 0);
+	rect.setAttribute(QStringLiteral("style"),
+					  QStringLiteral("line-style:normal;line-weight:normal;filling:none;color:black"));
+	rect.setAttribute(QStringLiteral("antialias"), QStringLiteral("false"));
+	description.appendChild(rect);
+
+	QDomElement text = doc.createElement(QStringLiteral("dynamic_text"));
+	text.setAttribute(QStringLiteral("x"), -57);
+	text.setAttribute(QStringLiteral("y"), -14);
+	text.setAttribute(QStringLiteral("z"), 1);
+	text.setAttribute(QStringLiteral("text_width"), 114);
+	text.setAttribute(QStringLiteral("Halignment"), QStringLiteral("AlignLeft"));
+	text.setAttribute(QStringLiteral("Valignment"), QStringLiteral("AlignTop"));
+	text.setAttribute(QStringLiteral("frame"), QStringLiteral("false"));
+	text.setAttribute(QStringLiteral("rotation"), 0);
+	text.setAttribute(QStringLiteral("keep_visual_rotation"), QStringLiteral("false"));
+	text.setAttribute(QStringLiteral("text_from"), QStringLiteral("CompositeText"));
+	text.setAttribute(QStringLiteral("uuid"), QUuid::createUuid().toString());
+	text.setAttribute(QStringLiteral("font"), QETApp::dynamicTextsItemFont(7).toString());
+
+	QDomElement text_cache = doc.createElement(QStringLiteral("text"));
+	text_cache.appendChild(doc.createTextNode(manufacturer + QLatin1Char('\n') + reference));
+	text.appendChild(text_cache);
+
+	QDomElement composite_text = doc.createElement(QStringLiteral("composite_text"));
+	composite_text.appendChild(doc.createTextNode(QStringLiteral("%{manufacturer}\n%{manufacturer_reference}")));
+	text.appendChild(composite_text);
+
+	description.appendChild(text);
+	definition.appendChild(description);
+	return definition;
+}
+
+/**
+	@brief DiagramView::generateCabinetThumbnails
+	Context menu action (discussion #602). For every selected element with
+	both a manufacturer and a manufacturer reference, add a thumbnail
+	element showing them to the folder "Cabinet thumbnails" of this
+	project's embedded collection, from where it can be placed on a
+	cabinet layout folio like any other element. A device that already
+	has a thumbnail there is skipped, so placing it several times does
+	not pile up copies.
+*/
+void DiagramView::generateCabinetThumbnails()
+{
+	QETProject *project = m_diagram->project();
+	if (!project || project->isReadOnly()) {
+		return;
+	}
+	XmlElementCollection *collection = project->embeddedElementCollection();
+	if (!collection) {
+		return;
+	}
+
+	const QString dir_name = QStringLiteral("Cabinet thumbnails");
+	const QString dir_path = QStringLiteral("import/") + dir_name;
+	if (!collection->exist(dir_path))
+	{
+		NamesList dir_names;
+		dir_names.addName(QStringLiteral("en"), dir_name);
+			//Stored per language, like an element's names: not tr(), which
+			//would store the interface's language under "fr"
+		dir_names.addName(QStringLiteral("fr"), QStringLiteral("Vignettes d'armoire"));
+		if (!collection->createDir(QStringLiteral("import"), dir_name, dir_names)) {
+			return;
+		}
+	}
+
+	QStringList existing = collection->elementsNames(collection->directory(dir_path));
+	int created = 0;
+	const QList<QGraphicsItem *> selected_items = m_diagram->selectedItems();
+	for (QGraphicsItem *qgi : selected_items)
+	{
+		const Element *element = qgraphicsitem_cast<Element *>(qgi);
+		if (!element || !hasCabinetInfo(element->elementInformations())) {
+			continue;
+		}
+		const DiagramContext infos = element->elementInformations();
+		const QString manufacturer = infos[QETInformation::ELMT_MANUFACTURER].toString().trimmed();
+		const QString reference = infos[QETInformation::ELMT_MANUFACTURER_REF].toString().trimmed();
+
+			//The display name keeps the values as typed; the file name
+			//cannot hold characters such as '/', which would be read as
+			//a folder.
+		const QString display_name = manufacturer + QLatin1Char(' ') + reference;
+		const QString file_name = QET::stringToFileName(display_name) + QStringLiteral(".elmt");
+		if (existing.contains(file_name)) {
+			continue;
+		}
+
+		QDomDocument doc;
+		const QDomElement definition = cabinetThumbnailDefinition(doc, display_name, manufacturer, reference);
+		if (collection->addElementDefinition(dir_path, file_name, definition))
+		{
+			existing << file_name;
+			++created;
+		}
+	}
+
+	if (created) {
+		project->setModified(true);
 	}
 }
 

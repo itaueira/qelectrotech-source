@@ -852,6 +852,18 @@ QUuid Diagram::uuid()
 }
 
 /**
+	@brief Diagram::wiresNotReconnected
+	@return one line per wire of the loaded file that was left out because
+	a terminal it joins could not be found, for example after the symbol's
+	definition in the project was replaced by one whose terminals differ.
+	Empty for a folio that loaded every wire.
+*/
+QStringList Diagram::wiresNotReconnected() const
+{
+	return m_wires_not_reconnected;
+}
+
+/**
 	@brief Diagram::uuidUsedByOtherDiagram
 	A hand-edited or merged project file can contain two folios with the same
 	uuid. The uuid is used as a key (e.g. in the project database), so the
@@ -1609,6 +1621,14 @@ Terminal* findTerminal(int conductor_index,
 
 				return terminal;
 			}
+				//The uuid a project gave a terminal on opening is worked out
+				//from where the terminal is in its symbol: if the symbol's
+				//definition has since been replaced by one whose terminals
+				//carry other uuids, the terminal at that place is still it.
+			for (auto terminal: element->terminals()) {
+				if (terminal->derivedUuid() == terminal_uuid)
+					return terminal;
+			}
 			qDebug() << "Diagram::fromXml() : "
 				 << terminal_index
 				 << ":"
@@ -2005,6 +2025,8 @@ bool Diagram::fromXml(QDomElement &document,
 	}
 
 	  // Load conductor
+	if (consider_informations)
+		m_wires_not_reconnected.clear();
 	QList<Conductor *> added_conductors;
 	for (auto f : QET::findInDomElement(root,
 										QStringLiteral("conductors"),
@@ -2017,6 +2039,33 @@ bool Diagram::fromXml(QDomElement &document,
 		Terminal* p1 = findTerminal(1, f, table_adr_id, added_elements);
 		Terminal* p2 = findTerminal(2, f, table_adr_id, added_elements);
 
+			//Keep a trace of the wire, it will be missing from the next save
+		if ((!p1 || !p2) && consider_informations)
+		{
+				//The symbol's label, else its name. For an end not found,
+				//only the uuid form of a wire says which symbol it is on.
+			auto end_label = [&f, &added_elements](const QString &index,
+												   Terminal *found) {
+				Element *element = found ? found->parentElement() : nullptr;
+				const QUuid uuid(f.attribute(QStringLiteral("element") + index));
+				for (int i = 0 ; !element && !uuid.isNull()
+								 && i < added_elements.size() ; ++i) {
+					if (added_elements.at(i)->uuid() == uuid)
+						element = added_elements.at(i);
+				}
+				if (!element)
+					return QStringLiteral("?");
+				const QString label = element->actualLabel();
+				return label.isEmpty() ? element->name() : label;
+			};
+			QString wire = QStringLiteral("%1 - %2").arg(end_label(QStringLiteral("1"), p1),
+													   end_label(QStringLiteral("2"), p2));
+			const QString num = f.attribute(QStringLiteral("num"));
+			if (!num.isEmpty() && num != QLatin1String("_"))
+				wire += QStringLiteral(" (%1)").arg(num);
+			m_wires_not_reconnected << wire;
+		}
+
 		if (p1 && p2 && p1 != p2)
 		{
 			Conductor *c = new Conductor(p1, p2);
@@ -2024,11 +2073,39 @@ bool Diagram::fromXml(QDomElement &document,
 			{
 				addItem(c);
 				c -> fromXml(f);
+					//A wire saved without a uuid got a random one that was
+					//never saved (#754), so it had no identity from one
+					//session to the next. Derive it from what it connects:
+					//the symbol and terminal at each end, sorted so the
+					//direction it was drawn in does not matter. Never its
+					//place in the file or its folio's index, so inserting or
+					//moving a folio, or saving the wires in another order,
+					//does not change it. It is saved from now on, so
+					//re-connecting the wire later keeps it; derivedItemUuid()
+					//never hands out a uuid the file already carries, so a
+					//wire later drawn on the ends it left gets another one.
+				if (consider_informations && m_project
+					&& QUuid(f.attribute(QStringLiteral("uuid"))).isNull()) {
+					auto end = [](const Terminal *t) {
+						return t->parentElement()->uuid().toString()
+								+ QLatin1Char('/') + t->stableUuid().toString();
+					};
+					QStringList ends{end(p1), end(p2)};
+					ends.sort();
+					c->setUuid(m_project->derivedItemUuid(QStringLiteral("conductor"),
+													  ends.join(QLatin1Char('\n'))));
+				}
 				added_conductors << c;
 			}
 			else
 				delete c;
 		}
+	}
+	if (consider_informations && !m_wires_not_reconnected.isEmpty()) {
+		qWarning().noquote() << "Diagram::fromXml():"
+							 << m_wires_not_reconnected.size()
+							 << "wire(s) not loaded, a terminal they join was not found:"
+							 << m_wires_not_reconnected.join(QStringLiteral(", "));
 	}
 
 		//Filling of falculatory lists
@@ -2373,6 +2450,7 @@ void Diagram::setItemGroup(QGraphicsItem *item, const QUuid &group)
 	if (m_project) {
 		m_project->dataBase()->itemGroupChanged(item);
 	}
+	emit itemGroupChanged();
 }
 
 /**

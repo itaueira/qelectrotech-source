@@ -26,10 +26,15 @@
 #include "../../utils/qetutils.h"
 #include "../../qetmessagebox.h"
 #include "../../textgrid.h"
+#include "../../editor/terminalnamecheck.h"
+#include "../../ElementsCollection/qetlabelsfile.h"
+#include "../prefixconfigurationdialog.h"
 #include "../nokde/kcolorbutton.h"
+#include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFontDialog>
+#include <QMessageBox>
 #include <QSettings>
 
 /**
@@ -221,6 +226,7 @@ GeneralConfigurationPage::GeneralConfigurationPage(QWidget *parent) :
 	ui->MaxPartsElementEditorList_sb->setValue(settings.value("elementeditor/max-parts-element-editor-list", 200).toInt());
 	ui->ElementEditor_Grid_PointSize_min_sb->setValue(settings.value("elementeditor/grid_pointsize_min", 1).toInt());
 	ui->ElementEditor_Grid_PointSize_max_sb->setValue(settings.value("elementeditor/grid_pointsize_max", 1).toInt());
+	ui->m_check_terminal_names_cb->setChecked(settings.value(TerminalNameCheck::settings_key, true).toBool());
 
 	QString path = settings.value("elements-collections/common-collection-path", "default").toString();
 	if (path != "default")
@@ -346,6 +352,7 @@ void GeneralConfigurationPage::applyConf()
 	settings.setValue("elementeditor/max-parts-element-editor-list", ui->MaxPartsElementEditorList_sb->value());
 	settings.setValue("elementeditor/grid_pointsize_min", ui->ElementEditor_Grid_PointSize_min_sb->value());
 	settings.setValue("elementeditor/grid_pointsize_max", ui->ElementEditor_Grid_PointSize_max_sb->value());
+	settings.setValue(TerminalNameCheck::settings_key, ui->m_check_terminal_names_cb->isChecked());
 
 		//DIAGRAM VIEW
 	settings.setValue("diagramview/gestures", ui->m_use_gesture_trackpad->isChecked());
@@ -694,6 +701,90 @@ void GeneralConfigurationPage::on_m_user_macros_path_cb_currentIndexChanged(int 
 			ui->m_user_macros_path_cb->setCurrentIndex(0);
 		}
 	}
+}
+
+/**
+	@brief GeneralConfigurationPage::on_m_prefix_pb_clicked
+	Open the dialog where the prefixes of the user collection folders are
+	configured, creating the qet_labels.xml of that collection when it
+	does not exist yet.
+	Nothing is written until that dialog is validated : cancelling it
+	leaves the collection exactly as it was.
+*/
+void GeneralConfigurationPage::on_m_prefix_pb_clicked()
+{
+		//The directory the page displays, even when the change has not
+		//been applied yet : QETApp::customElementsDir() still answers with
+		//the previously saved path, which is not what is shown when the
+		//combo has been put back on "Par defaut".
+	QString directory;
+	switch (ui->m_custom_elmt_path_cb->currentIndex()) {
+	case 1:			//"Parcourir..." : the item itself holds the chosen path
+		directory = ui->m_custom_elmt_path_cb->itemData(1, Qt::DisplayRole).toString();
+		break;
+	case 0:			//"Par defaut" : where a default custom collection lives
+		directory = QETApp::dataDir() + QStringLiteral("/elements/");
+		break;
+	default:
+		break;
+	}
+	if (directory.isEmpty()) {
+		directory = QETApp::customElementsDir();
+	}
+	directory = QDir::cleanPath(directory);
+
+	if (!QDir(directory).exists() && !QDir().mkpath(directory)) {
+		QMessageBox::warning(this,
+							 tr("Répertoire introuvable"),
+							 tr("Le répertoire de la collection utilisateur :\n%1\nn'existe pas et n'a pas pu être créé.")
+							 .arg(directory));
+		return;
+	}
+
+	const QList<QStringList> folders = QetLabelsFile::scanFolders(directory);
+	if (folders.isEmpty()) {
+		QMessageBox::information(this,
+								 tr("Aucun sous-dossier"),
+								 tr("La collection utilisateur :\n%1\nne contient aucun sous-dossier : il n'y a donc aucun préfixe à configurer.")
+								 .arg(directory));
+		return;
+	}
+
+	QetLabelsFile labels;
+	if (!labels.load(directory)) {
+		QMessageBox::warning(this,
+							 tr("Fichier de préfixes illisible"),
+							 labels.errorString());
+		return;
+	}
+	if (labels.isBroken()) {
+			//A broken file may only be one forgotten tag away from being
+			//perfectly valid : tell what is wrong and let the user decide,
+			//rebuilding would drop every prefix the file still holds.
+		QMessageBox box(QMessageBox::Warning,
+						tr("Fichier de préfixes endommagé"),
+						tr("Le fichier %1 n'est pas un fichier XML valide :\n%2")
+						.arg(labels.filePath(), labels.brokenReason()),
+						QMessageBox::NoButton,
+						this);
+		box.addButton(tr("Corriger le fichier"), QMessageBox::AcceptRole);
+		auto *rebuild_button = box.addButton(tr("Reconstruire"), QMessageBox::DestructiveRole);
+		box.setInformativeText(tr("Rien n'a encore été modifié.\n\n"
+								  "« Corriger le fichier » : cette fenêtre se ferme sans rien changer. "
+								  "Ouvrez le fichier dans un éditeur de texte à l'endroit indiqué, "
+								  "corrigez-le puis relancez cette commande.\n\n"
+								  "« Reconstruire » : l'arborescence des dossiers est recréée, "
+								  "mais tous les préfixes actuels sont perdus. Le fichier actuel "
+								  "est conservé sous le nom qet_labels.xml.bak avant d'être remplacé."));
+		box.setDetailedText(tr("Fichier : %1").arg(labels.filePath()));
+		box.exec();
+		if (box.clickedButton() != rebuild_button) {
+			return;
+		}
+	}
+
+	PrefixConfigurationDialog dialog(labels, folders, this);
+	dialog.exec();
 }
 
 /**

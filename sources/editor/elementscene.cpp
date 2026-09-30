@@ -17,6 +17,8 @@
 */
 #include "elementscene.h"
 
+#include "../ElementsCollection/terminaluuids.h"
+#include "../borderproperties.h"
 #include "../NameList/ui/namelistdialog.h"
 #include "../NameList/ui/namelistwidget.h"
 #include "../QPropertyUndoCommand/qpropertyundocommand.h"
@@ -71,6 +73,49 @@ ElementScene::ElementScene(QETElementEditor *editor, QObject *parent) :
 	m_decorator_lock = new QMutex();
 	connect(&m_undo_stack, &QUndoStack::indexChanged, this, &ElementScene::managePrimitivesGroups);
 	connect(this, &ElementScene::selectionChanged, this, &ElementScene::managePrimitivesGroups);
+
+	QSettings settings;
+	m_background_frame_visible = settings.value(
+			QStringLiteral("elementeditor/background_frame_visible"), false).toBool();
+	BorderProperties bp = BorderProperties::defaultProperties();
+	m_background_frame_size = QSizeF(
+			settings.value(QStringLiteral("elementeditor/background_frame_width"),
+						   bp.columns_count * bp.columns_width).toReal(),
+			settings.value(QStringLiteral("elementeditor/background_frame_height"),
+						   bp.rows_count * bp.rows_height).toReal());
+}
+
+/**
+	@brief ElementScene::setBackgroundFrameVisible
+	Toggle the visual-only background frame used to proportion this
+	element's drawing against a representative folio surface. Like the
+	hotspot indicator, this frame is never written to the saved .elmt file.
+	@param visible
+*/
+void ElementScene::setBackgroundFrameVisible(bool visible)
+{
+	if (m_background_frame_visible == visible) {
+		return;
+	}
+	m_background_frame_visible = visible;
+	QSettings().setValue(QStringLiteral("elementeditor/background_frame_visible"), visible);
+	update();
+}
+
+/**
+	@brief ElementScene::setBackgroundFrameSize
+	@param size the new size (in scene/grid units) of the background frame
+*/
+void ElementScene::setBackgroundFrameSize(const QSizeF &size)
+{
+	if (m_background_frame_size == size) {
+		return;
+	}
+	m_background_frame_size = size;
+	QSettings settings;
+	settings.setValue(QStringLiteral("elementeditor/background_frame_width"), size.width());
+	settings.setValue(QStringLiteral("elementeditor/background_frame_height"), size.height());
+	update();
 }
 
 /**
@@ -1195,6 +1240,13 @@ ElementContent ElementScene::loadContent(const QDomDocument &xml_document)
 
 	if (root.tagName() != "definition" || root.attribute("type") != "element")
 		return(loaded_parts);
+
+		//Terminals saved without a uuid get the one a project gives them
+		//(see TerminalUuids::fillMissing()), not a random one: the same old
+		//symbol then has the same terminal uuids wherever it is copied.
+		//On a copy, the document is the caller's. A paste renews them all.
+	root = root.cloneNode(true).toElement();
+	TerminalUuids::fillMissingInDefinition(root);
 
 	//Load the graphic description of the element
 	for (QDomNode node = root.firstChild() ; !node.isNull() ; node = node.nextSibling())

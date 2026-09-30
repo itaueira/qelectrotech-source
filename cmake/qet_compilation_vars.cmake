@@ -725,12 +725,16 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ElementsCollection/pinoutusage.h
   ${QET_DIR}/sources/ElementsCollection/pinoutusagescanner.cpp
   ${QET_DIR}/sources/ElementsCollection/pinoutusagescanner.h
+  ${QET_DIR}/sources/ElementsCollection/qetlabelsfile.cpp
+  ${QET_DIR}/sources/ElementsCollection/qetlabelsfile.h
   ${QET_DIR}/sources/ElementsCollection/sheetsymbolextractor.cpp
   ${QET_DIR}/sources/ElementsCollection/sheetsymbolextractor.h
   ${QET_DIR}/sources/ElementsCollection/symbolbuilder.cpp
   ${QET_DIR}/sources/ElementsCollection/symbolbuilder.h
   ${QET_DIR}/sources/ElementsCollection/symbolgroup.cpp
   ${QET_DIR}/sources/ElementsCollection/symbolgroup.h
+  ${QET_DIR}/sources/ElementsCollection/terminaluuids.cpp
+  ${QET_DIR}/sources/ElementsCollection/terminaluuids.h
   ${QET_DIR}/sources/ElementsCollection/xmlelementcollection.cpp
   ${QET_DIR}/sources/ElementsCollection/xmlelementcollection.h
   ${QET_DIR}/sources/ElementsCollection/xmlprojectelementcollectionitem.cpp
@@ -988,6 +992,10 @@ set(QET_SRC_FILES
 
   ${QET_DIR}/sources/ui/aboutqetdialog.cpp
   ${QET_DIR}/sources/ui/aboutqetdialog.h
+  ${QET_DIR}/sources/ui/aiassistantdialog.cpp
+  ${QET_DIR}/sources/ui/aiassistantdialog.h
+  ${QET_DIR}/sources/ui/aiassistantsetup.cpp
+  ${QET_DIR}/sources/ui/aiassistantsetup.h
   ${QET_DIR}/sources/ui/abstractelementpropertieseditorwidget.cpp
   ${QET_DIR}/sources/ui/abstractelementpropertieseditorwidget.h
   ${QET_DIR}/sources/ui/alignmenttextdialog.cpp
@@ -1022,6 +1030,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ui/diagrampropertieseditordockwidget.h
   ${QET_DIR}/sources/ui/backupdialog.cpp
   ${QET_DIR}/sources/ui/backupdialog.h
+  ${QET_DIR}/sources/ui/backuprestoredialog.cpp
+  ${QET_DIR}/sources/ui/backuprestoredialog.h
   ${QET_DIR}/sources/ui/dialogwaiting.cpp
   ${QET_DIR}/sources/ui/dialogwaiting.h
   ${QET_DIR}/sources/ui/duplicateoffsetdialog.cpp
@@ -1072,6 +1082,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ui/multipastedialog.h
   ${QET_DIR}/sources/ui/potentialselectordialog.cpp
   ${QET_DIR}/sources/ui/potentialselectordialog.h
+  ${QET_DIR}/sources/ui/prefixconfigurationdialog.cpp
+  ${QET_DIR}/sources/ui/prefixconfigurationdialog.h
   ${QET_DIR}/sources/ui/projectpropertiesdialog.cpp
   ${QET_DIR}/sources/ui/projectpropertiesdialog.h
   ${QET_DIR}/sources/ui/reportpropertiewidget.cpp
@@ -1175,6 +1187,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/utils/apppreferences.h
   ${QET_DIR}/sources/utils/conductorcreator.cpp
   ${QET_DIR}/sources/utils/conductorcreator.h
+  ${QET_DIR}/sources/utils/colordialogdoubleclick.cpp
+  ${QET_DIR}/sources/utils/colordialogdoubleclick.h
   ${QET_DIR}/sources/utils/csvwriter.cpp
   ${QET_DIR}/sources/utils/csvwriter.h
   ${QET_DIR}/sources/utils/macosxopenevent.cpp

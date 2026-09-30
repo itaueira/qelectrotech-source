@@ -275,6 +275,17 @@ void DiagramEventAddMacro::buildPreview(QPointF pos)
 
 		dummy_diagram->fromXml(preview_node, QPointF(0, 0), false, nullptr);
 
+			// Compute bounding rect of TOP-LEVEL items only (matching fromXml's added_items logic)
+			// Child items (DynamicElementTextItem, Terminal) are NOT included - they move with parents
+		QRectF top_level_rect;
+		for (auto *item : dummy_diagram->items()) {
+			if (!item->parentItem()) {
+				top_level_rect = top_level_rect.united(
+							item->mapToScene(item->boundingRect()).boundingRect());
+			}
+		}
+		m_items_top_left = top_level_rect.topLeft();
+
 		QRectF scene_rect = dummy_diagram->itemsBoundingRect();
 		if (!scene_rect.isEmpty()) {
 			QPixmap pixmap(scene_rect.toAlignedRect().size());
@@ -284,7 +295,12 @@ void DiagramEventAddMacro::buildPreview(QPointF pos)
 			dummy_diagram->render(&painter, QRectF(QPointF(0,0), scene_rect.size()), scene_rect);
 
 			m_preview_item = new QGraphicsPixmapItem(pixmap);
-			m_preview_item->setOffset(scene_rect.topLeft());
+				// Anchor the preview on the template's own top-left
+				// corner, where addMacro() puts it, not on the origin of
+				// the folio it was saved from: a template saved from the
+				// middle of a folio was otherwise shown, and placed, that
+				// far below and to the right of the cursor.
+			m_preview_item->setOffset(scene_rect.topLeft() - m_items_top_left);
 		}
 	}
 
@@ -350,6 +366,13 @@ bool DiagramEventAddMacro::addMacro(QPointF final_pos)
 	MacroUuid::renew(cloned_node);
 
 	QPointF target_pos = final_pos;
+		// fromXml() puts the template's top-left corner on final_pos,
+		// under the cursor. It skips that for a null position, which
+		// would leave the items where they were saved, so a click on
+		// the folio origin is nudged by less than it snaps away.
+	if (target_pos.isNull()) {
+		target_pos = QPointF(0.1, 0.1);
+	}
 
 	DiagramContent pasted_content;
 

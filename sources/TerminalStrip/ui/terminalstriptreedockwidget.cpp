@@ -118,15 +118,8 @@ void TerminalStripTreeDockWidget::setProject(QETProject *project)
     }
     m_project = project;
     if (m_project) {
-            //`this` is passed as the context object, and it is not
-            //decoration. Without it the connection belongs to the sender
-            //alone and outlives this widget: a dock destroyed before the
-            //project it watches - which is what closing the manager window
-            //and then closing the project does - leaves the lambda holding a
-            //dangling `this`, and destroyed() then calls reload() through
-            //freed memory. With the context object Qt drops the connection
-            //when the dock dies. FreeTerminalModel::setProject() next door
-            //always passed its context; this one did not.
+            //`this` as context: this dock can be deleted before the project
+            //(with the editor window that owns it), and the connection must go with it
         m_project_destroy_connection = connect(m_project, &QObject::destroyed, this, [this](){
             this->m_current_strip.clear();
             this->reload();

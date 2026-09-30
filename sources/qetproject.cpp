@@ -236,7 +236,7 @@ QETProject::~QETProject()
 	}
 
 		//Wait for any in-flight async crash-recovery backup to finish: the worker
-		//writes through &m_backup_file, a member that would otherwise be destroyed
+		//writes through m_backup_files, a member that would otherwise be destroyed
 		//under it (issue #492).
 	waitForBackup();
 
@@ -383,7 +383,7 @@ void QETProject::init()
 	{
 		int ms = autosave_interval*60*1000;
 		m_autosave_timer.setInterval(ms);
-		connect(&m_autosave_timer, &QTimer::timeout, this, [=]()
+		connect(&m_autosave_timer, &QTimer::timeout, this, [this]()
 		{
 			if(!this->m_file_path.isEmpty())
 				this->write();
@@ -599,12 +599,16 @@ void QETProject::setFilePath(const QString &filepath)
 	if (filepath == m_file_path) {
 		return;
 	}
-		//Don't close/re-point the backup file while a backup is still writing it.
+		//Don't close/re-point the backup files while a backup is still writing one.
 	waitForBackup();
-	if (m_backup_file.isOpen()) {
-		m_backup_file.close();
+	const QUrl managed_file = QUrl::fromLocalFile(filepath);
+	for (auto &backup_file : m_backup_files) {
+		if (backup_file.isOpen()) {
+			backup_file.close();
+		}
+		backup_file.setManagedFile(managed_file);
 	}
-	m_backup_file.setManagedFile(QUrl::fromLocalFile(filepath));
+	m_next_backup_slot = 0;
 	m_file_path = filepath;
 
 	QFileInfo fi(m_file_path);
@@ -617,7 +621,7 @@ void QETProject::setFilePath(const QString &filepath)
 	m_project_properties.addValue("saveddate-eu",  QDate::currentDate().toString("dd-MM-yyyy"));
 	m_project_properties.addValue("saveddate-us",  QDate::currentDate().toString("yyyy-MM-dd"));
 	m_project_properties.addValue("savedtime",     QDateTime::currentDateTime().toString("HH:mm"));
-	m_project_properties.addValue("savedfilename", QFileInfo(filePath()).baseName());
+	m_project_properties.addValue("savedfilename", QFileInfo(filePath()).completeBaseName());
 	m_project_properties.addValue("savedfilepath", filePath());
 
 
@@ -1605,7 +1609,7 @@ QETResult QETProject::write()
 	m_project_properties.addValue("saveddate-us",  QDate::currentDate().toString("yyyy-MM-dd"));
 	m_project_properties.addValue("saveddate-eu",  QDate::currentDate().toString("dd-MM-yyyy"));
 	m_project_properties.addValue("savedtime",     QDateTime::currentDateTime().toString("HH:mm"));
-	m_project_properties.addValue("savedfilename", QFileInfo(filePath()).baseName());
+	m_project_properties.addValue("savedfilename", QFileInfo(filePath()).completeBaseName());
 	m_project_properties.addValue("savedfilepath", filePath());
 
 	emit projectInformationsChanged(this);
@@ -2121,7 +2125,7 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 
 	m_data_base.blockSignals(false);
 	m_data_base.setUpdateBlocked(false);
-	m_data_base.updateDB();
+	m_data_base.updateDB(xml_project);
 	const qint64 database_ms = phase_timer.elapsed();
 
 	qInfo().nospace()
@@ -2607,7 +2611,10 @@ void QETProject::detachDiagram(Diagram *diagram)
 
 /**
 	@brief QETProject::writeBackup
-	Write a backup file of this project, in the case that QET crash
+	Write a backup file of this project, in the case that QET crash.
+	The snapshots are written in turn to m_backup_files, so a write made
+	while the project is already in a bad state only replaces the oldest
+	snapshot, and the earlier ones are still there to recover from.
 	@return true when the project was serialised and the write started,
 	false when there was nothing to write
 
@@ -2638,7 +2645,7 @@ bool QETProject::writeBackup()
 	if (!m_backup_enabled)
 		return false;
 		//Don't launch a new backup while the previous one is still writing:
-		//both would write through &m_backup_file on different threads.
+		//both could write through the same m_backup_files slot on different threads.
 	if (m_backup_future.isRunning())
 		return false;
 		//Nothing has changed since the state a file already holds.
@@ -2653,8 +2660,10 @@ bool QETProject::writeBackup()
 		//Qt5-style QtConcurrent::run(function, reference-args) call did not
 		//survive the Qt6 API change, a lambda behaves identically on both.
 	QDomDocument xml_project(toXml());
-	m_backup_future = QtConcurrent::run([this, xml_project, revision]() mutable {
-		const bool written = QET::writeToFile(xml_project, &m_backup_file, nullptr);
+	KAutoSaveFile *target = &m_backup_files[m_next_backup_slot];
+	m_next_backup_slot = (m_next_backup_slot + 1) % BackupGenerations;
+	m_backup_future = QtConcurrent::run([this, target, xml_project, revision]() mutable {
+		const bool written = QET::writeToFile(xml_project, target, nullptr);
 			//A write that failed leaves the state unbacked on purpose, so
 			//that the next tick tries again instead of taking the project
 			//for safe on a file that was never written.
@@ -3115,14 +3124,25 @@ bool QETProject::projectWasModified()
 	Indique a chaque schema du projet quel est son numero de folio et combien de
 	folio le projet contient.
 */
+/**
+	@brief QETProject::projectWideProperties
+	@return the project's properties as every folio's title block sees them:
+	the user's project properties plus the project's title, path and file name.
+*/
+DiagramContext QETProject::projectWideProperties()
+{
+	DiagramContext project_wide_properties = m_project_properties;
+	project_wide_properties.addValue("projecttitle", title());
+	project_wide_properties.addValue("projectpath", filePath());
+	project_wide_properties.addValue("projectfilename", QFileInfo(filePath()).completeBaseName());
+	return project_wide_properties;
+}
+
 void QETProject::updateDiagramsFolioData()
 {
 	int total_folio = m_diagrams_list.count();
 
-	DiagramContext project_wide_properties = m_project_properties;
-	project_wide_properties.addValue("projecttitle", title());
-	project_wide_properties.addValue("projectpath", filePath());
-	project_wide_properties.addValue("projectfilename", QFileInfo(filePath()).baseName());
+	const DiagramContext project_wide_properties = projectWideProperties();
 
 	for (int i = 0 ; i < total_folio ; ++ i)
 	{

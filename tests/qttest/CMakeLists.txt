@@ -111,12 +111,35 @@ add_test(NAME tst_alignment COMMAND tst_alignment)
 target_include_directories(tst_alignment PRIVATE ${QET_DIR}/sources)
 target_link_libraries(tst_alignment PRIVATE Qt::Test)
 
+# terminalnamecheck.h is header-only: the terminal name rule applied by the
+# element editor on save and by --check-elements.
+add_executable(tst_terminalnamecheck tst_terminalnamecheck.cpp)
+add_test(NAME tst_terminalnamecheck COMMAND tst_terminalnamecheck)
+target_include_directories(tst_terminalnamecheck PRIVATE ${QET_DIR}/sources)
+target_link_libraries(tst_terminalnamecheck PRIVATE Qt::Test)
+
+# configprofile.h is header-only: which settings a saved configuration
+# profile carries, and how loading one replaces the live settings.
+add_executable(tst_configprofile tst_configprofile.cpp)
+add_test(NAME tst_configprofile COMMAND tst_configprofile)
+target_include_directories(tst_configprofile PRIVATE ${QET_DIR}/sources)
+target_link_libraries(tst_configprofile PRIVATE Qt::Test Qt::Gui)
+
 # itemgroups.cpp keeps group membership and the selection rule apart from
 # Diagram, so it is tested here on a plain scene of rectangles.
 add_executable(tst_itemgroups tst_itemgroups.cpp ${QET_DIR}/sources/itemgroups.cpp)
 add_test(NAME tst_itemgroups COMMAND tst_itemgroups)
 target_include_directories(tst_itemgroups PRIVATE ${QET_DIR}/sources)
 target_link_libraries(tst_itemgroups PRIVATE Qt::Test Qt::Widgets Qt::Xml)
+
+# textanchor.h is header-only: the point of a text chosen by its alignment,
+# shown as Position X/Y in the text properties (#1155).
+add_executable(tst_textanchor tst_textanchor.cpp)
+add_test(NAME tst_textanchor COMMAND tst_textanchor)
+set_tests_properties(tst_textanchor PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+target_include_directories(tst_textanchor PRIVATE ${QET_DIR}/sources)
+target_link_libraries(tst_textanchor PRIVATE Qt::Test Qt::Widgets)
+
 # legacyelementtypes.h is header-only: the rewrite of element type names in
 # nomenclature queries saved before June 2022.
 add_executable(tst_legacyelementtypes tst_legacyelementtypes.cpp)
@@ -211,6 +234,16 @@ add_executable(
 add_test(NAME tst_scriptingsetting COMMAND tst_scriptingsetting)
 target_include_directories(tst_scriptingsetting PRIVATE ${QET_DIR}/sources)
 target_link_libraries(tst_scriptingsetting PRIVATE Qt::Test Qt::Gui)
+
+# AiAssistantSetup: finding the MCP server beside an installation, and the
+# configuration text for each AI assistant. Compiles the one file alone.
+add_executable(
+  tst_aiassistantsetup
+  tst_aiassistantsetup.cpp
+  ${QET_DIR}/sources/ui/aiassistantsetup.cpp)
+add_test(NAME tst_aiassistantsetup COMMAND tst_aiassistantsetup)
+target_include_directories(tst_aiassistantsetup PRIVATE ${QET_DIR}/sources)
+target_link_libraries(tst_aiassistantsetup PRIVATE Qt::Test Qt::Core)
 
 # QetSettings::sheetBackground() -- the sheet (folio) background the diagram
 # editor remembers between runs. Compiles qetsettings.cpp alone for the same
@@ -343,6 +376,60 @@ target_link_libraries(tst_conductorselfretrace PRIVATE Qt::Test)
 target_compile_definitions(tst_conductorselfretrace PRIVATE
   "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
 
+# qet.conductorUuids() / qet.conductorEnds(): a script lists a folio's
+# conductors by uuid and finds each one's two ends. Runs a script through
+# the real binary's --run on fixtures/qet_bug_repro_resaved.qet, so only
+# where --run exists: a build without the Qt Qml module has no scripting
+# (see QET_HAS_SCRIPTING in the top-level CMakeLists.txt).
+if(QET_HAS_SCRIPTING)
+  add_executable(
+    tst_scriptconductoruuid
+    tst_scriptconductoruuid.cpp)
+  add_test(NAME tst_scriptconductoruuid COMMAND tst_scriptconductoruuid)
+  add_dependencies(tst_scriptconductoruuid qelectrotech)
+  target_link_libraries(tst_scriptconductoruuid PRIVATE Qt::Test)
+  target_compile_definitions(tst_scriptconductoruuid PRIVATE
+    "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
+
+  # The project database filled from the file as it is read holds exactly
+  # what it holds filled from the built folios (QET_DATABASE_FROM_FOLIOS=1),
+  # on every example saved once; an older file falls back, saying why.
+  add_executable(
+    tst_databasefromdocument
+    tst_databasefromdocument.cpp)
+  add_test(NAME tst_databasefromdocument COMMAND tst_databasefromdocument)
+  add_dependencies(tst_databasefromdocument qelectrotech)
+  target_link_libraries(tst_databasefromdocument PRIVATE Qt::Test Qt::Xml)
+  target_compile_definitions(tst_databasefromdocument PRIVATE
+    "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
+    "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
+
+  # The project database keeps a folio's date with its century: 741.qet's
+  # 2010-09-21, read through project_summary_view under LC_ALL=en_US.UTF-8.
+  add_executable(
+    tst_dbfoliodate
+    tst_dbfoliodate.cpp)
+  add_test(NAME tst_dbfoliodate COMMAND tst_dbfoliodate)
+  add_dependencies(tst_dbfoliodate qelectrotech)
+  target_link_libraries(tst_dbfoliodate PRIVATE Qt::Test)
+  target_compile_definitions(tst_dbfoliodate PRIVATE
+    "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
+    "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
+
+  # qet.elementTerminals() lists each terminal's uuid and qet.terminalIndex()
+  # turns element uuid + terminal uuid back into the index the conductor
+  # calls take, on examples/perceuse.qet (two terminals at one point).
+  add_executable(
+    tst_scriptterminaluuid
+    tst_scriptterminaluuid.cpp)
+  add_test(NAME tst_scriptterminaluuid COMMAND tst_scriptterminaluuid)
+  add_dependencies(tst_scriptterminaluuid qelectrotech)
+  target_link_libraries(tst_scriptterminaluuid PRIVATE Qt::Test Qt::Xml)
+  target_compile_definitions(tst_scriptterminaluuid PRIVATE
+    "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
+    "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
+endif()
+
 # A symbol saved without a uuid gets the same one on every load, and
 # inserting a folio does not change it. Runs the real binary's --resave on
 # fixtures/qet_bug_repro_resaved.qet with the symbols' uuids stripped.
@@ -354,6 +441,21 @@ add_dependencies(tst_derivedsymboluuid qelectrotech)
 target_link_libraries(tst_derivedsymboluuid PRIVATE Qt::Test Qt::Xml)
 target_compile_definitions(tst_derivedsymboluuid PRIVATE
   "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
+
+# A wire saved without a uuid gets one derived from its two ends: the same
+# on every load, saved, and unchanged by inserting a folio, reordering the
+# wires or drawing a wire the other way. Runs the real binary's --resave on
+# a fixture and on examples/tremie_vibrante.qet (ends by terminal number).
+add_executable(
+  tst_derivedwireuuid
+  tst_derivedwireuuid.cpp)
+add_test(NAME tst_derivedwireuuid COMMAND tst_derivedwireuuid)
+add_dependencies(tst_derivedwireuuid qelectrotech)
+target_link_libraries(tst_derivedwireuuid PRIVATE Qt::Test Qt::Xml)
+target_compile_definitions(tst_derivedwireuuid PRIVATE
+  "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
+  "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
+
 # Saving a project that was just saved changes nothing: runs the real
 # binary's --resave twice on every project in examples/, and on one whose
 # title block holds a single-space value (#973).
@@ -365,6 +467,20 @@ add_test(NAME tst_resaveunchanged COMMAND tst_resaveunchanged)
 add_dependencies(tst_resaveunchanged qelectrotech)
 target_link_libraries(tst_resaveunchanged PRIVATE Qt::Test)
 target_compile_definitions(tst_resaveunchanged PRIVATE
+  "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
+  "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
+
+# Replacing a symbol's definition in a project keeps its terminal uuids, so
+# the wires saved against them still load: TerminalUuids::keep() on its own,
+# then the real binary's --info on an example whose symbols were replaced.
+add_executable(
+  tst_terminaluuids
+  tst_terminaluuids.cpp
+  ${QET_DIR}/sources/ElementsCollection/terminaluuids.cpp)
+add_test(NAME tst_terminaluuids COMMAND tst_terminaluuids)
+add_dependencies(tst_terminaluuids qelectrotech)
+target_link_libraries(tst_terminaluuids PRIVATE Qt::Test Qt::Xml)
+target_compile_definitions(tst_terminaluuids PRIVATE
   "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
   "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
 

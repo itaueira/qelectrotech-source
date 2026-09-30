@@ -371,9 +371,6 @@ void Conductor::segmentsToPath()
 	@param o2 Orientation de la borne 2
 */
 void Conductor::updateConductorPath(const QPointF &p1, Qet::Orientation o1, const QPointF &p2, Qet::Orientation o2) {
-	Q_UNUSED(o1);
-	Q_UNUSED(o2);
-
 	ConductorProfile &conductor_profile = conductor_profiles[currentPathType()];
 
 	Q_ASSERT_X(conductor_profile.segmentsCount(QET::Both) > 1, "Conductor::priv_modifieConductor", "pas de points a modifier");
@@ -394,6 +391,25 @@ void Conductor::updateConductorPath(const QPointF &p1, Qet::Orientation o1, cons
 	// calculates the vertical and horizontal differences to be applied
 	qreal h_diff = (qAbs(new_rect.width())  - qAbs(profile_width) ) * getSign(profile_width);
 	qreal v_diff = (qAbs(new_rect.height()) - qAbs(profile_height)) * getSign(profile_height);
+
+	// A profile with no segment of non-zero length along an axis has nowhere
+	// to put a difference along that axis: it would be dropped and the last
+	// point would join the terminal diagonally. Every straight conductor
+	// loaded from a file is like this, as a zero-length segment is saved as
+	// horizontal (bugtracker #105). Generate a new path instead, as when
+	// there is no profile for this path type.
+	const auto can_absorb = [](qreal diff, const QList<ConductorSegmentProfile *> &segments_list) {
+		if (qAbs(diff) <= 0.01) return(true);
+		for (ConductorSegmentProfile *csp : segments_list) {
+			if (csp -> length) return(true);
+		}
+		return(false);
+	};
+	if (!can_absorb(h_diff, conductor_profile.horizontalSegments()) ||
+		!can_absorb(v_diff, conductor_profile.verticalSegments())) {
+		generateConductorPath(p1, o1, p2, o2);
+		return;
+	}
 
 	// applique les differences aux segments
 	// apply the differences to the segments
@@ -1275,8 +1291,10 @@ bool Conductor::fromXml(QDomElement &dom_element)
 		m_uuid = QUuid::createUuid();
 	}
 
-	setPos(dom_element.attribute("x", nullptr).toDouble(),
-		   dom_element.attribute("y", nullptr).toDouble());
+		//"nan" and "inf" parse as numbers; a non-finite position is kept at 0
+	const qreal x = dom_element.attribute("x", nullptr).toDouble();
+	const qreal y = dom_element.attribute("y", nullptr).toDouble();
+	setPos(qIsFinite(x) ? x : 0, qIsFinite(y) ? y : 0);
 
 	bool retval = pathFromXml(dom_element);
 
@@ -1405,7 +1423,10 @@ bool Conductor::pathFromXml(const QDomElement &e) {
 		// cette longueur doit etre un reel
 		bool ok;
 		qreal segment_length = current_segment.attribute("length").toDouble(&ok);
-		if (!ok) continue;
+			// toDouble() accepts "nan" and "inf". A NaN length would also pass
+			// the coherence check below (every comparison with NaN is false)
+			// and turn the whole path into NaN.
+		if (!ok || !qIsFinite(segment_length)) continue;
 
 		if (current_segment.attribute("orientation") == "horizontal") {
 			segments_x << segment_length;

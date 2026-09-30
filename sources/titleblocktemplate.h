@@ -188,7 +188,7 @@ class TitleBlockTemplate : public QObject {
 	void applyCellSpan(TitleBlockCell *);
 	void applyRowColNums();
 	void rowColsChanged();
-	QStringList listOfVariables();
+	QStringList listOfVariables() const;
 	/**
 		@brief The text a cell shows, once the variables it names have been
 		replaced from the given context and the unfilled ones dropped.

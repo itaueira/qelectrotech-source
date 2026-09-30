@@ -49,6 +49,7 @@
 #include <QSet>
 #include <QFuture>
 
+#include <array>
 #include <atomic>
 
 class Diagram;
@@ -141,6 +142,10 @@ class QETProject : public QObject
 		/// background thread referencing the project, and a short-lived CLI
 		/// process can destroy the project before the write finishes (crash).
 		static void setBackupEnabled(bool enabled);
+
+		/// Number of crash-recovery snapshots kept per project, written in
+		/// turn by writeBackup(), so one bad write cannot replace the only copy
+		static constexpr int BackupGenerations = 3;
 
 			///DEFAULT PROPERTIES
 		BorderProperties defaultBorderProperties() const;
@@ -239,9 +244,9 @@ class QETProject : public QObject
 			@brief Block until the backup started by writeBackup() has
 			reached the disk. Returns at once when none is in flight.
 
-			The worker writes through &m_backup_file, a member it does not
-			own, so anything that re-points or destroys that file waits here
-			first.
+			The worker writes through one of m_backup_files, members it does
+			not own, so anything that re-points or destroys those files waits
+			here first.
 		*/
 		void waitForBackup();
 
@@ -394,6 +399,7 @@ class QETProject : public QObject
 			setting leaves nothing in the model for a text to notice.
 		*/
 		void refreshElementLabels();
+		DiagramContext projectWideProperties();
 		void setProjectProperties(const DiagramContext &);
 		QUndoStack* undoStack() {return m_undo_stack;}
 
@@ -577,7 +583,9 @@ class QETProject : public QObject
 		QTimer m_save_backup_timer,
 			   m_autosave_timer;
 		QFuture<bool> m_backup_future;
-		KAutoSaveFile m_backup_file;
+			/// Crash-recovery snapshots, written in turn by writeBackup()
+		std::array<KAutoSaveFile, BackupGenerations> m_backup_files;
+		int m_next_backup_slot = 0;
 			/// Which state the project is in: bumped by anything that claims
 			/// to change what toXml() would write. Not a count of edits and
 			/// not a value ever shown - only the comparison below means
