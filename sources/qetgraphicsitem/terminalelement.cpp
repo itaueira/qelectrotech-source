@@ -45,6 +45,59 @@ void TerminalElement::initLink(QETProject *project) {
 }
 
 /**
+	@brief TerminalElement::linkToElement
+	Link this terminal to a strip terminal, the terminal drawn on the
+	terminal strip sheet. Only a terminal whose definition gives it the
+	slave role does, and only to a master of the strip terminal kind; it
+	stays a terminal in everything else, and keeps its place in its strip.
+	@param elmt
+*/
+void TerminalElement::linkToElement(Element *elmt)
+{
+	if (!elmt
+	    || !m_data.isStripTerminalSlave()
+	    || !elmt->elementData().isStripTerminalMaster()
+	    || connected_elements.contains(elmt))
+		return;
+
+	if (!isFree())
+		unlinkAllElements();
+
+	connected_elements << elmt;
+	elmt->linkToElement(this);
+	emit linkedElementChanged();
+}
+
+/**
+	@brief TerminalElement::unlinkAllElements
+*/
+void TerminalElement::unlinkAllElements()
+{
+	if (isFree())
+		return;
+
+	const auto linked = connected_elements;
+	for (Element *elmt : linked)
+		unlinkElement(elmt);
+	emit linkedElementChanged();
+}
+
+/**
+	@brief TerminalElement::unlinkElement
+	@param elmt
+*/
+void TerminalElement::unlinkElement(Element *elmt)
+{
+	if (!connected_elements.contains(elmt))
+		return;
+
+	connected_elements.removeOne(elmt);
+	elmt->unlinkElement(this);
+	elmt->setHighlighted(false);
+	emit linkedElementChanged();
+}
+
+/**
  * @brief TerminalElement::realTerminal
  * @return the real terminal of this terminal element.
  */

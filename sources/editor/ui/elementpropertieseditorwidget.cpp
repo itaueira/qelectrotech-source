@@ -175,8 +175,10 @@ void ElementPropertiesEditorWidget::upDateInterface()
 				m_plc_gb->setVisible(false);
 			ui->max_slaves_checkbox->setVisible(true);
 			ui->max_slaves_spinbox->setVisible(true);
-			ui->m_slave_groups_checkbox->setVisible(true);
-			ui->m_slave_groups_table->setVisible(true);
+				//A strip terminal has terminals as slaves, not contacts
+			const bool contacts = m_data.m_master_type != ElementData::StripTerminal;
+			ui->m_slave_groups_checkbox->setVisible(contacts);
+			ui->m_slave_groups_table->setVisible(contacts);
 		}
 	} else if (m_data.m_type == ElementData::Terminal) {
 		ui->m_terminal_type_cb->setCurrentIndex(
@@ -185,6 +187,7 @@ void ElementPropertiesEditorWidget::upDateInterface()
 		ui->m_terminal_func_cb->setCurrentIndex(
 					ui->m_terminal_func_cb->findData(
 						m_data.m_terminal_function));
+		ui->m_strip_slave_cb->setChecked(m_data.m_terminal_strip_slave);
 
 		const DiagramContext &info = m_data.m_informations;
 		ui->m_auto_num_locked_cb->setChecked(
@@ -231,6 +234,7 @@ void ElementPropertiesEditorWidget::setUpInterface()
 	ui->m_master_type_cb->addItem(tr("Organe de protection"), ElementData::Protection);
 	ui->m_master_type_cb->addItem(tr("Commutateur / bouton"), ElementData::Commutator);
 	ui->m_master_type_cb->addItem(tr("Module PLC"),           ElementData::PLC);
+	ui->m_master_type_cb->addItem(tr("Borne de bornier"),     ElementData::StripTerminal);
 	ui->m_master_type_cb->setMinimumWidth(150);
 
 		//Terminal option
@@ -274,8 +278,10 @@ void ElementPropertiesEditorWidget::setUpInterface()
 				m_plc_gb->setVisible(false);
 			ui->max_slaves_checkbox->setVisible(true);
 			ui->max_slaves_spinbox->setVisible(true);
-			ui->m_slave_groups_checkbox->setVisible(true);
-			ui->m_slave_groups_table->setVisible(true);
+				//A strip terminal has terminals as slaves, not contacts
+			const bool contacts = master_type != ElementData::StripTerminal;
+			ui->m_slave_groups_checkbox->setVisible(contacts);
+			ui->m_slave_groups_table->setVisible(contacts);
 		}
 	});
 
@@ -394,7 +400,9 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 		m_data.m_master_type = ui->m_master_type_cb->currentData().value<ElementData::MasterType>();
 
 		//If the checkbox is checked, save the number; otherwise, -1 (infinity)
-		if ((m_data.m_master_type == ElementData::Coil || m_data.m_master_type == ElementData::Protection || m_data.m_master_type == ElementData::Commutator) && ui->max_slaves_checkbox->isChecked()) {
+			//The limit of a strip terminal is how many levels the terminal
+			//has: 1 for a single one, 2 for a two level one
+		if ((m_data.m_master_type == ElementData::Coil || m_data.m_master_type == ElementData::Protection || m_data.m_master_type == ElementData::Commutator || m_data.m_master_type == ElementData::StripTerminal) && ui->max_slaves_checkbox->isChecked()) {
 			m_data.m_max_slaves = ui->max_slaves_spinbox->value();
 		} else {
 			m_data.m_max_slaves = -1;
@@ -402,6 +410,11 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 
 		if (m_data.m_master_type == ElementData::PLC) {
 			readPlcTable();
+		} else if (m_data.m_master_type == ElementData::StripTerminal) {
+				//Hidden for this kind, so a table left over from another
+				//kind is not saved with it
+			m_data.m_slave_contact_groups_enabled = false;
+			m_data.m_slave_contact_groups.clear();
 		} else {
 			readSlaveGroupsFromTable();
 		}
@@ -409,6 +422,7 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 	{
 		m_data.m_terminal_type = ui->m_terminal_type_cb->currentData().value<ElementData::TerminalType>();
 		m_data.m_terminal_function = ui->m_terminal_func_cb->currentData().value<ElementData::TerminalFunction>();
+		m_data.m_terminal_strip_slave = ui->m_strip_slave_cb->isChecked();
 	}
 
 	for (QTreeWidgetItem *qtwi : ui->m_tree->invisibleRootItem()->takeChildren())

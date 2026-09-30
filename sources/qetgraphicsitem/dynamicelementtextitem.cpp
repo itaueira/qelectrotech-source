@@ -38,6 +38,20 @@
 namespace
 {
 	/**
+		A contact, or a terminal that can be the slave of a strip terminal:
+		both show, under their label, where their master is. The terminal
+		keeps its own information (see elementUseForInfo()), so its master
+		is the element it is linked to, and not m_master_element.
+	*/
+	bool showsMasterPosition(const Element *element)
+	{
+		return element && element->elementData().linksAsSlave();
+	}
+}
+
+namespace
+{
+	/**
 		@brief The value of one element information, written the way a person
 		has to read it on the folio.
 		@param dc the informations of the element this text takes its value from
@@ -326,6 +340,13 @@ Element *DynamicElementTextItem::masterElement() const
 		return elmt->linkedElements().first();
 	}
 
+		//Same reason for a terminal linked to a strip terminal: it answers
+		//for its own information, and its master is the one it is linked to
+	if (elmt->elementData().isStripTerminalSlave())
+		return elmt->linkedElements().isEmpty()
+				? nullptr
+				: elmt->linkedElements().first();
+
 	return m_master_element.data();
 }
 
@@ -458,7 +479,7 @@ void DynamicElementTextItem::setTextFrom(DynamicElementTextItem::TextFrom text_f
 	}
 		
 	if(m_parent_element.data()->linkType() == Element::Master ||
-	   m_parent_element.data()->linkType() == Element::Slave)
+	   showsMasterPosition(m_parent_element.data()))
 		updateXref();
 		
 	emit textFromChanged(m_text_from);
@@ -832,7 +853,7 @@ QVariant DynamicElementTextItem::itemChange(QGraphicsItem::GraphicsItemChange ch
 			return QGraphicsObject::itemChange(change, value);
 		
 			//If the parent is slave, we keep aware about the changement of master.
-		if(m_parent_element.data()->linkType() == Element::Slave)
+		if(showsMasterPosition(m_parent_element.data()))
 		{
 			connect(m_parent_element.data(), &Element::linkedElementChanged, this, &DynamicElementTextItem::masterChanged);
 			if(m_parent_element.data()->diagram())
@@ -1632,6 +1653,15 @@ void DynamicElementTextItem::zoomToLinkedElement()
 			(m_text_from == CompositeText && m_composite_text.contains("%{label}")))
 			zoomed_element = m_master_element.data();
 	}
+		//A terminal linked to a strip terminal: m_master_element is the
+		//terminal itself, which answers for its own information
+	if(parentElement()->elementData().isStripTerminalSlave()
+	   && !parentElement()->linkedElements().isEmpty())
+	{
+		if ((m_text_from == ElementInfo && m_info_name == "label") ||
+			(m_text_from == CompositeText && m_composite_text.contains("%{label}")))
+			zoomed_element = parentElement()->linkedElements().first();
+	}
 	if((parentElement()->linkType() & Element::AllReport) && m_other_report)
 	{
 		if((m_text_from == ElementInfo && m_info_name == "label") ||
@@ -1705,7 +1735,7 @@ void DynamicElementTextItem::updateXref()
 				}
 			}
 		}
-		else if (m_parent_element.data()->linkType() == Element::Slave &&
+		else if (showsMasterPosition(m_parent_element.data()) &&
 				!m_parent_element.data()->linkedElements().isEmpty())
 		{
 			Element *master_elmt = m_parent_element.data()->linkedElements().first();
@@ -1794,7 +1824,7 @@ void DynamicElementTextItem::updateXref()
 		m_slave_Xref_item = nullptr;
 
 		//If position changed to Champ de texte, store xref in element info
-		if(m_parent_element->linkType() == Element::Slave &&
+		if(showsMasterPosition(m_parent_element.data()) &&
 		   !m_parent_element->linkedElements().isEmpty())
 		{
 			Element *master_elmt = m_parent_element->linkedElements().first();
@@ -1818,7 +1848,7 @@ void DynamicElementTextItem::updateXref()
 	}
 
 	//Remove stale "xref" from elementInformations when no longer needed
-	if(m_parent_element->linkType() == Element::Slave &&
+	if(showsMasterPosition(m_parent_element.data()) &&
 	   m_text_from == ElementInfo && m_info_name == "xref" &&
 	   !parentGroup())
 	{

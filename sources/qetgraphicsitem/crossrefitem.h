@@ -130,6 +130,7 @@ class CrossRefItem : public QGraphicsObject
 		void drawAsCross(QPainter &painter);
 		void drawAsContacts(QPainter &painter);
 		void drawAsPlcTable(QPainter &painter);
+		void drawAsPositions(QPainter &painter);
 		bool mustDrawAllConfiguredSlaves() const;
 		QRectF drawLinkedSlaveContacts(QPainter &painter, Element *elmt);
 		QRectF drawContact(QPainter &painter,

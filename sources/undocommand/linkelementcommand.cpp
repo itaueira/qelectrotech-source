@@ -132,6 +132,16 @@ bool LinkElementCommand::isLinkable(Element *element_a, Element *element_b, bool
 
 		case Element::Master:
 		{
+			//A strip terminal takes the terminals of the schematic that
+			//can be its slave, and nothing else
+		if (element_a->elementData().isStripTerminalMaster())
+		{
+			if (!element_b->elementData().isStripTerminalSlave()) return false;
+			if (element_b->isFree()) return true;
+			if (element_a->linkedElements().contains(element_b) && already_linked) return true;
+			return false;
+		}
+
 			//Type isn't good
 		if (element_b->linkType() != Element::Slave) return false;
 
@@ -154,6 +164,8 @@ bool LinkElementCommand::isLinkable(Element *element_a, Element *element_b, bool
 		{
 				//Type isn't good
 			if (element_b->linkType() != Element::Master) return false;
+				//A contact is never the slave of a strip terminal
+			if (element_b->elementData().isStripTerminalMaster()) return false;
 
 				// PLC master can only link to PLC slave, and vice versa
 			{
@@ -170,7 +182,16 @@ bool LinkElementCommand::isLinkable(Element *element_a, Element *element_b, bool
 			return false;
 		}
 
-		case Element::Terminale: return false;
+		case Element::Terminale:
+		{
+				//Only a terminal given the slave role by its definition,
+				//and only to a strip terminal
+			if (!element_a->elementData().isStripTerminalSlave()) return false;
+			if (!element_b->elementData().isStripTerminalMaster()) return false;
+			if (element_a->isFree()) return true;
+			if (element_b->linkedElements().contains(element_a) && already_linked) return true;
+			return false;
+		}
 
 		default: return false;
 	}

@@ -765,7 +765,7 @@ void ElementTextItemGroup::mouseDoubleClickEvent(
 			//same point whichever item was handed the event.
 		if(m_slave_Xref_item->boundingRect().contains(m_slave_Xref_item->mapFromScene(event->scenePos())))
 		{
-			if(parentElement()->linkType() == Element::Slave && !parentElement()->linkedElements().isEmpty())
+			if(parentElement()->elementData().linksAsSlave() && !parentElement()->linkedElements().isEmpty())
 			{
 				m_slave_Xref_item->setDefaultTextColor(Qt::black);
 				Element *elmt = parentElement()->linkedElements().first();
@@ -863,7 +863,7 @@ void ElementTextItemGroup::updateXref()
 				}
 			}
 		}
-		else if(m_parent_element->linkType() == Element::Slave &&
+		else if(m_parent_element->elementData().linksAsSlave() &&
 				!m_parent_element->linkedElements().isEmpty())
 		{
 			Element *master_elmt = m_parent_element->linkedElements().first();
@@ -948,7 +948,7 @@ void ElementTextItemGroup::updateXref()
 		m_slave_Xref_item = nullptr;
 
 		//If position changed to Champ de texte, store xref in element info
-		if(m_parent_element->linkType() == Element::Slave &&
+		if(m_parent_element->elementData().linksAsSlave() &&
 		   !m_parent_element->linkedElements().isEmpty() &&
 		   m_parent_element->diagram())
 		{
@@ -973,7 +973,7 @@ void ElementTextItemGroup::updateXref()
 	}
 
 	//Remove stale "xref" from elementInformations when no longer needed
-	if(m_parent_element->linkType() == Element::Slave &&
+	if(m_parent_element->elementData().linksAsSlave() &&
 	   m_parent_element->diagram())
 	{
 		for(DynamicElementTextItem *deti : texts())

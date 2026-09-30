@@ -927,7 +927,13 @@ if(TARGET qet_core)
         # ficam. Precisa de projeto aberto porque a tabela so existe presa a
         # um mestre numa folha, e em tres lugares diferentes conforme a
         # posicao escolhida no projeto.
-        src/ui/xrefhidden_test.cpp)
+        src/ui/xrefhidden_test.cpp
+        # O borne da folha da regua como mestre do borne do esquema. Precisa
+        # de projeto aberto porque o que se prova e o vinculo entre dois
+        # elementos carregados -- e que o borne vinculado continua borne,
+        # levando o potencial de um fio ao outro, o que so existe com
+        # condutores de verdade ligados a ele.
+        src/ui/striplink_test.cpp)
 
     target_link_libraries(
         C_uitests

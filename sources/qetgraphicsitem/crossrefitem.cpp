@@ -336,7 +336,9 @@ void CrossRefItem::updateLabel()
 		m_update_map = true;
 		XRefProperties::DisplayHas dh = m_properties.displayHas();
 
-		if (dh == XRefProperties::Cross)
+		if (m_element->elementData().isStripTerminalMaster())
+			drawAsPositions(qp);
+		else if (dh == XRefProperties::Cross)
 			drawAsCross(qp);
 		else if (dh == XRefProperties::Contacts)
 			drawAsContacts(qp);
@@ -443,11 +445,56 @@ void CrossRefItem::paint(
 
 	m_update_map = false;
 	XRefProperties::DisplayHas dh = m_properties.displayHas();
-	if (dh == XRefProperties::Cross)
+	if (m_element->elementData().isStripTerminalMaster())
+		drawAsPositions(*painter);
+	else if (dh == XRefProperties::Cross)
 		drawAsCross(*painter);
 	else if (dh == XRefProperties::Contacts)
 		drawAsContacts(*painter);
 	painter->restore();
+}
+
+/**
+	@brief CrossRefItem::drawAsPositions
+	Draw the cross reference of a strip terminal: one line per terminal of
+	the schematic linked to it, saying where that terminal is. A terminal
+	is not a contact, and the cross and the comb would draw it as one - or
+	not at all, since they sort their slaves by contact state.
+	@param painter painter to use
+*/
+void CrossRefItem::drawAsPositions(QPainter &painter)
+{
+	if (m_update_map)
+		m_hovered_contacts_map.clear();
+
+	QRectF drawn;
+	QPointF top_left(0, 0);
+	const auto linked = m_element->linkedElements();
+	for (Element *elmt : linked)
+	{
+		QPen pen = painter.pen();
+		pen.setColor(m_hovered_contact == elmt ? Qt::blue : Qt::black);
+		painter.setPen(pen);
+
+		const QString str = elementPositionText(elmt);
+		const QRectF bounding = painter.boundingRect(
+					QRectF(top_left, QSizeF(1, 1)), Qt::AlignLeft, str);
+		painter.drawText(bounding, Qt::AlignLeft, str);
+
+		if (m_update_map)
+			m_hovered_contacts_map.insert(elmt, bounding.adjusted(-2, -1, 2, 1));
+
+		drawn |= bounding;
+		top_left.ry() += bounding.height();
+	}
+
+		//The geometry is built once, in updateLabel(), like the other drawings
+	if (m_update_map)
+	{
+		m_bounding_rect = drawn;
+		m_shape_path = QPainterPath();
+		m_shape_path.addRect(drawn);
+	}
 }
 
 /**

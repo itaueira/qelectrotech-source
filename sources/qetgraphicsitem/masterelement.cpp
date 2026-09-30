@@ -56,8 +56,15 @@ MasterElement::~MasterElement()
 */
 void MasterElement::linkToElement(Element *elmt)
 {
-		// check if element is slave and if isn't already linked
-	if (elmt->linkType() == Slave && !connected_elements.contains(elmt))
+		//A strip terminal takes the terminals of the schematic that can be
+		//its slave, and nothing else; any other master takes slaves, and
+		//never a terminal
+	const bool linkable = m_data.isStripTerminalMaster()
+			? elmt->elementData().isStripTerminalSlave()
+			: elmt->linkType() == Slave;
+
+		// check if element is linkable and if isn't already linked
+	if (linkable && !connected_elements.contains(elmt))
 	{
 		connected_elements << elmt;
 		elmt->linkToElement(this);

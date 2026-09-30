@@ -34,6 +34,20 @@
 #include <QSettings>
 #include <QSignalBlocker>
 
+namespace
+{
+	/**
+		@brief linksAsSlave
+		@return true for a contact, and for a terminal that can be the slave
+		of a strip terminal: both link to one master, and this tab is the
+		one that finds it for them.
+	*/
+	bool linksAsSlave(const Element *element)
+	{
+		return element && element->elementData().linksAsSlave();
+	}
+}
+
 
 /**
 	@brief LinkSingleElementWidget::LinkSingleElementWidget
@@ -58,7 +72,7 @@ LinkSingleElementWidget::LinkSingleElementWidget(Element *elmt,
 	m_save_header_state = new QAction(tr("Enregistrer la disposition"), this);
 
 	// Hide the full-masters checkbox for non-slave elements
-	const bool is_slave = (elmt && elmt->elementData().m_type == ElementData::Slave);
+	const bool is_slave = linksAsSlave(elmt);
 	ui->m_hide_full_masters_cb->setVisible(is_slave);
 
 	// Restore persisted state before connecting to avoid toggled firing buildTree()
@@ -105,7 +119,7 @@ LinkSingleElementWidget::LinkSingleElementWidget(Element *elmt,
 		const auto elmt_type{this->m_element->elementData().m_type};
 		if (elmt_type & ElementData::AllReport)
 			settings.setValue(QStringLiteral("link-element-widget/report-state"), qba);
-		else if (elmt_type == ElementData::Slave)
+		else if (linksAsSlave(this->m_element))
 			settings.setValue(QStringLiteral("link-element-widget/slave-state"), qba);
 	});
 			
@@ -166,7 +180,7 @@ void LinkSingleElementWidget::setElement(Element *element)
 	m_element = element;
 
 	const auto elmt_type{m_element->elementData().m_type};
-	if (elmt_type == ElementData::Slave)
+	if (linksAsSlave(m_element))
 		m_filter = ElementData::Master;
 	else if (elmt_type & ElementData::AllReport)
 		m_filter = elmt_type == ElementData::NextReport
@@ -267,7 +281,7 @@ void LinkSingleElementWidget::buildTree()
 	
 	const auto elmt_vector{availableElements()};
 
-	if (m_element->elementData().m_type == ElementData::Slave)
+	if (linksAsSlave(m_element))
 	{
 		m_full_masters.clear();
 		
@@ -440,6 +454,14 @@ QVector <QPointer<Element>> LinkSingleElementWidget::availableElements()
 		Element *elmt = elmt_vector.at(i);
 
 		if (elmt->linkType() == Element::Master) {
+				// A terminal is offered strip terminals only, and a contact
+				// is never offered one
+			if (m_element->elementData().isStripTerminalSlave()
+			    != elmt->elementData().isStripTerminalMaster()) {
+				elmt_vector.removeAt(i);
+				continue;
+			}
+
 			const bool master_is_plc = (elmt->elementData().m_master_type == ElementData::PLC);
 
 			// PLC slave can only link to PLC master, and vice versa
@@ -509,7 +531,7 @@ void LinkSingleElementWidget::setUpHeaderLabels()
 	const QSettings settings;
 	
 	const auto elmt_type{m_element->elementData().m_type};
-	if (elmt_type == ElementData::Slave)
+	if (linksAsSlave(m_element))
 	{
 		if (settings.value(QStringLiteral("genericpanel/folio"), false).toBool())
 		{

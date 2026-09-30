@@ -36,6 +36,13 @@ class TerminalElement : public Element
 		~TerminalElement() override;
 		void initLink(QETProject *project) override;
 
+			//A terminal whose definition says it can be the slave of a strip
+			//terminal links to one such master; any other terminal does not
+			//link at all, as before
+		void linkToElement(Element *elmt) override;
+		void unlinkAllElements() override;
+		void unlinkElement(Element *elmt) override;
+
 		QSharedPointer<RealTerminal> realTerminal() const;
 		void setParentTerminalStrip(TerminalStrip *strip);
 		TerminalStrip *parentTerminalStrip() const;

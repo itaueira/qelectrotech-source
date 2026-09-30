@@ -312,6 +312,10 @@ void ElementPropertiesWidget::updateUi()
 				m_list_editor << new LinkSingleElementWidget(m_element, this);
 			break;
 		case Element::Terminale:
+				//A terminal that can be the slave of a strip terminal takes
+				//the tab a contact takes to find its master
+			if (m_element->elementData().isStripTerminalSlave())
+				m_list_editor << new LinkSingleElementWidget(m_element, this);
 			m_list_editor << new ElementInfoWidget(m_element, this);
 			break;
 		case Element::ConductorDefinition:

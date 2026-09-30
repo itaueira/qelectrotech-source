@@ -713,10 +713,18 @@ void MasterPropertiesWidget::updateUi()
 		ElementProvider elmt_prov(m_project);
 		QSettings settings;
 
-		//Build the list of free available element
+		//Build the list of free available element. A strip terminal is
+		//offered the terminals that can be its slave, and nothing else;
+		//any other master is offered slaves, as before
+		const bool strip_terminal = m_element->elementData().isStripTerminalMaster();
 		QList <QTreeWidgetItem *> items_list;
-		for(const auto &elmt : elmt_prov.freeElement(ElementData::Slave))
+		for(const auto &elmt : elmt_prov.freeElement(strip_terminal
+							     ? ElementData::Terminal
+							     : ElementData::Slave))
 		{
+			if (strip_terminal && !elmt->elementData().isStripTerminalSlave())
+				continue;
+
 			// Filter out PLC-Slave elements — they should only link to PLC-Master
 			if (elmt->elementData().m_slave_type == ElementData::PLCSlave)
 				continue;

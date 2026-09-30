@@ -54,7 +54,10 @@ class ElementData : public PropertiesInterface
 			Coil,
 			Protection,
 			Commutator,
-			PLC
+			PLC,
+				///The terminal as drawn on a terminal strip sheet: its slaves
+				///are the terminals of the schematic, see m_terminal_strip_slave
+			StripTerminal
 		};
 		Q_ENUM(MasterType)
 
@@ -265,6 +268,20 @@ class ElementData : public PropertiesInterface
 		PlcMasterData plcMasterData() const { return m_plc_master_data; }
 		void setPlcMasterData(const PlcMasterData &data) { m_plc_master_data = data; }
 
+			/// A terminal that can be the slave of a strip terminal, and stays
+			/// a terminal in everything else.
+		bool isStripTerminalSlave() const
+		{return m_type == ElementData::Terminal && m_terminal_strip_slave;}
+			/// A master whose slaves are terminals of the schematic.
+		bool isStripTerminalMaster() const
+		{return m_type == ElementData::Master
+				&& m_master_type == ElementData::StripTerminal;}
+			/// A contact, or a terminal that can be the slave of a strip
+			/// terminal: both link to one master, and show under their
+			/// label where it is.
+		bool linksAsSlave() const
+		{return m_type == ElementData::Slave || isStripTerminalSlave();}
+
 		// must be public, because this class is a private member
 		// of Element/ element editor and they must access this data
 		ElementData::Type       m_type = ElementData::Simple;
@@ -280,6 +297,11 @@ class ElementData : public PropertiesInterface
 
 		ElementData::TerminalType     m_terminal_type     = ElementData::TTGeneric;
 		ElementData::TerminalFunction m_terminal_function = ElementData::TFGeneric;
+			/// Written in the definition as the kind information "link_role"
+			/// with the value "slave". The terminal keeps its link type: it
+			/// is added to, not replaced, so the terminal stays in its strip
+			/// and still carries the potential across.
+		bool m_terminal_strip_slave = false;
 
 		int m_contact_count{1};
 		DiagramContext m_informations;

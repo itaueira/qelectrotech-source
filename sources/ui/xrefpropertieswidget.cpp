@@ -104,6 +104,7 @@ void XRefPropertiesWidget::buildUi()
 	ui -> m_type_cb -> addItem(tr("Organe de protection"), "protection");
 	ui -> m_type_cb -> addItem(tr("Commutateur / bouton"), "commutator");
 	ui -> m_type_cb -> addItem(tr("Automate (PLC)"), "plc");
+	ui -> m_type_cb -> addItem(tr("Borne de bornier"), "strip_terminal");
 
 	ui -> m_snap_to_cb -> addItem(tr("En bas de page"), "bottom");
 	ui -> m_snap_to_cb -> addItem(tr("Sous le label de l'élément"), "label");
@@ -221,7 +222,10 @@ void XRefPropertiesWidget::updateDisplay()
 	//have no effect at all for this type, so they are hidden instead of
 	//being offered for nothing. The positioning settings and the labels
 	//(the table really uses them) stay available.
-	const bool is_plc = type == QLatin1String("plc");
+	//A strip terminal draws the position of each linked terminal, and has
+	//no contact to draw either: the same options are left out.
+	const bool is_plc = type == QLatin1String("plc")
+			|| type == QLatin1String("strip_terminal");
 	ui->m_display_has_contacts_rb->setVisible(!is_plc);
 	ui->m_display_has_cross_rb->setVisible(!is_plc);
 	ui->m_show_terminal_name_cb->setVisible(!is_plc);

@@ -268,8 +268,10 @@ void injectCrossRefLinks(QPdfEngine *engine, Diagram *diagram,
 				continue;
 			}
 
-			// (b) Slave element : the "(folio-pos)" text -> master element
-			if (parent->linkType() == Element::Slave) {
+			// (b) Slave element : the "(folio-pos)" text -> master element.
+			// A terminal linked to a strip terminal shows the same text.
+			if (parent->linkType() == Element::Slave
+			    || parent->elementData().isStripTerminalSlave()) {
 				QGraphicsTextItem *sx = deti->slaveXrefItem();
 				Element *master = deti->masterElement();
 				if (sx && master && master->diagram()) {

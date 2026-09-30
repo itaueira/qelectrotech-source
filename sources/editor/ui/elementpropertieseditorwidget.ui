@@ -259,6 +259,19 @@
             </property>
            </widget>
           </item>
+          <item row="4" column="0" colspan="2">
+           <widget class="QCheckBox" name="m_strip_slave_cb">
+            <property name="styleSheet">
+             <string>margin: 5px; font-weight: bold;</string>
+            </property>
+            <property name="toolTip">
+             <string>La borne reste une borne : elle garde sa place dans son bornier et transmet le potentiel. Elle peut en plus être liée à la borne qui la représente sur le folio du bornier.</string>
+            </property>
+            <property name="text">
+             <string>Peut être esclave d'une borne de bornier</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

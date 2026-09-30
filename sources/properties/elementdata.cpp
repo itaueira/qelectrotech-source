@@ -262,6 +262,16 @@ QDomElement ElementData::kindInfoToXml(QDomDocument &document)
 		auto func_txt = document.createTextNode(terminalFunctionToString(m_terminal_function));
 		xml_func.appendChild(func_txt);
 		returned_elmt.appendChild(xml_func);
+
+			//link role, written only when set: a program that does not know
+			//it ignores it and opens the terminal as a plain terminal
+		if (m_terminal_strip_slave)
+		{
+			auto xml_role = document.createElement(QStringLiteral("kindInformation"));
+			xml_role.setAttribute(QStringLiteral("name"), QStringLiteral("link_role"));
+			xml_role.appendChild(document.createTextNode(QStringLiteral("slave")));
+			returned_elmt.appendChild(xml_role);
+		}
 	}
 
 	return returned_elmt;
@@ -635,6 +645,10 @@ bool ElementData::operator==(const ElementData &data) const
 		else if (data.m_terminal_function != m_terminal_function) {
 			return false;
 		}
+
+		if (data.m_terminal_strip_slave != m_terminal_strip_slave) {
+			return false;
+		}
 	}
 
 	if(data.m_informations != m_informations) {
@@ -731,6 +745,8 @@ QString ElementData::masterTypeToString(ElementData::MasterType type)
 			return QStringLiteral("commutator");
 		case ElementData::PLC:
 			return QStringLiteral("plc");
+		case ElementData::StripTerminal:
+			return QStringLiteral("strip_terminal");
 	}
 	return QStringLiteral("coil");
 }
@@ -745,6 +761,8 @@ ElementData::MasterType ElementData::masterTypeFromString(const QString &string)
 		return ElementData::Commutator;
 	} else if (string == QLatin1String("plc")) {
 		return ElementData::PLC;
+	} else if (string == QLatin1String("strip_terminal")) {
+		return ElementData::StripTerminal;
 	}
 
 	qDebug() << "ElementData::masterTypeFromString : string "
@@ -922,6 +940,10 @@ QString ElementData::translatedTerminalFunction(ElementData::TerminalFunction fu
 
 void ElementData::kindInfoFromXml(const QDomElement &xml_element)
 {
+		//A flag, and not a value every definition writes: left over from a
+		//definition read before, it would make a plain terminal a slave
+	m_terminal_strip_slave = false;
+
 	if (m_type == ElementData::Master ||
 		m_type == ElementData::Slave  ||
 		m_type == ElementData::Terminal)
@@ -955,6 +977,8 @@ void ElementData::kindInfoFromXml(const QDomElement &xml_element)
 					m_terminal_type = terminalTypeFromString(dom_elmt.text());
 				} else if (name == QLatin1String("function")) {
 					m_terminal_function = terminalFunctionFromString(dom_elmt.text());
+				} else if (name == QLatin1String("link_role")) {
+					m_terminal_strip_slave = dom_elmt.text() == QLatin1String("slave");
 				}
 			}
 		}
