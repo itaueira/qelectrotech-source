@@ -17,6 +17,9 @@
 */
 #include "../qt_catch_tostring.h"
 #include "../../../../sources/ElementsCollection/elementslocation.h"
+#include "../../../../sources/catalog/catalog.h"
+#include "../../../../sources/catalog/catalogpart.h"
+#include "../../../../sources/catalog/ui/catalogpartdialog.h"
 #include "../../../../sources/editor/editorcommands.h"
 #include "../../../../sources/editor/elementscene.h"
 #include "../../../../sources/editor/graphicspart/partimage.h"
@@ -38,6 +41,11 @@
 #include <QFile>
 #include <QGraphicsSceneMouseEvent>
 #include <QImage>
+#include <QLabel>
+#include <QMessageBox>
+#include <QPointer>
+#include <QPushButton>
+#include <QTabBar>
 #include <QString>
 #include <QTemporaryDir>
 #include <QTextStream>
@@ -193,71 +201,13 @@ TEST_CASE("T44 — the layout drawing is read in millimetre, and only its shapes
 	}
 }
 
-TEST_CASE("T44 — the element editor writes back the layout drawing it read",
-	  "[t44][layoutdrawing]")
-{
-	QETElementEditor editor;
-	ElementScene *scene = editor.elementScene();
-	REQUIRE(scene);
-
-	const QDomDocument read = symbol(drawing45x90());
-	scene->fromXml(read);
-
-	const QDomDocument saved = scene->toXml();
-	const QDomElement block = layoutBlock(saved);
-	REQUIRE_FALSE(block.isNull());
-
-		//Byte for byte what was read - terminal and dynamic text included:
-		//this scene keeps the block, it does not judge it. Filtering is
-		//the reader's business, and the reader of the saved file still
-		//finds the same drawing.
-	CHECK(serialized(block) == serialized(layoutBlock(read)));
-	const auto drawing = ElementPictureFactory::layoutDrawing(saved.documentElement());
-	CHECK(drawing.parts == 2);
-	CHECK(drawing.bounds == QRectF(0, 0, 45, 90));
-
-		//And the symbol is still the symbol: the description was not
-		//touched by the block written beside it.
-	const QDomElement description = saved.documentElement().firstChildElement("description");
-	CHECK(description.elementsByTagName("line").size() == 1);
-	CHECK(description.elementsByTagName("terminal").size() == 1);
-
-	SECTION("a selection export does not carry the drawing along")
-	{
-		scene->slot_selectAll();
-		CHECK(layoutBlock(scene->toXml(false)).isNull());
-	}
-
-	SECTION("reset forgets it, so the next element does not inherit it")
-	{
-		scene->reset();
-		CHECK(scene->layoutDrawingXml().isNull());
-		CHECK(layoutBlock(scene->toXml()).isNull());
-	}
-}
-
-TEST_CASE("T44 — a symbol without a layout drawing is saved without one",
-	  "[t44][layoutdrawing]")
-{
-	QETElementEditor editor;
-	ElementScene *scene = editor.elementScene();
-	scene->fromXml(symbol(QString()));
-
-		//Not even an empty block: an old symbol saved by this version must
-		//come out the way it went in.
-	CHECK(scene->layoutDrawingXml().isNull());
-	CHECK(layoutBlock(scene->toXml()).isNull());
-}
-
 /*
 	From here on the editor is driven the way the person driving it does:
-	opened from a file, the tab switched, a shape drawn with the real tool
-	of the tool bar, saved through toFile(), read back. A file and not a
-	location: a file outside every collection is no element to
-	ElementsLocation::isElement(), and fromLocation() would stop on a
-	modal box nobody can close here. The mouse goes to
-	the scene as scene events, which is where the tools read it: going
-	through the view would only add the geometry of a window nobody sees.
+	opened from a symbol file, or on the drawing of a part of the
+	catalogue, a shape drawn with the real tool of the tool bar, saved by
+	its action. The mouse goes to the scene as scene events, which is where
+	the tools read it: going through the view would only add the geometry
+	of a window nobody sees.
 */
 namespace {
 	QString writeSymbol(const QTemporaryDir &dir, const QString &name, const QDomDocument &doc)
@@ -288,6 +238,13 @@ namespace {
 		}
 		FAIL("no action named " << text.toStdString());
 		return nullptr;
+	}
+
+	QAction *saveAction(QETElementEditor &editor)
+	{
+		QAction *save = editor.findChild<QAction *>(QStringLiteral("m_save_action"));
+		REQUIRE(save);
+		return save;
 	}
 
 	void sendMouse(ElementScene *scene, QEvent::Type type, const QPointF &pos)
@@ -328,223 +285,354 @@ namespace {
 		return found;
 	}
 
+	/// The drawing an editor hands back when its "Enregistrer" is used
+	QString savedBy(QETElementEditor &editor)
+	{
+		QString block;
+		bool emitted = false;
+		const auto connection = QObject::connect(&editor, &QETElementEditor::partDrawingSaved,
+							 [&](const QString &saved) {
+			block = saved;
+			emitted = true;
+		});
+		saveAction(editor)->trigger();
+		QObject::disconnect(connection);
+		REQUIRE(emitted);
+		return block;
+	}
+
+	/// Answers the message boxes that come up while it lives, with
+	/// @a button, and counts them. A modal window that is no message box -
+	/// the editor itself, opened modal over the window of a part - is left
+	/// alone.
+	class Answerer
+	{
+		public:
+			explicit Answerer(QMessageBox::StandardButton button) : m_button(button)
+			{
+				m_timer.setInterval(20);
+				QObject::connect(&m_timer, &QTimer::timeout, [this]() {
+					auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+					if (!box) {
+						return;
+					}
+					if (QAbstractButton *answer = box->button(m_button)) {
+						++m_answered;
+						answer->click();
+					}
+				});
+				m_timer.start();
+			}
+			int answered() const {return m_answered;}
+
+		private:
+			QTimer m_timer;
+			QMessageBox::StandardButton m_button;
+			int m_answered = 0;
+	};
+
+	QPushButton *pushButton(QWidget &window, const QString &text)
+	{
+		for (QPushButton *button : window.findChildren<QPushButton *>()) {
+			if (button->text() == text) {
+				return button;
+			}
+		}
+		FAIL("no button named " << text.toStdString());
+		return nullptr;
+	}
+
+	/// The editor "Modifier le dessin 2D…" opens over the window of a part.
+	/// The window is shown modal first, the way the program runs it by
+	/// exec(): a closing that refuses while any modal window is up passed
+	/// the bench where nothing was modal, and would have locked the editor
+	/// for good in the program - measured, by planting it back.
+	QETElementEditor *openDrawingFrom(CatalogPartDialog &dialog)
+	{
+		if (!dialog.isVisible()) {
+			dialog.setWindowModality(Qt::ApplicationModal);
+			dialog.show();
+		}
+		auto *edit = dialog.findChild<QPushButton *>(QStringLiteral("edit_drawing"));
+		REQUIRE(edit);
+		edit->click();
+		for (QETElementEditor *editor : dialog.findChildren<QETElementEditor *>()) {
+			if (editor->isVisible() && editor->isPartDrawingMode()) {
+					//Modal over the part: nobody edits the part beneath
+				CHECK(editor->windowModality() == Qt::WindowModal);
+				return editor;
+			}
+		}
+		return nullptr;
+	}
+
+	QPixmap previewOf(CatalogPartDialog &dialog)
+	{
+		auto *preview = dialog.findChild<QLabel *>(QStringLiteral("drawing_preview"));
+		REQUIRE(preview);
+		return preview->pixmap();
+	}
+
+	QString summaryOf(CatalogPartDialog &dialog)
+	{
+		auto *summary = dialog.findChild<QLabel *>(QStringLiteral("drawing_summary"));
+		REQUIRE(summary);
+		return summary->text();
+	}
+
+	/// A catalogue in memory holding one part @a code, of the contactor class
+	struct OnePart
+	{
+		explicit OnePart(const QString &code, const QString &drawing = QString())
+		{
+			QString error;
+			REQUIRE(catalog.openInMemory(&error));
+			const int contactor = catalog.classByKey(QStringLiteral("contactor")).id;
+			REQUIRE(contactor > 0);
+			CatalogPart part(code, contactor);
+			part.layout_drawing = drawing;
+			REQUIRE(catalog.savePart(part, &error));
+		}
+		Catalog catalog;
+	};
+
 	const QString add_rectangle = QStringLiteral("Ajouter un rectangle");
 	const QString add_line      = QStringLiteral("Ajouter une ligne");
 }
 
-TEST_CASE("CU-44.1 — the 2D drawing survives save and reopen",
+TEST_CASE("CU-44.4 — the symbol is a symbol again: no 2D tab, and no drawing in the file",
 	  "[t44][layoutdrawing]")
 {
+		//A symbol of the first version of this task, with its block
 	QTemporaryDir dir;
 	REQUIRE(dir.isValid());
-	const QString path = writeSymbol(dir, QStringLiteral("piece.elmt"), symbol(QString()));
+	const QString path = writeSymbol(dir, QStringLiteral("ancien.elmt"), symbol(drawing45x90()));
 
+	QETElementEditor editor;
+	editor.fromFile(path);
+	CHECK_FALSE(editor.isPartDrawingMode());
+	CHECK_FALSE(editor.isLayoutDrawingActive());
+		//The docks still tab, and their bars are tab bars: what must be
+		//gone is the one that switched to the drawing
+	for (QTabBar *bar : editor.findChildren<QTabBar *>()) {
+		for (int index = 0 ; index < bar->count() ; ++index) {
+			CHECK(bar->tabText(index) != QStringLiteral("Dessin 2D"));
+		}
+	}
+	CHECK(editor.layoutDrawingScene()->items().isEmpty());
+
+	REQUIRE(editor.toFile(path));
+	const QDomDocument saved = readFile(path);
+	CHECK(layoutBlock(saved).isNull());
+		//And the symbol is the symbol it was
+	const QDomElement description = saved.documentElement().firstChildElement("description");
+	CHECK(description.elementsByTagName("line").size() == 1);
+	CHECK(description.elementsByTagName("terminal").size() == 1);
+}
+
+TEST_CASE("CU-44.5 — the editor of the drawing of a part has the drawing, and nothing else",
+	  "[t44][layoutdrawing]")
+{
+	QETElementEditor editor;
+	editor.editPartDrawing(QStringLiteral("LC1D09"), QString());
+
+	CHECK(editor.isPartDrawingMode());
+	CHECK(editor.isLayoutDrawingActive());
+	CHECK(editor.elementScene() == editor.layoutDrawingScene());
+	CHECK(editor.windowTitle().contains(QStringLiteral("LC1D09")));
+
+		//No terminal and no dynamic text on a plate; the shapes all there
+	CHECK_FALSE(editorAction(editor, QStringLiteral("Ajouter une borne"))->isEnabled());
+	CHECK_FALSE(editorAction(editor, QStringLiteral("Ajouter un champ texte dynamique"))->isEnabled());
+	CHECK(editorAction(editor, add_rectangle)->isEnabled());
+	CHECK(editorAction(editor, add_line)->isEnabled());
+
+		//None of the actions of a symbol file, and the save that hands the
+		//drawing back
+	for (const char *name : {"m_new_action", "m_open_action", "m_open_from_file_action",
+				 "m_save_as_action", "m_save_as_file_action", "m_reload_action",
+				 "m_import_dxf", "m_edit_names_action", "m_edit_author_action",
+				 "m_edit_element_properties_action"})
+	{
+		INFO(name);
+		QAction *action = editor.findChild<QAction *>(QString::fromLatin1(name));
+		REQUIRE(action);
+		CHECK_FALSE(action->isVisible());
+		CHECK_FALSE(action->isEnabled());
+	}
+	CHECK(saveAction(editor)->isVisible());
+}
+
+TEST_CASE("T44 — the editor of a drawing hands back what was drawn, and opens it again",
+	  "[t44][layoutdrawing]")
+{
+	QString saved;
 	{
 		QETElementEditor editor;
-		editor.fromFile(path);
-		editor.setLayoutDrawingActive(true);
-		REQUIRE(editor.elementScene() == editor.layoutDrawingScene());
-
+		editor.editPartDrawing(QStringLiteral("LC1D09"), QString());
 		drawWith(editor, add_rectangle, QPointF(0, 0), QPointF(45, 90));
 		drawWith(editor, add_line,      QPointF(0, 45), QPointF(45, 45));
-		REQUIRE(partsOf<PartRectangle>(editor.layoutDrawingScene()).size() == 1);
-		REQUIRE(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
-		REQUIRE(editor.toFile(path));
+		saved = savedBy(editor);
+			//Handed back is saved: nothing left to ask on closing
+		CHECK(editor.layoutDrawingScene()->undoStack().isClean());
 	}
-
-		//The file, as any reader finds it
-	const QDomDocument saved = readFile(path);
-	const QDomElement block = layoutBlock(saved);
-	REQUIRE_FALSE(block.isNull());
-	CHECK(block.elementsByTagName("rect").size() == 1);
-	CHECK(block.elementsByTagName("line").size() == 1);
-	const auto drawing = ElementPictureFactory::layoutDrawing(saved.documentElement());
+	const auto drawing = ElementPictureFactory::layoutDrawingOf(saved);
 	CHECK(drawing.parts == 2);
 	CHECK(drawing.bounds == QRectF(0, 0, 45, 90));
 
-		//And the editor, opened again
 	QETElementEditor reopened;
-	reopened.fromFile(path);
-	CHECK_FALSE(reopened.isLayoutDrawingActive());
+	reopened.editPartDrawing(QStringLiteral("LC1D09"), saved);
 	const auto rects = partsOf<PartRectangle>(reopened.layoutDrawingScene());
 	REQUIRE(rects.size() == 1);
 	CHECK(rects.first()->sceneGeometricRect() == QRectF(0, 0, 45, 90));
 	CHECK(partsOf<PartLine>(reopened.layoutDrawingScene()).size() == 1);
+		//Opening is not an edit
+	CHECK_FALSE(reopened.layoutDrawingScene()->undoStack().canUndo());
 
-		//The symbol tab is as it was: the line and the terminal, nothing of
-		//the 2D drawing in it
-	CHECK(partsOf<PartLine>(reopened.elementScene()).size() == 1);
-	CHECK(partsOf<PartTerminal>(reopened.elementScene()).size() == 1);
-	CHECK(partsOf<PartRectangle>(reopened.elementScene()).isEmpty());
+		//And a drawing emptied hands back nothing, not an empty block. Saved
+		//once with a line first: with nothing changed the action is off,
+		//which is right and is not what is asked here.
+	QETElementEditor empty;
+	empty.editPartDrawing(QStringLiteral("LC1D12"), QString());
+	drawWith(empty, add_line, QPointF(0, 0), QPointF(10, 0));
+	CHECK_FALSE(savedBy(empty).isEmpty());
+	empty.layoutDrawingScene()->undoStack().undo();
+	CHECK(savedBy(empty).isEmpty());
 }
 
-TEST_CASE("CU-44.2 — a symbol without a 2D drawing comes out as it went in",
+TEST_CASE("CU-44.1 — the drawing of a part survives saving and reopening it in the catalogue",
 	  "[t44][layoutdrawing]")
 {
-	QTemporaryDir dir;
-	REQUIRE(dir.isValid());
-	const QString path = writeSymbol(dir, QStringLiteral("ancien.elmt"), symbol(QString()));
+	OnePart bench(QStringLiteral("LC1D09"));
+	{
+		CatalogPartDialog dialog(&bench.catalog, bench.catalog.partByCode(QStringLiteral("LC1D09")));
+		CHECK(previewOf(dialog).isNull());
+		QETElementEditor *editor = openDrawingFrom(dialog);
+		REQUIRE(editor);
+		CHECK(editor->windowTitle().contains(QStringLiteral("LC1D09")));
+		drawWith(*editor, add_rectangle, QPointF(0, 0), QPointF(45, 90));
+		drawWith(*editor, add_line,      QPointF(0, 45), QPointF(45, 45));
+		saveAction(*editor)->trigger();
+		const QPointer<QETElementEditor> closing(editor);
+		CHECK(editor->close());
 
-	QETElementEditor editor;
-	editor.fromFile(path);
-	drawWith(editor, add_line, QPointF(-10, 10), QPointF(10, 10));
-	REQUIRE(partsOf<PartLine>(editor.elementScene()).size() == 2);
-	REQUIRE(editor.toFile(path));
+			//The window of the part has it and shows it - and nothing is in
+			//the catalogue before its own "Enregistrer"
+		CHECK_FALSE(previewOf(dialog).isNull());
+		CHECK(summaryOf(dialog).contains(QStringLiteral("45")));
+		CHECK(bench.catalog.partByCode(QStringLiteral("LC1D09")).layout_drawing.isEmpty());
 
-		//Not even an empty block
-	CHECK(layoutBlock(readFile(path)).isNull());
-}
-
-TEST_CASE("CU-44.3 — editing only the symbol does not erase the 2D drawing",
-	  "[t44][layoutdrawing]")
-{
-	QTemporaryDir dir;
-	REQUIRE(dir.isValid());
-	const QString path = writeSymbol(dir, QStringLiteral("piece.elmt"), symbol(drawing45x90()));
-
-	QETElementEditor editor;
-	editor.fromFile(path);
-		//The 2D tab is never shown
-	REQUIRE_FALSE(editor.isLayoutDrawingActive());
-	drawWith(editor, add_line, QPointF(-10, 10), QPointF(10, 10));
-	REQUIRE(editor.toFile(path));
-
-	const QDomDocument saved = readFile(path);
-	const QDomElement block = layoutBlock(saved);
-	REQUIRE_FALSE(block.isNull());
-		//The shapes are all there. What the block held besides shapes - a
-		//terminal and a dynamic text, which this fixture puts in on purpose
-		//- the 2D tab never took, and so never writes back.
-	const auto drawing = ElementPictureFactory::layoutDrawing(saved.documentElement());
+		Answerer yes(QMessageBox::Yes);
+		pushButton(dialog, QStringLiteral("Enregistrer"))->click();
+		CHECK(yes.answered() == 1);
+	}
+	const CatalogPart saved = bench.catalog.partByCode(QStringLiteral("LC1D09"));
+	const auto drawing = ElementPictureFactory::layoutDrawingOf(saved.layout_drawing);
 	CHECK(drawing.parts == 2);
 	CHECK(drawing.bounds == QRectF(0, 0, 45, 90));
-	CHECK(block.elementsByTagName("terminal").isEmpty());
-	CHECK(block.elementsByTagName("dynamic_text").isEmpty());
+
+		//Opened again: the window shows it, and the editor has the two parts
+		//where they were
+	CatalogPartDialog again(&bench.catalog, saved);
+	CHECK_FALSE(previewOf(again).isNull());
+	QETElementEditor *reopened = openDrawingFrom(again);
+	REQUIRE(reopened);
+	const auto rects = partsOf<PartRectangle>(reopened->layoutDrawingScene());
+	REQUIRE(rects.size() == 1);
+	CHECK(rects.first()->sceneGeometricRect() == QRectF(0, 0, 45, 90));
+	CHECK(partsOf<PartLine>(reopened->layoutDrawingScene()).size() == 1);
+	CHECK(reopened->close());
 }
 
-TEST_CASE("CU-44.4 — the 2D drawing does not show on the folio",
+TEST_CASE("CU-44.3 — saving the part from its window keeps the drawing, and a new revision carries it",
 	  "[t44][layoutdrawing]")
 {
-	QTemporaryDir dir;
-	REQUIRE(dir.isValid());
-
-		//The same symbol saved by the editor twice, with and without a 2D
-		//drawing: what the folio is built from must not tell them apart.
-	auto saveThrough = [&dir](const QString &name, const QString &block, const QString &uuid) {
-		const QString path = writeSymbol(dir, name, symbol(block, uuid));
-		QETElementEditor editor;
-		editor.fromFile(path);
-		return editor.elementXml();
-	};
-	const QDomDocument with = saveThrough(QStringLiteral("avec.elmt"), drawing45x90(),
-								QStringLiteral("{9a1d2c3e-0000-4000-8000-000000000001}"));
-	const QDomDocument without = saveThrough(QStringLiteral("sans.elmt"), QString(),
-								QStringLiteral("{9a1d2c3e-0000-4000-8000-000000000002}"));
-	REQUIRE_FALSE(layoutBlock(with).isNull());
-
-		//The size and hotspot the folio places it by
-	for (const char *attribute : {"width", "height", "hotspot_x", "hotspot_y"}) {
-		INFO(attribute);
-		CHECK(with.documentElement().attribute(attribute)
-			  == without.documentElement().attribute(attribute));
+	const QString block = QStringLiteral(
+		"<layout_drawing><rect x=\"0\" y=\"0\" width=\"45\" height=\"90\" %1/></layout_drawing>")
+		.arg(shape_style);
+	OnePart bench(QStringLiteral("GV2ME10"), block);
+	{
+			//Saved in place without opening the drawing
+		CatalogPartDialog dialog(&bench.catalog, bench.catalog.partByCode(QStringLiteral("GV2ME10")));
+		Answerer yes(QMessageBox::Yes);
+		pushButton(dialog, QStringLiteral("Enregistrer"))->click();
+		REQUIRE(yes.answered() == 1);
 	}
-
-		//The terminals an element on a folio gets: those of the description
-	CHECK(with.documentElement().firstChildElement("description")
-			.elementsByTagName("terminal").size() == 1);
-
-		//And what the folio draws, by the factory that draws it: one line,
-		//the symbol's. The rectangle and the second line of the block would
-		//show here if the folio read it.
-	const QString path = dir.filePath(QStringLiteral("avec-enregistre.elmt"));
-	QFile file(path);
-	REQUIRE(file.open(QIODevice::WriteOnly));
-	file.write(with.toByteArray());
-	file.close();
-	const auto primitives = ElementPictureFactory::instance()->getPrimitives(ElementsLocation(path));
-	CHECK(primitives.m_lines.size() == 1);
-	CHECK(primitives.m_rectangles.isEmpty());
+	CHECK(bench.catalog.partByCode(QStringLiteral("GV2ME10")).layout_drawing == block);
+	{
+		CatalogPartDialog dialog(&bench.catalog, bench.catalog.partByCode(QStringLiteral("GV2ME10")));
+		Answerer yes(QMessageBox::Yes);
+		pushButton(dialog, QStringLiteral("Enregistrer comme nouvelle révision"))->click();
+		REQUIRE(yes.answered() == 1);
+	}
+	const CatalogPart current = bench.catalog.partByCode(QStringLiteral("GV2ME10"));
+	CHECK(current.revision == 2);
+	CHECK(current.layout_drawing == block);
 }
 
-TEST_CASE("CU-44.5 — the 2D tab has no terminal and no dynamic text",
+TEST_CASE("CU-44.6 — closing the drawing without saving leaves the part as it was",
+	  "[t44][layoutdrawing]")
+{
+	OnePart bench(QStringLiteral("LC1D18"));
+	CatalogPartDialog dialog(&bench.catalog, bench.catalog.partByCode(QStringLiteral("LC1D18")));
+
+	QETElementEditor *first = openDrawingFrom(dialog);
+	REQUIRE(first);
+	drawWith(*first, add_line, QPointF(0, 0), QPointF(45, 0));
+	{
+		Answerer no(QMessageBox::No);
+		CHECK(first->close());
+		CHECK(no.answered() == 1);
+	}
+	CHECK(previewOf(dialog).isNull());
+	CHECK(summaryOf(dialog).isEmpty());
+
+		//"Annuler" keeps the editor, and what was drawn in it
+	QETElementEditor *second = openDrawingFrom(dialog);
+	REQUIRE(second);
+	REQUIRE(second != first);
+	drawWith(*second, add_line, QPointF(0, 0), QPointF(45, 0));
+	{
+		Answerer cancel(QMessageBox::Cancel);
+		CHECK_FALSE(second->close());
+		CHECK(cancel.answered() == 1);
+	}
+	CHECK(second->isVisible());
+	CHECK(partsOf<PartLine>(second->layoutDrawingScene()).size() == 1);
+
+		//And saving hands it to the window of the part
+	saveAction(*second)->trigger();
+	CHECK_FALSE(previewOf(dialog).isNull());
+	CHECK(second->close());
+}
+
+TEST_CASE("T44 — the editor of a drawing refuses what is not a shape, pasted or loaded",
 	  "[t44][layoutdrawing]")
 {
 	QETElementEditor editor;
-	editor.elementScene()->fromXml(symbol(QString()));
-	QAction *terminal = editorAction(editor, QStringLiteral("Ajouter une borne"));
-	QAction *dynamic  = editorAction(editor, QStringLiteral("Ajouter un champ texte dynamique"));
-	REQUIRE(terminal->isEnabled());
-	REQUIRE(dynamic->isEnabled());
-
-	editor.setLayoutDrawingActive(true);
-	CHECK_FALSE(terminal->isEnabled());
-	CHECK_FALSE(dynamic->isEnabled());
-		//The shapes are all there
-	CHECK(editorAction(editor, add_rectangle)->isEnabled());
-	CHECK(editorAction(editor, add_line)->isEnabled());
-
-	editor.setLayoutDrawingActive(false);
-	CHECK(terminal->isEnabled());
-	CHECK(dynamic->isEnabled());
-}
-
-TEST_CASE("CU-44.6 — undo is per tab",
-	  "[t44][layoutdrawing]")
-{
-	QETElementEditor editor;
-	editor.elementScene()->fromXml(symbol(QString()));
-	QAction *undo = editorAction(editor, QStringLiteral("Annuler"));
-		//Kept before any switch: elementScene() answers for the tab shown
-	ElementScene *symbol_scene = editor.elementScene();
-
-	editor.setLayoutDrawingActive(true);
-	drawWith(editor, add_line, QPointF(0, 0), QPointF(45, 0));
-	REQUIRE(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
-
-	editor.setLayoutDrawingActive(false);
-	drawWith(editor, add_line, QPointF(-10, 10), QPointF(10, 10));
-	REQUIRE(partsOf<PartLine>(symbol_scene).size() == 2);
-
-	REQUIRE(undo->isEnabled());
-	undo->trigger();
-	CHECK(partsOf<PartLine>(symbol_scene).size() == 1);
+		//Loaded: the fixture has a terminal and a dynamic text in its block
+	QDomDocument document;
+	document.appendChild(document.importNode(layoutBlock(symbol(drawing45x90())), true));
+	editor.editPartDrawing(QStringLiteral("LC1D09"), document.toString(-1));
+	CHECK(partsOf<PartRectangle>(editor.layoutDrawingScene()).size() == 1);
 	CHECK(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
+	CHECK(partsOf<PartTerminal>(editor.layoutDrawingScene()).isEmpty());
 
-		//And back on the 2D tab, its own undo
-	editor.setLayoutDrawingActive(true);
-	REQUIRE(undo->isEnabled());
-	undo->trigger();
-	CHECK(partsOf<PartLine>(editor.layoutDrawingScene()).isEmpty());
-	CHECK(partsOf<PartLine>(symbol_scene).size() == 1);
-}
-
-TEST_CASE("T44 — the 2D tab refuses what is not a shape, pasted or loaded",
-	  "[t44][layoutdrawing]")
-{
-	QETElementEditor editor;
-	editor.setLayoutDrawingActive(true);
-
-		//The paste path: fromXml at a position, consider_informations off.
-		//A whole symbol pasted on the plate drawing leaves its line, and
-		//not its terminal.
+		//Pasted: a whole symbol leaves its line, and not its terminal
 	editor.elementScene()->fromXml(symbol(QString()), QPointF(5, 5), false);
-	CHECK(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
+	CHECK(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 2);
 	CHECK(partsOf<PartTerminal>(editor.layoutDrawingScene()).isEmpty());
 }
 
-TEST_CASE("CU-44.15 — the fields of the 2D tab say mm",
+TEST_CASE("CU-44.15 — the fields of the drawing say mm, and those of the symbol do not",
 	  "[t44][layoutdrawing]")
 {
-	QETElementEditor editor;
-	editor.elementScene()->fromXml(symbol(QString()));
-	ElementScene *symbol_scene = editor.elementScene();
-
 		//The editor of a part is shown in the tools dock only once a part
-		//of its kind is selected, and it is the same editor on both tabs
-	auto fieldsShownFor = [&editor](ElementScene *scene) {
-		QList<PartRectangle *> rectangles = partsOf<PartRectangle>(scene);
+		//of its kind is selected
+	auto fieldsShownFor = [](QETElementEditor &editor) {
+		QList<PartRectangle *> rectangles = partsOf<PartRectangle>(editor.elementScene());
 		REQUIRE(rectangles.size() == 1);
-		scene->clearSelection();
+		editor.elementScene()->clearSelection();
 		rectangles.first()->setSelected(true);
 		QList<QDoubleSpinBox *> fields;
 		for (RectangleEditor *shown : editor.findChildren<RectangleEditor *>()) {
@@ -553,20 +641,22 @@ TEST_CASE("CU-44.15 — the fields of the 2D tab say mm",
 		return fields;
 	};
 
-	editor.setLayoutDrawingActive(true);
-	drawWith(editor, add_rectangle, QPointF(0, 0), QPointF(45, 90));
-	const QList<QDoubleSpinBox *> in_2d = fieldsShownFor(editor.layoutDrawingScene());
+	QETElementEditor drawing;
+	drawing.editPartDrawing(QStringLiteral("LC1D09"), QString());
+	drawWith(drawing, add_rectangle, QPointF(0, 0), QPointF(45, 90));
+	const QList<QDoubleSpinBox *> in_mm = fieldsShownFor(drawing);
 		//x, y, width, height and the two radii
-	REQUIRE(in_2d.size() == 6);
-	for (QDoubleSpinBox *field : in_2d) {
+	REQUIRE(in_mm.size() == 6);
+	for (QDoubleSpinBox *field : in_mm) {
 		CHECK(field->suffix() == QStringLiteral(" mm"));
 	}
 
-		//Back on the symbol the same fields say nothing: its unit is the
-		//folio's, and a millimetre there would be a lie
-	editor.setLayoutDrawingActive(false);
-	drawWith(editor, add_rectangle, QPointF(-5, -5), QPointF(5, 5));
-	const QList<QDoubleSpinBox *> on_symbol = fieldsShownFor(symbol_scene);
+		//On a symbol the unit is the folio's, and a millimetre there would
+		//be a lie
+	QETElementEditor symbol_editor;
+	symbol_editor.elementScene()->fromXml(symbol(QString()));
+	drawWith(symbol_editor, add_rectangle, QPointF(-5, -5), QPointF(5, 5));
+	const QList<QDoubleSpinBox *> on_symbol = fieldsShownFor(symbol_editor);
 	REQUIRE(on_symbol.size() == 6);
 	for (QDoubleSpinBox *field : on_symbol) {
 		CHECK(field->suffix().isEmpty());
@@ -574,8 +664,8 @@ TEST_CASE("CU-44.15 — the fields of the 2D tab say mm",
 }
 
 /*
-	The image of the 2D tab: the photo or the datasheet drawing of the part,
-	inside the symbol, at the size the person says the part has.
+	The image of the drawing: the photo or the datasheet drawing of the
+	part, inside the part, at the size the person says the part has.
 */
 
 namespace {
@@ -662,16 +752,17 @@ TEST_CASE("CU-44.12 — inserting an image asks the real size of the part",
 	const QString png = writeBytes(dir, QStringLiteral("datasheet.png"),
 				       rasterFile("PNG", QSize(400, 800), Qt::red));
 
-	QETElementEditor editor;
-	editor.elementScene()->fromXml(symbol(QString()));
-	QAction *insert = editorAction(editor, insert_image);
-		//On the symbol there is nothing to insert an image into
-	CHECK_FALSE(insert->isEnabled());
-	CHECK_FALSE(editor.insertImageFile(png));
-	CHECK(partsOf<PartImage>(editor.elementScene()).isEmpty());
+		//On a symbol there is nothing to insert an image into
+	const QString symbol_path = writeSymbol(dir, QStringLiteral("piece.elmt"), symbol(QString()));
+	QETElementEditor symbol_editor;
+	symbol_editor.fromFile(symbol_path);
+	CHECK_FALSE(editorAction(symbol_editor, insert_image)->isEnabled());
+	CHECK_FALSE(symbol_editor.insertImageFile(png));
+	CHECK(partsOf<PartImage>(symbol_editor.elementScene()).isEmpty());
 
-	editor.setLayoutDrawingActive(true);
-	CHECK(insert->isEnabled());
+	QETElementEditor editor;
+	editor.editPartDrawing(QStringLiteral("LC1D09"), QString());
+	CHECK(editorAction(editor, insert_image)->isEnabled());
 
 		//The question answered the way a person answers it: the width typed
 		//in, the height following it in proportion, then the proportion let
@@ -725,26 +816,16 @@ TEST_CASE("CU-44.12 — inserting an image asks the real size of the part",
 		//One step of undo takes it out again
 	editor.layoutDrawingScene()->undoStack().undo();
 	CHECK(partsOf<PartImage>(editor.layoutDrawingScene()).isEmpty());
-
-		//And back on the symbol the action is off again: off at first is
-		//only how it is made, off after the 2D tab is the rule
-	editor.setLayoutDrawingActive(false);
-	CHECK_FALSE(insert->isEnabled());
 }
 
-TEST_CASE("CU-44.13 — the image is scaled freely, and travels inside the symbol",
+TEST_CASE("CU-44.13 — the image is scaled freely, and stays inside the part",
 	  "[t44][layoutdrawing]")
 {
-	QTemporaryDir dir;
-	REQUIRE(dir.isValid());
-	const QString path = writeSymbol(dir, QStringLiteral("piece.elmt"),
-					 symbol(QString(), QStringLiteral("{0b3c2c8e-0c4f-4a43-9a52-1d1f5f2b7a13}")));
 	const QByteArray png = rasterFile("PNG", QSize(40, 80), Qt::red);
-
+	QString saved;
 	{
 		QETElementEditor editor;
-		editor.fromFile(path);
-		editor.setLayoutDrawingActive(true);
+		editor.editPartDrawing(QStringLiteral("LC1D09"), QString());
 		PartImage *image = editor.addLayoutImage(png, QStringLiteral("png"), QSizeF(22.5, 90));
 		REQUIRE(image);
 
@@ -766,51 +847,48 @@ TEST_CASE("CU-44.13 — the image is scaled freely, and travels inside the symbo
 		height->setValue(85.0);
 		emit height->editingFinished();
 		CHECK(image->rect().size() == QSizeF(25, 85));
-		REQUIRE(editor.toFile(path));
+		saved = savedBy(editor);
 	}
 
-		//The file holds the image itself, and the description the folio
-		//draws holds nothing of it
-	const QDomDocument saved = readFile(path);
-	const QDomElement written = layoutBlock(saved).firstChildElement(QStringLiteral("image"));
+		//The drawing holds the image itself
+	QDomDocument document;
+	REQUIRE(document.setContent(saved));
+	const QDomElement written = document.documentElement().firstChildElement(QStringLiteral("image"));
 	REQUIRE_FALSE(written.isNull());
 	CHECK(written.attribute(QStringLiteral("format")) == QStringLiteral("png"));
 	CHECK(written.attribute(QStringLiteral("width"))  == QStringLiteral("25"));
 	CHECK(written.attribute(QStringLiteral("height")) == QStringLiteral("85"));
 	CHECK(QByteArray::fromBase64(written.text().toLatin1()) == png);
-	CHECK(saved.documentElement().firstChildElement(QStringLiteral("description"))
-	      .elementsByTagName(QStringLiteral("image")).isEmpty());
 
 		//Opened again with no file of it anywhere on the disk
 	QETElementEditor reopened;
-	reopened.fromFile(path);
+	reopened.editPartDrawing(QStringLiteral("LC1D09"), saved);
 	const auto images = partsOf<PartImage>(reopened.layoutDrawingScene());
 	REQUIRE(images.size() == 1);
 	CHECK(images.first()->rect().size() == QSizeF(25, 85));
 	CHECK_FALSE(images.first()->isNull());
 	CHECK(images.first()->fileData() == png);
-	CHECK(partsOf<PartImage>(reopened.elementScene()).isEmpty());
 }
 
-TEST_CASE("T44 — an image pasted on the symbol is refused, and kept on the 2D tab",
+TEST_CASE("T44 — an image pasted on a symbol is refused, and kept on a drawing",
 	  "[t44][layoutdrawing]")
 {
-	QETElementEditor editor;
-	ElementScene *symbol_scene = editor.elementScene();
-	symbol_scene->fromXml(symbol(QString()));
-
-		//What the clipboard holds after copying an image of the 2D tab
+		//What the clipboard holds after copying an image of a drawing
 	QDomDocument pasted = symbol(QString());
 	pasted.documentElement().firstChildElement(QStringLiteral("description")).appendChild(
 				imageElement(pasted, rasterFile("PNG", QSize(10, 10), Qt::red),
 					     QStringLiteral("png"), QRectF(0, 0, 10, 10)));
 
+	QETElementEditor symbol_editor;
+	ElementScene *symbol_scene = symbol_editor.elementScene();
+	symbol_scene->fromXml(symbol(QString()));
 	symbol_scene->fromXml(pasted, QPointF(5, 5), false);
 	CHECK(partsOf<PartImage>(symbol_scene).isEmpty());
 
-	editor.setLayoutDrawingActive(true);
-	editor.elementScene()->fromXml(pasted, QPointF(5, 5), false);
-	CHECK(partsOf<PartImage>(editor.layoutDrawingScene()).size() == 1);
+	QETElementEditor drawing;
+	drawing.editPartDrawing(QStringLiteral("LC1D09"), QString());
+	drawing.elementScene()->fromXml(pasted, QPointF(5, 5), false);
+	CHECK(partsOf<PartImage>(drawing.layoutDrawingScene()).size() == 1);
 }
 
 TEST_CASE("T44 — an image this program cannot draw is kept as it came",
@@ -837,14 +915,10 @@ TEST_CASE("T44 — an image this program cannot draw is kept as it came",
 	CHECK(back.text() == element.text());
 
 		//And the plate counts nothing it could not draw
-	QDomDocument definition;
-	REQUIRE(definition.setContent(QStringLiteral(
-		"<definition type=\"element\" width=\"20\" height=\"20\" hotspot_x=\"10\" hotspot_y=\"10\">"
-		"<description/><layout_drawing/></definition>")));
-	definition.documentElement().firstChildElement(QStringLiteral("layout_drawing"))
-			.appendChild(definition.importNode(element, true));
-	const auto drawing = ElementPictureFactory::layoutDrawing(definition.documentElement());
-	CHECK(drawing.parts == 0);
+	QDomDocument block;
+	block.appendChild(block.createElement(QStringLiteral("layout_drawing")));
+	block.documentElement().appendChild(block.importNode(element, true));
+	CHECK(ElementPictureFactory::layoutDrawingOf(block.documentElement()).parts == 0);
 }
 
 TEST_CASE("T44 — rotating, flipping or mirroring leaves an image as it is drawn",
@@ -854,7 +928,7 @@ TEST_CASE("T44 — rotating, flipping or mirroring leaves an image as it is draw
 		//transform, sideways, with the fields still saying the old width
 		//and height, and nothing of the turn in the file
 	QETElementEditor editor;
-	editor.setLayoutDrawingActive(true);
+	editor.editPartDrawing(QStringLiteral("LC1D09"), QString());
 	PartImage *image = editor.addLayoutImage(rasterFile("PNG", QSize(40, 80), Qt::red),
 						 QStringLiteral("png"), QSizeF(45, 88));
 	REQUIRE(image);

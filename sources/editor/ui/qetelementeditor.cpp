@@ -63,7 +63,6 @@
 #include <QFileDialog>
 #include <QSvgGenerator>
 #include <QHBoxLayout>
-#include <QTabBar>
 #include <QUndoGroup>
 #include <QUndoView>
 #include <QVBoxLayout>
@@ -275,7 +274,6 @@ void QETElementEditor::fromFile(const QString &filepath)
 	}
 
 	m_elmt_scene -> fromXml(document_xml);
-	loadLayoutDrawing();
 	fillPartsList();
 
 	if (!infos_file.isWritable())
@@ -353,7 +351,6 @@ void QETElementEditor::fromLocation(const ElementsLocation &location)
 
 		//Load the element
 	m_elmt_scene -> fromXml(document_xml);
-	loadLayoutDrawing();
 	fillPartsList();
 
 		//location is read only
@@ -496,12 +493,6 @@ void QETElementEditor::setLayoutDrawingActive(bool active)
 		m_active_view  = active ? m_drawing_view  : m_view;
 		m_view_stack->setCurrentWidget(m_active_view);
 		m_undo_group->setActiveStack(&m_active_scene->undoStack());
-	}
-
-	const int index = active ? 1 : 0;
-	if (m_view_tabs->currentIndex() != index) {
-		const QSignalBlocker blocker(m_view_tabs);
-		m_view_tabs->setCurrentIndex(index);
 	}
 
 	updateLengthUnit();
@@ -705,33 +696,85 @@ ElementScene *QETElementEditor::layoutDrawingScene() const {
 
 /**
  * @brief QETElementEditor::elementXml
- * The shapes of the 2D tab become the layout_drawing block the symbol
- * scene writes beside its description. An empty tab writes no block, not
- * even an empty one, so that an old symbol saved here comes out the way
- * it went in.
+ * The symbol as it would be saved. It carries no 2D drawing: the drawing
+ * belongs to the part of the catalogue, and one symbol serves a whole
+ * family of parts.
  * @return the element as it would be saved
  */
 QDomDocument QETElementEditor::elementXml()
 {
-	QDomDocument scratch;
-	const QDomElement block = m_drawing_scene->contentToXml(
-				scratch, ElementPictureFactory::layoutDrawingTagName());
-	m_elmt_scene->setLayoutDrawingXml(block.hasChildNodes() ? block : QDomElement());
 	return m_elmt_scene->toXml();
 }
 
 /**
- * @brief QETElementEditor::loadLayoutDrawing
- * Fill the 2D tab from the layout_drawing block the symbol scene has just
- * read. The block goes through the path the symbol is loaded by, under
- * the name that path reads, and the scene of the tab keeps the shapes and
- * refuses the rest.
+ * @brief QETElementEditor::editPartDrawing
+ * @param part_code : the code of the part
+ * @param block : its drawing, a <layout_drawing> block as text
  */
-void QETElementEditor::loadLayoutDrawing()
+void QETElementEditor::editPartDrawing(const QString &part_code, const QString &block)
+{
+	m_part_drawing_mode = true;
+	m_part_code = part_code;
+		//Hidden is also off, shortcut included: Qt keeps an invisible
+		//action disabled whatever is set on it afterwards, and the test of
+		//this mode found the second guard that was here doing nothing
+	for (QAction *action : symbolFileActions()) {
+		action->setVisible(false);
+	}
+	setLayoutDrawingActive(true);
+	loadPartDrawing(block);
+	fillPartsList();
+	updateTitle();
+	updateAction();
+		//Seen on the screen on 2026-10-01: the bar still said "element
+		//editor" over the drawing of a part
+	statusBar()->showMessage(tr("Dessin 2D de la pièce, en millimètres"));
+}
+
+bool QETElementEditor::isPartDrawingMode() const
+{
+	return m_part_drawing_mode;
+}
+
+QString QETElementEditor::partDrawing() const
+{
+	QDomDocument document;
+	const QDomElement block = m_drawing_scene->contentToXml(
+				document, ElementPictureFactory::layoutDrawingTagName());
+	if (!block.hasChildNodes()) {
+		return QString();
+	}
+	document.appendChild(block);
+	return document.toString(-1);
+}
+
+/**
+ * @brief QETElementEditor::symbolFileActions
+ * @return the actions that work on a symbol file, which the part drawing
+ * mode does without: opening, saving under another name, the names, the
+ * author and the properties of the element, pasting from a symbol
+ */
+QList<QAction *> QETElementEditor::symbolFileActions() const
+{
+	return {ui->m_new_action, ui->m_open_action, ui->m_open_from_file_action,
+		ui->m_import_scaled_element, ui->m_import_dxf, ui->m_save_as_action,
+		ui->m_save_as_file_action, ui->m_export_svg_action, ui->m_reload_action,
+		ui->m_edit_names_action, ui->m_edit_author_action,
+		ui->m_edit_element_properties_action, ui->m_paste_from_menu->menuAction()};
+}
+
+/**
+ * @brief QETElementEditor::loadPartDrawing
+ * Fill the 2D scene from a <layout_drawing> block. The block goes through
+ * the path a symbol is loaded by, as the description of a definition,
+ * and the scene keeps the shapes and refuses the rest.
+ * @param block : the block, as text
+ */
+void QETElementEditor::loadPartDrawing(const QString &block)
 {
 	m_drawing_scene->reset();
-	const QDomElement block = m_elmt_scene->layoutDrawingXml();
-	if (block.isNull()) {
+	QDomDocument read;
+	if (block.isEmpty() || !read.setContent(block)) {
 		return;
 	}
 
@@ -739,14 +782,15 @@ void QETElementEditor::loadLayoutDrawing()
 	QDomElement root = document.createElement(QStringLiteral("definition"));
 	root.setAttribute(QStringLiteral("type"), QStringLiteral("element"));
 	QDomElement description = document.createElement(QStringLiteral("description"));
-	for (QDomNode node = block.firstChild() ; !node.isNull() ; node = node.nextSibling()) {
+	const QDomElement drawing = read.documentElement();
+	for (QDomNode node = drawing.firstChild() ; !node.isNull() ; node = node.nextSibling()) {
 		description.appendChild(document.importNode(node, true));
 	}
 	root.appendChild(description);
 	document.appendChild(root);
 
 	m_drawing_scene->fromXml(document, QPointF(), false);
-		//Opening is not an edit: the tab starts with nothing to undo
+		//Opening is not an edit: the drawing starts with nothing to undo
 	m_drawing_scene->undoStack().clear();
 }
 
@@ -808,6 +852,18 @@ QString QETElementEditor::getOpenElementFileName(QWidget *parent, const QString 
  */
 void QETElementEditor::updateTitle()
 {
+	if (m_part_drawing_mode)
+	{
+		QString title = tr("Dessin 2D — %1").arg(m_part_code.isEmpty()
+							 ? tr("nouvelle pièce")
+							 : m_part_code);
+		if (isModified()) {
+			title += QLatin1Char(' ') + tr("[Modifié]", "window title tag");
+		}
+		setWindowTitle(title);
+		return;
+	}
+
 	QString title = m_min_title;
 	title += " - " + m_elmt_scene->elementData().m_names_list.name() + " ";
 	if (!m_file_name.isEmpty() || !m_location.isNull()) {
@@ -1319,7 +1375,17 @@ void QETElementEditor::closeEvent(QCloseEvent *qce)
 		//guard QETMainWindow::event() applies to the other editors is
 		//applied here instead -- before canClose(), which itself opens a
 		//modal dialog.
-	if (QETMainWindow::refuseCloseWhileModal(qce)) {
+		//Unless the modal window is the one this editor was opened from:
+		//the drawing of a part opens over the window of the part, which
+		//is itself modal, and refusing then would keep the editor open for
+		//good. A box this editor opened is still what is guarded against.
+	QWidget *modal = QApplication::activeModalWidget();
+	bool opened_from_modal = false;
+	for (QWidget *owner = parentWidget() ; owner && !opened_from_modal ; owner = owner->parentWidget()) {
+		opened_from_modal = owner == modal;
+	}
+	if (modal && modal != this && !opened_from_modal
+		&& QETMainWindow::refuseCloseWhileModal(qce)) {
 		return;
 	}
 	if (canClose()) {
@@ -1342,6 +1408,20 @@ bool QETElementEditor::canClose()
 {
 	if (!isModified()) {
 		return(true);
+	}
+	if (m_part_drawing_mode)
+	{
+		const QMessageBox::StandardButton answer = QET::QetMessageBox::question(
+			this,
+			tr("Enregistrer le dessin 2D ?", "dialog title"),
+			tr("Voulez-vous enregistrer le dessin 2D de la pièce %1 ?")
+			.arg(m_part_code),
+			QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+			QMessageBox::Cancel);
+		if (answer == QMessageBox::Cancel) {
+			return false;
+		}
+		return answer == QMessageBox::Yes ? on_m_save_action_triggered() : true;
 	}
 		//First ask user to save
 	QMessageBox::StandardButton answer = QET::QetMessageBox::question(
@@ -1719,24 +1799,7 @@ void QETElementEditor::initGui()
 	m_view_stack = new QStackedWidget(this);
 	m_view_stack->addWidget(m_view);
 	m_view_stack->addWidget(m_drawing_view);
-	m_view_tabs = new QTabBar(this);
-	m_view_tabs->addTab(tr("Symbole", "element editor tab"));
-	m_view_tabs->addTab(tr("Dessin 2D", "element editor tab"));
-	m_view_tabs->setTabToolTip(1, tr("Le dessin de la pièce vue de face, en millimètres, "
-					 "tel qu'il apparaît sur la plaque de montage. "
-					 "Il n'apparaît pas sur les folios."));
-	m_view_tabs->setDrawBase(false);
-	connect(m_view_tabs, &QTabBar::currentChanged, this, [this](int index) {
-		setLayoutDrawingActive(index == 1);
-	});
-
-	auto central = new QWidget(this);
-	auto central_layout = new QVBoxLayout(central);
-	central_layout->setContentsMargins(0, 0, 0, 0);
-	central_layout->setSpacing(0);
-	central_layout->addWidget(m_view_tabs);
-	central_layout->addWidget(m_view_stack);
-	setCentralWidget(central);
+	setCentralWidget(m_view_stack);
 
 	m_undo_group = new QUndoGroup(this);
 	m_undo_group->addStack(&m_elmt_scene->undoStack());
@@ -1840,6 +1903,19 @@ void QETElementEditor::copyAndPasteXml(const QDomDocument &xml_document)
  */
 bool QETElementEditor::on_m_save_action_triggered()
 {
+		//The drawing of a part goes back to whoever opened it: the part is
+		//not this window's to write
+	if (m_part_drawing_mode)
+	{
+		m_drawing_scene->clearEventInterface();
+		UncheckAddPrimitive();
+		emit partDrawingSaved(partDrawing());
+		m_drawing_scene->undoStack().setClean();
+		updateTitle();
+		updateAction();
+		return true;
+	}
+
 	if (checkElement())
 	{
 		if (m_opened_from_file)

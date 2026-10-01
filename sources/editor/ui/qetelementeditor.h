@@ -30,7 +30,6 @@ class ElementView;
 class QListWidget;
 class QStackedWidget;
 class QLabel;
-class QTabBar;
 class QUndoGroup;
 class QUndoView;
 class PartImage;
@@ -44,6 +43,9 @@ class QETElementEditor : public QMainWindow
 		Q_OBJECT
 	signals:
 		void saveToLocation(ElementsLocation loc);
+			/// "Enregistrer" in part drawing mode: the drawing as it stands,
+			/// a <layout_drawing> block as text, empty when nothing is drawn
+		void partDrawingSaved(const QString &block);
 
 	public:
 		explicit QETElementEditor(QWidget *parent = nullptr);
@@ -77,17 +79,33 @@ class QETElementEditor : public QMainWindow
 		void openElement(const QString &filepath);
 		bool checkElement();
 
-			/// The two tabs above the drawing area: the symbol drawn on
-			/// folios, and the 2D drawing of the part, in millimetre, that
-			/// the mounting plate shows. elementScene() and elementView()
-			/// answer for the tab shown, because every part, part editor
+			/// The two scenes: the symbol drawn on folios, and the 2D
+			/// drawing of a part of the catalogue, in millimetre, that the
+			/// mounting plate shows. elementScene() and elementView()
+			/// answer for the one shown, because every part, part editor
 			/// and tool reaches the scene through them.
 		bool isLayoutDrawingActive() const;
-		void setLayoutDrawingActive(bool active);
 		ElementScene *layoutDrawingScene() const;
-			/// The element as it would be saved: the symbol, with the
-			/// shapes of the 2D tab as its layout_drawing block
+			/// The element as it would be saved
 		QDomDocument elementXml();
+
+		/**
+			@brief Open on the 2D drawing of a part of the catalogue, alone.
+			@param part_code the code of the part, for the title and the
+			questions
+			@param block the drawing, a <layout_drawing> block as text;
+			empty for a part that has none yet
+
+			No symbol, and none of the actions of a symbol file. Saving
+			hands the drawing to partDrawingSaved(), and whoever opened
+			the editor decides where it goes: the drawing belongs to the
+			part, and the part is not this window's to write.
+		*/
+		void editPartDrawing(const QString &part_code, const QString &block);
+		bool isPartDrawingMode() const;
+			/// @return the drawing as it stands, a <layout_drawing> block
+			/// as text, empty when nothing is drawn
+		QString partDrawing() const;
 			/// An image on the 2D tab, at @a size_mm, centred on the
 			/// origin, as one step of undo. @return the image, or nullptr
 			/// when the bytes are not a file of @a format this program
@@ -152,7 +170,9 @@ class QETElementEditor : public QMainWindow
 		void copyAndPasteXml(const QDomDocument &xml_document);
 		bool isModified() const;
 		void setClean();
-		void loadLayoutDrawing();
+		void setLayoutDrawingActive(bool active);
+		void loadPartDrawing(const QString &block);
+		QList<QAction *> symbolFileActions() const;
 		void updateLengthUnit();
 		void insertImage();
 		bool askImageSize(QSizeF &size);
@@ -208,8 +228,9 @@ class QETElementEditor : public QMainWindow
 		ElementView
 			*m_drawing_view = nullptr,
 			*m_active_view  = nullptr;
-		QTabBar *m_view_tabs = nullptr;
 		QStackedWidget *m_view_stack = nullptr;
+		bool m_part_drawing_mode = false;
+		QString m_part_code;
 		QUndoGroup *m_undo_group = nullptr;
 		QUndoView *m_undo_view = nullptr;
 		QAction

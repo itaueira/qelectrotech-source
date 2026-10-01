@@ -21,6 +21,8 @@
 #include "../catalogassignment.h"
 #include "../physicalview.h"
 #include "catalogbrowserdialog.h"
+#include "../../editor/ui/qetelementeditor.h"
+#include "../../factory/elementpicturefactory.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -34,6 +36,9 @@
 #include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
+#include <QLocale>
+#include <QPainter>
+#include <QPixmap>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
@@ -181,10 +186,42 @@ void CatalogPartDialog::buildWidgets()
 	accessory_layout->addWidget(accessory_hint);
 	accessory_layout->addWidget(m_accessory_overflow);
 
+		// --- 2D drawing -----------------------------------------------
+		//The front of the part, in millimetre, as the mounting plate
+		//shows it. It is the part's, and not its symbol's: one symbol
+		//serves a family of parts of different sizes.
+	QWidget *drawing_tab = new QWidget(this);
+	QVBoxLayout *drawing_layout = new QVBoxLayout(drawing_tab);
+	QLabel *drawing_hint = new QLabel(tr("Le dessin de la pièce vue de face, en millimètres, "
+					     "tel qu'il apparaît sur la plaque de montage. Il est "
+					     "gardé dans la pièce, et non dans son symbole."), drawing_tab);
+	drawing_hint->setWordWrap(true);
+	m_drawing_preview = new QLabel(drawing_tab);
+	m_drawing_preview->setObjectName(QStringLiteral("drawing_preview"));
+	m_drawing_preview->setAlignment(Qt::AlignCenter);
+	m_drawing_preview->setMinimumSize(220, 220);
+	m_drawing_preview->setWordWrap(true);
+	m_drawing_summary = new QLabel(drawing_tab);
+	m_drawing_summary->setObjectName(QStringLiteral("drawing_summary"));
+	m_drawing_summary->setAlignment(Qt::AlignCenter);
+	QPushButton *edit_drawing = new QPushButton(tr("Modifier le dessin 2D…"), drawing_tab);
+	edit_drawing->setObjectName(QStringLiteral("edit_drawing"));
+	m_remove_drawing = new QPushButton(tr("Retirer le dessin"), drawing_tab);
+	m_remove_drawing->setObjectName(QStringLiteral("remove_drawing"));
+	QHBoxLayout *drawing_buttons = new QHBoxLayout();
+	drawing_buttons->addWidget(edit_drawing);
+	drawing_buttons->addWidget(m_remove_drawing);
+	drawing_buttons->addStretch();
+	drawing_layout->addWidget(drawing_hint);
+	drawing_layout->addWidget(m_drawing_preview, 1);
+	drawing_layout->addWidget(m_drawing_summary);
+	drawing_layout->addLayout(drawing_buttons);
+
 	QTabWidget *tabs = new QTabWidget(this);
 	tabs->addTab(scroll, tr("Propriétés"));
 	tabs->addTab(pin_tab, tr("Bornes"));
 	tabs->addTab(accessory_tab, tr("Accessoires"));
+	tabs->addTab(drawing_tab, tr("Dessin 2D"));
 
 	m_status = new QLabel(this);
 	m_status->setWordWrap(true);
@@ -220,6 +257,9 @@ void CatalogPartDialog::buildWidgets()
 		this, &CatalogPartDialog::removeSelectedAccessory);
 	connect(save, &QPushButton::clicked, this, &CatalogPartDialog::saveInPlace);
 	connect(save_revision, &QPushButton::clicked, this, &CatalogPartDialog::saveAsNewRevision);
+	connect(edit_drawing, &QPushButton::clicked, this, &CatalogPartDialog::editDrawing);
+	connect(m_remove_drawing, &QPushButton::clicked, this, &CatalogPartDialog::removeDrawing);
+	updateDrawingPreview();
 	connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 }
 
@@ -689,6 +729,82 @@ namespace
 	@param as_new_revision
 	@return true when the part was saved
 */
+/**
+	@brief CatalogPartDialog::editDrawing
+	Open the 2D drawing of the part in the editor, alone and over this
+	window. What the editor saves comes back to the part this window holds,
+	and it is this window's "Enregistrer" that writes it to the catalogue:
+	one writer for the part, so that neither overwrites the other.
+*/
+void CatalogPartDialog::editDrawing()
+{
+	auto *editor = new QETElementEditor(this);
+	editor->setAttribute(Qt::WA_DeleteOnClose);
+		//Modal to this window only: the part beneath is not edited while
+		//its drawing is open, and the rest of the program is not concerned
+	editor->setWindowModality(Qt::WindowModal);
+	const QString code = m_code->text().trimmed();
+	editor->editPartDrawing(code.isEmpty() ? m_part.code : code, m_part.layout_drawing);
+	connect(editor, &QETElementEditor::partDrawingSaved, this, [this](const QString &block) {
+		m_part.layout_drawing = block;
+		updateDrawingPreview();
+	});
+	editor->show();
+}
+
+/**
+	@brief CatalogPartDialog::removeDrawing
+	Take the drawing away: the part shows on a plate as a box with its name
+	again. Like every change here, nothing is written before "Enregistrer".
+*/
+void CatalogPartDialog::removeDrawing()
+{
+	m_part.layout_drawing.clear();
+	updateDrawingPreview();
+}
+
+/**
+	@brief CatalogPartDialog::updateDrawingPreview
+	The drawing scaled into the preview, and its size in millimetre below it.
+*/
+void CatalogPartDialog::updateDrawingPreview()
+{
+	m_remove_drawing->setEnabled(!m_part.layout_drawing.isEmpty());
+	const ElementPictureFactory::LayoutDrawing drawing =
+			ElementPictureFactory::layoutDrawingOf(m_part.layout_drawing);
+	if (drawing.isNull())
+	{
+		m_drawing_preview->setPixmap(QPixmap());
+		m_drawing_preview->setText(m_part.layout_drawing.isEmpty()
+					   ? tr("Aucun dessin 2D : la pièce apparaît sur la plaque "
+						"comme une boîte à son nom.")
+					   : tr("Ce dessin 2D ne peut pas être affiché."));
+		m_drawing_summary->clear();
+		return;
+	}
+
+	const QRectF bounds = drawing.bounds;
+	const qreal side = 200.0;
+	const qreal scale = side / qMax(qMax(bounds.width(), bounds.height()), 1.0);
+	QPixmap pixmap(qMax(1, qRound(bounds.width() * scale)) + 2,
+		       qMax(1, qRound(bounds.height() * scale)) + 2);
+	pixmap.fill(Qt::white);
+	QPainter painter(&pixmap);
+	painter.setRenderHint(QPainter::Antialiasing, true);
+	painter.translate(1.0, 1.0);
+	painter.scale(scale, scale);
+	painter.translate(-bounds.topLeft());
+	painter.drawPicture(QPointF(0.0, 0.0), drawing.picture);
+	painter.end();
+	m_drawing_preview->setText(QString());
+	m_drawing_preview->setPixmap(pixmap);
+
+	const QLocale locale;
+	m_drawing_summary->setText(tr("%1 × %2 mm, %n partie(s)", "", drawing.parts)
+				   .arg(locale.toString(bounds.width(), 'f', 1),
+					locale.toString(bounds.height(), 'f', 1)));
+}
+
 bool CatalogPartDialog::save(bool as_new_revision)
 {
 	if (!m_catalog) {

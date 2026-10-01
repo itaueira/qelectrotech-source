@@ -29,6 +29,7 @@ class QComboBox;
 class QFormLayout;
 class QLabel;
 class QLineEdit;
+class QPushButton;
 class QTableWidget;
 class QWidget;
 
@@ -69,6 +70,8 @@ class CatalogPartDialog : public QDialog
 		void pickAccessoryFromCatalog();
 		void saveInPlace();
 		void saveAsNewRevision();
+		void editDrawing();
+		void removeDrawing();
 
 	private:
 		void buildWidgets();
@@ -78,6 +81,7 @@ class CatalogPartDialog : public QDialog
 		void updateAccessoryOverflow();
 		bool collect(CatalogPart &part);
 		bool save(bool as_new_revision);
+		void updateDrawingPreview();
 		void movePin(int offset);
 
 		QWidget *editorFor(const CatalogProperty &property, const QString &value);
@@ -99,6 +103,12 @@ class CatalogPartDialog : public QDialog
 		/// has auxiliary blocks to receive them.
 		QLabel *m_accessory_overflow = nullptr;
 		QLabel *m_status = nullptr;
+			/// The 2D drawing of the part, as a picture and as a size: the
+			/// part is checked at a glance, without opening the editor
+		QLabel
+			*m_drawing_preview = nullptr,
+			*m_drawing_summary = nullptr;
+		QPushButton *m_remove_drawing = nullptr;
 };
 
 #endif // CATALOGPARTDIALOG_H
