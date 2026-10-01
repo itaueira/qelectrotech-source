@@ -7200,7 +7200,7 @@ Criar?</translation>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="216"/>
         <source>Bornier</source>
-        <translation>Terminal</translation>
+        <translation>Borne</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="217"/>
