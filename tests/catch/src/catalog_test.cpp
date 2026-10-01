@@ -22,6 +22,7 @@
 #include "../../../sources/diagramcontext.h"
 #include "qt_catch_tostring.h"
 
+#include <QDomDocument>
 #include <QFile>
 #include <QSqlDatabase>
 #include <QSqlQuery>
@@ -1037,4 +1038,182 @@ TEST_CASE("T20 — un dégagement jamais saisi reste vide, et n'est pas zéro")
 	CHECK(to_element.value(QStringLiteral("clearance_top")) == QStringLiteral("50"));
 	CHECK(to_element.value(QStringLiteral("insertion_x")) == QStringLiteral("12.5"));
 	CHECK(to_element.value(QStringLiteral("draw_outline")) == QStringLiteral("1"));
+}
+
+/*
+	The 2D drawing of a part: the front of it in millimetre, a
+	<layout_drawing> block kept by the part of the catalogue and not by its
+	symbol, which serves a whole family of parts.
+*/
+namespace
+{
+	/// A box of 45 by 90 cut by a line, and a tiny image, as a part keeps it
+	QString drawing45x90()
+	{
+		return QStringLiteral(
+			"<layout_drawing>"
+			"<rect x=\"0\" y=\"0\" width=\"45\" height=\"90\" rx=\"0\" ry=\"0\"/>"
+			"<line x1=\"0\" y1=\"45\" x2=\"45\" y2=\"45\"/>"
+			"<image x=\"5\" y=\"5\" width=\"10\" height=\"10\" format=\"png\">"
+			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg=="
+			"</image>"
+			"</layout_drawing>");
+	}
+
+	QString otherDrawing()
+	{
+		return QStringLiteral("<layout_drawing>"
+				      "<line x1=\"0\" y1=\"0\" x2=\"10\" y2=\"0\"/>"
+				      "</layout_drawing>");
+	}
+
+	/// The block as a DOM writes it: two texts that are the same XML
+	/// compare equal, whatever quoting or attribute order they came in
+	QString normalised(const QString &block)
+	{
+		QDomDocument document;
+		if (!document.setContent(block)) {
+			return QStringLiteral("<not xml>");
+		}
+		return document.toString(-1);
+	}
+}
+
+TEST_CASE("T44 — the catalogue keeps the 2D drawing of a part, and gives it back",
+	  "[t44][catalog]")
+{
+	OpenCatalog open;
+	Catalog &catalog = open.catalog;
+	QString error;
+
+	CatalogPart part(QStringLiteral("LC1D09"), classId(catalog, "contactor"));
+	part.layout_drawing = drawing45x90();
+	REQUIRE(catalog.savePart(part, &error));
+	CatalogPart reread = catalog.partByCode(QStringLiteral("LC1D09"));
+	CHECK(reread.layout_drawing == drawing45x90());
+		//Not one of the values: nothing to list beside the width
+	CHECK_FALSE(reread.values.contains(QStringLiteral("layout_drawing")));
+
+		//Another drawing replaces it, and is not added beside it
+	reread.layout_drawing = otherDrawing();
+	REQUIRE(catalog.savePart(reread, &error));
+	CHECK(catalog.partByCode(QStringLiteral("LC1D09")).layout_drawing == otherDrawing());
+
+		//And no drawing takes it away
+	reread.layout_drawing.clear();
+	REQUIRE(catalog.savePart(reread, &error));
+	CHECK(catalog.partByCode(QStringLiteral("LC1D09")).layout_drawing.isEmpty());
+
+		//A part that never had one has none
+	CatalogPart plain(QStringLiteral("LC1D12"), classId(catalog, "contactor"));
+	REQUIRE(catalog.savePart(plain, &error));
+	CHECK(catalog.partByCode(QStringLiteral("LC1D12")).layout_drawing.isEmpty());
+}
+
+TEST_CASE("T44 — saving a part keeps its drawing, and a new revision carries it",
+	  "[t44][catalog]")
+{
+	OpenCatalog open;
+	Catalog &catalog = open.catalog;
+	QString error;
+
+	CatalogPart part(QStringLiteral("GV2ME10"), classId(catalog, "contactor"));
+	part.setValue(QStringLiteral("manufacturer"), QStringLiteral("ACME"));
+	part.layout_drawing = drawing45x90();
+	REQUIRE(catalog.savePart(part, &error));
+
+		//A value changed and saved in place, the way the part window does
+		//it: from the part as it was read
+	CatalogPart edited = catalog.partByCode(QStringLiteral("GV2ME10"));
+	edited.setValue(QStringLiteral("manufacturer"), QStringLiteral("ACME Brasil"));
+	REQUIRE(catalog.savePart(edited, &error));
+	CHECK(catalog.partByCode(QStringLiteral("GV2ME10")).layout_drawing == drawing45x90());
+
+		//A new revision is written from the part in memory, and not copied
+		//in the database: it has the drawing because the part read has it
+	CatalogPart next = catalog.partByCode(QStringLiteral("GV2ME10"));
+	REQUIRE(catalog.savePartAsNewRevision(next, &error));
+	const CatalogPart current = catalog.partByCode(QStringLiteral("GV2ME10"));
+	CHECK(current.revision == 2);
+	CHECK(current.layout_drawing == drawing45x90());
+	CHECK(catalog.partByCode(QStringLiteral("GV2ME10"), 1).layout_drawing == drawing45x90());
+}
+
+TEST_CASE("CU-44.2 — an older catalogue migrates to the drawing, and keeps its parts",
+	  "[t44][catalog]")
+{
+	QTemporaryDir directory;
+	REQUIRE(directory.isValid());
+	const QString file = directory.filePath(QStringLiteral("anterior.sqlite"));
+	QString error;
+	{
+		Catalog catalog;
+		REQUIRE(catalog.open(file, &error));
+		CatalogPart part(QStringLiteral("PART-OLD"), classId(catalog, "contactor"));
+		part.setValue(QStringLiteral("manufacturer"), QStringLiteral("ACME"));
+		REQUIRE(catalog.savePart(part, &error));
+	}
+
+		//What the build before this one left: version 5, and no table for
+		//drawings
+	const QString connection = QStringLiteral("catalog_drawing_migration_test");
+	{
+		QSqlDatabase database = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connection);
+		database.setDatabaseName(file);
+		REQUIRE(database.open());
+		QSqlQuery drop(database);
+		REQUIRE(drop.exec(QStringLiteral("DROP TABLE catalog_part_drawing")));
+		REQUIRE(CatalogSchema::setMeta(database, QStringLiteral("schema_version"),
+					       QStringLiteral("5")));
+		REQUIRE_FALSE(database.tables().contains(QStringLiteral("catalog_part_drawing")));
+		database.close();
+	}
+	QSqlDatabase::removeDatabase(connection);
+
+	Catalog reopened;
+	REQUIRE(reopened.open(file, &error));
+	CHECK(reopened.schemaVersion() == CatalogSchema::currentVersion());
+	CHECK(CatalogSchema::currentVersion() >= 6);
+	CatalogPart part = reopened.partByCode(QStringLiteral("PART-OLD"));
+	REQUIRE_FALSE(part.isNull());
+	CHECK(part.value(QStringLiteral("manufacturer")) == QStringLiteral("ACME"));
+	CHECK(part.layout_drawing.isEmpty());
+
+		//And the new table takes a drawing at once
+	part.layout_drawing = drawing45x90();
+	REQUIRE(reopened.savePart(part, &error));
+	CHECK(reopened.partByCode(QStringLiteral("PART-OLD")).layout_drawing == drawing45x90());
+}
+
+TEST_CASE("CU-44.18 — the package of a part carries its drawing, image included",
+	  "[t44][catalog]")
+{
+	OpenCatalog from;
+	QString error;
+	CatalogPart part(QStringLiteral("XB4BA31"), classId(from.catalog, "contactor"));
+	part.layout_drawing = drawing45x90();
+	REQUIRE(from.catalog.savePart(part, &error));
+
+	QTemporaryDir directory;
+	REQUIRE(directory.isValid());
+	const QString path = directory.filePath(CatalogPackage::suggestedFileName(part));
+	REQUIRE(CatalogPackage::write(path, from.catalog, from.catalog.partByCode(part.code), &error));
+
+	OpenCatalog to;
+	CatalogPart received = CatalogPackage::read(path, to.catalog, &error);
+	REQUIRE_FALSE(received.isNull());
+	CHECK(normalised(received.layout_drawing) == normalised(drawing45x90()));
+	REQUIRE(to.catalog.savePart(received, &error));
+	CHECK(normalised(to.catalog.partByCode(part.code).layout_drawing)
+	      == normalised(drawing45x90()));
+
+		//And a part without one writes no empty block
+	CatalogPart plain(QStringLiteral("XB4BA42"), classId(from.catalog, "contactor"));
+	REQUIRE(from.catalog.savePart(plain, &error));
+	const QString plain_path = directory.filePath(QStringLiteral("plain.qetpart"));
+	REQUIRE(CatalogPackage::write(plain_path, from.catalog, from.catalog.partByCode(plain.code), &error));
+	QFile written(plain_path);
+	REQUIRE(written.open(QIODevice::ReadOnly));
+	CHECK_FALSE(written.readAll().contains("layout_drawing"));
+	CHECK(CatalogPackage::read(plain_path, to.catalog, &error).layout_drawing.isEmpty());
 }

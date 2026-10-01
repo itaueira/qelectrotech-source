@@ -182,6 +182,18 @@ class CatalogPart
 		QHash<QString, QString> values;
 		QList<CatalogPin> pins;
 		QList<CatalogAccessory> accessories;
+		/**
+			The 2D drawing of the part seen from the front, in millimetre:
+			a <layout_drawing> block, as text, empty when the part has
+			none. It is the part that has a front, and not its symbol - one
+			symbol serves a whole family of parts of different sizes.
+
+			Not one of the values: it is no property a class declares, and
+			a block of tens of kilobytes of base64 is nothing to list beside
+			the width. It travels the way the pins do, rewritten with them,
+			which is what makes a new revision carry it.
+		*/
+		QString layout_drawing;
 };
 
 #endif // CATALOGPART_H

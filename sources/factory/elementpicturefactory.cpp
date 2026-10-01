@@ -428,9 +428,22 @@ namespace {
 
 ElementPictureFactory::LayoutDrawing ElementPictureFactory::layoutDrawing(const QDomElement &definition)
 {
+	return layoutDrawingOf(definition.firstChildElement(layoutDrawingTagName()));
+}
+
+ElementPictureFactory::LayoutDrawing ElementPictureFactory::layoutDrawingOf(const QString &block)
+{
+	QDomDocument document;
+	if (block.isEmpty() || !document.setContent(block)) {
+		return LayoutDrawing();
+	}
+	return layoutDrawingOf(document.documentElement());
+}
+
+ElementPictureFactory::LayoutDrawing ElementPictureFactory::layoutDrawingOf(const QDomElement &block)
+{
 	LayoutDrawing drawing;
-	const QDomElement block = definition.firstChildElement(layoutDrawingTagName());
-	if (block.isNull()) {
+	if (block.isNull() || block.tagName() != layoutDrawingTagName()) {
 		return drawing;
 	}
 

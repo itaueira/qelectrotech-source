@@ -241,6 +241,16 @@ bool CatalogPackage::write(const QString &file_path,
 		root.appendChild(element);
 	}
 
+		//The 2D drawing, images inside, as the part keeps it. An older
+		//build reading the package skips an element it does not know.
+	if (!part.layout_drawing.isEmpty())
+	{
+		QDomDocument drawing;
+		if (drawing.setContent(part.layout_drawing)) {
+			root.appendChild(document.importNode(drawing.documentElement(), true));
+		}
+	}
+
 	document.appendChild(root);
 
 	QFile file(file_path);
@@ -376,6 +386,12 @@ CatalogPart CatalogPackage::read(const QString &file_path,
 			part.accessories.append(
 				CatalogAccessory(child.attribute(QStringLiteral("code")),
 						 ok && quantity > 0.0 ? quantity : 1.0));
+		}
+		else if (child.tagName() == QStringLiteral("layout_drawing"))
+		{
+			QDomDocument drawing;
+			drawing.appendChild(drawing.importNode(child, true));
+			part.layout_drawing = drawing.toString(-1);
 		}
 		child = child.nextSiblingElement();
 	}

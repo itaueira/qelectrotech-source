@@ -1404,6 +1404,14 @@ CatalogPart Catalog::readPart(int part_id) const
 		}
 	}
 
+	QSqlQuery drawing(database);
+	drawing.prepare(QStringLiteral("SELECT block FROM catalog_part_drawing "
+				       "WHERE part_id = :id"));
+	drawing.bindValue(QStringLiteral(":id"), part_id);
+	if (drawing.exec() && drawing.next()) {
+		part.layout_drawing = drawing.value(0).toString();
+	}
+
 	return part;
 }
 
@@ -1552,15 +1560,16 @@ bool Catalog::validatePartValues(const CatalogPart &part, QString *error) const
 	@brief Catalog::writePartRows
 	@param part : has to carry a valid id
 	@param error
-	@return true on success. Rewrites the values, the pins and the
-	accessories of a part wholesale, which is both simpler and safer than
-	working out what changed.
+	@return true on success. Rewrites the values, the pins, the
+	accessories and the 2D drawing of a part wholesale, which is both
+	simpler and safer than working out what changed.
 */
 bool Catalog::writePartRows(const CatalogPart &part, QString *error)
 {
 	const QStringList tables = { QStringLiteral("catalog_part_value"),
 				     QStringLiteral("catalog_part_pin"),
-				     QStringLiteral("catalog_part_accessory") };
+				     QStringLiteral("catalog_part_accessory"),
+				     QStringLiteral("catalog_part_drawing") };
 	for (const QString &table : tables)
 	{
 		QSqlQuery clear(m_database);
@@ -1625,6 +1634,20 @@ bool Catalog::writePartRows(const CatalogPart &part, QString *error)
 		insert.bindValue(QStringLiteral(":id"), part.id);
 		insert.bindValue(QStringLiteral(":code"), accessory.code);
 		insert.bindValue(QStringLiteral(":quantity"), accessory.quantity);
+		if (!insert.exec())
+		{
+			setError(error, insert.lastError().text());
+			return false;
+		}
+	}
+
+	if (!part.layout_drawing.isEmpty())
+	{
+		QSqlQuery insert(m_database);
+		insert.prepare(QStringLiteral("INSERT INTO catalog_part_drawing (part_id, block) "
+					      "VALUES (:id, :block)"));
+		insert.bindValue(QStringLiteral(":id"), part.id);
+		insert.bindValue(QStringLiteral(":block"), part.layout_drawing);
 		if (!insert.exec())
 		{
 			setError(error, insert.lastError().text());

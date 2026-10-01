@@ -78,6 +78,12 @@ class ElementPictureFactory
 			every reader that walks the whole definition by tag name.
 		*/
 		static bool isLayoutDrawingPart(const QString &tag_name);
+			/// The drawing of a <layout_drawing> block, wherever it comes from:
+			/// the part of a catalog, or the copy a project keeps of it
+		static LayoutDrawing layoutDrawingOf(const QDomElement &block);
+			/// The same, from the block written as text; an empty or
+			/// unreadable text is no drawing
+		static LayoutDrawing layoutDrawingOf(const QString &block);
 
 		/**
 			@return the drawing of the layout_drawing block of

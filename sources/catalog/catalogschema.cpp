@@ -27,7 +27,7 @@
 namespace
 {
 	/// Highest schema version this build writes and understands.
-	const int CATALOG_SCHEMA_VERSION = 5;
+	const int CATALOG_SCHEMA_VERSION = 6;
 
 	/// Run one statement, filling @a error with the driver message on failure.
 	bool exec(QSqlDatabase &db, const QString &statement, QString *error)
@@ -151,6 +151,7 @@ bool CatalogSchema::applyStep(QSqlDatabase &db, int version, QString *error)
 		case 3:  ok = createVersion3(db, error); break;
 		case 4:  ok = createVersion4(db, error); break;
 		case 5:  ok = createVersion5(db, error); break;
+		case 6:  ok = createVersion6(db, error); break;
 		default:
 			if (error)
 			{
@@ -390,6 +391,22 @@ bool CatalogSchema::createVersion5(QSqlDatabase &db, QString *error)
 		}
 	}
 	return true;
+}
+
+/**
+	@brief CatalogSchema::createVersion6
+	The 2D drawing of a part: one row per part, the <layout_drawing> block
+	as text. A table of its own and not a row of catalog_part_value, where a
+	key no class declares would still be written and then listed among the
+	values of the part. It goes with the part it belongs to, the way the
+	pins and the accessories do.
+*/
+bool CatalogSchema::createVersion6(QSqlDatabase &db, QString *error)
+{
+	return exec(db, QStringLiteral("CREATE TABLE catalog_part_drawing ("
+				       "part_id INTEGER PRIMARY KEY "
+				       "REFERENCES catalog_part(id) ON DELETE CASCADE,"
+				       "block TEXT NOT NULL)"), error);
 }
 
 /**
