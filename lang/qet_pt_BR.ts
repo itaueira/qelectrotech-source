@@ -6895,32 +6895,37 @@ O nome exibido do elemento é alterado separadamente nas propriedades do element
         <translation>Informações</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="328"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="367"/>
         <source>Ajouter une propriété personnalisée</source>
         <translation>Adicionar uma propriedade personalizada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="335"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="374"/>
         <source>Séparation de potentiel</source>
         <translation>Separação de potencial</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="339"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="378"/>
         <source>Exclure de la nomenclature</source>
         <translation>Excluir da lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="164"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="203"/>
         <source>Repère déjà utilisé</source>
         <translation>Tag já usada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="166"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="116"/>
+        <source>Le numéro vient de la borne de bornier à laquelle cette borne est liée : il se modifie sur celle-ci.</source>
+        <translation>O número vem do borne de régua de bornes a que este borne está vinculado: ele se altera lá.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="205"/>
         <source>« %1 » est déjà le repère d&apos;un autre composant, au même endroit.</source>
         <translation>« %1 » já é a tag de outro componente, no mesmo lugar.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="169"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="208"/>
         <source>Deux composants avec le même repère, c&apos;est une erreur que personne ne voit avant le montage : la borne câblée d&apos;après le schéma va au mauvais appareil.
 
 Aller le voir, ou garder le doublon en le sachant ?</source>
@@ -6929,27 +6934,27 @@ Aller le voir, ou garder le doublon en le sachant ?</source>
 Ir ver, ou guardar o duplicado sabendo disso?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="174"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="213"/>
         <source>Aller jusqu&apos;à l&apos;autre</source>
         <translation>Ir até o outro</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="177"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="216"/>
         <source>Garder le doublon</source>
         <translation>Guardar o duplicado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="445"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="484"/>
         <source>« %1 » est déjà le repère d&apos;un autre composant, au même endroit. Deux composants avec le même repère, c&apos;est une erreur que personne ne voit avant le montage.</source>
         <translation>« %1 » já é a tag de outro componente, no mesmo lugar. Dois componentes com a mesma tag é um erro que ninguém vê antes da montagem.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="541"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="580"/>
         <source>Liste de matériaux absente</source>
         <translation>Lista de material ausente</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="542"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="581"/>
         <source>Aucun fichier de liste de matériaux n&apos;existe à cet emplacement :
 %1
 
@@ -6961,12 +6966,12 @@ Le créer ?</source>
 Criar?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="555"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="594"/>
         <source>Création impossible</source>
         <translation>Não foi possível criar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="556"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="595"/>
         <source>Impossible de créer le fichier :
 %1
 %2</source>
@@ -13109,7 +13114,7 @@ Deseja vincular este contato escravo mesmo assim?</translation>
         <translation type="vanished">O desenho 2D não tem as proporções da caixa do catálogo: ele aparece inteiro, em escala, dentro da caixa, e é a caixa que vale para o layout.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountedpartitem.cpp" line="464"/>
+        <location filename="../sources/location/layout/mountedpartitem.cpp" line="491"/>
         <source>Le dessin 2D n&apos;a pas la taille de la boîte du catalogue : il est montré en vraie grandeur, et c&apos;est la boîte qui compte pour l&apos;implantation.</source>
         <translation>O desenho 2D não tem o tamanho da caixa do catálogo: ele aparece em tamanho real, e é a caixa que vale para o layout.</translation>
     </message>
@@ -13369,460 +13374,460 @@ Deseja vincular este contato escravo mesmo assim?</translation>
     </message>
     <message>
         <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="326"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="782"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="785"/>
         <source>Ce projet ne se modifie pas.</source>
         <translation>Este projeto não se modifica.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="415"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="424"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="418"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="427"/>
         <source>Nouvelle platine</source>
         <translation>Nova placa</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="416"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="419"/>
         <source>Une platine appartient à une localisation du projet, et ce projet n&apos;en a aucune. Faites l&apos;armoire dans « Armoires et localisations… », puis revenez ici.</source>
         <translation>Uma placa pertence a uma localização do projeto, e este projeto não tem nenhuma. Faça o painel em « Painéis e localizações… », depois volte aqui.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="432"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="435"/>
         <source>Platine (fond d&apos;armoire)</source>
         <translation>Placa (fundo do painel)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="434"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="437"/>
         <source>Porte</source>
         <translation>Porta</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="435"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="438"/>
         <source>Joue (flanc)</source>
         <translation>Lateral (flanco)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="438"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="441"/>
         <source>Platine principale</source>
         <translation>Placa principal</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="443"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="449"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="586"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="593"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="602"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="446"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="452"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="589"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="596"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="605"/>
         <source> mm</source>
         <translation> mm</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="444"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="450"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="594"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="447"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="453"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="597"/>
         <source>non mesurée</source>
         <translation>não medida</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="459"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="462"/>
         <source>Localisation :</source>
         <translation>Localização:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="460"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="463"/>
         <source>Face :</source>
         <translation>Face:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="461"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="464"/>
         <source>Nom :</source>
         <translation>Nome:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="462"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="465"/>
         <source>Largeur utile :</source>
         <translation>Largura útil:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="463"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="466"/>
         <source>Hauteur utile :</source>
         <translation>Altura útil:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="482"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="485"/>
         <source>Platine ajoutée.</source>
         <translation>Placa adicionada.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="542"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="545"/>
         <source>« %1 » est posé, mais le catalogue ne dit pas ce qu&apos;il mesure : il est dessiné comme non mesuré.</source>
         <translation>« %1 » está posto, mas o catálogo não diz o que ele mede: está desenhado como não medido.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="547"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="550"/>
         <source>« %1 » est posé sur la platine.</source>
         <translation>« %1 » está posto na placa.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="571"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="574"/>
         <source>Poser un rail ou une goulotte</source>
         <translation>Pôr um trilho ou uma canaleta</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="577"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="580"/>
         <source>Autre (à préciser ci-dessous)</source>
         <translation>Outro (a especificar abaixo)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="580"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="583"/>
         <source>Rail</source>
         <translation>Trilho</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="581"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="584"/>
         <source>Goulotte</source>
         <translation>Canaleta</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="587"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="590"/>
         <source>La largeur que le profilé occupe sur la platine, en travers de sa longueur.</source>
         <translation>A largura que o perfil ocupa na placa, através do seu comprimento.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="595"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="598"/>
         <source>La hauteur du profilé au-dessus de la platine. Elle ne se dessine pas ici, elle compte pour la porte.</source>
         <translation>A altura do perfil acima da placa. Ela não se desenha aqui, mas conta para a porta.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="605"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="608"/>
         <source>Horizontal</source>
         <translation>Horizontal</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="606"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="609"/>
         <source>Vertical</source>
         <translation>Vertical</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="657"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="660"/>
         <source>Profilé courant :</source>
         <translation>Perfil atual:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="658"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="661"/>
         <source>Type :</source>
         <translation>Tipo:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="659"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="662"/>
         <source>Largeur :</source>
         <translation>Largura:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="660"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="663"/>
         <source>Hauteur :</source>
         <translation>Altura:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="661"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="664"/>
         <source>Longueur coupée :</source>
         <translation>Comprimento cortado:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="662"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="665"/>
         <source>Sens :</source>
         <translation>Sentido:</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="684"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="687"/>
         <source>%1 posé sur la platine.</source>
         <translation>%1 posto na placa.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="708"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="711"/>
         <source>Dites si c&apos;est un rail ou une goulotte : un profilé sans type ne se pose pas.</source>
         <translation>Diga se é um trilho ou uma canaleta: um perfil sem tipo não se põe.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="722"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="725"/>
         <source>Un profilé a besoin de sa largeur : sans elle, rien ne se dessine sur la platine.</source>
         <translation>Um perfil precisa da largura dele: sem ela, nada se desenha na placa.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="732"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="735"/>
         <source>Une longueur de coupe est un nombre de millimètres.</source>
         <translation>Um comprimento de corte é um número de milímetros.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="824"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="827"/>
         <source>Ces composants sont déjà alignés à gauche.</source>
         <translation>Estes componentes já estão alinhados à esquerda.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="838"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="841"/>
         <source>Ces composants sont déjà alignés en haut.</source>
         <translation>Estes componentes já estão alinhados ao topo.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="852"/>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="866"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="855"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="869"/>
         <source>Ces composants sont déjà également espacés.</source>
         <translation>Estes componentes já estão igualmente espaçados.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="902"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="905"/>
         <source>X : %1 mm    Y : %2 mm</source>
         <translation>X: %1 mm    Y: %2 mm</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="913"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="916"/>
         <source>1 mm = %1 px</source>
         <translation>1 mm = %1 px</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1030"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1033"/>
         <source>Le symbole de cette pièce n&apos;existe plus dans le projet.</source>
         <translation>O símbolo desta peça não existe mais no projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1059"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1062"/>
         <source>That part is not mounted on any plate of this project.</source>
         <translation>Esta peça não está montada em nenhuma placa deste projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1075"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1078"/>
         <source>Nouvelle platine…</source>
         <translation>Nova placa…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1076"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1079"/>
         <source>Déclare une face à implanter pour une localisation du projet.</source>
         <translation>Declara uma face a implantar para uma localização do projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1081"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1084"/>
         <source>Ajouter un composant…</source>
         <translation>Adicionar um componente…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1082"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1085"/>
         <source>Pose un article du catalogue sur la platine, à la mesure du catalogue.</source>
         <translation>Põe um artigo do catálogo na placa, na medida do catálogo.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1087"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1090"/>
         <source>Ajouter un rail ou une goulotte…</source>
         <translation>Adicionar um trilho ou uma canaleta…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1088"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1091"/>
         <source>Pose un profilé coupé à la longueur voulue. Une fois posé, il se rallonge et se raccourcit par ses extrémités.</source>
         <translation>Põe um perfil cortado no comprimento desejado. Uma vez posto, ele se alonga e se encurta pelas extremidades.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1094"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1097"/>
         <source>Annuler</source>
         <translation>Desfazer</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1098"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1101"/>
         <source>Rétablir</source>
         <translation>Refazer</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1102"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1105"/>
         <source>Zoom avant</source>
         <translation>Aumentar Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1106"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1109"/>
         <source>Zoom arrière</source>
         <translation>Diminuir Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1111"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1114"/>
         <source>Ajuster à la platine</source>
         <translation>Ajustar à placa</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1116"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1119"/>
         <source>Échelle 1:1 (1 mm = 1 px)</source>
         <translation>Escala 1:1 (1 mm = 1 px)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1121"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1124"/>
         <source>Aligner à gauche</source>
         <translation>Alinhar à esquerda</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1122"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1125"/>
         <source>Amène les composants sélectionnés sur le bord gauche du plus à gauche d&apos;entre eux.</source>
         <translation>Leva os componentes selecionados até a borda esquerda do mais à esquerda deles.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1128"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1131"/>
         <source>Aligner en haut</source>
         <translation>Alinhar ao topo</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1129"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1132"/>
         <source>Amène les composants sélectionnés sur le bord supérieur du plus haut d&apos;entre eux.</source>
         <translation>Leva os componentes selecionados até a borda superior do mais alto deles.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1135"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1138"/>
         <source>Répartir horizontalement</source>
         <translation>Distribuir horizontalmente</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1136"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1139"/>
         <source>Laisse le même espace entre les composants sélectionnés, de gauche à droite ; ceux des deux bouts ne bougent pas.</source>
         <translation>Deixa o mesmo espaço entre os componentes selecionados, da esquerda para a direita; os dois das pontas não se movem.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1143"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1146"/>
         <source>Répartir verticalement</source>
         <translation>Distribuir verticalmente</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1144"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1147"/>
         <source>Laisse le même espace entre les composants sélectionnés, de haut en bas ; ceux des deux bouts ne bougent pas.</source>
         <translation>Deixa o mesmo espaço entre os componentes selecionados, de cima para baixo; os dois das pontas não se movem.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1151"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1154"/>
         <source>Modifier le dessin 2D de la pièce…</source>
         <translation>Editar o desenho 2D da peça…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1152"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1155"/>
         <source>Ouvre le dessin 2D de la pièce sélectionnée, tel que le catalogue le garde ; ce qui est enregistré va dans la pièce du catalogue, pour tous les projets.</source>
         <translation>Abre o desenho 2D da peça selecionada, como o catálogo o guarda; o que for salvo vai para a peça do catálogo, para todos os projetos.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1158"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1161"/>
         <source>Aller au symbole</source>
         <translation>Ir para o símbolo</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1159"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1162"/>
         <source>Affiche le folio du symbole de la pièce sélectionnée, avec le symbole sélectionné.</source>
         <translation>Mostra a folha do símbolo da peça selecionada, com o símbolo selecionado.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1164"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1167"/>
         <source>Check the plate…</source>
         <translation>Verificar a placa…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1165"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1168"/>
         <source>What is wrong with this face before a hole is drilled in it: two parts in the same room, air a part asked for, parts off the plate.</source>
         <translation>O que está errado nesta face antes de um furo ser feito nela: duas peças no mesmo espaço, folga que uma peça pediu, peças fora da placa.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1172"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1175"/>
         <source>Drilling table…</source>
         <translation>Tabela de furação…</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1173"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1176"/>
         <source>The holes of this face as the worklist the bench drills from, with the corner they are measured from written at the head of it.</source>
         <translation>Os furos desta face como a lista de trabalho de onde a bancada fura, com o canto de onde são medidos escrito no topo dela.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1180"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1183"/>
         <source>Fermer</source>
         <translation>Fechar</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1195"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1198"/>
         <source>La face implantée</source>
         <translation>A face implantada</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1200"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1203"/>
         <source>&amp;Calepinage</source>
         <translation>&amp;Layout</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1215"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1218"/>
         <source>&amp;Édition</source>
         <translation>&amp;Editar</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1222"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1225"/>
         <source>&amp;Affichage</source>
         <translation>&amp;Exibir</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1228"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1231"/>
         <source>Calepinage</source>
         <translation>Layout</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1230"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1233"/>
         <source>Platine : </source>
         <translation>Placa: </translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1282"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1285"/>
         <source>(aucune platine)</source>
         <translation>(nenhuma placa)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1288"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1291"/>
         <source>%1 — %2 composant(s)</source>
         <translation>%1 — %2 componente(s)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1371"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1374"/>
         <source>Les composants de la liste de matériel qui ne sont montés sur aucune face : glissez-en un sur la plaque pour le monter.</source>
         <translation>Os componentes da lista de material que não estão montados em nenhuma face: arraste um deles para a placa para montá-lo.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1374"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1377"/>
         <source>Hors de la plaque</source>
         <translation>Fora da placa</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1397"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1400"/>
         <source>(sans repère)</source>
         <translation>(sem tag)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1400"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1403"/>
         <source>%1 — %2</source>
         <translation>%1 — %2</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1405"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1408"/>
         <source>Hors de la plaque (%1)</source>
         <translation>Fora da placa (%1)</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1427"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1430"/>
         <source>Ce composant est déjà monté.</source>
         <translation>Este componente já está montado.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1445"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1448"/>
         <source>Ce composant n&apos;est pas dans la liste de matériel du projet.</source>
         <translation>Este componente não está na lista de material do projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1532"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1548"/>
         <source>La pièce « %1 » n&apos;est plus dans le catalogue : le dessin n&apos;a pas été enregistré.</source>
         <translation>A peça « %1 » não está mais no catálogo: o desenho não foi salvo.</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1586"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1602"/>
         <source>projet sans titre</source>
         <translation>projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1591"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1607"/>
         <source>Calepinage — %1</source>
         <translation>Layout — %1</translation>
     </message>
     <message>
-        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1595"/>
+        <location filename="../sources/location/layout/mountinglayouteditor.cpp" line="1611"/>
         <source>Calepinage : %1 — %2</source>
         <translation>Layout: %1 — %2</translation>
     </message>

@@ -17,6 +17,12 @@
 */
 #include "terminalelement.h"
 #include"../TerminalStrip/realterminal.h"
+#include "../qetinformation.h"
+#include "../diagram.h"
+#include "../qetproject.h"
+#include "../dataBase/projectdatabase.h"
+
+#include <QScopedValueRollback>
 
 /**
 	@brief TerminalElement::TerminalElement
@@ -31,6 +37,11 @@ TerminalElement::TerminalElement(const ElementsLocation &location,
 {
 	auto rt = new RealTerminal(this);
 	m_real_terminal = rt->sharedRef();
+
+		//Whatever writes the label of a linked terminal - its properties,
+		//the text edited on the folio, a script - the number goes back to
+		//the one of its strip terminal: the two sides never disagree
+	connect(this, &Element::elementInfoChange, this, &TerminalElement::followStripMaster);
 }
 
 TerminalElement::~TerminalElement()
@@ -65,6 +76,16 @@ void TerminalElement::linkToElement(Element *elmt)
 
 	connected_elements << elmt;
 	elmt->linkToElement(this);
+
+		//The number is typed once, on the strip terminal, and this one
+		//receives it. As data, and not only on the screen: the strip and the
+		//wiring list read the label of this terminal itself, and not what is
+		//drawn of it. This runs on opening a project too, when the links
+		//are made again - so the strip terminal wins over a label that was
+		//changed outside this program.
+	m_master_info_connection = connect(elmt, &Element::elementInfoChange,
+					   this, &TerminalElement::followStripMaster);
+	followStripMaster();
 	emit linkedElementChanged();
 }
 
@@ -92,9 +113,66 @@ void TerminalElement::unlinkElement(Element *elmt)
 		return;
 
 	connected_elements.removeOne(elmt);
+		//Unlinked, the terminal keeps the number it received: it has become
+		//its own. Undoing the link is what gives the former one back, see
+		//LinkElementCommand. Not listening to the former master changes no
+		//behaviour - followStripMaster() asks who the master is first - but
+		//without it every link made again would add one more connection.
+	disconnect(m_master_info_connection);
 	elmt->unlinkElement(this);
 	elmt->setHighlighted(false);
 	emit linkedElementChanged();
+}
+
+Element *TerminalElement::stripMaster() const
+{
+	if (!m_data.isStripTerminalSlave()) {
+		return nullptr;
+	}
+	for (Element *elmt : connected_elements) {
+		if (elmt && elmt->elementData().isStripTerminalMaster()) {
+			return elmt;
+		}
+	}
+	return nullptr;
+}
+
+bool TerminalElement::labelComesFromStrip() const
+{
+	return stripMaster() != nullptr;
+}
+
+/**
+	@brief TerminalElement::followStripMaster
+	Write the label of the strip terminal into this one. A formula goes
+	too: it would compute this label again, over the one received.
+	Nothing is written when there is nothing to change, which is what
+	stops the call this one triggers through elementInfoChange. And that
+	call is refused while this one runs: anything that left the label
+	different after writing it would otherwise loop until the stack ran
+	out - measured, by keeping the formula: the bench crashed.
+*/
+void TerminalElement::followStripMaster()
+{
+	Element *master = stripMaster();
+	if (!master || m_following_strip) {
+		return;
+	}
+	QScopedValueRollback<bool> following(m_following_strip, true);
+	const QString number = master->actualLabel();
+	DiagramContext information = elementInformations();
+	if (information.value(QETInformation::ELMT_LABEL).toString() == number
+	    && information.value(QETInformation::ELMT_FORMULA).toString().isEmpty()) {
+		return;
+	}
+	information.remove(QETInformation::ELMT_FORMULA);
+	information.addValue(QETInformation::ELMT_LABEL, number);
+	setElementInformations(information);
+		//The parts list, the lists and the labels read the data base of the
+		//project, which a command tells of what it changed. This change is
+		//made by no command of this terminal, and nobody else would tell it.
+	if (diagram() && diagram()->project() && diagram()->project()->dataBase())
+		diagram()->project()->dataBase()->elementInfoChanged(this);
 }
 
 /**

@@ -43,12 +43,23 @@ class TerminalElement : public Element
 		void unlinkAllElements() override;
 		void unlinkElement(Element *elmt) override;
 
+			/// @return the strip terminal this terminal is linked to, or
+			/// nullptr when it is linked to none
+		Element *stripMaster() const;
+			/// @return true when the label of this terminal is the one of a
+			/// strip terminal, and so is edited there and not here
+		bool labelComesFromStrip() const;
+
 		QSharedPointer<RealTerminal> realTerminal() const;
 		void setParentTerminalStrip(TerminalStrip *strip);
 		TerminalStrip *parentTerminalStrip() const;
 
 	private:
+		void followStripMaster();
+
 		QSharedPointer<RealTerminal> m_real_terminal;
+		QMetaObject::Connection m_master_info_connection;
+		bool m_following_strip = false;
 };
 
 #endif // TERMINALELEMENT_H

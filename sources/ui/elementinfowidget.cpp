@@ -36,6 +36,18 @@
 #include "../undocommand/changeelementinformationcommand.h"
 #include "customelementinfopartwidget.h"
 #include "elementinfopartwidget.h"
+#include "../qetgraphicsitem/terminalelement.h"
+
+namespace
+{
+		/// @return true when the label of @a element is the one of the strip
+		/// terminal it is linked to, and so is typed there and not here
+	bool labelComesFromStrip(Element *element)
+	{
+		auto terminal = qobject_cast<TerminalElement *>(element);
+		return terminal && terminal->labelComesFromStrip();
+	}
+}
 
 /**
 	@brief ElementInfoWidget::ElementInfoWidget
@@ -88,11 +100,38 @@ void ElementInfoWidget::setElement(Element *element)
 		else
 			label_info_widget->setDisabled(true);
 
-		connect(formula_info_widget, &ElementInfoPartWidget::textChanged, this, [label_info_widget](const QString text)
+		connect(formula_info_widget, &ElementInfoPartWidget::textChanged, this, [this, label_info_widget](const QString text)
 		{
-			label_info_widget->setEnabled(text.isEmpty()? true : false);
+			label_info_widget->setEnabled(text.isEmpty() && !labelComesFromStrip(m_element.data()));
 		});
 	}
+
+		//The number of a terminal linked to a strip terminal is the one of
+		//the strip terminal: it is typed there, and both fields are shut
+		//here, saying why. Again whenever a link is made or undone.
+	auto lock_from_strip = [this, formula_info_widget, label_info_widget]()
+	{
+		const bool from_strip = labelComesFromStrip(m_element.data());
+		const QString why = from_strip
+				? tr("Le numéro vient de la borne de bornier à laquelle "
+				     "cette borne est liée : il se modifie sur celle-ci.")
+				: QString();
+		if (label_info_widget)
+		{
+			if (from_strip)
+				label_info_widget->setEnabled(false);
+			else if (!formula_info_widget || formula_info_widget->text().isEmpty())
+				label_info_widget->setEnabled(true);
+			label_info_widget->setToolTip(why);
+		}
+		if (formula_info_widget)
+		{
+			formula_info_widget->setEnabled(!from_strip);
+			formula_info_widget->setToolTip(why);
+		}
+	};
+	lock_from_strip();
+	connect(m_element.data(), &Element::linkedElementChanged, this, lock_from_strip);
 
 	connect(m_element.data(), &Element::elementInfoChange, this, &ElementInfoWidget::elementInfoChange);
 }

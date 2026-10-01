@@ -21,6 +21,7 @@
 #include "../diagram.h"
 #include "../diagramposition.h"
 #include "../qetproject.h"
+#include "../dataBase/projectdatabase.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
 #include "../qetgraphicsitem/terminal.h"
@@ -85,6 +86,14 @@ bool LinkElementCommand::mergeWith(const QUndoCommand *other)
 	LinkElementCommand const *undo = static_cast<const LinkElementCommand *> (other);
 	if (m_element != undo->m_element) return false;
 	m_linked_after = undo->m_linked_after;
+		//What a terminal had before is what it had before this command, the
+		//first of the two; the other one only knows of the terminals it added
+	for (auto it = undo->m_strip_terminal_informations.cbegin();
+	     it != undo->m_strip_terminal_informations.cend(); ++it)
+	{
+		if (!m_strip_terminal_informations.contains(it.key()))
+			m_strip_terminal_informations.insert(it.key(), it.value());
+	}
 	return true;
 }
 
@@ -323,6 +332,7 @@ void LinkElementCommand::undo()
 	}
 
 	makeLink(m_linked_before);
+	restoreStripTerminalInformations();
 	QUndoCommand::undo();
 }
 
@@ -333,6 +343,7 @@ void LinkElementCommand::undo()
 void LinkElementCommand::redo()
 {
 	if(m_element->diagram()) m_element->diagram()->showMe();
+	keepStripTerminalInformations();
 	makeLink(m_linked_after);
 
 		//If the action is to link two reports together, and the conductors
@@ -692,5 +703,43 @@ void LinkElementCommand::makeLink(const QList<Element *> &element_list)
 			}
 			m_element->unlinkElement(elmt);
 		}
+	}
+}
+
+/**
+	@brief LinkElementCommand::keepStripTerminalInformations
+	Keep what each terminal that can be the slave of a strip terminal, and
+	that this command touches, has before it is linked. Only once per
+	terminal: a second redo comes after an undo, which gave it back.
+*/
+void LinkElementCommand::keepStripTerminalInformations()
+{
+	QList<Element *> touched = m_linked_before + m_linked_after;
+	touched << m_element;
+	for (Element *elmt : touched)
+	{
+		if (elmt && elmt->elementData().isStripTerminalSlave()
+		    && !m_strip_terminal_informations.contains(elmt))
+			m_strip_terminal_informations.insert(elmt, elmt->elementInformations());
+	}
+}
+
+/**
+	@brief LinkElementCommand::restoreStripTerminalInformations
+	Give the terminals back what they had before the link, once the links
+	of before are made again. A terminal linked before is linked again by
+	then, and follows its strip terminal whatever is written here.
+*/
+void LinkElementCommand::restoreStripTerminalInformations()
+{
+	for (auto it = m_strip_terminal_informations.cbegin();
+	     it != m_strip_terminal_informations.cend(); ++it)
+	{
+		Element *terminal = it.key();
+		terminal->setElementInformations(it.value());
+			//and the data base of the project, which the lists read
+		if (terminal->diagram() && terminal->diagram()->project()
+		    && terminal->diagram()->project()->dataBase())
+			terminal->diagram()->project()->dataBase()->elementInfoChanged(terminal);
 	}
 }

@@ -19,7 +19,10 @@
 #define LINKELEMENTCOMMAND_H
 
 #include <QUndoCommand>
+#include <QHash>
 #include <QMap>
+
+#include "../diagramcontext.h"
 
 class Element;
 
@@ -53,8 +56,14 @@ class LinkElementCommand : public QUndoCommand
 	private:
 		void setUpNewLink (const QList<Element *> &element_list, bool already_link);
 		void makeLink (const QList <Element *> &element_list);
+		void keepStripTerminalInformations();
+		void restoreStripTerminalInformations();
 
 	private:
+			//A terminal linked to a strip terminal receives its number, as
+			//data. This is what each terminal this command touches had before
+			//the first redo, so that undoing the link gives it back.
+		QHash<Element *, DiagramContext> m_strip_terminal_informations;
 		Element *m_element;
 		bool m_first_redo;
 		int m_group_index = -1;

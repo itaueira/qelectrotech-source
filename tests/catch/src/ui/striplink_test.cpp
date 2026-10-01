@@ -29,7 +29,13 @@
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/masterelement.h"
 #include "../../../../sources/qetgraphicsitem/terminalelement.h"
+#include "../../../../sources/dataBase/projectdatabase.h"
+#include "../../../../sources/qetinformation.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/TerminalStrip/realterminal.h"
+#include "../../../../sources/ui/elementinfopartwidget.h"
+#include "../../../../sources/ui/elementinfowidget.h"
+#include "../../../../sources/undocommand/changeelementinformationcommand.h"
 #include "../../../../sources/ui/linksingleelementwidget.h"
 #include "../../../../sources/ui/masterpropertieswidget.h"
 #include "../../../../sources/undocommand/linkelementcommand.h"
@@ -41,6 +47,7 @@
 #include <QDialogButtonBox>
 #include <QDomDocument>
 #include <QGraphicsSceneMouseEvent>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTreeWidget>
@@ -635,4 +642,248 @@ TEST_CASE("CU-43.15 — a double click on either reference leads to the other te
 		CHECK(t1->isSelected());
 		CHECK_FALSE(x1->isSelected());
 	}
+}
+
+namespace
+{
+	QString labelOf(Element *element)
+	{
+		return element->elementInformations()
+				.value(QETInformation::ELMT_LABEL).toString();
+	}
+
+	/// Give @a element the label @a label the way its properties do: one
+	/// command on the project's stack.
+	void relabel(QETProject *project, Element *element, const QString &label)
+	{
+		DiagramContext renamed = element->elementInformations();
+		renamed.addValue(QETInformation::ELMT_LABEL, label);
+		project->undoStack()->push(new ChangeElementInformationCommand(
+			element, element->elementInformations(), renamed));
+	}
+
+	/// The label the data base of @a project holds for the element of
+	/// uuid @a uuid - what the parts list and the lists read
+	QString labelInDataBase(QETProject *project, const QString &uuid)
+	{
+		for (const auto &row : project->dataBase()->bomElements())
+			if (QUuid(row.uuid) == QUuid(uuid))
+				return row.label;
+		return QStringLiteral("<absent>");
+	}
+
+	/// The edit field of @a key in the information tab, or nullptr
+	QLineEdit *fieldOf(ElementInfoWidget &tab, const QString &key)
+	{
+		for (auto part : tab.findChildren<ElementInfoPartWidget *>())
+			if (part->key() == key)
+				return part->findChild<QLineEdit *>();
+		return nullptr;
+	}
+}
+
+TEST_CASE("CU-43.17 — the terminal of the schematic takes the number of its strip terminal, both ways of undo",
+	  "[t43][striplink]")
+{
+		//Answered on 2026-10-01: the number is typed once, on the strip
+		//terminal, and the terminal of the schematic receives it - as data,
+		//because the strip and the wiring list read the label itself
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	QETProject *project = bench.project.project();
+	Element *t1 = bench(t1_uuid);
+	Element *x1 = bench(x1_uuid);
+	REQUIRE(t1 != nullptr);
+	REQUIRE(x1 != nullptr);
+	auto terminal = qobject_cast<TerminalElement *>(t1);
+	REQUIRE(terminal != nullptr);
+	REQUIRE(labelOf(t1) == QStringLiteral("1"));
+	REQUIRE(labelOf(x1) == QStringLiteral("S1"));
+	CHECK_FALSE(terminal->labelComesFromStrip());
+
+	link(project, t1, x1);
+	CHECK(terminal->labelComesFromStrip());
+	CHECK(labelOf(t1) == QStringLiteral("S1"));
+		//The strip reads the data, and so it has the number too; and so
+		//does the data base the lists read, which no command told
+	CHECK(terminal->realTerminal()->label() == QStringLiteral("S1"));
+	CHECK(labelInDataBase(project, t1_uuid) == QStringLiteral("S1"));
+
+		//The strip terminal renamed: the two sides follow, and one undo
+		//gives the two back
+	relabel(project, x1, QStringLiteral("7"));
+	CHECK(labelOf(x1) == QStringLiteral("7"));
+	CHECK(labelOf(t1) == QStringLiteral("7"));
+	CHECK(terminal->realTerminal()->label() == QStringLiteral("7"));
+	project->undoStack()->undo();
+	CHECK(labelOf(x1) == QStringLiteral("S1"));
+	CHECK(labelOf(t1) == QStringLiteral("S1"));
+	CHECK(terminal->realTerminal()->label() == QStringLiteral("S1"));
+
+		//Written on the linked terminal itself, the label goes back to the
+		//one of its strip terminal: the two sides never disagree
+	DiagramContext typed = t1->elementInformations();
+	typed.addValue(QETInformation::ELMT_LABEL, QStringLiteral("99"));
+	t1->setElementInformations(typed);
+	CHECK(labelOf(t1) == QStringLiteral("S1"));
+
+		//Undoing the link gives the terminal its own number back, and the
+		//strip terminal stops driving it
+	project->undoStack()->undo();
+	REQUIRE(t1->linkedElements().isEmpty());
+	CHECK_FALSE(terminal->labelComesFromStrip());
+	CHECK(labelOf(t1) == QStringLiteral("1"));
+	CHECK(labelInDataBase(project, t1_uuid) == QStringLiteral("1"));
+	CHECK(terminal->realTerminal()->label() == QStringLiteral("1"));
+	DiagramContext elsewhere = x1->elementInformations();
+	elsewhere.addValue(QETInformation::ELMT_LABEL, QStringLiteral("S9"));
+	x1->setElementInformations(elsewhere);
+	CHECK(labelOf(t1) == QStringLiteral("1"));
+
+		//And redoing it takes the number of the strip terminal again
+	project->undoStack()->redo();
+	CHECK(terminal->labelComesFromStrip());
+	CHECK(labelOf(t1) == QStringLiteral("S9"));
+}
+
+TEST_CASE("CU-43.17 — the label of a linked terminal is not edited in its properties, and says why",
+	  "[t43][striplink]")
+{
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	Element *t1 = bench(t1_uuid);
+	Element *t3 = bench(t3_uuid);
+	Element *x1 = bench(x1_uuid);
+	REQUIRE(t1 != nullptr);
+	REQUIRE(t3 != nullptr);
+	link(bench.project.project(), t1, x1);
+
+	ElementInfoWidget linked_tab(t1);
+	QLineEdit *linked_label = fieldOf(linked_tab, QETInformation::ELMT_LABEL);
+	REQUIRE(linked_label != nullptr);
+	CHECK_FALSE(linked_label->isEnabled());
+	CHECK(linked_label->text() == QStringLiteral("S1"));
+	QLineEdit *linked_formula = fieldOf(linked_tab, QETInformation::ELMT_FORMULA);
+	if (linked_formula) {
+		CHECK_FALSE(linked_formula->isEnabled());
+	}
+	bool said = false;
+	for (auto part : linked_tab.findChildren<ElementInfoPartWidget *>())
+		if (part->key() == QETInformation::ELMT_LABEL)
+			said = !part->toolTip().isEmpty();
+	CHECK(said);
+
+		//A terminal linked to nothing keeps its field
+	ElementInfoWidget free_tab(t3);
+	QLineEdit *free_label = fieldOf(free_tab, QETInformation::ELMT_LABEL);
+	REQUIRE(free_label != nullptr);
+	CHECK(free_label->isEnabled());
+
+		//And the field opens again when the link is undone, the tab open
+	bench.project.project()->undoStack()->undo();
+	CHECK(linked_label->isEnabled());
+}
+
+TEST_CASE("T43 — taking the number of the strip terminal drops a formula, and undo gives it back",
+	  "[t43][striplink]")
+{
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	QETProject *project = bench.project.project();
+	Element *t2 = bench(t2_uuid);
+	Element *x2 = bench(x2_uuid);
+	REQUIRE(t2 != nullptr);
+	REQUIRE(x2 != nullptr);
+
+		//A formula would compute the label again, over the one received
+	DiagramContext with_formula = t2->elementInformations();
+	with_formula.addValue(QETInformation::ELMT_FORMULA, QStringLiteral("Z9"));
+	t2->setElementInformations(with_formula);
+	REQUIRE(labelOf(t2) == QStringLiteral("Z9"));
+
+	link(project, t2, x2);
+	CHECK(labelOf(t2) == QStringLiteral("S2"));
+	CHECK(t2->elementInformations().value(QETInformation::ELMT_FORMULA).toString().isEmpty());
+
+	project->undoStack()->undo();
+	CHECK(t2->elementInformations().value(QETInformation::ELMT_FORMULA).toString()
+	      == QStringLiteral("Z9"));
+	CHECK(labelOf(t2) == QStringLiteral("Z9"));
+
+		//Unlinked without undo, it keeps the number it received: it has
+		//become its own
+	project->undoStack()->redo();
+	REQUIRE(labelOf(t2) == QStringLiteral("S2"));
+	auto unlink_all = new LinkElementCommand(t2);
+	unlink_all->unlinkAll();
+	project->undoStack()->push(unlink_all);
+	REQUIRE(t2->linkedElements().isEmpty());
+	CHECK(labelOf(t2) == QStringLiteral("S2"));
+}
+
+TEST_CASE("T43 — opening a project, the strip terminal wins over a terminal whose label disagrees",
+	  "[t43][striplink]")
+{
+		//Written outside this program, or before it: the terminal of the
+		//schematic linked to the strip terminal S1, with another label. The
+		//links are made again on opening, and the number follows.
+	QString xml = fixtureXml();
+	const QString t1_open = QStringLiteral("uuid=\"%1\">").arg(t1_uuid);
+	const int at = xml.indexOf(t1_open);
+	REQUIRE(at >= 0);
+	const int inputs = xml.indexOf(QStringLiteral("<inputs/>"), at);
+	REQUIRE(inputs > at);
+	xml.insert(inputs, QStringLiteral("<links_uuids><link_uuid uuid=\"%1\"/></links_uuids>").arg(x1_uuid));
+
+	UiBench::ScratchProject project(xml, QStringLiteral("striplink-open.qet"));
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+	Element *t1 = byUuid(project.diagram(0), t1_uuid);
+	Element *x1 = byUuid(project.diagram(0), x1_uuid);
+	REQUIRE(t1 != nullptr);
+	REQUIRE(x1 != nullptr);
+	REQUIRE(t1->linkedElements().contains(x1));
+	CHECK(labelOf(t1) == QStringLiteral("S1"));
+
+		//and it travels: saved and opened again, it is still the same
+	REQUIRE(project.saveAndReopen());
+	t1 = byUuid(project.diagram(0), t1_uuid);
+	REQUIRE(t1 != nullptr);
+	CHECK(labelOf(t1) == QStringLiteral("S1"));
+}
+
+TEST_CASE("T43 — two link commands merged on one strip terminal give every terminal its number back",
+	  "[t43][striplink]")
+{
+		//The tab of the master pushes one command per change, and the stack
+		//merges the ones that follow on the same element. The second knows
+		//of the terminal it added; the merged one has to remember it too.
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	QETProject *project = bench.project.project();
+	Element *x2 = bench(x2_uuid);
+	Element *t2 = bench(t2_uuid);
+	Element *t3 = bench(t3_uuid);
+	REQUIRE(x2 != nullptr);
+	REQUIRE(t2 != nullptr);
+	REQUIRE(t3 != nullptr);
+	const int steps = project->undoStack()->count();
+
+	auto first = new LinkElementCommand(x2);
+	first->setLink(t2);
+	project->undoStack()->push(first);
+	auto second = new LinkElementCommand(x2);
+	second->setLink(QList<Element *>({t2, t3}));
+	project->undoStack()->push(second);
+	REQUIRE(project->undoStack()->count() == steps + 1);
+	CHECK(labelOf(t2) == QStringLiteral("S2"));
+	CHECK(labelOf(t3) == QStringLiteral("S2"));
+
+	project->undoStack()->undo();
+	CHECK(labelOf(t2) == QStringLiteral("2"));
+	CHECK(labelOf(t3) == QStringLiteral("3"));
 }
