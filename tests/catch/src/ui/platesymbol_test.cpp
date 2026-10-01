@@ -31,6 +31,7 @@
 #include <catch2/catch.hpp>
 #include <QAction>
 #include <QApplication>
+#include <QComboBox>
 #include <QDockWidget>
 #include <QDropEvent>
 #include <QListWidget>
@@ -338,10 +339,20 @@ TEST_CASE("T19 — mounting from off the plate: part code, box of the catalogue,
 	CHECK(editor.mountElement(elementUuid(4), QPointF(200, 100), &error).isEmpty());
 	CHECK_FALSE(error.isEmpty());
 
-		//One step of undo takes it away and puts it back on the list
+		//One step of undo takes it away and puts it back on the list, and
+		//the box of faces counts what the face holds again
+	QComboBox *faces = nullptr;
+	for (QComboBox *box : editor.findChildren<QComboBox *>()) {
+		if (box->currentText().contains(QStringLiteral("composant"))) {
+			faces = box;
+		}
+	}
+	REQUIRE(faces);
+	CHECK(faces->currentText().contains(QStringLiteral("2 composant")));
 	editor.scene()->undoStack().undo();
 	CHECK(scratch->mountingLayout().itemOfElement(elementUuid(2)).isEmpty());
 	CHECK(editor.unmountedElements().contains(elementUuid(2)));
+	CHECK(faces->currentText().contains(QStringLiteral("1 composant")));
 
 		//A part nobody measured that has a drawing is drawn as its drawing,
 		//and that is what lands centred where it was dropped

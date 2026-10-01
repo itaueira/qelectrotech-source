@@ -369,8 +369,11 @@ void MountingLayoutEditor::stepApplied()
 	commitToProject();
 	updateActions();
 		//A part mounted or taken away is a line gone from, or back on, the
-		//list of what is off the plate
+		//list of what is off the plate, and a count of the face that moved.
+		//Seen on the screen on 2026-10-01: after an undo the box of faces
+		//still said two parts over a plate holding one.
 	refreshUnmounted();
+	refreshSurfaceList();
 }
 
 /**
