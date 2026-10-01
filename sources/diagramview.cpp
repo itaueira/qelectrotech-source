@@ -20,6 +20,7 @@
 #include "lastusedstyle.h"
 #include "utils/colordialogdoubleclick.h"
 #include "qetproject.h"
+#include "location/mountinglayout.h"
 #include "QPropertyUndoCommand/qpropertyundocommand.h"
 #include "diagramcommands.h"
 #include "diagramevent/diagrameventaddelement.h"
@@ -1848,6 +1849,17 @@ QList<QAction *> DiagramView::contextMenuActions() const
 				//asks for.
 			if (selectionHasElement()) {
 				list << qde->m_catalog_assign;
+			}
+				//Only for one element, and one mounted on a plate: an entry
+				//for a component that is on no plate would open a window to
+				//say it is not there.
+			if (selected_items.count() == 1) {
+				const Element *element = qgraphicsitem_cast<Element *>(selected_items.first());
+				QETProject *project = m_diagram->project();
+				if (element && project
+				    && !project->mountingLayout().itemOfElement(element->uuid().toString()).isEmpty()) {
+					list << qde->m_show_on_plate;
+				}
 			}
 			list << m_separators.at(1);
 			list << qde->m_selection_actions_group.actions();

@@ -146,6 +146,7 @@ namespace
 		return before.uuid == after.uuid
 		       && before.label == after.label
 		       && before.part_code == after.part_code
+		       && before.element == after.element
 		       && before.profile == after.profile
 		       && before.run == after.run
 		       && sameLength(before.position.x(), after.position.x())
@@ -196,6 +197,12 @@ namespace
 		if (!item.part_code.isEmpty()) {
 			element.setAttribute(QStringLiteral("part"), item.part_code);
 		}
+			//Which element of the folio this is. Written only when
+			//there is one: a part laid before its symbol was drawn has
+			//none, and that is an ordinary state, not a missing value.
+		if (!item.element.isEmpty()) {
+			element.setAttribute(QStringLiteral("element"), item.element);
+		}
 
 			//The position is written whatever it is, because the top
 			//left corner of the face is a place like any other and
@@ -245,6 +252,7 @@ namespace
 		item.uuid      = element.attribute(QStringLiteral("uuid"));
 		item.label     = element.attribute(QStringLiteral("label"));
 		item.part_code = element.attribute(QStringLiteral("part"));
+		item.element   = element.attribute(QStringLiteral("element"));
 		item.position  = QPointF(length(element.attribute(QStringLiteral("x"))),
 					 length(element.attribute(QStringLiteral("y"))));
 		item.size      = QSizeF(length(element.attribute(QStringLiteral("width"))),
@@ -1022,6 +1030,27 @@ QString MountingLayout::surfaceOfItem(const QString &item_uuid) const
 {
 	const int owner = indexOfItemOwner(item_uuid);
 	return owner < 0 ? QString() : m_surfaces.at(owner).uuid;
+}
+
+/**
+	@brief MountingLayout::itemOfElement
+	@param element_uuid the uuid of an element of a folio
+	@return the mounted item that is that element, empty when the
+	element is mounted on no face of this layout
+*/
+QString MountingLayout::itemOfElement(const QString &element_uuid) const
+{
+	if (element_uuid.isEmpty()) {
+		return QString();
+	}
+	for (const MountingSurface &surface : m_surfaces) {
+		for (const MountedItem &item : surface.items) {
+			if (item.element == element_uuid) {
+				return item.uuid;
+			}
+		}
+	}
+	return QString();
 }
 
 bool MountingLayout::holdsItem(const QString &item_uuid) const

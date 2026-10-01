@@ -229,6 +229,10 @@ class MountedItem
 		QString label;
 			/// the catalogue part it was bought as, to name the product
 		QString part_code;
+			/// the element of the folio this part is, by its uuid; empty
+			/// for a part laid with no symbol behind it, which is the
+			/// layout drawn before the schematic
+		QString element;
 			/// top left corner of its footprint, millimetre
 		QPointF position;
 			/// the room it takes on the surface, millimetre

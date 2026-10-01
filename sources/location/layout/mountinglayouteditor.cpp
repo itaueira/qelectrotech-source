@@ -20,6 +20,7 @@
 #include "../../catalog/catalog.h"
 #include "../../catalog/catalogpart.h"
 #include "../../catalog/ui/catalogbrowserdialog.h"
+#include "../../elementprovider.h"
 #include "../../qetapp.h"
 #include "../../qeticons.h"
 #include "../../qetproject.h"
@@ -944,6 +945,36 @@ MountingCheckDialog *MountingLayoutEditor::openPlateCheck()
 	which is worse than saying nothing: the part is there, on the plate
 	being shown, and it is not.
 */
+/**
+	@brief MountingLayoutEditor::goToSymbol
+	Ask for the folio of the symbol of the selected part. When the
+	symbol is gone from the project, say so here and go nowhere: the
+	part keeps the link, because the symbol may come back with an undo.
+*/
+void MountingLayoutEditor::goToSymbol()
+{
+	const QStringList selected = m_scene->selectedUuids();
+	if (selected.count() != 1 || !m_project) {
+		return;
+	}
+	const MountedPartItem *part = m_scene->partItem(selected.first());
+	if (!part) {
+		return;
+	}
+	const QString element_uuid = part->mountedItem().element;
+	if (element_uuid.isEmpty()) {
+		return;
+	}
+
+	const QList<Element *> found =
+			ElementProvider(m_project).fromUuids({QUuid(element_uuid)});
+	if (found.isEmpty()) {
+		say(tr("Le symbole de cette pièce n'existe plus dans le projet."), true);
+		return;
+	}
+	emit goToElement(found.first());
+}
+
 void MountingLayoutEditor::pointAtItem(const QString &item_uuid)
 {
 	if (item_uuid.isEmpty()) {
@@ -1059,6 +1090,12 @@ void MountingLayoutEditor::buildActions()
 	connect(m_spread_down, &QAction::triggered,
 		this, &MountingLayoutEditor::spreadDown);
 
+	m_go_to_symbol = new QAction(tr("Aller au symbole"), this);
+	m_go_to_symbol->setStatusTip(tr("Affiche le folio du symbole de la pièce "
+					  "sélectionnée, avec le symbole sélectionné."));
+	connect(m_go_to_symbol, &QAction::triggered,
+		this, &MountingLayoutEditor::goToSymbol);
+
 	m_check_plate = new QAction(tr("Check the plate…"), this);
 	m_check_plate->setStatusTip(tr("What is wrong with this face before a "
 				       "hole is drilled in it: two parts in "
@@ -1113,6 +1150,8 @@ void MountingLayoutEditor::buildWidgets()
 	QMenu *edit_menu = menuBar()->addMenu(tr("&Édition"));
 	edit_menu->addAction(m_undo);
 	edit_menu->addAction(m_redo);
+	edit_menu->addSeparator();
+	edit_menu->addAction(m_go_to_symbol);
 
 	QMenu *view_menu = menuBar()->addMenu(tr("&Affichage"));
 	view_menu->addAction(m_zoom_in);
@@ -1288,6 +1327,17 @@ void MountingLayoutEditor::updateActions()
 		//it.
 	m_check_plate->setEnabled(!m_shown.isEmpty());
 	m_drilling_table->setEnabled(!m_shown.isEmpty());
+
+		//One part, and one that came from a symbol. A part laid with no
+		//symbol behind it has nowhere to go, and saying so in a grey
+		//entry is the honest answer.
+	bool has_symbol = false;
+	if (selected == 1) {
+		if (const MountedPartItem *part = m_scene->partItem(m_scene->selectedUuids().first())) {
+			has_symbol = !part->mountedItem().element.isEmpty();
+		}
+	}
+	m_go_to_symbol->setEnabled(has_symbol);
 
 	const int index = m_surface_box->findData(m_shown);
 	if (index >= 0 && index != m_surface_box->currentIndex())

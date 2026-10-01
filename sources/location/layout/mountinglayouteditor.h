@@ -27,6 +27,7 @@
 #include <QString>
 
 class DrillingTableDialog;
+class Element;
 class MountedItem;
 class MountingCheckDialog;
 class MountingScene;
@@ -224,11 +225,18 @@ class MountingLayoutEditor : public QMainWindow
 		*/
 		MountingCheckDialog *openPlateCheck();
 
+	signals:
+			/// The person asked to see the symbol of a part, and here
+			/// it is. Emitted rather than done: this window has no idea
+			/// what a folio view is, and whoever opened it does.
+		void goToElement(Element *element);
+
 	protected:
 		void closeEvent(QCloseEvent *event) override;
 
 	private slots:
 		void stepApplied();
+		void goToSymbol();
 		void surfaceChosen(int index);
 		void newSurface();
 		void addPart();
@@ -256,6 +264,8 @@ class MountingLayoutEditor : public QMainWindow
 		void pointedAt(const QPointF &position_mm);
 		void zoomTold(qreal pixels_per_millimetre);
 
+		//Public since the folio asks it too, for "show on the plate"
+	public slots:
 		/**
 			@brief Select the part of @a item_uuid and bring it into
 			view.
@@ -379,6 +389,7 @@ class MountingLayoutEditor : public QMainWindow
 		QAction *m_zoom_actual = nullptr;
 		QAction *m_drilling_table = nullptr;
 		QAction *m_check_plate = nullptr;
+		QAction *m_go_to_symbol = nullptr;
 		QAction *m_close = nullptr;
 
 		/**

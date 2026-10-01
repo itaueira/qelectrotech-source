@@ -521,3 +521,57 @@ TEST_CASE("T19 — o arquivo pode guardar o que a calepinagem não aceita, e a l
 	REQUIRE(relido.fromXml(segunda_volta.documentElement()));
 	CHECK(relido == lido);
 }
+
+TEST_CASE("T19 — a peça montada guarda o elemento da folha que ela é, e só quando tem um",
+	  "[calepinagem][t44]")
+{
+	MountingLayout layout;
+	const QString face = layout.appendSurface(placa("QCM1", 600, 800));
+	MountedItem com_simbolo = peca("-Q1", "A9F74210", 10, 20, 22.5, 85);
+	com_simbolo.element = QStringLiteral("{5e0c1d4a-0000-4000-8000-0000000000aa}");
+	const QString q1 = layout.mountItem(face, com_simbolo);
+		//Uma peça posta antes do esquema: sem símbolo, e isso é um estado
+		//comum, não um valor faltando.
+	const QString x1 = layout.mountItem(face, peca("-X1", "", 50, 20, 6, 45));
+	REQUIRE_FALSE(q1.isEmpty());
+	REQUIRE_FALSE(x1.isEmpty());
+
+	QDomDocument documento;
+	documento.appendChild(layout.toXml(documento));
+
+		//O atributo só onde há vínculo: o arquivo não ganha uma palavra
+		//repetida em cada peça para dizer o comum.
+	const QDomNodeList itens = documento.elementsByTagName(MountingSurface::itemTagName());
+	REQUIRE(itens.size() == 2);
+	int com_atributo = 0;
+	for (int i = 0; i < itens.size(); ++i) {
+		if (itens.at(i).toElement().hasAttribute(QStringLiteral("element"))) {
+			++com_atributo;
+		}
+	}
+	CHECK(com_atributo == 1);
+
+	MountingLayout lido;
+	REQUIRE(lido.fromXml(documento.documentElement()));
+	CHECK(lido == layout);
+	CHECK(lido.item(q1).element == com_simbolo.element);
+	CHECK(lido.item(x1).element.isEmpty());
+
+		//E a pergunta da volta, da folha para a placa
+	CHECK(lido.itemOfElement(com_simbolo.element) == q1);
+	CHECK(lido.itemOfElement(QStringLiteral("{00000000-0000-4000-8000-000000000000}")).isEmpty());
+		//A peça solta tem elemento vazio, e um uuid vazio não pode achar
+		//justamente ela.
+	CHECK(lido.itemOfElement(QString()).isEmpty());
+
+	SECTION("vincular ou desvincular é mudança, e não passa como igual")
+	{
+			//A comparação decide se a janela grava no projeto: um campo
+			//que ela ignorasse faria um vínculo novo sumir calado.
+		MountingLayout outro = lido;
+		MountedItem mudado = outro.item(x1);
+		mudado.element = QStringLiteral("{5e0c1d4a-0000-4000-8000-0000000000bb}");
+		REQUIRE(outro.updateItem(mudado));
+		CHECK_FALSE(outro == lido);
+	}
+}

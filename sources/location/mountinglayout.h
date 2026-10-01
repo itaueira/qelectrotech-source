@@ -319,6 +319,7 @@ class MountingLayout
 		MountedItem item(const QString &item_uuid) const;
 			/// @return the face @a item_uuid is mounted on, empty when none
 		QString surfaceOfItem(const QString &item_uuid) const;
+		QString itemOfElement(const QString &element_uuid) const;
 		bool holdsItem(const QString &item_uuid) const;
 			/// @return every item of the layout, face by face
 		QStringList mountedItemUuids() const;

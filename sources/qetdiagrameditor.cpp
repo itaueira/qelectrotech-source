@@ -69,6 +69,7 @@
 #include "factory/elementpicturefactory.h"
 #include "factory/qetgraphicstablefactory.h"
 #include "location/layout/mountinglayouteditor.h"
+#include "location/mountinglayout.h"
 #include "location/ui/locationbomdialog.h"
 #include "location/ui/locationmanagerdialog.h"
 #include "location/ui/locationreportdialog.h"
@@ -713,6 +714,14 @@ void QETDiagramEditor::setUpActions()
 						   tr("Éditeur de schémas"),
 						   Qt::CTRL | Qt::SHIFT | Qt::Key_P);
 	connect(m_catalog_assign, &QAction::triggered, this, &QETDiagramEditor::assignCatalogPart);
+
+		//The way back from the folio to the plate. Offered by the context
+		//menu only for an element that is mounted somewhere (see
+		//DiagramView::contextMenuActions()).
+	m_show_on_plate = new QAction(tr("Montrer sur la plaque"), this);
+	m_show_on_plate->setStatusTip(tr("Ouvre l'implantation de la plaque où ce "
+					   "composant est monté, avec la pièce sélectionnée."));
+	connect(m_show_on_plate, &QAction::triggered, this, &QETDiagramEditor::showSelectionOnPlate);
 
 	m_catalog_register = new QAction(QET::Icons::TableOfContent, tr("Enregistrer une pièce"), this);
 	m_catalog_register->setToolTip(tr(
@@ -2225,7 +2234,44 @@ void QETDiagramEditor::showMountingLayout()
 
 	MountingLayoutEditor *editor = new MountingLayoutEditor(project);
 	editor->setAttribute(Qt::WA_DeleteOnClose);
+		//From a part to its symbol: the plate asks, this window knows
+		//where the folios are.
+	connect(editor, &MountingLayoutEditor::goToElement, this, &QETDiagramEditor::goToElement);
 	editor->show();
+}
+
+/**
+	@brief QETDiagramEditor::showSelectionOnPlate
+	Open the mounting layout of the project with the part of the selected
+	element selected and in view. One element, and one that is mounted:
+	the context menu offers nothing else.
+*/
+void QETDiagramEditor::showSelectionOnPlate()
+{
+	DiagramView *view = currentDiagramView();
+	QETProject *project = currentProject();
+	if (!view || !view->diagram() || !project) {
+		return;
+	}
+	const QList<QGraphicsItem *> selected = view->diagram()->selectedItems();
+	if (selected.count() != 1) {
+		return;
+	}
+	const Element *element = qgraphicsitem_cast<Element *>(selected.first());
+	if (!element) {
+		return;
+	}
+	const QString item = project->mountingLayout()
+			     .itemOfElement(element->uuid().toString());
+	if (item.isEmpty()) {
+		return;
+	}
+
+	showMountingLayout();
+	const QList<MountingLayoutEditor *> opened = QETApp::mountingLayoutEditors(project);
+	if (!opened.isEmpty()) {
+		opened.first()->pointAtItem(item);
+	}
 }
 
 /**

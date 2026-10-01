@@ -937,7 +937,10 @@ if(TARGET qet_core)
         # O desenho 2D da peca no arquivo do simbolo. Precisa do editor de
         # simbolos de verdade: as partes chegam a cena pelo editor, sem
         # conferir nulo, e e a gravacao dele que perderia o bloco.
-        src/ui/layoutdrawing_test.cpp)
+        src/ui/layoutdrawing_test.cpp
+        # A peca da placa e o elemento da folha que ela e: precisa de
+        # projeto aberto com folha, e da janela de calepinagem sobre ele.
+        src/ui/platesymbol_test.cpp)
 
     target_link_libraries(
         C_uitests

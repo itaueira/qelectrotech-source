@@ -221,6 +221,7 @@ class QETDiagramEditor : public QETMainWindow
 		void showLocationReport();
 		void showLocationBom();
 		void showMountingLayout();
+		void showSelectionOnPlate();
 		void putMountingLayoutOnFolio();
 		void goToElement(Element *element);
 		void insertNomenclature(const QString &query);
@@ -244,6 +245,7 @@ class QETDiagramEditor : public QETMainWindow
 			//short public block is the list of actions the context menu is
 			//allowed to reach - everything else stays private.
 		*m_catalog_assign = nullptr,///< Assign a catalog part to the selected components
+		*m_show_on_plate = nullptr, ///< Show the selected element on its mounting plate
 		*m_navigate = nullptr,      ///< Go to the other representation of the selected object
 		*m_insert_last_element = nullptr; ///< Place the last placed element again
 		
