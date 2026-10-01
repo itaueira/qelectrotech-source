@@ -24,10 +24,10 @@
 #include <QPicture>
 #include <QRectF>
 #include <QString>
+#include <QUuid>
 
 class ElementsLocation;
 class QPicture;
-class QUuid;
 class QDomElement;
 class QPainter;
 class QGraphicsSimpleTextItem;

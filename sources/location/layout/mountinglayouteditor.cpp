@@ -154,7 +154,21 @@ MountingLayoutEditor::MountingLayoutEditor(QETProject *project,
 }
 
 MountingLayoutEditor::~MountingLayoutEditor()
-{}
+{
+		//The scene and the view are children of this window and die after
+		//this body. The scene deletes its parts on the way out, the
+		//selection changes as each one goes, and updateActions() then read
+		//the map of parts of a scene already half destroyed - a crash in one
+		//run out of fifteen, measured. Nothing they emit while dying is news
+		//for a window that is closing.
+	if (m_scene) {
+		disconnect(m_scene, nullptr, this, nullptr);
+		disconnect(&m_scene->undoStack(), nullptr, this, nullptr);
+	}
+	if (m_view) {
+		disconnect(m_view, nullptr, this, nullptr);
+	}
+}
 
 /**
 	@brief MountingLayoutEditor::project
@@ -221,6 +235,7 @@ bool MountingLayoutEditor::showSurface(const QString &surface_uuid)
 	m_shown = index >= 0 ? surface_uuid : QString();
 	m_scene->setSurface(index >= 0 ? layout.at(index) : MountingSurface());
 	refreshPartAxes();
+	refreshLayoutDrawings();
 
 	m_view->zoomFit();
 	updateTitle();
@@ -760,6 +775,7 @@ QString MountingLayoutEditor::mountOnShownSurface(MountedItem item,
 		//whose axis the catalogue knows, and the drawing has to be told
 		//before the first time somebody drops that part on a rail.
 	refreshPartAxes();
+	refreshLayoutDrawings();
 
 	refreshSurfaceList();
 	updateTitle();
@@ -1245,6 +1261,22 @@ void MountingLayoutEditor::refreshSurfaceList()
 	difference is the one it will need. Leaving them out keeps the table the
 	size of what somebody actually measured.
 */
+/**
+	@brief MountingLayoutEditor::refreshLayoutDrawings
+	Read the 2D drawing of every part of the face shown that is an element
+	of a folio, from the definitions the project holds, and hand them to
+	the scene.
+*/
+void MountingLayoutEditor::refreshLayoutDrawings()
+{
+	if (!m_project || m_shown.isEmpty()) {
+		m_scene->setLayoutDrawings({});
+		return;
+	}
+	m_scene->setLayoutDrawings(MountedPartItem::layoutDrawingsOf(
+					    m_project, m_project->mountingLayout().surface(m_shown).items));
+}
+
 void MountingLayoutEditor::refreshPartAxes()
 {
 	if (!m_scene) {

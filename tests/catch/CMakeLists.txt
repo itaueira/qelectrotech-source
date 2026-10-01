@@ -940,7 +940,10 @@ if(TARGET qet_core)
         src/ui/layoutdrawing_test.cpp
         # A peca da placa e o elemento da folha que ela e: precisa de
         # projeto aberto com folha, e da janela de calepinagem sobre ele.
-        src/ui/platesymbol_test.cpp)
+        src/ui/platesymbol_test.cpp
+        # A placa desenhando o desenho 2D do simbolo: a geometria na peca, e o
+        # caminho do desenho pelo projeto, pela folha e por um salvar.
+        src/ui/platedrawing_test.cpp)
 
     target_link_libraries(
         C_uitests

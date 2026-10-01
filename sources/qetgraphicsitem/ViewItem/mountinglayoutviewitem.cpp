@@ -35,6 +35,7 @@
 #include <QPainterPath>
 #include <QPen>
 #include <QStyleOptionGraphicsItem>
+#include <QUuid>
 
 #include <cmath>
 
@@ -695,11 +696,16 @@ void MountingLayoutViewItem::rebuild()
 	}
 
 	const QList<MountedItem> items = m_surface.items;
+		//The same drawings the plate window shows, read the same way
+	const auto drawings = MountedPartItem::layoutDrawingsOf(project(), items);
 	for (const MountedItem &item : items)
 	{
 		MountedPartItem *part = item.isCutToLength()
 					? new MountedProfileItem(item, this)
 					: new MountedPartItem(item, this);
+		if (!item.element.isEmpty()) {
+			part->setLayoutDrawing(drawings.value(QUuid(item.element).toString()));
+		}
 
 			//The three locks that make this a drawing and not an
 			//editor. Cleared here rather than asked of those classes,

@@ -20,6 +20,7 @@
 
 #include "../mountingalign.h"
 #include "../mountinglayout.h"
+#include "../../factory/elementpicturefactory.h"
 
 #include <QGraphicsScene>
 #include <QHash>
@@ -239,6 +240,13 @@ class MountingScene : public QGraphicsScene
 		void setPartAxes(const QHash<QString, QPointF> &axis_by_part_code);
 			/// @return where the axis of each product sits, millimetre
 		QHash<QString, QPointF> partAxes() const;
+
+			/// The 2D drawing of each element of the folio, by the uuid
+			/// of the element, handed in by whoever knows the project -
+			/// which this scene does not. Kept, so that a part drawn again
+			/// by an undo gets its drawing back, and applied at once to
+			/// the parts already drawn.
+		void setLayoutDrawings(const QHash<QString, ElementPictureFactory::LayoutDrawing> &by_element);
 
 		/**
 			@brief Which rail carries a part.
@@ -511,6 +519,7 @@ class MountingScene : public QGraphicsScene
 		QHash<QString, MountedPartItem *> m_items;
 		/// where the axis of each product sits inside its own body, millimetre
 		QHash<QString, QPointF> m_axes;
+		QHash<QString, ElementPictureFactory::LayoutDrawing> m_drawings;
 		QUndoStack m_undo_stack;
 };
 

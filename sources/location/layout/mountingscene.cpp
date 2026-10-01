@@ -32,6 +32,7 @@
 #include <QPainter>
 #include <QPen>
 #include <QUndoCommand>
+#include <QUuid>
 
 #include <cmath>
 #include <limits>
@@ -437,6 +438,21 @@ void MountingScene::setPartAxes(const QHash<QString, QPointF> &axis_by_part_code
 QHash<QString, QPointF> MountingScene::partAxes() const
 {
 	return m_axes;
+}
+
+/**
+	@brief MountingScene::setLayoutDrawings
+	@param by_element the drawing of each element, by its uuid
+*/
+void MountingScene::setLayoutDrawings(const QHash<QString, ElementPictureFactory::LayoutDrawing> &by_element)
+{
+	m_drawings = by_element;
+	for (MountedPartItem *part : std::as_const(m_items)) {
+		const QString element = part->mountedItem().element;
+		part->setLayoutDrawing(element.isEmpty()
+				       ? ElementPictureFactory::LayoutDrawing()
+				       : m_drawings.value(QUuid(element).toString()));
+	}
 }
 
 /**
@@ -1162,6 +1178,13 @@ MountedPartItem *MountingScene::drawItem(const MountedItem &item)
 	}
 	else {
 		part = new MountedPartItem(item);
+	}
+
+		//The drawing of the symbol, when the part is one and the symbol
+		//has one. Here, the one place a part becomes a drawing, so that a
+		//part put back by an undo is the same as the one taken away.
+	if (!item.element.isEmpty()) {
+		part->setLayoutDrawing(m_drawings.value(QUuid(item.element).toString()));
 	}
 
 	addItem(part);

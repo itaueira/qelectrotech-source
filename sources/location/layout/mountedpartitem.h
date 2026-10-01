@@ -19,9 +19,12 @@
 #define MOUNTEDPARTITEM_H
 
 #include "../enclosuretransfer.h"
+#include "../../factory/elementpicturefactory.h"
 
 #include <QGraphicsObject>
+#include <QHash>
 
+class QETProject;
 class QGraphicsSceneMouseEvent;
 class QPainter;
 class QStyleOptionGraphicsItem;
@@ -139,6 +142,40 @@ class MountedPartItem : public QGraphicsObject
 		*/
 		static qreal unmeasuredMarkerSide();
 
+		/**
+			@brief Give the part the 2D drawing of its symbol.
+			@param drawing the layout_drawing of the element it is,
+			millimetre; a null one puts the plain box back
+
+			The catalogue box keeps ruling the size, which is the half
+			of the decision about drawings that did not move. With a
+			declared size the drawing is scaled the same on both axes
+			to fit inside the box, centred, and a proportion that
+			disagrees is marked on the part and said in its tooltip -
+			never corrected by stretching. Without one the drawing is
+			shown at its own size, and the part stays unmeasured: a
+			drawing is not a catalogue entry, and the fit check keeps
+			treating the part as a point.
+		*/
+		void setLayoutDrawing(const ElementPictureFactory::LayoutDrawing &drawing);
+		bool hasLayoutDrawing() const;
+			/// @return where the drawing is painted, item coordinates
+		QRectF layoutDrawingRect() const;
+			/// @return true when drawing and box disagree on proportion
+			/// by more than drawingTolerance()
+		bool drawingProportionDiffers() const;
+			/// @return the gap in proportion that is marked, as a fraction
+		static qreal drawingTolerance();
+
+		/**
+			@return the drawings of the elements @a items are, by the
+			uuid of the element, read from the definitions the project
+			holds. An item with no element, or whose element has no
+			drawing, is not in it.
+		*/
+		static QHash<QString, ElementPictureFactory::LayoutDrawing>
+		layoutDrawingsOf(QETProject *project, const QList<MountedItem> &items);
+
 	signals:
 		/**
 			@brief Emitted when a drag of this item has just ended.
@@ -157,9 +194,13 @@ class MountedPartItem : public QGraphicsObject
 		void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 
 	private:
+		qreal layoutDrawingScale() const;
+		void updateDrawingToolTip();
+
 		MountedItem m_item;
 		QPointF m_press_position;
 		bool m_pressed = false;
+		ElementPictureFactory::LayoutDrawing m_drawing;
 };
 
 #endif // MOUNTEDPARTITEM_H

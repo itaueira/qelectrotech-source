@@ -301,6 +301,7 @@ class MountingLayoutEditor : public QMainWindow
 			one reference is one row read.
 		*/
 		void refreshPartAxes();
+		void refreshLayoutDrawings();
 
 		void updateTitle();
 		void updateActions();

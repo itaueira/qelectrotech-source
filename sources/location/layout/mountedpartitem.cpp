@@ -18,6 +18,9 @@
 #include "mountedpartitem.h"
 
 #include "../mountingmeasure.h"
+#include "../../ElementsCollection/elementslocation.h"
+#include "../../elementprovider.h"
+#include "../../qetgraphicsitem/element.h"
 
 #include <QBrush>
 #include <QColor>
@@ -26,9 +29,12 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>
+#include <QPolygonF>
+#include <QUuid>
 #include <QStyleOptionGraphicsItem>
 
 #include <cmath>
+#include <limits>
 
 namespace
 {
@@ -143,7 +149,7 @@ void MountedPartItem::setMountedItem(const MountedItem &mounted_item)
 	m_item = mounted_item;
 	m_item.position = finitePosition(m_item.position);
 	setPos(m_item.position);
-	setToolTip(m_item.designation());
+	updateDrawingToolTip();
 	update();
 }
 
@@ -179,6 +185,14 @@ QRectF MountedPartItem::drawnRect() const
 {
 	if (hasDeclaredSize()) {
 		return QRectF(QPointF(0.0, 0.0), declaredSize());
+	}
+		//No catalogue box, but a drawing in millimetre: the drawing at its
+		//own size. Still not a measurement - hasDeclaredSize() keeps saying
+		//so, and the model is told nothing.
+	if (hasLayoutDrawing()) {
+		return QRectF(0.0, 0.0,
+			      qMax(m_drawing.bounds.width(), 1.0),
+			      qMax(m_drawing.bounds.height(), 1.0));
 	}
 
 	return QRectF(0.0, 0.0, unmeasuredMarkerSide(), unmeasuredMarkerSide());
@@ -257,6 +271,49 @@ void MountedPartItem::paint(QPainter *painter,
 	const QRectF body = drawnRect();
 	const bool measured = hasDeclaredSize();
 
+	if (hasLayoutDrawing())
+	{
+			//The drawing replaces the box and the name. The box is still
+			//traced, light, because it is the room the part takes and the
+			//one the fit check reads: dotted when the catalogue gave it,
+			//dashed in the colour of "not measured" when nobody did.
+		painter->save();
+		QPen outline(measured ? QColor(150, 150, 150) : QColor(176, 106, 0));
+		outline.setCosmetic(true);
+		outline.setWidth(isSelected() ? 2 : 1);
+		outline.setStyle(measured ? Qt::DotLine : Qt::DashLine);
+		painter->setPen(outline);
+		painter->setBrush(QColor(255, 255, 255));
+		painter->drawRect(body);
+
+		const QRectF target = layoutDrawingRect();
+		const qreal scale = layoutDrawingScale();
+		painter->save();
+		painter->setRenderHint(QPainter::Antialiasing, true);
+		painter->setClipRect(body);
+		painter->translate(target.topLeft());
+		painter->scale(scale, scale);
+		painter->translate(-m_drawing.bounds.topLeft());
+		painter->drawPicture(QPointF(0.0, 0.0), m_drawing.picture);
+		painter->restore();
+
+		if (drawingProportionDiffers())
+		{
+				//A corner, not a colour over the whole part: the drawing
+				//is right, it is its fit in the box that is in question
+			const qreal side = qMax(1.0, qMin(qMin(body.width(), body.height()) / 4.0, 6.0));
+			QPolygonF mark;
+			mark << body.topRight()
+			     << body.topRight() - QPointF(side, 0.0)
+			     << body.topRight() + QPointF(0.0, side);
+			painter->setPen(Qt::NoPen);
+			painter->setBrush(QColor(220, 120, 0));
+			painter->drawPolygon(mark);
+		}
+		painter->restore();
+		return;
+	}
+
 	painter->save();
 	painter->setRenderHint(QPainter::Antialiasing, false);
 
@@ -296,6 +353,137 @@ void MountedPartItem::paint(QPainter *painter,
 qreal MountedPartItem::unmeasuredMarkerSide()
 {
 	return MARKER_SIDE;
+}
+
+/**
+	@brief MountedPartItem::setLayoutDrawing
+	@param drawing the layout_drawing of the element this part is
+*/
+void MountedPartItem::setLayoutDrawing(const ElementPictureFactory::LayoutDrawing &drawing)
+{
+	prepareGeometryChange();
+	m_drawing = drawing;
+	updateDrawingToolTip();
+	update();
+}
+
+bool MountedPartItem::hasLayoutDrawing() const
+{
+	return !m_drawing.isNull();
+}
+
+/**
+	@brief MountedPartItem::layoutDrawingScale
+	@return how much the drawing is scaled, the same on both axes: what
+	fits the box when the catalogue gave one, 1 when it did not
+*/
+qreal MountedPartItem::layoutDrawingScale() const
+{
+	if (!hasLayoutDrawing() || !hasDeclaredSize()) {
+		return 1.0;
+	}
+	const QSizeF box = declaredSize();
+	const qreal width  = m_drawing.bounds.width();
+	const qreal height = m_drawing.bounds.height();
+		//A drawing that is a single line has no extent across it, and is
+		//fitted by the dimension it has
+	qreal scale = std::numeric_limits<qreal>::max();
+	if (width > 0.0)  scale = qMin(scale, box.width() / width);
+	if (height > 0.0) scale = qMin(scale, box.height() / height);
+	return scale == std::numeric_limits<qreal>::max() ? 1.0 : scale;
+}
+
+/**
+	@brief MountedPartItem::layoutDrawingRect
+	@return where the drawing is painted: centred in the box, scaled the
+	same on both axes, when the catalogue gave a box; the box itself, at
+	the size of the drawing, when it did not
+*/
+QRectF MountedPartItem::layoutDrawingRect() const
+{
+	if (!hasLayoutDrawing()) {
+		return QRectF();
+	}
+	const QRectF body = drawnRect();
+	const QSizeF drawn = m_drawing.bounds.size() * layoutDrawingScale();
+	QRectF target(QPointF(0.0, 0.0), drawn);
+	target.moveCenter(body.center());
+	return target;
+}
+
+bool MountedPartItem::drawingProportionDiffers() const
+{
+	if (!hasLayoutDrawing() || !hasDeclaredSize()) {
+		return false;
+	}
+	const QSizeF box = declaredSize();
+	const qreal width  = m_drawing.bounds.width();
+	const qreal height = m_drawing.bounds.height();
+	if (width <= 0.0 || height <= 0.0) {
+		return false;
+	}
+	const qreal drawing_ratio = width / height;
+	const qreal box_ratio = box.width() / box.height();
+	return std::abs(drawing_ratio / box_ratio - 1.0) > drawingTolerance();
+}
+
+qreal MountedPartItem::drawingTolerance()
+{
+	return 0.02;
+}
+
+/**
+	@brief MountedPartItem::updateDrawingToolTip
+	The designation, and when drawing and box disagree, the sentence that
+	says so: the mark on the corner is what is seen, this is what is read.
+*/
+void MountedPartItem::updateDrawingToolTip()
+{
+	QString tip = m_item.designation();
+	if (drawingProportionDiffers()) {
+		tip += QLatin1Char('\n')
+		       + tr("Le dessin 2D n'a pas les proportions de la boîte du "
+			    "catalogue : il est montré entier, à l'échelle, dans la "
+			    "boîte, et c'est la boîte qui compte pour l'implantation.");
+	}
+	setToolTip(tip);
+}
+
+/**
+	@brief MountedPartItem::layoutDrawingsOf
+	@param project the project the elements are in
+	@param items the mounted items to find the drawings of
+	@return the drawing of each element, by the uuid of the element as
+	QUuid::toString() writes it
+*/
+QHash<QString, ElementPictureFactory::LayoutDrawing>
+MountedPartItem::layoutDrawingsOf(QETProject *project, const QList<MountedItem> &items)
+{
+	QHash<QString, ElementPictureFactory::LayoutDrawing> drawings;
+	if (!project) {
+		return drawings;
+	}
+
+	QList<QUuid> wanted;
+	for (const MountedItem &item : items) {
+		if (!item.element.isEmpty()) {
+			wanted << QUuid(item.element);
+		}
+	}
+	if (wanted.isEmpty()) {
+		return drawings;
+	}
+
+		//Read from the definition the project holds, not from a collection
+		//on this computer: that copy is what travels with the project
+	for (Element *element : ElementProvider(project).fromUuids(wanted))
+	{
+		const auto drawing = ElementPictureFactory::layoutDrawing(element->location().xml());
+		if (!drawing.isNull()) {
+			drawings.insert(element->uuid().toString(), drawing);
+		}
+	}
+	return drawings;
 }
 
 /**
