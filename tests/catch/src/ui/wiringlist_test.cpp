@@ -312,7 +312,7 @@ TEST_CASE("T17 — a coluna Página do plano de fiação traz o número da folha
 
 		//The header first, because every assertion below counts on the Page
 		//column being the first one.
-	CHECK(rows.first().size() == 9);
+	CHECK(rows.first().size() == 10);
 	CHECK(rows.first().value(0) == QStringLiteral("Page"));
 
 	const QList<QStringList> data_rows = rows.mid(1);
@@ -321,14 +321,14 @@ TEST_CASE("T17 — a coluna Página do plano de fiação traz o número da folha
 		//number typed in here: one row per cable at most - two halves of a
 		//wire drawn across a folio arrow are merged into one - and not
 		//fewer than half of them, which would mean rows are being dropped.
-		//And nine cells on every row: a row short of one is a shifted row,
+		//And ten cells on every row: a row short of one is a shifted row,
 		//and a shifted row reads like a well-formed one.
 	CHECK(data_rows.size() <= drawn);
 	CHECK(data_rows.size() >= drawn / 2);
 
 	int malformed = 0;
 	for (const QStringList &row : data_rows) {
-		if (row.size() != 9) {
+		if (row.size() != 10) {
 			++malformed;
 		}
 	}
@@ -543,7 +543,7 @@ TEST_CASE("T17 — seção, cor, função e tensão do fio chegam ao banco e à 
 			//while they are filled on a real project. Asserting on them would
 			//be asserting on the fixture, not on the exporter.
 		const QStringList row = rowWithSection(rows, QStringLiteral("1,5"));
-		REQUIRE(row.size() == 9);
+		REQUIRE(row.size() == 10);
 
 			//Columns 5 to 8: voltage, colour, section, function - the
 			//order the header row declares.
@@ -556,7 +556,7 @@ TEST_CASE("T17 — seção, cor, função e tensão do fio chegam ao banco e à 
 			//the pair of the assertion above: a column filled with a
 			//placeholder would satisfy the four checks above and lie here.
 		const QStringList empty_row = rowWithSection(rows, QString());
-		REQUIRE(empty_row.size() == 9);
+		REQUIRE(empty_row.size() == 10);
 		CHECK(empty_row.value(5).isEmpty());
 		CHECK(empty_row.value(6).isEmpty());
 		CHECK(empty_row.value(7).isEmpty());

@@ -36,6 +36,7 @@
 #include "properties/xrefproperties.h"
 #include "titleblock/templatescollection.h"
 #include "titleblockproperties.h"
+#include "wirehops.h"
 #include "diagram.h"
 #ifdef BUILD_WITHOUT_KF
 #	include "ui/nokde/kautosavefile.h"
@@ -221,6 +222,8 @@ class QETProject : public QObject
 		bool autoElement () const;
 		bool autoFolio () const;
 		void setAutoConductor (bool ac);
+		WireHops::Mode wireHops() const;
+		void setWireHops(WireHops::Mode mode);
 		void setAutoBreakConductor (bool abc);
 		void setAutoElement (bool ae);
 		void autoFolioNumberingNewFolios ();
@@ -505,10 +508,12 @@ class QETProject : public QObject
 		void readTerminalStripXml(const QDomDocument &xml_project);
 		void readCableXml(const QDomDocument &xml_project);
 		void readUsageXml(QDomDocument &xml_project);
+		void readWireHopsXml(QDomDocument &xml_project);
 
 		void writeProjectPropertiesXml(QDomElement &);
 		void writeDefaultPropertiesXml(QDomElement &);
 		void writeUsageXml(QDomElement &);
+		void writeWireHopsXml(QDomElement &);
 		void addDiagram(Diagram *diagram, int pos = -1);
 		void detachDiagram(Diagram *diagram);
 		void init();
@@ -569,6 +574,7 @@ class QETProject : public QObject
 		QHash <QString, NumerotationContext> m_element_autonum; //Title and NumContext hash
 		QString m_current_element_autonum;
 		bool m_auto_conductor = true;
+		WireHops::Mode m_wire_hops = WireHops::Mode::None;
 	bool m_auto_break_conductor = false;
 		XmlElementCollection *m_elements_collection = nullptr;
 		bool m_freeze_new_elements = false;

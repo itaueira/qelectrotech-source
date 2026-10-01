@@ -376,6 +376,34 @@ target_link_libraries(tst_conductorselfretrace PRIVATE Qt::Test)
 target_compile_definitions(tst_conductorselfretrace PRIVATE
   "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
 
+# The wiring list export (--export-cables) keeps every wire drawn to a folio
+# report when a report has several, joins only one-to-one report pairs, and
+# prints the folio number rather than its template. fixtures/wiring_list_arrows.qet
+# has one of each report pair; the examples check the page column.
+add_executable(
+  tst_wiringlistexport
+  tst_wiringlistexport.cpp)
+add_test(NAME tst_wiringlistexport COMMAND tst_wiringlistexport)
+add_dependencies(tst_wiringlistexport qelectrotech)
+target_link_libraries(tst_wiringlistexport PRIVATE Qt::Test)
+target_compile_definitions(tst_wiringlistexport PRIVATE
+  "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
+  "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
+
+# Hops where wires cross (issue #436): the geometry in wirehops.cpp, and
+# through the real binary, that --resave keeps the project setting and
+# adds nothing to a project without it.
+add_executable(
+  tst_wirehops
+  tst_wirehops.cpp
+  ${QET_DIR}/sources/wirehops.cpp)
+add_test(NAME tst_wirehops COMMAND tst_wirehops)
+add_dependencies(tst_wirehops qelectrotech)
+target_include_directories(tst_wirehops PRIVATE ${QET_DIR}/sources)
+target_link_libraries(tst_wirehops PRIVATE Qt::Test Qt::Gui)
+target_compile_definitions(tst_wirehops PRIVATE
+  "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
+
 # qet.conductorUuids() / qet.conductorEnds(): a script lists a folio's
 # conductors by uuid and finds each one's two ends. Runs a script through
 # the real binary's --run on fixtures/qet_bug_repro_resaved.qet, so only
@@ -390,6 +418,18 @@ if(QET_HAS_SCRIPTING)
   target_link_libraries(tst_scriptconductoruuid PRIVATE Qt::Test)
   target_compile_definitions(tst_scriptconductoruuid PRIVATE
     "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
+
+  # QET_SETTINGS_DIR moves the settings into an INI file there (#1178): a
+  # script places a symbol only the folder's settings file can resolve.
+  add_executable(
+    tst_settingsdir
+    tst_settingsdir.cpp)
+  add_test(NAME tst_settingsdir COMMAND tst_settingsdir)
+  add_dependencies(tst_settingsdir qelectrotech)
+  target_link_libraries(tst_settingsdir PRIVATE Qt::Test)
+  target_compile_definitions(tst_settingsdir PRIVATE
+    "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
+    "QET_ELEMENTS_DIR=\"${QET_DIR}/elements\"")
 
   # The project database filled from the file as it is read holds exactly
   # what it holds filled from the built folios (QET_DATABASE_FROM_FOLIOS=1),

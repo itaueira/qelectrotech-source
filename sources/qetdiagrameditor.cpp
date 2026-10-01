@@ -1557,6 +1557,7 @@ void QETDiagramEditor::setUpActions()
 	QAction *zoom_content = m_zoom_actions_group.addAction( QET::Icons::ZoomDraw,     tr("Zoom sur le contenu"));
 	QAction *zoom_fit     = m_zoom_actions_group.addAction( QET::Icons::ZoomFitBest,  tr("Zoom adapté"));
 	QAction *zoom_reset   = m_zoom_actions_group.addAction( QET::Icons::ZoomOriginal, tr("Pas de zoom"));
+	QAction *center_on_cursor = m_zoom_actions_group.addAction(tr("Centrer sur le curseur"));
 	m_zoom_action_toolBar << zoom_content << zoom_fit << zoom_reset;
 
 	ShortcutManager::instance().registerAction(zoom_in, "diagrameditor.zoom_in", tr("Éditeur de schémas"), QKeySequence::ZoomIn);
@@ -1564,18 +1565,21 @@ void QETDiagramEditor::setUpActions()
 	ShortcutManager::instance().registerAction(zoom_content, "diagrameditor.zoom_content", tr("Éditeur de schémas"), Qt::CTRL | Qt::Key_8);
 	ShortcutManager::instance().registerAction(zoom_fit, "diagrameditor.zoom_fit", tr("Éditeur de schémas"), Qt::CTRL | Qt::Key_9);
 	ShortcutManager::instance().registerAction(zoom_reset, "diagrameditor.zoom_reset", tr("Éditeur de schémas"), Qt::CTRL | Qt::Key_0);
+	ShortcutManager::instance().registerAction(center_on_cursor, "diagrameditor.center_on_cursor", tr("Éditeur de schémas"), QKeySequence());
 
 	zoom_in     ->setStatusTip(tr("Agrandit le folio", "status bar tip"));
 	zoom_out    ->setStatusTip(tr("Rétrécit le folio", "status bar tip"));
 	zoom_content->setStatusTip(tr("Adapte le zoom de façon à afficher tout le contenu du folio indépendamment du cadre"));
 	zoom_fit    ->setStatusTip(tr("Adapte le zoom exactement sur le cadre du folio", "status bar tip"));
 	zoom_reset  ->setStatusTip(tr("Restaure le zoom par défaut", "status bar tip"));
+	center_on_cursor->setStatusTip(tr("Centre le folio sur le point sous le curseur de la souris, sans changer le zoom", "status bar tip"));
 
 	zoom_in     ->setData("zoom_in");
 	zoom_out    ->setData("zoom_out");
 	zoom_content->setData("zoom_content");
 	zoom_fit    ->setData("zoom_fit");
 	zoom_reset  ->setData("zoom_reset");
+	center_on_cursor->setData("center_on_cursor");
 
 	connect(&m_zoom_actions_group, &QActionGroup::triggered, this, &QETDiagramEditor::zoomGroupTriggered);
 
@@ -1601,6 +1605,7 @@ void QETDiagramEditor::setUpActions()
 	QAction *add_line	   = m_add_item_actions_group.addAction(QET::Icons::PartLine,      tr("Ajouter une ligne", "Draw line"));
 	QAction *add_rectangle = m_add_item_actions_group.addAction(QET::Icons::PartRectangle, tr("Ajouter un rectangle"));
 	QAction *add_ellipse   = m_add_item_actions_group.addAction(QET::Icons::PartEllipse,   tr("Ajouter une ellipse"));
+	QAction *add_arc       = m_add_item_actions_group.addAction(QET::Icons::PartArc,       tr("Ajouter un arc"));
 	QAction *add_polyline  = m_add_item_actions_group.addAction(QET::Icons::PartPolygon,   tr("Ajouter une polyligne"));
 	QAction *add_location_area = m_add_item_actions_group.addAction(QET::Icons::LocationArea, tr("Ajouter une zone de localisation"));
 	QAction *add_path      = m_add_item_actions_group.addAction(QET::Icons::PartBezier,   tr("Ajouter une courbe"));
@@ -1614,6 +1619,7 @@ void QETDiagramEditor::setUpActions()
 	add_line     ->setStatusTip(tr("Ajoute une ligne sur le folio actuel"));
 	add_rectangle->setStatusTip(tr("Ajoute un rectangle sur le folio actuel"));
 	add_ellipse  ->setStatusTip(tr("Ajoute une ellipse sur le folio actuel"));
+	add_arc      ->setStatusTip(tr("Ajoute un arc sur le folio actuel"));
 	add_polyline ->setStatusTip(tr("Ajoute une polyligne sur le folio actuel"));
 	add_location_area->setStatusTip(tr("Dessine sur le folio actuel une zone qui affecte les composants qu'elle contient"));
 	add_path     ->setStatusTip(tr("Ajoute une courbe de Bézier sur le folio actuel"));
@@ -1627,6 +1633,7 @@ void QETDiagramEditor::setUpActions()
 	add_line     ->setData(QStringLiteral("line"));
 	add_rectangle->setData(QStringLiteral("rectangle"));
 	add_ellipse  ->setData(QStringLiteral("ellipse"));
+	add_arc      ->setData(QStringLiteral("arc"));
 	add_polyline ->setData(QStringLiteral("polyline"));
 	add_location_area->setData(QStringLiteral("location_area"));
 	add_path     ->setData(QStringLiteral("path"));
@@ -1636,6 +1643,7 @@ void QETDiagramEditor::setUpActions()
 	add_line->setCheckable(true);
 	add_rectangle->setCheckable(true);
 	add_ellipse->setCheckable(true);
+	add_arc->setCheckable(true);
 	add_polyline->setCheckable(true);
 	add_location_area->setCheckable(true);
 	add_path->setCheckable(true);
@@ -4025,6 +4033,8 @@ void QETDiagramEditor::zoomGroupTriggered(QAction *action)
 		dv->zoomFit();
 	else if (value == "zoom_reset")
 		dv->zoomReset();
+	else if (value == "center_on_cursor")
+		dv->centerOnCursor();
 }
 
 /**
@@ -4099,6 +4109,8 @@ void QETDiagramEditor::addItemGroupTriggered(QAction *action)
 		diagram_event = new DiagramEventAddShape (d, QetShapeItem::Rectangle);
 	else if (value == "ellipse")
 		diagram_event = new DiagramEventAddShape (d, QetShapeItem::Ellipse);
+	else if (value == "arc")
+		diagram_event = new DiagramEventAddShape (d, QetShapeItem::Ellipse, true);
 	else if (value == "polyline")
 		diagram_event = new DiagramEventAddShape (d, QetShapeItem::Polygon);
 	else if (value == "path")

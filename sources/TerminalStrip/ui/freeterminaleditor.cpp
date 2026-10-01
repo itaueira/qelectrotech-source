@@ -42,6 +42,9 @@ FreeTerminalEditor::FreeTerminalEditor(QETProject *project, QWidget *parent) :
     m_model = new FreeTerminalModel(m_project, this);
 	ui->m_table_view->setModel(m_model);
 	ui->m_table_view->setCurrentIndex(m_model->index(0,0));
+		//Selected rows can be dragged onto a strip of the terminal strip tree
+	ui->m_table_view->setDragEnabled(true);
+	ui->m_table_view->setDragDropMode(QAbstractItemView::DragOnly);
 
     if (m_project) {
         connect(m_project, &QObject::destroyed, this, &FreeTerminalEditor::reload);
@@ -299,11 +302,31 @@ void FreeTerminalEditor::on_m_move_pb_clicked()
 	reload();
 }
 
+/**
+ * @brief FreeTerminalEditor::hasPendingEdits
+ * @return true if cells were edited and not yet applied
+ */
+bool FreeTerminalEditor::hasPendingEdits() const {
+	return !m_model->modifiedModelRealTerminalData().isEmpty();
+}
+
 void FreeTerminalEditor::selectionChanged()
 {
 	const bool has_selection = !ui->m_table_view->selectionModel()->selectedIndexes().isEmpty();
 	const bool has_pending   = !m_model->modifiedModelRealTerminalData().isEmpty();
-	setDisabledMove(!has_selection || has_pending);
+	const bool has_strip     = ui->m_move_in_cb->count() > 0;
+	setDisabledMove(!has_strip || !has_selection || has_pending);
+
+		//Say why the button is disabled, the most basic reason first
+	if (!has_strip) {
+		ui->m_move_pb->setToolTip(tr("Le projet n'a aucun bornier : créez-en un avec le bouton +"));
+	} else if (has_pending) {
+		ui->m_move_pb->setToolTip(tr("Appliquez ou annulez les modifications en cours avant de déplacer"));
+	} else if (!has_selection) {
+		ui->m_move_pb->setToolTip(tr("Sélectionnez dans le tableau les bornes à déplacer"));
+	} else {
+		ui->m_move_pb->setToolTip(tr("Déplacer les bornes sélectionnées vers le bornier choisi"));
+	}
 }
 
 void FreeTerminalEditor::setDisabledMove(bool b)
@@ -311,18 +334,5 @@ void FreeTerminalEditor::setDisabledMove(bool b)
 	ui->m_move_label->setDisabled(b);
 	ui->m_move_in_cb->setDisabled(b);
 	ui->m_move_pb->setDisabled(b);
-
-		//A disabled button cannot be clicked, so it cannot answer for
-		//itself: whoever aims at it and finds it dead gets the reason
-		//from the tooltip, which a disabled widget still shows. Without
-		//this, the move looks exactly as broken while it waits for a
-		//pending edit as it did while it refused in silence.
-	const auto tool_tip = b ? tr("Enregistrez ou annulez les modifications en "
-				     "cours avant de déplacer la borne.")
-				: tr("Déplacer les bornes sélectionnées dans le "
-				     "bornier choisi. Le bouton Appliquer, lui, "
-				     "n'en déplace aucune.");
-	ui->m_move_in_cb->setToolTip(tool_tip);
-	ui->m_move_pb->setToolTip(tool_tip);
 }
 
