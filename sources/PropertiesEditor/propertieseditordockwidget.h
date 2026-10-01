@@ -40,6 +40,7 @@ class PropertiesEditorDockWidget : public QDockWidget
 		bool addEditor (PropertiesEditorWidget *editor, int index = 0);
 		QList<PropertiesEditorWidget *> editors() const;
 		bool removeEditor (PropertiesEditorWidget *editor);
+		void growToContent();
 
 	protected:
 		QList <PropertiesEditorWidget *> m_editor_list;

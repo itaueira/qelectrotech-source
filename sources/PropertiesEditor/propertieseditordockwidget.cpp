@@ -19,7 +19,10 @@
 #include "ui_propertieseditordockwidget.h"
 #include "propertieseditorwidget.h"
 
+#include <QMainWindow>
 #include <QScrollArea>
+#include <QScrollBar>
+#include <QTimer>
 
 /**
 	@brief PropertiesEditorDockWidget::PropertiesEditorDockWidget
@@ -111,7 +114,83 @@ bool PropertiesEditorDockWidget::addEditor(PropertiesEditorWidget *editor,
 
 	ui -> m_main_vlayout -> insertWidget(index, editor);
 	m_editor_list << editor;
+		//Once the editor is laid out, what it asks for is known
+	QTimer::singleShot(0, this, &PropertiesEditorDockWidget::growToContent);
 	return true;
+}
+
+/**
+	@brief PropertiesEditorDockWidget::growToContent
+	Ask the main window for the height the editors would like, when the
+	dock is shorter than that. Scrolling, the dock no longer forces any
+	height, and it was left with what it had when it was empty - a strip
+	of a hundred pixels over a dock of automatic numbering half empty,
+	seen on the screen on 2026-10-01. resizeDocks() keeps every other dock
+	at least at its minimum, so this grows the dock without laying it over
+	its neighbour, which its minimum height used to do. It never shrinks
+	it: a dock someone made taller stays so.
+*/
+void PropertiesEditorDockWidget::growToContent()
+{
+	auto main_window = qobject_cast<QMainWindow *>(parentWidget());
+	if (!main_window || isFloating() || !isVisible())
+		return;
+
+	auto scroll_area = qobject_cast<QScrollArea *>(widget());
+	if (!scroll_area)
+		return;
+	const int frame = height() - scroll_area->viewport()->height();
+		//A content wider than the dock brings the horizontal bar, and the
+		//bar takes its height from the view: measured, 14 px short
+	const bool too_wide = ui->dockWidgetContents->minimumSizeHint().width()
+			      > scroll_area->viewport()->width();
+	const int bar = too_wide && !scroll_area->horizontalScrollBar()->isVisible()
+			? scroll_area->horizontalScrollBar()->sizeHint().height()
+			: 0;
+	const int wanted = ui->dockWidgetContents->sizeHint().height() + frame + bar;
+	if (height() >= wanted || !main_window->tabifiedDockWidgets(this).isEmpty())
+		return;
+
+		//The docks stacked with this one, in the same column of the same
+		//area, and what each can give: its height above its own minimum
+	const Qt::DockWidgetArea area = main_window->dockWidgetArea(this);
+	QList<QDockWidget *> column;
+	QList<int> spare;
+	int total_spare = 0;
+	for (QDockWidget *other : main_window->findChildren<QDockWidget *>())
+	{
+		if (other == this || other->isFloating() || !other->isVisible()
+		    || main_window->dockWidgetArea(other) != area
+		    || other->geometry().right() < geometry().left()
+		    || other->geometry().left() > geometry().right())
+			continue;
+		const int minimum = qMax(other->minimumHeight(),
+					 other->minimumSizeHint().height());
+		column << other;
+		spare << qMax(0, other->height() - minimum);
+		total_spare += spare.constLast();
+	}
+	const int given = qMin(wanted - height(), total_spare);
+	if (given <= 0)
+		return;
+
+		//Every dock of the column gets its size, and the sizes add up to
+		//what the column has. Asked for this one alone, resizeDocks() sets
+		//it and then shrinks the whole column to fit, this one included,
+		//and gives about half - measured, 300 to 427 px asking for 558.
+	QList<QDockWidget *> docks({this});
+	QList<int> sizes({height() + given});
+	int taken = 0;
+	for (int i = 0; i < column.size(); ++i)
+	{
+		const int take = (i == column.size() - 1)
+				? given - taken
+				: given * spare.at(i) / total_spare;
+		taken += take;
+		docks << column.at(i);
+		sizes << column.at(i)->height() - take;
+	}
+	main_window->resizeDocks(docks, sizes, Qt::Vertical);
 }
 
 /**

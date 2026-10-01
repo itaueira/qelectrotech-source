@@ -35,6 +35,7 @@
 #include <catch2/catch.hpp>
 
 #include <QApplication>
+#include <QMainWindow>
 #include <QCheckBox>
 #include <QDomDocument>
 #include <QScrollArea>
@@ -532,4 +533,59 @@ TEST_CASE("T43 — the properties dock scrolls, so the box of the master is reac
 	QApplication::processEvents();
 	const QRect seen(box->mapTo(scroll_area->viewport(), QPoint(0, 0)), box->size());
 	CHECK(scroll_area->viewport()->rect().contains(seen));
+}
+
+TEST_CASE("T43 — the properties dock grows to its editors when the window has room, never over its neighbour",
+	  "[t43][xref]")
+{
+		//Seen on the screen on 2026-10-01, once the dock scrolled: it kept
+		//the height it had when it was empty, a strip of a hundred pixels,
+		//over a dock of automatic numbering half empty
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	MasterElement *k1 = coil(bench.project.diagram(0));
+	REQUIRE(k1 != nullptr);
+
+	QMainWindow window;
+	window.setCentralWidget(new QWidget);
+	auto dock = new PropertiesEditorDockWidget(&window);
+	auto below = new QDockWidget(QStringLiteral("below"), &window);
+	auto filler = new QWidget;
+	filler->setMinimumHeight(150);
+	below->setWidget(filler);
+	window.addDockWidget(Qt::RightDockWidgetArea, dock);
+	window.addDockWidget(Qt::RightDockWidgetArea, below);
+	window.resize(900, 900);
+	window.show();
+	QApplication::processEvents();
+	const int empty_height = dock->height();
+
+	auto editor = new ElementPropertiesWidget(k1);
+	REQUIRE(dock->addEditor(editor));
+	QApplication::processEvents();
+	QApplication::processEvents();
+
+	auto scroll_area = dock->findChild<QScrollArea *>();
+	REQUIRE(scroll_area != nullptr);
+	const int asked = scroll_area->widget()->sizeHint().height();
+	INFO("empty " << empty_height << ", asked " << asked << ", now " << dock->height()
+	     << ", window " << window.height() << ", below " << below->height()
+	     << ", below min " << below->minimumSizeHint().height());
+		//It grew to what the editor asks, which fits in this window...
+	CHECK(dock->height() > empty_height);
+	CHECK(scroll_area->viewport()->height() >= asked);
+		//...without being laid over the dock under it, which keeps its own
+	CHECK_FALSE(dock->geometry().intersects(below->geometry()));
+	CHECK(below->widget()->height() >= filler->minimumHeight());
+
+		//Made taller by hand, it is not shrunk back by the next editor
+	const int taller = dock->height() + 60;
+	window.resizeDocks({dock}, {taller}, Qt::Vertical);
+	QApplication::processEvents();
+	const int kept = dock->height();
+	REQUIRE(kept > asked);
+	dock->growToContent();
+	QApplication::processEvents();
+	CHECK(dock->height() == kept);
 }
