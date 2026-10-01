@@ -130,6 +130,28 @@ namespace
 		return ink;
 	}
 
+	/// Whether @a colour is paper or ink seen through the orange veil of a
+	/// drawing that does not fit its box: far more red than blue, which
+	/// white, black and the greys of the plate never are
+	bool isVeiled(const QColor &colour)
+	{
+		return colour.red() - colour.blue() > 60;
+	}
+
+	/// The pixels of @a image inside @a area that are under the veil
+	int veiledIn(const QImage &image, const QRect &area)
+	{
+		int veiled = 0;
+		for (int y = area.top(); y <= area.bottom(); ++y) {
+			for (int x = area.left(); x <= area.right(); ++x) {
+				if (isVeiled(image.pixelColor(x, y))) {
+					++veiled;
+				}
+			}
+		}
+		return veiled;
+	}
+
 	/// Whether this platform draws letters at all when there is no screen.
 	/// A build of Qt that rasterises no glyph offscreen would fail the test
 	/// of the name for a reason that is not this code.
@@ -291,6 +313,95 @@ TEST_CASE("CU-44.8 — a size that disagrees with the catalogue is marked, not c
 		narrow.setLayoutDrawing(drawingOf(drawing45x90()));
 		CHECK(narrow.drawingSizeDiffers());
 	}
+
+	SECTION("the warning is a veil over the whole drawing, and only when asked")
+	{
+			//Decided on 2026-10-01: a mark on a corner shrank with the part,
+			//and on a small one nobody saw it. The veil is as large as the
+			//drawing, whatever its size.
+		auto *item = new MountedPartItem(part(QSizeF(45, 100)));
+		item->setLayoutDrawing(drawingOf(drawing45x90()));
+		REQUIRE(item->drawingSizeDiffers());
+			//Off by default: whoever does not ask, the folio, never shows it
+		CHECK_FALSE(item->sizeWarningShown());
+		const QImage plain = paintedAlone(item);
+		CHECK(veiledIn(plain, plain.rect()) == 0);
+
+		item->setSizeWarningShown(true);
+		const QImage veiled = paintedAlone(item);
+			//4 px a millimetre, the drawing at (0, 5) and 45 by 90: its four
+			//corners, two millimetres in, are all under the veil
+		CHECK(isVeiled(veiled.pixelColor(8, 28)));
+		CHECK(isVeiled(veiled.pixelColor(172, 28)));
+		CHECK(isVeiled(veiled.pixelColor(8, 372)));
+		CHECK(isVeiled(veiled.pixelColor(172, 372)));
+			//and the strip of box above the drawing is not: it is the
+			//drawing that is in question, not the room around it
+		CHECK_FALSE(isVeiled(veiled.pixelColor(90, 8)));
+		delete item;
+	}
+
+	SECTION("a drawing that fits its box is never veiled, even when asked")
+	{
+		auto *item = new MountedPartItem(part(QSizeF(45, 90)));
+		item->setLayoutDrawing(drawingOf(drawing45x90()));
+		item->setSizeWarningShown(true);
+		const QImage image = paintedAlone(item);
+		CHECK(veiledIn(image, image.rect()) == 0);
+		delete item;
+	}
+}
+
+TEST_CASE("T44 — the warning of size is on the plate window, and never on the folio",
+	  "[t44][calepinagem]")
+{
+	UiBench::ScratchProject scratch(projectXml(QString()), QStringLiteral("plate-warning.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+		//A box of 45 by 100 for a drawing of 45 by 90: one that warns
+	MountedItem item = part(QSizeF(45, 100));
+	item.part_code = QStringLiteral("PART-WARNED");
+	QString face;
+	MountingLayout layout = plateWith(item, &face);
+	layout.setPartDrawing(item.part_code, drawing45x90());
+	scratch->setMountingLayout(layout);
+
+		//On the plate window, where the part is placed, the warning is shown
+	MountingLayoutEditor editor(scratch.project());
+	MountedPartItem *on_plate = editor.scene()->partItem(QStringLiteral("q1"));
+	REQUIRE(on_plate != nullptr);
+	REQUIRE(on_plate->drawingSizeDiffers());
+	CHECK(on_plate->sizeWarningShown());
+
+		//On the folio it is not, and the folio is what every print, PDF
+		//and image is drawn from: the plate painted there has no veil
+	auto *view = new MountingLayoutViewItem();
+	scratch.diagram(0)->addItem(view);
+	view->setProject(scratch.project());
+	view->setSurfaceUuid(face);
+	MountedPartItem *on_folio = view->partItem(QStringLiteral("q1"));
+	REQUIRE(on_folio != nullptr);
+	REQUIRE(on_folio->drawingSizeDiffers());
+	CHECK_FALSE(on_folio->sizeWarningShown());
+
+	auto folioImage = [&]() {
+		const QRectF area = on_folio->sceneBoundingRect();
+		QImage image(QSize(qMax(1, qRound(area.width() * 4)), qMax(1, qRound(area.height() * 4))),
+			     QImage::Format_ARGB32);
+		image.fill(Qt::white);
+		QPainter painter(&image);
+		scratch.diagram(0)->render(&painter, QRectF(QPointF(0, 0), image.size()), area);
+		painter.end();
+		return image;
+	};
+	const QImage folio = folioImage();
+	CHECK(veiledIn(folio, folio.rect()) == 0);
+		//And the zero means something: the same picture of the folio sees
+		//the veil the moment the part is asked to show it
+	on_folio->setSizeWarningShown(true);
+	const QImage control = folioImage();
+	CHECK(veiledIn(control, control.rect()) > 0);
 }
 
 TEST_CASE("CU-44.9 — with no measure in the catalogue the drawing shows, and the part stays unmeasured",

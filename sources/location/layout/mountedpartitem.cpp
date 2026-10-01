@@ -304,23 +304,20 @@ void MountedPartItem::paint(QPainter *painter,
 		painter->drawPicture(QPointF(0.0, 0.0), m_drawing.picture);
 		painter->restore();
 
-			//The name stays readable over the drawing: three breakers drawn
-			//alike are three parts nobody can tell apart otherwise
-		paintDesignationOver(painter, body);
-
-		if (drawingSizeDiffers())
+			//The whole drawing under a veil, and not a mark on a corner: a
+			//corner shrinks with the part, and on a terminal 5 mm wide it
+			//was a dot nobody saw. The veil is as large as the part is.
+		if (m_size_warning_shown && drawingSizeDiffers())
 		{
-				//A corner, not a colour over the whole part: the drawing
-				//is right, it is its fit in the box that is in question
-			const qreal side = qMax(1.0, qMin(qMin(body.width(), body.height()) / 4.0, 6.0));
-			QPolygonF mark;
-			mark << body.topRight()
-			     << body.topRight() - QPointF(side, 0.0)
-			     << body.topRight() + QPointF(0.0, side);
 			painter->setPen(Qt::NoPen);
-			painter->setBrush(QColor(220, 120, 0));
-			painter->drawPolygon(mark);
+			painter->setBrush(sizeWarningColour());
+			painter->drawRect(target);
 		}
+
+			//The name stays readable over the drawing, and over the veil:
+			//three breakers drawn alike are three parts nobody can tell
+			//apart otherwise
+		paintDesignationOver(painter, body);
 		painter->restore();
 		return;
 	}
@@ -413,6 +410,35 @@ bool MountedPartItem::drawingSizeDiffers() const
 	       || differs(m_drawing.bounds.height(), box.height());
 }
 
+/**
+	@brief MountedPartItem::setSizeWarningShown
+	@param shown whether a drawing whose size disagrees with the box is
+	painted under the veil of sizeWarningColour()
+*/
+void MountedPartItem::setSizeWarningShown(bool shown)
+{
+	if (m_size_warning_shown == shown) {
+		return;
+	}
+	m_size_warning_shown = shown;
+	update();
+}
+
+bool MountedPartItem::sizeWarningShown() const
+{
+	return m_size_warning_shown;
+}
+
+/**
+	@brief MountedPartItem::sizeWarningColour
+	@return the veil over a drawing whose size disagrees with the box:
+	orange, and see-through enough for the drawing to stay readable
+*/
+QColor MountedPartItem::sizeWarningColour()
+{
+	return QColor(230, 120, 0, 110);
+}
+
 qreal MountedPartItem::drawingTolerance()
 {
 	return 0.02;
@@ -454,7 +480,8 @@ void MountedPartItem::paintDesignationOver(QPainter *painter, const QRectF &body
 /**
 	@brief MountedPartItem::updateDrawingToolTip
 	The designation, and when drawing and box disagree, the sentence that
-	says so: the mark on the corner is what is seen, this is what is read.
+	says so: the veil over the drawing is what is seen, this is what is
+	read.
 */
 void MountedPartItem::updateDrawingToolTip()
 {

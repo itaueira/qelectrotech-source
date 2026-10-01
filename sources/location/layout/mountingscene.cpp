@@ -1181,6 +1181,9 @@ MountedPartItem *MountingScene::drawItem(const MountedItem &item)
 		//the one place a part becomes a drawing, so that a part put back
 		//by an undo is the same as the one taken away.
 	part->setLayoutDrawing(m_drawings.value(item.part_code.trimmed()));
+		//The plate window is where a part is placed, and so where a drawing
+		//that does not fit its box is shown as a warning; the folio is not
+	part->setSizeWarningShown(true);
 
 	addItem(part);
 

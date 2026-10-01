@@ -152,8 +152,9 @@ class MountedPartItem : public QGraphicsObject
 			is drawn in millimetre, at the scale of the panel, to be the
 			part as it is. With a declared size it is centred on the
 			catalogue box, which stays the room the fit check reads, and
-			a size that disagrees with the box is marked on the part and
-			said in its tooltip - never corrected. Without one the part
+			a size that disagrees with the box is said in its tooltip,
+			and shown when setSizeWarningShown() asks - never corrected.
+			Without one the part
 			stays unmeasured: a drawing is not a catalogue entry, and
 			the fit check keeps treating the part as a point.
 		*/
@@ -169,6 +170,19 @@ class MountedPartItem : public QGraphicsObject
 		static qreal drawingTolerance();
 			/// @return the gap in size below which nothing is marked, millimetre
 		static qreal drawingToleranceMm();
+
+		/**
+			@brief Whether a drawing whose size disagrees with the box is
+			painted under an orange veil.
+			Off by default, and on only on the plate window: the veil is
+			a warning for whoever places the part. The view of the plate
+			on a folio leaves it off, and so does every print, PDF and
+			image of it, which are all drawn from the folio.
+		*/
+		void setSizeWarningShown(bool shown);
+		bool sizeWarningShown() const;
+			/// @return the colour of the veil, see-through
+		static QColor sizeWarningColour();
 
 		/**
 			@return the drawings of the parts @a items are, by part
@@ -203,6 +217,7 @@ class MountedPartItem : public QGraphicsObject
 		MountedItem m_item;
 		QPointF m_press_position;
 		bool m_pressed = false;
+		bool m_size_warning_shown = false;
 		ElementPictureFactory::LayoutDrawing m_drawing;
 };
 
