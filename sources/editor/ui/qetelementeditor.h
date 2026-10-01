@@ -30,6 +30,9 @@ class ElementView;
 class QListWidget;
 class QStackedWidget;
 class QLabel;
+class QTabBar;
+class QUndoGroup;
+class QUndoView;
 
 namespace Ui {
 	class QETElementEditor;
@@ -72,6 +75,18 @@ class QETElementEditor : public QMainWindow
 		void updateSelectionFromPartsList();
 		void openElement(const QString &filepath);
 		bool checkElement();
+
+			/// The two tabs above the drawing area: the symbol drawn on
+			/// folios, and the 2D drawing of the part, in millimetre, that
+			/// the mounting plate shows. elementScene() and elementView()
+			/// answer for the tab shown, because every part, part editor
+			/// and tool reaches the scene through them.
+		bool isLayoutDrawingActive() const;
+		void setLayoutDrawingActive(bool active);
+		ElementScene *layoutDrawingScene() const;
+			/// The element as it would be saved: the symbol, with the
+			/// shapes of the 2D tab as its layout_drawing block
+		QDomDocument elementXml();
 
 	protected:
 		bool event(QEvent *event) override;
@@ -124,6 +139,9 @@ class QETElementEditor : public QMainWindow
 		void initGui();
 		QWidget *clearToolsDock();
 		void copyAndPasteXml(const QDomDocument &xml_document);
+		bool isModified() const;
+		void setClean();
+		void loadLayoutDrawing();
 
 	private:
 		Ui::QETElementEditor *ui;
@@ -164,6 +182,25 @@ class QETElementEditor : public QMainWindow
 		QLabel *m_default_informations = nullptr;
 
 		QLabel *m_position_label = nullptr;
+
+			/// m_elmt_scene and m_view stay the symbol's: the element
+			/// data, the checks before saving and the title are the
+			/// symbol's whichever tab is shown. What edits the content -
+			/// tools, selection, parts list, edit menu, zoom, undo -
+			/// goes through the active pair.
+		ElementScene
+			*m_drawing_scene = nullptr,
+			*m_active_scene  = nullptr;
+		ElementView
+			*m_drawing_view = nullptr,
+			*m_active_view  = nullptr;
+		QTabBar *m_view_tabs = nullptr;
+		QStackedWidget *m_view_stack = nullptr;
+		QUndoGroup *m_undo_group = nullptr;
+		QUndoView *m_undo_view = nullptr;
+		QAction
+			*m_add_terminal_action     = nullptr,
+			*m_add_dynamic_text_action = nullptr;
 
 };
 

@@ -60,6 +60,10 @@
 #include <QFileDialog>
 #include <QSvgGenerator>
 #include <QHBoxLayout>
+#include <QTabBar>
+#include <QUndoGroup>
+#include <QUndoView>
+#include <QVBoxLayout>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -96,6 +100,18 @@ QETElementEditor::QETElementEditor(QWidget *parent) :
  */
 QETElementEditor::~QETElementEditor()
 {
+		//The scenes are children of this window and die after this body,
+		//with its docks already gone. An undo stack still holding commands
+		//emits as it is cleared on the way out, and what it reached here
+		//was updateInformations() on a tools dock that no longer exists.
+		//closeEvent() empties the stacks first and hides this; a window
+		//destroyed without being closed did not.
+	for (ElementScene *scene : {m_elmt_scene, m_drawing_scene}) {
+		if (scene) {
+			disconnect(scene, nullptr, this, nullptr);
+			disconnect(&scene->undoStack(), nullptr, this, nullptr);
+		}
+	}
 	delete ui;
 	qDeleteAll(m_editors.begin(), m_editors.end());
 }
@@ -203,6 +219,9 @@ void QETElementEditor::setReadOnly(bool ro)
 {
 	m_read_only = ro;
 	m_view->setInteractive(!ro);
+	if (m_drawing_view) {
+		m_drawing_view->setInteractive(!ro);
+	}
 	updateAction();
 }
 
@@ -249,6 +268,7 @@ void QETElementEditor::fromFile(const QString &filepath)
 	}
 
 	m_elmt_scene -> fromXml(document_xml);
+	loadLayoutDrawing();
 	fillPartsList();
 
 	if (!infos_file.isWritable())
@@ -266,7 +286,11 @@ void QETElementEditor::fromFile(const QString &filepath)
 
 	// memorise le fichier
 	setFileName(filepath);
-	QETApp::elementsRecentFiles() -> fileWasOpened(filepath);
+		//Null without a QETApp instance, which is the case of the editor
+		//opened outside the application, as the test bench does
+	if (RecentFiles *recent = QETApp::elementsRecentFiles()) {
+		recent -> fileWasOpened(filepath);
+	}
 	updateAction();
 }
 
@@ -280,9 +304,11 @@ bool QETElementEditor::toFile(const QString &filepath)
 {
 	m_elmt_scene -> clearEventInterface();
 	m_elmt_scene -> clearSelection();
+	m_drawing_scene -> clearEventInterface();
+	m_drawing_scene -> clearSelection();
 	UncheckAddPrimitive();
 
-	QDomDocument element_xml = m_elmt_scene -> toXml();
+	QDomDocument element_xml = elementXml();
 	bool writing = QET::writeXmlFile(element_xml, filepath);
 	if (!writing) {
 		QET::QetMessageBox::warning(
@@ -320,6 +346,7 @@ void QETElementEditor::fromLocation(const ElementsLocation &location)
 
 		//Load the element
 	m_elmt_scene -> fromXml(document_xml);
+	loadLayoutDrawing();
 	fillPartsList();
 
 		//location is read only
@@ -347,9 +374,11 @@ bool QETElementEditor::toLocation(const ElementsLocation &location)
 {
 	m_elmt_scene -> clearEventInterface();
 	m_elmt_scene -> clearSelection();
+	m_drawing_scene -> clearEventInterface();
+	m_drawing_scene -> clearSelection();
 	UncheckAddPrimitive();
 
-	if (!location.setXml(m_elmt_scene -> toXml())) {
+	if (!location.setXml(elementXml())) {
 		QET::QetMessageBox::critical(this,
 									 tr("Erreur", "message box title"),
 									 tr("Impossible d'enregistrer l'élément", "message box content"));
@@ -422,7 +451,7 @@ bool QETElementEditor::isEditing(const QString &filepath)
  * @return
  */
 ElementScene *QETElementEditor::elementScene() const {
-	return m_elmt_scene;
+	return m_active_scene;
 }
 
 /**
@@ -430,7 +459,121 @@ ElementScene *QETElementEditor::elementScene() const {
  * @return
  */
 ElementView *QETElementEditor::elementView() const {
-	return m_view;
+	return m_active_view;
+}
+
+/**
+ * @brief QETElementEditor::isLayoutDrawingActive
+ * @return true when the tab shown is the 2D drawing of the part
+ */
+bool QETElementEditor::isLayoutDrawingActive() const {
+	return m_active_scene == m_drawing_scene;
+}
+
+/**
+ * @brief QETElementEditor::setLayoutDrawingActive
+ * Show the 2D drawing of the part, or the symbol. Everything that edits
+ * the content follows: the part being added is dropped, the undo stack,
+ * the parts list and the tools are those of the tab shown.
+ * @param active : true for the 2D drawing
+ */
+void QETElementEditor::setLayoutDrawingActive(bool active)
+{
+	if (active != isLayoutDrawingActive())
+	{
+			//A tool half used on one tab is not carried over to the other
+		m_active_scene->clearEventInterface();
+		UncheckAddPrimitive();
+
+		m_active_scene = active ? m_drawing_scene : m_elmt_scene;
+		m_active_view  = active ? m_drawing_view  : m_view;
+		m_view_stack->setCurrentWidget(m_active_view);
+		m_undo_group->setActiveStack(&m_active_scene->undoStack());
+	}
+
+	const int index = active ? 1 : 0;
+	if (m_view_tabs->currentIndex() != index) {
+		const QSignalBlocker blocker(m_view_tabs);
+		m_view_tabs->setCurrentIndex(index);
+	}
+
+	fillPartsList();
+	updateInformations();
+	updateAction();
+}
+
+/**
+ * @brief QETElementEditor::layoutDrawingScene
+ * @return the scene of the 2D tab
+ */
+ElementScene *QETElementEditor::layoutDrawingScene() const {
+	return m_drawing_scene;
+}
+
+/**
+ * @brief QETElementEditor::elementXml
+ * The shapes of the 2D tab become the layout_drawing block the symbol
+ * scene writes beside its description. An empty tab writes no block, not
+ * even an empty one, so that an old symbol saved here comes out the way
+ * it went in.
+ * @return the element as it would be saved
+ */
+QDomDocument QETElementEditor::elementXml()
+{
+	QDomDocument scratch;
+	const QDomElement block = m_drawing_scene->contentToXml(
+				scratch, ElementPictureFactory::layoutDrawingTagName());
+	m_elmt_scene->setLayoutDrawingXml(block.hasChildNodes() ? block : QDomElement());
+	return m_elmt_scene->toXml();
+}
+
+/**
+ * @brief QETElementEditor::loadLayoutDrawing
+ * Fill the 2D tab from the layout_drawing block the symbol scene has just
+ * read. The block goes through the path the symbol is loaded by, under
+ * the name that path reads, and the scene of the tab keeps the shapes and
+ * refuses the rest.
+ */
+void QETElementEditor::loadLayoutDrawing()
+{
+	m_drawing_scene->reset();
+	const QDomElement block = m_elmt_scene->layoutDrawingXml();
+	if (block.isNull()) {
+		return;
+	}
+
+	QDomDocument document;
+	QDomElement root = document.createElement(QStringLiteral("definition"));
+	root.setAttribute(QStringLiteral("type"), QStringLiteral("element"));
+	QDomElement description = document.createElement(QStringLiteral("description"));
+	for (QDomNode node = block.firstChild() ; !node.isNull() ; node = node.nextSibling()) {
+		description.appendChild(document.importNode(node, true));
+	}
+	root.appendChild(description);
+	document.appendChild(root);
+
+	m_drawing_scene->fromXml(document, QPointF(), false);
+		//Opening is not an edit: the tab starts with nothing to undo
+	m_drawing_scene->undoStack().clear();
+}
+
+/**
+ * @brief QETElementEditor::isModified
+ * @return true when either tab holds an unsaved change
+ */
+bool QETElementEditor::isModified() const {
+	return !m_elmt_scene->undoStack().isClean()
+			|| !m_drawing_scene->undoStack().isClean();
+}
+
+/**
+ * @brief QETElementEditor::setClean
+ * Mark both tabs saved
+ */
+void QETElementEditor::setClean()
+{
+	m_elmt_scene->undoStack().setClean();
+	m_drawing_scene->undoStack().setClean();
 }
 
 /**
@@ -475,7 +618,7 @@ void QETElementEditor::updateTitle()
 	QString title = m_min_title;
 	title += " - " + m_elmt_scene->elementData().m_names_list.name() + " ";
 	if (!m_file_name.isEmpty() || !m_location.isNull()) {
-		if (!m_elmt_scene -> undoStack().isClean()) {
+		if (isModified()) {
 			title += tr("[Modifié]", "window title tag");
 		}
 	}
@@ -492,7 +635,7 @@ void QETElementEditor::fillPartsList()
 {
 	m_parts_list -> blockSignals(true);
 	m_parts_list -> clear();
-	QList<QGraphicsItem *> qgis = m_elmt_scene -> zItems();
+	QList<QGraphicsItem *> qgis = m_active_scene -> zItems();
 
 	QSettings settings;
 	int maxParts = settings.value("elementeditor/max-parts-element-editor-list", 200).toInt();
@@ -557,7 +700,7 @@ void QETElementEditor::updateCurrentPartEditor()
  */
 void QETElementEditor::updateInformations()
 {
-	QList<QGraphicsItem *> selected_qgis = m_elmt_scene -> selectedItems();
+	QList<QGraphicsItem *> selected_qgis = m_active_scene -> selectedItems();
 	if (selected_qgis.isEmpty())
 	{
 		clearToolsDock();
@@ -729,7 +872,7 @@ void QETElementEditor::updateInformations()
  */
 void QETElementEditor::updatePartsList()
 {
-	int items_count = m_elmt_scene -> items().count();
+	int items_count = m_active_scene -> items().count();
 	QSettings settings;
   const int maxParts = settings.value("elementeditor/max-parts-element-editor-list", 200).toInt();
 	if (m_parts_list -> count() != items_count) {
@@ -738,7 +881,7 @@ void QETElementEditor::updatePartsList()
 	else if (items_count <= maxParts) {
 		m_parts_list -> blockSignals(true);
 		int i = 0;
-		QList<QGraphicsItem *> items = m_elmt_scene -> zItems();
+		QList<QGraphicsItem *> items = m_active_scene -> zItems();
 		for (int j = items.count() - 1 ; j >= 0 ; -- j) {
 			QGraphicsItem *qgi = items[j];
 			QListWidgetItem *qlwi = m_parts_list -> item(i);
@@ -754,7 +897,7 @@ void QETElementEditor::updatePartsList()
  */
 void QETElementEditor::updateSelectionFromPartsList()
 {
-	m_elmt_scene  -> blockSignals(true);
+	m_active_scene -> blockSignals(true);
 	m_parts_list -> blockSignals(true);
 	for (int i = 0 ; i < m_parts_list -> count() ; ++ i) {
 		QListWidgetItem *qlwi = m_parts_list -> item(i);
@@ -764,7 +907,7 @@ void QETElementEditor::updateSelectionFromPartsList()
 		}
 	}
 	m_parts_list -> blockSignals(false);
-	m_elmt_scene -> blockSignals(false);
+	m_active_scene -> blockSignals(false);
 	updateInformations();
 	updateAction();
 }
@@ -989,6 +1132,7 @@ void QETElementEditor::closeEvent(QCloseEvent *qce)
 		writeSettings();
 		setAttribute(Qt::WA_DeleteOnClose);
 		m_elmt_scene -> reset();
+		m_drawing_scene -> reset();
 		qce -> accept();
 	}
 	else {
@@ -1002,7 +1146,7 @@ void QETElementEditor::closeEvent(QCloseEvent *qce)
  */
 bool QETElementEditor::canClose()
 {
-	if (m_elmt_scene -> undoStack().isClean()) {
+	if (!isModified()) {
 		return(true);
 	}
 		//First ask user to save
@@ -1089,8 +1233,9 @@ void QETElementEditor::writeSettings() const
  */
 void QETElementEditor::setupActions()
 {
-	m_undo_action = m_elmt_scene -> undoStack().createUndoAction(this, tr("Annuler"));
-	m_redo_action = m_elmt_scene -> undoStack().createRedoAction(this, tr("Refaire"));
+		//One group, its active stack the tab shown: undo is per tab
+	m_undo_action = m_undo_group -> createUndoAction(this, tr("Annuler"));
+	m_redo_action = m_undo_group -> createRedoAction(this, tr("Refaire"));
 	m_undo_action -> setIcon(QET::Icons::EditUndo);
 	m_redo_action -> setIcon(QET::Icons::EditRedo);
 	ShortcutManager::instance().registerAction(m_undo_action, "elementeditor.undo", tr("Éditeur d'élément"), QKeySequence::Undo);
@@ -1172,14 +1317,16 @@ void QETElementEditor::setupActions()
 		action -> setCheckable(true);
 	}
 
-	connect(add_line,      &QAction::triggered, [this]() {m_elmt_scene->setEventInterface(new ESEventAddLine(m_elmt_scene));});
-	connect(add_rectangle, &QAction::triggered, [this]() {m_elmt_scene->setEventInterface(new ESEventAddRect(m_elmt_scene));});
-	connect(add_ellipse,   &QAction::triggered, [this]() {m_elmt_scene->setEventInterface(new ESEventAddEllipse(m_elmt_scene));});
-	connect(add_polygon,   &QAction::triggered, [this]() {m_elmt_scene->setEventInterface(new ESEventAddPolygon(m_elmt_scene));});
-	connect(add_text,      &QAction::triggered, [this]() {m_elmt_scene->setEventInterface(new ESEventAddText(m_elmt_scene));});
-	connect(add_arc,       &QAction::triggered, [this]() {m_elmt_scene->setEventInterface(new ESEventAddArc(m_elmt_scene));});
-	connect(add_terminal,  &QAction::triggered, [this]() {m_elmt_scene->setEventInterface(new ESEventAddTerminal(m_elmt_scene));});
-	connect(add_dynamic_text_field, &QAction::triggered, [this]() {m_elmt_scene->setEventInterface(new ESEventAddDynamicTextField(m_elmt_scene));});
+	connect(add_line,      &QAction::triggered, [this]() {m_active_scene->setEventInterface(new ESEventAddLine(m_active_scene));});
+	connect(add_rectangle, &QAction::triggered, [this]() {m_active_scene->setEventInterface(new ESEventAddRect(m_active_scene));});
+	connect(add_ellipse,   &QAction::triggered, [this]() {m_active_scene->setEventInterface(new ESEventAddEllipse(m_active_scene));});
+	connect(add_polygon,   &QAction::triggered, [this]() {m_active_scene->setEventInterface(new ESEventAddPolygon(m_active_scene));});
+	connect(add_text,      &QAction::triggered, [this]() {m_active_scene->setEventInterface(new ESEventAddText(m_active_scene));});
+	connect(add_arc,       &QAction::triggered, [this]() {m_active_scene->setEventInterface(new ESEventAddArc(m_active_scene));});
+	connect(add_terminal,  &QAction::triggered, [this]() {m_active_scene->setEventInterface(new ESEventAddTerminal(m_active_scene));});
+	connect(add_dynamic_text_field, &QAction::triggered, [this]() {m_active_scene->setEventInterface(new ESEventAddDynamicTextField(m_active_scene));});
+	m_add_terminal_action     = add_terminal;
+	m_add_dynamic_text_action = add_dynamic_text_field;
 
 	add_polygon -> setStatusTip(tr("Double-click pour terminer la forme, Click droit pour annuler le dernier point"));
 	add_text    -> setStatusTip(tr("Ajouter un texte d'élément non éditable dans les schémas"));
@@ -1264,8 +1411,8 @@ void QETElementEditor::updateAction()
 				<< ui->m_rotateFine_action
 				<< ui->m_flip_action
 				<< ui->m_mirror_action;
-	const bool has_selection = m_elmt_scene->selectedItems().count() > 0;
-	const bool adding_part = m_elmt_scene->behavior() == ElementScene::AddPart;
+	const bool has_selection = m_active_scene->selectedItems().count() > 0;
+	const bool adding_part = m_active_scene->behavior() == ElementScene::AddPart;
 	auto items_selected = !m_read_only && has_selection && !adding_part;
 	for (auto action : std::as_const(select_list)) {
 		action->setEnabled(items_selected);
@@ -1284,9 +1431,15 @@ void QETElementEditor::updateAction()
 	ui->m_paste_in_area_action->setEnabled(clipboard_contain_elmt);
 
 		//Action about undo stack status
-	ui->m_save_action-> setEnabled(!m_read_only && !m_elmt_scene->undoStack().isClean());
-	m_undo_action    -> setEnabled(!m_read_only && m_elmt_scene -> undoStack().canUndo());
-	m_redo_action    -> setEnabled(!m_read_only && m_elmt_scene -> undoStack().canRedo());
+	ui->m_save_action-> setEnabled(!m_read_only && isModified());
+	m_undo_action    -> setEnabled(!m_read_only && m_active_scene -> undoStack().canUndo());
+	m_redo_action    -> setEnabled(!m_read_only && m_active_scene -> undoStack().canRedo());
+
+		//A plate has no terminal and no text resolved from the element
+	if (m_add_terminal_action) {
+		m_add_terminal_action->setEnabled(!m_read_only && !isLayoutDrawingActive());
+		m_add_dynamic_text_action->setEnabled(!m_read_only && !isLayoutDrawingActive());
+	}
 
 }
 
@@ -1295,28 +1448,35 @@ void QETElementEditor::updateAction()
  */
 void QETElementEditor::setupConnection()
 {
-	connect(m_elmt_scene, &ElementScene::partsAdded,          this, &QETElementEditor::UncheckAddPrimitive);
-	connect(m_elmt_scene, &ElementScene::partsAdded,          this, &QETElementEditor::fillPartsList);
-	connect(m_elmt_scene, &ElementScene::partsRemoved,        this, &QETElementEditor::fillPartsList);
-	connect(m_elmt_scene, &ElementScene::partsZValueChanged,  this, &QETElementEditor::fillPartsList);
 	connect(m_parts_list, &QListWidget::itemSelectionChanged, this, &QETElementEditor::updateSelectionFromPartsList);
 	connect(QApplication::clipboard(),  &QClipboard::dataChanged, this, &QETElementEditor::updateAction);
-	connect(m_elmt_scene, &ElementScene::behaviorChanged,     this, &QETElementEditor::updateAction);
 
-	connect(m_elmt_scene, &ElementScene::selectionChanged, [this]() {
-		this->updateInformations();
-		this->updateAction();
-		this->updatePartsList();
-	});
+		//Both scenes, the symbol's and the 2D drawing's. What the slots
+		//refresh is the tab shown; a signal from the hidden one, which is
+		//only ever emitted while loading, refreshes the same thing.
+	for (ElementScene *scene : {m_elmt_scene, m_drawing_scene})
+	{
+		connect(scene, &ElementScene::partsAdded,          this, &QETElementEditor::UncheckAddPrimitive);
+		connect(scene, &ElementScene::partsAdded,          this, &QETElementEditor::fillPartsList);
+		connect(scene, &ElementScene::partsRemoved,        this, &QETElementEditor::fillPartsList);
+		connect(scene, &ElementScene::partsZValueChanged,  this, &QETElementEditor::fillPartsList);
+		connect(scene, &ElementScene::behaviorChanged,     this, &QETElementEditor::updateAction);
 
-	connect(&(m_elmt_scene -> undoStack()), &QUndoStack::cleanChanged, [this]() {
-		this->updateAction();
-		this->updateTitle();
-	});
+		connect(scene, &ElementScene::selectionChanged, this, [this]() {
+			this->updateInformations();
+			this->updateAction();
+			this->updatePartsList();
+		});
 
-	connect(&(m_elmt_scene -> undoStack()), &QUndoStack::indexChanged, [this]() {
-		this->updateInformations();
-	});
+		connect(&(scene -> undoStack()), &QUndoStack::cleanChanged, this, [this]() {
+			this->updateAction();
+			this->updateTitle();
+		});
+
+		connect(&(scene -> undoStack()), &QUndoStack::indexChanged, this, [this]() {
+			this->updateInformations();
+		});
+	}
 }
 
 /**
@@ -1337,7 +1497,42 @@ void QETElementEditor::initGui()
 	m_elmt_scene = new ElementScene(this, this);
 	m_view = new ElementView(m_elmt_scene, this);
 	m_view->setDragMode(QGraphicsView::RubberBandDrag);
-	setCentralWidget(m_view);
+
+		//The 2D drawing of the part, in millimetre, for the mounting plate.
+		//A view of its own: ElementView keeps the scene it was given.
+	m_drawing_scene = new ElementScene(this, this);
+	m_drawing_scene->setShapesOnly(true);
+	m_drawing_view = new ElementView(m_drawing_scene, this);
+	m_drawing_view->setDragMode(QGraphicsView::RubberBandDrag);
+	m_active_scene = m_elmt_scene;
+	m_active_view  = m_view;
+
+	m_view_stack = new QStackedWidget(this);
+	m_view_stack->addWidget(m_view);
+	m_view_stack->addWidget(m_drawing_view);
+	m_view_tabs = new QTabBar(this);
+	m_view_tabs->addTab(tr("Symbole", "element editor tab"));
+	m_view_tabs->addTab(tr("Dessin 2D", "element editor tab"));
+	m_view_tabs->setTabToolTip(1, tr("Le dessin de la pièce vue de face, en millimètres, "
+					 "tel qu'il apparaît sur la plaque de montage. "
+					 "Il n'apparaît pas sur les folios."));
+	m_view_tabs->setDrawBase(false);
+	connect(m_view_tabs, &QTabBar::currentChanged, this, [this](int index) {
+		setLayoutDrawingActive(index == 1);
+	});
+
+	auto central = new QWidget(this);
+	auto central_layout = new QVBoxLayout(central);
+	central_layout->setContentsMargins(0, 0, 0, 0);
+	central_layout->setSpacing(0);
+	central_layout->addWidget(m_view_tabs);
+	central_layout->addWidget(m_view_stack);
+	setCentralWidget(central);
+
+	m_undo_group = new QUndoGroup(this);
+	m_undo_group->addStack(&m_elmt_scene->undoStack());
+	m_undo_group->addStack(&m_drawing_scene->undoStack());
+	m_undo_group->setActiveStack(&m_elmt_scene->undoStack());
 
 		//Part dock editor
 	m_default_informations = new QLabel(this);
@@ -1346,9 +1541,9 @@ void QETElementEditor::initGui()
 	ui->m_tools_dock->setWidget(m_tools_dock_stack);
 
 		//Undo dock
-	auto undo_view = new QUndoView(&(m_elmt_scene->undoStack()), this);
-	undo_view->setEmptyLabel(tr("Aucune modification"));
-	ui->m_undo_dock->setWidget(undo_view);
+	m_undo_view = new QUndoView(m_undo_group, this);
+	m_undo_view->setEmptyLabel(tr("Aucune modification"));
+	ui->m_undo_dock->setWidget(m_undo_view);
 
 		//parts list dock
 	m_parts_list = new QListWidget(this);
@@ -1382,6 +1577,12 @@ void QETElementEditor::initGui()
 	
 	connect(m_elmt_scene, &ElementScene::mouseMoved, this, [this](const QPointF &pos) {
 		m_position_label->setText(tr("X: %1  Y: %2")
+			.arg(pos.x(), 0, 'f', 1)
+			.arg(pos.y(), 0, 'f', 1));
+	});
+		//On the 2D tab the unit is the millimetre, and the readout says so
+	connect(m_drawing_scene, &ElementScene::mouseMoved, this, [this](const QPointF &pos) {
+		m_position_label->setText(tr("X: %1 mm  Y: %2 mm")
 			.arg(pos.x(), 0, 'f', 1)
 			.arg(pos.y(), 0, 'f', 1));
 	});
@@ -1421,7 +1622,7 @@ void QETElementEditor::copyAndPasteXml(const QDomDocument &xml_document)
 	}
 	clipboard -> setText(clipboard_content);
 
-	m_view -> pasteInArea();
+	m_active_view -> pasteInArea();
 }
 
 /**
@@ -1440,7 +1641,7 @@ bool QETElementEditor::on_m_save_action_triggered()
 
 			//Else wa save to the file at filename_ path
 			bool result_save = toFile(m_file_name);
-			if (result_save) m_elmt_scene -> undoStack().setClean();
+			if (result_save) setClean();
 			return(result_save);
 		}
 		else
@@ -1452,7 +1653,7 @@ bool QETElementEditor::on_m_save_action_triggered()
 			//Else save to the known location
 			bool result_save = toLocation(m_location);
 			if (result_save) {
-				m_elmt_scene -> undoStack().setClean();
+				setClean();
 				emit saveToLocation(m_location);
 			}
 			return(result_save);
@@ -1482,7 +1683,7 @@ bool QETElementEditor::on_m_save_as_action_triggered()
 		bool result_save = toLocation(location);
 		if (result_save) {
 			setLocation(location);
-			m_elmt_scene -> undoStack().setClean();
+			setClean();
 			emit saveToLocation(location);
 		}
 
@@ -1493,7 +1694,7 @@ bool QETElementEditor::on_m_save_as_action_triggered()
 }
 
 void QETElementEditor::on_m_select_all_act_triggered() {
-	m_elmt_scene->slot_selectAll();
+	m_active_scene->slot_selectAll();
 }
 
 void QETElementEditor::on_m_edit_element_properties_action_triggered() { m_elmt_scene->slot_editProperties(); }
@@ -1548,8 +1749,10 @@ bool QETElementEditor::on_m_save_as_file_action_triggered()
 		//If the save success, the filename is keep
 		if (result_save) {
 			setFileName(fn);
-			QETApp::elementsRecentFiles() -> fileWasOpened(fn);
-			m_elmt_scene -> undoStack().setClean();
+			if (RecentFiles *recent = QETApp::elementsRecentFiles()) {
+				recent -> fileWasOpened(fn);
+			}
+			setClean();
 		}
 
 		return(result_save);
@@ -1649,7 +1852,7 @@ bool QETElementEditor::on_m_export_svg_action_triggered()
 void QETElementEditor::on_m_reload_action_triggered()
 {
 	//If user already edit the element, ask confirmation to reload
-	if (!m_elmt_scene -> undoStack().isClean()) {
+	if (isModified()) {
 		QMessageBox::StandardButton answer = QET::QetMessageBox::question(this,
 																		  tr("Recharger l'élément", "dialog title"),
 																		  tr("Vous avez efffectué des modifications sur cet élément. Si vous le rechargez, ces modifications seront perdues. Voulez-vous vraiment recharger l'élément ?", "dialog content"),
@@ -1662,6 +1865,7 @@ void QETElementEditor::on_m_reload_action_triggered()
 
 	//Reload the element
 	m_elmt_scene -> reset();
+	m_drawing_scene -> reset();
 	if (m_opened_from_file) {
 		fromFile(m_file_name);
 	}
@@ -1672,15 +1876,15 @@ void QETElementEditor::on_m_reload_action_triggered()
 
 void QETElementEditor::on_m_quit_action_triggered() { close(); }
 
-void QETElementEditor::on_m_deselect_all_action_triggered() { m_elmt_scene->slot_deselectAll(); }
+void QETElementEditor::on_m_deselect_all_action_triggered() { m_active_scene->slot_deselectAll(); }
 
-void QETElementEditor::on_m_cut_action_triggered() { m_view->cut(); }
+void QETElementEditor::on_m_cut_action_triggered() { m_active_view->cut(); }
 
-void QETElementEditor::on_m_copy_action_triggered() { m_view->copy(); }
+void QETElementEditor::on_m_copy_action_triggered() { m_active_view->copy(); }
 
-void QETElementEditor::on_m_paste_action_triggered() { m_view->paste(); }
+void QETElementEditor::on_m_paste_action_triggered() { m_active_view->paste(); }
 
-void QETElementEditor::on_m_paste_in_area_action_triggered() { m_view->pasteInArea(); }
+void QETElementEditor::on_m_paste_in_area_action_triggered() { m_active_view->pasteInArea(); }
 
 void QETElementEditor::on_m_paste_from_file_action_triggered()
 {
@@ -1739,21 +1943,21 @@ void QETElementEditor::on_m_paste_from_element_action_triggered()
 	copyAndPasteXml(document_xml);
 }
 
-void QETElementEditor::on_m_revert_selection_action_triggered() { m_elmt_scene->slot_invertSelection(); }
+void QETElementEditor::on_m_revert_selection_action_triggered() { m_active_scene->slot_invertSelection(); }
 
-void QETElementEditor::on_m_delete_action_triggered() { m_elmt_scene->slot_delete(); }
+void QETElementEditor::on_m_delete_action_triggered() { m_active_scene->slot_delete(); }
 
 void QETElementEditor::on_m_edit_names_action_triggered() { m_elmt_scene->slot_editNames(); }
 
 void QETElementEditor::on_m_edit_author_action_triggered() { m_elmt_scene->slot_editAuthorInformations(); }
 
-void QETElementEditor::on_m_zoom_in_action_triggered() { m_view->zoomIn(); }
+void QETElementEditor::on_m_zoom_in_action_triggered() { m_active_view->zoomIn(); }
 
-void QETElementEditor::on_m_zoom_out_action_triggered() { m_view->zoomOut(); }
+void QETElementEditor::on_m_zoom_out_action_triggered() { m_active_view->zoomOut(); }
 
-void QETElementEditor::on_m_zoom_fit_best_action_triggered() { m_view->zoomFit(); }
+void QETElementEditor::on_m_zoom_fit_best_action_triggered() { m_active_view->zoomFit(); }
 
-void QETElementEditor::on_m_zoom_original_action_triggered() { m_view->zoomReset(); }
+void QETElementEditor::on_m_zoom_original_action_triggered() { m_active_view->zoomReset(); }
 
 void QETElementEditor::on_m_about_qet_action_triggered() { QETApp::instance()->aboutQET(); }
 
@@ -1796,6 +2000,7 @@ void QETElementEditor::on_m_import_dxf_triggered()
 		QDomDocument xml_;
 		xml_.setContent(array_);
 
+		setLayoutDrawingActive(false);
 		m_elmt_scene->undoStack().push(new OpenElmtCommand(xml_, m_elmt_scene));
 	}
 }
@@ -1819,6 +2024,7 @@ void QETElementEditor::on_m_import_scaled_element_triggered()
 		QDomDocument xml_;
 		xml_.setContent(array_);
 
+		setLayoutDrawingActive(false);
 		m_elmt_scene->undoStack().push(new OpenElmtCommand(xml_, m_elmt_scene));
 	}
 }

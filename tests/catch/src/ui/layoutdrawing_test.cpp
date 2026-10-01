@@ -16,12 +16,21 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../qt_catch_tostring.h"
+#include "../../../../sources/ElementsCollection/elementslocation.h"
 #include "../../../../sources/editor/elementscene.h"
+#include "../../../../sources/editor/graphicspart/partline.h"
+#include "../../../../sources/editor/graphicspart/partrectangle.h"
+#include "../../../../sources/editor/graphicspart/partterminal.h"
 #include "../../../../sources/editor/ui/qetelementeditor.h"
 #include "../../../../sources/factory/elementpicturefactory.h"
 #include <catch2/catch.hpp>
+#include <QAction>
+#include <QApplication>
 #include <QDomDocument>
+#include <QFile>
+#include <QGraphicsSceneMouseEvent>
 #include <QString>
+#include <QTemporaryDir>
 #include <QTextStream>
 
 /*
@@ -49,20 +58,23 @@ namespace {
 		"style=\"line-style:normal;line-weight:normal;filling:none;color:black\"");
 
 	/// A symbol of one line and one terminal, with @a layout_drawing
-	/// appended to the definition as it is given.
-	QDomDocument symbol(const QString &layout_drawing)
+	/// appended to the definition as it is given. The uuid is a parameter
+	/// because ElementPictureFactory caches by it: two files sharing one
+	/// would be drawn from whichever was read first.
+	QDomDocument symbol(const QString &layout_drawing,
+						const QString &uuid = QStringLiteral("{0b3c2c8e-0c4f-4a43-9a52-1d1f5f2b7a10}"))
 	{
 		const QString xml = QStringLiteral(
 			"<definition type=\"element\" width=\"40\" height=\"20\""
 			" hotspot_x=\"20\" hotspot_y=\"10\" link_type=\"simple\">"
-			"<uuid uuid=\"{0b3c2c8e-0c4f-4a43-9a52-1d1f5f2b7a10}\"/>"
+			"<uuid uuid=\"%3\"/>"
 			"<names><name lang=\"fr\">essai</name></names>"
 			"<elementInformations/>"
 			"<description>"
 			"<line x1=\"-10\" y1=\"0\" x2=\"10\" y2=\"0\" end1=\"none\" end2=\"none\""
 			" length1=\"1.5\" length2=\"1.5\" %1/>"
 			"<terminal x=\"-10\" y=\"0\" orientation=\"w\" name=\"1\"/>"
-			"</description>%2</definition>").arg(shape_style, layout_drawing);
+			"</description>%2</definition>").arg(shape_style, layout_drawing, uuid);
 		QDomDocument doc;
 		REQUIRE(doc.setContent(xml));
 		return doc;
@@ -225,4 +237,287 @@ TEST_CASE("T44 — a symbol without a layout drawing is saved without one",
 		//come out the way it went in.
 	CHECK(scene->layoutDrawingXml().isNull());
 	CHECK(layoutBlock(scene->toXml()).isNull());
+}
+
+/*
+	From here on the editor is driven the way the person driving it does:
+	opened from a file, the tab switched, a shape drawn with the real tool
+	of the tool bar, saved through toFile(), read back. A file and not a
+	location: a file outside every collection is no element to
+	ElementsLocation::isElement(), and fromLocation() would stop on a
+	modal box nobody can close here. The mouse goes to
+	the scene as scene events, which is where the tools read it: going
+	through the view would only add the geometry of a window nobody sees.
+*/
+namespace {
+	QString writeSymbol(const QTemporaryDir &dir, const QString &name, const QDomDocument &doc)
+	{
+		const QString path = dir.filePath(name);
+		QFile file(path);
+		REQUIRE(file.open(QIODevice::WriteOnly));
+		file.write(doc.toByteArray());
+		file.close();
+		return path;
+	}
+
+	QDomDocument readFile(const QString &path)
+	{
+		QFile file(path);
+		REQUIRE(file.open(QIODevice::ReadOnly));
+		QDomDocument doc;
+		REQUIRE(doc.setContent(file.readAll()));
+		return doc;
+	}
+
+	QAction *editorAction(QETElementEditor &editor, const QString &text)
+	{
+		for (QAction *action : editor.findChildren<QAction *>()) {
+			if (action->text() == text) {
+				return action;
+			}
+		}
+		FAIL("no action named " << text.toStdString());
+		return nullptr;
+	}
+
+	void sendMouse(ElementScene *scene, QEvent::Type type, const QPointF &pos)
+	{
+		QGraphicsSceneMouseEvent event(type);
+		event.setScenePos(pos);
+		event.setButton(type == QEvent::GraphicsSceneMouseMove ? Qt::NoButton : Qt::LeftButton);
+		event.setButtons(type == QEvent::GraphicsSceneMousePress ? Qt::LeftButton : Qt::NoButton);
+		QApplication::sendEvent(scene, &event);
+	}
+
+	void clickAt(ElementScene *scene, const QPointF &pos)
+	{
+		sendMouse(scene, QEvent::GraphicsSceneMousePress, pos);
+		sendMouse(scene, QEvent::GraphicsSceneMouseRelease, pos);
+	}
+
+	/// What a person does with a two-click tool of the bar: pick the
+	/// tool, click the first corner, move, click the second.
+	void drawWith(QETElementEditor &editor, const QString &tool, const QPointF &from, const QPointF &to)
+	{
+		editorAction(editor, tool)->trigger();
+		ElementScene *scene = editor.elementScene();
+		clickAt(scene, from);
+		sendMouse(scene, QEvent::GraphicsSceneMouseMove, to);
+		clickAt(scene, to);
+	}
+
+	template <typename Part>
+	QList<Part *> partsOf(ElementScene *scene)
+	{
+		QList<Part *> found;
+		for (QGraphicsItem *item : scene->items()) {
+			if (auto part = dynamic_cast<Part *>(item)) {
+				found << part;
+			}
+		}
+		return found;
+	}
+
+	const QString add_rectangle = QStringLiteral("Ajouter un rectangle");
+	const QString add_line      = QStringLiteral("Ajouter une ligne");
+}
+
+TEST_CASE("CU-44.1 — the 2D drawing survives save and reopen",
+	  "[t44][layoutdrawing]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = writeSymbol(dir, QStringLiteral("piece.elmt"), symbol(QString()));
+
+	{
+		QETElementEditor editor;
+		editor.fromFile(path);
+		editor.setLayoutDrawingActive(true);
+		REQUIRE(editor.elementScene() == editor.layoutDrawingScene());
+
+		drawWith(editor, add_rectangle, QPointF(0, 0), QPointF(45, 90));
+		drawWith(editor, add_line,      QPointF(0, 45), QPointF(45, 45));
+		REQUIRE(partsOf<PartRectangle>(editor.layoutDrawingScene()).size() == 1);
+		REQUIRE(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
+		REQUIRE(editor.toFile(path));
+	}
+
+		//The file, as any reader finds it
+	const QDomDocument saved = readFile(path);
+	const QDomElement block = layoutBlock(saved);
+	REQUIRE_FALSE(block.isNull());
+	CHECK(block.elementsByTagName("rect").size() == 1);
+	CHECK(block.elementsByTagName("line").size() == 1);
+	const auto drawing = ElementPictureFactory::layoutDrawing(saved.documentElement());
+	CHECK(drawing.parts == 2);
+	CHECK(drawing.bounds == QRectF(0, 0, 45, 90));
+
+		//And the editor, opened again
+	QETElementEditor reopened;
+	reopened.fromFile(path);
+	CHECK_FALSE(reopened.isLayoutDrawingActive());
+	const auto rects = partsOf<PartRectangle>(reopened.layoutDrawingScene());
+	REQUIRE(rects.size() == 1);
+	CHECK(rects.first()->sceneGeometricRect() == QRectF(0, 0, 45, 90));
+	CHECK(partsOf<PartLine>(reopened.layoutDrawingScene()).size() == 1);
+
+		//The symbol tab is as it was: the line and the terminal, nothing of
+		//the 2D drawing in it
+	CHECK(partsOf<PartLine>(reopened.elementScene()).size() == 1);
+	CHECK(partsOf<PartTerminal>(reopened.elementScene()).size() == 1);
+	CHECK(partsOf<PartRectangle>(reopened.elementScene()).isEmpty());
+}
+
+TEST_CASE("CU-44.2 — a symbol without a 2D drawing comes out as it went in",
+	  "[t44][layoutdrawing]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = writeSymbol(dir, QStringLiteral("ancien.elmt"), symbol(QString()));
+
+	QETElementEditor editor;
+	editor.fromFile(path);
+	drawWith(editor, add_line, QPointF(-10, 10), QPointF(10, 10));
+	REQUIRE(partsOf<PartLine>(editor.elementScene()).size() == 2);
+	REQUIRE(editor.toFile(path));
+
+		//Not even an empty block
+	CHECK(layoutBlock(readFile(path)).isNull());
+}
+
+TEST_CASE("CU-44.3 — editing only the symbol does not erase the 2D drawing",
+	  "[t44][layoutdrawing]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = writeSymbol(dir, QStringLiteral("piece.elmt"), symbol(drawing45x90()));
+
+	QETElementEditor editor;
+	editor.fromFile(path);
+		//The 2D tab is never shown
+	REQUIRE_FALSE(editor.isLayoutDrawingActive());
+	drawWith(editor, add_line, QPointF(-10, 10), QPointF(10, 10));
+	REQUIRE(editor.toFile(path));
+
+	const QDomDocument saved = readFile(path);
+	const QDomElement block = layoutBlock(saved);
+	REQUIRE_FALSE(block.isNull());
+		//The shapes are all there. What the block held besides shapes - a
+		//terminal and a dynamic text, which this fixture puts in on purpose
+		//- the 2D tab never took, and so never writes back.
+	const auto drawing = ElementPictureFactory::layoutDrawing(saved.documentElement());
+	CHECK(drawing.parts == 2);
+	CHECK(drawing.bounds == QRectF(0, 0, 45, 90));
+	CHECK(block.elementsByTagName("terminal").isEmpty());
+	CHECK(block.elementsByTagName("dynamic_text").isEmpty());
+}
+
+TEST_CASE("CU-44.4 — the 2D drawing does not show on the folio",
+	  "[t44][layoutdrawing]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+
+		//The same symbol saved by the editor twice, with and without a 2D
+		//drawing: what the folio is built from must not tell them apart.
+	auto saveThrough = [&dir](const QString &name, const QString &block, const QString &uuid) {
+		const QString path = writeSymbol(dir, name, symbol(block, uuid));
+		QETElementEditor editor;
+		editor.fromFile(path);
+		return editor.elementXml();
+	};
+	const QDomDocument with = saveThrough(QStringLiteral("avec.elmt"), drawing45x90(),
+								QStringLiteral("{9a1d2c3e-0000-4000-8000-000000000001}"));
+	const QDomDocument without = saveThrough(QStringLiteral("sans.elmt"), QString(),
+								QStringLiteral("{9a1d2c3e-0000-4000-8000-000000000002}"));
+	REQUIRE_FALSE(layoutBlock(with).isNull());
+
+		//The size and hotspot the folio places it by
+	for (const char *attribute : {"width", "height", "hotspot_x", "hotspot_y"}) {
+		INFO(attribute);
+		CHECK(with.documentElement().attribute(attribute)
+			  == without.documentElement().attribute(attribute));
+	}
+
+		//The terminals an element on a folio gets: those of the description
+	CHECK(with.documentElement().firstChildElement("description")
+			.elementsByTagName("terminal").size() == 1);
+
+		//And what the folio draws, by the factory that draws it: one line,
+		//the symbol's. The rectangle and the second line of the block would
+		//show here if the folio read it.
+	const QString path = dir.filePath(QStringLiteral("avec-enregistre.elmt"));
+	QFile file(path);
+	REQUIRE(file.open(QIODevice::WriteOnly));
+	file.write(with.toByteArray());
+	file.close();
+	const auto primitives = ElementPictureFactory::instance()->getPrimitives(ElementsLocation(path));
+	CHECK(primitives.m_lines.size() == 1);
+	CHECK(primitives.m_rectangles.isEmpty());
+}
+
+TEST_CASE("CU-44.5 — the 2D tab has no terminal and no dynamic text",
+	  "[t44][layoutdrawing]")
+{
+	QETElementEditor editor;
+	editor.elementScene()->fromXml(symbol(QString()));
+	QAction *terminal = editorAction(editor, QStringLiteral("Ajouter une borne"));
+	QAction *dynamic  = editorAction(editor, QStringLiteral("Ajouter un champ texte dynamique"));
+	REQUIRE(terminal->isEnabled());
+	REQUIRE(dynamic->isEnabled());
+
+	editor.setLayoutDrawingActive(true);
+	CHECK_FALSE(terminal->isEnabled());
+	CHECK_FALSE(dynamic->isEnabled());
+		//The shapes are all there
+	CHECK(editorAction(editor, add_rectangle)->isEnabled());
+	CHECK(editorAction(editor, add_line)->isEnabled());
+
+	editor.setLayoutDrawingActive(false);
+	CHECK(terminal->isEnabled());
+	CHECK(dynamic->isEnabled());
+}
+
+TEST_CASE("CU-44.6 — undo is per tab",
+	  "[t44][layoutdrawing]")
+{
+	QETElementEditor editor;
+	editor.elementScene()->fromXml(symbol(QString()));
+	QAction *undo = editorAction(editor, QStringLiteral("Annuler"));
+		//Kept before any switch: elementScene() answers for the tab shown
+	ElementScene *symbol_scene = editor.elementScene();
+
+	editor.setLayoutDrawingActive(true);
+	drawWith(editor, add_line, QPointF(0, 0), QPointF(45, 0));
+	REQUIRE(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
+
+	editor.setLayoutDrawingActive(false);
+	drawWith(editor, add_line, QPointF(-10, 10), QPointF(10, 10));
+	REQUIRE(partsOf<PartLine>(symbol_scene).size() == 2);
+
+	REQUIRE(undo->isEnabled());
+	undo->trigger();
+	CHECK(partsOf<PartLine>(symbol_scene).size() == 1);
+	CHECK(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
+
+		//And back on the 2D tab, its own undo
+	editor.setLayoutDrawingActive(true);
+	REQUIRE(undo->isEnabled());
+	undo->trigger();
+	CHECK(partsOf<PartLine>(editor.layoutDrawingScene()).isEmpty());
+	CHECK(partsOf<PartLine>(symbol_scene).size() == 1);
+}
+
+TEST_CASE("T44 — the 2D tab refuses what is not a shape, pasted or loaded",
+	  "[t44][layoutdrawing]")
+{
+	QETElementEditor editor;
+	editor.setLayoutDrawingActive(true);
+
+		//The paste path: fromXml at a position, consider_informations off.
+		//A whole symbol pasted on the plate drawing leaves its line, and
+		//not its terminal.
+	editor.elementScene()->fromXml(symbol(QString()), QPointF(5, 5), false);
+	CHECK(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
+	CHECK(partsOf<PartTerminal>(editor.layoutDrawingScene()).isEmpty());
 }

@@ -95,6 +95,7 @@ class ElementScene : public QGraphicsScene
 		bool m_background_frame_visible = false;
 		QSizeF m_background_frame_size;
 		QDomDocument m_layout_drawing;
+		bool m_shapes_only = false;
 	
 		// methods
 	public:
@@ -157,6 +158,13 @@ class ElementScene : public QGraphicsScene
 			/// a symbol would drop a 2D drawing nobody had opened.
 		QDomElement layoutDrawingXml() const;
 		void setLayoutDrawingXml(const QDomElement &block);
+
+			/// A scene for the 2D drawing of a part takes shapes only:
+			/// loading or pasting a terminal, a dynamic text or a PLC
+			/// table into it is refused, part by part.
+		void setShapesOnly(bool shapes_only) {m_shapes_only = shapes_only;}
+		bool shapesOnly() const {return m_shapes_only;}
+		QDomElement contentToXml(QDomDocument &document, const QString &tag_name) const;
 	
 	protected:
 		void mouseMoveEvent         (QGraphicsSceneMouseEvent *) override;

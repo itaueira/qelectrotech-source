@@ -143,6 +143,30 @@ void ElementScene::setLayoutDrawingXml(const QDomElement &block)
 }
 
 /**
+	@brief ElementScene::contentToXml
+	The parts of this scene under an element named @a tag_name, where
+	they stand: unlike toXml(), nothing is moved to the origin and no size
+	is computed, which is what the 2D drawing of a part needs - its
+	coordinates are millimetres, and they mean what they say.
+	@param document : the document the element is created in
+	@param tag_name : the name of the element
+	@return the element, with no child when the scene holds no part
+*/
+QDomElement ElementScene::contentToXml(QDomDocument &document, const QString &tag_name) const
+{
+	QDomElement content = document.createElement(tag_name);
+	for (QGraphicsItem *qgi : zItems())
+	{
+		if (CustomElementPart *ce = dynamic_cast<CustomElementPart *>(qgi))
+		{
+			if (ce->isUseless()) continue;
+			content.appendChild(ce->toXml(document));
+		}
+	}
+	return content;
+}
+
+/**
  * @brief ElementScene::elementData
  * @return the elementdata using by the scene
  */
@@ -1313,6 +1337,14 @@ ElementContent ElementScene::loadContent(const QDomDocument &xml_document)
 				if (QET::hasNonFiniteGeometry(qde)) {
 					qWarning() << "Element editor: skipped a" << qde.tagName()
 							   << "with a non-finite coordinate";
+					continue;
+				}
+
+					//The 2D drawing of a part takes shapes only, and this is
+					//also the path of a paste: a terminal copied from the
+					//symbol must not land on the plate drawing.
+				if (m_shapes_only
+					&& !ElementPictureFactory::isLayoutDrawingPart(qde.tagName())) {
 					continue;
 				}
 
