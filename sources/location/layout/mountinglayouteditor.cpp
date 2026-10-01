@@ -25,6 +25,7 @@
 #include "../../qetapp.h"
 #include "../../qeticons.h"
 #include "../../qetproject.h"
+#include "../../dataBase/projectdatabase.h"
 #include "../mountinglayout.h"
 #include "../mountingmeasure.h"
 #include "../mountingpartview.h"
@@ -41,6 +42,10 @@
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QDockWidget>
+#include <QListWidget>
+#include <QMimeData>
+#include <QUuid>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QHash>
@@ -121,6 +126,16 @@ MountingLayoutEditor::MountingLayoutEditor(QETProject *project,
 			close();
 		});
 	}
+
+	buildUnmountedDock();
+	connect(m_view, &MountingView::elementDropped,
+		this, [this](const QString &element_uuid, const QPointF &position_mm)
+	{
+		QString error;
+		if (mountElement(element_uuid, position_mm, &error).isEmpty() && !error.isEmpty()) {
+			say(error, true);
+		}
+	});
 
 	refreshSurfaceList();
 
@@ -353,6 +368,9 @@ void MountingLayoutEditor::stepApplied()
 {
 	commitToProject();
 	updateActions();
+		//A part mounted or taken away is a line gone from, or back on, the
+		//list of what is off the plate
+	refreshUnmounted();
 }
 
 /**
@@ -1308,6 +1326,152 @@ void MountingLayoutEditor::refreshLayoutDrawings()
 	const MountingLayout layout = m_project->mountingLayout();
 	m_scene->setLayoutDrawings(MountedPartItem::layoutDrawingsOf(
 					    layout, layout.surface(m_shown).items));
+}
+
+namespace
+{
+	/// The list of what is off the plate: its rows are dragged out as the
+	/// uuid of their element, under a type the plate knows
+	class UnmountedList : public QListWidget
+	{
+		public:
+			using QListWidget::QListWidget;
+
+		protected:
+			QStringList mimeTypes() const override
+			{
+				return {MountingView::unmountedElementMimeType()};
+			}
+			QMimeData *mimeData(const QList<QListWidgetItem *> &items) const override
+			{
+				if (items.isEmpty()) {
+					return nullptr;
+				}
+				auto *data = new QMimeData();
+				data->setData(MountingView::unmountedElementMimeType(),
+					      items.first()->data(Qt::UserRole).toString().toUtf8());
+				return data;
+			}
+	};
+}
+
+/**
+	@brief MountingLayoutEditor::buildUnmountedDock
+	The elements of the folios that enter the bill of materials and are
+	mounted on no face. They are dragged onto the plate from here, which is
+	where a plate laid after its diagram starts.
+*/
+void MountingLayoutEditor::buildUnmountedDock()
+{
+	m_unmounted = new UnmountedList(this);
+	m_unmounted->setObjectName(QStringLiteral("unmounted_list"));
+	m_unmounted->setDragEnabled(true);
+	m_unmounted->setDragDropMode(QAbstractItemView::DragOnly);
+	m_unmounted->setSelectionMode(QAbstractItemView::SingleSelection);
+	m_unmounted->setToolTip(tr("Les composants de la liste de matériel qui ne sont montés sur "
+				   "aucune face : glissez-en un sur la plaque pour le monter."));
+
+	m_unmounted_dock = new QDockWidget(tr("Hors de la plaque"), this);
+	m_unmounted_dock->setObjectName(QStringLiteral("unmounted_dock"));
+	m_unmounted_dock->setWidget(m_unmounted);
+	addDockWidget(Qt::RightDockWidgetArea, m_unmounted_dock);
+	refreshUnmounted();
+}
+
+void MountingLayoutEditor::refreshUnmounted()
+{
+	if (!m_unmounted) {
+		return;
+	}
+	m_unmounted->clear();
+	if (m_project && m_project->dataBase())
+	{
+		const MountingLayout layout = m_project->mountingLayout();
+		const QList<projectDataBase::BomElement> elements = m_project->dataBase()->bomElements();
+		for (const projectDataBase::BomElement &element : elements)
+		{
+			const QString uuid = QUuid(element.uuid).toString();
+			if (!layout.itemOfElement(uuid).isEmpty()) {
+				continue;
+			}
+			const QString label = element.label.isEmpty() ? tr("(sans repère)") : element.label;
+			auto *row = new QListWidgetItem(element.part_code.isEmpty()
+							? label
+							: tr("%1 — %2").arg(label, element.part_code),
+							m_unmounted);
+			row->setData(Qt::UserRole, uuid);
+		}
+	}
+	m_unmounted_dock->setWindowTitle(tr("Hors de la plaque (%1)").arg(m_unmounted->count()));
+}
+
+QStringList MountingLayoutEditor::unmountedElements() const
+{
+	QStringList uuids;
+	for (int row = 0 ; m_unmounted && row < m_unmounted->count() ; ++row) {
+		uuids << m_unmounted->item(row)->data(Qt::UserRole).toString();
+	}
+	return uuids;
+}
+
+QString MountingLayoutEditor::mountElement(const QString &element_uuid, const QPointF &centre_mm,
+					   QString *error)
+{
+	if (!m_project || !m_project->dataBase()) {
+		return QString();
+	}
+	const QString wanted = QUuid(element_uuid).toString();
+	if (!m_project->mountingLayout().itemOfElement(wanted).isEmpty())
+	{
+		if (error) {
+			*error = tr("Ce composant est déjà monté.");
+		}
+		return QString();
+	}
+
+	bool known = false;
+	projectDataBase::BomElement found;
+	for (const projectDataBase::BomElement &element : m_project->dataBase()->bomElements())
+	{
+		if (QUuid(element.uuid).toString() == wanted) {
+			found = element;
+			known = true;
+			break;
+		}
+	}
+	if (!known)
+	{
+		if (error) {
+			*error = tr("Ce composant n'est pas dans la liste de matériel du projet.");
+		}
+		return QString();
+	}
+
+	MountedItem item;
+	if (catalog()) {
+		item = MountingPartReader::mountedItemFor(*catalog(), found.part_code, QPointF(), found.label);
+	}
+	else {
+		item.label = found.label;
+		item.part_code = found.part_code;
+	}
+	item.element = wanted;
+		//Centred where it was dropped: the pointer is on the part, not on
+		//its corner
+	const qreal width  = item.hasDeclaredSize() ? item.size.width()  : MountedPartItem::unmeasuredMarkerSide();
+	const qreal height = item.hasDeclaredSize() ? item.size.height() : MountedPartItem::unmeasuredMarkerSide();
+	item.position = centre_mm - QPointF(width / 2.0, height / 2.0);
+	return mountOnShownSurface(item, error);
+}
+
+void MountingLayoutEditor::changeEvent(QEvent *event)
+{
+	QMainWindow::changeEvent(event);
+		//Back from a folio, where an element may have been added or taken
+		//out of the bill of materials
+	if (event->type() == QEvent::ActivationChange && isActiveWindow()) {
+		refreshUnmounted();
+	}
 }
 
 Catalog *MountingLayoutEditor::catalog() const

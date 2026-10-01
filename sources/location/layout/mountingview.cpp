@@ -19,6 +19,9 @@
 
 #include "mountingscene.h"
 
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QSettings>
@@ -37,6 +40,7 @@ MountingView::MountingView(MountingScene *scene, QWidget *parent) :
 {
 	setInteractive(true);
 	setMouseTracking(true);
+	setAcceptDrops(true);
 	setRenderHint(QPainter::Antialiasing, true);
 	setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
 	setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
@@ -263,4 +267,51 @@ void MountingView::clampFit()
 		resetTransform();
 		scale(m_max_zoom, m_max_zoom);
 	}
+}
+
+QString MountingView::unmountedElementMimeType()
+{
+	return QStringLiteral("application/x-qet-unmounted-element");
+}
+
+/**
+	@brief MountingView::dragEnterEvent
+	An element not mounted yet is taken here; anything else goes on to the
+	scene, as it did. The scene takes in every drag that enters and would
+	carry this one in too - measured by the test of the drop, which passed
+	with this taken out. Said here so that what is taken does not hang on
+	that; the move below is the one that decides.
+*/
+void MountingView::dragEnterEvent(QDragEnterEvent *event)
+{
+	if (event->mimeData()->hasFormat(unmountedElementMimeType())) {
+		event->acceptProposedAction();
+		return;
+	}
+	QGraphicsView::dragEnterEvent(event);
+}
+
+void MountingView::dragMoveEvent(QDragMoveEvent *event)
+{
+	if (event->mimeData()->hasFormat(unmountedElementMimeType())) {
+		event->acceptProposedAction();
+		return;
+	}
+	QGraphicsView::dragMoveEvent(event);
+}
+
+/**
+	@brief MountingView::dropEvent
+	Said, not done: what mounting an element means - its part, its box, the
+	undo - is the window's to decide.
+*/
+void MountingView::dropEvent(QDropEvent *event)
+{
+	if (!event->mimeData()->hasFormat(unmountedElementMimeType())) {
+		QGraphicsView::dropEvent(event);
+		return;
+	}
+	event->acceptProposedAction();
+	emit elementDropped(QString::fromUtf8(event->mimeData()->data(unmountedElementMimeType())),
+			    mapToScene(event->position().toPoint()));
 }

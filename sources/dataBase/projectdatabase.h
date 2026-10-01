@@ -105,6 +105,22 @@ class projectDataBase : public QObject
 			*/
 		static constexpr int MaxResultRows = 100000;
 		QSqlDatabase database() const {return m_data_base;}
+
+			/// One element of the bill of materials, as a mounting
+			/// layout needs it
+		struct BomElement
+		{
+			QString uuid;      ///< as the element table holds it
+			QString label;
+			QString part_code;
+		};
+		/**
+			@return every element that enters the bill of materials, by
+			the rule of element_nomenclature_view - which publishes no
+			uuid, and so cannot answer which of them is mounted on a
+			plate. In order of label.
+		*/
+		QList<BomElement> bomElements();
 		int excludedConductorCount() const;
 
 		/**
@@ -243,6 +259,8 @@ class projectDataBase : public QObject
 		static QString elementTypeClause(ElementData::Types types,
 						 const QString &column);
 		static QString elementViewBody();
+		static QString elementViewSource();
+		static QString nomenclatureCondition();
 		void createElementNomenclatureView();
 		void createElementLabelView();
 		void createSummaryView();

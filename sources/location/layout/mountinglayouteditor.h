@@ -27,6 +27,8 @@
 #include <QString>
 
 class Catalog;
+class QDockWidget;
+class QListWidget;
 class DrillingTableDialog;
 class Element;
 class MountedItem;
@@ -238,6 +240,21 @@ class MountingLayoutEditor : public QMainWindow
 		*/
 		bool savePartDrawing(const QString &code, const QString &block);
 
+		/**
+			@brief Mount an element of the folios that enters the bill of
+			materials, centred on @a centre_mm of the face shown, as one
+			step of undo.
+			@return the identifier of the item, empty when refused
+
+			With the part code of the element, the box the catalogue has
+			for it, the label of the element and the link back to it -
+			what a drop from the list of what is off the plate does.
+		*/
+		QString mountElement(const QString &element_uuid, const QPointF &centre_mm,
+				     QString *error = nullptr);
+			/// @return the uuids the list of what is off the plate shows
+		QStringList unmountedElements() const;
+
 	signals:
 			/// The person asked to see the symbol of a part, and here
 			/// it is. Emitted rather than done: this window has no idea
@@ -247,6 +264,7 @@ class MountingLayoutEditor : public QMainWindow
 	protected:
 		void closeEvent(QCloseEvent *event) override;
 		void showEvent(QShowEvent *event) override;
+		void changeEvent(QEvent *event) override;
 
 	private slots:
 		void stepApplied();
@@ -317,6 +335,8 @@ class MountingLayoutEditor : public QMainWindow
 		*/
 		void refreshPartAxes();
 		void refreshLayoutDrawings();
+		void buildUnmountedDock();
+		void refreshUnmounted();
 
 		void updateTitle();
 		void updateActions();
@@ -407,6 +427,8 @@ class MountingLayoutEditor : public QMainWindow
 		QAction *m_check_plate = nullptr;
 		QAction *m_go_to_symbol = nullptr;
 		QAction *m_edit_part_drawing = nullptr;
+		QDockWidget *m_unmounted_dock = nullptr;
+		QListWidget *m_unmounted = nullptr;
 		QPointer<Catalog> m_catalog;
 		bool m_fitted_on_show = false;
 		QAction *m_close = nullptr;

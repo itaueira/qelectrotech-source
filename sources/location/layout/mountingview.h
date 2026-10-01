@@ -102,9 +102,21 @@ class MountingView : public QGraphicsView
 			/// @brief Emitted after the zoom changed, in pixels per millimetre
 		void zoomChanged(qreal pixels_per_millimetre);
 
+			/// @brief An element of the folios was dropped on the plate,
+			/// at @a position_mm
+		void elementDropped(const QString &element_uuid, const QPointF &position_mm);
+
+	public:
+			/// @return the type of the drag that carries an element not
+			/// mounted yet, its uuid as UTF-8
+		static QString unmountedElementMimeType();
+
 	protected:
 		void wheelEvent(QWheelEvent *event) override;
 		void mouseMoveEvent(QMouseEvent *event) override;
+		void dragEnterEvent(QDragEnterEvent *event) override;
+		void dragMoveEvent(QDragMoveEvent *event) override;
+		void dropEvent(QDropEvent *event) override;
 
 	private:
 		bool gestures() const;

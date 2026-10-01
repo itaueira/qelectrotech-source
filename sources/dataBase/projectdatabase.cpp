@@ -2008,17 +2008,61 @@ QString projectDataBase::elementViewBody()
 			       "e.sub_type AS element_sub_type,"
 			       "di.title AS title,"
 			       "di.folio AS folio,"
-			       "e.pos AS position"
-			       " FROM element_info ei, diagram_info di, element e, diagram d"
-			       " WHERE ei.element_uuid = e.uuid"
-			       " AND e.diagram_uuid = d.uuid"
-			       " AND di.diagram_uuid = d.uuid");
-
-		//The kinds, stated once for both views - see above.
-	body += elementTypeClause(publishedElementTypes(),
-				  QStringLiteral("e.type"));
-
+			       "e.pos AS position");
+	body += elementViewSource();
 	return body;
+}
+
+/**
+	@brief projectDataBase::elementViewSource
+	@return the tables and the join behind both element views, and the
+	kinds they keep: everything of the body but the columns, so that a query
+	asking for other columns asks it of the same rows.
+*/
+QString projectDataBase::elementViewSource()
+{
+	return QStringLiteral(" FROM element_info ei, diagram_info di, element e, diagram d"
+			      " WHERE ei.element_uuid = e.uuid"
+			      " AND e.diagram_uuid = d.uuid"
+			      " AND di.diagram_uuid = d.uuid")
+			//The kinds, stated once for both views - see above.
+		+ elementTypeClause(publishedElementTypes(), QStringLiteral("e.type"));
+}
+
+/**
+	@brief projectDataBase::nomenclatureCondition
+	@return what the bill of materials drops from the element rows: what the
+	user kept out of it, and what names nothing. Written once, for the view
+	and for bomElements(), which asks the same question of the same rows.
+*/
+QString projectDataBase::nomenclatureCondition()
+{
+	return QStringLiteral(" AND (ei.exclude_from_bom IS NOT 'true')")
+		+ QStringLiteral(" AND ")
+		+ QETBom::informationPresentCondition(QStringLiteral("ei."),
+						      QETInformation::elementInfoKeys());
+}
+
+QList<projectDataBase::BomElement> projectDataBase::bomElements()
+{
+	QList<BomElement> elements;
+	QSqlQuery query(m_data_base);
+	if (!query.exec(QStringLiteral("SELECT e.uuid, ei.label, ei.part_code")
+			+ elementViewSource() + nomenclatureCondition()
+			+ QStringLiteral(" ORDER BY ei.label")))
+	{
+		qDebug() << query.lastError();
+		return elements;
+	}
+	while (query.next())
+	{
+		BomElement element;
+		element.uuid      = query.value(0).toString();
+		element.label     = query.value(1).toString();
+		element.part_code = query.value(2).toString();
+		elements << element;
+	}
+	return elements;
 }
 
 /**
@@ -2080,11 +2124,7 @@ void projectDataBase::createElementNomenclatureView()
 {
 	const QString create_view = QStringLiteral("CREATE VIEW element_nomenclature_view AS ")
 				+ elementViewBody()
-				+ QStringLiteral(" AND (ei.exclude_from_bom IS NOT 'true')")
-				+ QStringLiteral(" AND ")
-				+ QETBom::informationPresentCondition(
-					QStringLiteral("ei."),
-					QETInformation::elementInfoKeys());
+				+ nomenclatureCondition();
 
 	QSqlQuery query(m_data_base);
 	if (!query.exec(create_view)) {
