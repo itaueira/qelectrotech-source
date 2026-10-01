@@ -1457,10 +1457,23 @@ QString MountingLayoutEditor::mountElement(const QString &element_uuid, const QP
 	}
 	item.element = wanted;
 		//Centred where it was dropped: the pointer is on the part, not on
-		//its corner
-	const qreal width  = item.hasDeclaredSize() ? item.size.width()  : MountedPartItem::unmeasuredMarkerSide();
-	const qreal height = item.hasDeclaredSize() ? item.size.height() : MountedPartItem::unmeasuredMarkerSide();
-	item.position = centre_mm - QPointF(width / 2.0, height / 2.0);
+		//its corner - on what the plate will show of it. The box of the
+		//catalogue when there is one; for a part nobody measured, its
+		//drawing, which is what is drawn then; and the marker only when
+		//there is neither. Seen on the screen on 2026-10-01: centred by the
+		//marker, a part with a drawing landed 12 by 35 mm off the pointer.
+	QSizeF shown = item.hasDeclaredSize() ? item.size : QSizeF();
+	if (shown.isEmpty())
+	{
+		QString block = m_project->mountingLayout().partDrawing(found.part_code);
+		if (block.isEmpty() && catalog() && !found.part_code.isEmpty()) {
+			block = catalog()->partByCode(found.part_code).layout_drawing;
+		}
+		const auto drawing = ElementPictureFactory::layoutDrawingOf(block);
+		const qreal side = MountedPartItem::unmeasuredMarkerSide();
+		shown = drawing.isNull() ? QSizeF(side, side) : drawing.bounds.size();
+	}
+	item.position = centre_mm - QPointF(shown.width() / 2.0, shown.height() / 2.0);
 	return mountOnShownSurface(item, error);
 }
 

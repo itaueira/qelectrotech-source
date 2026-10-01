@@ -241,6 +241,8 @@ namespace
 			+ elementXml(3, 400, information(QStringLiteral("label"), QStringLiteral("X1")))
 			+ elementXml(4, 550, information(QStringLiteral("label"), QStringLiteral("Y1"))
 					     + information(QStringLiteral("exclude_from_bom"), QStringLiteral("true")))
+			+ elementXml(5, 700, information(QStringLiteral("label"), QStringLiteral("Z1"))
+					     + information(QStringLiteral("part_code"), QStringLiteral("DRAWN-ONLY")))
 			+ QStringLiteral("</elements><inputs/><conductors/></diagram></project>");
 	}
 
@@ -287,7 +289,7 @@ TEST_CASE("CU-19.15 — off the plate lists what enters the bill of materials an
 		//The rule of the bill of materials: the element kept out of it is not
 		//there, the other three are
 	const QList<projectDataBase::BomElement> elements = scratch->dataBase()->bomElements();
-	REQUIRE(elements.size() == 3);
+	REQUIRE(elements.size() == 4);
 	CHECK(elements.at(0).label == QStringLiteral("K1"));
 	CHECK(elements.at(0).part_code == QStringLiteral("LC1D09"));
 
@@ -295,10 +297,10 @@ TEST_CASE("CU-19.15 — off the plate lists what enters the bill of materials an
 	MountingLayoutEditor editor(scratch.project());
 		//The breaker is on the plate, the excluded one is not in the list:
 		//the contactor and the terminal are what is left to mount
-	CHECK(editor.unmountedElements() == QStringList({elementUuid(2), elementUuid(3)}));
+	CHECK(editor.unmountedElements() == QStringList({elementUuid(2), elementUuid(3), elementUuid(5)}));
 	auto *dock = editor.findChild<QDockWidget *>(QStringLiteral("unmounted_dock"));
 	REQUIRE(dock);
-	CHECK(dock->windowTitle().contains(QStringLiteral("2")));
+	CHECK(dock->windowTitle().contains(QStringLiteral("3")));
 }
 
 TEST_CASE("T19 — mounting from off the plate: part code, box of the catalogue, label, link, one undo",
@@ -340,6 +342,22 @@ TEST_CASE("T19 — mounting from off the plate: part code, box of the catalogue,
 	editor.scene()->undoStack().undo();
 	CHECK(scratch->mountingLayout().itemOfElement(elementUuid(2)).isEmpty());
 	CHECK(editor.unmountedElements().contains(elementUuid(2)));
+
+		//A part nobody measured that has a drawing is drawn as its drawing,
+		//and that is what lands centred where it was dropped
+	CatalogPart drawn_only(QStringLiteral("DRAWN-ONLY"), catalog.classByKey(QStringLiteral("contactor")).id);
+	drawn_only.layout_drawing = QStringLiteral(
+		"<layout_drawing><rect x='0' y='0' width='30' height='60' rx='0' ry='0'"
+		" style='line-style:normal;line-weight:normal;filling:none;color:black'/></layout_drawing>");
+	REQUIRE(catalog.savePart(drawn_only, &error));
+	const QString z1 = editor.mountElement(elementUuid(5), QPointF(300, 150), &error);
+	REQUIRE_FALSE(z1.isEmpty());
+	MountedPartItem *on_plate = editor.scene()->partItem(z1);
+	REQUIRE(on_plate);
+	REQUIRE(on_plate->hasLayoutDrawing());
+	const QPointF centre = on_plate->mapRectToScene(on_plate->layoutDrawingRect()).center();
+	CHECK(centre.x() == Approx(300));
+	CHECK(centre.y() == Approx(150));
 }
 
 TEST_CASE("T19 — a row of off the plate dropped on the plate is mounted where it fell",
