@@ -17,6 +17,7 @@
 */
 #include "../qt_catch_tostring.h"
 #include "../../../../sources/ElementsCollection/elementslocation.h"
+#include "../../../../sources/editor/editorcommands.h"
 #include "../../../../sources/editor/elementscene.h"
 #include "../../../../sources/editor/graphicspart/partimage.h"
 #include "../../../../sources/editor/graphicspart/partline.h"
@@ -844,4 +845,31 @@ TEST_CASE("T44 — an image this program cannot draw is kept as it came",
 			.appendChild(definition.importNode(element, true));
 	const auto drawing = ElementPictureFactory::layoutDrawing(definition.documentElement());
 	CHECK(drawing.parts == 0);
+}
+
+TEST_CASE("T44 — rotating, flipping or mirroring leaves an image as it is drawn",
+	  "[t44][layoutdrawing]")
+{
+		//Found on the screen on 2026-10-01: Space turned the image by its
+		//transform, sideways, with the fields still saying the old width
+		//and height, and nothing of the turn in the file
+	QETElementEditor editor;
+	editor.setLayoutDrawingActive(true);
+	PartImage *image = editor.addLayoutImage(rasterFile("PNG", QSize(40, 80), Qt::red),
+						 QStringLiteral("png"), QSizeF(45, 88));
+	REQUIRE(image);
+	const QRectF drawn = image->sceneGeometricRect();
+	ElementScene *scene = editor.layoutDrawingScene();
+	REQUIRE(scene->selectedItems() == QList<QGraphicsItem *>{image});
+
+	scene->undoStack().push(new RotateElementsCommand(scene));
+	CHECK(image->QGraphicsItem::rotation() == 0.0);
+	CHECK(image->sceneGeometricRect() == drawn);
+	scene->undoStack().undo();
+	CHECK(image->QGraphicsItem::rotation() == 0.0);
+	CHECK(image->sceneGeometricRect() == drawn);
+
+	scene->undoStack().push(new FlipElementsCommand(scene));
+	scene->undoStack().push(new MirrorElementsCommand(scene));
+	CHECK(image->sceneGeometricRect() == drawn);
 }

@@ -287,6 +287,22 @@ void PartImage::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 }
 
 /**
+	@brief PartImage::itemChange
+	The turn the rotate command gives a part it does not know is refused:
+	the image stays as it is drawn, which is what its file says. Measured
+	on the screen on 2026-10-01: turned, it showed sideways while its
+	fields kept the old width and height, and a save would have put it
+	back upright at another place.
+*/
+QVariant PartImage::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+	if (change == ItemRotationChange) {
+		return QVariant(QGraphicsItem::rotation());
+	}
+	return PartRectangle::itemChange(change, value);
+}
+
+/**
 	@brief PartImage::decode
 	The one place that knows how a format is read, so that the editor and
 	the plate draw the same file the same way.

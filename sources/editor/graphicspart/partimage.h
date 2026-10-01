@@ -43,9 +43,11 @@ class QSvgRenderer;
 	As far as editing goes it is a rectangle - its handles, its undo, its
 	scaling inside a selection of several parts - painting the file where
 	the rectangle draws its outline. It has no style and no rounded corner,
-	and it does not turn: the commands that rotate, flip and mirror pick
-	the parts they know by type, and leave this one where it is rather
-	than stretch it across.
+	and it does not turn. Flipping and mirroring pick the parts they know
+	by type and pass this one by; rotating turns a part it does not know
+	by its transform, which toXml() does not write, and the image would
+	come back from a save upright and somewhere else - so it refuses the
+	turn itself, in itemChange().
 */
 class PartImage : public PartRectangle
 {
@@ -108,6 +110,7 @@ class PartImage : public PartRectangle
 
 	protected:
 		void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+		QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 	private:
 		static bool decode(const QByteArray &data, const QString &format,
