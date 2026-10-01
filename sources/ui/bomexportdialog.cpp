@@ -65,7 +65,11 @@ BOMExportDialog::BOMExportDialog(QETProject *project, QWidget *parent) :
 
 	m_query_widget = new ElementQueryWidget(this);
 	ui->m_main_layout->insertWidget(0, m_query_widget);
-		//By default format as bom is clicked
+		//By default format as bom is clicked. The box says so too: the
+		//upstream form of 2026-09 has it born unticked, and the merge kept
+		//this call, which groups as if it were ticked - the list and the box
+		//disagreed. The grouping by part is what the lists here are built on.
+	ui->m_format_as_bom->setChecked(true);
 	on_m_format_as_bom_clicked(true);
 }
 

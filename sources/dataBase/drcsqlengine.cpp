@@ -401,14 +401,19 @@ DrcSqlReport DrcSqlEngine::run(QETProject *project,
 			//on it: on a statement that failed to prepare, a second
 			//execution throws away the reason the data base gave and
 			//leaves "Unable to fetch row" in its place.
-		QSqlQuery query = data_base->newQuery(statement);
+		QString refused;
+		QSqlQuery query = data_base->newQuery(statement, &refused);
 		report.countQuerySent();
 
 		if (!query.isActive())
 		{
-			result.setFailed(
-				queryFailedMessage(
-					query.lastError().text().trimmed()));
+				//The reason comes back through newQuery() since the
+				//upstream sync of 2026-09-28, and lastError() of the empty
+				//query it returns is empty
+			const QString reason = refused.trimmed().isEmpty()
+					? query.lastError().text().trimmed()
+					: refused.trimmed();
+			result.setFailed(queryFailedMessage(reason));
 			report.append(result);
 			continue;
 		}

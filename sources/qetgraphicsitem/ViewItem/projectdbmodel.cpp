@@ -817,10 +817,15 @@ void ProjectDBModel::fillValue()
 		//read "No query Unable to fetch row" instead of the "no such
 		//column" the data base had answered. Measured, not supposed :
 		//it is what the test of this behaviour reported first.
-	auto query_ = m_project->dataBase()->newQuery(m_query);
+	QString refused_;
+	auto query_ = m_project->dataBase()->newQuery(m_query, &refused_);
 	if (!query_.isActive())
 	{
-		const auto error_ = query_.lastError().text().trimmed();
+			//The reason comes back through newQuery() since the upstream
+			//sync of 2026-09-28; lastError() of what it returns is empty
+		const auto error_ = refused_.trimmed().isEmpty()
+				? query_.lastError().text().trimmed()
+				: refused_.trimmed();
 		setLastError(error_.isEmpty()
 			     ? tr("La liste n'a pas pu être établie.")
 			     : tr("La liste n'a pas pu être établie : %1").arg(error_));
