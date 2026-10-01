@@ -933,7 +933,11 @@ if(TARGET qet_core)
         # elementos carregados -- e que o borne vinculado continua borne,
         # levando o potencial de um fio ao outro, o que so existe com
         # condutores de verdade ligados a ele.
-        src/ui/striplink_test.cpp)
+        src/ui/striplink_test.cpp
+        # O desenho 2D da peca no arquivo do simbolo. Precisa do editor de
+        # simbolos de verdade: as partes chegam a cena pelo editor, sem
+        # conferir nulo, e e a gravacao dele que perderia o bloco.
+        src/ui/layoutdrawing_test.cpp)
 
     target_link_libraries(
         C_uitests

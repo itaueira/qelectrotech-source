@@ -20,6 +20,7 @@
 #include "../ElementsCollection/elementslocation.h"
 #include "../editor/graphicspart/partline.h"
 #include "../properties/elementdata.h"
+#include "../qet.h"
 #include "../qetapp.h"
 #include "../qetversion.h"
 #include "../utils/qetutils.h"
@@ -28,7 +29,9 @@
 #include <QDomElement>
 #include <QGraphicsSimpleTextItem>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPicture>
+#include <QPolygonF>
 #include <QRegularExpression>
 #include <QTextDocument>
 #include <iostream>
@@ -337,6 +340,96 @@ void ElementPictureFactory::parseElement(const QDomElement &dom, QPainter &paint
 	else if (dom.tagName() == "arc")     (parseArc    (dom, painter, prim));
 	else if (dom.tagName() == "polygon") (parsePolygon(dom, painter, prim));
 	else if (dom.tagName() == "text")    (parseText   (dom, painter, prim));
+}
+
+QString ElementPictureFactory::layoutDrawingTagName()
+{
+	return QStringLiteral("layout_drawing");
+}
+
+bool ElementPictureFactory::isLayoutDrawingPart(const QString &tag_name)
+{
+		//The shapes parseElement() draws, and nothing else
+	static const QStringList shapes {
+		QStringLiteral("line"),    QStringLiteral("rect"),
+		QStringLiteral("ellipse"), QStringLiteral("circle"),
+		QStringLiteral("arc"),     QStringLiteral("polygon"),
+		QStringLiteral("text")};
+	return shapes.contains(tag_name);
+}
+
+namespace {
+	/**
+		The geometry of what was parsed, in the unit it was written in.
+		QPicture::boundingRect() would answer too, but in whole units:
+		on a plate the unit is the millimetre, and a part 22.5 mm wide
+		read as 22 or 23 is off by the very margin the plate uses to say
+		that a drawing and its catalogue box disagree.
+	*/
+	QRectF boundsOf(const ElementPictureFactory::primitives &prim)
+	{
+		QRectF bounds;
+		auto unite = [&bounds](const QRectF &r) {
+			bounds = bounds.isNull() ? r : bounds.united(r);
+		};
+		for (const QLineF &line : prim.m_lines)
+			unite(QRectF(line.p1(), line.p2()).normalized());
+		for (const QRectF &rect : prim.m_rectangles)
+			unite(rect.normalized());
+		for (const QRectF &circle : prim.m_circles)
+			unite(circle.normalized());
+		for (const QVector<QPointF> &points : prim.m_polygons)
+			unite(QPolygonF(points).boundingRect());
+		for (const QVector<qreal> &arc : prim.m_arcs)
+		{
+			if (arc.size() < 6) continue;
+				//x, y, width, height, start and span, in degrees, as
+				//parseArc() and parseEllipse() store them
+			const QRectF rect(arc.at(0), arc.at(1), arc.at(2), arc.at(3));
+			QPainterPath path;
+			path.arcMoveTo(rect, arc.at(4));
+			path.arcTo(rect, arc.at(4), arc.at(5));
+			unite(path.boundingRect());
+		}
+		for (const QGraphicsSimpleTextItem *text : prim.m_texts)
+			unite(text->sceneBoundingRect());
+		return bounds;
+	}
+}
+
+ElementPictureFactory::LayoutDrawing ElementPictureFactory::layoutDrawing(const QDomElement &definition)
+{
+	LayoutDrawing drawing;
+	const QDomElement block = definition.firstChildElement(layoutDrawingTagName());
+	if (block.isNull()) {
+		return drawing;
+	}
+
+	primitives prim;
+	QPainter painter(&drawing.picture);
+	painter.setRenderHint(QPainter::Antialiasing,     true);
+	painter.setRenderHint(QPainter::TextAntialiasing, true);
+	for (QDomElement shape = block.firstChildElement() ;
+		 !shape.isNull() ;
+		 shape = shape.nextSiblingElement())
+	{
+		if (!isLayoutDrawingPart(shape.tagName())
+			|| QET::hasNonFiniteGeometry(shape)) {
+			continue;
+		}
+		instance()->parseElement(shape, painter, prim);
+	}
+	painter.end();
+
+		//Counted from what the parsers kept, and not from the tags seen:
+		//a shape missing an attribute is skipped by its parser, draws
+		//nothing, and must not make an empty drawing look like a drawing.
+	drawing.parts = int(prim.m_lines.size() + prim.m_rectangles.size()
+					   + prim.m_circles.size() + prim.m_polygons.size()
+					   + prim.m_arcs.size() + prim.m_texts.size());
+	drawing.bounds = boundsOf(prim);
+	qDeleteAll(prim.m_texts);
+	return drawing;
 }
 
 void ElementPictureFactory::parseLine(const QDomElement &dom, QPainter &painter, primitives &prim) const

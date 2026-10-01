@@ -94,6 +94,7 @@ class ElementScene : public QGraphicsScene
 		bool m_hotspot_visible = true;
 		bool m_background_frame_visible = false;
 		QSizeF m_background_frame_size;
+		QDomDocument m_layout_drawing;
 	
 		// methods
 	public:
@@ -149,6 +150,13 @@ class ElementScene : public QGraphicsScene
 		void setBackgroundFrameVisible(bool visible);
 		QSizeF backgroundFrameSize() const {return m_background_frame_size;}
 		void setBackgroundFrameSize(const QSizeF &size);
+
+			/// The layout_drawing block of the element, kept and written
+			/// back by this scene, which does not draw it. toXml() builds
+			/// its document from nothing: without this, the first save of
+			/// a symbol would drop a 2D drawing nobody had opened.
+		QDomElement layoutDrawingXml() const;
+		void setLayoutDrawingXml(const QDomElement &block);
 	
 	protected:
 		void mouseMoveEvent         (QGraphicsSceneMouseEvent *) override;

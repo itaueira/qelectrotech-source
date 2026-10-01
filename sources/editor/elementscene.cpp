@@ -19,6 +19,7 @@
 
 #include "../ElementsCollection/terminaluuids.h"
 #include "../borderproperties.h"
+#include "../factory/elementpicturefactory.h"
 #include "../NameList/ui/namelistdialog.h"
 #include "../NameList/ui/namelistwidget.h"
 #include "../QPropertyUndoCommand/qpropertyundocommand.h"
@@ -116,6 +117,29 @@ void ElementScene::setBackgroundFrameSize(const QSizeF &size)
 	settings.setValue(QStringLiteral("elementeditor/background_frame_width"), size.width());
 	settings.setValue(QStringLiteral("elementeditor/background_frame_height"), size.height());
 	update();
+}
+
+/**
+	@brief ElementScene::layoutDrawingXml
+	@return the layout_drawing block this scene will write back, null
+	when the element has none
+*/
+QDomElement ElementScene::layoutDrawingXml() const
+{
+	return m_layout_drawing.documentElement();
+}
+
+/**
+	@brief ElementScene::setLayoutDrawingXml
+	@param block : the layout_drawing block to write back on the next
+	toXml(), copied; a null element means the element has none
+*/
+void ElementScene::setLayoutDrawingXml(const QDomElement &block)
+{
+	m_layout_drawing = QDomDocument();
+	if (!block.isNull()) {
+		m_layout_drawing.appendChild(m_layout_drawing.importNode(block, true));
+	}
 }
 
 /**
@@ -567,6 +591,15 @@ const QDomDocument ElementScene::toXml(bool all_parts)
 	}
 	root.appendChild(description);
 
+		//The 2D drawing of the part, beside the description. Written back
+		//as it was read, because this document starts from nothing and
+		//would otherwise drop it. A selection export is what a paste
+		//carries, and pasting shapes of one symbol into another must not
+		//bring the whole drawing along.
+	if (all_parts && !m_layout_drawing.documentElement().isNull()) {
+		root.appendChild(xml_document.importNode(m_layout_drawing.documentElement(), true));
+	}
+
 	xml_document.appendChild(root);
 	return(xml_document);
 }
@@ -637,6 +670,8 @@ void ElementScene::fromXml(
 		if (root.tagName() == "definition" &&
 			root.attribute("type") == "element") {
 			m_element_data.fromXml(root);
+			setLayoutDrawingXml(root.firstChildElement(
+									ElementPictureFactory::layoutDrawingTagName()));
 		}
 	}
 
@@ -1207,6 +1242,7 @@ void ElementScene::reset()
 
 	delete m_decorator;
 	m_decorator = nullptr;
+	setLayoutDrawingXml(QDomElement());
 }
 
 /**

@@ -21,6 +21,9 @@
 #include <QMutex>
 #include <QSharedPointer>
 #include <QHash>
+#include <QPicture>
+#include <QRectF>
+#include <QString>
 
 class ElementsLocation;
 class QPicture;
@@ -46,6 +49,42 @@ class ElementPictureFactory
 			QList<QVector<qreal>> m_arcs;
 			QList<QGraphicsSimpleTextItem*> m_texts;
 		};
+
+		/**
+			@brief The drawing of a part as it sits on a mounting plate.
+
+			Read from the layout_drawing block of an element definition, a
+			sibling of description that holds the same kinds of shape, in
+			which one unit is one millimetre - the unit of the mounting
+			scene. The two never meet: the folio draws description and
+			ignores this block, and this reads the block and never the
+			symbol.
+		*/
+		struct LayoutDrawing
+		{
+			QPicture picture;
+			QRectF bounds; ///< the geometry of the shapes, in millimetre
+			int parts = 0; ///< shapes drawn; 0 means there is no drawing
+			bool isNull() const { return parts == 0; }
+		};
+
+		/// @return the tag of the block, beside description
+		static QString layoutDrawingTagName();
+
+		/**
+			@return whether @a tag_name is a shape the block may hold.
+			Shapes only: a terminal, a dynamic text or a PLC table means
+			nothing on a plate, and a terminal in there would be counted by
+			every reader that walks the whole definition by tag name.
+		*/
+		static bool isLayoutDrawingPart(const QString &tag_name);
+
+		/**
+			@return the drawing of the layout_drawing block of
+			@a definition, null when the block is absent or holds no shape
+			this would draw. Needs no scene and no editor.
+		*/
+		static LayoutDrawing layoutDrawing(const QDomElement &definition);
 		
 		
 		/**
