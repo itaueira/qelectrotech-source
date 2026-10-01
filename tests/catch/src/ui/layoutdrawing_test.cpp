@@ -18,22 +18,29 @@
 #include "../qt_catch_tostring.h"
 #include "../../../../sources/ElementsCollection/elementslocation.h"
 #include "../../../../sources/editor/elementscene.h"
+#include "../../../../sources/editor/graphicspart/partimage.h"
 #include "../../../../sources/editor/graphicspart/partline.h"
 #include "../../../../sources/editor/graphicspart/partrectangle.h"
 #include "../../../../sources/editor/graphicspart/partterminal.h"
 #include "../../../../sources/editor/ui/rectangleeditor.h"
+#include "../../../../sources/editor/ui/imageeditor.h"
 #include "../../../../sources/editor/ui/qetelementeditor.h"
 #include "../../../../sources/factory/elementpicturefactory.h"
 #include <catch2/catch.hpp>
 #include <QAction>
 #include <QApplication>
+#include <QBuffer>
+#include <QCheckBox>
+#include <QDialog>
 #include <QDomDocument>
 #include <QDoubleSpinBox>
 #include <QFile>
 #include <QGraphicsSceneMouseEvent>
+#include <QImage>
 #include <QString>
 #include <QTemporaryDir>
 #include <QTextStream>
+#include <QTimer>
 
 /*
 	The layout_drawing block of an element definition: the drawing of the
@@ -563,4 +570,278 @@ TEST_CASE("CU-44.15 — the fields of the 2D tab say mm",
 	for (QDoubleSpinBox *field : on_symbol) {
 		CHECK(field->suffix().isEmpty());
 	}
+}
+
+/*
+	The image of the 2D tab: the photo or the datasheet drawing of the part,
+	inside the symbol, at the size the person says the part has.
+*/
+
+namespace {
+	/// A raster file of @a size pixels, all of @a colour, written at
+	/// @a per_metre dots a metre so that its size in millimetre is known
+	QByteArray rasterFile(const char *format, const QSize &size, const QColor &colour,
+			      int per_metre = 10000)
+	{
+		QImage image(size, QImage::Format_RGB32);
+		image.fill(colour);
+		image.setDotsPerMeterX(per_metre);
+		image.setDotsPerMeterY(per_metre);
+		QByteArray bytes;
+		QBuffer buffer(&bytes);
+		buffer.open(QIODevice::WriteOnly);
+		image.save(&buffer, format);
+		return bytes;
+	}
+
+	/// An SVG drawn in millimetre: a red box of 45 by 90
+	QByteArray svgFile()
+	{
+		return QByteArrayLiteral(
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"45mm\" height=\"90mm\""
+			" viewBox=\"0 0 45 90\">"
+			"<rect x=\"0\" y=\"0\" width=\"45\" height=\"90\" fill=\"#ff0000\"/></svg>");
+	}
+
+	QString writeBytes(const QTemporaryDir &dir, const QString &name, const QByteArray &bytes)
+	{
+		const QString path = dir.filePath(name);
+		QFile file(path);
+		REQUIRE(file.open(QIODevice::WriteOnly));
+		file.write(bytes);
+		return path;
+	}
+
+	QDomElement imageElement(QDomDocument &doc, const QByteArray &bytes, const QString &format,
+				 const QRectF &rect)
+	{
+		QDomElement image = doc.createElement(QStringLiteral("image"));
+		image.setAttribute(QStringLiteral("x"), rect.x());
+		image.setAttribute(QStringLiteral("y"), rect.y());
+		image.setAttribute(QStringLiteral("width"), rect.width());
+		image.setAttribute(QStringLiteral("height"), rect.height());
+		image.setAttribute(QStringLiteral("format"), format);
+		image.appendChild(doc.createTextNode(QString::fromLatin1(bytes.toBase64())));
+		return image;
+	}
+
+	const QString insert_image = QStringLiteral("Insérer une image");
+}
+
+TEST_CASE("T44 — an image file says its size, from its resolution or its units",
+	  "[t44][layoutdrawing]")
+{
+		//400 by 800 pixels at 10 000 a metre are 40 by 80 mm
+	const QSizeF png = PartImage::fileSizeMm(rasterFile("PNG", QSize(400, 800), Qt::red), QStringLiteral("png"));
+	CHECK(png.width()  == Approx(40.0));
+	CHECK(png.height() == Approx(80.0));
+	const QSizeF jpg = PartImage::fileSizeMm(rasterFile("JPG", QSize(400, 800), Qt::red), QStringLiteral("jpg"));
+	CHECK(jpg.width()  == Approx(40.0).margin(0.1));
+	CHECK(jpg.height() == Approx(80.0).margin(0.1));
+		//And an SVG written in millimetre comes back at its size
+	const QSizeF svg = PartImage::fileSizeMm(svgFile(), QStringLiteral("svg"));
+	CHECK(svg.width()  == Approx(45.0).margin(0.05));
+	CHECK(svg.height() == Approx(90.0).margin(0.05));
+
+		//Bytes that are no such file, or a format that is not kept, are nothing
+	CHECK(PartImage::fileSizeMm(QByteArrayLiteral("not an image"), QStringLiteral("png")).isEmpty());
+	CHECK(PartImage::fileSizeMm(rasterFile("PNG", QSize(4, 4), Qt::red), QStringLiteral("bmp")).isEmpty());
+
+	CHECK(PartImage::formatOfFile(QStringLiteral("/a/datasheet.PNG")) == QStringLiteral("png"));
+	CHECK(PartImage::formatOfFile(QStringLiteral("photo.jpeg")) == QStringLiteral("jpg"));
+	CHECK(PartImage::formatOfFile(QStringLiteral("drawing.svg")) == QStringLiteral("svg"));
+	CHECK(PartImage::formatOfFile(QStringLiteral("scan.bmp")).isEmpty());
+}
+
+TEST_CASE("CU-44.12 — inserting an image asks the real size of the part",
+	  "[t44][layoutdrawing]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString png = writeBytes(dir, QStringLiteral("datasheet.png"),
+				       rasterFile("PNG", QSize(400, 800), Qt::red));
+
+	QETElementEditor editor;
+	editor.elementScene()->fromXml(symbol(QString()));
+	QAction *insert = editorAction(editor, insert_image);
+		//On the symbol there is nothing to insert an image into
+	CHECK_FALSE(insert->isEnabled());
+	CHECK_FALSE(editor.insertImageFile(png));
+	CHECK(partsOf<PartImage>(editor.elementScene()).isEmpty());
+
+	editor.setLayoutDrawingActive(true);
+	CHECK(insert->isEnabled());
+
+		//The question answered the way a person answers it: the width typed
+		//in, the height following it in proportion, then the proportion let
+		//go and the height typed in apart
+	double asked_width = 0.0, asked_height = 0.0, followed_height = 0.0;
+	bool answered = false;
+	QTimer answer;
+	answer.setInterval(20);
+	int tries = 200;
+	QObject::connect(&answer, &QTimer::timeout, [&]() {
+		auto *dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget());
+		if (!dialog || dialog->objectName() != QStringLiteral("image_size_dialog")) {
+			if (--tries <= 0) {
+				answer.stop();
+			}
+			return;
+		}
+		answer.stop();
+		auto *width  = dialog->findChild<QDoubleSpinBox *>(QStringLiteral("image_width"));
+		auto *height = dialog->findChild<QDoubleSpinBox *>(QStringLiteral("image_height"));
+		auto *keep   = dialog->findChild<QCheckBox *>(QStringLiteral("image_keep_proportion"));
+		if (!width || !height || !keep) {
+			dialog->reject();
+			return;
+		}
+		asked_width  = width->value();
+		asked_height = height->value();
+		width->setValue(22.5);
+		followed_height = height->value();
+		keep->setChecked(false);
+		height->setValue(90.0);
+		answered = true;
+		dialog->accept();
+	});
+	answer.start();
+	REQUIRE(editor.insertImageFile(png));
+	REQUIRE(answered);
+		//It started at the size the file says, in its proportion
+	CHECK(asked_width  == Approx(40.0));
+	CHECK(asked_height == Approx(80.0));
+	CHECK(followed_height == Approx(45.0));
+
+	const auto images = partsOf<PartImage>(editor.layoutDrawingScene());
+	REQUIRE(images.size() == 1);
+	CHECK(images.first()->sceneGeometricRect() == QRectF(-11.25, -45, 22.5, 90));
+	CHECK(images.first()->isSelected());
+	CHECK_FALSE(images.first()->isNull());
+		//Grabbed anywhere on it, where a rectangle is grabbed by its outline
+	CHECK(images.first()->shape().contains(images.first()->rect().center()));
+
+		//One step of undo takes it out again
+	editor.layoutDrawingScene()->undoStack().undo();
+	CHECK(partsOf<PartImage>(editor.layoutDrawingScene()).isEmpty());
+
+		//And back on the symbol the action is off again: off at first is
+		//only how it is made, off after the 2D tab is the rule
+	editor.setLayoutDrawingActive(false);
+	CHECK_FALSE(insert->isEnabled());
+}
+
+TEST_CASE("CU-44.13 — the image is scaled freely, and travels inside the symbol",
+	  "[t44][layoutdrawing]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = writeSymbol(dir, QStringLiteral("piece.elmt"),
+					 symbol(QString(), QStringLiteral("{0b3c2c8e-0c4f-4a43-9a52-1d1f5f2b7a13}")));
+	const QByteArray png = rasterFile("PNG", QSize(40, 80), Qt::red);
+
+	{
+		QETElementEditor editor;
+		editor.fromFile(path);
+		editor.setLayoutDrawingActive(true);
+		PartImage *image = editor.addLayoutImage(png, QStringLiteral("png"), QSizeF(22.5, 90));
+		REQUIRE(image);
+
+			//The fields of the part, shown because the image is selected
+		ImageEditor *fields = nullptr;
+		for (ImageEditor *shown : editor.findChildren<ImageEditor *>()) {
+			fields = shown;
+		}
+		REQUIRE(fields);
+		auto *width  = fields->findChild<QDoubleSpinBox *>(QStringLiteral("m_width_sb"));
+		auto *height = fields->findChild<QDoubleSpinBox *>(QStringLiteral("m_height_sb"));
+		REQUIRE(width);
+		REQUIRE(height);
+		CHECK(width->suffix() == QStringLiteral(" mm"));
+
+			//25 by 85: not the proportion of the file, and kept as asked
+		width->setValue(25.0);
+		emit width->editingFinished();
+		height->setValue(85.0);
+		emit height->editingFinished();
+		CHECK(image->rect().size() == QSizeF(25, 85));
+		REQUIRE(editor.toFile(path));
+	}
+
+		//The file holds the image itself, and the description the folio
+		//draws holds nothing of it
+	const QDomDocument saved = readFile(path);
+	const QDomElement written = layoutBlock(saved).firstChildElement(QStringLiteral("image"));
+	REQUIRE_FALSE(written.isNull());
+	CHECK(written.attribute(QStringLiteral("format")) == QStringLiteral("png"));
+	CHECK(written.attribute(QStringLiteral("width"))  == QStringLiteral("25"));
+	CHECK(written.attribute(QStringLiteral("height")) == QStringLiteral("85"));
+	CHECK(QByteArray::fromBase64(written.text().toLatin1()) == png);
+	CHECK(saved.documentElement().firstChildElement(QStringLiteral("description"))
+	      .elementsByTagName(QStringLiteral("image")).isEmpty());
+
+		//Opened again with no file of it anywhere on the disk
+	QETElementEditor reopened;
+	reopened.fromFile(path);
+	const auto images = partsOf<PartImage>(reopened.layoutDrawingScene());
+	REQUIRE(images.size() == 1);
+	CHECK(images.first()->rect().size() == QSizeF(25, 85));
+	CHECK_FALSE(images.first()->isNull());
+	CHECK(images.first()->fileData() == png);
+	CHECK(partsOf<PartImage>(reopened.elementScene()).isEmpty());
+}
+
+TEST_CASE("T44 — an image pasted on the symbol is refused, and kept on the 2D tab",
+	  "[t44][layoutdrawing]")
+{
+	QETElementEditor editor;
+	ElementScene *symbol_scene = editor.elementScene();
+	symbol_scene->fromXml(symbol(QString()));
+
+		//What the clipboard holds after copying an image of the 2D tab
+	QDomDocument pasted = symbol(QString());
+	pasted.documentElement().firstChildElement(QStringLiteral("description")).appendChild(
+				imageElement(pasted, rasterFile("PNG", QSize(10, 10), Qt::red),
+					     QStringLiteral("png"), QRectF(0, 0, 10, 10)));
+
+	symbol_scene->fromXml(pasted, QPointF(5, 5), false);
+	CHECK(partsOf<PartImage>(symbol_scene).isEmpty());
+
+	editor.setLayoutDrawingActive(true);
+	editor.elementScene()->fromXml(pasted, QPointF(5, 5), false);
+	CHECK(partsOf<PartImage>(editor.layoutDrawingScene()).size() == 1);
+}
+
+TEST_CASE("T44 — an image this program cannot draw is kept as it came",
+	  "[t44][layoutdrawing]")
+{
+		//A format of a later version, or bytes damaged on the way: drawn as
+		//a crossed box, and written back untouched
+	QDomDocument doc;
+	QDomElement element = doc.createElement(QStringLiteral("image"));
+	element.setAttribute(QStringLiteral("x"), 0);
+	element.setAttribute(QStringLiteral("y"), 0);
+	element.setAttribute(QStringLiteral("width"), 20);
+	element.setAttribute(QStringLiteral("height"), 30);
+	element.setAttribute(QStringLiteral("format"), QStringLiteral("webp"));
+	element.appendChild(doc.createTextNode(QString::fromLatin1(QByteArrayLiteral("RIFF....WEBP").toBase64())));
+
+	QETElementEditor editor;
+	PartImage image(&editor);
+	image.fromXml(element);
+	CHECK(image.isNull());
+	CHECK_FALSE(image.isUseless());
+	const QDomElement back = image.toXml(doc);
+	CHECK(back.attribute(QStringLiteral("format")) == QStringLiteral("webp"));
+	CHECK(back.text() == element.text());
+
+		//And the plate counts nothing it could not draw
+	QDomDocument definition;
+	REQUIRE(definition.setContent(QStringLiteral(
+		"<definition type=\"element\" width=\"20\" height=\"20\" hotspot_x=\"10\" hotspot_y=\"10\">"
+		"<description/><layout_drawing/></definition>")));
+	definition.documentElement().firstChildElement(QStringLiteral("layout_drawing"))
+			.appendChild(definition.importNode(element, true));
+	const auto drawing = ElementPictureFactory::layoutDrawing(definition.documentElement());
+	CHECK(drawing.parts == 0);
 }

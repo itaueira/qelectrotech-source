@@ -40,6 +40,7 @@
 #include "../esevent/eseventadddynamictextfield.h"
 #include "../../elementdialog.h"
 #include "../graphicspart/partterminal.h"
+#include "../graphicspart/partimage.h"
 #include "../terminalnamecheck.h"
 #include "../arceditor.h"
 #include "ellipseeditor.h"
@@ -49,11 +50,13 @@
 #include "terminaleditor.h"
 #include "texteditor.h"
 #include "dynamictextfieldeditor.h"
+#include "imageeditor.h"
 #include "../../newelementwizard.h"
 #include "../editorcommands.h"
 #include "../../dxf/dxftoelmt.h"
 #include "../../qet_elementscaler/qet_elementscaler.h"
 #include "../UndoCommand/openelmtcommand.h"
+#include "../UndoCommand/addpartcommand.h"
 
 #include <QSettings>
 #include <QActionGroup>
@@ -66,6 +69,10 @@
 #include <QVBoxLayout>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QCheckBox>
+#include <QDir>
+#include <QFile>
+#include <QLabel>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 
@@ -516,7 +523,8 @@ void QETElementEditor::updateLengthUnit()
 {
 	const QString suffix = isLayoutDrawingActive() ? tr(" mm") : QString();
 	for (const QString &name : {QStringLiteral("arc"), QStringLiteral("ellipse"),
-				    QStringLiteral("line"), QStringLiteral("rect")})
+				    QStringLiteral("line"), QStringLiteral("rect"),
+				    QStringLiteral("image")})
 	{
 		if (ElementItemEditor *editor = m_editors.value(name)) {
 			for (QDoubleSpinBox *field : editor->findChildren<QDoubleSpinBox *>()) {
@@ -524,6 +532,167 @@ void QETElementEditor::updateLengthUnit()
 			}
 		}
 	}
+}
+
+/**
+ * @brief QETElementEditor::addLayoutImage
+ * @param data : the bytes of the file
+ * @param format : one of PartImage::formats()
+ * @param size_mm : the real size of the part, millimetre
+ * @return the image added to the 2D tab, selected, or nullptr
+ */
+PartImage *QETElementEditor::addLayoutImage(const QByteArray &data, const QString &format,
+					   const QSizeF &size_mm)
+{
+	if (m_read_only || size_mm.isEmpty()) {
+		return nullptr;
+	}
+	auto *image = new PartImage(this);
+	if (!image->setFile(data, format)) {
+		delete image;
+		return nullptr;
+	}
+	image->setRect(QRectF(QPointF(-size_mm.width() / 2.0, -size_mm.height() / 2.0), size_mm));
+	m_drawing_scene->undoStack().push(new AddPartCommand(tr("Insérer une image"), m_drawing_scene, image));
+	m_drawing_scene->clearSelection();
+	image->setSelected(true);
+	return image;
+}
+
+/**
+ * @brief QETElementEditor::insertImage
+ * The action of the parts tool bar: a file, then its real size.
+ */
+void QETElementEditor::insertImage()
+{
+	if (m_read_only || !isLayoutDrawingActive()) {
+		return;
+	}
+	const QString path = QFileDialog::getOpenFileName(
+				this, tr("Insérer une image"), QETApp::pictureDir(),
+				tr("Images (*.png *.jpg *.jpeg *.svg)"));
+	if (!path.isEmpty()) {
+		insertImageFile(path);
+	}
+}
+
+/**
+ * @brief QETElementEditor::insertImageFile
+ * The size is asked because a file seldom knows it: the question starts
+ * at the proportion of the file, and the image stays free afterwards.
+ * @param path : the file to insert
+ * @return true when an image was added
+ */
+bool QETElementEditor::insertImageFile(const QString &path)
+{
+	if (m_read_only || !isLayoutDrawingActive()) {
+		return false;
+	}
+	const QString format = PartImage::formatOfFile(path);
+	QByteArray data;
+	QFile file(path);
+	if (!format.isEmpty() && file.open(QIODevice::ReadOnly)) {
+		data = file.readAll();
+	}
+	QSizeF size = PartImage::fileSizeMm(data, format);
+	if (size.isEmpty())
+	{
+		QET::QetMessageBox::critical(this, tr("Insérer une image"),
+					     tr("Impossible de lire l'image %1.")
+					     .arg(QDir::toNativeSeparators(path)));
+		return false;
+	}
+
+		//The symbol is copied into every project that uses it, and the
+		//image with it
+	const qreal megabytes = data.size() / (1024.0 * 1024.0);
+	if (megabytes > 2.0
+		&& QET::QetMessageBox::question(
+			this, tr("Insérer une image"),
+			tr("L'image pèse %1 Mo, et une copie sera gardée dans chaque "
+			   "projet qui utilise ce symbole. L'insérer quand même ?")
+			.arg(megabytes, 0, 'f', 1),
+			QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes) {
+		return false;
+	}
+
+	if (!askImageSize(size)) {
+		return false;
+	}
+	return addLayoutImage(data, format, size) != nullptr;
+}
+
+/**
+ * @brief QETElementEditor::askImageSize
+ * Ask the real width and height of the part, in millimetre, starting at
+ * @a size and holding the proportion of the file until told not to.
+ * @param size : the size of the file in, the size answered out
+ * @return false when the question was cancelled
+ */
+bool QETElementEditor::askImageSize(QSizeF &size)
+{
+	const qreal ratio = size.height() / size.width();
+		//A file that says it is two metres wide, or a tenth of a millimetre,
+		//said nothing worth starting from but its proportion
+	if (size.width() < 1.0 || size.width() > 2000.0
+		|| size.height() < 1.0 || size.height() > 2000.0) {
+		size = QSizeF(50.0, 50.0 * ratio);
+	}
+
+	QDialog dialog(this);
+	dialog.setObjectName(QStringLiteral("image_size_dialog"));
+	dialog.setWindowTitle(tr("Dimensions de l'image"));
+	auto *layout = new QVBoxLayout(&dialog);
+	auto *explanation = new QLabel(tr("La taille réelle de la pièce, en millimètre. "
+					  "L'image est étirée à ces dimensions, qui restent "
+					  "modifiables ensuite."), &dialog);
+	explanation->setWordWrap(true);
+	layout->addWidget(explanation);
+
+	auto field = [&dialog](const QString &name, qreal value) {
+		auto *spin_box = new QDoubleSpinBox(&dialog);
+		spin_box->setObjectName(name);
+		spin_box->setDecimals(2);
+		spin_box->setRange(0.01, 100000.0);
+		spin_box->setSuffix(tr(" mm"));
+		spin_box->setValue(value);
+		return spin_box;
+	};
+	QDoubleSpinBox *width  = field(QStringLiteral("image_width"),  size.width());
+	QDoubleSpinBox *height = field(QStringLiteral("image_height"), size.height());
+	auto *form = new QFormLayout();
+	form->addRow(tr("Largeur :"), width);
+	form->addRow(tr("Hauteur :"), height);
+	layout->addLayout(form);
+
+	auto *keep = new QCheckBox(tr("Garder les proportions du fichier"), &dialog);
+	keep->setObjectName(QStringLiteral("image_keep_proportion"));
+	keep->setChecked(true);
+	layout->addWidget(keep);
+	bool following = false;
+	connect(width, qOverload<double>(&QDoubleSpinBox::valueChanged), &dialog, [&](double value) {
+		if (following || !keep->isChecked()) return;
+		following = true;
+		height->setValue(value * ratio);
+		following = false;
+	});
+	connect(height, qOverload<double>(&QDoubleSpinBox::valueChanged), &dialog, [&](double value) {
+		if (following || !keep->isChecked()) return;
+		following = true;
+		width->setValue(value / ratio);
+		following = false;
+	});
+
+	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+	connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+	connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+	layout->addWidget(buttons);
+
+	if (dialog.exec() != QDialog::Accepted) {
+		return false;
+	}
+	size = QSizeF(width->value(), height->value());
+	return true;
 }
 
 /**
@@ -819,7 +988,8 @@ void QETElementEditor::updateInformations()
 			return;
 		}
 		else if (cep_list.length() == 1 &&
-				 (selection_xml_name == "polygon" || selection_xml_name == "terminal"))
+				 (selection_xml_name == "polygon" || selection_xml_name == "terminal"
+			  || selection_xml_name == "image"))
 		{
 #if TODO_LIST
 #pragma message("@TODO maybe allowing multipart edit when number of points is the same?")
@@ -1362,6 +1532,16 @@ void QETElementEditor::setupActions()
 	parts_toolbar -> addActions(m_add_part_action_grp -> actions());
 	addToolBar(Qt::LeftToolBarArea, parts_toolbar);
 
+		//Not a tool of the group: it does its work at once, and leaves the
+		//tool in use as it was
+	m_insert_image_action = new QAction(QET::Icons::adding_image, tr("Insérer une image"), this);
+	m_insert_image_action->setStatusTip(tr("Insérer la photo de la pièce, ou le dessin de sa fiche technique, dans le dessin 2D, aux dimensions réelles"));
+	connect(m_insert_image_action, &QAction::triggered, this, &QETElementEditor::insertImage);
+		//Off until updateAction() sees the 2D tab: the symbol is shown first
+	m_insert_image_action->setEnabled(false);
+	parts_toolbar->addSeparator();
+	parts_toolbar->addAction(m_insert_image_action);
+
 		//Background frame action: a visual-only reference rectangle, never
 		//written to the saved .elmt file, to help proportion the drawing
 		//against a representative folio surface.
@@ -1464,6 +1644,10 @@ void QETElementEditor::updateAction()
 		m_add_terminal_action->setEnabled(!m_read_only && !isLayoutDrawingActive());
 		m_add_dynamic_text_action->setEnabled(!m_read_only && !isLayoutDrawingActive());
 	}
+		//And an image belongs to the 2D drawing only: no folio draws one
+	if (m_insert_image_action) {
+		m_insert_image_action->setEnabled(!m_read_only && isLayoutDrawingActive());
+	}
 
 }
 
@@ -1517,6 +1701,7 @@ void QETElementEditor::initGui()
 	m_editors["text"]         = new TextEditor(this);
 	m_editors["style"]        = new StyleEditor(this);
 	m_editors["dynamic_text"] = new DynamicTextFieldEditor(this);
+	m_editors["image"]        = new ImageEditor(this);
 
 	m_elmt_scene = new ElementScene(this, this);
 	m_view = new ElementView(m_elmt_scene, this);

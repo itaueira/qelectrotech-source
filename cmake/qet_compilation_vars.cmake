@@ -663,6 +663,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/editor/graphicspart/partpolygon.h
   ${QET_DIR}/sources/editor/graphicspart/partrectangle.cpp
   ${QET_DIR}/sources/editor/graphicspart/partrectangle.h
+  ${QET_DIR}/sources/editor/graphicspart/partimage.cpp
+  ${QET_DIR}/sources/editor/graphicspart/partimage.h
   ${QET_DIR}/sources/editor/graphicspart/partplctable.cpp
   ${QET_DIR}/sources/editor/graphicspart/partplctable.h
   ${QET_DIR}/sources/editor/graphicspart/partterminal.cpp
@@ -681,6 +683,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/editor/ui/polygoneditor.h
   ${QET_DIR}/sources/editor/ui/rectangleeditor.cpp
   ${QET_DIR}/sources/editor/ui/rectangleeditor.h
+  ${QET_DIR}/sources/editor/ui/imageeditor.cpp
+  ${QET_DIR}/sources/editor/ui/imageeditor.h
   ${QET_DIR}/sources/editor/ui/terminaleditor.cpp
   ${QET_DIR}/sources/editor/ui/terminaleditor.h
   ${QET_DIR}/sources/editor/ui/texteditor.cpp

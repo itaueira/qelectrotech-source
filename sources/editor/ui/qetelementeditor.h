@@ -33,6 +33,7 @@ class QLabel;
 class QTabBar;
 class QUndoGroup;
 class QUndoView;
+class PartImage;
 
 namespace Ui {
 	class QETElementEditor;
@@ -87,6 +88,16 @@ class QETElementEditor : public QMainWindow
 			/// The element as it would be saved: the symbol, with the
 			/// shapes of the 2D tab as its layout_drawing block
 		QDomDocument elementXml();
+			/// An image on the 2D tab, at @a size_mm, centred on the
+			/// origin, as one step of undo. @return the image, or nullptr
+			/// when the bytes are not a file of @a format this program
+			/// can draw
+		PartImage *addLayoutImage(const QByteArray &data, const QString &format,
+					  const QSizeF &size_mm);
+			/// What "Insérer une image" does once the file is chosen: ask
+			/// the real size, then addLayoutImage(). @return true when an
+			/// image was added
+		bool insertImageFile(const QString &path);
 
 	protected:
 		bool event(QEvent *event) override;
@@ -143,6 +154,8 @@ class QETElementEditor : public QMainWindow
 		void setClean();
 		void loadLayoutDrawing();
 		void updateLengthUnit();
+		void insertImage();
+		bool askImageSize(QSizeF &size);
 
 	private:
 		Ui::QETElementEditor *ui;
@@ -201,7 +214,8 @@ class QETElementEditor : public QMainWindow
 		QUndoView *m_undo_view = nullptr;
 		QAction
 			*m_add_terminal_action     = nullptr,
-			*m_add_dynamic_text_action = nullptr;
+			*m_add_dynamic_text_action = nullptr,
+			*m_insert_image_action     = nullptr;
 
 };
 

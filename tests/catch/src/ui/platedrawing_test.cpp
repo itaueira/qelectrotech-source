@@ -26,6 +26,7 @@
 #include "../../../../sources/qetgraphicsitem/ViewItem/mountinglayoutviewitem.h"
 #include "../../../../sources/qetproject.h"
 #include <catch2/catch.hpp>
+#include <QBuffer>
 #include <QDomDocument>
 #include <QGraphicsScene>
 #include <QImage>
@@ -414,4 +415,67 @@ TEST_CASE("T44 — the scene keeps the drawings it is given, for the parts it dr
 	REQUIRE(drawn != nullptr);
 	CHECK(drawn->hasLayoutDrawing());
 	CHECK(drawn->layoutDrawingRect() == QRectF(0, 0, 45, 90));
+}
+
+namespace {
+	/// A raster file of @a size pixels, all of @a colour, written at
+	/// @a per_metre dots a metre so that its size in millimetre is known
+	QByteArray rasterFile(const char *format, const QSize &size, const QColor &colour,
+			      int per_metre = 10000)
+	{
+		QImage image(size, QImage::Format_RGB32);
+		image.fill(colour);
+		image.setDotsPerMeterX(per_metre);
+		image.setDotsPerMeterY(per_metre);
+		QByteArray bytes;
+		QBuffer buffer(&bytes);
+		buffer.open(QIODevice::WriteOnly);
+		image.save(&buffer, format);
+		return bytes;
+	}
+
+	/// An SVG drawn in millimetre: a red box of 45 by 90
+	QByteArray svgFile()
+	{
+		return QByteArrayLiteral(
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"45mm\" height=\"90mm\""
+			" viewBox=\"0 0 45 90\">"
+			"<rect x=\"0\" y=\"0\" width=\"45\" height=\"90\" fill=\"#ff0000\"/></svg>");
+	}
+
+	QString imageDrawing(const QByteArray &bytes, const QString &format)
+	{
+		return QStringLiteral(
+			"<layout_drawing>"
+			"<image x=\"0\" y=\"0\" width=\"25\" height=\"85\" format=\"%1\">%2</image>"
+			"</layout_drawing>").arg(format, QString::fromLatin1(bytes.toBase64()));
+	}
+}
+
+TEST_CASE("CU-44.14 — the plate shows an image at its real size",
+	  "[t44][calepinagem]")
+{
+	const QList<QPair<QString, QByteArray>> files {
+		{QStringLiteral("png"), rasterFile("PNG", QSize(40, 80), Qt::red)},
+		{QStringLiteral("jpg"), rasterFile("JPG", QSize(40, 80), Qt::red)},
+		{QStringLiteral("svg"), svgFile()}};
+	for (const auto &file : files)
+	{
+		INFO("format " << file.first.toStdString());
+		const auto drawing = drawingOf(imageDrawing(file.second, file.first));
+		CHECK(drawing.parts == 1);
+		CHECK(drawing.bounds == QRectF(0, 0, 25, 85));
+
+			//25 by 85 in the catalogue too: no mark, the image filling the
+			//box - stretched, whatever the proportion of the file
+		auto *item = new MountedPartItem(part(QSizeF(25, 85)));
+		item->setLayoutDrawing(drawing);
+		CHECK_FALSE(item->drawingSizeDiffers());
+		CHECK(item->layoutDrawingRect() == QRectF(0, 0, 25, 85));
+		const QColor seen = middleOf(item);
+		CHECK(seen.red() > 200);
+		CHECK(seen.green() < 60);
+		CHECK(seen.blue() < 60);
+		delete item;
+	}
 }

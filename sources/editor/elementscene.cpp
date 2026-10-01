@@ -31,6 +31,7 @@
 #include "graphicspart/partarc.h"
 #include "graphicspart/partdynamictextfield.h"
 #include "graphicspart/partellipse.h"
+#include "graphicspart/partimage.h"
 #include "graphicspart/partline.h"
 #include "graphicspart/partpolygon.h"
 #include "graphicspart/partrectangle.h"
@@ -1358,6 +1359,9 @@ ElementContent ElementScene::loadContent(const QDomDocument &xml_document)
 				else if (qde.tagName() == "arc")        cep = new PartArc       (m_element_editor);
 				else if (qde.tagName() == "dynamic_text") cep = new PartDynamicTextField (m_element_editor);
 				else if (qde.tagName() == "plc_table")  cep = new PartPlcTable  (m_element_editor);
+					//An image is a part of the 2D drawing only: pasted on the
+					//symbol, it would land in a description no folio draws
+				else if (qde.tagName() == "image" && m_shapes_only) cep = new PartImage(m_element_editor);
 				//For the input (aka the old text field) we try to convert it to the new partDynamicTextField
 				else if (qde.tagName() == "input") cep = pdtf = new PartDynamicTextField(m_element_editor);
 				else continue;

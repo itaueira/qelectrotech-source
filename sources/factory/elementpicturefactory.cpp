@@ -18,6 +18,7 @@
 #include "elementpicturefactory.h"
 
 #include "../ElementsCollection/elementslocation.h"
+#include "../editor/graphicspart/partimage.h"
 #include "../editor/graphicspart/partline.h"
 #include "../properties/elementdata.h"
 #include "../qet.h"
@@ -349,12 +350,13 @@ QString ElementPictureFactory::layoutDrawingTagName()
 
 bool ElementPictureFactory::isLayoutDrawingPart(const QString &tag_name)
 {
-		//The shapes parseElement() draws, and nothing else
+		//The shapes parseElement() draws, and the image, that only a 2D
+		//drawing has and layoutDrawing() draws itself
 	static const QStringList shapes {
 		QStringLiteral("line"),    QStringLiteral("rect"),
 		QStringLiteral("ellipse"), QStringLiteral("circle"),
 		QStringLiteral("arc"),     QStringLiteral("polygon"),
-		QStringLiteral("text")};
+		QStringLiteral("text"),    QStringLiteral("image")};
 	return shapes.contains(tag_name);
 }
 
@@ -395,6 +397,33 @@ namespace {
 			unite(text->sceneBoundingRect());
 		return bounds;
 	}
+
+	/**
+		An image of a 2D drawing, painted over its rectangle. It is none of
+		the folio's shapes: parseElement() never sees one, and no symbol
+		draws one.
+		@return false, painting nothing, when the rectangle or the file
+		cannot be used
+	*/
+	bool parseLayoutImage(const QDomElement &dom, QPainter &painter, QRectF *drawn)
+	{
+		qreal x, y, width, height;
+		if (!QET::attributeIsAReal(dom, QStringLiteral("x"), &x)
+			|| !QET::attributeIsAReal(dom, QStringLiteral("y"), &y)
+			|| !QET::attributeIsAReal(dom, QStringLiteral("width"), &width)
+			|| !QET::attributeIsAReal(dom, QStringLiteral("height"), &height)
+			|| width <= 0.0 || height <= 0.0) {
+			return false;
+		}
+		const QRectF target(x, y, width, height);
+		if (!PartImage::paintFile(&painter, target,
+					  QByteArray::fromBase64(dom.text().trimmed().toLatin1()),
+					  dom.attribute(QStringLiteral("format")))) {
+			return false;
+		}
+		*drawn = target;
+		return true;
+	}
 }
 
 ElementPictureFactory::LayoutDrawing ElementPictureFactory::layoutDrawing(const QDomElement &definition)
@@ -406,6 +435,7 @@ ElementPictureFactory::LayoutDrawing ElementPictureFactory::layoutDrawing(const 
 	}
 
 	primitives prim;
+	QVector<QRectF> images;
 	QPainter painter(&drawing.picture);
 	painter.setRenderHint(QPainter::Antialiasing,     true);
 	painter.setRenderHint(QPainter::TextAntialiasing, true);
@@ -417,6 +447,14 @@ ElementPictureFactory::LayoutDrawing ElementPictureFactory::layoutDrawing(const 
 			|| QET::hasNonFiniteGeometry(shape)) {
 			continue;
 		}
+		if (shape.tagName() == QLatin1String("image"))
+		{
+			QRectF drawn;
+			if (parseLayoutImage(shape, painter, &drawn)) {
+				images << drawn;
+			}
+			continue;
+		}
 		instance()->parseElement(shape, painter, prim);
 	}
 	painter.end();
@@ -426,8 +464,12 @@ ElementPictureFactory::LayoutDrawing ElementPictureFactory::layoutDrawing(const 
 		//nothing, and must not make an empty drawing look like a drawing.
 	drawing.parts = int(prim.m_lines.size() + prim.m_rectangles.size()
 					   + prim.m_circles.size() + prim.m_polygons.size()
-					   + prim.m_arcs.size() + prim.m_texts.size());
+					   + prim.m_arcs.size() + prim.m_texts.size()
+					   + images.size());
 	drawing.bounds = boundsOf(prim);
+	for (const QRectF &image : std::as_const(images)) {
+		drawing.bounds = drawing.bounds.isNull() ? image : drawing.bounds.united(image);
+	}
 	qDeleteAll(prim.m_texts);
 	return drawing;
 }
