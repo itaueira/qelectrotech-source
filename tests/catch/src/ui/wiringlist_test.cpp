@@ -118,14 +118,30 @@ namespace
 	}
 
 	/// The rows of @a csv, header included, empty trailing line dropped.
+	/// A record ends on a line break outside quotes: a label written on
+	/// two lines in the folio is one quoted cell, and splitting on every
+	/// line break cut it into two broken rows - 97 rows for 77 wires,
+	/// measured on the example after the upstream sync of 2026-09-30.
 	QList<QStringList> parseCsv(const QString &csv)
 	{
 		QList<QStringList> rows;
-		const QStringList lines = csv.split(QLatin1Char('\n'));
-		for (const QString &line : lines) {
-			if (!line.isEmpty()) {
-				rows << parseRow(line);
+		QString record;
+		bool quoted = false;
+		for (const QChar c : csv) {
+			if (c == QLatin1Char('"')) {
+				quoted = !quoted;
 			}
+			if (c == QLatin1Char('\n') && !quoted) {
+				if (!record.isEmpty()) {
+					rows << parseRow(record);
+				}
+				record.clear();
+				continue;
+			}
+			record.append(c);
+		}
+		if (!record.isEmpty()) {
+			rows << parseRow(record);
 		}
 		return rows;
 	}

@@ -32,6 +32,9 @@
 
 #include <QSet>
 #include <QSqlQuery>
+#include <QUndoStack>
+
+#include "../../../../sources/undocommand/changeelementinformationcommand.h"
 #include <QString>
 
 /*
@@ -209,7 +212,12 @@ TEST_CASE("T21 — an item kept out of the parts list is still collected",
 	Element *excluded = sheets.first()->elements().first();
 	DiagramContext information = excluded->elementInformations();
 	information.addValue(exclude_key, QStringLiteral("true"));
-	excluded->setElementInformations(information);
+		//Through the command the properties push, which is what tells the
+		//data base of the project. Written straight on the element, the
+		//base is not told, and it is no longer rebuilt from scratch on every
+		//read since the upstream sync of 2026-09-28.
+	scratch.project()->undoStack()->push(new ChangeElementInformationCommand(
+		excluded, excluded->elementInformations(), information));
 
 	const LabelEntryList after = collector.collect();
 	REQUIRE(collector.error().isEmpty());

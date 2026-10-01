@@ -155,6 +155,13 @@ TEST_CASE("T42 — o backup automático não reserializa um projeto que não mud
 				//setModified(true) changes nothing and announces nothing.
 				//A guard reading that flag would take the project for
 				//already copied and drop this edit from the backup.
+				//Since the upstream sync of 2026-09-28 the flag follows the
+				//options of the project only, and a folio added no longer
+				//raises it: the session raises it once, through the options,
+				//and is backed up, before the edit the trap is about.
+			bench->setModified(true);
+			REQUIRE(bench->writeBackup());
+			bench->waitForBackup();
 			REQUIRE(bench->projectOptionsWereModified());
 			bench->setModified(true);
 			REQUIRE(bench->writeBackup());

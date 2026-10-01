@@ -104,10 +104,12 @@ namespace
 		list:
 
 		- XS6 draws three labels against a nine way part, and two of them -
-		  "9 " and "a1" - are spellings the part does not have. The trailing
-		  blank and the case are the two ways a label goes wrong while
-		  looking right, and neither may be folded away into a way that
-		  reads spare while it is in fact wired;
+		  "09" and "a1" - are spellings the part does not have. The leading
+		  zero and the case are two ways a label goes wrong while looking
+		  right, and neither may be folded away into a way that reads spare
+		  while it is in fact wired. A trailing blank was the first example
+		  here, until reading a project learnt to trim every value of an
+		  element (upstream, 2026-09-28): it no longer survives a load;
 		- two pins belong to no connector, one known to be a pin by the
 		  class of its part and the other by the class its symbol was built
 		  with, because those are two different roads to the same answer;
@@ -146,7 +148,7 @@ namespace
 				//XS6, on the second folio, drawing two labels its part
 				//has no way for
 			{2, 100, 100, "1",  "XS6", nine_ways, "pin.elmt", ""},
-			{2, 140, 100, "9 ", "XS6", nine_ways, "pin.elmt", ""},
+			{2, 140, 100, "09", "XS6", nine_ways, "pin.elmt", ""},
 			{2, 180, 100, "a1", "XS6", nine_ways, "pin.elmt", ""},
 				//The other list: two pins outside every connector, known
 				//to be pins by two different roads
@@ -583,7 +585,7 @@ TEST_CASE("T34 — o rótulo de broche não é normalizado, e a discordância ap
 	/*
 		The asymmetry of the two normalisations, measured on an open project
 		rather than argued about: the connector name is folded, so CN1, cn1
-		and "CN1 " are one connector; the pin label is not, so "9 " against a
+		and "CN1 " are one connector; the pin label is not, so "09" against a
 		part that says "9" comes out by name.
 
 		Folding the label would make the mismatch vanish into a number that
@@ -605,9 +607,9 @@ TEST_CASE("T34 — o rótulo de broche não é normalizado, e a discordância ap
 
 	SECTION("os dois rótulos que a peça não tem saem pelo nome")
 	{
-			//Neither the trailing blank nor the case is folded away, and
+			//Neither the leading zero nor the case is folded away, and
 			//the list is what somebody reads to put it right.
-		CHECK(xs6.not_on_part == QStringList({QStringLiteral("9 "),
+		CHECK(xs6.not_on_part == QStringList({QStringLiteral("09"),
 						      QStringLiteral("a1")}));
 	}
 

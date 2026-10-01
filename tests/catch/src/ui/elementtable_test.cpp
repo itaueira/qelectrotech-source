@@ -420,12 +420,12 @@ TEST_CASE("CU-17.15 — o fio que termina em contato de relé sobrevive a salvar
 		const QStringList from_repopulate = elementRows(data_base);
 		REQUIRE_FALSE(from_repopulate.isEmpty());
 
-		QSqlQuery clear_elements = data_base->newQuery(
-					QStringLiteral("DELETE FROM element"));
-		REQUIRE(clear_elements.exec());
-		QSqlQuery clear_info = data_base->newQuery(
-					QStringLiteral("DELETE FROM element_info"));
-		REQUIRE(clear_info.exec());
+			//Straight on the connection: newQuery() is read only since the
+			//upstream sync of 2026-09-28, and refuses a DELETE
+		QSqlQuery clear_elements(data_base->database());
+		REQUIRE(clear_elements.exec(QStringLiteral("DELETE FROM element")));
+		QSqlQuery clear_info(data_base->database());
+		REQUIRE(clear_info.exec(QStringLiteral("DELETE FROM element_info")));
 		REQUIRE(countOf(data_base,
 				QStringLiteral("SELECT COUNT(*) FROM element")) == 0);
 

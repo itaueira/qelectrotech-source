@@ -462,10 +462,24 @@ TEST_CASE("T16 — a visão do banco nasce da lista canônica, e publica o que p
 			//formula was the one key of elementInfoKeys() the hand-written
 			//view left out. It is the gain of the change, and it is checked
 			//by name so that a second unplanned column cannot ride in on a
-			//count that happens to match.
+			//count that happens to match. The other eight are the keys the
+			//upstream added to the list, which the generated view publishes
+			//by construction: model, category, voltage_rating,
+			//current_rating and notes, and width, height and depth -
+			//arrived with the sync of 2026-09-28.
 		INFO("columns the generated view added: "
 		     << added.join(QStringLiteral(", ")).toStdString());
-		CHECK(added == QStringList({QStringLiteral("formula")}));
+		QStringList sorted = added;
+		sorted.sort();
+		CHECK(sorted == QStringList({QStringLiteral("category"),
+					     QStringLiteral("current_rating"),
+					     QStringLiteral("depth"),
+					     QStringLiteral("formula"),
+					     QStringLiteral("height"),
+					     QStringLiteral("model"),
+					     QStringLiteral("notes"),
+					     QStringLiteral("voltage_rating"),
+					     QStringLiteral("width")}));
 	}
 
 	SECTION("toda chave de informação é selecionável, sem exceção")

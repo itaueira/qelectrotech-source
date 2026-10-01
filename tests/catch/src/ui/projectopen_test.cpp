@@ -25,6 +25,8 @@
 #include <catch2/catch.hpp>
 
 #include <QColor>
+#include <QFile>
+#include <QTemporaryDir>
 #include <QImage>
 
 #include <algorithm>
@@ -50,7 +52,16 @@ TEST_CASE("bancada — o guarda recusa o exemplo que abriria uma caixa de diálo
 
 	SECTION("o exemplo gravado em 0.3 é recusado, e a razão diz por quê")
 	{
-		const QString path = UiBench::examplePath(QStringLiteral("schema_indus.qet"));
+			//The example of the upstream was 0.3 and was converted to the
+			//current format on 2026-09-28; none of examples/ is that old
+			//now. The case writes its own file of that version.
+		QTemporaryDir dir;
+		REQUIRE(dir.isValid());
+		const QString path = dir.filePath(QStringLiteral("old.qet"));
+		QFile old(path);
+		REQUIRE(old.open(QIODevice::WriteOnly));
+		old.write("<project version=\"0.3\" title=\"old\"/>\n");
+		old.close();
 		REQUIRE_FALSE(UiBench::opensWithoutDialog(path, &reason));
 		REQUIRE(reason.contains(QLatin1String("0.6")));
 	}
