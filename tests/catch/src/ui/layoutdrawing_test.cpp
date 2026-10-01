@@ -21,12 +21,14 @@
 #include "../../../../sources/editor/graphicspart/partline.h"
 #include "../../../../sources/editor/graphicspart/partrectangle.h"
 #include "../../../../sources/editor/graphicspart/partterminal.h"
+#include "../../../../sources/editor/ui/rectangleeditor.h"
 #include "../../../../sources/editor/ui/qetelementeditor.h"
 #include "../../../../sources/factory/elementpicturefactory.h"
 #include <catch2/catch.hpp>
 #include <QAction>
 #include <QApplication>
 #include <QDomDocument>
+#include <QDoubleSpinBox>
 #include <QFile>
 #include <QGraphicsSceneMouseEvent>
 #include <QString>
@@ -520,4 +522,45 @@ TEST_CASE("T44 — the 2D tab refuses what is not a shape, pasted or loaded",
 	editor.elementScene()->fromXml(symbol(QString()), QPointF(5, 5), false);
 	CHECK(partsOf<PartLine>(editor.layoutDrawingScene()).size() == 1);
 	CHECK(partsOf<PartTerminal>(editor.layoutDrawingScene()).isEmpty());
+}
+
+TEST_CASE("CU-44.15 — the fields of the 2D tab say mm",
+	  "[t44][layoutdrawing]")
+{
+	QETElementEditor editor;
+	editor.elementScene()->fromXml(symbol(QString()));
+	ElementScene *symbol_scene = editor.elementScene();
+
+		//The editor of a part is shown in the tools dock only once a part
+		//of its kind is selected, and it is the same editor on both tabs
+	auto fieldsShownFor = [&editor](ElementScene *scene) {
+		QList<PartRectangle *> rectangles = partsOf<PartRectangle>(scene);
+		REQUIRE(rectangles.size() == 1);
+		scene->clearSelection();
+		rectangles.first()->setSelected(true);
+		QList<QDoubleSpinBox *> fields;
+		for (RectangleEditor *shown : editor.findChildren<RectangleEditor *>()) {
+			fields << shown->findChildren<QDoubleSpinBox *>();
+		}
+		return fields;
+	};
+
+	editor.setLayoutDrawingActive(true);
+	drawWith(editor, add_rectangle, QPointF(0, 0), QPointF(45, 90));
+	const QList<QDoubleSpinBox *> in_2d = fieldsShownFor(editor.layoutDrawingScene());
+		//x, y, width, height and the two radii
+	REQUIRE(in_2d.size() == 6);
+	for (QDoubleSpinBox *field : in_2d) {
+		CHECK(field->suffix() == QStringLiteral(" mm"));
+	}
+
+		//Back on the symbol the same fields say nothing: its unit is the
+		//folio's, and a millimetre there would be a lie
+	editor.setLayoutDrawingActive(false);
+	drawWith(editor, add_rectangle, QPointF(-5, -5), QPointF(5, 5));
+	const QList<QDoubleSpinBox *> on_symbol = fieldsShownFor(symbol_scene);
+	REQUIRE(on_symbol.size() == 6);
+	for (QDoubleSpinBox *field : on_symbol) {
+		CHECK(field->suffix().isEmpty());
+	}
 }

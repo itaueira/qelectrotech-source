@@ -142,6 +142,7 @@ class QETElementEditor : public QMainWindow
 		bool isModified() const;
 		void setClean();
 		void loadLayoutDrawing();
+		void updateLengthUnit();
 
 	private:
 		Ui::QETElementEditor *ui;

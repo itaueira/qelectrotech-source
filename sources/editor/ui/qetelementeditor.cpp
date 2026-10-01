@@ -497,9 +497,33 @@ void QETElementEditor::setLayoutDrawingActive(bool active)
 		m_view_tabs->setCurrentIndex(index);
 	}
 
+	updateLengthUnit();
 	fillPartsList();
 	updateInformations();
 	updateAction();
+}
+
+/**
+ * @brief QETElementEditor::updateLengthUnit
+ * The fields of position and size say "mm" on the 2D tab, where a unit is
+ * a millimetre of the part, and nothing on the symbol, whose unit is the
+ * folio's. Only the editors of the shapes are touched: every
+ * QDoubleSpinBox of theirs is a position or a length, where the terminal
+ * and the dynamic text carry an angle in one - and neither exists on the
+ * 2D tab.
+ */
+void QETElementEditor::updateLengthUnit()
+{
+	const QString suffix = isLayoutDrawingActive() ? tr(" mm") : QString();
+	for (const QString &name : {QStringLiteral("arc"), QStringLiteral("ellipse"),
+				    QStringLiteral("line"), QStringLiteral("rect")})
+	{
+		if (ElementItemEditor *editor = m_editors.value(name)) {
+			for (QDoubleSpinBox *field : editor->findChildren<QDoubleSpinBox *>()) {
+				field->setSuffix(suffix);
+			}
+		}
+	}
 }
 
 /**
