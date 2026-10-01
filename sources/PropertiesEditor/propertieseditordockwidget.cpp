@@ -19,16 +19,31 @@
 #include "ui_propertieseditordockwidget.h"
 #include "propertieseditorwidget.h"
 
+#include <QScrollArea>
+
 /**
 	@brief PropertiesEditorDockWidget::PropertiesEditorDockWidget
 	Constructor
 	@param parent : parent widget
+
+	The editors are put in a scroll area. Without it, the minimum height
+	of the dock is the one of its tallest editor, and when the docks
+	stacked in the same area of the main window do not fit in the
+	screen, the dock under this one is laid over the bottom of it, and
+	what is there can be neither seen nor clicked. Scrolling, the dock
+	takes the room it is given.
 */
 PropertiesEditorDockWidget::PropertiesEditorDockWidget(QWidget *parent) :
 	QDockWidget(parent),
 	ui(new Ui::PropertiesEditorDockWidget)
 {
 	ui->setupUi(this);
+
+	auto scroll_area = new QScrollArea(this);
+	scroll_area->setFrameShape(QFrame::NoFrame);
+	scroll_area->setWidgetResizable(true);
+	scroll_area->setWidget(ui->dockWidgetContents);
+	setWidget(scroll_area);
 }
 
 /**

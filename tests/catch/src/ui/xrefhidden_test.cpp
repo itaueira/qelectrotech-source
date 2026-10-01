@@ -29,12 +29,18 @@
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/ui/masterpropertieswidget.h"
+#include "../../../../sources/ui/elementpropertieswidget.h"
+#include "../../../../sources/PropertiesEditor/propertieseditordockwidget.h"
 
 #include <catch2/catch.hpp>
 
+#include <QApplication>
 #include <QCheckBox>
 #include <QDomDocument>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QString>
+#include <QTabWidget>
 #include <QTreeWidget>
 #include <QUndoStack>
 
@@ -473,4 +479,57 @@ TEST_CASE("CU-43.5 — a hidden cross reference keeps following its contacts",
 		//Shown again, the table is rebuilt from the three contacts linked now
 		//and not from the two it had when it was hidden
 	CHECK(xref->hoveredContactsMap().uniqueKeys().size() == 3);
+}
+
+TEST_CASE("T43 — the properties dock scrolls, so the box of the master is reached on a short screen",
+	  "[t43][xref]")
+{
+		//Seen on the screen on 2026-10-01: with the program maximised, the
+		//dock of the automatic numbering was laid over the bottom of this
+		//one, and the box that hides the cross reference could be neither
+		//seen nor clicked. The dock could not be shorter than its tallest
+		//editor - 452 px measured on Windows, set by the tab of the
+		//informations, and not by this box.
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	MasterElement *k1 = coil(bench.project.diagram(0));
+	REQUIRE(k1 != nullptr);
+
+	PropertiesEditorDockWidget dock;
+	auto editor = new ElementPropertiesWidget(k1);
+	REQUIRE(dock.addEditor(editor));
+	const int editor_minimum = editor->minimumSizeHint().height();
+	REQUIRE(editor_minimum > 300);
+		//The dock no longer asks for the height of what it shows
+	CHECK(dock.minimumSizeHint().height() < editor_minimum / 2);
+
+		//Given less room than its editor asks, it scrolls, and the editor
+		//still takes the whole width it is given
+	dock.resize(700, 250);
+	dock.show();
+	QApplication::processEvents();
+	auto scroll_area = dock.findChild<QScrollArea *>();
+	REQUIRE(scroll_area != nullptr);
+	CHECK(scroll_area->verticalScrollBar()->maximum() > 0);
+		//and says so: a bar that scrolls but is not shown is a dock nobody
+		//knows has more below
+	CHECK(scroll_area->verticalScrollBar()->isVisible());
+	CHECK(scroll_area->widget()->width() == scroll_area->viewport()->width());
+
+		//And the box of the master, at the bottom of its tab, is reached
+	auto box = dock.findChild<QCheckBox *>(QStringLiteral("m_hide_xref_cb"));
+	REQUIRE(box != nullptr);
+	auto tabs = editor->findChild<QTabWidget *>();
+	REQUIRE(tabs != nullptr);
+	for (int i = 0; i < tabs->count(); ++i) {
+		if (tabs->widget(i)->isAncestorOf(box)) {
+			tabs->setCurrentIndex(i);
+		}
+	}
+	QApplication::processEvents();
+	scroll_area->ensureWidgetVisible(box);
+	QApplication::processEvents();
+	const QRect seen(box->mapTo(scroll_area->viewport(), QPoint(0, 0)), box->size());
+	CHECK(scroll_area->viewport()->rect().contains(seen));
 }
