@@ -233,6 +233,7 @@ class MountingLayoutEditor : public QMainWindow
 
 	protected:
 		void closeEvent(QCloseEvent *event) override;
+		void showEvent(QShowEvent *event) override;
 
 	private slots:
 		void stepApplied();
@@ -391,6 +392,7 @@ class MountingLayoutEditor : public QMainWindow
 		QAction *m_drilling_table = nullptr;
 		QAction *m_check_plate = nullptr;
 		QAction *m_go_to_symbol = nullptr;
+		bool m_fitted_on_show = false;
 		QAction *m_close = nullptr;
 
 		/**

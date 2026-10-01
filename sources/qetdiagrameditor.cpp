@@ -2236,7 +2236,13 @@ void QETDiagramEditor::showMountingLayout()
 	editor->setAttribute(Qt::WA_DeleteOnClose);
 		//From a part to its symbol: the plate asks, this window knows
 		//where the folios are.
-	connect(editor, &MountingLayoutEditor::goToElement, this, &QETDiagramEditor::goToElement);
+	connect(editor, &MountingLayoutEditor::goToElement, this, [this](Element *element) {
+		goToElement(element);
+			//In front: the plate window is above this one, and a folio
+			//changed behind it is a change nobody sees
+		raise();
+		activateWindow();
+	});
 	editor->show();
 }
 

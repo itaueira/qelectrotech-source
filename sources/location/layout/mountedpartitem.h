@@ -147,25 +147,27 @@ class MountedPartItem : public QGraphicsObject
 			@param drawing the layout_drawing of the element it is,
 			millimetre; a null one puts the plain box back
 
-			The catalogue box keeps ruling the size, which is the half
-			of the decision about drawings that did not move. With a
-			declared size the drawing is scaled the same on both axes
-			to fit inside the box, centred, and a proportion that
-			disagrees is marked on the part and said in its tooltip -
-			never corrected by stretching. Without one the drawing is
-			shown at its own size, and the part stays unmeasured: a
-			drawing is not a catalogue entry, and the fit check keeps
-			treating the part as a point.
+			The drawing is shown at its real size and never scaled: it
+			is drawn in millimetre, at the scale of the panel, to be the
+			part as it is. With a declared size it is centred on the
+			catalogue box, which stays the room the fit check reads, and
+			a size that disagrees with the box is marked on the part and
+			said in its tooltip - never corrected. Without one the part
+			stays unmeasured: a drawing is not a catalogue entry, and
+			the fit check keeps treating the part as a point.
 		*/
 		void setLayoutDrawing(const ElementPictureFactory::LayoutDrawing &drawing);
 		bool hasLayoutDrawing() const;
 			/// @return where the drawing is painted, item coordinates
 		QRectF layoutDrawingRect() const;
-			/// @return true when drawing and box disagree on proportion
-			/// by more than drawingTolerance()
-		bool drawingProportionDiffers() const;
-			/// @return the gap in proportion that is marked, as a fraction
+			/// @return true when drawing and box differ, in either
+			/// dimension, by more than the larger of drawingTolerance()
+			/// of the box and drawingToleranceMm()
+		bool drawingSizeDiffers() const;
+			/// @return the gap in size that is marked, as a fraction of the box
 		static qreal drawingTolerance();
+			/// @return the gap in size below which nothing is marked, millimetre
+		static qreal drawingToleranceMm();
 
 		/**
 			@return the drawings of the elements @a items are, by the
@@ -194,8 +196,8 @@ class MountedPartItem : public QGraphicsObject
 		void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 
 	private:
-		qreal layoutDrawingScale() const;
 		void updateDrawingToolTip();
+		void paintDesignationOver(QPainter *painter, const QRectF &body) const;
 
 		MountedItem m_item;
 		QPointF m_press_position;

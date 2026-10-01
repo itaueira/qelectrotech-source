@@ -28,13 +28,13 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QFontMetricsF>
 #include <QPen>
 #include <QPolygonF>
 #include <QUuid>
 #include <QStyleOptionGraphicsItem>
 
 #include <cmath>
-#include <limits>
 
 namespace
 {
@@ -232,8 +232,14 @@ void MountedPartItem::setMillimetrePosition(const QPointF &position_mm)
 */
 QRectF MountedPartItem::boundingRect() const
 {
-	return drawnRect().adjusted(-OUTLINE_SLACK, -OUTLINE_SLACK,
-				    OUTLINE_SLACK, OUTLINE_SLACK);
+		//A drawing at real size may be larger than its catalogue box, and
+		//what is painted has to be inside what is declared
+	QRectF area = drawnRect();
+	if (hasLayoutDrawing()) {
+		area |= layoutDrawingRect();
+	}
+	return area.adjusted(-OUTLINE_SLACK, -OUTLINE_SLACK,
+			     OUTLINE_SLACK, OUTLINE_SLACK);
 }
 
 /**
@@ -273,10 +279,11 @@ void MountedPartItem::paint(QPainter *painter,
 
 	if (hasLayoutDrawing())
 	{
-			//The drawing replaces the box and the name. The box is still
-			//traced, light, because it is the room the part takes and the
-			//one the fit check reads: dotted when the catalogue gave it,
-			//dashed in the colour of "not measured" when nobody did.
+			//The drawing replaces the plain box, and the name is written
+			//over it. The box is still traced, light, because it is the
+			//room the part takes and the one the fit check reads: dotted
+			//when the catalogue gave it, dashed in the colour of "not
+			//measured" when nobody did.
 		painter->save();
 		QPen outline(measured ? QColor(150, 150, 150) : QColor(176, 106, 0));
 		outline.setCosmetic(true);
@@ -287,17 +294,20 @@ void MountedPartItem::paint(QPainter *painter,
 		painter->drawRect(body);
 
 		const QRectF target = layoutDrawingRect();
-		const qreal scale = layoutDrawingScale();
 		painter->save();
 		painter->setRenderHint(QPainter::Antialiasing, true);
-		painter->setClipRect(body);
-		painter->translate(target.topLeft());
-		painter->scale(scale, scale);
-		painter->translate(-m_drawing.bounds.topLeft());
+			//Real size, never scaled: a unit of the drawing is a millimetre
+			//of the plate. Not clipped to the box either - a drawing larger
+			//than the catalogue box shows by how much.
+		painter->translate(target.topLeft() - m_drawing.bounds.topLeft());
 		painter->drawPicture(QPointF(0.0, 0.0), m_drawing.picture);
 		painter->restore();
 
-		if (drawingProportionDiffers())
+			//The name stays readable over the drawing: three breakers drawn
+			//alike are three parts nobody can tell apart otherwise
+		paintDesignationOver(painter, body);
+
+		if (drawingSizeDiffers())
 		{
 				//A corner, not a colour over the whole part: the drawing
 				//is right, it is its fit in the box that is in question
@@ -373,63 +383,71 @@ bool MountedPartItem::hasLayoutDrawing() const
 }
 
 /**
-	@brief MountedPartItem::layoutDrawingScale
-	@return how much the drawing is scaled, the same on both axes: what
-	fits the box when the catalogue gave one, 1 when it did not
-*/
-qreal MountedPartItem::layoutDrawingScale() const
-{
-	if (!hasLayoutDrawing() || !hasDeclaredSize()) {
-		return 1.0;
-	}
-	const QSizeF box = declaredSize();
-	const qreal width  = m_drawing.bounds.width();
-	const qreal height = m_drawing.bounds.height();
-		//A drawing that is a single line has no extent across it, and is
-		//fitted by the dimension it has
-	qreal scale = std::numeric_limits<qreal>::max();
-	if (width > 0.0)  scale = qMin(scale, box.width() / width);
-	if (height > 0.0) scale = qMin(scale, box.height() / height);
-	return scale == std::numeric_limits<qreal>::max() ? 1.0 : scale;
-}
-
-/**
 	@brief MountedPartItem::layoutDrawingRect
-	@return where the drawing is painted: centred in the box, scaled the
-	same on both axes, when the catalogue gave a box; the box itself, at
-	the size of the drawing, when it did not
+	@return where the drawing is painted: at its real size, centred on the
+	catalogue box when there is one, and filling the dashed outline of an
+	unmeasured part when there is not
 */
 QRectF MountedPartItem::layoutDrawingRect() const
 {
 	if (!hasLayoutDrawing()) {
 		return QRectF();
 	}
-	const QRectF body = drawnRect();
-	const QSizeF drawn = m_drawing.bounds.size() * layoutDrawingScale();
-	QRectF target(QPointF(0.0, 0.0), drawn);
-	target.moveCenter(body.center());
+	QRectF target(QPointF(0.0, 0.0), m_drawing.bounds.size());
+	target.moveCenter(drawnRect().center());
 	return target;
 }
 
-bool MountedPartItem::drawingProportionDiffers() const
+bool MountedPartItem::drawingSizeDiffers() const
 {
 	if (!hasLayoutDrawing() || !hasDeclaredSize()) {
 		return false;
 	}
 	const QSizeF box = declaredSize();
-	const qreal width  = m_drawing.bounds.width();
-	const qreal height = m_drawing.bounds.height();
-	if (width <= 0.0 || height <= 0.0) {
-		return false;
-	}
-	const qreal drawing_ratio = width / height;
-	const qreal box_ratio = box.width() / box.height();
-	return std::abs(drawing_ratio / box_ratio - 1.0) > drawingTolerance();
+	auto differs = [](qreal drawn, qreal declared) {
+		const qreal allowed = qMax(drawingToleranceMm(), drawingTolerance() * declared);
+		return std::abs(drawn - declared) > allowed;
+	};
+	return differs(m_drawing.bounds.width(), box.width())
+	       || differs(m_drawing.bounds.height(), box.height());
 }
 
 qreal MountedPartItem::drawingTolerance()
 {
 	return 0.02;
+}
+
+qreal MountedPartItem::drawingToleranceMm()
+{
+	return 0.5;
+}
+
+/**
+	@brief MountedPartItem::paintDesignationOver
+	The designation, on a pale plate so that the lines of the drawing do
+	not cross it out, at the size the plain box uses.
+*/
+void MountedPartItem::paintDesignationOver(QPainter *painter, const QRectF &body) const
+{
+	const qreal text_height = qMin(LABEL_HEIGHT, body.height() / 3.0);
+	if (text_height < 1.0) {
+		return;
+	}
+	painter->save();
+	QFont font = painter->font();
+	font.setPixelSize(qMax(1, qRound(text_height)));
+	painter->setFont(font);
+	const QString text = m_item.designation();
+	const QRectF text_rect = QFontMetricsF(font)
+				 .boundingRect(body, Qt::AlignCenter, text)
+				 .adjusted(-text_height * 0.2, 0.0, text_height * 0.2, 0.0)
+				 .intersected(body);
+	painter->setPen(Qt::NoPen);
+	painter->setBrush(QColor(255, 255, 255, 210));
+	painter->drawRect(text_rect);
+	painter->setPen(QPen(QColor(40, 40, 40)));
+	painter->drawText(body, Qt::AlignCenter, text);
+	painter->restore();
 }
 
 /**
@@ -440,11 +458,11 @@ qreal MountedPartItem::drawingTolerance()
 void MountedPartItem::updateDrawingToolTip()
 {
 	QString tip = m_item.designation();
-	if (drawingProportionDiffers()) {
+	if (drawingSizeDiffers()) {
 		tip += QLatin1Char('\n')
-		       + tr("Le dessin 2D n'a pas les proportions de la boîte du "
-			    "catalogue : il est montré entier, à l'échelle, dans la "
-			    "boîte, et c'est la boîte qui compte pour l'implantation.");
+		       + tr("Le dessin 2D n'a pas la taille de la boîte du "
+			    "catalogue : il est montré en vraie grandeur, et c'est "
+			    "la boîte qui compte pour l'implantation.");
 	}
 	setToolTip(tip);
 }

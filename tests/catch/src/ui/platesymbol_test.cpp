@@ -21,11 +21,13 @@
 #include "../../../../sources/location/layout/mountedpartitem.h"
 #include "../../../../sources/location/layout/mountinglayouteditor.h"
 #include "../../../../sources/location/layout/mountingscene.h"
+#include "../../../../sources/location/layout/mountingview.h"
 #include "../../../../sources/location/mountinglayout.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetproject.h"
 #include <catch2/catch.hpp>
 #include <QAction>
+#include <QCoreApplication>
 #include <QSignalSpy>
 #include <QStatusBar>
 
@@ -148,4 +150,29 @@ TEST_CASE("T19 — « Aller au symbole » hands out the element of the folio the
 			//An element mounted nowhere: the context menu offers nothing
 		CHECK(bench->mountingLayout().itemOfElement(QStringLiteral("{00000000-0000-4000-8000-0000000000ff}")).isEmpty());
 	}
+}
+
+TEST_CASE("T19 — the plate window frames the plate the first time it shows",
+	  "[t44][calepinagem]")
+{
+		//Measured on the screen before the fix: 1 mm = 0.06 px, a plate of
+		//600 by 300 drawn in a box of 36 pixels. The fit ran in the
+		//constructor, before the view had a size.
+	UiBench::Project bench(QStringLiteral("tremie_vibrante.qet"));
+	REQUIRE(bench.isOpen());
+	MountingLayout layout;
+	REQUIRE_FALSE(layout.appendSurface(MountingSurface(QStringLiteral("QCM1"),
+							   QStringLiteral("plate"),
+							   MountingArea(600.0, 300.0))).isEmpty());
+	bench->setMountingLayout(layout);
+
+	MountingLayoutEditor editor(bench.project());
+	editor.resize(1100, 800);
+	editor.show();
+	for (int i = 0; i < 5; ++i) {
+		QCoreApplication::processEvents();
+	}
+		//600 mm across a view about a thousand pixels wide: over one pixel
+		//a millimetre, and nowhere near the 0.06 of the bug
+	CHECK(editor.view()->pixelsPerMillimetre() > 1.0);
 }

@@ -35,6 +35,8 @@
 
 #include <QAction>
 #include <QCloseEvent>
+#include <QShowEvent>
+#include <QTimer>
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -967,6 +969,23 @@ MountingCheckDialog *MountingLayoutEditor::openPlateCheck()
 	symbol is gone from the project, say so here and go nowhere: the
 	part keeps the link, because the symbol may come back with an undo.
 */
+/**
+	@brief MountingLayoutEditor::showEvent
+	Fit the plate the first time the window shows. showSurface() fits it
+	too, but called from the constructor that is before the view has a
+	size, and the fit came out at 0.06 px a millimetre - a whole plate in
+	a dot, measured on the screen on 2026-10-01. A part pointed at from a
+	folio was then selected and centred where nobody could see it.
+*/
+void MountingLayoutEditor::showEvent(QShowEvent *event)
+{
+	QMainWindow::showEvent(event);
+	if (!m_fitted_on_show) {
+		m_fitted_on_show = true;
+		QTimer::singleShot(0, m_view, &MountingView::zoomFit);
+	}
+}
+
 void MountingLayoutEditor::goToSymbol()
 {
 	const QStringList selected = m_scene->selectedUuids();

@@ -50,14 +50,19 @@ namespace
 		"antialias=\"false\" "
 		"style=\"line-style:normal;line-weight:normal;filling:none;color:black\"");
 
-	/// The 2D drawing of a part 45 mm wide and 90 mm tall: its outline only,
-	/// so that the middle of it is empty paper.
-	QString drawing45x90()
+	/// The 2D drawing of a part @a width by @a height mm: its outline only,
+	/// so that the inside of it is empty paper.
+	QString outlineDrawing(qreal width, qreal height)
 	{
 		return QStringLiteral(
 			"<layout_drawing>"
-			"<rect x=\"0\" y=\"0\" width=\"45\" height=\"90\" rx=\"0\" ry=\"0\" %1/>"
-			"</layout_drawing>").arg(shape_style);
+			"<rect x=\"0\" y=\"0\" width=\"%2\" height=\"%3\" rx=\"0\" ry=\"0\" %1/>"
+			"</layout_drawing>").arg(shape_style).arg(width).arg(height);
+	}
+
+	QString drawing45x90()
+	{
+		return outlineDrawing(45, 90);
 	}
 
 	ElementPictureFactory::LayoutDrawing drawingOf(const QString &block)
@@ -77,8 +82,8 @@ namespace
 		return item;
 	}
 
-	/// The colour of the middle of the part, painted at 4 px a millimetre
-	QColor middleOf(MountedPartItem *item)
+	/// The part painted alone at 4 px a millimetre, its box filling the image
+	QImage paintedAlone(MountedPartItem *item)
 	{
 		QGraphicsScene scene;
 		scene.addItem(item);
@@ -90,7 +95,46 @@ namespace
 		scene.render(&painter, QRectF(QPointF(0, 0), image.size()), body);
 		painter.end();
 		scene.removeItem(item);
-		return image.pixelColor(image.width() / 2, image.height() / 2);
+		return image;
+	}
+
+	/// The colour of the part on its middle column, a quarter of the way
+	/// down: inside the outline, and clear of the name written at its centre
+	QColor middleOf(MountedPartItem *item)
+	{
+		const QImage image = paintedAlone(item);
+		return image.pixelColor(image.width() / 2, image.height() / 4);
+	}
+
+	/// The dark pixels of @a image inside @a area: ink on paper
+	int inkIn(const QImage &image, const QRect &area)
+	{
+		int ink = 0;
+		for (int y = area.top(); y <= area.bottom(); ++y) {
+			for (int x = area.left(); x <= area.right(); ++x) {
+				if (qGray(image.pixel(x, y)) < 128) {
+					++ink;
+				}
+			}
+		}
+		return ink;
+	}
+
+	/// Whether this platform draws letters at all when there is no screen.
+	/// A build of Qt that rasterises no glyph offscreen would fail the test
+	/// of the name for a reason that is not this code.
+	bool glyphsAreDrawn()
+	{
+		QImage probe(QSize(80, 30), QImage::Format_ARGB32);
+		probe.fill(Qt::white);
+		QPainter painter(&probe);
+		QFont font = painter.font();
+		font.setPixelSize(20);
+		painter.setFont(font);
+		painter.setPen(Qt::black);
+		painter.drawText(probe.rect(), Qt::AlignCenter, QStringLiteral("Q1"));
+		painter.end();
+		return inkIn(probe, probe.rect()) > 0;
 	}
 
 	/// One sheet, one embedded symbol carrying @a layout_drawing, and one
@@ -158,7 +202,7 @@ TEST_CASE("CU-44.7 — the plate draws the 2D drawing inside the box of the cata
 	CHECK(item->drawnRect() == QRectF(0, 0, 45, 90));
 		//The whole box, and no mark: drawing and catalogue agree
 	CHECK(item->layoutDrawingRect() == QRectF(0, 0, 45, 90));
-	CHECK_FALSE(item->drawingProportionDiffers());
+	CHECK_FALSE(item->drawingSizeDiffers());
 	CHECK(item->toolTip() == QStringLiteral("-Q1"));
 
 		//And it is painted, not just computed: the middle of the outline
@@ -171,35 +215,71 @@ TEST_CASE("CU-44.7 — the plate draws the 2D drawing inside the box of the cata
 	auto *plain = new MountedPartItem(part(QSizeF(45, 90)));
 	CHECK(middleOf(plain) == QColor(236, 236, 236));
 	delete plain;
+
+		//And the name is written over the drawing. Found on the screen on
+		//2026-10-01: with the drawing in place of the box, three breakers
+		//drawn alike were three parts nobody could tell apart. The inside
+		//of the outline is paper, so ink there, away from the outline, is
+		//the name.
+	if (!glyphsAreDrawn()) {
+		WARN("this Qt draws no glyph offscreen: the name is not checked");
+		return;
+	}
+	auto *named = new MountedPartItem(part(QSizeF(45, 90)));
+	named->setLayoutDrawing(drawingOf(drawing45x90()));
+	const QImage image = paintedAlone(named);
+	delete named;
+	const QRect inside = image.rect().adjusted(8, 8, -8, -8);
+	CHECK(inkIn(image, inside) > 0);
 }
 
-TEST_CASE("CU-44.8 — a proportion that disagrees is marked, not corrected",
+TEST_CASE("CU-44.8 — a size that disagrees with the catalogue is marked, not corrected",
 	  "[t44][calepinagem]")
 {
-	SECTION("taller box: the drawing stays whole, centred, at its proportion")
+	SECTION("taller box: the drawing keeps its real size, centred on the box")
 	{
 		MountedPartItem item(part(QSizeF(45, 100)));
 		item.setLayoutDrawing(drawingOf(drawing45x90()));
 		CHECK(item.drawnRect() == QRectF(0, 0, 45, 100));
 		CHECK(item.layoutDrawingRect() == QRectF(0, 5, 45, 90));
-		CHECK(item.drawingProportionDiffers());
-		CHECK(item.toolTip().contains(QStringLiteral("proportions")));
+		CHECK(item.drawingSizeDiffers());
+		CHECK(item.toolTip().contains(QStringLiteral("taille")));
 	}
 
-	SECTION("wider box: scaled by the height, centred across")
+	SECTION("a drawing larger than its box is not shrunk: it overflows it, and says so")
 	{
-		MountedPartItem item(part(QSizeF(90, 90)));
+			//The rule that was replaced would have scaled it down to fit.
+			//At real size it sticks out of the box on every side, and what
+			//is painted has to stay inside what the item declares.
+		MountedPartItem item(part(QSizeF(20, 20)));
 		item.setLayoutDrawing(drawingOf(drawing45x90()));
-		CHECK(item.layoutDrawingRect() == QRectF(22.5, 0, 45, 90));
-		CHECK(item.drawingProportionDiffers());
+		CHECK(item.layoutDrawingRect() == QRectF(-12.5, -35, 45, 90));
+		CHECK(item.boundingRect().contains(item.layoutDrawingRect()));
+		CHECK(item.drawingSizeDiffers());
+			//The fit check reads the box, not the drawing
+		CHECK(item.mountedItem().footprint().size() == QSizeF(20, 20));
 	}
 
 	SECTION("within the tolerance there is nothing to say")
 	{
-			//45 / 90 against 45 / 91: about 1 %, under the 2 % marked
-		MountedPartItem item(part(QSizeF(45, 91)));
-		item.setLayoutDrawing(drawingOf(drawing45x90()));
-		CHECK_FALSE(item.drawingProportionDiffers());
+			//1 mm on 91: over 0.5 mm, and under 2 % of it - the share
+			//is what lets it through
+		MountedPartItem taller(part(QSizeF(45, 91)));
+		taller.setLayoutDrawing(drawingOf(drawing45x90()));
+		CHECK_FALSE(taller.drawingSizeDiffers());
+			//0.4 mm on a part of 10: over 2 % of it, which is 0.2 mm, and
+			//under 0.5 mm - the floor is what lets it through. A small part
+			//drawn from a datasheet is not wrong by the width of a line.
+		MountedPartItem small(part(QSizeF(10.4, 20)));
+		small.setLayoutDrawing(drawingOf(outlineDrawing(10, 20)));
+		CHECK_FALSE(small.drawingSizeDiffers());
+		MountedPartItem small_off(part(QSizeF(10.6, 20)));
+		small_off.setLayoutDrawing(drawingOf(outlineDrawing(10, 20)));
+		CHECK(small_off.drawingSizeDiffers());
+			//And 1 mm on 46, which is more than both: 0.5 mm and 0.92 mm
+		MountedPartItem narrow(part(QSizeF(46, 90)));
+		narrow.setLayoutDrawing(drawingOf(drawing45x90()));
+		CHECK(narrow.drawingSizeDiffers());
 	}
 }
 
@@ -212,7 +292,7 @@ TEST_CASE("CU-44.9 — with no measure in the catalogue the drawing shows, and t
 	CHECK_FALSE(item.hasDeclaredSize());
 	CHECK(item.drawnRect() == QRectF(0, 0, 45, 90));
 	CHECK(item.layoutDrawingRect() == QRectF(0, 0, 45, 90));
-	CHECK_FALSE(item.drawingProportionDiffers());
+	CHECK_FALSE(item.drawingSizeDiffers());
 		//What is on the screen never becomes what is in the file
 	CHECK_FALSE(item.mountedItem().hasDeclaredSize());
 	CHECK(item.mountedItem().declaredSize() == QSizeF(0, 0));
@@ -258,7 +338,7 @@ TEST_CASE("CU-44.11 — the drawing comes from the project, and travels with it"
 		REQUIRE(on_plate != nullptr);
 		CHECK(on_plate->hasLayoutDrawing());
 		CHECK(on_plate->layoutDrawingRect() == QRectF(0, 5, 45, 90));
-		CHECK(on_plate->drawingProportionDiffers());
+		CHECK(on_plate->drawingSizeDiffers());
 	};
 
 	SECTION("on the plate window, read through the element of the folio")
