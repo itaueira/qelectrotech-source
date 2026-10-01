@@ -442,16 +442,13 @@ QHash<QString, QPointF> MountingScene::partAxes() const
 
 /**
 	@brief MountingScene::setLayoutDrawings
-	@param by_element the drawing of each element, by its uuid
+	@param by_code the drawing of each part code
 */
-void MountingScene::setLayoutDrawings(const QHash<QString, ElementPictureFactory::LayoutDrawing> &by_element)
+void MountingScene::setLayoutDrawings(const QHash<QString, ElementPictureFactory::LayoutDrawing> &by_code)
 {
-	m_drawings = by_element;
+	m_drawings = by_code;
 	for (MountedPartItem *part : std::as_const(m_items)) {
-		const QString element = part->mountedItem().element;
-		part->setLayoutDrawing(element.isEmpty()
-				       ? ElementPictureFactory::LayoutDrawing()
-				       : m_drawings.value(QUuid(element).toString()));
+		part->setLayoutDrawing(m_drawings.value(part->mountedItem().part_code.trimmed()));
 	}
 }
 
@@ -1180,12 +1177,10 @@ MountedPartItem *MountingScene::drawItem(const MountedItem &item)
 		part = new MountedPartItem(item);
 	}
 
-		//The drawing of the symbol, when the part is one and the symbol
-		//has one. Here, the one place a part becomes a drawing, so that a
-		//part put back by an undo is the same as the one taken away.
-	if (!item.element.isEmpty()) {
-		part->setLayoutDrawing(m_drawings.value(QUuid(item.element).toString()));
-	}
+		//The drawing of its part code, when the project keeps one. Here,
+		//the one place a part becomes a drawing, so that a part put back
+		//by an undo is the same as the one taken away.
+	part->setLayoutDrawing(m_drawings.value(item.part_code.trimmed()));
 
 	addItem(part);
 

@@ -17,17 +17,29 @@
 */
 #include "uibench.h"
 #include "../qt_catch_tostring.h"
+#include "../../../../sources/catalog/catalog.h"
+#include "../../../../sources/catalog/catalogpart.h"
 #include "../../../../sources/diagram.h"
+#include "../../../../sources/editor/elementscene.h"
+#include "../../../../sources/editor/ui/qetelementeditor.h"
 #include "../../../../sources/factory/elementpicturefactory.h"
 #include "../../../../sources/location/layout/mountedpartitem.h"
 #include "../../../../sources/location/layout/mountinglayouteditor.h"
 #include "../../../../sources/location/layout/mountingscene.h"
 #include "../../../../sources/location/mountinglayout.h"
 #include "../../../../sources/qetgraphicsitem/ViewItem/mountinglayoutviewitem.h"
+#include "../../../../sources/qetapp.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/qetresult.h"
 #include <catch2/catch.hpp>
 #include <QBuffer>
+#include <QAction>
+#include <QApplication>
 #include <QDomDocument>
+#include <QFile>
+#include <QGraphicsSceneMouseEvent>
+#include <QSettings>
+#include <QTemporaryDir>
 #include <QGraphicsScene>
 #include <QImage>
 #include <QPainter>
@@ -68,12 +80,9 @@ namespace
 
 	ElementPictureFactory::LayoutDrawing drawingOf(const QString &block)
 	{
-		QDomDocument doc;
-		REQUIRE(doc.setContent(QStringLiteral(
-			"<definition type=\"element\" width=\"20\" height=\"20\""
-			" hotspot_x=\"10\" hotspot_y=\"10\">"
-			"<description/>%1</definition>").arg(block)));
-		return ElementPictureFactory::layoutDrawing(doc.documentElement());
+		const auto drawing = ElementPictureFactory::layoutDrawingOf(block);
+		REQUIRE_FALSE(drawing.isNull());
+		return drawing;
 	}
 
 	MountedItem part(const QSizeF &size)
@@ -317,20 +326,93 @@ TEST_CASE("CU-44.10 — with no 2D drawing the part stays the box with its name"
 	CHECK_FALSE(item.hasLayoutDrawing());
 }
 
-TEST_CASE("CU-44.11 — the drawing comes from the project, and travels with it",
+/*
+	The plate at the scale of a project: the drawing of each part comes
+	from the copy the project keeps by part code, renewed from the
+	catalogue, and not from the symbol of the folio, which serves a whole
+	family of parts and carries no drawing.
+*/
+namespace {
+	const QString part_code = QStringLiteral("LC1D09");
+
+	MountedItem coded(const QSizeF &size, const QString &code = part_code)
+	{
+		MountedItem item = part(size);
+		item.part_code = code;
+		return item;
+	}
+
+	/// The catalogue of the program, pointed at a file of its own for the
+	/// time of a test and given back afterwards: opening a project renews
+	/// its copies from that catalogue, and a test of it must not write in
+	/// anybody's
+	class ProgramCatalogue
+	{
+		public:
+			explicit ProgramCatalogue(const QString &file) :
+				m_before(QSettings().value(QStringLiteral("catalog/path")).toString())
+			{
+				QETApp::setCatalogPath(file);
+			}
+			~ProgramCatalogue() {QETApp::setCatalogPath(m_before);}
+			Catalog &catalog() {return *QETApp::catalog();}
+
+		private:
+			QString m_before;
+	};
+
+	void saveDrawing(Catalog &catalog, const QString &code, const QString &block)
+	{
+		CatalogPart part = catalog.partByCode(code);
+		if (part.isNull()) {
+			part = CatalogPart(code, catalog.classByKey(QStringLiteral("contactor")).id);
+		}
+		part.layout_drawing = block;
+		QString error;
+		REQUIRE(catalog.savePart(part, &error));
+	}
+
+	void sendMouse(ElementScene *scene, QEvent::Type type, const QPointF &pos)
+	{
+		QGraphicsSceneMouseEvent event(type);
+		event.setScenePos(pos);
+		event.setButton(type == QEvent::GraphicsSceneMouseMove ? Qt::NoButton : Qt::LeftButton);
+		event.setButtons(type == QEvent::GraphicsSceneMousePress ? Qt::LeftButton : Qt::NoButton);
+		QApplication::sendEvent(scene, &event);
+	}
+
+	QAction *actionNamed(QWidget &window, const QString &text)
+	{
+		for (QAction *action : window.findChildren<QAction *>()) {
+			if (action->text() == text) {
+				return action;
+			}
+		}
+		FAIL("no action named " << text.toStdString());
+		return nullptr;
+	}
+}
+
+TEST_CASE("CU-44.11 — the drawing comes from the copy the project keeps, and travels with it",
 	  "[t44][calepinagem]")
 {
-	UiBench::ScratchProject scratch(projectXml(drawing45x90()),
-					QStringLiteral("plate-drawing.qet"));
+		//The symbol of the folio carries no drawing: the part is drawn by
+		//its code, and the copy is in the project
+	UiBench::ScratchProject scratch(projectXml(QString()), QStringLiteral("plate-drawing.qet"));
 	INFO(scratch.error().toStdString());
 	REQUIRE(scratch.isOpen());
-	REQUIRE(scratch.diagram(0)->elements().size() == 1);
-	REQUIRE(scratch.diagram(0)->elements().first()->uuid().toString() == elementUuid());
 
-	MountedItem linked = part(QSizeF(45, 100));
+	MountedItem linked = coded(QSizeF(45, 100));
 	linked.element = elementUuid();
 	QString face;
-	scratch->setMountingLayout(plateWith(linked, &face));
+	MountingLayout layout = plateWith(linked, &face);
+	layout.setPartDrawing(part_code, drawing45x90());
+		//And a part with no symbol behind it: the same code, the same drawing
+	MountedItem loose = coded(QSizeF(45, 90));
+	loose.uuid = QStringLiteral("q2");
+	loose.position = QPointF(200, 20);
+	REQUIRE_FALSE(layout.mountItem(face, loose).isEmpty());
+	scratch->setMountingLayout(layout);
 
 	auto checkPlate = [&face](QETProject *project) {
 		MountingLayoutEditor editor(project);
@@ -340,9 +422,12 @@ TEST_CASE("CU-44.11 — the drawing comes from the project, and travels with it"
 		CHECK(on_plate->hasLayoutDrawing());
 		CHECK(on_plate->layoutDrawingRect() == QRectF(0, 5, 45, 90));
 		CHECK(on_plate->drawingSizeDiffers());
+		MountedPartItem *without_symbol = editor.scene()->partItem(QStringLiteral("q2"));
+		REQUIRE(without_symbol != nullptr);
+		CHECK(without_symbol->hasLayoutDrawing());
 	};
 
-	SECTION("on the plate window, read through the element of the folio")
+	SECTION("on the plate window")
 	{
 		checkPlate(scratch.project());
 	}
@@ -359,21 +444,127 @@ TEST_CASE("CU-44.11 — the drawing comes from the project, and travels with it"
 		CHECK(on_folio->layoutDrawingRect() == QRectF(0, 5, 45, 90));
 	}
 
-	SECTION("after a save and a reopening, from the copy the project embeds")
+	SECTION("after a save and a reopening with a catalogue that does not know the code")
 	{
+			//The catalogue of the bench is empty: the code is unknown, and
+			//the copy is what draws the plate
+		REQUIRE(QETApp::catalog()->partByCode(part_code).isNull());
 		REQUIRE(scratch.saveAndReopen());
 		checkPlate(scratch.project());
 	}
 }
 
-TEST_CASE("T44 — a part whose symbol has no 2D drawing, or that is no symbol, gets none",
+TEST_CASE("CU-44.16 — the catalogue is the source of the copy, at opening and when it changes",
 	  "[t44][calepinagem]")
 {
-	UiBench::ScratchProject scratch(projectXml(QString()),
-					QStringLiteral("plate-nodrawing.qet"));
+	QTemporaryDir directory;
+	REQUIRE(directory.isValid());
+	ProgramCatalogue program(directory.filePath(QStringLiteral("catalogue.sqlite")));
+	REQUIRE(program.catalog().isOpen());
+	saveDrawing(program.catalog(), part_code, outlineDrawing(45, 100));
+
+		//Written with the old drawing, 45 by 90
+	UiBench::ScratchProject scratch(projectXml(QString()), QStringLiteral("plate-source.qet"));
+	REQUIRE(scratch.isOpen());
+	QString face;
+	MountingLayout layout = plateWith(coded(QSizeF(45, 100)), &face);
+	layout.setPartDrawing(part_code, drawing45x90());
+	scratch->setMountingLayout(layout);
+
+		//Opened again: the catalogue says 45 by 100, and the plate follows
+	REQUIRE(scratch.saveAndReopen());
+	CHECK(ElementPictureFactory::layoutDrawingOf(
+		      scratch->mountingLayout().partDrawing(part_code)).bounds == QRectF(0, 0, 45, 100));
+	CHECK_FALSE(scratch->projectWasModified());
+	{
+		MountingLayoutEditor editor(scratch.project());
+		MountedPartItem *drawn = editor.scene()->partItem(QStringLiteral("q1"));
+		REQUIRE(drawn != nullptr);
+		CHECK(drawn->layoutDrawingRect() == QRectF(0, 0, 45, 100));
+		CHECK_FALSE(drawn->drawingSizeDiffers());
+	}
+
+		//The drawing taken off the part, with the project open: the copy
+		//goes, and the part is a box with its name again - and renewing is
+		//no edit of anybody's
+	auto *view = new MountingLayoutViewItem();
+	scratch.diagram(0)->addItem(view);
+	view->setProject(scratch.project());
+	view->setSurfaceUuid(face);
+	REQUIRE(view->partItem(QStringLiteral("q1"))->hasLayoutDrawing());
+	saveDrawing(program.catalog(), part_code, QString());
+	CHECK(scratch->mountingLayout().partDrawing(part_code).isEmpty());
+	CHECK_FALSE(view->partItem(QStringLiteral("q1"))->hasLayoutDrawing());
+	CHECK_FALSE(scratch->projectWasModified());
+}
+
+TEST_CASE("T44 — opening renews the copy from the catalogue, and so does saving, each on its own",
+	  "[t44][calepinagem]")
+{
+		//Saving and reopening hides one behind the other: a save that
+		//renews writes the new drawing, and the opening that should renew
+		//finds nothing left to do - planted, either went unnoticed. So each
+		//is asked alone here.
+	QTemporaryDir directory;
+	REQUIRE(directory.isValid());
+	const QString file = directory.filePath(QStringLiteral("catalogue.sqlite"));
+	ProgramCatalogue program(file);
+	REQUIRE(program.catalog().isOpen());
+	saveDrawing(program.catalog(), part_code, outlineDrawing(45, 100));
+
+	QString face;
+	MountingLayout layout = plateWith(coded(QSizeF(45, 100)), &face);
+	layout.setPartDrawing(part_code, drawing45x90());
+	QDomDocument written;
+	written.appendChild(layout.toXml(written));
+	QString project_xml = projectXml(QString());
+	project_xml.replace(QStringLiteral("</project>"), written.toString(-1) + QStringLiteral("</project>"));
+
+	SECTION("opening: a file written with the old drawing comes up with the new one")
+	{
+		UiBench::ScratchProject scratch(project_xml, QStringLiteral("plate-open.qet"));
+		REQUIRE(scratch.isOpen());
+		CHECK(ElementPictureFactory::layoutDrawingOf(
+			      scratch->mountingLayout().partDrawing(part_code)).bounds == QRectF(0, 0, 45, 100));
+		CHECK_FALSE(scratch->projectWasModified());
+	}
+
+	SECTION("saving: a change made elsewhere, that this program was not told of, is written")
+	{
+		UiBench::ScratchProject scratch(projectXml(QString()), QStringLiteral("plate-save.qet"));
+		REQUIRE(scratch.isOpen());
+		scratch->setMountingLayout(layout);
+			//Another workstation on the same catalogue: no signal reaches
+			//this program, and the next save is what carries the change
+		{
+			Catalog elsewhere;
+			QString error;
+			REQUIRE(elsewhere.open(file, &error));
+			saveDrawing(elsewhere, part_code, outlineDrawing(45, 110));
+		}
+		REQUIRE(scratch->write().isOk());
+
+		QFile saved(scratch.filePath());
+		REQUIRE(saved.open(QIODevice::ReadOnly));
+		QDomDocument document;
+		REQUIRE(document.setContent(saved.readAll()));
+		const QDomElement copy = document.documentElement()
+				.firstChildElement(MountingLayout::tagName())
+				.firstChildElement(QStringLiteral("part_drawings"))
+				.firstChildElement(QStringLiteral("part_drawing"));
+		REQUIRE(copy.attribute(QStringLiteral("code")) == part_code);
+		CHECK(ElementPictureFactory::layoutDrawingOf(copy.firstChildElement()).bounds
+		      == QRectF(0, 0, 45, 110));
+	}
+}
+
+TEST_CASE("T44 — a part with no code, or a code with no copy, gets no drawing",
+	  "[t44][calepinagem]")
+{
+	UiBench::ScratchProject scratch(projectXml(QString()), QStringLiteral("plate-nodrawing.qet"));
 	REQUIRE(scratch.isOpen());
 
-	MountedItem linked = part(QSizeF(45, 90));
+	MountedItem linked = coded(QSizeF(45, 90), QStringLiteral("NO-COPY"));
 	linked.element = elementUuid();
 	MountedItem loose(QStringLiteral("-X9"), QPointF(100, 20), QSizeF(6, 45));
 	loose.uuid = QStringLiteral("x9");
@@ -383,7 +574,7 @@ TEST_CASE("T44 — a part whose symbol has no 2D drawing, or that is no symbol, 
 	scratch->setMountingLayout(layout);
 
 	const auto drawings = MountedPartItem::layoutDrawingsOf(
-				scratch.project(), scratch->mountingLayout().surface(face).items);
+				scratch->mountingLayout(), scratch->mountingLayout().surface(face).items);
 	CHECK(drawings.isEmpty());
 
 	MountingLayoutEditor editor(scratch.project());
@@ -398,15 +589,13 @@ TEST_CASE("T44 — the scene keeps the drawings it is given, for the parts it dr
 		//covers the plate window. This is the scene on its own: given the
 		//drawings first, rebuilt afterwards - by a new face, by an undo of
 		//its own - it must give each part its drawing back unaided.
-	MountedItem linked = part(QSizeF(45, 90));
-	linked.element = elementUuid();
 	MountingSurface surface(QStringLiteral("QCM1"), QStringLiteral("plate"),
 				MountingArea(600.0, 800.0));
-	surface.items << linked;
+	surface.items << coded(QSizeF(45, 90));
 
 	MountingScene scene;
 	QHash<QString, ElementPictureFactory::LayoutDrawing> drawings;
-	drawings.insert(elementUuid(), drawingOf(drawing45x90()));
+	drawings.insert(part_code, drawingOf(drawing45x90()));
 	scene.setLayoutDrawings(drawings);
 	REQUIRE(scene.partItem(QStringLiteral("q1")) == nullptr);
 
@@ -415,6 +604,69 @@ TEST_CASE("T44 — the scene keeps the drawings it is given, for the parts it dr
 	REQUIRE(drawn != nullptr);
 	CHECK(drawn->hasLayoutDrawing());
 	CHECK(drawn->layoutDrawingRect() == QRectF(0, 0, 45, 90));
+}
+
+TEST_CASE("CU-44.19 — the drawing of a part is modified from the plate, into the catalogue",
+	  "[t44][calepinagem]")
+{
+	Catalog catalog;
+	QString error;
+	REQUIRE(catalog.openInMemory(&error));
+	saveDrawing(catalog, part_code, drawing45x90());
+
+	UiBench::ScratchProject scratch(projectXml(QString()), QStringLiteral("plate-edit.qet"));
+	REQUIRE(scratch.isOpen());
+	QString face;
+	MountingLayout layout = plateWith(coded(QSizeF(45, 90)), &face);
+	MountedItem loose(QStringLiteral("-X9"), QPointF(100, 20), QSizeF(6, 45));
+	loose.uuid = QStringLiteral("x9");
+	REQUIRE_FALSE(layout.mountItem(face, loose).isEmpty());
+	scratch->setMountingLayout(layout);
+	REQUIRE(scratch->refreshPartDrawings(catalog));
+
+	MountingLayoutEditor editor(scratch.project());
+	editor.setCatalog(&catalog);
+	editor.show();
+	QAction *modify = actionNamed(editor, QStringLiteral("Modifier le dessin 2D de la pièce…"));
+
+		//A part with no code has no part to draw
+	editor.scene()->partItem(QStringLiteral("x9"))->setSelected(true);
+	CHECK_FALSE(modify->isEnabled());
+	editor.scene()->clearSelection();
+	MountedPartItem *on_plate = editor.scene()->partItem(QStringLiteral("q1"));
+	on_plate->setSelected(true);
+	REQUIRE(modify->isEnabled());
+	modify->trigger();
+
+	QETElementEditor *drawing = nullptr;
+	for (QETElementEditor *shown : editor.findChildren<QETElementEditor *>()) {
+		if (shown->isVisible() && shown->isPartDrawingMode()) {
+			drawing = shown;
+		}
+	}
+	REQUIRE(drawing != nullptr);
+	CHECK(drawing->windowTitle().contains(part_code));
+		//It opens on what the catalogue holds
+	REQUIRE(drawing->layoutDrawingScene()->items().size() >= 1);
+
+		//A line drawn with the tool, and saved
+	actionNamed(*drawing, QStringLiteral("Ajouter une ligne"))->trigger();
+	ElementScene *scene = drawing->elementScene();
+	sendMouse(scene, QEvent::GraphicsSceneMousePress, QPointF(0, 45));
+	sendMouse(scene, QEvent::GraphicsSceneMouseRelease, QPointF(0, 45));
+	sendMouse(scene, QEvent::GraphicsSceneMouseMove, QPointF(45, 45));
+	sendMouse(scene, QEvent::GraphicsSceneMousePress, QPointF(45, 45));
+	sendMouse(scene, QEvent::GraphicsSceneMouseRelease, QPointF(45, 45));
+	QAction *save = drawing->findChild<QAction *>(QStringLiteral("m_save_action"));
+	REQUIRE(save);
+	save->trigger();
+
+		//In the catalogue, in the copy of the project, and on the plate,
+		//without reopening anything
+	CHECK(ElementPictureFactory::layoutDrawingOf(catalog.partByCode(part_code).layout_drawing).parts == 2);
+	CHECK(ElementPictureFactory::layoutDrawingOf(scratch->mountingLayout().partDrawing(part_code)).parts == 2);
+	CHECK(editor.scene()->partItem(QStringLiteral("q1"))->hasLayoutDrawing());
+	CHECK(drawing->close());
 }
 
 namespace {

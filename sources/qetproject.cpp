@@ -30,6 +30,8 @@
 #include "diagram.h"
 #include "qetgraphicsitem/element.h"
 #include "qetapp.h"
+#include "catalog/catalog.h"
+#include "location/mountingpartview.h"
 #include "qetmessagebox.h"
 #include "qetresult.h"
 #include "titleblock/integrationmovetemplateshandler.h"
@@ -352,6 +354,11 @@ void QETProject::init()
 
 	m_undo_stack = new QUndoStack(this);
 	connect(m_undo_stack, &QUndoStack::cleanChanged, this, &QETProject::undoStackChanged);
+		//A part changed in the catalogue is a drawing that may have changed
+		//on a plate of this project
+	connect(QETApp::catalog(), &Catalog::partsChanged, this, [this]() {
+		refreshPartDrawings(*QETApp::catalog());
+	});
 		//Every push, undo and redo moves the index, and each of them changes
 		//what toXml() would write. cleanChanged() above does not cover that:
 		//it only fires when the stack crosses its clean mark, so the second
@@ -1416,6 +1423,7 @@ QDomDocument QETProject::toXml()
 		//by the same rule: a project whose panel nobody laid out writes
 		//no such element at all.
 	if (!m_mounting_layout.isEmpty()) {
+		refreshPartDrawings(*QETApp::catalog());
 		project_root.appendChild(m_mounting_layout.toXml(xml_doc));
 	}
 
@@ -2097,6 +2105,9 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 		//written before this existed stands.
 	m_mounting_layout.fromXml(xml_project.documentElement().firstChildElement(
 					  MountingLayout::tagName()));
+		//The catalogue is the source of the drawings the layout keeps a copy
+		//of, and opening is where a change made there reaches the project
+	refreshPartDrawings(*QETApp::catalog());
 
 		//The configurations. Tolerant the same way: no element means no
 		//option, which is the state of every project ever written until
@@ -2916,6 +2927,15 @@ MountingLayout QETProject::mountingLayout() const
 	it only here, after the value really changed, is the whole contract those
 	views rely on.
 */
+bool QETProject::refreshPartDrawings(const Catalog &catalog)
+{
+	if (!MountingPartReader::refreshDrawings(catalog, m_mounting_layout)) {
+		return false;
+	}
+	emit partDrawingsChanged(this);
+	return true;
+}
+
 void QETProject::setMountingLayout(const MountingLayout &layout)
 {
 	if (m_mounting_layout == layout) {

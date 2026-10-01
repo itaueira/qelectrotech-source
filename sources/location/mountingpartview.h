@@ -358,6 +358,21 @@ class MountingPartReader
 		static QStringList partCodesOf(const MountingLayout &layout);
 
 		/**
+			@brief Renew the copies of the 2D drawings @a layout keeps,
+			from @a catalog, which is their source.
+			@return true when a copy changed
+
+			A code the catalogue knows takes its drawing, and loses its
+			copy when the part has none: taking the drawing off a part
+			is a decision, and it holds. A code the catalogue does not
+			know keeps its copy - that copy is what draws the plate the
+			same on another computer, or with the network down, and a
+			catalogue that does not answer never erases what the project
+			knows. A code no item uses any more loses its copy.
+		*/
+		static bool refreshDrawings(const Catalog &catalog, MountingLayout &layout);
+
+		/**
 			@brief Which codes of a face the catalogue does not
 			hold.
 			@param catalog the catalogue to ask

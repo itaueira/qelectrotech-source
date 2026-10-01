@@ -53,6 +53,7 @@
 #include <array>
 #include <atomic>
 
+class Catalog;
 class Diagram;
 class ElementsLocation;
 class QETResult;
@@ -372,6 +373,17 @@ class QETProject : public QObject
 		*/
 		MountingLayout mountingLayout() const;
 		void setMountingLayout(const MountingLayout &layout);
+		/**
+			@brief Renew the copies of the 2D drawings of the parts the
+			layout mounts, from @a catalog.
+			@return true when a copy changed
+
+			Not an edit of anybody's: the project is not marked
+			modified and nothing enters the undo, and the next save
+			writes the renewed copies. partDrawingsChanged() tells the
+			views that draw them.
+		*/
+		bool refreshPartDrawings(const Catalog &catalog);
 
 		/**
 			@brief In which configurations this project can be built,
@@ -468,6 +480,9 @@ class QETProject : public QObject
 			/// afternoon somebody posed it, and the project then holds two
 			/// answers about one panel.
 		void mountingLayoutChanged(QETProject *);
+			/// The copies of the 2D drawings were renewed from the
+			/// catalogue, and nothing else of the layout changed
+		void partDrawingsChanged(QETProject *);
 
 	private slots:
 		void updateDiagramsFolioData();

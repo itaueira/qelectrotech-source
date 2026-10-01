@@ -22,6 +22,7 @@
 #include "enclosuretransfer.h"
 
 #include <QCoreApplication>
+#include <QHash>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -378,6 +379,22 @@ class MountingLayout
 		QDomElement toXml(QDomDocument &document) const;
 		bool fromXml(const QDomElement &element);
 
+		/**
+			@brief The copy the project keeps of the 2D drawing of a
+			part of the catalogue, by its part code.
+
+			The catalogue is the source, and this is the copy that
+			travels: a project opened on another computer, or with the
+			network down, draws its plates the same. Text, the
+			<layout_drawing> block as the part keeps it, and nothing
+			here reads it - drawing it is the plate's business.
+			@return the block, empty when the project keeps none
+		*/
+		QString partDrawing(const QString &part_code) const;
+			/// @brief Keep @a block for @a part_code; an empty one drops it
+		void setPartDrawing(const QString &part_code, const QString &block);
+		QHash<QString, QString> partDrawings() const;
+
 		static QString tagName();
 		static QString newId();
 
@@ -390,6 +407,7 @@ class MountingLayout
 			       const QString &except_surface_uuid = QString()) const;
 
 		QVector<MountingSurface> m_surfaces;
+		QHash<QString, QString> m_part_drawings;
 };
 
 #endif // MOUNTINGLAYOUT_H

@@ -19,6 +19,7 @@
 #include "../../../sources/location/mountingpartview.h"
 #include "qt_catch_tostring.h"
 
+#include <QDomDocument>
 #include <QHash>
 #include <QList>
 #include <QPointF>
@@ -777,4 +778,117 @@ TEST_CASE("T19 — the whole layout is refreshed face by face, and says what cha
 			//must not make the project ask to be saved.
 		CHECK(MountingPartReader::applyTo(catalog, layout).isEmpty());
 	}
+}
+
+/*
+	The copy the project keeps of the 2D drawing of each part, by part
+	code: the catalogue is its source, and the copy is what travels.
+*/
+namespace
+{
+	QString drawingBlock(qreal width, qreal height)
+	{
+		return QStringLiteral("<layout_drawing><rect x='0' y='0' width='%1' height='%2'/>"
+				      "</layout_drawing>").arg(width).arg(height);
+	}
+
+	/// The block as a DOM writes it
+	QString canonical(const QString &block)
+	{
+		QDomDocument document;
+		REQUIRE(document.setContent(block));
+		return document.toString(-1);
+	}
+
+	MountingLayout layoutOf(const QStringList &codes)
+	{
+		MountingLayout layout;
+		MountingSurface board(QStringLiteral("QCM1"), QStringLiteral("plate"),
+				      MountingArea(600, 300));
+		board.uuid = QStringLiteral("plate-1");
+		int index = 0;
+		for (const QString &code : codes) {
+			board.items << mounted(QString::number(++index).toUtf8().constData(),
+					       code.toUtf8().constData(), index * 50.0, 0, QSizeF(45, 90));
+		}
+		REQUIRE_FALSE(layout.appendSurface(board).isEmpty());
+		return layout;
+	}
+}
+
+TEST_CASE("T44 — the layout keeps a copy of each drawing by part code, and writes it",
+	  "[t44][location][mounting]")
+{
+	MountingLayout layout = layoutOf({QStringLiteral("LC1D09"), QStringLiteral("GV2ME10")});
+	layout.setPartDrawing(QStringLiteral("LC1D09"), drawingBlock(45, 90));
+		//The code is the code, spaces aside, the way partCodesOf() reads it
+	layout.setPartDrawing(QStringLiteral(" GV2ME10 "), drawingBlock(45, 100));
+	CHECK(layout.partDrawing(QStringLiteral("GV2ME10")) == canonical(drawingBlock(45, 100)));
+	CHECK(layout.partDrawings().size() == 2);
+
+		//Written and read back, the same layout
+	QDomDocument document;
+	document.appendChild(layout.toXml(document));
+	CHECK(document.documentElement().firstChildElement(QStringLiteral("part_drawings"))
+	      .elementsByTagName(QStringLiteral("part_drawing")).size() == 2);
+	MountingLayout read;
+	REQUIRE(read.fromXml(document.documentElement()));
+	CHECK(read.partDrawing(QStringLiteral("LC1D09")) == canonical(drawingBlock(45, 90)));
+	CHECK(read == layout);
+
+		//And a drawing that differs is a layout that differs: that is what
+		//makes a save of the project carry the copy it changed
+	MountingLayout other = read;
+	other.setPartDrawing(QStringLiteral("LC1D09"), drawingBlock(45, 95));
+	CHECK(other != read);
+
+		//No drawing, no copy - and nothing written for it
+	read.setPartDrawing(QStringLiteral("LC1D09"), QString());
+	read.setPartDrawing(QStringLiteral("GV2ME10"), QStringLiteral("not a drawing"));
+	CHECK(read.partDrawings().isEmpty());
+	QDomDocument empty;
+	empty.appendChild(read.toXml(empty));
+	CHECK(empty.documentElement().firstChildElement(QStringLiteral("part_drawings")).isNull());
+}
+
+TEST_CASE("T44 — the catalogue is the source of the copies, and a code it does not know keeps its own",
+	  "[t44][location][mounting][catalog]")
+{
+	OpenCatalog fixture;
+	Catalog &catalog = fixture.catalog;
+
+	CatalogPart drawn(QStringLiteral("LC1D09"), classId(catalog, "contactor"));
+	drawn.layout_drawing = drawingBlock(45, 90);
+	CatalogPart plain(QStringLiteral("GV2ME10"), classId(catalog, "contactor"));
+	QString error;
+	REQUIRE(catalog.savePart(drawn, &error));
+	REQUIRE(catalog.savePart(plain, &error));
+
+	MountingLayout layout = layoutOf({QStringLiteral("LC1D09"), QStringLiteral("GV2ME10"),
+					  QStringLiteral("NOT-HERE")});
+	layout.setPartDrawing(QStringLiteral("LC1D09"), drawingBlock(40, 80));
+	layout.setPartDrawing(QStringLiteral("GV2ME10"), drawingBlock(40, 80));
+	layout.setPartDrawing(QStringLiteral("NOT-HERE"), drawingBlock(10, 10));
+	layout.setPartDrawing(QStringLiteral("GONE"), drawingBlock(5, 5));
+
+	CHECK(MountingPartReader::refreshDrawings(catalog, layout));
+		//Known, with a drawing: the drawing of the catalogue
+	CHECK(layout.partDrawing(QStringLiteral("LC1D09")) == canonical(drawingBlock(45, 90)));
+		//Known, without one: the copy goes - taking it off was a decision
+	CHECK(layout.partDrawing(QStringLiteral("GV2ME10")).isEmpty());
+		//Not known here: the copy stays, and draws the plate the same
+	CHECK(layout.partDrawing(QStringLiteral("NOT-HERE")) == canonical(drawingBlock(10, 10)));
+		//Mounted nowhere any more: nothing to keep it for
+	CHECK(layout.partDrawing(QStringLiteral("GONE")).isEmpty());
+
+		//Nothing changed in the catalogue, nothing changes here
+	CHECK_FALSE(MountingPartReader::refreshDrawings(catalog, layout));
+
+		//And a catalogue that does not answer erases nothing it was not
+		//asked about
+	Catalog closed;
+	REQUIRE_FALSE(closed.isOpen());
+	CHECK_FALSE(MountingPartReader::refreshDrawings(closed, layout));
+	CHECK(layout.partDrawing(QStringLiteral("LC1D09")) == canonical(drawingBlock(45, 90)));
+	CHECK(layout.partDrawing(QStringLiteral("NOT-HERE")) == canonical(drawingBlock(10, 10)));
 }

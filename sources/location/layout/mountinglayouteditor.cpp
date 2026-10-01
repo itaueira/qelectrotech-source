@@ -20,6 +20,7 @@
 #include "../../catalog/catalog.h"
 #include "../../catalog/catalogpart.h"
 #include "../../catalog/ui/catalogbrowserdialog.h"
+#include "../../editor/ui/qetelementeditor.h"
 #include "../../elementprovider.h"
 #include "../../qetapp.h"
 #include "../../qeticons.h"
@@ -775,8 +776,12 @@ QString MountingLayoutEditor::mountOnShownSurface(MountedItem item,
 
 		//A product that was not on this face a moment ago may be one
 		//whose axis the catalogue knows, and the drawing has to be told
-		//before the first time somebody drops that part on a rail.
+		//before the first time somebody drops that part on a rail. And
+		//one whose drawing the project has no copy of yet.
 	refreshPartAxes();
+	if (m_project && catalog()) {
+		m_project->refreshPartDrawings(*catalog());
+	}
 	refreshLayoutDrawings();
 
 	refreshSurfaceList();
@@ -1125,6 +1130,13 @@ void MountingLayoutEditor::buildActions()
 	connect(m_spread_down, &QAction::triggered,
 		this, &MountingLayoutEditor::spreadDown);
 
+	m_edit_part_drawing = new QAction(tr("Modifier le dessin 2D de la pièce…"), this);
+	m_edit_part_drawing->setStatusTip(tr("Ouvre le dessin 2D de la pièce sélectionnée, tel que "
+					     "le catalogue le garde ; ce qui est enregistré va dans "
+					     "la pièce du catalogue, pour tous les projets."));
+	connect(m_edit_part_drawing, &QAction::triggered,
+		this, &MountingLayoutEditor::editPartDrawing);
+
 	m_go_to_symbol = new QAction(tr("Aller au symbole"), this);
 	m_go_to_symbol->setStatusTip(tr("Affiche le folio du symbole de la pièce "
 					  "sélectionnée, avec le symbole sélectionné."));
@@ -1187,6 +1199,7 @@ void MountingLayoutEditor::buildWidgets()
 	edit_menu->addAction(m_redo);
 	edit_menu->addSeparator();
 	edit_menu->addAction(m_go_to_symbol);
+	edit_menu->addAction(m_edit_part_drawing);
 
 	QMenu *view_menu = menuBar()->addMenu(tr("&Affichage"));
 	view_menu->addAction(m_zoom_in);
@@ -1292,8 +1305,82 @@ void MountingLayoutEditor::refreshLayoutDrawings()
 		m_scene->setLayoutDrawings({});
 		return;
 	}
+	const MountingLayout layout = m_project->mountingLayout();
 	m_scene->setLayoutDrawings(MountedPartItem::layoutDrawingsOf(
-					    m_project, m_project->mountingLayout().surface(m_shown).items));
+					    layout, layout.surface(m_shown).items));
+}
+
+Catalog *MountingLayoutEditor::catalog() const
+{
+	return m_catalog ? m_catalog.data() : QETApp::catalog();
+}
+
+void MountingLayoutEditor::setCatalog(Catalog *catalog)
+{
+	m_catalog = catalog;
+	refreshPartAxes();
+	updateActions();
+}
+
+/**
+	@brief MountingLayoutEditor::editPartDrawing
+	Open the 2D drawing of the part selected, as the catalogue holds it,
+	in the editor, over this window. What the editor saves is written to
+	the part at once: here there is no window of the part to hold it.
+*/
+void MountingLayoutEditor::editPartDrawing()
+{
+	const QStringList selected = m_scene->selectedUuids();
+	if (selected.count() != 1 || !catalog()) {
+		return;
+	}
+	const MountedPartItem *part = m_scene->partItem(selected.first());
+	if (!part) {
+		return;
+	}
+	const QString code = part->mountedItem().part_code.trimmed();
+	const CatalogPart catalog_part = catalog()->partByCode(code);
+	if (catalog_part.isNull()) {
+		return;
+	}
+
+	auto *editor = new QETElementEditor(this);
+	editor->setAttribute(Qt::WA_DeleteOnClose);
+	editor->setWindowModality(Qt::WindowModal);
+	editor->editPartDrawing(code, catalog_part.layout_drawing);
+	connect(editor, &QETElementEditor::partDrawingSaved, this, [this, code](const QString &block) {
+		savePartDrawing(code, block);
+	});
+	editor->show();
+}
+
+bool MountingLayoutEditor::savePartDrawing(const QString &code, const QString &block)
+{
+	Catalog *catalog = this->catalog();
+	if (!catalog) {
+		return false;
+	}
+		//Read again: the part may have been saved by somebody else since
+		//the editor opened, and only its drawing is this window's to write
+	CatalogPart part = catalog->partByCode(code);
+	if (part.isNull())
+	{
+		say(tr("La pièce « %1 » n'est plus dans le catalogue : le dessin n'a pas "
+		       "été enregistré.").arg(code), true);
+		return false;
+	}
+	part.layout_drawing = block;
+	QString error;
+	if (!catalog->savePart(part, &error))
+	{
+		say(error, true);
+		return false;
+	}
+	if (m_project) {
+		m_project->refreshPartDrawings(*catalog);
+	}
+	refreshLayoutDrawings();
+	return true;
 }
 
 void MountingLayoutEditor::refreshPartAxes()
@@ -1302,7 +1389,7 @@ void MountingLayoutEditor::refreshPartAxes()
 		return;
 	}
 
-	Catalog *catalog = QETApp::catalog();
+	Catalog *catalog = this->catalog();
 	if (!catalog)
 	{
 		m_scene->setPartAxes(QHash<QString, QPointF>());
@@ -1389,6 +1476,17 @@ void MountingLayoutEditor::updateActions()
 		}
 	}
 	m_go_to_symbol->setEnabled(has_symbol);
+
+		//One part, of a code the catalogue knows: the drawing is the
+		//part's, and a code nobody has registered has no part to draw
+	bool has_part = false;
+	if (selected == 1 && catalog()) {
+		if (const MountedPartItem *part = m_scene->partItem(m_scene->selectedUuids().first())) {
+			const QString code = part->mountedItem().part_code.trimmed();
+			has_part = !code.isEmpty() && !catalog()->partByCode(code).isNull();
+		}
+	}
+	m_edit_part_drawing->setEnabled(has_part && isEditable());
 
 	const int index = m_surface_box->findData(m_shown);
 	if (index >= 0 && index != m_surface_box->currentIndex())

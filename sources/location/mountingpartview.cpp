@@ -18,6 +18,7 @@
 #include "mountingpartview.h"
 
 #include "../catalog/catalog.h"
+#include "../catalog/catalogpart.h"
 #include "../catalog/physicalview.h"
 
 #include <QSet>
@@ -556,6 +557,29 @@ QStringList MountingPartReader::partCodesOf(const MountingLayout &layout)
 		}
 	}
 	return distinctCodes(codes);
+}
+
+bool MountingPartReader::refreshDrawings(const Catalog &catalog, MountingLayout &layout)
+{
+	const MountingLayout before = layout;
+	const QStringList codes = partCodesOf(layout);
+
+	const QStringList kept = layout.partDrawings().keys();
+	for (const QString &code : kept) {
+		if (!codes.contains(code)) {
+			layout.setPartDrawing(code, QString());
+		}
+	}
+
+	for (const QString &code : codes)
+	{
+		const CatalogPart part = catalog.partByCode(code);
+		if (part.isNull()) {
+			continue;
+		}
+		layout.setPartDrawing(code, part.layout_drawing);
+	}
+	return layout != before;
 }
 
 /**

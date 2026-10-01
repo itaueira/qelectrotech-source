@@ -623,6 +623,35 @@ bool MountingLayout::isEmpty() const
 void MountingLayout::clear()
 {
 	m_surfaces.clear();
+	m_part_drawings.clear();
+}
+
+QString MountingLayout::partDrawing(const QString &part_code) const
+{
+	return m_part_drawings.value(part_code.trimmed());
+}
+
+void MountingLayout::setPartDrawing(const QString &part_code, const QString &block)
+{
+	const QString code = part_code.trimmed();
+	if (code.isEmpty()) {
+		return;
+	}
+		//Kept the way a DOM writes it: the same drawing read from the
+		//file and from the catalogue compares equal, whatever quoting or
+		//order of attributes it arrived in, and the project is not told it
+		//changed when it did not. What is no XML is no drawing.
+	QDomDocument document;
+	if (block.isEmpty() || !document.setContent(block)) {
+		m_part_drawings.remove(code);
+		return;
+	}
+	m_part_drawings.insert(code, document.toString(-1));
+}
+
+QHash<QString, QString> MountingLayout::partDrawings() const
+{
+	return m_part_drawings;
 }
 
 /// @return how many items the project has mounted, every face added up
@@ -1208,6 +1237,27 @@ QDomElement MountingLayout::toXml(QDomDocument &document) const
 	for (const MountingSurface &surface : m_surfaces) {
 		element.appendChild(surface.toXml(document));
 	}
+
+		//The copies of the 2D drawings, by part code and in code order, so
+		//that the same layout always writes the same file
+	if (!m_part_drawings.isEmpty())
+	{
+		QDomElement drawings = document.createElement(QStringLiteral("part_drawings"));
+		QStringList codes = m_part_drawings.keys();
+		std::sort(codes.begin(), codes.end());
+		for (const QString &code : std::as_const(codes))
+		{
+			QDomDocument block;
+			if (!block.setContent(m_part_drawings.value(code))) {
+				continue;
+			}
+			QDomElement drawing = document.createElement(QStringLiteral("part_drawing"));
+			drawing.setAttribute(QStringLiteral("code"), code);
+			drawing.appendChild(document.importNode(block.documentElement(), true));
+			drawings.appendChild(drawing);
+		}
+		element.appendChild(drawings);
+	}
 	return element;
 }
 
@@ -1258,6 +1308,20 @@ bool MountingLayout::fromXml(const QDomElement &element)
 		m_surfaces.append(surface);
 	}
 
+	const QDomElement drawings = element.firstChildElement(QStringLiteral("part_drawings"));
+	for (QDomElement drawing = drawings.firstChildElement(QStringLiteral("part_drawing"));
+	     !drawing.isNull();
+	     drawing = drawing.nextSiblingElement(QStringLiteral("part_drawing")))
+	{
+		const QDomElement block = drawing.firstChildElement();
+		if (block.isNull()) {
+			continue;
+		}
+		QDomDocument text;
+		text.appendChild(text.importNode(block, true));
+		setPartDrawing(drawing.attribute(QStringLiteral("code")), text.toString(-1));
+	}
+
 	return true;
 }
 
@@ -1273,7 +1337,7 @@ QString MountingLayout::newId()
 
 bool MountingLayout::operator==(const MountingLayout &other) const
 {
-	if (count() != other.count()) {
+	if (count() != other.count() || m_part_drawings != other.m_part_drawings) {
 		return false;
 	}
 	for (int i = 0; i < m_surfaces.count(); ++i)

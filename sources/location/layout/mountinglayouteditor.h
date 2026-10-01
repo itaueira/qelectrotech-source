@@ -26,6 +26,7 @@
 #include <QSizeF>
 #include <QString>
 
+class Catalog;
 class DrillingTableDialog;
 class Element;
 class MountedItem;
@@ -225,6 +226,18 @@ class MountingLayoutEditor : public QMainWindow
 		*/
 		MountingCheckDialog *openPlateCheck();
 
+			/// The catalogue this window reads the parts from and writes
+			/// their drawings to; the one of the program when none is set
+		Catalog *catalog() const;
+		void setCatalog(Catalog *catalog);
+		/**
+			@brief Write @a block as the 2D drawing of the part @a code,
+			in its current revision in the catalogue, and draw it.
+			@return false, with the reason said, when the catalogue does
+			not take it
+		*/
+		bool savePartDrawing(const QString &code, const QString &block);
+
 	signals:
 			/// The person asked to see the symbol of a part, and here
 			/// it is. Emitted rather than done: this window has no idea
@@ -238,6 +251,7 @@ class MountingLayoutEditor : public QMainWindow
 	private slots:
 		void stepApplied();
 		void goToSymbol();
+		void editPartDrawing();
 		void surfaceChosen(int index);
 		void newSurface();
 		void addPart();
@@ -392,6 +406,8 @@ class MountingLayoutEditor : public QMainWindow
 		QAction *m_drilling_table = nullptr;
 		QAction *m_check_plate = nullptr;
 		QAction *m_go_to_symbol = nullptr;
+		QAction *m_edit_part_drawing = nullptr;
+		QPointer<Catalog> m_catalog;
 		bool m_fitted_on_show = false;
 		QAction *m_close = nullptr;
 

@@ -17,6 +17,7 @@
 */
 #include "mountedpartitem.h"
 
+#include "../mountinglayout.h"
 #include "../mountingmeasure.h"
 #include "../../ElementsCollection/elementslocation.h"
 #include "../../elementprovider.h"
@@ -469,36 +470,26 @@ void MountedPartItem::updateDrawingToolTip()
 
 /**
 	@brief MountedPartItem::layoutDrawingsOf
-	@param project the project the elements are in
+	@param layout the layout keeping the copies
 	@param items the mounted items to find the drawings of
-	@return the drawing of each element, by the uuid of the element as
-	QUuid::toString() writes it
+	@return the drawing of each part code, read once per code: a plate of
+	forty breakers of one reference decodes its image once
 */
 QHash<QString, ElementPictureFactory::LayoutDrawing>
-MountedPartItem::layoutDrawingsOf(QETProject *project, const QList<MountedItem> &items)
+MountedPartItem::layoutDrawingsOf(const MountingLayout &layout, const QList<MountedItem> &items)
 {
 	QHash<QString, ElementPictureFactory::LayoutDrawing> drawings;
-	if (!project) {
-		return drawings;
-	}
-
-	QList<QUuid> wanted;
-	for (const MountedItem &item : items) {
-		if (!item.element.isEmpty()) {
-			wanted << QUuid(item.element);
-		}
-	}
-	if (wanted.isEmpty()) {
-		return drawings;
-	}
-
-		//Read from the definition the project holds, not from a collection
-		//on this computer: that copy is what travels with the project
-	for (Element *element : ElementProvider(project).fromUuids(wanted))
+	for (const MountedItem &item : items)
 	{
-		const auto drawing = ElementPictureFactory::layoutDrawing(element->location().xml());
+		const QString code = item.part_code.trimmed();
+		if (code.isEmpty() || drawings.contains(code)) {
+			continue;
+		}
+			//Read from the copy the project keeps, not from the catalogue
+			//of this computer: that copy is what travels with the project
+		const auto drawing = ElementPictureFactory::layoutDrawingOf(layout.partDrawing(code));
 		if (!drawing.isNull()) {
-			drawings.insert(element->uuid().toString(), drawing);
+			drawings.insert(code, drawing);
 		}
 	}
 	return drawings;

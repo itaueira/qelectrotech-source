@@ -104,6 +104,7 @@ void MountingLayoutViewItem::setProject(QETProject *project)
 	{
 		disconnect(m_project.data(), &QETProject::mountingLayoutChanged,
 			   this, &MountingLayoutViewItem::reload);
+		disconnect(m_project.data(), &QETProject::partDrawingsChanged, this, nullptr);
 	}
 
 	m_project = project;
@@ -112,6 +113,12 @@ void MountingLayoutViewItem::setProject(QETProject *project)
 	{
 		connect(m_project.data(), &QETProject::mountingLayoutChanged,
 			this, &MountingLayoutViewItem::reload);
+			//The face is the same, and reload() would stop there: a
+			//drawing renewed from the catalogue has to be drawn anyway
+		connect(m_project.data(), &QETProject::partDrawingsChanged, this, [this]() {
+			rebuild();
+			update();
+		});
 	}
 
 	reload();
@@ -697,15 +704,15 @@ void MountingLayoutViewItem::rebuild()
 
 	const QList<MountedItem> items = m_surface.items;
 		//The same drawings the plate window shows, read the same way
-	const auto drawings = MountedPartItem::layoutDrawingsOf(project(), items);
+	const auto drawings = project()
+			      ? MountedPartItem::layoutDrawingsOf(project()->mountingLayout(), items)
+			      : QHash<QString, ElementPictureFactory::LayoutDrawing>();
 	for (const MountedItem &item : items)
 	{
 		MountedPartItem *part = item.isCutToLength()
 					? new MountedProfileItem(item, this)
 					: new MountedPartItem(item, this);
-		if (!item.element.isEmpty()) {
-			part->setLayoutDrawing(drawings.value(QUuid(item.element).toString()));
-		}
+		part->setLayoutDrawing(drawings.value(item.part_code.trimmed()));
 
 			//The three locks that make this a drawing and not an
 			//editor. Cleared here rather than asked of those classes,

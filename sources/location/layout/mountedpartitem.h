@@ -24,6 +24,7 @@
 #include <QGraphicsObject>
 #include <QHash>
 
+class MountingLayout;
 class QETProject;
 class QGraphicsSceneMouseEvent;
 class QPainter;
@@ -170,13 +171,13 @@ class MountedPartItem : public QGraphicsObject
 		static qreal drawingToleranceMm();
 
 		/**
-			@return the drawings of the elements @a items are, by the
-			uuid of the element, read from the definitions the project
-			holds. An item with no element, or whose element has no
-			drawing, is not in it.
+			@return the drawings of the parts @a items are, by part
+			code, read from the copies @a layout keeps. An item with no
+			code, or whose code has no copy, is not in it - and draws
+			the box with its name.
 		*/
 		static QHash<QString, ElementPictureFactory::LayoutDrawing>
-		layoutDrawingsOf(QETProject *project, const QList<MountedItem> &items);
+		layoutDrawingsOf(const MountingLayout &layout, const QList<MountedItem> &items);
 
 	signals:
 		/**

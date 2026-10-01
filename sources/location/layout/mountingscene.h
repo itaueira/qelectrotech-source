@@ -519,6 +519,7 @@ class MountingScene : public QGraphicsScene
 		QHash<QString, MountedPartItem *> m_items;
 		/// where the axis of each product sits inside its own body, millimetre
 		QHash<QString, QPointF> m_axes;
+			/// by part code
 		QHash<QString, ElementPictureFactory::LayoutDrawing> m_drawings;
 		QUndoStack m_undo_stack;
 };
