@@ -712,6 +712,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/editor/ui/rectangleeditor.h
   ${QET_DIR}/sources/editor/ui/imageeditor.cpp
   ${QET_DIR}/sources/editor/ui/imageeditor.h
+  ${QET_DIR}/sources/editor/ui/scaleelementdialog.cpp
+  ${QET_DIR}/sources/editor/ui/scaleelementdialog.h
   ${QET_DIR}/sources/editor/ui/terminaleditor.cpp
   ${QET_DIR}/sources/editor/ui/terminaleditor.h
   ${QET_DIR}/sources/editor/ui/texteditor.cpp
