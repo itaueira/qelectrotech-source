@@ -1647,12 +1647,16 @@ void TitleBlockTemplate::render(QPainter &painter,
 	Width of the titleblock to render
 	@param file_path :
 	@param color :
+	@param dxf_transform :
+	Applied to every DXF point after the title block is laid out, as the
+	QPainter is rotated for a title block at the right of the folio
 */
 void TitleBlockTemplate::renderDxf(QRectF &title_block_rect,
 				   const DiagramContext &diagram_context,
 				   int titleblock_width,
 				   QString &file_path,
-				   int color) const
+				   int color,
+				   const QTransform &dxf_transform) const
 {
 	QList<int> widths = columnsWidth(titleblock_width);
 
@@ -1664,12 +1668,13 @@ void TitleBlockTemplate::renderDxf(QRectF &title_block_rect,
 			*Createdxf::yScale;
 	double recWidth  = title_block_rect.width()  * Createdxf::xScale;
 	double recHeight = title_block_rect.height() * Createdxf::yScale;
-	Createdxf::drawRectangle(file_path,
-				 xCoord,
-				 yCoord,
-				 recWidth,
-				 recHeight,
-				 color);
+	Createdxf::drawPolyline(file_path,
+				dxf_transform.map(QPolygonF(QRectF(xCoord,
+								  yCoord,
+								  recWidth,
+								  recHeight))),
+				color,
+				true);
 
 	// run through each individual cell
 	for (int j = 0 ; j < rows_heights_.count() ; ++ j) {
@@ -1703,7 +1708,10 @@ void TitleBlockTemplate::renderDxf(QRectF &title_block_rect,
 			y = yCoord + recHeight - h - y*Createdxf::yScale;
 			w *= Createdxf::xScale;
 
-			Createdxf::drawRectangle(file_path, x, y, w, h, color);
+			Createdxf::drawPolyline(file_path,
+						dxf_transform.map(QPolygonF(QRectF(x, y, w, h))),
+						color,
+						true);
 			if (cells_[i][j] -> type() == TitleBlockCell::TextCell)
 			{
 				QString final_text =
@@ -1716,7 +1724,8 @@ void TitleBlockTemplate::renderDxf(QRectF &title_block_rect,
 						  y,
 						  w,
 						  h,
-						  color);
+						  color,
+						  dxf_transform);
 			}
 		}
 	}
@@ -1980,6 +1989,7 @@ void TitleBlockTemplate::renderTextCell(QPainter &painter,
 	@param w
 	@param h
 	@param color
+	@param dxf_transform : see renderDxf()
 */
 void TitleBlockTemplate::renderTextCellDxf(
 		QString &file_path,
@@ -1989,7 +1999,8 @@ void TitleBlockTemplate::renderTextCellDxf(
 		qreal y,
 		qreal w,
 		qreal h,
-		int color) const
+		int color,
+		const QTransform &dxf_transform) const
 {
 	if (text.isEmpty()) return;
 	QFont text_font = TitleBlockTemplate::fontForCell(cell);
@@ -2051,6 +2062,8 @@ void TitleBlockTemplate::renderTextCellDxf(
 	const QStringList lines = text.split(QRegularExpression(QStringLiteral("\r\n|\r|\n")));
 	const qreal line_spacing = textHeight * Createdxf::yScale * 1.6;
 	const int last = lines.size() - 1;
+	const qreal rotation = qRadiansToDegrees(
+				qAtan2(dxf_transform.m12(), dxf_transform.m11()));
 	for (int i = 0 ; i < lines.size() ; ++i)
 	{
 		const QString &line = lines.at(i);
@@ -2077,17 +2090,21 @@ void TitleBlockTemplate::renderTextCellDxf(
 		}
 
 		// x offset value below currently set heuristically based on appearance...
+		const QPointF insert = dxf_transform.map(
+					QPointF(x - 2*Createdxf::xScale, y1 + offset));
+		const QPointF align = dxf_transform.map(QPointF(x2, y1 + offset));
 		Createdxf::drawTextAligned(
 					file_path,
 					line,
-					x - 2*Createdxf::xScale,
-					y1 + offset,
+					insert.x(),
+					insert.y(),
 					textHeight*Createdxf::yScale,
-					0,
+					rotation,
 					0,
 					hAlign,
 					vAlign,
-					x2,
+					align.x(),
+					align.y(),
 					ratio,
 					color);
 	}

@@ -20,6 +20,7 @@
 
 #include "ElementsCollection/collectionloadgate.h"
 #include "SearchAndReplace/ui/searchandreplacewidget.h"
+#include "diagramcontext.h"
 #include "qetmainwindow.h"
 
 #include <QActionGroup>
@@ -31,6 +32,7 @@
 #include <QUndoGroup>
 
 class QToolButton;
+class QLabel;
 
 class QMdiSubWindow;
 class QETProject;
@@ -62,6 +64,8 @@ class QETDiagramEditor : public QETMainWindow
 	Q_OBJECT
 
         friend class TerminalStripEditorWindow;
+        friend class LiveServer;
+        friend class MacroRecorder;
 	
 	public:
 		QETDiagramEditor(
@@ -159,6 +163,8 @@ class QETDiagramEditor : public QETMainWindow
 		void slot_updateModeActions();
 		void slot_updateComplexActions();
 		void slot_updatePasteAction();
+		void pasteElementInformations();
+		void updatePasteElementInfoAction();
 		void slot_updateWindowsMenu();
 		void slot_updateAutoNumDock();
 		void insertElementFromCollection(const ElementsLocation &location);
@@ -166,6 +172,7 @@ class QETDiagramEditor : public QETMainWindow
 		void rememberPlacedElement(const ElementsLocation &location);
 		void showElementPicker();
 		void showShortcutBar();
+		void rebuildToolBars();
 		bool repeatLastCommand();
 		void generateTerminalBlock();
 		void setWindowedMode();
@@ -183,6 +190,13 @@ class QETDiagramEditor : public QETMainWindow
 		void slot_reloadElementDrawings();
 #ifdef QET_HAS_SCRIPTING
 		void slot_runScript();
+		void rebuildScriptActions();
+		void updateScriptActions();
+		bool ensureScriptingEnabled(const QString &title);
+		void runStoredScript(const QString &path, const QString &name);
+		void setUpLiveIndicator();
+		void setUpMacroRecorder();
+		void macroRecorded(const QJsonObject &recording);
 #endif
 		void editDiagramProperties(DiagramView *);
 		void editDiagramProperties(Diagram *);
@@ -207,6 +221,7 @@ class QETDiagramEditor : public QETMainWindow
 
 	private slots:
 		void updateTextGridButton();
+		void updateShownKinds();
 		void selectionChanged();
 		void assignCatalogPart();
 		void registerCatalogPart();
@@ -247,6 +262,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_catalog_assign = nullptr,///< Assign a catalog part to the selected components
 		*m_show_on_plate = nullptr, ///< Show the selected element on its mounting plate
 		*m_navigate = nullptr,      ///< Go to the other representation of the selected object
+		*m_paste_element_info,      ///< Copy the information of the copied element onto the selected elements (#1375)
 		*m_insert_last_element = nullptr; ///< Place the last placed element again
 		
 		QActionGroup
@@ -281,6 +297,7 @@ class QETDiagramEditor : public QETMainWindow
 		*undo,				///< Cancel the latest action
 		*redo,				///< Redo the latest cancelled operation
 		*m_paste,			///< Paste clipboard content on the current diagram
+		*m_paste_origin,		///< Same, at the copied position, cursor warped to the origin (Ctrl+Shift+V)
 		*m_duplicate,			///< Copy selection, offset by the configured step (#991)
 		*m_configure_duplicate,		///< Reopen the duplicate offset/direction dialog (#991)
 		*m_auto_conductor,		///< Enable/Disable the use of auto conductor
@@ -342,6 +359,9 @@ class QETDiagramEditor : public QETMainWindow
 		*m_reload_element_drawings,    ///< Action to redraw every placed element from its current definition
 #ifdef QET_HAS_SCRIPTING
 		*m_run_script,                 ///< Action to run a JavaScript macro against the current project
+		*m_open_scripts_folder,        ///< Action to open the folder stored scripts are read from
+		*m_manage_scripts,             ///< Action to open the script manager
+		*m_record_macro,               ///< Action to start / stop recording a macro
 #endif
 		*m_export_project_db,		///Export to file the internal database of the current project
 		*m_tile_window,			///< Show MDI subwindows as tile
@@ -353,6 +373,8 @@ class QETDiagramEditor : public QETMainWindow
 		*m_rotate_selection,		///< Rotate selected elements and text items by 90 degrees
 		*m_rotate_group_selection = nullptr, ///< Rotate the selection as a whole around its shared center, instead of each item in place
 		*m_rotate_texts,		///< Direct selected text items to a specific angle
+		*m_mirror_horizontal = nullptr, ///< Mirror the selected elements, left and right swap (#1335)
+		*m_mirror_vertical = nullptr,   ///< Mirror the selected elements, top and bottom swap (#1335)
 		*m_find_element,		///< Find the selected element in the panel
 		*m_group_selected_texts = nullptr,
 		*m_group_selection = nullptr,   ///< Group the selected items (#1070)
@@ -370,6 +392,8 @@ class QETDiagramEditor : public QETMainWindow
 		DiagramBgColorToolButton *m_background_color_button = nullptr;
 		QMenu *m_text_grid_menu = nullptr;		///< Snap step used when dragging texts
 		QToolButton *m_text_grid_button = nullptr;
+		QMenu *m_shown_kinds_menu = nullptr;		///< View > Show, kinds of items (#301)
+		QLabel *m_hidden_kinds_label = nullptr;	///< Status bar: how many kinds are hidden
 
 		QList <QAction *> m_zoom_action_toolBar; ///Only zoom action must displayed in the toolbar
 
@@ -399,6 +423,10 @@ class QETDiagramEditor : public QETMainWindow
 		ElementsLocation m_last_inserted_element;
 			
 		DiagramPropertiesEditorDockWidget *m_selection_properties_editor;
+			/// Information of the one element on the clipboard, read when
+			/// the clipboard changes; see slot_updatePasteAction()
+		DiagramContext m_clipboard_element_info;
+		bool m_clipboard_has_element = false;
 			/// Elements panel
 		ElementsPanelWidget *pa;
 		QMenu *windows_menu;
@@ -408,7 +436,18 @@ class QETDiagramEditor : public QETMainWindow
 		*view_tool_bar       = nullptr,
 		*diagram_tool_bar    = nullptr,
 		*m_add_item_tool_bar = nullptr,
-		*m_depth_tool_bar    = nullptr;
+		*m_depth_tool_bar    = nullptr,
+		*m_scripts_tool_bar  = nullptr;	///< One button per stored script
+			/// Toolbars the user added (DiagramToolbarSettings)
+		QList<QToolBar *> m_custom_tool_bars;
+			/// The toolbar buttons that are widgets, by DiagramToolbarSettings id
+		QHash<QString, QAction *> m_toolbar_widgets;
+#ifdef QET_HAS_SCRIPTING
+		QMenu *m_scripts_menu = nullptr;
+		QList<QAction *> m_script_actions;	///< One per stored script, rebuilt when the folder changes
+		bool m_had_scripts = false;
+		QPointer<QDialog> m_script_manager;
+#endif
 		
 		QUndoGroup undo_group;
 		AutoNumberingDockWidget *m_autonumbering_dock;

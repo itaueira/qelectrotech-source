@@ -58,6 +58,9 @@ class CrossRefItem : public QGraphicsObject
 	private:
 		void init();
 		void setUpConnection();
+		void stackAtBottom();
+		static bool textsOverlap(const QList<QRectF> &a,
+								const QList<QRectF> &b);
 	
 	public:
 		enum { Type = UserType + 1009 };
@@ -140,6 +143,8 @@ class CrossRefItem : public QGraphicsObject
 				   const QStringList &master_labels = QStringList());
 		void fillCrossRef(QPainter &painter);
 		void AddExtraInfo(QPainter &painter, const QString&);
+		void drawText(QPainter &painter, const QRectF &rect, int flags,
+					  const QString &text);
 		QList<Element *> NOElements() const;
 		QList<Element *> NCElements() const;
 
@@ -155,6 +160,7 @@ class CrossRefItem : public QGraphicsObject
 			//only when this is true and the master does not hide it.
 		bool m_snap_visible = true;
 		QMultiMap <Element *, QRectF> m_hovered_contacts_map;
+		QList <QRectF> m_text_rects; //rects of the drawn texts (local coords)
 		Element *m_hovered_contact = nullptr;
 		DynamicElementTextItem *m_text = nullptr;
 		ElementTextItemGroup *m_group = nullptr;

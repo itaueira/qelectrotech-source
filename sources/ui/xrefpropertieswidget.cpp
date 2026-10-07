@@ -147,13 +147,21 @@ void XRefPropertiesWidget::saveProperties(int index) {
 	xrp.setShowPowerContac(ui->m_show_power_cb->isChecked());
 	xrp.setShowTerminalName(ui->m_show_terminal_name_cb->isChecked());
 	xrp.setShowAllConfiguredSlaves(ui->m_show_all_slaves_cb->isChecked());
+	xrp.setStackOverlapping(ui->m_stack_overlapping_cb->isChecked());
 	xrp.setPrefix("power",  ui->m_power_prefix_le->text());
 	xrp.setPrefix("delay",  ui->m_delay_prefix_le->text());
 	xrp.setPrefix("switch", ui->m_switch_prefix_le->text());
 	xrp.setMasterLabel(ui->m_master_le->text());
 	xrp.setSlaveLabel(ui->m_slave_le->text());
-	xrp.setOffset(ui->m_offset_sb->value());
-	xrp.setSlaveOffset(ui->m_slave_offset_sb->value());
+		//The boxes cannot show a value below their minimum (the offset's
+		//minimum is its "Default" entry, standing for the stored 0): keep
+		//the stored value unless the box shows something else.
+	if (ui->m_offset_sb->value() != qBound(ui->m_offset_sb->minimum(), xrp.offset(),
+										   ui->m_offset_sb->maximum()))
+		xrp.setOffset(ui->m_offset_sb->value());
+	if (ui->m_slave_offset_sb->value() != qBound(ui->m_slave_offset_sb->minimum(), xrp.slaveOffset(),
+												 ui->m_slave_offset_sb->maximum()))
+		xrp.setSlaveOffset(ui->m_slave_offset_sb->value());
 
 	m_properties.insert(type, xrp);
 }
@@ -195,6 +203,8 @@ void XRefPropertiesWidget::updateDisplay()
 		ui->m_snap_to_cb->setCurrentIndex(ui->m_snap_to_cb->findData("label"));
 		ui->m_offset_sb->setEnabled(false);
 	}
+	ui->m_stack_overlapping_cb->setChecked(xrp.stackOverlapping());
+	ui->m_stack_overlapping_cb->setEnabled(ui->m_offset_sb->isEnabled());
 
 	if(xrp.getXrefPos() == Qt::AlignTop) ui->m_xrefpos_cb->setCurrentIndex(ui->m_xrefpos_cb->findData("top"));
 	else if(xrp.getXrefPos() == Qt::AlignLeft) ui->m_xrefpos_cb->setCurrentIndex(ui->m_xrefpos_cb->findData("left"));
@@ -230,6 +240,7 @@ void XRefPropertiesWidget::updateDisplay()
 	ui->m_display_has_cross_rb->setVisible(!is_plc);
 	ui->m_show_terminal_name_cb->setVisible(!is_plc);
 	ui->m_show_all_slaves_cb->setVisible(!is_plc);
+	ui->m_stack_overlapping_cb->setVisible(!is_plc);
 	ui->m_cross_properties_gb->setVisible(!is_plc);
 }
 
@@ -258,4 +269,5 @@ void XRefPropertiesWidget::enableOffsetSB(int i){
 		ui->m_offset_sb->setEnabled(false);
 	else
 		ui->m_offset_sb->setEnabled(true);
+	ui->m_stack_overlapping_cb->setEnabled(ui->m_offset_sb->isEnabled());
 }

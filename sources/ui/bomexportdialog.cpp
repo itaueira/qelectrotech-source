@@ -17,6 +17,7 @@
 */
 #include "bomexportdialog.h"
 
+#include "../bomexport.h"
 #include "../dataBase/bomquery.h"
 #include "../dataBase/projectdatabase.h"
 #include "../dataBase/ui/elementquerywidget.h"
@@ -447,4 +448,13 @@ void BOMExportDialog::on_m_format_as_bom_clicked(bool checked) {
 		//derived from it.
 	m_query_widget->setGroupBy(bomGroupBy(m_query_widget->queryStr()),
 				   checked);
+}
+
+/**
+	@brief BOMExportDialog::on_m_no_junctions_clicked
+	@param checked : true leaves out the junctions, see
+	BomExport::junctionFilter()
+*/
+void BOMExportDialog::on_m_no_junctions_clicked(bool checked) {
+	m_query_widget->setExtraFilter(BomExport::junctionFilter(), checked);
 }
