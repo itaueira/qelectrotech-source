@@ -54,6 +54,7 @@
 #include "../../dxf/dxftoelmt.h"
 #include "../../qet_elementscaler/qet_elementscaler.h"
 #include "../UndoCommand/openelmtcommand.h"
+#include "../../toolbarsettings.h"
 
 #include <QSettings>
 #include <QActionGroup>
@@ -89,6 +90,7 @@ QETElementEditor::QETElementEditor(QWidget *parent) :
 	readSettings();  // restoreGeometry before show()
 	show();
 	readSettingsState();  // restoreState() must be called after show() in Qt6
+	ToolbarSettings::applyTo(this);
 }
 
 /**
@@ -765,6 +767,9 @@ void QETElementEditor::updateSelectionFromPartsList()
 	}
 	m_parts_list -> blockSignals(false);
 	m_elmt_scene -> blockSignals(false);
+		//selectionChanged was blocked above, so the selection decorator must be
+		//updated by hand, otherwise dragging moves only the part under the cursor
+	m_elmt_scene -> managePrimitivesGroups();
 	updateInformations();
 	updateAction();
 }

@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "diagramview.h"
+#include "autoNum/ui/pastenumberingimport.h"
 #include "cellruler.h"
 #include "lastusedstyle.h"
 #include "utils/colordialogdoubleclick.h"
@@ -42,6 +43,7 @@
 #include "diagram.h"
 #include "diagramcontexttoolbar.h"
 #include "diagramgestureoverlay.h"
+#include "gesturesettings.h"
 #include "shortcutbarsettings.h"
 #include "shortcutmanager.h"
 #include "ElementsCollection/xmlelementcollection.h"
@@ -177,6 +179,9 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 #ifdef Q_OS_MACOS
 		color_dialog -> setWindowFlags(Qt::Sheet);
 #endif
+			// Qt's own dialog on every platform: the GTK one keeps its own
+			// recent-colours row and ignores the custom colours QET saves
+		color_dialog->setOption(QColorDialog::DontUseNativeDialog);
 		color_dialog->setCurrentColor(initial_properties.color);
 		ColorDialogDoubleClick::install(color_dialog);
 
@@ -480,8 +485,9 @@ void DiagramView::zoomFit()
 */
 void DiagramView::zoomContent()
 {
-	fitInView(m_diagram -> itemsBoundingRect(), Qt::KeepAspectRatio);
-	adjustGridToZoom();
+	const QRectF content = m_diagram->visibleItemsBoundingRect();
+	if (!content.isNull())
+		zoomToRect(content);
 }
 
 /**
@@ -572,7 +578,10 @@ void DiagramView::paste(const QPointF &pos, QClipboard::Mode clipboard_mode) {
 	if (content_pasted.count())
 	{
 		m_diagram -> clearSelection();
-		m_diagram -> undoStack().push(new PasteDiagramCommand(m_diagram, content_pasted));
+			//Asks whether to import the numberings the copy brings, if the
+			//project has not got them
+		PasteNumberingImport::push(this, m_diagram, content_pasted,
+								   PasteNumberingImport::copiedBy(document_xml));
 		adjustSceneRect();
 	}
 }
@@ -790,7 +799,8 @@ void DiagramView::mouseMoveEvent(QMouseEvent *e)
 				m_diagram->clearEventInterface();
 				m_swallow_native_menu = true;
 			}
-			m_gesture_overlay->showAt(m_gesture_origin, selectionCommands());
+			m_gesture_overlay->showAt(m_gesture_origin, gestureCommands(),
+						  GestureSettings::directions());
 		}
 		if (m_gesture_overlay->isVisible()) {
 			m_gesture_overlay->setPointer(pos);
@@ -973,6 +983,28 @@ QList<QAction *> DiagramView::selectionCommands() const
 		if (QAction *action = ShortcutManager::instance().action(id, qde)) {
 			actions << action;
 		}
+	}
+	return actions;
+}
+
+/**
+	@brief DiagramView::gestureCommands
+	@return the gesture ring's commands for the current selection, as this
+	window's actions. A list the user picked keeps its directions: a
+	command this window lacks leaves its direction empty (nullptr).
+	Otherwise the ring shows the shortcut bar's commands, in order.
+*/
+QList<QAction *> DiagramView::gestureCommands() const
+{
+	QETDiagramEditor *qde = diagramEditor();
+	const auto context = ShortcutBarSettings::contextFor(m_diagram->selectedItems());
+	if (!qde || !GestureSettings::isCustom(context)) {
+		return selectionCommands();
+	}
+	QList<QAction *> actions;
+	for (const QString &id : GestureSettings::ids(context)) {
+		actions << (id.isEmpty() ? nullptr
+					 : ShortcutManager::instance().action(id, qde));
 	}
 	return actions;
 }
@@ -1815,6 +1847,7 @@ QList<QAction *> DiagramView::contextMenuActions() const
 			list << qde->m_cut;
 			list << qde->m_copy;
 			list << m_multi_paste;
+			list << qde->m_paste_element_info;
 			list << m_separators.at(0);
 				//Going to the other representation of what is under the
 				//cursor is the gesture a schematic is read with, so it is
@@ -2000,8 +2033,8 @@ void DiagramView::contextMenuEvent(QContextMenuEvent *e)
 	@brief DiagramView::updateFolioReportMenu
 	Fill the "Renvoi de folio" submenu of the context menu with the folio
 	report elements this project already uses -- the ones in its embedded
-	collection -- or, when it has none yet, the coming and going arrows of
-	the common collection. An entry places its element where the context
+	collection -- and the coming and going arrows of the common collection,
+	each name listed once. An entry places its element where the context
 	menu was opened. Left empty, and so hidden, on a read-only diagram.
 */
 void DiagramView::updateFolioReportMenu()
@@ -2015,9 +2048,9 @@ void DiagramView::updateFolioReportMenu()
 	QETProject *project = m_diagram->project();
 	XmlElementCollection *collection =
 		project ? project->embeddedElementCollection() : nullptr;
+	QSet<QString> names;
 	if (collection)
 	{
-		QSet<QString> names;
 		const QDomNodeList definitions =
 			collection->root().elementsByTagName(QStringLiteral("definition"));
 		for (int i = 0 ; i < definitions.count() ; ++i)
@@ -2040,16 +2073,16 @@ void DiagramView::updateFolioReportMenu()
 		}
 	}
 
-	if (locations.isEmpty())
+		//Always offer both standard arrows: placing one copies it into the
+		//embedded collection, and must not hide the other one.
+	for (const auto path : {
+		 "common://10_electric/10_allpole/100_folio_referencing/01coming_arrow.elmt",
+		 "common://10_electric/10_allpole/100_folio_referencing/02going_arrow.elmt"})
 	{
-		for (const auto path : {
-			 "common://10_electric/10_allpole/100_folio_referencing/01coming_arrow.elmt",
-			 "common://10_electric/10_allpole/100_folio_referencing/02going_arrow.elmt"})
-		{
-			const ElementsLocation location(QString::fromLatin1(path));
-			if (location.exist()) {
-				locations << location;
-			}
+		const ElementsLocation location(QString::fromLatin1(path));
+		if (location.exist() && !names.contains(location.name())) {
+			names.insert(location.name());
+			locations << location;
 		}
 	}
 
