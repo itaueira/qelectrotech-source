@@ -293,6 +293,11 @@ class QETProject : public QObject
 		bool acquireOpenLock();
 		/// Who holds the in-use lock, empty when nobody does
 		QString openLockHolder() const;
+		/**
+			Give @p successor, the same project reloaded, the in-use lock
+			and what this project remembers of its file on the disk.
+		*/
+		void handOverTo(QETProject *successor);
 
 		/// Remember the file as it is on disk right now
 		void captureDiskState();

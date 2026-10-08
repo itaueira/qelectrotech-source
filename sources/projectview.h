@@ -103,6 +103,8 @@ class ProjectView : public QWidget
 		void changeFirstTab();
 		void changeLastTab();
 		void setDiagramPosition(Diagram *diagram, int new_position);
+		bool closeElementEditors();
+		void skipClosingQuestions();
 
 	public slots:
 		void removeDiagram(DiagramView *diagram_view, bool silent = false);
@@ -192,6 +194,7 @@ class ProjectView : public QWidget
 		QMap<int, DiagramView *> m_diagram_ids;
 		int m_previous_tab_index = -1;
 		QList<DiagramView *> m_diagram_view_list;
+		bool m_close_without_saving = false;
 };
 
 

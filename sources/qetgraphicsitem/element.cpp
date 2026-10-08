@@ -2368,6 +2368,21 @@ bool Element::definitionGeometryMatches(const QDomElement &definition) const
 		return false;
 	}
 
+	return definitionTerminalsMatch(definition);
+}
+
+/**
+	@brief Element::definitionTerminalsMatch
+	The terminal half of definitionGeometryMatches(): whether @p definition
+	has exactly the terminals of this live element, at the same places.
+	Size and hotspot are not looked at: a terminal is placed relative to
+	the hotspot, so they can change without moving a terminal - see
+	adoptDefinitionBox().
+	@param definition : the <definition> root of the element
+	@return true if every conductor would still find its terminal
+*/
+bool Element::definitionTerminalsMatch(const QDomElement &definition) const
+{
 		//Terminal positions described by the new definition
 	QList<QPointF> new_terminals;
 	for (QDomElement description = definition.firstChildElement(QStringLiteral("description")) ;
@@ -2409,6 +2424,34 @@ bool Element::definitionGeometryMatches(const QDomElement &definition) const
 		}
 	}
 
+	return true;
+}
+
+/**
+	@brief Element::adoptDefinitionBox
+	Give this live element the size and the hotspot of @p definition, the
+	way buildFromXml() does when it is built. The terminals and the drawing
+	are not touched: a terminal is placed relative to the hotspot, so it
+	stays where it is, and so do the conductors on it.
+
+	The symbol editor recomputes the box of a symbol each time it saves one,
+	so a symbol corrected only in its drawing may come back with another
+	hotspot. Adopting the box first is what lets reloadPicture() redraw it.
+	@param definition : the <definition> root of the element
+	@return false, and nothing changed, when the definition has no valid
+	size or hotspot
+*/
+bool Element::adoptDefinitionBox(const QDomElement &definition)
+{
+	int w = 0, h = 0, hot_x = 0, hot_y = 0;
+	if (!QET::attributeIsAnInteger(definition, QStringLiteral("width"), &w)         ||
+		!QET::attributeIsAnInteger(definition, QStringLiteral("height"), &h)        ||
+		!QET::attributeIsAnInteger(definition, QStringLiteral("hotspot_x"), &hot_x) ||
+		!QET::attributeIsAnInteger(definition, QStringLiteral("hotspot_y"), &hot_y)) {
+		return false;
+	}
+	setSize(w, h);
+	setHotspot(QPoint(hot_x, hot_y));
 	return true;
 }
 

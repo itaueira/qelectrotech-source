@@ -738,6 +738,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ElementsCollection/elementcollectionhandler.h
   ${QET_DIR}/sources/ElementsCollection/elementcollectionitem.cpp
   ${QET_DIR}/sources/ElementsCollection/elementcollectionitem.h
+  ${QET_DIR}/sources/ElementsCollection/elementorigin.cpp
+  ${QET_DIR}/sources/ElementsCollection/elementorigin.h
   ${QET_DIR}/sources/ElementsCollection/elementpreviewdelegate.cpp
   ${QET_DIR}/sources/ElementsCollection/elementpreviewdelegate.h
   ${QET_DIR}/sources/ElementsCollection/elementscollectionmodel.cpp
@@ -750,6 +752,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ElementsCollection/elementslocation.h
   ${QET_DIR}/sources/ElementsCollection/elementstreeview.cpp
   ${QET_DIR}/sources/ElementsCollection/elementstreeview.h
+  ${QET_DIR}/sources/ElementsCollection/embeddedelementrefresh.cpp
+  ${QET_DIR}/sources/ElementsCollection/embeddedelementrefresh.h
   ${QET_DIR}/sources/ElementsCollection/fileelementcollectionitem.cpp
   ${QET_DIR}/sources/ElementsCollection/fileelementcollectionitem.h
   ${QET_DIR}/sources/ElementsCollection/pinoutblocktemplate.cpp
@@ -1205,6 +1209,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/linkelementcommand.h
   ${QET_DIR}/sources/undocommand/movediagramcommand.cpp
   ${QET_DIR}/sources/undocommand/movediagramcommand.h
+  ${QET_DIR}/sources/undocommand/refreshembeddedelementscommand.cpp
+  ${QET_DIR}/sources/undocommand/refreshembeddedelementscommand.h
   ${QET_DIR}/sources/undocommand/removediagramcommand.cpp
   ${QET_DIR}/sources/undocommand/removediagramcommand.h
   ${QET_DIR}/sources/undocommand/setautonumcontextcommand.cpp

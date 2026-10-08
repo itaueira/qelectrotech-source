@@ -227,6 +227,33 @@ DiagramView *ProjectView::firstDiagram()
 
 
 /**
+	@brief ProjectView::closeElementEditors
+	Close the symbol editors and the title block editors open on this
+	project, asking about what they did not save. Done first when the
+	project is reloaded from memory, while the user can still cancel.
+	@return false when the user cancelled
+*/
+bool ProjectView::closeElementEditors()
+{
+	return(tryClosingElementEditors());
+}
+
+/**
+	@brief ProjectView::skipClosingQuestions
+	Make the next closing of this view ask nothing and write nothing: the
+	project is being reloaded from what it holds in memory, and its
+	successor takes its place. The usual closing asks whether to save and
+	writes the file according to the answer, which a reload must never do.
+	Close the editors first (closeElementEditors()), while cancelling is
+	still possible; the window that holds this view is closed by its editor
+	(QETDiagramEditor::closeProject()).
+*/
+void ProjectView::skipClosingQuestions()
+{
+	m_close_without_saving = true;
+}
+
+/**
 	Cette methode essaye de fermer successivement les editeurs d'element puis
 	les schemas du projet. L'utilisateur peut refuser de fermer un schema ou un
 	editeur.
@@ -237,6 +264,10 @@ DiagramView *ProjectView::firstDiagram()
 bool ProjectView::tryClosing()
 {
 	if (!m_project) return(true);
+
+		//Closed because the project is being reloaded from memory: nothing
+		//is asked and, above all, nothing is written - see skipClosingQuestions()
+	if (m_close_without_saving) return(true);
 
 	// First step: require external editors closing -- users may either cancel
 	// the whole closing process or save (and therefore add) content into this

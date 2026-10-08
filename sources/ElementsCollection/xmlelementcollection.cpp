@@ -20,6 +20,7 @@
 #include "../NameList/nameslist.h"
 #include "../qetproject.h"
 #include "../qetxml.h"
+#include "elementorigin.h"
 #include "elementslocation.h"
 #include "terminaluuids.h"
 
@@ -134,6 +135,9 @@ XmlElementCollection::XmlElementCollection(const QDomElement &dom_element,
 			//Before any folio is built from these symbols, so that their
 			//terminals carry the uuid the next save writes
 		TerminalUuids::fillMissing(root());
+			//A project saved before copies recorded their origin: each one is
+			//taken to be the version it came from
+		ElementOrigin::stampMissing(root());
 	}
 	else
 		qDebug() << "XmlElementCollection : tagName of dom_element is not collection";
@@ -506,6 +510,8 @@ QString XmlElementCollection::addElement(ElementsLocation &location)
 		}
 	}
 
+		//What was just taken is the version it came from
+	ElementOrigin::stampMissing(root());
 	emit elementAdded(integrated_path);
 	return integrated_path;
 }
@@ -603,10 +609,13 @@ ElementsLocation XmlElementCollection::copy(
 	      && destination.projectCollection() == this))
 		return ElementsLocation();
 
-	if (source.isElement())
-		return copyElement(source, destination, rename);
-	else
-		return copyDirectory(source, destination, rename, deep_copy);
+	const ElementsLocation copied = source.isElement()
+			? copyElement(source, destination, rename)
+			: copyDirectory(source, destination, rename, deep_copy);
+		//A copy replaced from its collection is the version it came from
+		//again: the <element> it replaced, and its record, are gone
+	ElementOrigin::stampMissing(root());
+	return copied;
 }
 
 /**

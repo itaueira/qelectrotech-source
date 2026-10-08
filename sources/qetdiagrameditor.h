@@ -188,6 +188,7 @@ class QETDiagramEditor : public QETMainWindow
 		void editProjectProperties(QETProject *);
 		void slot_terminalNumbering();
 		void slot_reloadElementDrawings();
+		void reloadProjectFromMemory(QETProject *project, const QStringList &collection_dirs);
 #ifdef QET_HAS_SCRIPTING
 		void slot_runScript();
 		void rebuildScriptActions();

@@ -85,8 +85,10 @@ class Element : public QetGraphicsItem
 			int *state = nullptr,
 			Element::kind link_type = Element::Simple);
 		~Element() override;
-	private:
 		bool definitionGeometryMatches(const QDomElement &definition) const;
+		bool definitionTerminalsMatch(const QDomElement &definition) const;
+		bool adoptDefinitionBox(const QDomElement &definition);
+	private:
 		Element(const Element &);
 
 		// attributes

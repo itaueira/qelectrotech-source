@@ -943,7 +943,12 @@ if(TARGET qet_core)
         src/ui/platesymbol_test.cpp
         # A placa desenhando o desenho 2D do simbolo: a geometria na peca, e o
         # caminho do desenho pelo projeto, pela folha e por um salvar.
-        src/ui/platedrawing_test.cpp)
+        src/ui/platedrawing_test.cpp
+        # Trazer para o projeto o simbolo corrigido na colecao, e o aviso a
+        # quem salva um simbolo em uso: precisa de projeto aberto, porque a
+        # copia do simbolo mora na colecao embutida dele, e o desenho que
+        # muda e o dos elementos ja postos nas folhas.
+        src/ui/embeddedrefresh_test.cpp)
 
     target_link_libraries(
         C_uitests

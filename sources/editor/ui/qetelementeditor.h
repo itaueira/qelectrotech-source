@@ -177,6 +177,8 @@ class QETElementEditor : public QMainWindow
 		void updateLengthUnit();
 		void insertImage();
 		bool askImageSize(QSizeF &size);
+		void noticePlacedElements(const ElementsLocation &location);
+		static ElementsLocation fileLocation(const QString &file_path);
 
 	private:
 		Ui::QETElementEditor *ui;

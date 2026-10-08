@@ -1746,6 +1746,34 @@ bool QETProject::acquireOpenLock()
 }
 
 /**
+	@brief QETProject::handOverTo
+	Give @p successor, this same project reloaded from what it holds in
+	memory, what belongs to the file and not to the content: the in-use
+	lock, and the state of the file on the disk when it was last read or
+	written - the one that tells a save whether somebody else wrote to it
+	meanwhile.
+
+	The lock is moved, not copied: this project is destroyed afterwards,
+	and releasing a lock it still owned would delete the lock file of the
+	successor. A lock the successor already had is released first.
+	@param successor : the reloaded project, with the same file path
+*/
+void QETProject::handOverTo(QETProject *successor)
+{
+	if (!successor || successor == this) {
+		return;
+	}
+	successor->m_disk_state = m_disk_state;
+	if (successor->m_open_lock)
+	{
+		successor->m_open_lock->release();
+		delete successor->m_open_lock;
+	}
+	successor->m_open_lock = m_open_lock;
+	m_open_lock = nullptr;
+}
+
+/**
 	@brief QETProject::openLockHolder
 	@return who holds the in-use lock, empty when nobody does
 */

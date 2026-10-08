@@ -17,6 +17,7 @@
 */
 #include "qetdiagrameditor.h"
 
+#include "ElementsCollection/embeddedelementrefresh.h"
 #include "ElementsCollection/sheetsymbolextractor.h"
 #include "ElementsCollection/ui/createsymboldialog.h"
 #include "ElementsCollection/ui/pinoutgeneratordialog.h"
@@ -1342,8 +1343,9 @@ void QETDiagramEditor::setUpActions()
 	m_reload_element_drawings = new QAction(QET::Icons::ViewRefresh, tr("Recharger les dessins des éléments"), this);
 	ShortcutManager::instance().registerAction(m_reload_element_drawings, "diagrameditor.reload_element_drawings", tr("Éditeur de schémas"), QKeySequence());
 	m_reload_element_drawings->setStatusTip(
-		tr("Redessine chaque élément placé d'après sa définition actuelle,"
-		   " sans avoir à fermer et rouvrir le projet (action non annulable)"));
+		tr("Met à jour les éléments modifiés dans la collection entreprise ou utilisateur,"
+		   " puis redessine chaque élément posé d'après sa définition actuelle,"
+		   " sans avoir à fermer et rouvrir le projet"));
 	connect(m_reload_element_drawings, &QAction::triggered, this, &QETDiagramEditor::slot_reloadElementDrawings);
 
 #ifdef QET_HAS_SCRIPTING
@@ -6189,10 +6191,52 @@ void QETDiagramEditor::slot_terminalNumbering() {
 	marked as modified. Elements whose size, hotspot or terminals changed
 	are skipped and listed: they must be removed and re-inserted, which
 	deletes the conductors already connected to them.
+
+	Before redrawing, the symbols changed in the company or user collection
+	are brought into the project's own copies - see
+	EmbeddedElementRefresh::bringFromCollections(). That part does change
+	the project, so it is undoable and marks it as modified; the redraw that
+	follows stays as described above. The elements whose copy has another
+	size or hotspot but their terminals take that box first, so that the
+	redraw applies it instead of listing them.
+
+	And when some terminal was added, removed or moved, the user is offered
+	to reload the project the way opening it does, which applies all of it
+	without removing anything - see reloadProjectFromMemory().
 */
 void QETDiagramEditor::slot_reloadElementDrawings() {
 	QETProject *project = currentProject();
 	if (!project) return;
+
+	const QStringList collection_dirs = EmbeddedElementRefresh::editableCollectionDirs();
+
+		//A terminal added, removed or moved can only be applied by building
+		//the elements again, so the project is reloaded - if the user agrees
+	const QStringList needing_reload =
+			EmbeddedElementRefresh::needingReload(project, collection_dirs);
+	if (!needing_reload.isEmpty())
+	{
+		QMessageBox question(QMessageBox::Question,
+							 tr("Recharger les dessins des éléments"),
+							 EmbeddedElementRefresh::reloadQuestion(needing_reload.size()),
+							 QMessageBox::NoButton,
+							 this);
+		QPushButton *reload = question.addButton(tr("Recharger"), QMessageBox::AcceptRole);
+		question.addButton(tr("Pas maintenant"), QMessageBox::RejectRole);
+		question.setDefaultButton(reload);
+		question.setDetailedText(needing_reload.join(QLatin1Char('\n')));
+		question.exec();
+		if (question.clickedButton() == reload) {
+			reloadProjectFromMemory(project, collection_dirs);
+			return;
+		}
+	}
+
+	const EmbeddedElementRefresh::Report brought =
+			EmbeddedElementRefresh::bringFromCollections(project, collection_dirs);
+		//A copy corrected from a folio may come with another size or hotspot,
+		//which the redraw below would refuse: the elements take it first
+	EmbeddedElementRefresh::adoptBoxes(project);
 
 	QList<Element *> elements;
 	QSet<QString> dropped_locations;
@@ -6238,27 +6282,35 @@ void QETDiagramEditor::slot_reloadElementDrawings() {
 
 	QString message = tr("%n élément(s) redessiné(s).", "", reloaded);
 
+	const QString brought_text = EmbeddedElementRefresh::reportText(brought);
+	if (!brought_text.isEmpty()) {
+		message = brought_text % QStringLiteral("\n\n") % message;
+	}
+
 	if (unavailable) {
 		message += QStringLiteral("\n\n")
 				% tr("%n élément(s) dont la définition est introuvable ou illisible :"
 					  " leur dessin actuel a été conservé.", "", unavailable);
 	}
 
-	if (geometry_changed.isEmpty())
+	const QStringList brought_details = EmbeddedElementRefresh::reportDetails(brought);
+	if (geometry_changed.isEmpty() && brought_details.isEmpty())
 	{
 		QET::QetMessageBox::information(
 			this, tr("Recharger les dessins des éléments"), message);
 		return;
 	}
 
-	message += QStringLiteral("\n\n")
-			% tr("%n élément(s) non redessiné(s) : leur taille, leur point de saisie"
-				  " ou leurs bornes ont changé (borne ajoutée, supprimée ou déplacée).",
-				  "", geometry_changed.size())
-			% QStringLiteral("\n\n")
-			% tr("Pour les mettre à jour, il faut les supprimer puis les réinsérer."
-				  " Attention : cette opération supprime les conducteurs déjà reliés"
-				  " à ces éléments, qu'il faudra retracer.");
+	if (!geometry_changed.isEmpty())
+	{
+		message += QStringLiteral("\n\n")
+				% tr("%n élément(s) non redessiné(s) : leur taille, leur point de saisie"
+					  " ou leurs bornes ont changé (borne ajoutée, supprimée ou déplacée).",
+					  "", geometry_changed.size())
+				% QStringLiteral("\n\n")
+				% tr("Pour les mettre à jour sans rien supprimer, relancez la commande"
+					  " et acceptez de recharger le projet.");
+	}
 
 		//The full list goes in the expandable, scrollable details area
 		//so the dialog stays readable on large projects.
@@ -6267,7 +6319,91 @@ void QETDiagramEditor::slot_reloadElementDrawings() {
 					message,
 					QMessageBox::Ok,
 					this);
-	box.setDetailedText(geometry_changed.join(QLatin1Char('\n')));
+	box.setDetailedText((brought_details + geometry_changed).join(QLatin1Char('\n')));
+	box.exec();
+}
+
+/**
+	@brief QETDiagramEditor::reloadProjectFromMemory
+	Bring every newer version of the editable collections into @p project,
+	the ones whose terminals changed included, and reload it the way opening
+	it does - from what it holds in memory, so nothing has to be saved first
+	and the file on the disk is untouched. See EmbeddedElementRefresh::
+	reopened() for what happens to the conductors.
+
+	The order matters. The symbol editors open on the project are closed
+	first, because they may ask to save and the user may cancel: past that
+	point nothing can be cancelled. The old view is closed without asking
+	and without writing, since its usual closing saves the file according to
+	the answer. The reloaded project then takes its place, on the folio that
+	was shown. Reopening has the price of reopening: the undo history and
+	the windows tied to the old project are gone.
+	@param project : the current project
+	@param collection_dirs : the editable collections
+*/
+void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
+											   const QStringList &collection_dirs)
+{
+	ProjectView *view = findProject(project);
+	if (!view || !view->closeElementEditors()) {
+		return;
+	}
+
+	DiagramView *shown = view->currentDiagram();
+	const int folio = shown ? project->diagrams().indexOf(shown->diagram()) : -1;
+
+	const EmbeddedElementRefresh::Report brought =
+			EmbeddedElementRefresh::bringFromCollections(project, collection_dirs, true);
+
+		//Hidden before it is dropped: dropping it only schedules its
+		//deletion, which the message boxes below would never let happen
+	DialogWaiting *waiting = DialogWaiting::instance(this);
+	const auto drop_waiting = [waiting]() {
+		waiting->hide();
+		DialogWaiting::dropInstance();
+	};
+	QString error;
+	QETProject *reloaded = EmbeddedElementRefresh::reopened(project, &error);
+	if (!reloaded)
+	{
+		drop_waiting();
+		QET::QetMessageBox::critical(
+					this,
+					tr("Recharger les dessins des éléments"),
+					tr("Le projet n'a pas pu être rechargé ; il reste ouvert tel qu'il"
+					   " était, avec les éléments mis à jour depuis la collection.\n\n%1")
+					.arg(error));
+		return;
+	}
+
+		//The old view goes first, through the same door as any project
+		//closing, so that the panels and QETApp let go of it. The projects
+		//panel never disconnects from a project it removes, and any signal
+		//the old project sends while it is being let go of puts it back:
+		//seen on screen, a second entry for a project about to be deleted
+	disconnect(project, nullptr, &pa->elementsPanel(), nullptr);
+	view->skipClosingQuestions();
+	closeProject(view);
+	pa->elementsPanel().projectWasClosed(project);
+	addProject(reloaded);
+	if (ProjectView *reloaded_view = findProject(reloaded))
+	{
+		if (Diagram *diagram = reloaded->diagrams().value(folio)) {
+			reloaded_view->showDiagram(diagram);
+		}
+		activateProject(reloaded_view);
+	}
+	drop_waiting();
+
+	const QStringList left_out = EmbeddedElementRefresh::wiresLeftOut(reloaded);
+	QMessageBox box(left_out.isEmpty() ? QMessageBox::Information : QMessageBox::Warning,
+					tr("Recharger les dessins des éléments"),
+					EmbeddedElementRefresh::reloadReportText(brought, left_out.size()),
+					QMessageBox::Ok,
+					this);
+	if (!left_out.isEmpty()) {
+		box.setDetailedText(left_out.join(QLatin1Char('\n')));
+	}
 	box.exec();
 }
 

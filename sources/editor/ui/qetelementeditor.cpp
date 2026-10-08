@@ -26,6 +26,7 @@
 #include "../../qetmainwindow.h"
 #include "../../recentfiles.h"
 #include "../../elementscollectioncache.h"
+#include "../../ElementsCollection/embeddedelementrefresh.h"
 #include "../../factory/elementpicturefactory.h"
 #include "../graphicspart/customelementpart.h"
 #include "../elementitemeditor.h"
@@ -410,6 +411,40 @@ bool QETElementEditor::toLocation(const ElementsLocation &location)
 	}
 
 	return(true);
+}
+
+/**
+ * @brief QETElementEditor::noticePlacedElements
+ * Tell whoever just saved the symbol at @p location that the elements an
+ * open project has placed from it keep their old drawing until the
+ * drawings are reloaded. Says nothing when no open project has it placed.
+ * See EmbeddedElementRefresh::savedNotice().
+ * @param location : where the symbol was saved
+ */
+void QETElementEditor::noticePlacedElements(const ElementsLocation &location)
+{
+	const QString notice = EmbeddedElementRefresh::savedNotice(
+				location,
+				QETApp::registeredProjects().values(),
+				EmbeddedElementRefresh::editableCollectionDirs());
+	if (notice.isEmpty()) {
+		return;
+	}
+	QET::QetMessageBox::information(this, tr("Éléments déjà posés"), notice);
+}
+
+/**
+ * @brief QETElementEditor::fileLocation
+ * @param file_path : a file the element was saved to, outside any location
+ * @return the location of @p file_path: a symbol of a collection when the
+ * file is inside the directory of one - a symbol of the company collection
+ * opened from the file manager is one - and a plain file otherwise.
+ * ElementsLocation compares the path as written, so the separators are made
+ * Qt's first.
+ */
+ElementsLocation QETElementEditor::fileLocation(const QString &file_path)
+{
+	return ElementsLocation(QDir::fromNativeSeparators(file_path));
 }
 
 /**
@@ -1939,7 +1974,10 @@ bool QETElementEditor::on_m_save_action_triggered()
 
 			//Else wa save to the file at filename_ path
 			bool result_save = toFile(m_file_name);
-			if (result_save) setClean();
+			if (result_save) {
+				setClean();
+				noticePlacedElements(fileLocation(m_file_name));
+			}
 			return(result_save);
 		}
 		else
@@ -1953,6 +1991,7 @@ bool QETElementEditor::on_m_save_action_triggered()
 			if (result_save) {
 				setClean();
 				emit saveToLocation(m_location);
+				noticePlacedElements(m_location);
 			}
 			return(result_save);
 		}
@@ -1983,6 +2022,7 @@ bool QETElementEditor::on_m_save_as_action_triggered()
 			setLocation(location);
 			setClean();
 			emit saveToLocation(location);
+			noticePlacedElements(location);
 		}
 
 		return(result_save);
@@ -2051,6 +2091,7 @@ bool QETElementEditor::on_m_save_as_file_action_triggered()
 				recent -> fileWasOpened(fn);
 			}
 			setClean();
+			noticePlacedElements(fileLocation(fn));
 		}
 
 		return(result_save);

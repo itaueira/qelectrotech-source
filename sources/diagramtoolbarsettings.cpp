@@ -193,7 +193,9 @@ QStringList DiagramToolbarSettings::defaultIds(const QString &name)
 			QStringLiteral("diagrameditor.conductor_reset"),
 			QStringLiteral("diagrameditor.auto_conductor"),
 			QStringLiteral("diagrameditor.auto_break_conductor"),
-			QStringLiteral("widget:conductor_color")};
+			QStringLiteral("widget:conductor_color"),
+			sep,
+			QStringLiteral("diagrameditor.reload_element_drawings")};
 	}
 	if (name == QLatin1String("adding")) {
 			//add_pdf is skipped when built without QtPdf, as before
