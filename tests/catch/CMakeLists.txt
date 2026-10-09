@@ -895,13 +895,20 @@ if(TARGET qet_core)
         # contato, contato sem bobina, borne fora de regua -- mais o motor
         # da rota de varredura que as roda e o painel que leva da linha ao
         # componente. Precisa de projeto aberto por medicao, e nao por
-        # gosto: o contato escravo nao tem linha em tabela nenhuma do banco
-        # do projeto, e o borne so chega a tabela dele depois que alguem
+        # gosto: o vinculo entre bobina e contato nao esta em tabela nenhuma
+        # do banco do projeto, e o borne so chega a tabela dele depois que alguem
         # desenha um condutor -- qualquer uma das tres escrita em SQL
         # devolveria lista vazia e declararia o projeto limpo. Cada regra
         # traz as duas metades, a que acusa e a que se cala de proposito,
         # sobre a mesma bancada antes e depois do vinculo.
         src/ui/drclinkrules_test.cpp
+        # A regra de consulta do componente compravel sem peca do catalogo:
+        # o que o banco do projeto guarda para um campo vazio (a chave que
+        # o componente nunca teve chega como NULL), o que a regra acusa e o
+        # que ela cala de proposito, e que ela diz o mesmo que o relatorio
+        # de componentes sem peca no mesmo projeto. Precisa de projeto
+        # aberto porque a pergunta e feita ao banco populado pelo projeto.
+        src/ui/drcfieldrules_test.cpp
         # Quantas etiquetas a lista de numeros de fio manda imprimir, e
         # para qual numero. Precisa de projeto aberto porque a regra le
         # duas coisas que so o desenho decide -- o texto do condutor e o

@@ -6100,6 +6100,19 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
     </message>
 </context>
 <context>
+    <name>DrcFieldRules</name>
+    <message>
+        <location filename="../sources/drc/drcfieldrules.cpp" line="153"/>
+        <source>%1 n&apos;a aucune pièce du catalogue.</source>
+        <translation>%1 não tem peça do catálogo.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcfieldrules.cpp" line="177"/>
+        <source>Composant à acheter sans pièce du catalogue</source>
+        <translation>Componente a comprar sem peça do catálogo</translation>
+    </message>
+</context>
+<context>
     <name>DrcFinding</name>
     <message>
         <location filename="../sources/drc/drcfinding.cpp" line="173"/>
@@ -6125,32 +6138,32 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
         <translation>(sem tag)</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drclinkrules.cpp" line="140"/>
+        <location filename="../sources/drc/drclinkrules.cpp" line="142"/>
         <source>L&apos;élément maître %1 n&apos;a aucun contact esclave : sa référence croisée ne renvoie nulle part.</source>
         <translation>O elemento mestre %1 não tem nenhum contato escravo: a referência cruzada dele não aponta para lugar nenhum.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drclinkrules.cpp" line="157"/>
+        <location filename="../sources/drc/drclinkrules.cpp" line="159"/>
         <source>Le contact esclave %1 n&apos;est rattaché à aucun élément maître : il n&apos;apparaît sur la référence croisée d&apos;aucune bobine.</source>
         <translation>O contato escravo %1 não está vinculado a nenhum elemento mestre: ele não aparece na referência cruzada de nenhuma bobina.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drclinkrules.cpp" line="181"/>
+        <location filename="../sources/drc/drclinkrules.cpp" line="183"/>
         <source>La borne %1 n&apos;appartient à aucun bornier : elle ne figurera sur aucun plan de bornier.</source>
         <translation>O borne %1 não pertence a nenhuma régua de bornes: ele não vai aparecer em nenhum plano de régua de bornes.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drclinkrules.cpp" line="223"/>
+        <location filename="../sources/drc/drclinkrules.cpp" line="225"/>
         <source>Élément maître sans aucun contact esclave</source>
         <translation>Elemento mestre sem nenhum contato escravo</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drclinkrules.cpp" line="235"/>
+        <location filename="../sources/drc/drclinkrules.cpp" line="237"/>
         <source>Contact esclave rattaché à aucun élément maître</source>
         <translation>Contato escravo não vinculado a nenhum elemento mestre</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drclinkrules.cpp" line="247"/>
+        <location filename="../sources/drc/drclinkrules.cpp" line="249"/>
         <source>Borne dessinée hors de tout bornier</source>
         <translation>Borne desenhado fora de qualquer régua de bornes</translation>
     </message>
@@ -6181,32 +6194,32 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
 <context>
     <name>DrcProjectActions</name>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="113"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="136"/>
         <source>Aucune règle activée : rien n&apos;a été vérifié. Un projet sans constat n&apos;est pas pour autant un projet sans défaut.</source>
         <translation>Nenhuma regra ativada: nada foi verificado. Um projeto sem ocorrência não é, por isso, um projeto sem defeito.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="120"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="143"/>
         <source>%1 règle(s) exécutée(s) : parcours %2 ms, requêtes %3 ms.</source>
         <translation>%1 regra(s) executada(s): percurso %2 ms, consultas %3 ms.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="129"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="152"/>
         <source>%1 règle(s) n&apos;ont pas pu être exécutées : leur résultat est inconnu, et non vide.</source>
         <translation>%1 regra(s) não puderam ser executadas: o resultado delas é desconhecido, e não vazio.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="137"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="160"/>
         <source>Aucun constat.</source>
         <translation>Nenhuma ocorrência.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="146"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="169"/>
         <source>%1 constat(s), dont %2 erreur(s). Double-cliquez une ligne, ou appuyez sur Entrée, pour aller au constat.</source>
         <translation>%1 ocorrência(s), sendo %2 erro(s). Dê duplo clique numa linha, ou pressione Enter, para ir até a ocorrência.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="309"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="360"/>
         <source>Contrôle du projet</source>
         <translation>Verificação do projeto</translation>
     </message>
@@ -7410,33 +7423,33 @@ O nome exibido do elemento é alterado separadamente nas propriedades do element
         <translation>Informações</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="451"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="452"/>
         <source>Ajouter une propriété personnalisée</source>
         <translation>Adicionar uma propriedade personalizada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="458"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="459"/>
         <source>Séparation de potentiel</source>
         <translation>Separação de potencial</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="462"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="463"/>
         <source>Exclure de la nomenclature</source>
         <translation>Excluir da lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="210"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="211"/>
         <source>Repère déjà utilisé</source>
         <translation>Tag já usada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="123"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="124"/>
         <source>Le numéro vient de la borne de bornier à laquelle cette borne est liée : il se modifie sur celle-ci.</source>
         <translation>O número vem do borne de régua de bornes a que este borne está vinculado: ele se altera lá.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="212"/>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="569"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="213"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="600"/>
         <source>« %1 » est déjà le repère d&apos;un autre composant, au même endroit.</source>
         <translation>« %1 » já é a tag de outro componente, no mesmo lugar.</translation>
     </message>
@@ -7449,12 +7462,12 @@ Aller le voir, ou garder le doublon en le sachant ?</source>
 Ir ver, ou guardar o duplicado sabendo disso?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="217"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="218"/>
         <source>Aller jusqu&apos;à l&apos;autre</source>
         <translation>Ir até o outro</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="220"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="221"/>
         <source>Garder le doublon</source>
         <translation>Guardar o duplicado</translation>
     </message>
@@ -7463,17 +7476,17 @@ Ir ver, ou guardar o duplicado sabendo disso?</translation>
         <translation type="vanished">« %1 » já é a tag de outro componente, no mesmo lugar. Dois componentes com a mesma tag é um erro que ninguém vê antes da montagem.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="215"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="216"/>
         <source>Aller le voir, ou garder le doublon ?</source>
         <translation>Ir ver o outro, ou manter a tag repetida?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="663"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="694"/>
         <source>Liste de matériaux absente</source>
         <translation>Lista de material ausente</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="664"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="695"/>
         <source>Aucun fichier de liste de matériaux n&apos;existe à cet emplacement :
 %1
 
@@ -7485,12 +7498,12 @@ Le créer ?</source>
 Criar?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="677"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="708"/>
         <source>Création impossible</source>
         <translation>Não foi possível criar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="678"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="709"/>
         <source>Impossible de créer le fichier :
 %1
 %2</source>
@@ -7499,83 +7512,83 @@ Criar?</translation>
 %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="952"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="994"/>
         <source>Numérotation automatique</source>
         <translation>Numeração automática</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="959"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1001"/>
         <source>…</source>
         <translation>…</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="960"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1002"/>
         <source>Ouvrir les numérotations d&apos;éléments du projet</source>
         <translation>Abrir as numerações de elementos do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="988"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1030"/>
         <source>Figer le nom</source>
         <translation>Congelar o nome</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="989"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1031"/>
         <source>Un nom figé n&apos;est pas changé par la numérotation automatique, et son numéro n&apos;est pas donné à un autre élément.</source>
         <translation>Um nome congelado não é alterado pela numeração automática, e o número dele não é dado a outro elemento.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1025"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1067"/>
         <source>Numéro</source>
         <translation>Número</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1029"/>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1093"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1071"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1135"/>
         <source>Seuls les numéros libres sont proposés : un élément qui doit garder son numéro réel peut le retrouver si personne ne l&apos;a.</source>
         <translation>Só os números livres são oferecidos: um elemento que deve manter seu número real pode recuperá-lo se ninguém o tiver.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1063"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1105"/>
         <source>%1  (actuel)</source>
         <translation>%1  (atual)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1065"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1107"/>
         <source>— (numéro inconnu)</source>
         <translation>— (número desconhecido)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1069"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1111"/>
         <source>%1  →  %2</source>
         <translation>%1  →  %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1091"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1133"/>
         <source>Le nom est figé : dégelez-le pour changer son numéro.</source>
         <translation>O nome está congelado: descongele-o para mudar o número.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1092"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1134"/>
         <source>Le numéro se choisit quand l&apos;élément garde sa numérotation.</source>
         <translation>O número só pode ser escolhido quando o elemento mantém sua numeração.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1157"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1199"/>
         <source>Aucune (nom saisi à la main)</source>
         <translation>Nenhuma (nome digitado à mão)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1176"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1218"/>
         <source>Formule propre : %1</source>
         <translation>Fórmula própria: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1216"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1258"/>
         <source>Nom figé</source>
         <translation>Nome congelado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1217"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1259"/>
         <source>Le nom de cet élément est figé.
 Changer sa numérotation le remplacera ou l&apos;effacera.
 
@@ -14260,32 +14273,32 @@ Deseja vincular este contato escravo mesmo assim?</translation>
 <context>
     <name>MissingPhysicalView</name>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="471"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="480"/>
         <source>pièce absente du catalogue</source>
         <translation>peça ausente do catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="473"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="482"/>
         <source>ni largeur ni hauteur</source>
         <translation>sem largura nem altura</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="480"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="489"/>
         <source>hauteur manquante, largeur héritée de la classe %1</source>
         <translation>falta a altura; a largura é herdada da classe %1</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="482"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="491"/>
         <source>hauteur manquante</source>
         <translation>falta a altura</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="485"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="494"/>
         <source>largeur manquante, hauteur héritée de la classe %1</source>
         <translation>falta a largura; a altura é herdada da classe %1</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="487"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="496"/>
         <source>largeur manquante</source>
         <translation>falta a largura</translation>
     </message>
@@ -23041,7 +23054,7 @@ O que você deseja fazer?</translation>
         <translation>Propriedades do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="273"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="274"/>
         <location filename="../sources/undocommand/changeelementinformationcommand.cpp" line="41"/>
         <source>Modifier les informations de l&apos;élément : %1</source>
         <translation>Editar as informações do elemento: %1</translation>
@@ -24119,12 +24132,12 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>Revisão da peça</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="295"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="304"/>
         <source>Composants sans pièce</source>
         <translation>Componentes sem peça</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="309"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="318"/>
         <source>Les %n composant(s) du projet ont une pièce attribuée. La nomenclature est complète.</source>
         <translation>
             <numerusform>O componente do projeto tem peça atribuída. A lista de material está completa.</numerusform>
@@ -24132,20 +24145,20 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="314"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="323"/>
         <source>%1 composant(s) sur %2 n&apos;ont pas de pièce attribuée. Double-cliquez une ligne pour aller au composant.</source>
         <translation>%1 de %2 componentes não têm peça atribuída. Dê duplo clique numa linha para ir ao componente.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="323"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="735"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="332"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="744"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="127"/>
         <source>Repère</source>
         <translation>Tag</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="324"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="736"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="333"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="745"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="112"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="128"/>
         <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="493"/>
@@ -24153,15 +24166,15 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>Folha</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="325"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="334"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="129"/>
         <source>Symbole</source>
         <translation>Símbolo</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="346"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="763"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="982"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="355"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="772"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="991"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="52"/>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="80"/>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="90"/>
@@ -24169,28 +24182,28 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>(sem tag)</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="385"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="394"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="272"/>
         <source>Attribuer une pièce…</source>
         <translation>Atribuir uma peça…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="386"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="395"/>
         <source>Attribue une pièce du catalogue aux composants sélectionnés dans cette liste, sans avoir à les retrouver un par un sur les folios.</source>
         <translation>Atribui uma peça do catálogo aos componentes selecionados nesta lista, sem ter de achar cada um deles nas folhas.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="654"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="663"/>
         <source>Pièces sans vue physique</source>
         <translation>Peças sem vista física</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="672"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="681"/>
         <source>Le catalogue n&apos;a pas répondu : impossible de dire quelles pièces sont mesurées.</source>
         <translation>O catálogo não respondeu: não há como dizer quais peças estão medidas.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="678"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="687"/>
         <source>Aucun des %n composant(s) du projet n&apos;a de pièce attribuée : c&apos;est « Composants sans pièce » qui répond à cela.</source>
         <translation>
             <numerusform>O componente do projeto não tem peça atribuída: quem responde a isso é « Componentes sem peça ».</numerusform>
@@ -24198,7 +24211,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="686"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="695"/>
         <source>Les %n composant(s) du projet qui ont une pièce ont une vue physique. Le plan peut être dessiné.</source>
         <translation>
             <numerusform>O componente do projeto que tem peça tem vista física. A disposição pode ser desenhada.</numerusform>
@@ -24206,12 +24219,12 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="700"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="709"/>
         <source>%1 composant(s) sur %2 utilisent une pièce sans vue physique : %3 code(s) à mesurer. Double-cliquez une ligne pour aller au composant.</source>
         <translation>%1 de %2 componentes usam uma peça sem vista física: %3 código(s) a medir. Dê duplo clique numa linha para ir ao componente.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="715"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="724"/>
         <source>%n composant(s) tiennent leur taille de leur classe et non de leur pièce.</source>
         <translation>
             <numerusform>%n componente tira o tamanho da classe, e não da peça.</numerusform>
@@ -24219,7 +24232,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="723"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="732"/>
         <source>Le catalogue ne déclare pas %n propriété(s) de la vue physique : importez le paquet de classes qui les apporte.</source>
         <translation>
             <numerusform>O catálogo não declara %n propriedade da vista física: importe o pacote de classes que a traz.</numerusform>
@@ -24227,27 +24240,27 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="737"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="746"/>
         <source>Code</source>
         <translation>Código</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="738"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="747"/>
         <source>Désignation</source>
         <translation>Designação</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="739"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="748"/>
         <source>Manque</source>
         <translation>Falta</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="804"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="813"/>
         <source>Mesurer la pièce…</source>
         <translation>Medir a peça…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="805"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="814"/>
         <source>Ouvre la fiche de la pièce des lignes sélectionnées pour y saisir les millimètres : une fiche par code, et les lignes mesurées quittent la liste.</source>
         <translation>Abre a ficha da peça das linhas selecionadas para digitar os milímetros: uma ficha por código, e as linhas medidas saem da lista.</translation>
     </message>
@@ -24256,29 +24269,29 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation type="vanished">%1 componente(s) de %2 ainda não têm peça atribuída. Duplo clique numa linha para ir ao componente.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="957"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="970"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="1005"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="966"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="979"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="1014"/>
         <source>Lier un accessoire</source>
         <translation>Vincular um acessório</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="958"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="967"/>
         <source>« %1 » n&apos;est pas de la classe Accessoire, mais de « %2 ». Le lier quand même ?</source>
         <translation>« %1 » não é da classe Acessório, e sim de « %2 ». Vincular assim mesmo?</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="971"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="980"/>
         <source>Ce projet n&apos;a aucun composant auquel rattacher l&apos;accessoire.</source>
         <translation>Este projeto não tem nenhum componente ao qual vincular o acessório.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="986"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="995"/>
         <source>folio %1</source>
         <translation>folha %1</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="1006"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="1015"/>
         <source>À quel composant « %1 » appartient-il ?</source>
         <translation>A qual componente « %1 » pertence?</translation>
     </message>

@@ -249,15 +249,21 @@ class projectDataBase : public QObject
 		void drawingItemDestroyed(QObject *object);
 
 	public:
+		/**
+			@return SQL restricting @a column of the element table to
+			@a types, as " AND <column> IN (...)". Public because the
+			rules of the project check filter the same column by kind,
+			and a second way of spelling the kinds would be a second
+			list to keep in step with ElementData::typeToString().
+		*/
+		static QString elementTypeClause(ElementData::Types types,
+						 const QString &column);
 
 	signals:
 		void dataBaseUpdated();
 
 	private:
 		bool createDataBase();
-		/// @return SQL restricting @a column of the element table to @a types
-		static QString elementTypeClause(ElementData::Types types,
-						 const QString &column);
 		static QString elementViewBody();
 		static QString elementViewSource();
 		static QString nomenclatureCondition();

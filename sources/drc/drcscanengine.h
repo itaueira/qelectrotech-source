@@ -102,9 +102,9 @@ class DrcScanReport
 	@par Why this is not SQL, measured and not preferred
 	projectDataBase fills its terminal table along the conductor path only
 	(insertTerminal() is called from the two places that record a
-	conductor), so a terminal with no wire never reaches it; and
-	populateElementTable() filters the components by type, so a slave
-	contact has no row in any table at all. A rule about either one,
+	conductor), so a terminal with no wire never reaches it; and the link
+	between a coil and its contacts is in no table, although each of them
+	has its row. A rule about either one,
 	written as a SELECT, would run, come back with nothing, and report a
 	clean project. That is the failure the route declaration exists to
 	prevent, and this engine is the place the rules that avoid it live.
@@ -132,7 +132,9 @@ class DrcScanReport
 	each rule is what makes a finding of one rule addressed the same way
 	as a finding of another - and the same way the parts report and the
 	location report address a component, which is the whole point of the
-	panel and those reports speaking one language.
+	panel and those reports speaking one language. The query route borrows
+	locate() for its rows that name a component, so the rule holds across
+	both routes and not only inside this one.
 */
 class DrcScanEngine
 {
@@ -173,6 +175,22 @@ class DrcScanEngine
 
 		DrcScanReport run(QETProject *project,
 				  const DrcRuleSet &rules) const;
+
+		/**
+			Write where @a finding is: its sheet, its folio number and,
+			for a finding on a component, its position in the grid of
+			the border.
+
+			Public and static for one reason: a row of the query route
+			that names a component is addressed by this same function, so
+			that a finding of either route is addressed one way. A second
+			copy of these lines would be a second way of numbering the
+			same sheet.
+
+			A finding that already carries a position keeps it, and one
+			with no sheet to be found is left as it is.
+		*/
+		static void locate(QETProject *project, DrcFinding &finding);
 
 	private:
 		/// identifier -> the walk that answers it

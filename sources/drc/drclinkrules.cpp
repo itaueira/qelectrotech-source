@@ -29,30 +29,32 @@
 #include <QPointer>
 #include <QVector>
 
-namespace
+/**
+	@brief DrcLinkRules::labelOf
+	@param element : the component a finding names
+	@return its label, or the words for a component that has none
+
+	A row that names nothing is a row nobody can act on, and the
+	missing-part report of the catalogue already answers this the same
+	way. Saying it in one place keeps the rules - of both routes - from
+	each inventing their own word for it.
+*/
+QString DrcLinkRules::labelOf(Element *element)
 {
-	/**
-		What to call a component that has no label.
-
-		A row that names nothing is a row nobody can act on, and the
-		missing-part report of the catalogue already answers this the same
-		way. Saying it in one place keeps the three rules from each
-		inventing their own word for it.
-	*/
-	QString labelOf(Element *element)
-	{
-		if (!element) {
-			return QString();
-		}
-
-		const QString label = element->actualLabel();
-		if (!label.isEmpty()) {
-			return label;
-		}
-		return QCoreApplication::translate("DrcLinkRules",
-						   "(sans repère)");
+	if (!element) {
+		return QString();
 	}
 
+	const QString label = element->actualLabel();
+	if (!label.isEmpty()) {
+		return label;
+	}
+	return QCoreApplication::translate("DrcLinkRules",
+					   "(sans repère)");
+}
+
+namespace
+{
 	/**
 		The findings of one direction of a cross reference.
 
@@ -90,7 +92,7 @@ namespace
 			findings.append(
 				DrcFinding::onElement(rule.identifier(),
 						      rule.severity(),
-						      text.arg(labelOf(element)),
+						      text.arg(DrcLinkRules::labelOf(element)),
 						      element));
 		}
 
@@ -192,7 +194,7 @@ QList<DrcFinding> DrcLinkRules::terminalOutsideStrip(QETProject *project,
 		findings.append(
 			DrcFinding::onElement(rule.identifier(),
 					      rule.severity(),
-					      text.arg(labelOf(terminal)),
+					      text.arg(DrcLinkRules::labelOf(terminal)),
 					      terminal));
 	}
 

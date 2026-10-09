@@ -57,10 +57,8 @@ namespace
 		if (!element) {
 			return false;
 		}
-		const ElementData::Type type = element->elementData().m_type;
-		return type == ElementData::Simple
-		       || type == ElementData::Master
-		       || type == ElementData::Slave;
+		return CatalogProjectActions::buyableComponentTypes().testFlag(
+					element->elementData().m_type);
 	}
 
 	QHash<QString, QString> informationOf(const Element *element)
@@ -123,6 +121,17 @@ namespace
 						      catalog.valueOrigins(part));
 		return body;
 	}
+}
+
+/**
+	@brief CatalogProjectActions::buyableComponentTypes
+	@return the kinds of element a bill of material cares about
+*/
+ElementData::Types CatalogProjectActions::buyableComponentTypes()
+{
+	return ElementData::Simple
+			| ElementData::Master
+			| ElementData::Slave;
 }
 
 /**

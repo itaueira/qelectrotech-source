@@ -20,6 +20,10 @@
 #include "drcpanel.h"
 
 #include "../../dataBase/drcsqlengine.h"
+#include "../../diagram.h"
+#include "../../qetgraphicsitem/element.h"
+#include "../../qetproject.h"
+#include "../drcfieldrules.h"
 #include "../drclinkrules.h"
 #include "../drcruleset.h"
 #include "../drcscanengine.h"
@@ -28,6 +32,8 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QElapsedTimer>
+#include <QHash>
+#include <QUuid>
 #include <QVariant>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -63,20 +69,16 @@ namespace
 	}
 
 	/**
-		A row of a query turned into something the panel can list.
+		A row of a query that names no component, turned into something
+		the panel can list.
 
-		It is listed and it does **not** navigate, and that is a stated
-		gap rather than an oversight. Which column of a result set holds
-		the uuid of the offending component is a decision the first query
-		rule makes - DrcSqlResult keeps the rows exactly as they came for
-		that reason - and guessing it here would mean picking a column by
-		name. There are two columns called pos in this data base, holding
-		two different things, so a guess would be wrong in a way nobody
-		would notice.
-
-		Until that decision is made, a row is shown with what the query
-		selected written out beside the rule that asked. Listing it
-		without a way to click it is worse than clicking; swallowing it
+		A row navigates when its rule selected the uuid of the offending
+		element under DrcFieldRules::elementUuidColumn() and that uuid is
+		one of the components of the project - see componentsByUuid(). This
+		is what is left for the other rows: a rule that selected no uuid,
+		or a uuid the folios no longer hold. Such a row is shown with what
+		the query selected written out beside the rule that asked. Listing
+		it without a way to click it is worse than clicking; swallowing it
 		would be worse than both, because the panel would then report a
 		clean project while a rule was finding things.
 	*/
@@ -90,6 +92,27 @@ namespace
 			pairs << QStringLiteral("%1=%2").arg(column, value);
 		}
 		return pairs.join(QStringLiteral(", "));
+	}
+
+	/**
+		Every component drawn in @a project, by uuid.
+
+		The rows of a query carry the uuid as text, and the panel needs the
+		object on the folio. Built once per run, and only when a rule of the
+		query route found something: a clean run pays nothing for it.
+	*/
+	QHash<QUuid, Element *> componentsByUuid(QETProject *project)
+	{
+		QHash<QUuid, Element *> components;
+		const QList<Diagram *> diagrams = project->diagrams();
+		for (Diagram *diagram : diagrams)
+		{
+			const QList<Element *> elements = diagram->elements();
+			for (Element *element : elements) {
+				components.insert(element->uuid(), element);
+			}
+		}
+		return components;
 	}
 }
 
@@ -169,12 +192,11 @@ int DrcProjectActions::buildFactoryCheck(DrcRuleSet &rules,
 					 DrcScanEngine &scan,
 					 DrcSqlEngine &sql)
 {
-	Q_UNUSED(sql)
-
-		//The query route ships no rule yet: the first ones of that route
-		//are written against the tables of the project data base, and they
-		//register themselves here the same way, next to this line.
-	return DrcLinkRules::registerRules(rules, scan);
+		//The walk first and the queries after, which is the order the
+		//findings are listed in.
+	int taken = DrcLinkRules::registerRules(rules, scan);
+	taken += DrcFieldRules::registerRules(rules, sql);
+	return taken;
 }
 
 /**
@@ -229,15 +251,44 @@ DrcProjectActions::CheckOutcome DrcProjectActions::runCheck(
 	outcome.failures = sql_report.failures();
 
 	const QList<DrcSqlResult> results = sql_report.results();
+	QHash<QUuid, Element *> components;
+	bool indexed = false;
 	for (const DrcSqlResult &result : results)
 	{
 		if (!result.hasFindings()) {
 			continue;
 		}
+		if (!indexed)
+		{
+			components = componentsByUuid(project);
+			indexed = true;
+		}
 
 		const DrcRule rule = rules.rule(result.identifier());
 		for (int row = 0 ; row < result.findingCount() ; ++row)
 		{
+				//A row that names a component becomes a finding on it,
+				//addressed by the same function the walk route uses - so
+				//the folio and the cell read the same whichever route
+				//found the component.
+			Element *element = components.value(
+						QUuid(result.value(
+							      row,
+							      DrcFieldRules::elementUuidColumn())));
+			const QString sentence = DrcFieldRules::findingText(
+							 result.identifier(), element);
+			if (element && !sentence.isEmpty())
+			{
+				DrcFinding finding = DrcFinding::onElement(
+							     result.identifier(),
+							     result.severity(),
+							     sentence,
+							     element);
+				DrcScanEngine::locate(project, finding);
+				outcome.findings.append(finding);
+				continue;
+			}
+
 			const QString text =
 					rule.description().isEmpty()
 					? rowText(result, row)

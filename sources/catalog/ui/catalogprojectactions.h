@@ -20,6 +20,7 @@
 
 #include "../catalogpart.h"
 #include "../catalogvalueorigin.h"
+#include "../../properties/elementdata.h"
 
 #include <QCoreApplication>
 #include <QList>
@@ -41,6 +42,17 @@ class QWidget;
 */
 namespace CatalogProjectActions
 {
+	/**
+		The kinds of element that get bought: simple, master and slave.
+
+		Written once, as a set, because two readers ask it - the report
+		below walks the folios with it, and the project check asks the
+		project data base with it. Two lists would be two answers to
+		"which components should have a part", and the panel and the
+		report would disagree on a project without anybody noticing.
+	*/
+	ElementData::Types buyableComponentTypes();
+
 	/**
 		Every component of @a project that has no catalog part assigned.
 		Reports, terminals and thumbnails are left out: they are not things

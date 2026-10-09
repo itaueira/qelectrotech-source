@@ -54,8 +54,9 @@
 	differences able to explain it.
 
 	The rules are of the walk route, and the reason is measured rather
-	than preferred: the project data base has no row for a slave contact
-	at all, and no row for a terminal until a conductor is drawn to it, so
+	than preferred: the project data base holds no link between a coil
+	and its contacts, and no row for a terminal until a conductor is drawn
+	to it, so
 	any of these three written as a query would come back with nothing and
 	report a clean project.
 */
@@ -76,6 +77,11 @@ namespace
 		contact of that coil also called KM1 - because that is what a
 		drawing looks like, and because each rule is read on its own
 		findings.
+
+		Every component carries a catalogue part. The factory profile
+		also asks for one, and a drawing called correct below has to be
+		correct for every rule that profile runs, not only for the three
+		read here.
 	*/
 	QString fixtureXml()
 	{
@@ -166,6 +172,8 @@ namespace
 					     "<elementInformations>"
 					     "<elementInformation show=\"1\" name=\"label\">%6"
 					     "</elementInformation>"
+					     "<elementInformation show=\"0\" name=\"part_code\">"
+					     "BENCH-PART</elementInformation>"
 					     "</elementInformations>"
 					     "<dynamic_texts/><texts_groups/>"
 					     "</element>")

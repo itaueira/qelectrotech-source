@@ -230,28 +230,45 @@ DrcScanReport DrcScanEngine::run(QETProject *project,
 				continue;
 			}
 
-				//The address of a finding is written here and nowhere
-				//else. A rule that numbered its own folio would be a rule
-				//that could number it differently from the next one, and
-				//the panel would address the same sheet two ways.
-			Diagram *sheet = sheetOf(finding);
-			if (sheet)
-			{
-				finding.setDiagram(sheet);
-				finding.setFolio(project->folioIndex(sheet) + 1);
-
-				if (finding.element() && finding.position().isEmpty())
-				{
-					finding.setPosition(
-						sheet->convertPosition(
-							finding.element()->scenePos())
-						.toString());
-				}
-			}
-
+				//The address of a finding is written by locate() and
+				//nowhere else. A rule that numbered its own folio would be
+				//a rule that could number it differently from the next
+				//one, and the panel would address the same sheet two ways.
+			locate(project, finding);
 			report.append(finding);
 		}
 	}
 
 	return report;
+}
+
+/**
+	@brief DrcScanEngine::locate
+	@param project : the project the finding belongs to
+	@param finding : the finding to address, in place
+
+	The position is the expression projectDataBase writes into the pos
+	column of the element table (bindElementValues()), so a finding and the
+	row it may have come from name the same cell of the grid.
+*/
+void DrcScanEngine::locate(QETProject *project, DrcFinding &finding)
+{
+	if (!project) {
+		return;
+	}
+
+	Diagram *sheet = sheetOf(finding);
+	if (!sheet) {
+		return;
+	}
+
+	finding.setDiagram(sheet);
+	finding.setFolio(project->folioIndex(sheet) + 1);
+
+	if (finding.element() && finding.position().isEmpty())
+	{
+		finding.setPosition(
+			sheet->convertPosition(finding.element()->scenePos())
+			.toString());
+	}
 }

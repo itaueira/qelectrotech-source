@@ -440,6 +440,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/connector/ui/connectorreportdialog.cpp
   ${QET_DIR}/sources/connector/ui/connectorreportdialog.h
 
+  ${QET_DIR}/sources/drc/drcfieldrules.cpp
+  ${QET_DIR}/sources/drc/drcfieldrules.h
   ${QET_DIR}/sources/drc/drcfinding.cpp
   ${QET_DIR}/sources/drc/drcfinding.h
   ${QET_DIR}/sources/drc/drclinkrules.cpp

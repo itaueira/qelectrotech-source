@@ -26,6 +26,7 @@
 
 class DrcRuleSet;
 class DrcScanEngine;
+class Element;
 class QETProject;
 
 /**
@@ -41,9 +42,8 @@ class QETProject;
 
 	They are all of the Scan route, and not by preference. A coil with no
 	contact is a question about a link, and a link is nowhere in the
-	project data base; a slave contact has no row in any table at all,
-	because populateElementTable() filters the components by kind and
-	leaves it out; and a terminal only reaches the terminal table once a
+	project data base - a slave contact has a row there, but not the coil
+	it follows; and a terminal only reaches the terminal table once a
 	conductor is drawn to it. Each of the three, written as a SELECT,
 	would come back with nothing and report a clean project.
 
@@ -70,6 +70,13 @@ namespace DrcLinkRules
 	QString slaveWithoutMasterIdentifier();
 	/// Machine key of "a terminal drawn outside any terminal strip".
 	QString terminalOutsideStripIdentifier();
+
+	/**
+		What a finding calls @a element: its label, or the words for a
+		component that has none. Shared with the rules of the query route,
+		so that a component without a label reads the same in every row.
+	*/
+	QString labelOf(Element *element);
 
 	/**
 		Every master element of @a project that is linked to no contact.
