@@ -879,6 +879,10 @@ if(TARGET qet_core)
         # it read before the start of its four places. Needs the drawer and
         # its pattern, and paints into an image.
         src/ui/terminalstripdrawer_test.cpp
+        # The information panel of an element and the keys a catalogue part
+        # writes on it: no anonymous row for them, and kept on apply. Needs
+        # a placed element, of both kinds.
+        src/ui/elementinfocatalogkeys_test.cpp
         # O motor da rota SQL da verificacao de projeto: o que ele
         # pergunta ao banco do projeto, o que ele se recusa a perguntar,
         # e como ele distingue uma consulta que quebrou de uma que nao

@@ -38,6 +38,7 @@
 #include "../dataBase/projectdatabase.h"
 #include "../qetinformation.h"
 #include "../qetproject.h"
+#include "../catalog/physicalview.h"
 #include "../ui/projectpropertiesdialog.h"
 #include "../ui_elementinfowidget.h"
 #include "../undocommand/changeelementinformationcommand.h"
@@ -497,8 +498,38 @@ QStringList ElementInfoWidget::predefinedKeys() const
 	keys << QETInformation::ELMT_FORMULA_ID
 		 << QStringLiteral("auto_num_locked")
 		 << QStringLiteral("potential_isolating")
-		 << QStringLiteral("exclude_from_bom");
+		 << QStringLiteral("exclude_from_bom")
+		 << catalogOnlyKeys();
 
+	return keys;
+}
+
+/**
+	@brief ElementInfoWidget::catalogOnlyKeys
+	@return the keys a catalogue part writes on the element that this panel
+	has no field for
+
+	The physical view of the part - its size when there is no field for it,
+	clearances, insertion point, outline flag - and its data sheet and
+	picture belong to the part code, not to the instance: a number typed
+	here would no longer follow the part when its code changes. Without
+	this list each of them became an anonymous editable row, and
+	currentInfo() keeps them as the element has them.
+*/
+QStringList ElementInfoWidget::catalogOnlyKeys() const
+{
+	const QStringList shown = (m_element.data()->elementData().m_type == ElementData::Terminal)
+			? QETInformation::terminalElementInfoKeys()
+			: QETInformation::elementInfoKeys();
+
+	QStringList keys;
+	for (const QString &key : CatalogPhysicalView::keys())
+	{
+		if (!shown.contains(key)) {
+			keys << key;
+		}
+	}
+	keys << QStringLiteral("datasheet") << QStringLiteral("image");
 	return keys;
 }
 
@@ -924,6 +955,17 @@ DiagramContext ElementInfoWidget::currentInfo() const
 		//The element keeps following its numbering scheme as long as its
 		//formula is left as it is; a formula edited by hand is its own.
 	const DiagramContext &elmt_info = m_element->elementInformations();
+
+		//Not shown, so not typed: what the catalogue wrote stays as it is.
+		//Built from the rows alone, the first edit of the label would drop
+		//the insertion point that came with the part.
+	for (const QString &key : catalogOnlyKeys())
+	{
+		if (elmt_info.contains(key) && !info_.contains(key)) {
+			info_.addValue(key, elmt_info.value(key));
+		}
+	}
+
 	if (elmt_info.contains(QETInformation::ELMT_FORMULA_ID)
 			&& !info_.value(QETInformation::ELMT_FORMULA).toString().isEmpty()
 			&& info_.value(QETInformation::ELMT_FORMULA) == elmt_info.value(QETInformation::ELMT_FORMULA)) {

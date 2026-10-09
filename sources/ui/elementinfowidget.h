@@ -84,6 +84,7 @@ class ElementInfoWidget : public AbstractElementPropertiesEditorWidget
 		*/
 		void warnAboutLabelCollision();
 		QStringList predefinedKeys() const;
+		QStringList catalogOnlyKeys() const;
 		void updateSuggestions();
 		void setupSchemeRow();
 		void setupFreezeRow();
