@@ -1095,7 +1095,7 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
 <context>
     <name>BOMExportDialog</name>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="345"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="356"/>
         <source>La nomenclature n&apos;a pas pu être extraite du projet.</source>
         <translation>A lista de material não pôde ser extraída do projeto.</translation>
     </message>
@@ -1146,7 +1146,8 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
     </message>
     <message>
         <location filename="../sources/ui/bomexportdialog.cpp" line="181"/>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="344"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="197"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="355"/>
         <source>Erreur</source>
         <translation>Erro</translation>
     </message>
@@ -1156,12 +1157,17 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
         <translation>O arquivo « %1 » não pôde ser escrito.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="215"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="198"/>
+        <source>L&apos;écriture du fichier « %1 » a échoué.</source>
+        <translation>A escrita do arquivo « %1 » falhou.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="226"/>
         <source>Nomenclature</source>
         <translation>Lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="216"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="227"/>
         <source>%1 composant(s) sans aucune information ne figurent pas dans la liste. Renseignez au moins un champ (label, numéro d&apos;article, fabricant).</source>
         <translation>%1 componente(s) sem nenhuma informação ficaram fora da lista. Preencha ao menos um campo (tag, código da peça, fabricante).</translation>
     </message>
@@ -1174,17 +1180,17 @@ Il suffit de renseigner un seul champ — label, numéro d&apos;article, fabrica
 Basta preencher um único campo — tag, código da peça, fabricante — para que um componente volte a constar.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="373"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="384"/>
         <source>Position</source>
         <translation>Posição</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="375"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="386"/>
         <source>Position du folio</source>
         <translation>Posição da folha</translation>
     </message>
     <message>
-        <location filename="../sources/ui/bomexportdialog.cpp" line="377"/>
+        <location filename="../sources/ui/bomexportdialog.cpp" line="388"/>
         <source>Quantité numéro d&apos;article</source>
         <comment>Special field with name : designation quantity</comment>
         <translatorcomment>Campo especial com nome: quantidade de designação</translatorcomment>
@@ -18065,6 +18071,14 @@ Opções disponíveis:
     </message>
 </context>
 <context>
+    <name>QETCsv</name>
+    <message>
+        <location filename="../sources/utils/csvwriter.cpp" line="41"/>
+        <source>Le texte n&apos;a pas été écrit en entier.</source>
+        <translation>O texto não foi escrito por inteiro.</translation>
+    </message>
+</context>
+<context>
     <name>QETDiagramEditor</name>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="220"/>
@@ -31843,6 +31857,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
     <message>
         <location filename="../sources/wiringlistexport.cpp" line="307"/>
         <location filename="../sources/wiringlistexport.cpp" line="322"/>
+        <location filename="../sources/wiringlistexport.cpp" line="331"/>
         <source>Erreur</source>
         <translation>Erro</translation>
     </message>
@@ -31867,72 +31882,77 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <translation>Não foi possível abrir o arquivo para gravação.</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="554"/>
+        <location filename="../sources/wiringlistexport.cpp" line="332"/>
+        <source>L&apos;écriture du fichier « %1 » a échoué.</source>
+        <translation>A escrita do arquivo « %1 » falhou.</translation>
+    </message>
+    <message>
+        <location filename="../sources/wiringlistexport.cpp" line="563"/>
         <source>Page</source>
         <comment>Wiring list CSV header</comment>
         <translation>Página</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="555"/>
+        <location filename="../sources/wiringlistexport.cpp" line="564"/>
         <source>Composant 1</source>
         <comment>Wiring list CSV header</comment>
         <translation>Componente 1</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="556"/>
+        <location filename="../sources/wiringlistexport.cpp" line="565"/>
         <source>Borne 1</source>
         <comment>Wiring list CSV header</comment>
         <translation>Borne 1</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="557"/>
+        <location filename="../sources/wiringlistexport.cpp" line="566"/>
         <source>Composant 2</source>
         <comment>Wiring list CSV header</comment>
         <translation>Componente 2</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="558"/>
+        <location filename="../sources/wiringlistexport.cpp" line="567"/>
         <source>Borne 2</source>
         <comment>Wiring list CSV header</comment>
         <translation>Borne 2</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="559"/>
+        <location filename="../sources/wiringlistexport.cpp" line="568"/>
         <source>Tension / Protocole</source>
         <comment>Wiring list CSV header</comment>
         <translation>Tensão / Protocolo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="560"/>
+        <location filename="../sources/wiringlistexport.cpp" line="569"/>
         <source>Couleur du fil</source>
         <comment>Wiring list CSV header</comment>
         <translation>Cor do cabo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="561"/>
+        <location filename="../sources/wiringlistexport.cpp" line="570"/>
         <source>Section du fil</source>
         <comment>Wiring list CSV header</comment>
         <translation>Seção do cabo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="562"/>
+        <location filename="../sources/wiringlistexport.cpp" line="571"/>
         <source>Fonction</source>
         <comment>Wiring list CSV header</comment>
         <translation>Função</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="563"/>
+        <location filename="../sources/wiringlistexport.cpp" line="572"/>
         <source>Câble</source>
         <comment>Wiring list CSV header</comment>
         <translation>Cabo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="328"/>
+        <location filename="../sources/wiringlistexport.cpp" line="337"/>
         <source>Export réussi</source>
         <translation>Exportação concluída</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="328"/>
+        <location filename="../sources/wiringlistexport.cpp" line="337"/>
         <source>Le plan de câblage a été exporté avec succès !</source>
         <translation>O plano de fiação foi exportado com sucesso!</translation>
     </message>

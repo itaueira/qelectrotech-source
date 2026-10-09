@@ -189,6 +189,17 @@ int BOMExportDialog::exec()
 			QTextStream stream(&file);
 			stream << bom;
 
+				//Asked before anything is said about the list: a file
+				//that did not take the text is not a saved list.
+			const QString failure = QETCsv::writeError(stream, file);
+			if (!failure.isEmpty())
+			{
+				QMessageBox::critical(this, tr("Erreur"),
+									  tr("L'écriture du fichier « %1 » a échoué.").arg(file_path)
+									  + "\n\n" + failure);
+				return r;
+			}
+
 				/*
 					And what the list does not hold, said out loud.
 

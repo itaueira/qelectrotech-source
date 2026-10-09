@@ -21,6 +21,9 @@
 #include <QString>
 #include <QStringList>
 
+class QFileDevice;
+class QTextStream;
+
 /**
 	@brief RFC-4180 quoting for the delimited text the program exports.
 
@@ -56,6 +59,24 @@ namespace QETCsv
 		*/
 	QString row(const QStringList &values,
 		    const QString &separator = QStringLiteral(";"));
+
+		/**
+			@brief Push what @p stream holds into @p file, and say
+			whether it arrived.
+			@param stream : the stream the list was written through
+			@param file : the device under it, still open
+			@return an empty string when everything reached the device,
+			else the reason, ready to be shown
+
+			QTextStream keeps the text in its own buffer until it is full
+			or flushed, and a device that refuses it - opened read-only,
+			disk full, share gone - says so only then. A writer that
+			closes the file without asking reports a list as saved when
+			it is not. Both are asked: the device for its error, and the
+			stream for its status, because a device that is not open for
+			writing refuses the text without recording any error.
+		*/
+	QString writeError(QTextStream &stream, QFileDevice &file);
 }
 
 #endif // CSVWRITER_H

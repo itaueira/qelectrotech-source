@@ -194,12 +194,12 @@ bool ConductorNumExport::toCsv()
 		//The buffer is pushed into the device first, and the device is
 		//asked for its error while it is still open. Do not move this
 		//below a close().
-	stream.flush();
-	if (file.error() != QFileDevice::NoError)
+	const QString failure = QETCsv::writeError(stream, file);
+	if (!failure.isEmpty())
 	{
 		QMessageBox::critical(m_parent_widget, QObject::tr("Erreur"),
 							  QObject::tr("L'écriture du fichier « %1 » a échoué.").arg(filename) %
-							  "\n\n" % file.errorString());
+							  "\n\n" % failure);
 		return false;
 	}
 

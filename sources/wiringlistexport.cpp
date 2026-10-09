@@ -324,6 +324,15 @@ void WiringListExport::toCsv()
     }
     QTextStream out(&file);
     out << csv;
+        //Success is said only once the device took the text, and the
+        //device is asked while it is still open.
+    const QString failure = QETCsv::writeError(out, file);
+    if (!failure.isEmpty()) {
+        QMessageBox::critical(m_parent, tr("Erreur"),
+                              tr("L'écriture du fichier « %1 » a échoué.").arg(fileName)
+                              + "\n\n" + failure);
+        return;
+    }
     file.close();
     QMessageBox::information(m_parent, tr("Export réussi"), tr("Le plan de câblage a été exporté avec succès !"));
 }

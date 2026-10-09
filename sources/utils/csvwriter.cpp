@@ -17,8 +17,32 @@
 */
 #include "csvwriter.h"
 
+#include <QCoreApplication>
+#include <QFileDevice>
+#include <QTextStream>
+
 namespace QETCsv
 {
+
+/**
+	@brief QETCsv::writeError
+	@param stream : the stream the list was written through
+	@param file : the device under it, still open
+	@return an empty string when everything reached the device, else the
+	reason. See the header.
+*/
+QString writeError(QTextStream &stream, QFileDevice &file)
+{
+	stream.flush();
+	if (file.error() != QFileDevice::NoError) {
+		return file.errorString();
+	}
+	if (stream.status() != QTextStream::Ok) {
+		return QCoreApplication::translate(
+			       "QETCsv", "Le texte n'a pas été écrit en entier.");
+	}
+	return QString();
+}
 
 /**
 	@brief QETCsv::field

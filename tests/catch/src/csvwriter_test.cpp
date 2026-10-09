@@ -19,8 +19,12 @@
 #include "qt_catch_tostring.h"
 
 #include <QChar>
+#include <QFile>
+#include <QFileInfo>
 #include <QString>
 #include <QStringList>
+#include <QTemporaryDir>
+#include <QTextStream>
 
 /*
 	The quoting every list of this program writes through.
@@ -178,4 +182,57 @@ TEST_CASE("T16 — a linha vazia e a linha de uma célula", "[csv]")
 		== QStringLiteral("W12"));
 	REQUIRE(QETCsv::row(QStringList() << QStringLiteral("W12;13"))
 		== QStringLiteral("\"W12;13\""));
+}
+
+/*
+	The second silent failure of a list export: the text never reaches the
+	disk and the program says the list was saved. QTextStream keeps what it
+	is given in a buffer, so a refusal shows only when that buffer is
+	pushed into the device - and a writer that closes the file without
+	asking never sees it.
+*/
+
+TEST_CASE("T16 — a escrita que o dispositivo recusa é relatada, e não dada por feita",
+	  "[csv]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = dir.filePath(QStringLiteral("list.csv"));
+	{
+		QFile seed(path);
+		REQUIRE(seed.open(QIODevice::WriteOnly));
+	}
+
+		//Opened for reading: the write is refused, and QFile records no
+		//error for it - only the stream knows.
+	QFile file(path);
+	REQUIRE(file.open(QIODevice::ReadOnly));
+	QTextStream stream(&file);
+	stream << QStringLiteral("K1;Contator 9 A\n");
+
+	const QString failure = QETCsv::writeError(stream, file);
+	CHECK_FALSE(failure.isEmpty());
+	CHECK(QFileInfo(path).size() == 0);
+}
+
+TEST_CASE("T16 — a escrita aceita chega ao disco antes de alguém fechar o arquivo",
+	  "[csv]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = dir.filePath(QStringLiteral("list.csv"));
+
+	QFile file(path);
+	REQUIRE(file.open(QIODevice::WriteOnly));
+	QTextStream stream(&file);
+	const QString text = QStringLiteral("K1;Contator 9 A\n");
+	stream << text;
+
+		//Still in the buffer of the stream: nothing on the disk yet. This
+		//is what makes the check below mean something.
+	REQUIRE(QFileInfo(path).size() == 0);
+
+	CHECK(QETCsv::writeError(stream, file).isEmpty());
+		//On the disk, with the file still open.
+	CHECK(QFileInfo(path).size() == text.toUtf8().size());
 }
