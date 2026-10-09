@@ -851,10 +851,9 @@ bool CatalogPartDialog::save(bool as_new_revision)
 		const QString y_name = fieldName(declarations,
 						 QStringLiteral("insertion_y"));
 		QMessageBox::warning(this, tr("Point d'insertion incomplet"),
-				     tr("Le point d'insertion demande ses deux "
-					"décalages. Renseignez « %1 » et « %2 », "
-					"ou laissez les deux vides : la pièce sera "
-					"alors posée par son coin.")
+				     tr("Renseignez « %1 » et « %2 », ou laissez "
+					"les deux vides pour poser la pièce par son "
+					"coin.")
 				     .arg(x_name, y_name));
 		return false;
 	}
@@ -864,9 +863,8 @@ bool CatalogPartDialog::save(bool as_new_revision)
 	if (as_new_revision)
 	{
 		if (QMessageBox::question(this, tr("Nouvelle révision"),
-					  tr("Créer une nouvelle révision de « %1 » ? Les projets "
-					     "existants continuent sur la révision qu'ils ont ; "
-					     "les nouveaux prendront celle-ci.").arg(to_save.code))
+					  tr("Créer une nouvelle révision de « %1 » ? Seuls les "
+					     "nouveaux projets la prendront.").arg(to_save.code))
 		    != QMessageBox::Yes)
 		{
 			return false;
@@ -881,10 +879,9 @@ bool CatalogPartDialog::save(bool as_new_revision)
 	{
 		if (m_part.id > 0
 		    && QMessageBox::question(this, tr("Modifier la pièce"),
-					     tr("Enregistrer « %1 » en place ? Tous les projets qui "
-						"utilisent cette pièce verront la correction à leur "
-						"prochaine ouverture. Pour un produit qui a changé, "
-						"utilisez plutôt une nouvelle révision.")
+					     tr("Enregistrer « %1 » par-dessus ? La correction "
+						"atteindra tous les projets qui l'utilisent ; pour "
+						"un produit différent, créez une nouvelle révision.")
 					     .arg(to_save.code))
 		       != QMessageBox::Yes)
 		{

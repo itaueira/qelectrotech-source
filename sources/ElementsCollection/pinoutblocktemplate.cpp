@@ -361,8 +361,7 @@ bool PinoutBlockTemplate::isValid(QString *error) const
 		if (error) {
 			*error = QCoreApplication::translate("PinoutBlockTemplate",
 					"L'espacement entre bornes doit valoir au "
-					"moins un pas de grille, sinon deux bornes "
-					"se posent au même endroit.");
+					"moins un pas de grille.");
 		}
 		return false;
 	}
@@ -417,10 +416,9 @@ bool PinoutBlockTemplate::isValid(QString *error) const
 	{
 		if (error) {
 			*error = QCoreApplication::translate("PinoutBlockTemplate",
-					"Une classe peut contredire la convention "
-					"sur un type de borne, pas sur tous : ceci "
-					"est une seconde convention, pas une "
-					"exception.");
+					"Une classe ne peut contredire la convention "
+					"que sur une partie des types de borne : "
+					"retirez une exception.");
 		}
 		return false;
 	}

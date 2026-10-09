@@ -979,9 +979,8 @@ void CircuitTableDialog::pasteFromClipboard()
 	const QString macro_for_new_rows = macroForNewRows();
 	if (m_table.isEmpty() && macro_for_new_rows.isEmpty())
 	{
-		say(tr("Choisissez d'abord le macro des circuits à générer : "
-		       "sans lui, la table ne sait pas dans quelles colonnes "
-		       "le collage tombe."), true);
+		say(tr("Choisissez d'abord le macro des circuits à générer, "
+		       "puis collez de nouveau."), true);
 		return;
 	}
 

@@ -153,15 +153,12 @@ QString SheetSymbolExtractor::refusal(const DiagramContent &content)
 {
 	if (content.m_shapes.isEmpty()) {
 		return QCoreApplication::translate("SheetSymbolExtractor",
-			"Rien n'est dessiné dans la sélection. Un symbole se fait "
-			"avec les outils de dessin : ligne, rectangle, ellipse, "
-			"polygone.");
+			"Rien n'est dessiné dans la sélection.");
 	}
 	if (!content.m_elements.isEmpty()) {
 		return QCoreApplication::translate("SheetSymbolExtractor",
-			"La sélection contient des composants. Un symbole est un "
-			"dessin ; un morceau de schéma avec des composants se "
-			"garde en groupement.");
+			"La sélection contient des composants : enregistrez-la "
+			"plutôt comme groupement.");
 	}
 	if (!content.conductors().isEmpty()) {
 		return QCoreApplication::translate("SheetSymbolExtractor",

@@ -126,9 +126,8 @@ void CatalogRepositoryDialog::buildWidgets()
 	m_import = new QPushButton(tr("Télécharger et importer"), this);
 	m_import->setDefault(true);
 	m_contribute = new QPushButton(tr("Contribuer une pièce…"), this);
-	m_contribute->setToolTip(tr("Écrit une pièce du catalogue local dans le répertoire. "
-				    "Rien ne sort d'ici sans cette action : le catalogue porte des "
-				    "décisions d'achat et d'ingénierie de l'entreprise."));
+	m_contribute->setToolTip(tr("Écrit une pièce du catalogue local dans le répertoire "
+				    "partagé."));
 
 	QDialogButtonBox *buttons = new QDialogButtonBox(this);
 	buttons->addButton(m_contribute, QDialogButtonBox::ActionRole);
@@ -178,8 +177,7 @@ void CatalogRepositoryDialog::reload()
 	{
 		m_status->setText(
 			QFileInfo::exists(root)
-			? tr("Le répertoire %1 est vide. Il se remplit par la contribution "
-			     "explicite de qui veut partager une pièce.").arg(root)
+			? tr("Le répertoire %1 est vide.").arg(root)
 			: tr("Le dossier %1 n'existe pas encore. Il sera créé à la première "
 			     "contribution.").arg(root));
 	}
@@ -399,14 +397,13 @@ void CatalogRepositoryDialog::importSelected()
 		// dialog at all.
 		const QString question =
 			declared
-			? tr("La classe « %1 » n'existe pas dans ce catalogue.\n\n"
-			     "Le paquet la déclare. Ceci va créer :\n\n%2\n\n"
-			     "Ce qui existe déjà ici n'est pas modifié. Continuer ?")
+			? tr("La classe « %1 » n'existe pas dans ce catalogue. Créer ce "
+			     "qui manque à partir du paquet, sans modifier l'existant ?"
+			     "\n\n%2")
 			  .arg(class_key, plan.toText())
-			: tr("La classe « %1 » n'existe pas dans ce catalogue.\n\n"
-			     "Ce paquet ne la déclare pas : elle serait créée vide sous "
-			     "« Composant », et les valeurs de la pièce y arriveraient "
-			     "comme du texte libre. Continuer ?")
+			: tr("La classe « %1 » n'existe pas et le paquet ne la décrit pas : "
+			     "elle sera créée vide, et les valeurs de la pièce entreront "
+			     "en texte libre. Continuer ?")
 			  .arg(class_key);
 		if (QMessageBox::question(this, tr("Classe absente"), question)
 		    != QMessageBox::Yes)
@@ -509,9 +506,9 @@ void CatalogRepositoryDialog::contribute()
 	}
 
 	if (QMessageBox::question(this, tr("Contribuer une pièce"),
-				  tr("Écrire « %1 » dans le répertoire partagé ?\n\n"
-				     "Les données de la pièce y seront lisibles par qui a accès au "
-				     "dossier. Le prix et les conditions commerciales ne partent pas.")
+				  tr("Écrire « %1 » dans le répertoire partagé ? Qui a accès au "
+				     "dossier pourra la lire, sans le prix ni les conditions "
+				     "commerciales.")
 					  .arg(part.code))
 	    != QMessageBox::Yes)
 	{

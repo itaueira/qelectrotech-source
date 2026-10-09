@@ -265,7 +265,7 @@
              <string>margin: 5px; font-weight: bold;</string>
             </property>
             <property name="toolTip">
-             <string>La borne reste une borne : elle garde sa place dans son bornier et transmet le potentiel. Elle peut en plus être liée à la borne qui la représente sur le folio du bornier.</string>
+             <string>La borne reste dans son bornier, et peut en plus être liée à celle qui la représente sur le folio du bornier.</string>
             </property>
             <property name="text">
              <string>Peut être esclave d'une borne de bornier</string>

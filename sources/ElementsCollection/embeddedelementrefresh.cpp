@@ -487,23 +487,13 @@ QString EmbeddedElementRefresh::reloadQuestion(int elements)
 {
 	return QCoreApplication::translate(
 				"EmbeddedElementRefresh",
-				"Les bornes de %n élément(s) posé(s) ont changé (borne ajoutée,"
-				" supprimée ou déplacée).",
+				"Les bornes de %n élément(s) ont changé. Recharger le projet pour les"
+				" appliquer ?",
 				nullptr, elements)
 			+ QStringLiteral("\n\n")
 			+ QCoreApplication::translate(
 				"EmbeddedElementRefresh",
-				"Pour les appliquer sans rien supprimer ni réinsérer, le projet va être"
-				" rechargé comme s'il était rouvert : un conducteur suit sa borne"
-				" déplacée, et le conducteur d'une borne qui n'existe plus est retiré.")
-			+ QStringLiteral("\n\n")
-			+ QCoreApplication::translate(
-				"EmbeddedElementRefresh",
-				"L'historique d'annulation sera vidé. Il n'est pas nécessaire"
-				" d'enregistrer avant : le fichier sur le disque ne change que lorsque"
-				" vous enregistrez, et fermer sans enregistrer reste possible.")
-			+ QStringLiteral("\n\n")
-			+ QCoreApplication::translate("EmbeddedElementRefresh", "Recharger le projet maintenant ?");
+				"L'annulation sera vidée. Rien n'est enregistré sur le disque.");
 }
 
 /**
@@ -514,22 +504,14 @@ QString EmbeddedElementRefresh::reloadQuestion(int elements)
 QString EmbeddedElementRefresh::reloadReportText(const Report &report, int wires_left_out)
 {
 	QStringList paragraphs;
-	paragraphs << QCoreApplication::translate("EmbeddedElementRefresh",
-											  "Le projet a été rechargé.");
-	if (report.brought_elements) {
-		paragraphs << QCoreApplication::translate(
-						  "EmbeddedElementRefresh",
-						  "%n élément(s) mis à jour depuis la collection entreprise"
-						  " ou utilisateur.",
-						  nullptr, report.brought_elements);
-	}
+	paragraphs << QCoreApplication::translate(
+					  "EmbeddedElementRefresh",
+					  "Projet rechargé : %n élément(s) mis à jour.",
+					  nullptr, report.brought_elements);
 	if (wires_left_out) {
 		paragraphs << QCoreApplication::translate(
 						  "EmbeddedElementRefresh",
-						  "%n conducteur(s) retiré(s) : la borne à laquelle ils étaient"
-						  " reliés n'existe plus. Si vous enregistrez, ils disparaîtront"
-						  " du fichier ; fermez sans enregistrer pour garder le fichier"
-						  " tel quel.",
+						  "%n conducteur(s) retiré(s) : leur borne n'existe plus.",
 						  nullptr, wires_left_out);
 	}
 	return paragraphs.join(QStringLiteral("\n\n"));
@@ -547,35 +529,28 @@ QString EmbeddedElementRefresh::reportText(const Report &report)
 	if (report.brought_elements) {
 		paragraphs << QCoreApplication::translate(
 						  "EmbeddedElementRefresh",
-						  "%n élément(s) mis à jour depuis la collection entreprise"
-						  " ou utilisateur.",
+						  "%n élément(s) mis à jour depuis la collection.",
 						  nullptr, report.brought_elements);
 	}
 	if (!report.terminals_changed.isEmpty()) {
 		paragraphs << QCoreApplication::translate(
 						  "EmbeddedElementRefresh",
-						  "%n élément(s) non mis à jour depuis la collection : dans la"
-						  " nouvelle version, leurs bornes ont changé (borne ajoutée,"
-						  " supprimée ou déplacée). Pour l'appliquer, relancez la commande"
-						  " et acceptez de recharger le projet.",
+						  "%n élément(s) non mis à jour : leurs bornes ont changé. Relancez"
+						  " la commande et acceptez de recharger le projet.",
 						  nullptr, report.terminals_changed.size());
 	}
 	if (!report.ambiguous.isEmpty()) {
 		paragraphs << QCoreApplication::translate(
 						  "EmbeddedElementRefresh",
-						  "%n élément(s) non mis à jour : le même chemin existe dans la"
-						  " collection entreprise et dans la collection utilisateur, et"
-						  " le projet ne dit pas de laquelle vient sa copie.",
+						  "%n élément(s) non mis à jour : présents dans les collections"
+						  " entreprise et utilisateur.",
 						  nullptr, report.ambiguous.size());
 	}
 	if (!report.changed_in_project.isEmpty()) {
 		paragraphs << QCoreApplication::translate(
 						  "EmbeddedElementRefresh",
-						  "%n élément(s) non mis à jour : ils ont été modifiés dans le"
-						  " projet et aussi dans la collection. La version du projet est"
-						  " conservée ; pour prendre celle de la collection, faites"
-						  " glisser l'élément de la collection sur un folio et"
-						  " choisissez de remplacer l'élément du projet.",
+						  "%n élément(s) non mis à jour : modifiés aussi dans le projet,"
+						  " dont la version est conservée.",
 						  nullptr, report.changed_in_project.size());
 	}
 	return paragraphs.join(QStringLiteral("\n\n"));
@@ -720,45 +695,40 @@ QString EmbeddedElementRefresh::noticeFor(
 		return QString();
 	}
 
+		//The list by project only says something when there is more than one
 	QString notice = QCoreApplication::translate(
 				"EmbeddedElementRefresh",
-				"Cet élément est posé %n fois dans les projets ouverts :",
-				nullptr, total)
-			+ QLatin1Char('\n') + lines.join(QLatin1Char('\n'))
-			+ QStringLiteral("\n\n")
+				"Cet élément est posé %n fois dans les projets ouverts.",
+				nullptr, total);
+	if (lines.size() > 1) {
+		notice += QLatin1Char('\n') + lines.join(QLatin1Char('\n'));
+	}
+	notice += QStringLiteral("\n\n")
 			+ QCoreApplication::translate(
 				"EmbeddedElementRefresh",
-				"Les éléments déjà posés gardent l'ancien dessin tant que vous"
-				" n'avez pas cliqué sur « Recharger les dessins des éléments »,"
-				" dans la barre d'outils Schéma ou dans le menu Projet.");
+				"Pour mettre à jour le dessin : « Recharger les dessins des éléments »"
+				" (barre Schéma).");
 
 	if (terminals_changed) {
 		notice += QStringLiteral("\n\n")
 				+ QCoreApplication::translate(
 					"EmbeddedElementRefresh",
-					"Ses bornes ont changé (borne ajoutée, supprimée ou déplacée) :"
-					" la commande proposera de recharger le projet comme s'il était"
-					" rouvert. Rien n'est à supprimer ni à réinsérer : un conducteur"
-					" suit sa borne déplacée, et le conducteur d'une borne qui"
-					" n'existe plus est retiré.");
+					"Ses bornes ont changé : la commande proposera de recharger le projet.");
 	}
 
 	if (copy_changed) {
 		notice += QStringLiteral("\n\n")
 				+ QCoreApplication::translate(
 					"EmbeddedElementRefresh",
-					"La copie de cet élément a aussi été modifiée dans un projet :"
-					" la version de ce projet est conservée, et elle ne sera pas"
-					" remplacée par celle-ci.");
+					"Il a aussi été modifié dans un projet, dont la version est conservée.");
 	}
 
 	if (from_collection && sourceFilesFor(embedded_path, collection_dirs).size() > 1) {
 		notice += QStringLiteral("\n\n")
 				+ QCoreApplication::translate(
 					"EmbeddedElementRefresh",
-					"Le même chemin existe dans la collection entreprise et dans la"
-					" collection utilisateur : les projets ne disent pas de laquelle"
-					" vient leur copie, et elle ne sera pas mise à jour.");
+					"Le même chemin existe dans les collections entreprise et"
+					" utilisateur : il ne sera pas mis à jour.");
 	}
 
 	return notice;

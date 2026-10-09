@@ -195,10 +195,8 @@ void IoAssignDialog::buildWidgets()
 	m_draw = new QCheckBox(tr("Dessiner aussi les circuits demandés "
 					   "par la colonne Connecter à"), this);
 	m_draw->setChecked(true);
-	m_draw->setToolTip(tr("Génère le schéma que chaque point demande, "
-				      "le lie à sa voie, et met ses bornes de champ "
-				      "dans un groupe de bornes. Un point dont la "
-				      "colonne Connecter à est vide ne dessine rien."));
+	m_draw->setToolTip(tr("Lie chaque circuit dessiné à sa voie et met ses "
+				      "bornes de champ dans un groupe de bornes."));
 	connect(m_draw, &QCheckBox::toggled,
 		this, &IoAssignDialog::selectionChanged);
 

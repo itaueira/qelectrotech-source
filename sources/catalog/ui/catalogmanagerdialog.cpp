@@ -130,11 +130,8 @@ void CatalogManagerDialog::buildWidgets()
 						   format.toXml());
 		}
 	}
-	m_class_numbering->setToolTip(tr("La règle de numérotation des objets de cette classe. Elle "
-					 "vit ici et non dans la commande, pour que deux personnes "
-					 "renumérotant le même projet obtiennent la même chose. Une "
-					 "sous-classe qui ne dit rien suit sa classe mère, comme pour "
-					 "la racine du repère."));
+	m_class_numbering->setToolTip(tr("La règle de numérotation des objets de cette classe ; "
+					 "sans règle, elle suit sa classe mère."));
 	m_apply_class       = new QPushButton(tr("Appliquer"), this);
 
 	QWidget *class_tab = new QWidget(this);
@@ -602,9 +599,9 @@ void CatalogManagerDialog::applyClassChanges()
 	{
 		// Say it out loud: this reaches the objects that already exist.
 		if (QMessageBox::question(this, tr("Changer la racine du repère"),
-					  tr("Changer la racine du repère de « %1 » touche tous les "
-					     "objets de cette classe et de ses sous-classes, y compris "
-					     "ceux des projets déjà enregistrés. Continuer ?")
+					  tr("La nouvelle racine vaut pour tous les objets de « %1 » "
+					     "et de ses sous-classes, y compris dans les projets déjà "
+					     "enregistrés. Continuer ?")
 					  .arg(catalog_class.name))
 		    != QMessageBox::Yes)
 		{
@@ -819,9 +816,8 @@ void CatalogManagerDialog::removeSelectedProperty()
 	}
 
 	if (QMessageBox::question(this, tr("Supprimer la propriété"),
-				  tr("Supprimer cette propriété ? Les valeurs déjà saisies dans les "
-				     "pièces sont conservées et redeviendront visibles si la "
-				     "propriété est recréée avec la même clé."))
+				  tr("Supprimer cette propriété ? Les valeurs des pièces sont "
+				     "gardées et reviendront si elle est recréée avec la même clé."))
 	    != QMessageBox::Yes)
 	{
 		return;

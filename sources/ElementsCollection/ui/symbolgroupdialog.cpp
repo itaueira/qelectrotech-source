@@ -258,10 +258,8 @@ void SymbolGroupDialog::act()
 			//what is inserted already stays as it is and only the next
 			//insertion changes.
 		if (QMessageBox::question(this, tr("Enregistrer le groupement"),
-				tr("« %1 » existe déjà. L'écraser ?\n\n"
-				   "Les schémas où il a déjà été inséré ne changent pas ; "
-				   "seules les insertions suivantes prendront la nouvelle "
-				   "version.").arg(name))
+				tr("Écraser « %1 » ? Les schémas où il a déjà été "
+				   "inséré ne changent pas.").arg(name))
 				!= QMessageBox::Yes) {
 			return;
 		}

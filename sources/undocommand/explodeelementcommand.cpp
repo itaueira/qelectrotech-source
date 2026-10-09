@@ -190,9 +190,7 @@ QString ExplodeElementCommand::refusal(Element *element)
 	}
 	if (!element->conductors().isEmpty()) {
 		return QCoreApplication::translate("ExplodeElementCommand",
-			"« %1 » a des conducteurs branchés. Éclaté, il n'aurait plus de "
-			"points de raccordement et les conducteurs ne tiendraient plus à "
-			"rien : débranchez-les d'abord.")
+			"« %1 » a des conducteurs branchés : débranchez-les d'abord.")
 				.arg(element->actualLabel());
 	}
 	if (element->location().xml().isNull()) {

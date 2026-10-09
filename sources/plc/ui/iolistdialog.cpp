@@ -532,9 +532,7 @@ void IoListDialog::addCard(QTreeWidgetItem *parent, const IoTree::CardGroup &car
 		item->setForeground(NameColumn, QBrush(QColor(Qt::red)));
 		item->setToolTip(NameColumn,
 				 tr("Aucune carte de ce projet ne répond à cet "
-				    "identifiant. Ses points sont montrés tout de "
-				    "même, pour qu'ils ne disparaissent pas du "
-				    "compte."));
+				    "identifiant."));
 		item->setFlags(Qt::ItemIsEnabled);
 	}
 	else

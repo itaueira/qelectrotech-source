@@ -91,9 +91,8 @@ void EnvironmentDialog::buildWidgets()
 	m_contents = new QTextBrowser(this);
 
 	m_backup = new QPushButton(tr("Copie de sauvegarde…"), this);
-	m_backup->setToolTip(tr("Copie tout l'environnement dans un dossier choisi, qui doit être "
-				"en dehors de l'environnement. C'est la protection de la "
-				"bibliothèque et du catalogue, pas seulement des projets."));
+	m_backup->setToolTip(tr("Copie tout l'environnement — bibliothèque, catalogue et "
+				"projets — dans un dossier hors de l'environnement."));
 
 	m_status = new QLabel(this);
 	m_status->setWordWrap(true);
@@ -227,8 +226,8 @@ void EnvironmentDialog::apply()
 	m_path_changed = true;
 	refreshContents();
 
-	QString message = tr("Environnement changé pour %1. Fermez et relancez le programme : "
-			     "la bibliothèque et le catalogue déjà chargés viennent de l'ancien.")
+	QString message = tr("Environnement changé pour %1. Fermez et relancez le programme "
+			     "pour l'utiliser.")
 			  .arg(wanted);
 	if (!error.isEmpty()) {
 		message += QStringLiteral("\n\n") + error;

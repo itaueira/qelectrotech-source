@@ -120,8 +120,7 @@ void CatalogBrowserDialog::buildWidgets()
 	m_duplicate_part = new QPushButton(tr("Dupliquer…"), this);
 	m_duplicate_part->setToolTip(tr(
 			   "Ouvre une pièce neuve avec les valeurs de celle-ci et le code "
-			   "vide. Cataloguer une famille — même produit, un champ qui "
-			   "change — devient remplir un champ au lieu de tout retaper."));
+			   "vide."));
 	m_remove_part = new QPushButton(tr("Supprimer"), this);
 	m_choose      = new QPushButton(tr("Attribuer"), this);
 	m_choose->setDefault(true);
@@ -509,9 +508,9 @@ void CatalogBrowserDialog::removeSelectedPart()
 	}
 
 	if (QMessageBox::question(this, tr("Supprimer la pièce"),
-				  tr("Supprimer « %1 » du catalogue ? Les projets qui la référencent "
-				     "gardent ce qu'ils ont enregistré, mais ne trouveront plus la "
-				     "pièce.").arg(m_selected.code))
+				  tr("Supprimer « %1 » du catalogue ? Les projets qui l'utilisent "
+				     "gardent leurs données, mais ne la trouveront plus.")
+				  .arg(m_selected.code))
 	    != QMessageBox::Yes)
 	{
 		return;

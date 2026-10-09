@@ -416,10 +416,9 @@ void MountingLayoutEditor::newSurface()
 		QMessageBox::information(
 				this,
 				tr("Nouvelle platine"),
-				tr("Une platine appartient à une localisation "
-				   "du projet, et ce projet n'en a aucune. "
-				   "Faites l'armoire dans « Armoires et "
-				   "localisations… », puis revenez ici."));
+				tr("Ce projet n'a aucune localisation. Créez "
+				   "l'armoire dans « Armoires et localisations… », "
+				   "puis revenez ici."));
 		return;
 	}
 

@@ -713,10 +713,9 @@ void CreateSymbolDialog::save()
 		question.setText(tr("« %1 » est déjà dans ce dossier.")
 				 .arg(QFileInfo(path).fileName()));
 		question.setInformativeText(
-			tr("Remplacer le symbole change le dessin dans tous les projets "
-			   "qui l'utilisent, y compris ceux déjà livrés.\n\n"
-			   "Enregistrer une révision laisse ces projets comme ils sont "
-			   "et ne sert que pour les suivants."));
+			tr("Remplacer change le dessin dans les projets qui "
+			   "l'utilisent, même ceux déjà livrés. Une révision ne sert "
+			   "qu'aux projets suivants."));
 		QPushButton *replace = question.addButton(
 					tr("Remplacer partout"), QMessageBox::DestructiveRole);
 		QPushButton *revision = question.addButton(

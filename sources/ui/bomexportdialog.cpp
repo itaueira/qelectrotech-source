@@ -213,11 +213,9 @@ int BOMExportDialog::exec()
 			{
 				QMessageBox::information(
 					this, tr("Nomenclature"),
-					tr("%1 composant(s) ne portent aucune information et "
-					   "ne figurent pas dans la liste.\n\n"
-					   "Il suffit de renseigner un seul champ — label, "
-					   "numéro d'article, fabricant — pour qu'un composant "
-					   "y revienne.").arg(nameless));
+					tr("%1 composant(s) sans aucune information ne figurent "
+					   "pas dans la liste. Renseignez au moins un champ "
+					   "(label, numéro d'article, fabricant).").arg(nameless));
 			}
 		}
 	}

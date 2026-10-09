@@ -53,9 +53,7 @@ BackupDialog::BackupDialog(QWidget *parent) :
 		tr("Do not ask again, and keep this answer",
 		   "check box, backup copy question"));
 	m_remember_cb->setToolTip(
-		tr("The choice is kept for this workstation and can be changed in "
-		   "Settings > General > Projects. It is never written into the "
-		   "project file.",
+		tr("Can be changed in Settings > General > Projects.",
 		   "check box tool tip, backup copy question"));
 	main_layout->addWidget(m_remember_cb);
 

@@ -122,11 +122,8 @@ void RenumberDialog::buildWidgets()
 	m_skip_prefixes = new QLineEdit(this);
 	m_skip_prefixes->setPlaceholderText(tr("X, XB, TB"));
 	m_skip_prefixes->setToolTip(tr(
-			   "Repères commençant par ces lettres : laissés tels quels. "
-			   "Sert aux bornes dont le symbole n'est pas déclaré comme "
-			   "borne dans la bibliothèque, et que le programme ne peut "
-			   "donc pas distinguer d'un composant. Séparés par des "
-			   "virgules."));
+			   "Préfixes séparés par des virgules : les repères qui "
+			   "commencent ainsi ne sont pas renumérotés."));
 
 	m_only_changes = new QCheckBox(tr("N'afficher que ce qui change"), this);
 	m_only_changes->setChecked(true);

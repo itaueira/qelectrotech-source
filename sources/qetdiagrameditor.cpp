@@ -1102,9 +1102,7 @@ void QETDiagramEditor::setUpActions()
 	m_show_terminals = new QAction(
 				tr("Points de raccordement"), this);
 	m_show_terminals->setToolTip(tr(
-				   "Garde tous les points de raccordement visibles. À laisser "
-				   "désactivé pour le travail courant : un point visible est un "
-				   "point qu'on déplace par accident."));
+				   "Garde tous les points de raccordement visibles."));
 	m_show_terminals->setStatusTip(m_show_terminals->toolTip());
 	m_show_terminals->setCheckable(true);
 	m_show_terminals->setChecked(Diagram::displayTerminals);
@@ -1343,9 +1341,7 @@ void QETDiagramEditor::setUpActions()
 	m_reload_element_drawings = new QAction(QET::Icons::ViewRefresh, tr("Recharger les dessins des éléments"), this);
 	ShortcutManager::instance().registerAction(m_reload_element_drawings, "diagrameditor.reload_element_drawings", tr("Éditeur de schémas"), QKeySequence());
 	m_reload_element_drawings->setStatusTip(
-		tr("Met à jour les éléments modifiés dans la collection entreprise ou utilisateur,"
-		   " puis redessine chaque élément posé d'après sa définition actuelle,"
-		   " sans avoir à fermer et rouvrir le projet"));
+		tr("Applique les éléments modifiés dans la collection et les redessine"));
 	connect(m_reload_element_drawings, &QAction::triggered, this, &QETDiagramEditor::slot_reloadElementDrawings);
 
 #ifdef QET_HAS_SCRIPTING
@@ -3615,9 +3611,8 @@ void QETDiagramEditor::save()
 			const QMessageBox::StandardButton answer = QET::QetMessageBox::warning(
 				this,
 				tr("Le fichier a changé entre-temps", "message box title"),
-				tr("%1 a été modifié par quelqu'un d'autre depuis que vous l'avez "
-				   "ouvert.\n\nL'enregistrer par-dessus effacerait ce travail. "
-				   "Enregistrez plutôt une copie, puis comparez les deux.")
+				tr("%1 a été modifié par quelqu'un d'autre depuis son ouverture. "
+				   "Enregistrez une copie pour ne pas écraser son travail.")
 					.arg(project -> filePath()),
 				QMessageBox::Save | QMessageBox::Cancel,
 				QMessageBox::Save);
@@ -3904,9 +3899,8 @@ bool QETDiagramEditor::openAndAddProject(
 			this,
 			tr("Projet déjà ouvert ailleurs", "message box title"),
 			tr("Ce projet est ouvert par %1.\n\n"
-			   "Ouvrir en lecture seule est le choix sûr : vous verrez le dessin, "
-			   "sans risque d'écraser son travail. Forcer l'ouverture en écriture "
-			   "n'a de sens que si vous savez que cette session n'existe plus.")
+			   "OK l'ouvre en lecture seule ; Ignorer force l'écriture, seulement "
+			   "si cette session n'existe plus.")
 				.arg(open_lock.holder().description()),
 			QMessageBox::Ok | QMessageBox::Ignore,
 			QMessageBox::Ok);
@@ -3937,11 +3931,9 @@ bool QETDiagramEditor::openAndAddProject(
 				QET::QetMessageBox::question(
 					this,
 					tr("Fichier de restauration", "message box title"),
-					tr("QElectroTech s'est arrêté brutalement alors que ce "
-					   "projet était ouvert. Une copie de restauration du %1 "
-					   "a été conservée.\n\n"
-					   "Voulez-vous ouvrir cette copie plutôt que le fichier "
-					   "enregistré ?", "message box content")
+					tr("QElectroTech s'est arrêté pendant que ce projet était "
+					   "ouvert. Ouvrir la copie de restauration du %1 au lieu "
+					   "du fichier enregistré ?", "message box content")
 						.arg(QLocale::system().toString(
 							     written, QLocale::ShortFormat)),
 					QMessageBox::Ok | QMessageBox::Cancel,
@@ -6304,12 +6296,10 @@ void QETDiagramEditor::slot_reloadElementDrawings() {
 	if (!geometry_changed.isEmpty())
 	{
 		message += QStringLiteral("\n\n")
-				% tr("%n élément(s) non redessiné(s) : leur taille, leur point de saisie"
-					  " ou leurs bornes ont changé (borne ajoutée, supprimée ou déplacée).",
+				% tr("%n élément(s) non redessiné(s) : leurs bornes ont changé.",
 					  "", geometry_changed.size())
-				% QStringLiteral("\n\n")
-				% tr("Pour les mettre à jour sans rien supprimer, relancez la commande"
-					  " et acceptez de recharger le projet.");
+				% QStringLiteral(" ")
+				% tr("Relancez la commande et acceptez de recharger le projet.");
 	}
 
 		//The full list goes in the expandable, scrollable details area
@@ -6370,8 +6360,7 @@ void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
 		QET::QetMessageBox::critical(
 					this,
 					tr("Recharger les dessins des éléments"),
-					tr("Le projet n'a pas pu être rechargé ; il reste ouvert tel qu'il"
-					   " était, avec les éléments mis à jour depuis la collection.\n\n%1")
+					tr("Le projet n'a pas pu être rechargé ; il reste ouvert.\n\n%1")
 					.arg(error));
 		return;
 	}

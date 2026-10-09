@@ -1314,10 +1314,8 @@ bool QETElementEditor::checkElement()
 			m_elmt_scene->elementData().m_type != ElementData::Thumbnail)
 		{
 			warnings << qMakePair (tr("Bornes sans nom"),
-								   tr("<br>%n borne(s) sans nom. Sans noms de bornes uniques,"
-								   " la liste de câblage (qui relie quoi à quoi) ne peut pas"
-								   " désigner chaque borne, et ne peut donc pas servir à"
-								   " câbler l'armoire en atelier.", "", unnamed));
+								   tr("<br>%n borne(s) sans nom : la liste de câblage ne"
+								   " pourra pas les désigner.", "", unnamed));
 		}
 	}
 

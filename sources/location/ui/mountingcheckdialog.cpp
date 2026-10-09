@@ -264,9 +264,8 @@ void MountingCheckDialog::buildWidgets()
 		this, &MountingCheckDialog::surfaceChosen);
 
 	m_recheck = new QPushButton(tr("Check again"), this);
-	m_recheck->setToolTip(tr("Ask the rule again. It is asked by itself "
-				 "after every step of the layout; this is for "
-				 "when the catalogue changed underneath."));
+	m_recheck->setToolTip(tr("Check the layout again, for instance after "
+				 "the catalogue changed."));
 	connect(m_recheck, &QPushButton::clicked,
 		this, &MountingCheckDialog::recheck);
 

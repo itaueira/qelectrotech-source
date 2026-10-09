@@ -212,10 +212,7 @@ QUndoCommand* ElementInfoWidget::associatedUndo() const
 			question.setText(tr("« %1 » est déjà le repère d'un autre "
 					    "composant, au même endroit.").arg(new_label));
 			question.setInformativeText(
-				tr("Deux composants avec le même repère, c'est une erreur "
-				   "que personne ne voit avant le montage : la borne câblée "
-				   "d'après le schéma va au mauvais appareil.\n\n"
-				   "Aller le voir, ou garder le doublon en le sachant ?"));
+				tr("Aller le voir, ou garder le doublon ?"));
 			QPushButton *go = question.addButton(
 						tr("Aller jusqu'à l'autre"),
 						QMessageBox::ActionRole);
@@ -570,9 +567,7 @@ void ElementInfoWidget::warnAboutLabelCollision()
 	{
 		field->setStyleSheet(QStringLiteral("QLineEdit { color : #C13A2E; }"));
 		field->setToolTip(tr("« %1 » est déjà le repère d'un autre composant, "
-				     "au même endroit. Deux composants avec le même "
-				     "repère, c'est une erreur que personne ne voit "
-				     "avant le montage.").arg(field->text()));
+				     "au même endroit.").arg(field->text()));
 	}
 	else
 	{

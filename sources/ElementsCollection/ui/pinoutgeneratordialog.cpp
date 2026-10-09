@@ -516,9 +516,9 @@ void PinoutGeneratorDialog::saveTemplateIntoClass()
 		//moment the change stops being this dialog's and becomes
 		//everyone's.
 	QMessageBox::information(this, tr("Modèle de la classe"),
-			tr("Le modèle de la classe « %1 » est enregistré. Les "
-			   "blocs générés à partir de maintenant le suivent ; "
-			   "les cartes déjà insérées gardent leur dessin.")
+			tr("Modèle de « %1 » enregistré. Il vaut pour les "
+			   "prochains blocs ; les cartes déjà insérées ne "
+			   "changent pas.")
 			.arg(m_class.name));
 }
 
@@ -732,10 +732,9 @@ void PinoutGeneratorDialog::save()
 		question.setText(tr("%n bloc(s) de cette pièce sont déjà dans "
 				    "ce dossier.", "", existing));
 		question.setInformativeText(
-			tr("Remplacer change le dessin dans tous les projets qui "
-			   "les utilisent, y compris ceux déjà livrés.\n\n"
-			   "Enregistrer une révision laisse ces projets comme "
-			   "ils sont et ne sert que pour les suivants."));
+			tr("Remplacer change le dessin dans les projets qui les "
+			   "utilisent, même ceux déjà livrés. Une révision ne sert "
+			   "qu'aux projets suivants."));
 		QPushButton *replace = question.addButton(
 					tr("Remplacer partout"),
 					QMessageBox::DestructiveRole);

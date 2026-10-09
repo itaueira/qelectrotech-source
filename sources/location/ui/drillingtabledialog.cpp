@@ -101,8 +101,8 @@ DrillingTableDialog::DrillingTableDialog(QETProject *project,
 	else
 	{
 		fill();
-		say(tr("This project has no plate yet. A drilling table is the "
-		       "worklist of one face, and there is no face to list."));
+		say(tr("This project has no plate yet. Create one in the cabinet "
+		       "layout."));
 	}
 }
 
@@ -339,9 +339,7 @@ void DrillingTableDialog::buildWidgets()
 
 	m_surface_box = new QComboBox(this);
 	m_surface_box->setMinimumWidth(240);
-	m_surface_box->setToolTip(tr("The face whose holes are listed. One "
-				     "list is one plate, because one plate is "
-				     "what is taken to the drill."));
+	m_surface_box->setToolTip(tr("The face whose holes are listed."));
 	connect(m_surface_box,
 		QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &DrillingTableDialog::surfaceChosen);
@@ -391,10 +389,8 @@ void DrillingTableDialog::buildWidgets()
 	m_tools->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_tools->setSelectionMode(QAbstractItemView::NoSelection);
 	m_tools->setMaximumHeight(140);
-	m_tools->setToolTip(tr("Which bits to fit, and how many times each. "
-			       "The counts add up to the number of holes: a "
-			       "hole lost between two groups leaves the number "
-			       "of groups exactly as it was."));
+	m_tools->setToolTip(tr("Which bits to fit, and how many holes each one "
+			       "drills."));
 
 	m_copy = new QPushButton(tr("Copy"), this);
 	m_copy->setToolTip(tr("Copy the whole list, tab separated, whatever "
