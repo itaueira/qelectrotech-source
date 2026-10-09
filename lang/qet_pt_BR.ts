@@ -24138,14 +24138,14 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="323"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="709"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="735"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="127"/>
         <source>Repère</source>
         <translation>Tag</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="324"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="710"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="736"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="112"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="128"/>
         <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="493"/>
@@ -24160,8 +24160,8 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="346"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="737"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="956"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="763"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="982"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="52"/>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="80"/>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="90"/>
@@ -24180,17 +24180,17 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>Atribui uma peça do catálogo aos componentes selecionados nesta lista, sem ter de achar cada um deles nas folhas.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="636"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="654"/>
         <source>Pièces sans vue physique</source>
         <translation>Peças sem vista física</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="654"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="672"/>
         <source>Le catalogue n&apos;a pas répondu : impossible de dire quelles pièces sont mesurées.</source>
         <translation>O catálogo não respondeu: não há como dizer quais peças estão medidas.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="660"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="678"/>
         <source>Aucun des %n composant(s) du projet n&apos;a de pièce attribuée : c&apos;est « Composants sans pièce » qui répond à cela.</source>
         <translation>
             <numerusform>O componente do projeto não tem peça atribuída: quem responde a isso é « Componentes sem peça ».</numerusform>
@@ -24198,7 +24198,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="668"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="686"/>
         <source>Les %n composant(s) du projet qui ont une pièce ont une vue physique. Le plan peut être dessiné.</source>
         <translation>
             <numerusform>O componente do projeto que tem peça tem vista física. A disposição pode ser desenhada.</numerusform>
@@ -24206,40 +24206,48 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="682"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="700"/>
         <source>%1 composant(s) sur %2 utilisent une pièce sans vue physique : %3 code(s) à mesurer. Double-cliquez une ligne pour aller au composant.</source>
         <translation>%1 de %2 componentes usam uma peça sem vista física: %3 código(s) a medir. Dê duplo clique numa linha para ir ao componente.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="697"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="715"/>
         <source>%n composant(s) tiennent leur taille de leur classe et non de leur pièce.</source>
         <translation>
             <numerusform>%n componente tira o tamanho da classe, e não da peça.</numerusform>
             <numerusform>%n componentes tiram o tamanho da classe, e não da peça.</numerusform>
         </translation>
     </message>
+    <message numerus="yes">
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="723"/>
+        <source>Le catalogue ne déclare pas %n propriété(s) de la vue physique : importez le paquet de classes qui les apporte.</source>
+        <translation>
+            <numerusform>O catálogo não declara %n propriedade da vista física: importe o pacote de classes que a traz.</numerusform>
+            <numerusform>O catálogo não declara %n propriedades da vista física: importe o pacote de classes que as traz.</numerusform>
+        </translation>
+    </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="711"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="737"/>
         <source>Code</source>
         <translation>Código</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="712"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="738"/>
         <source>Désignation</source>
         <translation>Designação</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="713"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="739"/>
         <source>Manque</source>
         <translation>Falta</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="778"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="804"/>
         <source>Mesurer la pièce…</source>
         <translation>Medir a peça…</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="779"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="805"/>
         <source>Ouvre la fiche de la pièce des lignes sélectionnées pour y saisir les millimètres : une fiche par code, et les lignes mesurées quittent la liste.</source>
         <translation>Abre a ficha da peça das linhas selecionadas para digitar os milímetros: uma ficha por código, e as linhas medidas saem da lista.</translation>
     </message>
@@ -24248,29 +24256,29 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation type="vanished">%1 componente(s) de %2 ainda não têm peça atribuída. Duplo clique numa linha para ir ao componente.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="931"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="944"/>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="979"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="957"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="970"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="1005"/>
         <source>Lier un accessoire</source>
         <translation>Vincular um acessório</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="932"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="958"/>
         <source>« %1 » n&apos;est pas de la classe Accessoire, mais de « %2 ». Le lier quand même ?</source>
         <translation>« %1 » não é da classe Acessório, e sim de « %2 ». Vincular assim mesmo?</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="945"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="971"/>
         <source>Ce projet n&apos;a aucun composant auquel rattacher l&apos;accessoire.</source>
         <translation>Este projeto não tem nenhum componente ao qual vincular o acessório.</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="960"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="986"/>
         <source>folio %1</source>
         <translation>folha %1</translation>
     </message>
     <message>
-        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="980"/>
+        <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="1006"/>
         <source>À quel composant « %1 » appartient-il ?</source>
         <translation>A qual componente « %1 » pertence?</translation>
     </message>

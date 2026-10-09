@@ -194,6 +194,17 @@ namespace CatalogProjectActions
 				looks exactly like a finding.
 			*/
 			bool catalog_read = false;
+			/**
+				the keys of the physical view the component class of the
+				catalogue does not declare, in the order of
+				CatalogPhysicalView::keys().
+
+				A catalogue created before a key existed does not get it
+				by itself - the default model is seeded into an empty
+				catalogue only -, and its part dialogue simply has no
+				field for it. Without this list nothing on screen says why.
+			*/
+			QStringList undeclared;
 	};
 
 	/**

@@ -526,6 +526,24 @@ CatalogProjectActions::physicalViewReport(QETProject *project, const Catalog &ca
 	report.components   = all.size();
 	report.catalog_read = catalog.isOpen();
 
+		//Asked of the class and not of the parts: a key the class does not
+		//declare is a field the part dialogue never shows, whatever the
+		//parts hold.
+	if (report.catalog_read)
+	{
+		const CatalogClass component =
+				catalog.classByKey(QStringLiteral("component"));
+		if (!component.isNull())
+		{
+			for (const QString &key : CatalogPhysicalView::keys())
+			{
+				if (catalog.effectiveProperty(component.id, key).isNull()) {
+					report.undeclared << key;
+				}
+			}
+		}
+	}
+
 		//One reading per product code and not per component: a plate
 		//with twelve of the same contactor would otherwise ask the data
 		//base the same three questions twelve times.
@@ -698,6 +716,14 @@ void CatalogProjectActions::showMissingPhysicalViewReport(QETProject *project,
 				"%n composant(s) tiennent leur taille de leur classe "
 				"et non de leur pièce.",
 				"", report.inherited_size);
+		}
+
+		if (report.catalog_read && !report.undeclared.isEmpty())
+		{
+			sentences << QObject::tr(
+				"Le catalogue ne déclare pas %n propriété(s) de la vue "
+				"physique : importez le paquet de classes qui les apporte.",
+				"", report.undeclared.size());
 		}
 
 		summary->setText(sentences.join(QLatin1Char(' ')));

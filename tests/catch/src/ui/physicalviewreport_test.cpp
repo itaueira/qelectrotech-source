@@ -485,4 +485,53 @@ TEST_CASE("T20 — um catálogo que não abriu não relata o projeto inteiro "
 		//answered: what could not be read is what a product is worth.
 	CHECK(report.components == 6);
 	CHECK(report.with_part == 5);
+		//Nothing was asked, so nothing is said missing either.
+	CHECK(report.undeclared.isEmpty());
+}
+
+TEST_CASE("T20 — o relatório diz quais propriedades da vista física o "
+	  "catálogo não declara",
+	  "[uibench][catalog][physicalview]")
+{
+	CatalogFixture fixture;
+
+	UiBench::ScratchProject scratch(fixtureXml(),
+					QStringLiteral("undeclared.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+		//A catalogue seeded today declares the whole physical view.
+	const Report seeded =
+			CatalogProjectActions::physicalViewReport(scratch.project(),
+								  fixture.catalog);
+	CHECK(seeded.undeclared.isEmpty());
+
+		//A catalogue created before the clearances, the insertion point and
+		//the outline flag existed: the same catalogue without those seven.
+	const QStringList added_later {
+		QStringLiteral("clearance_top"),
+		QStringLiteral("clearance_bottom"),
+		QStringLiteral("clearance_left"),
+		QStringLiteral("clearance_right"),
+		QStringLiteral("insertion_x"),
+		QStringLiteral("insertion_y"),
+		QStringLiteral("draw_outline") };
+	for (const QString &key : added_later)
+	{
+		const CatalogProperty property =
+				fixture.catalog.effectiveProperty(fixture.component_id, key);
+		REQUIRE_FALSE(property.isNull());
+		QString error;
+		REQUIRE(fixture.catalog.removeProperty(property.id, &error));
+	}
+
+	const Report older =
+			CatalogProjectActions::physicalViewReport(scratch.project(),
+								  fixture.catalog);
+	CHECK(older.undeclared == added_later);
+		//Said beside the list, never instead of it: the products to
+		//measure are still the same ones, because width and height are
+		//still declared.
+	CHECK(tags(older) == tags(seeded));
+	CHECK(older.with_part == seeded.with_part);
 }
