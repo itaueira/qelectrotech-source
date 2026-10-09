@@ -524,6 +524,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/ui/locationreportdialog.h
   ${QET_DIR}/sources/location/ui/mountingcheckdialog.cpp
   ${QET_DIR}/sources/location/ui/mountingcheckdialog.h
+  ${QET_DIR}/sources/location/undrawnparts.cpp
+  ${QET_DIR}/sources/location/undrawnparts.h
 
   ${QET_DIR}/sources/macro/circuitclipboard.cpp
   ${QET_DIR}/sources/macro/circuitclipboard.h

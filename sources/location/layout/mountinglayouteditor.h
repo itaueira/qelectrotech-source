@@ -254,6 +254,9 @@ class MountingLayoutEditor : public QMainWindow
 				     QString *error = nullptr);
 			/// @return the uuids the list of what is off the plate shows
 		QStringList unmountedElements() const;
+			/// @return the parts the list of what is off the folios
+			/// shows, by their identifier, in its order
+		QStringList undrawnItems() const;
 
 	signals:
 			/// The person asked to see the symbol of a part, and here
@@ -337,6 +340,8 @@ class MountingLayoutEditor : public QMainWindow
 		void refreshLayoutDrawings();
 		void buildUnmountedDock();
 		void refreshUnmounted();
+		void buildUndrawnDock();
+		void refreshUndrawn();
 
 		void updateTitle();
 		void updateActions();
@@ -429,6 +434,8 @@ class MountingLayoutEditor : public QMainWindow
 		QAction *m_edit_part_drawing = nullptr;
 		QDockWidget *m_unmounted_dock = nullptr;
 		QListWidget *m_unmounted = nullptr;
+		QDockWidget *m_undrawn_dock = nullptr;
+		QListWidget *m_undrawn = nullptr;
 		QPointer<Catalog> m_catalog;
 		bool m_fitted_on_show = false;
 		QAction *m_close = nullptr;

@@ -24,11 +24,13 @@
 #include "../../elementprovider.h"
 #include "../../qetapp.h"
 #include "../../qeticons.h"
+#include "../../qetgraphicsitem/element.h"
 #include "../../qetproject.h"
 #include "../../dataBase/projectdatabase.h"
 #include "../mountinglayout.h"
 #include "../mountingmeasure.h"
 #include "../mountingpartview.h"
+#include "../undrawnparts.h"
 #include "../ui/drillingtabledialog.h"
 #include "../ui/mountingcheckdialog.h"
 #include "mountedpartitem.h"
@@ -128,6 +130,7 @@ MountingLayoutEditor::MountingLayoutEditor(QETProject *project,
 	}
 
 	buildUnmountedDock();
+	buildUndrawnDock();
 	connect(m_view, &MountingView::elementDropped,
 		this, [this](const QString &element_uuid, const QPointF &position_mm)
 	{
@@ -373,6 +376,7 @@ void MountingLayoutEditor::stepApplied()
 		//Seen on the screen on 2026-10-01: after an undo the box of faces
 		//still said two parts over a plate holding one.
 	refreshUnmounted();
+	refreshUndrawn();
 	refreshSurfaceList();
 }
 
@@ -1416,6 +1420,100 @@ QStringList MountingLayoutEditor::unmountedElements() const
 	return uuids;
 }
 
+/**
+	@brief MountingLayoutEditor::buildUndrawnDock
+	The other way round from the list beside it: the parts mounted on a
+	face that no folio draws, each with why - laid with no symbol, or its
+	symbol deleted since. A row is activated to select its part on the
+	plate, the face changed first when it is on another one.
+
+	Nothing here ties a symbol to the part, and that is not an omission:
+	that command does not exist yet (CU-19.12). The list says which parts
+	would need it.
+*/
+void MountingLayoutEditor::buildUndrawnDock()
+{
+	m_undrawn = new QListWidget(this);
+	m_undrawn->setObjectName(QStringLiteral("undrawn_list"));
+	m_undrawn->setSelectionMode(QAbstractItemView::SingleSelection);
+	m_undrawn->setToolTip(tr("Les pièces montées qu'aucun folio ne dessine : double-cliquez "
+				 "sur une ligne pour sélectionner la pièce sur la plaque."));
+
+		//Deferred, and not called from the signal: pointing at a part on
+		//another face draws that face, which empties the undo stack, which
+		//refreshes this list - and the row the signal carries would be
+		//deleted while the list is still handing it out.
+	connect(m_undrawn, &QListWidget::itemActivated, this, [this](QListWidgetItem *row)
+	{
+		if (!row) {
+			return;
+		}
+		const QString uuid = row->data(Qt::UserRole).toString();
+		QTimer::singleShot(0, this, [this, uuid]()
+		{
+			pointAtItem(uuid);
+		});
+	});
+
+	m_undrawn_dock = new QDockWidget(tr("Hors des folios"), this);
+	m_undrawn_dock->setObjectName(QStringLiteral("undrawn_dock"));
+	m_undrawn_dock->setWidget(m_undrawn);
+	addDockWidget(Qt::RightDockWidgetArea, m_undrawn_dock);
+	refreshUndrawn();
+}
+
+/**
+	@brief MountingLayoutEditor::refreshUndrawn
+	Fill the list of what is off the folios from the project.
+
+	The folios are asked through the same lookup "go to the symbol" makes,
+	so that the list and that action can never disagree about whether a
+	symbol is gone - and only about the elements the plate names, not about
+	every element of the project.
+*/
+void MountingLayoutEditor::refreshUndrawn()
+{
+	if (!m_undrawn || !m_undrawn_dock) {
+		return;
+	}
+	m_undrawn->clear();
+	if (m_project)
+	{
+		const MountingLayout layout = m_project->mountingLayout();
+		QSet<QUuid> drawn;
+		const QList<Element *> found =
+				ElementProvider(m_project).fromUuids(UndrawnPart::namedElements(layout));
+		for (const Element *element : found) {
+			drawn.insert(element->uuid());
+		}
+
+		for (const UndrawnPart &part : UndrawnPart::of(layout, drawn))
+		{
+			const MountedItem &item = part.item;
+			QString name = item.label.isEmpty() ? item.designation() : item.label;
+			if (!item.label.isEmpty() && !item.part_code.isEmpty()) {
+				name = tr("%1 — %2").arg(item.label, item.part_code);
+			}
+			const QString text = part.reason == UndrawnPart::Reason::NoSymbol
+					     ? tr("%1 (sans symbole)").arg(name)
+					     : tr("%1 (symbole supprimé)").arg(name);
+			auto *row = new QListWidgetItem(text, m_undrawn);
+			row->setData(Qt::UserRole, item.uuid);
+			row->setData(Qt::UserRole + 1, static_cast<int>(part.reason));
+		}
+	}
+	m_undrawn_dock->setWindowTitle(tr("Hors des folios (%1)").arg(m_undrawn->count()));
+}
+
+QStringList MountingLayoutEditor::undrawnItems() const
+{
+	QStringList uuids;
+	for (int row = 0 ; m_undrawn && row < m_undrawn->count() ; ++row) {
+		uuids << m_undrawn->item(row)->data(Qt::UserRole).toString();
+	}
+	return uuids;
+}
+
 QString MountingLayoutEditor::mountElement(const QString &element_uuid, const QPointF &centre_mm,
 					   QString *error)
 {
@@ -1486,6 +1584,7 @@ void MountingLayoutEditor::changeEvent(QEvent *event)
 		//out of the bill of materials
 	if (event->type() == QEvent::ActivationChange && isActiveWindow()) {
 		refreshUnmounted();
+		refreshUndrawn();
 	}
 }
 
