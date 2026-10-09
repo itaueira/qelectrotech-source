@@ -952,7 +952,10 @@ if(TARGET qet_core)
         # Arrastar uma selecao move cada texto na direcao do arrasto, mesmo o
         # de elemento girado selecionado sem o elemento: precisa de folha com
         # elementos girados, e do comando de desfazer que o arrasto empilha.
-        src/ui/selectionmove_test.cpp)
+        src/ui/selectionmove_test.cpp
+        # O carimbo acompanha o projeto renomeado em todas as folhas: precisa
+        # de projeto aberto com varias folhas.
+        src/ui/titleblockfollow_test.cpp)
 
     target_link_libraries(
         C_uitests

@@ -405,6 +405,17 @@ QString BorderTitleBlock::titleBlockTemplateName() const
 }
 
 /**
+	@brief BorderTitleBlock::titleBlockContext
+	@return the variables the title block is rendered with: the project's,
+	the folio's additional fields and the historical fields, as last built
+	by updateDiagramContextForTitleBlock()
+*/
+DiagramContext BorderTitleBlock::titleBlockContext() const
+{
+	return m_titleblock_template_renderer -> context();
+}
+
+/**
 	@brief BorderTitleBlock::titleBlockTemplateChanged
 	This slot may be used to inform this class that the given title block
 	template has changed.

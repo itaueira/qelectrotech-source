@@ -183,6 +183,7 @@ class BorderTitleBlock : public QObject
 		const TitleBlockTemplate *titleBlockTemplate();
 		void setTitleBlockTemplate(const TitleBlockTemplate *);
 		QString titleBlockTemplateName() const;
+		DiagramContext titleBlockContext() const;
 		
 	public slots:
 		void titleBlockTemplateChanged(const QString &);
