@@ -105,8 +105,8 @@ DiagramPropertiesDialog::DiagramPropertiesDialog(Diagram *diagram, QWidget *pare
 			tr("Représenter en pointillés les fils qui sortent de la localisation"),
 			display_options);
 	dash_external_wires_cb->setToolTip(
-			tr("Pointillés quand les deux extrémités du fil sont dans des "
-			   "localisations différentes. Réglage propre à ce folio."));
+			tr("Sur ce folio seulement : pointillés quand les deux extrémités "
+			   "du fil sont dans des localisations différentes."));
 	dash_external_wires_cb->setChecked(diagram->dashExternalWires());
 	dash_external_wires_cb->setEnabled(!diagram_is_read_only);
 

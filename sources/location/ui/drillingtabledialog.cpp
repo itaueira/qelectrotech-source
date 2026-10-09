@@ -101,7 +101,7 @@ DrillingTableDialog::DrillingTableDialog(QETProject *project,
 	else
 	{
 		fill();
-		say(tr("This project has no plate yet. Create one in the cabinet "
+		say(tr("This project has no plate yet: create one in the cabinet "
 		       "layout."));
 	}
 }

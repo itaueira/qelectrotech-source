@@ -5919,8 +5919,8 @@ Gravar uma revisão deixa esses projetos como estão e serve só para os próxim
     </message>
     <message>
         <location filename="../sources/ui/diagrampropertiesdialog.cpp" line="108"/>
-        <source>Pointillés quand les deux extrémités du fil sont dans des localisations différentes. Réglage propre à ce folio.</source>
-        <translation>Tracejado quando as duas pontas do fio estão em localizações diferentes. Ajuste só desta folha.</translation>
+        <source>Sur ce folio seulement : pointillés quand les deux extrémités du fil sont dans des localisations différentes.</source>
+        <translation>Só nesta folha: tracejado quando as duas pontas do fio estão em localizações diferentes.</translation>
     </message>
     <message>
         <source>Un fil est représenté en pointillés lorsque ses deux extrémités sont dans des localisations différentes et qu&apos;aucune ne contient l&apos;autre.
@@ -6418,8 +6418,8 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
     </message>
     <message>
         <location filename="../sources/location/ui/drillingtabledialog.cpp" line="104"/>
-        <source>This project has no plate yet. Create one in the cabinet layout.</source>
-        <translation>Este projeto ainda não tem placa. Crie uma no layout do painel.</translation>
+        <source>This project has no plate yet: create one in the cabinet layout.</source>
+        <translation>Este projeto ainda não tem placa: crie uma no layout do painel.</translation>
     </message>
     <message>
         <location filename="../sources/location/ui/drillingtabledialog.cpp" line="342"/>
