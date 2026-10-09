@@ -875,6 +875,10 @@ if(TARGET qet_core)
         # está em cabo nenhum": é por isso que o caso mede o conteúdo de cada
         # célula e guarda os dois vazios legítimos.
         src/ui/terminalstripcable_test.cpp
+        # The terminal strip drawer with five levels or more on one terminal:
+        # it read before the start of its four places. Needs the drawer and
+        # its pattern, and paints into an image.
+        src/ui/terminalstripdrawer_test.cpp
         # O motor da rota SQL da verificacao de projeto: o que ele
         # pergunta ao banco do projeto, o que ele se recusa a perguntar,
         # e como ele distingue uma consulta que quebrou de uma que nao
