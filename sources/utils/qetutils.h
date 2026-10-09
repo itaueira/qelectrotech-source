@@ -19,6 +19,7 @@
 #define QETUTILS_H
 
 #include <QMargins>
+#include <QPointF>
 #include <QWeakPointer>
 
 class QGraphicsItem;
@@ -31,6 +32,7 @@ namespace QETUtils
 	QString marginsToString(const QMargins &margins);
 	QMargins marginsFromString(const QString &string);
 	qreal graphicsHandlerSize(QGraphicsItem *item);
+	QPointF movementInParentOf(const QGraphicsItem *item, const QPointF &scene_movement);
     void pixelSizedFont (QFont &font);
     QString fontToString (const QFont &font);
     bool fontFromString (QFont &font, const QString &description);

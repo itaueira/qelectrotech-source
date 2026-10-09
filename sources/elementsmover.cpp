@@ -33,6 +33,7 @@
 #include "qetdiagrameditor.h"
 #include "qetgraphicsitem/locationareaitem.h"
 #include "undocommand/movegraphicsitemcommand.h"
+#include "utils/qetutils.h"
 
 /**
 	@brief ElementsMover::ElementsMover Constructor
@@ -157,7 +158,10 @@ void ElementsMover::continueMovement(const QPointF &movement)
 	{
 		if (qgi == m_movement_driver)
 			continue;
-		qgi->setPos(qgi->pos() + movement);
+			//A text selected without its element is a child of it: the
+			//movement goes in the element's coordinates, which are turned
+			//when the element is
+		qgi->setPos(qgi->pos() + QETUtils::movementInParentOf(qgi, movement));
 	}
 
 	QVector<Conductor *>list_conductors;

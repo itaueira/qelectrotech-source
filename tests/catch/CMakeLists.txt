@@ -948,7 +948,11 @@ if(TARGET qet_core)
         # quem salva um simbolo em uso: precisa de projeto aberto, porque a
         # copia do simbolo mora na colecao embutida dele, e o desenho que
         # muda e o dos elementos ja postos nas folhas.
-        src/ui/embeddedrefresh_test.cpp)
+        src/ui/embeddedrefresh_test.cpp
+        # Arrastar uma selecao move cada texto na direcao do arrasto, mesmo o
+        # de elemento girado selecionado sem o elemento: precisa de folha com
+        # elementos girados, e do comando de desfazer que o arrasto empilha.
+        src/ui/selectionmove_test.cpp)
 
     target_link_libraries(
         C_uitests

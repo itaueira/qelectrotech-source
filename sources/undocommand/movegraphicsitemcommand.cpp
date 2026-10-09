@@ -23,6 +23,7 @@
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/elementtextitemgroup.h"
 #include "../qetgraphicsitem/conductortextitem.h"
+#include "../utils/qetutils.h"
 
 #include "../diagram.h"
 
@@ -121,11 +122,16 @@ void MoveGraphicsItemCommand::move(const QPointF &movement)
 			}
 		}
 
+			//The movement is of the folio, and the position of a child - a
+			//text of an element left out of the selection - is in its
+			//parent's coordinates, turned when the element is
+		const QPointF item_movement = QETUtils::movementInParentOf(qgi, movement);
+
 		if (const auto graphics_object = qgi->toGraphicsObject()) {
 			setupAnimation(graphics_object,
 						   "pos",
 						   graphics_object->pos(),
-						   graphics_object->pos() + movement);
+						   graphics_object->pos() + item_movement);
 		}
 		else if (qgi->type() == QGraphicsItemGroup::Type)
 		{
@@ -134,12 +140,12 @@ void MoveGraphicsItemCommand::move(const QPointF &movement)
 				setupAnimation(etig,
 							   "pos",
 							   etig->pos(),
-							   etig->pos() + movement);
+							   etig->pos() + item_movement);
 			}
 		}
 		else
 		{
-			qgi->setPos(qgi->pos() + movement);
+			qgi->setPos(qgi->pos() + item_movement);
 		}
 	}
 }

@@ -42,6 +42,29 @@ QString QETUtils::marginsToString(const QMargins &margins)
 }
 
 /**
+	@brief QETUtils::movementInParentOf
+	A movement of the folio, in the coordinates @p item's position is kept
+	in: those of its parent, or the folio's when it has none.
+
+	A text of an element is a child of the element, so its pos() is in the
+	element's coordinates. Added as is to it, a horizontal drag of the folio
+	moves the text of an element turned by 90 degrees vertically, and the
+	text of a mirrored element the other way.
+	@param item : the item the movement is applied to
+	@param scene_movement : the movement, in folio coordinates
+	@return the movement to add to item->pos()
+*/
+QPointF QETUtils::movementInParentOf(const QGraphicsItem *item,
+									  const QPointF &scene_movement)
+{
+	const QGraphicsItem *parent = item ? item->parentItem() : nullptr;
+	if (!parent) {
+		return scene_movement;
+	}
+	return parent->mapFromScene(scene_movement) - parent->mapFromScene(QPointF(0, 0));
+}
+
+/**
 	@brief QETUtils::marginsFromString
 	@param string
 	@return QMargins margins
