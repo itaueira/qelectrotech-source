@@ -126,9 +126,10 @@ void TerminalStripDrawer::paint(QPainter *painter)
         for (const auto &physical_t : m_strip->physicalTerminal())
         {
                 //Get the good offset according to how many level have the current physical terminal
+                //The pattern has four places: from five levels the offset would be negative
             const QVector<QSharedPointer<AbstractRealTerminalInterface>> real_terminal_vector{physical_t->realTerminals()};
             const auto real_t_count{real_terminal_vector.size()};
-            const auto offset_{4 - real_t_count};
+            const auto offset_{std::max<qsizetype>(0, 4 - real_t_count)};
 
 				//Loop over real terminals
 			for (auto i=0 ; i<real_t_count ; ++i)
@@ -362,9 +363,10 @@ qreal TerminalStripDrawer::width() const
 			for (const auto &physical_t : m_strip->physicalTerminal())
 			{
 				//Get the good offset according to how many level have the current physical terminal
+				//The pattern has four places: from five levels the offset would be negative
 				const QVector<QSharedPointer<AbstractRealTerminalInterface>> real_terminal_vector{physical_t->realTerminals()};
 				const auto real_t_count{real_terminal_vector.size()};
-				const auto offset_{4 - real_t_count};
+				const auto offset_{std::max<qsizetype>(0, 4 - real_t_count)};
 
 				//Loop over real terminals
 				for (auto i=0 ; i<real_t_count ; ++i)
