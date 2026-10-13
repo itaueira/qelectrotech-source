@@ -18,6 +18,7 @@
 #ifndef PROJECT_VIEW_H
 #define PROJECT_VIEW_H
 
+#include "navigationhistory.h"
 #include "qetresult.h"
 #include "titleblock/templatelocation.h"
 
@@ -105,12 +106,16 @@ class ProjectView : public QWidget
 		void setDiagramPosition(Diagram *diagram, int new_position);
 		bool closeElementEditors();
 		void skipClosingQuestions();
+		bool canGoBack() const;
+		bool canGoForward() const;
 
 	public slots:
 		void removeDiagram(DiagramView *diagram_view, bool silent = false);
 		void removeDiagram(Diagram *diagram, bool silent = false);
 		void showDiagram(DiagramView *);
 		void showDiagram(Diagram *);
+		void goBack();
+		void goForward();
 		void editProjectProperties();
 		void editCurrentDiagramProperties();
 		void editDiagramProperties(DiagramView *);
@@ -145,6 +150,8 @@ class ProjectView : public QWidget
 		void diagramActivated(DiagramView *);
 		void projectClosed(ProjectView *);
 		void errorEncountered(const QString &);
+			/// What Back and Forward can do changed
+		void historyChanged();
 			// relayed signals
 		void findElementRequired(const ElementsLocation &);
 
@@ -164,6 +171,7 @@ class ProjectView : public QWidget
 		int tryClosingDiagrams();
 		QString askUserForFilePath(bool = true);
 		QETResult noProjectResult() const;
+		void showFromHistory(DiagramView *diagram_view);
 
 	private slots:
 		void tabChanged(int);
@@ -195,6 +203,8 @@ class ProjectView : public QWidget
 		int m_previous_tab_index = -1;
 		QList<DiagramView *> m_diagram_view_list;
 		bool m_close_without_saving = false;
+			/// The folios the reader went through, for Back and Forward
+		NavigationHistory<DiagramView *> m_history;
 };
 
 

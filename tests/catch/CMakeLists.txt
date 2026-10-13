@@ -129,6 +129,10 @@ add_executable(
     src/foliovariables_test.cpp
     src/projectrevision_test.cpp
     src/apppreferences_test.cpp
+    # O caminho de folhas que Voltar e Avancar refazem, como num navegador.
+    # A regra e um cabecalho so, sem tela: o ProjectView que guarda uma esta
+    # no C_uitests.
+    src/navigationhistory_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -974,7 +978,11 @@ if(TARGET qet_core)
         # O projeto fechado nao volta ao painel de projetos quando ainda
         # emite sinal: precisa de dois projetos abertos de verdade, e de um
         # deles salvo e destruido como o editor faz ao fechar.
-        src/ui/projectspanelclose_test.cpp)
+        src/ui/projectspanelclose_test.cpp
+        # Voltar e Avancar entre as folhas vistas, como num navegador: o
+        # caminho guardado pelo ProjectView, os botoes laterais do mouse e
+        # o Ctrl+Alt com seta, com um projeto de verdade aberto.
+        src/ui/folionavigation_test.cpp)
 
     target_link_libraries(
         C_uitests

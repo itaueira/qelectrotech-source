@@ -468,6 +468,9 @@ void ProjectView::diagramRemoved(Diagram *diagram)
 	m_tab->removeTab(index_to_remove);
 	m_diagram_view_list.removeAll(diagram_view);
 	rebuildDiagramsMap();
+		//The view is deleted below: Back and Forward must never reach it.
+	m_history.remove(diagram_view);
+	emit(historyChanged());
 
 	emit(diagramRemoved(diagram_view));
 	delete diagram_view;
@@ -507,6 +510,70 @@ void ProjectView::showDiagram(Diagram *diagram) {
 	if (DiagramView *diagram_view = findDiagram(diagram)) {
 		m_tab -> setCurrentWidget(diagram_view);
 	}
+}
+
+/**
+	@brief ProjectView::canGoBack
+	@return true when the reader came to the current folio from another one
+	that Back can return to.
+*/
+bool ProjectView::canGoBack() const
+{
+	return m_history.canGoBack();
+}
+
+/**
+	@brief ProjectView::canGoForward
+	@return true when the reader went back, and Forward can return to the
+	folio they went back from.
+*/
+bool ProjectView::canGoForward() const
+{
+	return m_history.canGoForward();
+}
+
+/**
+	@brief ProjectView::goBack
+	Show the folio the reader was on before the current one, as the Back
+	button of a web browser does: the way they went, and not the order of
+	the folios in the project.
+*/
+void ProjectView::goBack()
+{
+	if (m_history.canGoBack()) {
+		showFromHistory(m_history.back());
+	}
+}
+
+/**
+	@brief ProjectView::goForward
+	Show again the folio the reader went back from.
+*/
+void ProjectView::goForward()
+{
+	if (m_history.canGoForward()) {
+		showFromHistory(m_history.forward());
+	}
+}
+
+/**
+	@brief ProjectView::showFromHistory
+	Show @a diagram_view, the folio the walk now stands on.
+	@param diagram_view
+*/
+void ProjectView::showFromHistory(DiagramView *diagram_view)
+{
+	if (m_tab->indexOf(diagram_view) == -1)
+	{
+			//Not a tab any more. diagramRemoved() should have taken it out
+			//of the walk; whatever went wrong, it is not shown.
+		m_history.remove(diagram_view);
+	}
+	else
+	{
+		m_tab->setCurrentWidget(diagram_view);
+	}
+	emit(historyChanged());
 }
 
 /**
@@ -1227,6 +1294,18 @@ void ProjectView::tabChanged(int tab_id)
 		setDisplayFallbackWidget(false);
 	
 	emit(diagramActivated(m_diagram_ids[tab_id]));
+
+		//Every folio the reader is taken to is a step of the walk Back and
+		//Forward retrace, whatever took them there: a tab, PageUp, the
+		//panel, a cross reference, a search. Back and Forward move inside
+		//the walk before they change the tab, so this finds the reader
+		//already there and records nothing. The view is read from the tab
+		//widget and not from m_diagram_ids, which a removed folio leaves
+		//out of date until diagramRemoved() rebuilds it.
+	if (auto dv = qobject_cast<DiagramView *>(m_tab->widget(tab_id))) {
+		m_history.visit(dv);
+		emit(historyChanged());
+	}
 	
 	if (m_diagram_ids[tab_id] != nullptr)
 		m_diagram_ids[tab_id]->diagram()->diagramActivated();

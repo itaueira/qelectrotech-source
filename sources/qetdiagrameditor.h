@@ -159,6 +159,7 @@ class QETDiagramEditor : public QETMainWindow
 		void alignGroupTriggered     (QAction *action);
 		void rowColumnGroupTriggered (QAction *action);
 		void slot_updateActions();
+		void updateFolioHistoryActions();
 		void slot_updateUndoStack();
 		void slot_updateModeActions();
 		void slot_updateComplexActions();
@@ -385,7 +386,9 @@ class QETDiagramEditor : public QETMainWindow
 		*m_save_file_as,		///< Save current project as a specific file
 		*m_find = nullptr,
 		*m_new_from_template = nullptr,	///< Start a new project from a template project
-		*m_jump_to_element = nullptr;	///< Open the "jump to element" quick-open popup
+		*m_jump_to_element = nullptr,	///< Open the "jump to element" quick-open popup
+		*m_folio_back = nullptr,	///< Back to the folio shown before, as in a web browser
+		*m_folio_forward = nullptr;	///< Forward to the folio left by going back
 
 		///< One-click conductor colour, in the "Schéma" toolbar
 		ConductorColorToolButton *m_conductor_color_button = nullptr;

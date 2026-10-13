@@ -247,6 +247,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/exportpropertieswidget.h
   ${QET_DIR}/sources/foliovariables.cpp
   ${QET_DIR}/sources/foliovariables.h
+  ${QET_DIR}/sources/folionavigationbuttons.cpp
+  ${QET_DIR}/sources/folionavigationbuttons.h
   ${QET_DIR}/sources/genericpanel.cpp
   ${QET_DIR}/sources/genericpanel.h
   ${QET_DIR}/sources/itemgroups.cpp
@@ -258,6 +260,7 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/machine_info.cpp
   ${QET_DIR}/sources/machine_info.h
   ${QET_DIR}/sources/main.cpp
+  ${QET_DIR}/sources/navigationhistory.h
   ${QET_DIR}/sources/newelementwizard.cpp
   ${QET_DIR}/sources/newelementwizard.h
   ${QET_DIR}/sources/projectview.cpp

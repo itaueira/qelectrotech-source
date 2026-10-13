@@ -78,6 +78,7 @@
 #include "elementspanelwidget.h"
 #include "factory/elementpicturefactory.h"
 #include "factory/qetgraphicstablefactory.h"
+#include "folionavigationbuttons.h"
 #include "location/layout/mountinglayouteditor.h"
 #include "location/mountinglayout.h"
 #include "location/ui/locationbomdialog.h"
@@ -1899,6 +1900,32 @@ void QETDiagramEditor::setUpActions()
 	ShortcutManager::instance().registerAction(m_navigate, "diagrameditor.navigate", tr("Éditeur de schémas"), Qt::Key_F12);
 	m_navigate->setStatusTip(tr("Atteint l'autre représentation de l'objet sélectionné", "status bar tip"));
 	connect(m_navigate, &QAction::triggered, this, &QETDiagramEditor::navigateToReference);
+
+		//Back and Forward retrace the folios the reader went through, as the
+		//buttons of a web browser do with pages - not the order of the
+		//folios in the project, which PageUp and PageDown already walk. Each
+		//project keeps its own way (ProjectView). Alt with an arrow is the
+		//fine keyboard move of a selection, hence Ctrl+Alt.
+	m_folio_back = new QAction(tr("Revenir dans l'historique des folios"), this);
+	ShortcutManager::instance().registerAction(m_folio_back, "diagrameditor.folio_back", tr("Éditeur de schémas"), QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Left));
+	m_folio_back->setStatusTip(tr("Revient au folio affiché avant celui-ci, comme le bouton Précédent d'un navigateur web", "status bar tip"));
+	connect(m_folio_back, &QAction::triggered, this, [this]() {
+		if (ProjectView *project_view = currentProjectView()) {
+			project_view->goBack();
+		}
+	});
+
+	m_folio_forward = new QAction(tr("Avancer dans l'historique des folios"), this);
+	ShortcutManager::instance().registerAction(m_folio_forward, "diagrameditor.folio_forward", tr("Éditeur de schémas"), QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Right));
+	m_folio_forward->setStatusTip(tr("Retourne au folio quitté en revenant en arrière, comme le bouton Suivant d'un navigateur web", "status bar tip"));
+	connect(m_folio_forward, &QAction::triggered, this, [this]() {
+		if (ProjectView *project_view = currentProjectView()) {
+			project_view->goForward();
+		}
+	});
+
+		//And the two side buttons of a mouse, anywhere in this window.
+	new FolioNavigationButtons(this, m_folio_back, m_folio_forward);
 }
 
 /**
@@ -3425,6 +3452,8 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addAction(m_find);
 	menu_edition -> addAction(m_jump_to_element);
 	menu_edition -> addAction(m_navigate);
+	menu_edition -> addAction(m_folio_back);
+	menu_edition -> addAction(m_folio_forward);
 	menu_edition -> addAction(m_command_search);
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_show_shortcut_bar);
@@ -4760,6 +4789,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_save_group                  -> setEnabled(editable_project);
 	m_insert_group                -> setEnabled(editable_project);
 	m_reload_element_drawings     -> setEnabled(opened_project);
+	updateFolioHistoryActions();
 #ifdef QET_HAS_SCRIPTING
 	m_run_script                  -> setEnabled(opened_project);
 #endif
@@ -4791,6 +4821,18 @@ void QETDiagramEditor::slot_updateActions()
 	slot_updatePasteAction();
 	slot_updateComplexActions();
 	slot_updateAutoNumDock();
+}
+
+/**
+	@brief QETDiagramEditor::updateFolioHistoryActions
+	Back and Forward are offered when the project in front has a folio to
+	go back, or forward, to.
+*/
+void QETDiagramEditor::updateFolioHistoryActions()
+{
+	ProjectView *project_view = currentProjectView();
+	m_folio_back   ->setEnabled(project_view && project_view->canGoBack());
+	m_folio_forward->setEnabled(project_view && project_view->canGoForward());
 }
 
 /**
@@ -5210,6 +5252,9 @@ void QETDiagramEditor::addProjectView(ProjectView *project_view)
 
 	// display error messages sent by the project view
 	connect(project_view, &ProjectView::errorEncountered, this, qOverload<const QString&>(&QETDiagramEditor::showError));
+
+		//Back and Forward follow the way walked in the project in front
+	connect(project_view, &ProjectView::historyChanged, this, &QETDiagramEditor::updateFolioHistoryActions);
 
 	//Highlight the current page
 	connect(project_view, &ProjectView::diagramActivated, this, [this](DiagramView *dv) {
