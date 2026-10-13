@@ -970,7 +970,11 @@ if(TARGET qet_core)
         src/ui/selectionmove_test.cpp
         # O carimbo acompanha o projeto renomeado em todas as folhas: precisa
         # de projeto aberto com varias folhas.
-        src/ui/titleblockfollow_test.cpp)
+        src/ui/titleblockfollow_test.cpp
+        # O projeto fechado nao volta ao painel de projetos quando ainda
+        # emite sinal: precisa de dois projetos abertos de verdade, e de um
+        # deles salvo e destruido como o editor faz ao fechar.
+        src/ui/projectspanelclose_test.cpp)
 
     target_link_libraries(
         C_uitests

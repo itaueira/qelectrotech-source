@@ -424,6 +424,21 @@ void ElementsPanel::projectWasClosed(QETProject *project) {
 		GenericPanel::deleteItem(item_to_remove);
 		projects_to_display_.remove(project);
 	}
+		//Stop listening to the project. Every project signal this panel
+		//connected to adds the project when it is not listed, which is right
+		//while it is open and wrong from now on: the project is deleted
+		//later, and any signal sent in between came back as a second entry
+		//holding a pointer to it - a right click on that entry read freed
+		//memory. The embedded title block templates are let go of as well,
+		//since they die with the project.
+	if (project)
+	{
+		disconnect(project, nullptr, this, nullptr);
+		if (TitleBlockTemplatesProjectCollection *templates =
+				project -> embeddedTitleBlockTemplatesCollection()) {
+			disconnect(templates, nullptr, this, nullptr);
+		}
+	}
 	emit(panelContentChanged());
 }
 
