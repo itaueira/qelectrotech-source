@@ -140,6 +140,7 @@ class CrossRefItem : public QGraphicsObject
 
 	private:
 		QPointF manualOffset() const;
+		qreal scaleFactor() const;
 		void offsetChanged();
 		void linkedChanged();
 		bool isHiddenByMaster() const;

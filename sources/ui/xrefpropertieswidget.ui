@@ -49,6 +49,39 @@
        </layout>
       </item>
       <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_scale">
+        <item>
+         <widget class="QLabel" name="m_scale_label">
+          <property name="text">
+           <string>Taille :</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="m_scale_sb">
+          <property name="toolTip">
+           <string>Taille de la référence croisée, en pourcentage de sa taille normale : la croix ou les contacts, avec leurs traits et leurs textes, et le texte de folio de ses esclaves.</string>
+          </property>
+          <property name="suffix">
+           <string notr="true"> %</string>
+          </property>
+          <property name="minimum">
+           <number>25</number>
+          </property>
+          <property name="maximum">
+           <number>200</number>
+          </property>
+          <property name="singleStep">
+           <number>5</number>
+          </property>
+          <property name="value">
+           <number>100</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="horizontalLayout_7">
         <item>
          <widget class="QLabel" name="label_9">

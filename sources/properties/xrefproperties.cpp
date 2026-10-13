@@ -73,6 +73,17 @@ XRefProperties::XRefProperties()
 }
 
 /**
+	@brief XRefProperties::setScale
+	@param percent : the size of the cross reference in percent of its
+	normal size, brought back between minScale() and maxScale(). Zero or
+	less, which a missing value reads as, means the normal size.
+*/
+void XRefProperties::setScale(const int percent)
+{
+	m_scale = percent <= 0 ? 100 : qBound(minScale(), percent, maxScale());
+}
+
+/**
 	@brief XRefProperties::toSettings
 	Save to settings
 	@param settings: QSettings to use
@@ -93,6 +104,7 @@ void XRefProperties::toSettings(QSettings &settings,
 	settings.setValue(prefix % "offset", offset);
 	int slave_offset = m_slave_offset;
 	settings.setValue(prefix % "slave_offset", slave_offset);
+	settings.setValue(prefix % "scale", m_scale);
 	QString master_label = m_master_label;
 	settings.setValue(prefix % "master_label", master_label);
 	QString slave_label = m_slave_label;
@@ -126,6 +138,7 @@ void XRefProperties::fromSettings(const QSettings &settings,
 	snap == "bottom"? m_snap_to = Bottom : m_snap_to = Label;
 	m_offset = settings.value(prefix % "offset", "0").toInt();
 	m_slave_offset = settings.value(prefix % "slave_offset", "0").toInt();
+	setScale(settings.value(prefix % "scale", 100).toInt());
 	m_master_label = settings.value(prefix % "master_label", "%f-%l%c").toString();
 	m_slave_label = settings.value(prefix % "slave_label", "(%f-%l%c)").toString();
 
@@ -165,6 +178,10 @@ QDomElement XRefProperties::toXml(QDomDocument &xml_document) const
 	int offset = m_offset;
 	xml_element.setAttribute("offset", QString::number(offset));
 	xml_element.setAttribute("slave_offset", QString::number(m_slave_offset));
+		//Written only when it is not the normal size, so that a project
+		//that keeps it is saved as before
+	if (m_scale != 100)
+		xml_element.setAttribute("scale", QString::number(m_scale));
 	QString master_label = m_master_label;
 	xml_element.setAttribute("master_label", master_label);
 	QString slave_label = m_slave_label;
@@ -195,6 +212,7 @@ bool XRefProperties::fromXml(const QDomElement &xml_element) {
 
 	m_offset = xml_element.attribute("offset", "0").toInt();
 	m_slave_offset = xml_element.attribute("slave_offset", "0").toInt();
+	setScale(xml_element.attribute("scale", "100").toInt());
 	m_master_label = xml_element.attribute("master_label", "%f-%l%c");
 	m_slave_label = xml_element.attribute("slave_label","(%f-%l%c)");
 	foreach (QString key, m_prefix_keys) {
@@ -240,6 +258,7 @@ bool XRefProperties::operator ==(const XRefProperties &xrp) const{
 			&& m_master_label== xrp.m_master_label
 			&& m_offset      == xrp.m_offset
 			&& m_slave_offset== xrp.m_slave_offset
+			&& m_scale       == xrp.m_scale
 			&& m_xref_pos    == xrp.m_xref_pos
 			&& m_slave_label == xrp.m_slave_label);
 }

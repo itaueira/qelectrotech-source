@@ -210,7 +210,12 @@ void CrossRefItem::setUpConnection()
 */
 QRectF CrossRefItem::boundingRect() const
 {
-	return m_bounding_rect;
+		//The drawing functions keep their geometry at the normal size, and
+		//rebuild it while they paint: the size is applied here, on the way
+		//out, and in paint()
+	const qreal scale = scaleFactor();
+	return QRectF(m_bounding_rect.topLeft() * scale,
+		      m_bounding_rect.size() * scale);
 }
 
 /**
@@ -218,7 +223,22 @@ QRectF CrossRefItem::boundingRect() const
 	@return the shape of this item
 */
 QPainterPath CrossRefItem::shape() const{
-	return m_shape_path;
+	const qreal scale = scaleFactor();
+	return QTransform::fromScale(scale, scale).map(m_shape_path);
+}
+
+/**
+	@brief CrossRefItem::scaleFactor
+	@return the size the project gives the cross references of this type,
+	1 for the normal size. Always 1 for a PLC master: its table is drawn
+	by the element from its definition, and shrinking only the clickable
+	cells would put them beside the drawing.
+*/
+qreal CrossRefItem::scaleFactor() const
+{
+	if (m_element->elementData().m_master_type == ElementData::PLC)
+		return 1.0;
+	return m_properties.scaleFactor();
 }
 
 /**
@@ -362,6 +382,21 @@ void CrossRefItem::updateLabel()
 		else if (dh == XRefProperties::Contacts)
 			drawAsContacts(qp);
 		m_update_map = false;
+
+			//Built at the normal size like the rest of the geometry, and
+			//only here: the hovered and clicked contacts, the PDF links
+			//and the stacking at the bottom of the folio read them as they
+			//are, in the coordinates of this item
+		const qreal scale = scaleFactor();
+		if (scale != 1.0)
+		{
+			for (auto it = m_hovered_contacts_map.begin();
+			     it != m_hovered_contacts_map.end(); ++it)
+				it.value() = QRectF(it.value().topLeft() * scale,
+						    it.value().size() * scale);
+			for (QRectF &text : m_text_rects)
+				text = QRectF(text.topLeft() * scale, text.size() * scale);
+		}
 	}
 
 	autoPos();
@@ -584,6 +619,7 @@ void CrossRefItem::paint(
 	painter->save();
 	painter->setPen(pen_);
 	painter->setFont(QETApp::diagramTextsFont(5));
+	painter->scale(scaleFactor(), scaleFactor());
 
 	m_update_map = false;
 	XRefProperties::DisplayHas dh = m_properties.displayHas();
@@ -1114,10 +1150,11 @@ void CrossRefItem::drawAsCross(QPainter &painter)
 	if (m_update_map) m_hovered_contacts_map.clear();
 
 	//Bounding rect is empty that mean there's no contact to draw
-	if (boundingRect().isEmpty()) return;
+	if (m_bounding_rect.isEmpty()) return;
 
-	//draw the cross
-	QRectF br = boundingRect();
+	//draw the cross. At the normal size: the painter is scaled already, and
+	//boundingRect() is the scaled box (see paint())
+	QRectF br = m_bounding_rect;
 	painter.drawLine(br.width()/2, 0, br.width()/2, br.height());	//vertical line
 	painter.drawLine(0, header, br.width(), header);	//horizontal line
 
@@ -1858,15 +1895,16 @@ void CrossRefItem::AddExtraInfo(QPainter &painter, const QString& type)
 		painter.setFont(QETApp::diagramTextsFont(6));
 
 		QRectF r, text_bounding;
-		qreal center = boundingRect().center().x();
-		qreal width = boundingRect().width() > 70
-				? boundingRect().width()/2
+			//At the normal size, as the painter is scaled already
+		qreal center = m_bounding_rect.center().x();
+		qreal width = m_bounding_rect.width() > 70
+				? m_bounding_rect.width()/2
 				: 35;
 
 		r = QRectF(QPointF(center - width,
-				   boundingRect().bottom()),
+				   m_bounding_rect.bottom()),
 				   QPointF(center + width,
-					   boundingRect().bottom() + 1));
+					   m_bounding_rect.bottom() + 1));
 
 		text_bounding = painter.boundingRect(
 					r,

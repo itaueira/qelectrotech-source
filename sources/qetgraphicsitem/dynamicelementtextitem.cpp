@@ -1914,6 +1914,9 @@ void DynamicElementTextItem::updateXref()
 					}
 					else
 						m_slave_Xref_item->setPlainText(xref_label);
+						//The size the project gives the cross references
+						//of the master's type
+					m_slave_Xref_item->setFont(QETApp::diagramTextsFont(5 * xrp.scaleFactor()));
 					setXref_item(xrp.getXrefPos(), xrp.slaveOffset());
 					return;
 				}

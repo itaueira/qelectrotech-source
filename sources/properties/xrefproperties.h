@@ -89,6 +89,18 @@ class XRefProperties : public PropertiesInterface
 	void setSlaveOffset(const int offset) {m_slave_offset = offset;}
 	int slaveOffset() const				 {return m_slave_offset;}
 
+		/**
+			The size of the cross reference, in percent of its normal
+			size: the cross or the contacts of the master, lines and texts
+			together, and the folio position text of its slaves. 100 by
+			default; kept between minScale() and maxScale().
+		*/
+	void setScale(const int percent);
+	int scale() const					 {return m_scale;}
+	qreal scaleFactor() const			 {return m_scale / 100.0;}
+	static int minScale() {return 25;}
+	static int maxScale() {return 200;}
+
 	void setKey(QString& key) {m_key = key;}
 
 	private:
@@ -105,6 +117,7 @@ class XRefProperties : public PropertiesInterface
 	QString m_slave_label;
 	int     m_offset;
 	int     m_slave_offset;
+	int     m_scale = 100;
 	QString m_key;
 };
 

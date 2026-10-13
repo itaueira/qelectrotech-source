@@ -153,6 +153,7 @@ void XRefPropertiesWidget::saveProperties(int index) {
 	xrp.setPrefix("switch", ui->m_switch_prefix_le->text());
 	xrp.setMasterLabel(ui->m_master_le->text());
 	xrp.setSlaveLabel(ui->m_slave_le->text());
+	xrp.setScale(ui->m_scale_sb->value());
 		//The boxes cannot show a value below their minimum (the offset's
 		//minimum is its "Default" entry, standing for the stored 0): keep
 		//the stored value unless the box shows something else.
@@ -194,6 +195,11 @@ void XRefPropertiesWidget::updateDisplay()
 
 	int slave_offset = xrp.slaveOffset();
 	ui->m_slave_offset_sb->setValue(slave_offset);
+
+	ui->m_scale_sb->setValue(xrp.scale());
+		//The table of a PLC is drawn by the element, from its definition:
+		//it keeps its size (CrossRefItem::scaleFactor)
+	ui->m_scale_sb->setEnabled(type != QLatin1String("plc"));
 
 	if (xrp.snapTo() == XRefProperties::Bottom){
 		 ui->m_snap_to_cb->setCurrentIndex(ui->m_snap_to_cb->findData("bottom"));

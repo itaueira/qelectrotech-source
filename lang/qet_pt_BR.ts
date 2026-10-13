@@ -5314,12 +5314,12 @@ Gravar uma revisão deixa esses projetos como estão e serve só para os próxim
 <context>
     <name>CrossRefItem</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="743"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="780"/>
         <source>Déplacer la référence croisée</source>
         <translation>Mover a referência cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="777"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="814"/>
         <source>Replacer la référence croisée</source>
         <translation>Reposicionar a referência cruzada</translation>
     </message>
@@ -6655,12 +6655,12 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
         <translation>texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1060"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1059"/>
         <source>Déplacer la référence croisée</source>
         <translation>Mover a referência cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1252"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1251"/>
         <source>Redimensionner un texte d&apos;élément</source>
         <translation>Redimensionar um texto de elemento</translation>
     </message>
@@ -23476,7 +23476,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="209"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1574"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1998"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2037"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2512"/>
         <source>Type</source>
         <translation>Tipo</translation>
@@ -23484,7 +23484,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="210"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1575"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1999"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2038"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2513"/>
         <source>Adresse</source>
         <translation>Endereço</translation>
@@ -23492,7 +23492,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="212"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1577"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2001"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2040"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2515"/>
         <location filename="../sources/qetinformation.cpp" line="455"/>
         <source>Commentaire</source>
@@ -23501,7 +23501,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="213"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1578"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2002"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2041"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2516"/>
         <location filename="../sources/qetinformation.cpp" line="522"/>
         <source>Réf. croisée</source>
@@ -23510,7 +23510,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="211"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1576"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2000"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2039"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2514"/>
         <location filename="../sources/qetinformation.cpp" line="456"/>
         <location filename="../sources/qetinformation.cpp" line="473"/>
@@ -32074,81 +32074,91 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
     </message>
     <message>
         <location filename="../sources/ui/xrefpropertieswidget.ui" line="56"/>
+        <source>Taille :</source>
+        <translation>Tamanho:</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="63"/>
+        <source>Taille de la référence croisée, en pourcentage de sa taille normale : la croix ou les contacts, avec leurs traits et leurs textes, et le texte de folio de ses esclaves.</source>
+        <translation>Tamanho da referência cruzada, em porcentagem do tamanho normal: a cruz ou os contatos, com seus traços e textos, e o texto de folha dos escravos.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="89"/>
         <source>XRef Vertical Offset:</source>
         <translation>XRef Deslocamento vertical:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="63"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="96"/>
         <source>10px corresponds to 1 tile displacement</source>
         <translation>10px corresponde a 1 deslocamento</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="66"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="99"/>
         <source>Set Vertical Offset for the Cross References. 10px corresponds to 1 tile displacement.</source>
         <translation>Conjunto de deslocamento vertical para as referências cruzadas. 10px corresponde a 1 deslocamento.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="69"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="102"/>
         <source>Default - Fit to XRef height</source>
         <translation>Padrão - Ajustar à altura de XRef</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="96"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="129"/>
         <source>Quand les textes de deux références croisées se chevauchent, celle de l&apos;élément le plus haut est placée au-dessus de l&apos;autre.</source>
         <translation>Quando os textos de duas referências cruzadas se sobrepõem, a do elemento mais alto fica acima da outra.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="99"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="132"/>
         <source>Empiler les références dont les textes se chevauchent</source>
         <translation>Empilhar as referências cujos textos se sobrepõem</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="108"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="141"/>
         <source>XRef slave position</source>
         <translation>Posição escrava XRef</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="160"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="193"/>
         <source>Afficher les numéros de bornes dans les Xrefs</source>
         <translation>Exibir os números dos bornes nas referências cruzadas</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="177"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="210"/>
         <source>Affiche&amp;r en contacts</source>
         <translation>Exibi&amp;r em contatos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="184"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="217"/>
         <source>Afficher en croix</source>
         <translation>Exibir em cruz</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="197"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="230"/>
         <source>Label des références croisées</source>
         <translation>Legenda das referências cruzadas</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="217"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="250"/>
         <source>Maitre</source>
         <translation>Mestre</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="227"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="260"/>
         <source>%f-%l%c</source>
         <translation>%f-%l%c</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="250"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="283"/>
         <source>Esclave</source>
         <translation>Escravo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="260"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="293"/>
         <source>(%f-%l%c)</source>
         <translation>(%f-%l%c)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="269"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="302"/>
         <source>Créer votre propre texte en vous aidant des variables suivantes :
 %f : le numéro de folio 
 %F: le label de folio
@@ -32165,27 +32175,27 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 %LM: Localização </translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="290"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="323"/>
         <source>Option d&apos;affichage en croix</source>
         <translation>Opção de visualização em cruz</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="296"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="329"/>
         <source>Afficher les contacts de puissance dans la croix</source>
         <translation>Exibir os contatos de potência na cruz</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="305"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="338"/>
         <source>Préfixe des contacts de puissance :</source>
         <translation>Prefixo dos contatos de potência:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="312"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="345"/>
         <source>Préfixe des contacts temporisés :</source>
         <translation>Prefixo dos contatos temporizados:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="325"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="358"/>
         <source>Préfixe des contacts inverseurs :</source>
         <translation>Prefixo dos contatos reversores:</translation>
     </message>
@@ -32250,22 +32260,22 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <translation>Alinhamento do texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="122"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="155"/>
         <source>Distance label - slave :</source>
         <translation>Distância rótulo - escravo:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="129"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="162"/>
         <source>Distance in pixels between the label and the slave cross reference</source>
         <translation>Distância em pixels entre o rótulo e a referência cruzada do escravo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="167"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="200"/>
         <source>Afficher dans le peigne de contacts tous les contacts esclaves définis par le maître, même ceux qui ne sont pas encore reliés, dans l&apos;ordre défini par le maître</source>
         <translation>Exibir no pente de contatos todos os contatos escravos definidos pelo mestre, mesmo os que ainda não estão ligados, na ordem definida pelo mestre</translation>
     </message>
     <message>
-        <location filename="../sources/ui/xrefpropertieswidget.ui" line="170"/>
+        <location filename="../sources/ui/xrefpropertieswidget.ui" line="203"/>
         <source>Afficher tous les esclaves définis par le maître</source>
         <translation>Exibir todos os escravos definidos pelo mestre</translation>
     </message>

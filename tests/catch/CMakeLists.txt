@@ -986,7 +986,11 @@ if(TARGET qet_core)
         # A referencia cruzada movida a mao, com Shift: o desvio guardado no
         # mestre e no rotulo do escravo, o desfazer, a gravacao e o
         # reposicionar.
-        src/ui/xrefmove_test.cpp)
+        src/ui/xrefmove_test.cpp
+        # O tamanho da referencia cruzada por tipo de mestre: o desenho
+        # medido pela tinta, a caixa, os contatos clicaveis, o texto do
+        # escravo, a gravacao e a pagina de configuracao.
+        src/ui/xrefscale_test.cpp)
 
     target_link_libraries(
         C_uitests
