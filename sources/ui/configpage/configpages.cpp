@@ -154,8 +154,11 @@ NewDiagramPage::NewDiagramPage(QETProject *project,
 	diagram_layout -> addWidget(ipw);
 	tab_widget->setMinimumSize(800, 650);
 
-	tab_widget -> addTab (diagram_widget, tr("Folio"));
-	tab_widget -> addTab (m_cpw,            tr("Conducteur"));
+		//The first two are the defaults of what is created next; the
+		//others change the whole project at once, which is why the page is
+		//called Folios and not New folio
+	tab_widget -> addTab (diagram_widget, tr("Nouveau folio", "configuration tab title"));
+	tab_widget -> addTab (m_cpw,            tr("Nouveau conducteur", "configuration tab title"));
 	tab_widget -> addTab (rpw,            tr("Reports de folio"));
 	tab_widget -> addTab (xrefpw,         tr("Références croisées"));
 	tab_widget -> addTab (m_gpw,          tr("Guides"));
@@ -300,7 +303,7 @@ QIcon NewDiagramPage::icon() const
 */
 QString NewDiagramPage::title() const
 {
-	if (m_project) return(tr("Nouveau folio", "configuration page title"));
+	if (m_project) return(tr("Folios", "configuration page title"));
 	return(tr("Nouveau projet", "configuration page title"));
 }
 

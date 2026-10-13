@@ -50,6 +50,7 @@ class ConfigDialog : public QDialog {
 	private:
 		void buildPagesList();
 		void addPageToList(ConfigPage *);
+		void updatePagesGrid();
 	
 	// attributes
 	private:

@@ -120,7 +120,7 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 		//Puts back where they are placed automatically the cross references
 		//moved with Shift+drag, of every selected element, as one step
 	m_reset_xref_placement = new QAction(tr("Replacer la référence croisée", "context menu action"), this);
-	m_reset_xref_placement->setStatusTip(tr("Remet la référence croisée des éléments sélectionnés à sa place automatique", "status bar tip"));
+	m_reset_xref_placement->setStatusTip(tr("Remet la référence croisée à sa place automatique", "status bar tip"));
 	connect(m_reset_xref_placement, &QAction::triggered, this, [this]() {
 		if (QUndoCommand *undo = CrossRefItem::resetPlacementCommand(m_diagram->selectedItems()))
 			m_diagram->undoStack().push(undo);

@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <QScrollArea>
+#include <QStyle>
 #include "configdialog.h"
 #include "ui/configpage/configpages.h"
 #include "qetapp.h"
@@ -119,6 +120,31 @@ void ConfigDialog::addPageToList(ConfigPage *page) {
 	new_button -> setText(page -> title());
 	new_button -> setTextAlignment(Qt::AlignHCenter);
 	new_button -> setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+	updatePagesGrid();
+}
+
+/**
+	@brief ConfigDialog::updatePagesGrid
+	Give every page of the list the same cell, as wide as the column, so the
+	icons and the names line up on one axis; a name too long for the cell
+	wraps. Without a cell each item was as wide as its own name and sat at
+	the left of the column, and a long name pushed its icon to the right.
+	Measured with the font in use, and leaving room for a vertical scroll
+	bar, so that the cells always fit the column.
+*/
+void ConfigDialog::updatePagesGrid()
+{
+	pages_list -> setWordWrap(true);
+	pages_list -> setSpacing(0);
+
+	const int scroll_bar = pages_list -> style() -> pixelMetric(
+				QStyle::PM_ScrollBarExtent, nullptr, pages_list);
+	const int width = pages_list -> maximumWidth()
+			  - 2 * pages_list -> frameWidth() - scroll_bar;
+		//The icon, two lines of name, and the room the spacing used to give
+	const int height = pages_list -> iconSize().height()
+			   + 2 * pages_list -> fontMetrics().height() + 16;
+	pages_list -> setGridSize(QSize(width, height));
 }
 
 /**

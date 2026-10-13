@@ -60,7 +60,7 @@
         <item>
          <widget class="QSpinBox" name="m_scale_sb">
           <property name="toolTip">
-           <string>Taille de la référence croisée, en pourcentage de sa taille normale : la croix ou les contacts, avec leurs traits et leurs textes, et le texte de folio de ses esclaves.</string>
+           <string>Taille de la croix et du texte de folio, en % de la normale</string>
           </property>
           <property name="suffix">
            <string notr="true"> %</string>

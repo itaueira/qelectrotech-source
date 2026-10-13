@@ -990,7 +990,10 @@ if(TARGET qet_core)
         # O tamanho da referencia cruzada por tipo de mestre: o desenho
         # medido pela tinta, a caixa, os contatos clicaveis, o texto do
         # escravo, a gravacao e a pagina de configuracao.
-        src/ui/xrefscale_test.cpp)
+        src/ui/xrefscale_test.cpp
+        # A coluna de paginas das janelas de configuracao: icones e nomes
+        # num eixo so, qualquer que seja o tamanho do nome.
+        src/ui/configdialog_test.cpp)
 
     target_link_libraries(
         C_uitests

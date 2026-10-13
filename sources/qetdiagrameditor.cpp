@@ -1908,7 +1908,7 @@ void QETDiagramEditor::setUpActions()
 		//fine keyboard move of a selection, hence Ctrl+Alt.
 	m_folio_back = new QAction(tr("Revenir dans l'historique des folios"), this);
 	ShortcutManager::instance().registerAction(m_folio_back, "diagrameditor.folio_back", tr("Éditeur de schémas"), QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Left));
-	m_folio_back->setStatusTip(tr("Revient au folio affiché avant celui-ci, comme le bouton Précédent d'un navigateur web", "status bar tip"));
+	m_folio_back->setStatusTip(tr("Revient au folio vu avant celui-ci", "status bar tip"));
 	connect(m_folio_back, &QAction::triggered, this, [this]() {
 		if (ProjectView *project_view = currentProjectView()) {
 			project_view->goBack();
@@ -1917,7 +1917,7 @@ void QETDiagramEditor::setUpActions()
 
 	m_folio_forward = new QAction(tr("Avancer dans l'historique des folios"), this);
 	ShortcutManager::instance().registerAction(m_folio_forward, "diagrameditor.folio_forward", tr("Éditeur de schémas"), QKeySequence(Qt::CTRL | Qt::ALT | Qt::Key_Right));
-	m_folio_forward->setStatusTip(tr("Retourne au folio quitté en revenant en arrière, comme le bouton Suivant d'un navigateur web", "status bar tip"));
+	m_folio_forward->setStatusTip(tr("Retourne au folio quitté en revenant", "status bar tip"));
 	connect(m_folio_forward, &QAction::triggered, this, [this]() {
 		if (ProjectView *project_view = currentProjectView()) {
 			project_view->goForward();
@@ -3374,19 +3374,27 @@ void QETDiagramEditor::setUpMenu()
 	menu_fichier -> addAction(m_quit_editor);
 
 	// menu Edition
+		//What is used all day stays in the first column, and the families
+		//used less often sit one level down, each under its subject: the
+		//commands added since issue #1336 had made the menu spill into a
+		//second column. Every action keeps its shortcut, and the command
+		//search, the gestures and the toolbars read the shortcut register,
+		//not this menu.
 	menu_edition -> addAction(undo);
 	menu_edition -> addAction(redo);
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_cut);
 	menu_edition -> addAction(m_copy);
 	menu_edition -> addAction(m_paste);
-	menu_edition -> addAction(m_paste_origin);
-	menu_edition -> addAction(m_paste_element_info);
 	menu_edition -> addAction(m_duplicate);
-	menu_edition -> addAction(m_configure_duplicate);
+	QMenu *paste_menu = menu_edition -> addMenu(QET::Icons::EditPaste, tr("Collage spécial"));
+	paste_menu -> addAction(m_paste_origin);
+	paste_menu -> addAction(m_paste_element_info);
+	paste_menu -> addSeparator();
+	paste_menu -> addAction(m_configure_duplicate);
 	menu_edition -> addSeparator();
-	menu_edition -> addAction(m_insert_last_element);
 	menu_edition -> addAction(m_show_element_picker);
+	menu_edition -> addAction(m_insert_last_element);
 		//The same actions the "Ajouter" toolbar holds. They were toolbar-only,
 		//which left them unreachable for anyone working without a mouse: a
 		//toolbar button has no key, so text fields, images and every drawing
@@ -3396,24 +3404,11 @@ void QETDiagramEditor::setUpMenu()
 	m_add_item_menu -> setIcon(QET::Icons::Add);
 	m_add_item_menu -> addActions(m_add_item_actions_group.actions());
 	menu_edition -> addSeparator();
-		//The menu had grown to over forty entries and no longer fitted on a
-		//laptop screen (issue #1336). Whole families now sit one level down,
-		//as Ajouter and Aligner already did; every action and its shortcut
-		//is unchanged.
 	QMenu *select_menu = menu_edition -> addMenu(QET::Icons::EditSelectAll, tr("Sélection"));
 	select_menu -> addActions(m_select_actions_group.actions());
-	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_delete_selection);
 	menu_edition -> addAction(m_rotate_selection);
-	menu_edition -> addAction(m_rotate_group_selection);
-	menu_edition -> addAction(m_rotate_texts);
-	menu_edition -> addAction(m_find_element);
 	menu_edition -> addAction(m_edit_selection);
-	QMenu *group_menu = menu_edition -> addMenu(QET::Icons::textGroup, tr("Grouper"));
-	group_menu -> addAction(m_group_selection);
-	group_menu -> addAction(m_ungroup_selection);
-	group_menu -> addSeparator();
-	group_menu -> addAction(m_group_selected_texts);
 	m_align_menu = menu_edition -> addMenu(tr("Aligner"));
 		//Snap to grid, then the horizontal three, then the vertical three,
 		//in the order setUpActions() adds them
@@ -3422,42 +3417,57 @@ void QETDiagramEditor::setUpMenu()
 	m_align_menu -> addActions(m_align_actions_group.actions().mid(1, 3));
 	m_align_menu -> addSeparator();
 	m_align_menu -> addActions(m_align_actions_group.actions().mid(4));
+	QMenu *arrange_menu = menu_edition -> addMenu(tr("Organiser"));
+	arrange_menu -> addAction(m_rotate_group_selection);
+	arrange_menu -> addAction(m_rotate_texts);
+	arrange_menu -> addSeparator();
+	QMenu *group_menu = arrange_menu -> addMenu(QET::Icons::textGroup, tr("Grouper"));
+	group_menu -> addAction(m_group_selection);
+	group_menu -> addAction(m_ungroup_selection);
+	group_menu -> addSeparator();
+	group_menu -> addAction(m_group_selected_texts);
+	QMenu *depth_menu = arrange_menu -> addMenu(QET::Icons::BringForward, tr("Profondeur"));
+	depth_menu -> addActions(m_depth_action_group->actions());
 	menu_edition -> addSeparator();
-	menu_edition -> addAction(m_conductor_reset);
-	menu_edition -> addAction(m_show_conductor_text);
-	menu_edition -> addAction(m_hide_conductor_text);
-	menu_edition -> addAction(m_align_conductor_text);
-	menu_edition -> addSeparator();
+	QMenu *conductor_menu = menu_edition -> addMenu(tr("Conducteurs"));
+	conductor_menu -> addAction(m_conductor_reset);
+	conductor_menu -> addSeparator();
+	conductor_menu -> addAction(m_show_conductor_text);
+	conductor_menu -> addAction(m_hide_conductor_text);
+	conductor_menu -> addAction(m_align_conductor_text);
 	menu_edition -> addAction(m_edit_diagram_properties);
 		//Shared with the folio's context menu (see
 		//DiagramView::contextMenuActions()).
 	m_row_column_menu = menu_edition -> addMenu(tr("Lignes et colonnes"));
 	m_row_column_menu -> setIcon(QET::Icons::EditTableInsertColumnRight);
 	m_row_column_menu -> addActions(m_row_column_actions_group.actions());
-	QMenu *depth_menu = menu_edition -> addMenu(QET::Icons::BringForward, tr("Profondeur"));
-	depth_menu -> addActions(m_depth_action_group->actions());
-	menu_edition -> addSeparator();
-	menu_edition -> addAction(m_create_symbol);
-	menu_edition -> addAction(m_generate_pinout);
-	menu_edition -> addAction(m_generate_circuits);
-	menu_edition -> addAction(m_import_io_sheet);
-	menu_edition -> addAction(m_assign_io_points);
-	menu_edition -> addAction(m_io_list);
-	menu_edition -> addAction(m_mark_io_bus);
-	menu_edition -> addAction(m_wire_io_commons);
-	menu_edition -> addAction(m_explode_element);
-	menu_edition -> addAction(m_save_group);
-	menu_edition -> addAction(m_insert_group);
 	menu_edition -> addSeparator();
 	menu_edition -> addAction(m_find);
 	menu_edition -> addAction(m_jump_to_element);
 	menu_edition -> addAction(m_navigate);
 	menu_edition -> addAction(m_folio_back);
 	menu_edition -> addAction(m_folio_forward);
-	menu_edition -> addAction(m_command_search);
 	menu_edition -> addSeparator();
-	menu_edition -> addAction(m_show_shortcut_bar);
+	QMenu *symbol_menu = menu_edition -> addMenu(tr("Symboles et circuits"));
+	symbol_menu -> addAction(m_create_symbol);
+	symbol_menu -> addAction(m_explode_element);
+	symbol_menu -> addSeparator();
+	symbol_menu -> addAction(m_generate_pinout);
+	symbol_menu -> addAction(m_generate_circuits);
+	symbol_menu -> addSeparator();
+	symbol_menu -> addAction(m_save_group);
+	symbol_menu -> addAction(m_insert_group);
+	QMenu *io_menu = menu_edition -> addMenu(tr("Entrées et sorties"));
+	io_menu -> addAction(m_import_io_sheet);
+	io_menu -> addAction(m_assign_io_points);
+	io_menu -> addAction(m_io_list);
+	io_menu -> addAction(m_mark_io_bus);
+	io_menu -> addAction(m_wire_io_commons);
+	menu_edition -> addSeparator();
+	menu_edition -> addAction(m_command_search);
 	menu_edition -> addAction(m_repeat_last_command);
+	menu_edition -> addAction(m_show_shortcut_bar);
+	menu_edition -> addAction(m_find_element);
 
 	// menu Projet
 	menu_project -> addAction(m_project_edit_properties);
