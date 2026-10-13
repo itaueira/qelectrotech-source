@@ -1020,7 +1020,8 @@ bool DynamicElementTextItem::sceneEventFilter(QGraphicsItem *watched, QEvent *ev
 		//Shift and a left press move the folio position text alone, the
 		//way Shift moves this text alone; without Shift the press goes on
 		//as it always did. Measured in the coordinates of this text, where
-		//the offset lives.
+		//the offset lives, and snapped to the text grid of the View menu -
+		//not freed by Ctrl, which with Shift turns the folio to panning.
 	auto mouse = static_cast<QGraphicsSceneMouseEvent *>(event);
 	if (event->type() == QEvent::GraphicsSceneMousePress)
 	{
@@ -1040,9 +1041,7 @@ bool DynamicElementTextItem::sceneEventFilter(QGraphicsItem *watched, QEvent *ev
 		QPointF offset = m_slave_xref_drag_from
 				 + mapFromScene(mouse->scenePos())
 				 - mapFromScene(mouse->buttonDownScenePos(Qt::LeftButton));
-		if (!(mouse->modifiers() & Qt::ControlModifier))
-			offset = Diagram::snapToTextGrid(offset);
-		setSlaveXrefOffset(offset);
+		setSlaveXrefOffset(Diagram::snapToTextGrid(offset));
 		return true;
 	}
 	else if (event->type() == QEvent::GraphicsSceneMouseRelease && m_slave_xref_dragging)

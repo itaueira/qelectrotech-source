@@ -692,10 +692,13 @@ void CrossRefItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 /**
 	@brief CrossRefItem::mouseMoveEvent
-	Move the cross reference with the mouse, in steps of the text grid, or
-	freely with Ctrl. The movement is measured in the coordinates of the
-	item holding it, where the offset lives, so it follows the mouse on a
-	rotated element too.
+	Move the cross reference with the mouse, in steps of the text grid
+	chosen in the View menu, which also offers no grid at all. Not freely
+	with Ctrl, as a text is: Ctrl with Shift turns the folio to panning
+	(DiagramView::switchToVisualisationModeIfNeeded), so the gesture would
+	never reach this item. The movement is measured in the coordinates of
+	the item holding it, where the offset lives, so it follows the mouse on
+	a rotated element too.
 	@param event
 */
 void CrossRefItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
@@ -710,9 +713,7 @@ void CrossRefItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 	QPointF offset = m_drag_from_offset
 			 + holder->mapFromScene(event->scenePos())
 			 - holder->mapFromScene(event->buttonDownScenePos(Qt::LeftButton));
-	if (!(event->modifiers() & Qt::ControlModifier))
-		offset = Diagram::snapToTextGrid(offset);
-	master->setXrefOffset(offset);
+	master->setXrefOffset(Diagram::snapToTextGrid(offset));
 	event->accept();
 }
 

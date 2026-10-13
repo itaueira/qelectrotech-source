@@ -27,6 +27,7 @@
 #include "../../../../sources/qetgraphicsitem/masterelement.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/textgrid.h"
 
 #include <catch2/catch.hpp>
 
@@ -34,6 +35,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsTextItem>
 #include <QPointF>
+#include <QSettings>
 #include <QString>
 #include <QUndoCommand>
 #include <QUndoStack>
@@ -377,11 +379,26 @@ TEST_CASE("T50 — Shift and a drag move the cross reference alone, on the text 
 		CHECK(xref->pos() == automatic + Diagram::snapToTextGrid(by));
 	}
 
-	SECTION("with Shift and Ctrl: freely, off the grid")
+	SECTION("with the text grid turned off in the View menu: freely")
 	{
-		REQUIRE(drag(xref, by, Qt::ShiftModifier | Qt::ControlModifier));
+			//Not with Ctrl, as a text is: Ctrl and Shift turn the folio to
+			//panning before the drag can reach the cross reference. The
+			//text grid of the View menu is the way, and "off" is one of its
+			//choices.
+		QSettings settings;
+		const QVariant kept = settings.value(TextGrid::settings_key);
+		settings.setValue(TextGrid::settings_key, 0);
+		REQUIRE(drag(xref, by, Qt::ShiftModifier));
+		kept.isValid() ? settings.setValue(TextGrid::settings_key, kept)
+			       : settings.remove(TextGrid::settings_key);
 		CHECK(k1->xrefOffset() == by);
 		CHECK(stack->index() == before + 1);
+	}
+
+	SECTION("Ctrl held with Shift changes nothing: still on the grid")
+	{
+		REQUIRE(drag(xref, by, Qt::ShiftModifier | Qt::ControlModifier));
+		CHECK(k1->xrefOffset() == Diagram::snapToTextGrid(by));
 	}
 
 	SECTION("without Shift: the press is not taken, and nothing moves")
@@ -411,7 +428,9 @@ TEST_CASE("T50 — Shift and a drag move the cross reference alone, on the text 
 	{
 		k1->setRotation(90);
 		const QPointF scene_before = xref->scenePos();
-		REQUIRE(drag(xref, QPointF(30, 0), Qt::ShiftModifier | Qt::ControlModifier));
+			//30 is a whole number of grid steps, so the grid leaves it as is
+		REQUIRE(Diagram::snapToTextGrid(QPointF(30, 0)) == QPointF(30, 0));
+		REQUIRE(drag(xref, QPointF(30, 0), Qt::ShiftModifier));
 		const QPointF moved = xref->scenePos() - scene_before;
 		CHECK(qAbs(moved.x() - 30) < 0.01);
 		CHECK(qAbs(moved.y()) < 0.01);
