@@ -53,6 +53,7 @@ class DynamicElementTextItem : public DiagramTextItem
 	Q_PROPERTY(qreal textWidth READ textWidth WRITE setTextWidth NOTIFY textWidthChanged)
 	Q_PROPERTY(bool keepVisualRotation READ keepVisualRotation WRITE setKeepVisualRotation NOTIFY keepVisualRotationChanged)
 	Q_PROPERTY(bool rotationPointCenter READ rotationPointCenter WRITE setRotationPointCenter NOTIFY rotationPointCenterChanged)
+	Q_PROPERTY(QPointF slaveXrefOffset READ slaveXrefOffset WRITE setSlaveXrefOffset NOTIFY slaveXrefOffsetChanged)
 	public:
 
 		enum TextFrom {
@@ -74,6 +75,7 @@ class DynamicElementTextItem : public DiagramTextItem
 		void textWidthChanged(qreal width);
 		void keepVisualRotationChanged(bool keep);
 		void rotationPointCenterChanged(bool center);
+		void slaveXrefOffsetChanged(const QPointF &offset);
 
 	public:
 		DynamicElementTextItem(Element *parent_element);
@@ -118,6 +120,11 @@ class DynamicElementTextItem : public DiagramTextItem
 		qreal textWidth() const {return m_text_width;}
 		void setTextWidth(qreal width);
 		void setXref_item(Qt::AlignmentFlag m_exHrefPos, int slave_offset = 0);
+			/// How far the user moved the folio position text of a slave
+			/// (slaveXrefItem()) from its automatic place, in the
+			/// coordinates of this text. Null when it was never moved.
+		QPointF slaveXrefOffset() const {return m_slave_xref_offset;}
+		void setSlaveXrefOffset(const QPointF &offset);
 
 		void setKeepVisualRotation(bool set);
 		bool keepVisualRotation() const;
@@ -196,6 +203,10 @@ class DynamicElementTextItem : public DiagramTextItem
 		m_first_scene_change = true;
 		CrossRefItem *m_Xref_item = nullptr;
 		QGraphicsTextItem *m_slave_Xref_item = nullptr;
+		QPointF m_slave_xref_offset;
+			//Shift+drag of m_slave_Xref_item, see sceneEventFilter()
+		bool m_slave_xref_dragging = false;
+		QPointF m_slave_xref_drag_from;
 		qreal m_text_width = -1;
 		QPointF m_initial_position;
 		bool m_keep_visual_rotation = true;

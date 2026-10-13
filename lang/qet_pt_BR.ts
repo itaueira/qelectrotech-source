@@ -5312,6 +5312,19 @@ Gravar uma revisão deixa esses projetos como estão e serve só para os próxim
     </message>
 </context>
 <context>
+    <name>CrossRefItem</name>
+    <message>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="743"/>
+        <source>Déplacer la référence croisée</source>
+        <translation>Mover a referência cruzada</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="777"/>
+        <source>Replacer la référence croisée</source>
+        <translation>Reposicionar a referência cruzada</translation>
+    </message>
+</context>
+<context>
     <name>CustomElementGraphicPart</name>
     <message>
         <location filename="../sources/editor/graphicspart/customelementgraphicpart.cpp" line="1365"/>
@@ -5976,85 +5989,97 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
 <context>
     <name>DiagramView</name>
     <message>
-        <location filename="../sources/diagramview.cpp" line="80"/>
+        <location filename="../sources/diagramview.cpp" line="82"/>
         <source>Ceci est la zone dans laquelle vous concevez vos schémas en y ajoutant des éléments et en posant des conducteurs entre leurs bornes. Il est également possible d&apos;ajouter des textes indépendants.</source>
         <comment>&quot;What&apos;s this?&quot; tip</comment>
         <translation>Esta é a área na qual criamos os esquemas, inserindo componentes e interconectando os seus terminais. Também podemos inserir textos diversos.</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="105"/>
+        <location filename="../sources/diagramview.cpp" line="107"/>
         <source>Coller ici</source>
         <comment>context menu action</comment>
         <translation>Colar aqui</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="108"/>
+        <location filename="../sources/diagramview.cpp" line="110"/>
         <source>Collage multiple</source>
         <translation>Colagem múltipla</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="115"/>
+        <location filename="../sources/diagramview.cpp" line="117"/>
         <source>Créer un template</source>
         <comment>context menu action</comment>
         <translation>Criar um modelo</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="119"/>
+        <location filename="../sources/diagramview.cpp" line="122"/>
+        <source>Replacer la référence croisée</source>
+        <comment>context menu action</comment>
+        <translation>Reposicionar a referência cruzada</translation>
+    </message>
+    <message>
+        <location filename="../sources/diagramview.cpp" line="123"/>
+        <source>Remet la référence croisée des éléments sélectionnés à sa place automatique</source>
+        <comment>status bar tip</comment>
+        <translation>Devolve a referência cruzada dos elementos selecionados à posição automática</translation>
+    </message>
+    <message>
+        <location filename="../sources/diagramview.cpp" line="130"/>
         <source>Générer une vignette d&apos;armoire</source>
         <comment>context menu action</comment>
         <translation>Gerar uma miniatura do painel</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="789"/>
+        <location filename="../sources/diagramview.cpp" line="800"/>
         <source>X: %1 Y: %2</source>
         <translation>X: %1 Y: %2</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="938"/>
+        <location filename="../sources/diagramview.cpp" line="949"/>
         <source>Connecter les bornes sélectionnées</source>
         <translation>Conectar os terminais selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="1361"/>
+        <location filename="../sources/diagramview.cpp" line="1372"/>
         <source>Sans titre</source>
         <comment>what to display for untitled diagrams</comment>
         <translation>Sem título</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2206"/>
+        <location filename="../sources/diagramview.cpp" line="2235"/>
         <source>Modèle enregistré</source>
         <translation>Modelo salvo</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2207"/>
+        <location filename="../sources/diagramview.cpp" line="2236"/>
         <source>Le modèle a été enregistré avec succès sous :
 %1</source>
         <translation>O modelo foi salvo com sucesso em:
 %1</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2210"/>
+        <location filename="../sources/diagramview.cpp" line="2239"/>
         <source>Erreur</source>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2210"/>
+        <location filename="../sources/diagramview.cpp" line="2239"/>
         <source>Le fichier n&apos;a pas pu être écrit.</source>
         <translation>Não foi possível gravar o arquivo.</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="179"/>
+        <location filename="../sources/diagramview.cpp" line="190"/>
         <source>Choisir la nouvelle couleur de ce conducteur</source>
         <translation>Escolha a nova cor do condutor</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="202"/>
+        <location filename="../sources/diagramview.cpp" line="213"/>
         <source>Modifier les propriétés d&apos;un conducteur</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="123"/>
+        <location filename="../sources/diagramview.cpp" line="134"/>
         <source>Renvoi de folio</source>
         <translation>Referência cruzada</translation>
     </message>
@@ -6625,12 +6650,17 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
         <translation>Editar texto do elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="860"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="873"/>
         <source>texte</source>
         <translation>texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1193"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1060"/>
+        <source>Déplacer la référence croisée</source>
+        <translation>Mover a referência cruzada</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1252"/>
         <source>Redimensionner un texte d&apos;élément</source>
         <translation>Redimensionar um texto de elemento</translation>
     </message>
@@ -23446,7 +23476,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="209"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1574"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1819"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1998"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2512"/>
         <source>Type</source>
         <translation>Tipo</translation>
@@ -23454,7 +23484,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="210"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1575"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1820"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1999"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2513"/>
         <source>Adresse</source>
         <translation>Endereço</translation>
@@ -23462,7 +23492,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="212"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1577"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1822"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2001"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2515"/>
         <location filename="../sources/qetinformation.cpp" line="455"/>
         <source>Commentaire</source>
@@ -23471,7 +23501,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="213"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1578"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1823"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2002"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2516"/>
         <location filename="../sources/qetinformation.cpp" line="522"/>
         <source>Réf. croisée</source>
@@ -23480,7 +23510,7 @@ Deseja substituí-lo?</translation>
     <message>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="211"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1576"/>
-        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="1821"/>
+        <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2000"/>
         <location filename="../sources/qetgraphicsitem/element.cpp" line="2514"/>
         <location filename="../sources/qetinformation.cpp" line="456"/>
         <location filename="../sources/qetinformation.cpp" line="473"/>

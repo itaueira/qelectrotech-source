@@ -256,6 +256,14 @@ QDomElement DynamicElementTextItem::toXml(QDomDocument &dom_doc) const
 		root_element.appendChild(dom_color);
 	}
 	
+		//Written only for a folio position text the user moved, so that a
+		//project that never moves one is saved as before
+	if (!m_slave_xref_offset.isNull())
+	{
+		root_element.setAttribute("slave_xref_dx", QString::number(m_slave_xref_offset.x()));
+		root_element.setAttribute("slave_xref_dy", QString::number(m_slave_xref_offset.y()));
+	}
+
 	return root_element;
 }
 
@@ -339,6 +347,11 @@ void DynamicElementTextItem::fromXml(const QDomElement &dom_elmt)
 	double x = dom_elmt.attribute("x", QString::number(0)).toDouble();
 	double y = dom_elmt.attribute("y", QString::number(0)).toDouble();
 	QGraphicsTextItem::setPos(qIsFinite(x) ? x : 0, qIsFinite(y) ? y : 0);
+
+		//Same clamp for the offset of the folio position text of a slave
+	const double dx = dom_elmt.attribute("slave_xref_dx", QString::number(0)).toDouble();
+	const double dy = dom_elmt.attribute("slave_xref_dy", QString::number(0)).toDouble();
+	setSlaveXrefOffset(QPointF(qIsFinite(dx) ? dx : 0, qIsFinite(dy) ? dy : 0));
 }
 
 /**
@@ -1001,6 +1014,52 @@ bool DynamicElementTextItem::sceneEventFilter(QGraphicsItem *watched, QEvent *ev
 	}
 	else if(event->type() == QEvent::GraphicsSceneMouseDoubleClick) {
 		zoomToLinkedElement();
+		return true;
+	}
+
+		//Shift and a left press move the folio position text alone, the
+		//way Shift moves this text alone; without Shift the press goes on
+		//as it always did. Measured in the coordinates of this text, where
+		//the offset lives.
+	auto mouse = static_cast<QGraphicsSceneMouseEvent *>(event);
+	if (event->type() == QEvent::GraphicsSceneMousePress)
+	{
+		if (mouse->button() != Qt::LeftButton
+		    || !(mouse->modifiers() & Qt::ShiftModifier)
+		    || !diagram() || diagram()->isReadOnly())
+			return false;
+		m_slave_xref_dragging = true;
+		m_slave_xref_drag_from = m_slave_xref_offset;
+		if (m_parent_element)
+			m_parent_element->setHighlighted(true);
+		event->accept();
+		return true;
+	}
+	else if (event->type() == QEvent::GraphicsSceneMouseMove && m_slave_xref_dragging)
+	{
+		QPointF offset = m_slave_xref_drag_from
+				 + mapFromScene(mouse->scenePos())
+				 - mapFromScene(mouse->buttonDownScenePos(Qt::LeftButton));
+		if (!(mouse->modifiers() & Qt::ControlModifier))
+			offset = Diagram::snapToTextGrid(offset);
+		setSlaveXrefOffset(offset);
+		return true;
+	}
+	else if (event->type() == QEvent::GraphicsSceneMouseRelease && m_slave_xref_dragging)
+	{
+		m_slave_xref_dragging = false;
+		if (m_parent_element)
+			m_parent_element->setHighlighted(false);
+			//One step of the undo stack, and none for a press that moved
+			//nothing
+		if (diagram() && m_slave_xref_offset != m_slave_xref_drag_from)
+		{
+			auto undo = new QPropertyUndoCommand(this, "slaveXrefOffset",
+							     m_slave_xref_drag_from,
+							     m_slave_xref_offset);
+			undo->setText(tr("Déplacer la référence croisée"));
+			diagram()->undoStack().push(undo);
+		}
 		return true;
 	}
 
@@ -2031,9 +2090,26 @@ void DynamicElementTextItem::setXref_item(Qt::AlignmentFlag m_exHrefPos, int sla
 			pos = QPointF(r.right() + slave_offset ,r.center().y() - m_slave_Xref_item->boundingRect().height()/2);
 		}
 	}
-	m_slave_Xref_item->setPos(pos);
+	m_slave_Xref_item->setPos(pos + m_slave_xref_offset);
 
 	return;
+}
+
+/**
+	@brief DynamicElementTextItem::setSlaveXrefOffset
+	Move the folio position text of a slave away from its automatic place,
+	or back to it with a null offset.
+	@param offset
+*/
+void DynamicElementTextItem::setSlaveXrefOffset(const QPointF &offset)
+{
+	if (offset == m_slave_xref_offset)
+		return;
+
+	m_slave_xref_offset = offset;
+	if (m_slave_Xref_item)
+		updateXref();
+	emit slaveXrefOffsetChanged(offset);
 }
 
 void DynamicElementTextItem::setKeepVisualRotation(bool set)

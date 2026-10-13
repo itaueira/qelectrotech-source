@@ -18,7 +18,10 @@
 #include "crossrefitem.h"
 #include "../shownkinds.h"
 
+#include <QGraphicsSceneMouseEvent>
 #include <QTimer>
+#include <QUndoCommand>
+#include "../QPropertyUndoCommand/qpropertyundocommand.h"
 #include "../qetproject.h"
 #include "../autoNum/assignvariables.h"
 #include "../diagram.h"
@@ -101,8 +104,12 @@ void CrossRefItem::init()
 	setAcceptHoverEvents(true);
 
 	if (auto master = qobject_cast<MasterElement *>(m_element))
+	{
 		connect(master, &MasterElement::xrefHiddenChanged,
 			this, &CrossRefItem::applyVisibility);
+		connect(master, &MasterElement::xrefOffsetChanged,
+			this, &CrossRefItem::offsetChanged);
+	}
 	applyVisibility();
 
 	setUpConnection();
@@ -326,7 +333,7 @@ void CrossRefItem::updateLabel()
 		// Position at the PLC table position from the .elmt definition
 		QList<QPointF> positions = m_element->plcTablePositions();
 		QPointF pos = positions.isEmpty() ? QPointF(0, 0) : positions.first();
-		setPos(pos);
+		setPos(pos + manualOffset());
 		m_element->keepReadable(this);
 
 		// Populate m_hovered_contacts_map using drawAsPlcTable on a
@@ -378,9 +385,36 @@ void CrossRefItem::autoPos()
 	//We calculate the position according to the snapTo of the xrefproperties
 	if (m_properties.snapTo() == XRefProperties::Bottom)
 		stackAtBottom();
-	else
-		QGIUtility::centerToParentBottom(this);
+	else if (QGIUtility::centerToParentBottom(this))
+		setPos(pos() + manualOffset());
 	m_element->keepReadable(this);
+}
+
+/**
+	@brief CrossRefItem::manualOffset
+	@return how far the user moved this cross reference from its automatic
+	place, in the coordinates of the item holding it; null when it was
+	never moved. The offset belongs to the master, so that it is the same
+	whether the cross reference hangs under the element, its label or its
+	texts group.
+*/
+QPointF CrossRefItem::manualOffset() const
+{
+	auto master = qobject_cast<MasterElement *>(m_element);
+	return master ? master->xrefOffset() : QPointF();
+}
+
+/**
+	@brief CrossRefItem::offsetChanged
+	The master was given another offset for its cross reference: place it
+	again. A PLC table is placed by updateLabel(), from the definition.
+*/
+void CrossRefItem::offsetChanged()
+{
+	if (m_element->elementData().m_master_type == ElementData::PLC)
+		updateLabel();
+	else
+		autoPos();
 }
 
 /**
@@ -428,6 +462,14 @@ void CrossRefItem::stackAtBottom()
 		const qreal offset = xref->m_properties.offset();
 		QGIUtility::centerToBottomDiagram(xref, xref->m_element,
 										  offset <= 40 ? 5 : offset);
+			//Moved by hand: where the user put it, and out of the stack -
+			//the others do not make room for it, and it does not move
+			//up for them.
+		const QPointF moved = xref->manualOffset();
+		if (!moved.isNull()) {
+			xref->setPos(xref->pos() + moved);
+			continue;
+		}
 		if (xref->boundingRect().isEmpty()
 			|| !xref->m_properties.stackOverlapping())
 			continue;
@@ -622,6 +664,143 @@ void CrossRefItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 	}
 
 	QetGraphicsItem::showItem(target);
+}
+
+/**
+	@brief CrossRefItem::mousePressEvent
+	Shift and a left press start moving this cross reference alone, the way
+	Shift moves a text of an element alone. Without Shift the press is left
+	to the items under it, as it always was.
+	@param event
+*/
+void CrossRefItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+	auto master = qobject_cast<MasterElement *>(m_element);
+	Diagram *diagram = m_element->diagram();
+	if (event->button() == Qt::LeftButton
+	    && (event->modifiers() & Qt::ShiftModifier)
+	    && master && diagram && !diagram->isReadOnly() && parentItem())
+	{
+		m_dragging = true;
+		m_drag_from_offset = master->xrefOffset();
+		m_element->setHighlighted(true);
+		event->accept();
+		return;
+	}
+	QGraphicsObject::mousePressEvent(event);
+}
+
+/**
+	@brief CrossRefItem::mouseMoveEvent
+	Move the cross reference with the mouse, in steps of the text grid, or
+	freely with Ctrl. The movement is measured in the coordinates of the
+	item holding it, where the offset lives, so it follows the mouse on a
+	rotated element too.
+	@param event
+*/
+void CrossRefItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+	auto master = qobject_cast<MasterElement *>(m_element);
+	if (!m_dragging || !master || !parentItem()) {
+		QGraphicsObject::mouseMoveEvent(event);
+		return;
+	}
+
+	const QGraphicsItem *holder = parentItem();
+	QPointF offset = m_drag_from_offset
+			 + holder->mapFromScene(event->scenePos())
+			 - holder->mapFromScene(event->buttonDownScenePos(Qt::LeftButton));
+	if (!(event->modifiers() & Qt::ControlModifier))
+		offset = Diagram::snapToTextGrid(offset);
+	master->setXrefOffset(offset);
+	event->accept();
+}
+
+/**
+	@brief CrossRefItem::mouseReleaseEvent
+	End a move: one step of the undo stack, and none when the cross
+	reference ends where it started.
+	@param event
+*/
+void CrossRefItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (!m_dragging) {
+		QGraphicsObject::mouseReleaseEvent(event);
+		return;
+	}
+	m_dragging = false;
+	m_element->setHighlighted(false);
+	event->accept();
+
+	auto master = qobject_cast<MasterElement *>(m_element);
+	Diagram *diagram = m_element->diagram();
+	if (!master || !diagram || master->xrefOffset() == m_drag_from_offset)
+		return;
+
+	auto undo = new QPropertyUndoCommand(master, "xrefOffset",
+					     m_drag_from_offset,
+					     master->xrefOffset());
+	undo->setText(tr("Déplacer la référence croisée"));
+	diagram->undoStack().push(undo);
+}
+
+/**
+	@brief CrossRefItem::ownerOf
+	@param item
+	@return the element @a item is the cross reference of, or nullptr
+*/
+Element *CrossRefItem::ownerOf(const QGraphicsItem *item)
+{
+	if (!item)
+		return nullptr;
+	if (item->type() == CrossRefItem::Type)
+		return static_cast<const CrossRefItem *>(item)->m_element;
+
+		//The folio position text of a slave is a plain text item, child of
+		//the label text of the slave
+	if (auto text = dynamic_cast<DynamicElementTextItem *>(item->parentItem()))
+		if (text->slaveXrefItem() == item)
+			return text->parentElement();
+	return nullptr;
+}
+
+/**
+	@brief CrossRefItem::resetPlacementCommand
+	@param items
+	@return one undo step giving back to every element among @a items its
+	automatic cross reference placement: the offset of a master, and the
+	offset of the folio position text of each text of a slave, in its
+	groups too. nullptr when there is nothing to give back.
+*/
+QUndoCommand *CrossRefItem::resetPlacementCommand(const QList<QGraphicsItem *> &items)
+{
+	auto command = new QUndoCommand(tr("Replacer la référence croisée"));
+	for (QGraphicsItem *item : items)
+	{
+		auto element = dynamic_cast<Element *>(item);
+		if (!element)
+			continue;
+
+		if (auto master = qobject_cast<MasterElement *>(element))
+			if (!master->xrefOffset().isNull())
+				new QPropertyUndoCommand(master, "xrefOffset",
+							 master->xrefOffset(), QPointF(),
+							 command);
+
+		QList<DynamicElementTextItem *> texts = element->dynamicTextItems();
+		for (ElementTextItemGroup *group : element->textGroups())
+			texts << group->texts();
+		for (DynamicElementTextItem *text : std::as_const(texts))
+			if (!text->slaveXrefOffset().isNull())
+				new QPropertyUndoCommand(text, "slaveXrefOffset",
+							 text->slaveXrefOffset(), QPointF(),
+							 command);
+	}
+
+	if (command->childCount())
+		return command;
+	delete command;
+	return nullptr;
 }
 
 /**

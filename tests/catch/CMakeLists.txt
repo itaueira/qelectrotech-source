@@ -982,7 +982,11 @@ if(TARGET qet_core)
         # Voltar e Avancar entre as folhas vistas, como num navegador: o
         # caminho guardado pelo ProjectView, os botoes laterais do mouse e
         # o Ctrl+Alt com seta, com um projeto de verdade aberto.
-        src/ui/folionavigation_test.cpp)
+        src/ui/folionavigation_test.cpp
+        # A referencia cruzada movida a mao, com Shift: o desvio guardado no
+        # mestre e no rotulo do escravo, o desfazer, a gravacao e o
+        # reposicionar.
+        src/ui/xrefmove_test.cpp)
 
     target_link_libraries(
         C_uitests

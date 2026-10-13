@@ -31,6 +31,7 @@
 #include "qetdiagrameditor.h"
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/conductortextitem.h"
+#include "qetgraphicsitem/crossrefitem.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/independenttextitem.h"
 #include "qeticons.h"
@@ -59,6 +60,7 @@
 #include <QPainter>
 #include <QPointer>
 #include <QSet>
+#include <QUndoCommand>
 #include <QUuid>
 #include <algorithm>
 
@@ -114,6 +116,15 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 	// Setup the action to create a template
 	m_create_template = new QAction(tr("Créer un template", "context menu action"), this);
 	connect(m_create_template, &QAction::triggered, this, &DiagramView::createTemplateFromSelection);
+
+		//Puts back where they are placed automatically the cross references
+		//moved with Shift+drag, of every selected element, as one step
+	m_reset_xref_placement = new QAction(tr("Replacer la référence croisée", "context menu action"), this);
+	m_reset_xref_placement->setStatusTip(tr("Remet la référence croisée des éléments sélectionnés à sa place automatique", "status bar tip"));
+	connect(m_reset_xref_placement, &QAction::triggered, this, [this]() {
+		if (QUndoCommand *undo = CrossRefItem::resetPlacementCommand(m_diagram->selectedItems()))
+			m_diagram->undoStack().push(undo);
+	});
 
 		//Setup the action to generate cabinet placement thumbnails (discussion #602)
 	m_generate_cabinet_thumbnail = new QAction(tr("Générer une vignette d'armoire", "context menu action"), this);
@@ -1859,6 +1870,14 @@ QList<QAction *> DiagramView::contextMenuActions() const
 				//drops it when there is not. Asking the question a second
 				//way would be a second answer to keep in step.
 			list << qde->m_navigate;
+				//Only when a cross reference of the selection was moved by
+				//hand: anywhere else the entry would do nothing.
+			if (!m_diagram->isReadOnly()) {
+				if (QUndoCommand *probe = CrossRefItem::resetPlacementCommand(selected_items)) {
+					delete probe;
+					list << m_reset_xref_placement;
+				}
+			}
 			list << m_create_template; // Add the create template action
 				//Disabled, and so left out below, unless a selected element
 				//has both a manufacturer and a manufacturer reference.
@@ -2009,6 +2028,13 @@ void DiagramView::contextMenuEvent(QContextMenuEvent *e)
 
 		if (auto qgi = m_diagram->itemAt(mapToScene(menu_pos), transform()))
 		{
+				//A cross reference cannot be selected: a right click on one
+				//selects the element it belongs to, whose menu holds what
+				//can be done with it. It used to fall through to the empty
+				//menu of the folio.
+			if (Element *owner = CrossRefItem::ownerOf(qgi)) {
+				qgi = owner;
+			}
 			if (!qgi->isSelected()) {
 				m_diagram->clearSelection();
 			}
@@ -2019,6 +2045,9 @@ void DiagramView::contextMenuEvent(QContextMenuEvent *e)
 				// qgi become a dangling pointer.
 				// we need to call again itemAt.
 			if (auto item_ = m_diagram->itemAt(mapToScene(menu_pos), transform())) {
+				if (Element *owner = CrossRefItem::ownerOf(item_)) {
+					item_ = owner;
+				}
 				item_->setSelected(true);
 			}
 		}

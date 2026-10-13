@@ -25,6 +25,7 @@
 #include <QStyleOptionGraphicsItem>
 
 class Element;
+class QUndoCommand;
 class DynamicElementTextItem;
 class ElementTextItemGroup;
 
@@ -95,6 +96,16 @@ class CrossRefItem : public QGraphicsObject
 				const Element *elmt,
 				const bool &add_prefix = false) const;
 
+		/// The element whose cross reference @a item is: the master of a
+		/// cross reference item, or the slave owning the "(folio-position)"
+		/// text under its label. nullptr for anything else.
+		static Element *ownerOf(const QGraphicsItem *item);
+		/// The undo command putting back at their automatic place the
+		/// cross references the user moved among the elements of @a items,
+		/// as one step. nullptr when none of them was moved.
+		static QUndoCommand *resetPlacementCommand(
+				const QList<QGraphicsItem *> &items);
+
 	public slots:
 		void updateProperties();
 		void updateLabel();
@@ -120,11 +131,16 @@ class CrossRefItem : public QGraphicsObject
 			   QWidget *widget) override;
 		void mouseDoubleClickEvent (
 				QGraphicsSceneMouseEvent * event ) override;
+		void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+		void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+		void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 		void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
 		void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
 		void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
 
 	private:
+		QPointF manualOffset() const;
+		void offsetChanged();
 		void linkedChanged();
 		bool isHiddenByMaster() const;
 		void applyVisibility();
@@ -166,6 +182,9 @@ class CrossRefItem : public QGraphicsObject
 		ElementTextItemGroup *m_group = nullptr;
 		QList <QMetaObject::Connection> m_slave_connection;
 		QList <QMetaObject::Connection> m_update_connection;
+			//Shift+drag of this item, see mousePressEvent()
+		bool m_dragging = false;
+		QPointF m_drag_from_offset;
 
 	public:
 		/// Returns the map of linked elements and their clickable rects (local coords).

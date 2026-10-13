@@ -58,6 +58,7 @@ class DiagramView : public PaletteGraphicsView
 		QAction          *m_paste_here = nullptr;
 		QAction			 *m_multi_paste = nullptr;
 		QAction          *m_create_template = nullptr;
+		QAction          *m_reset_xref_placement = nullptr;
 		QAction          *m_generate_cabinet_thumbnail = nullptr;
 		QMenu            *m_folio_report_menu = nullptr;
 		QPoint            m_paste_here_pos;

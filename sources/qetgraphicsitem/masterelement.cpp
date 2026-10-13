@@ -181,10 +181,27 @@ void MasterElement::setXrefHidden(bool hidden)
 }
 
 /**
+	@brief MasterElement::setXrefOffset
+	Move the cross reference of this master away from its automatic place,
+	or back to it with a null offset. The cross reference items listen to
+	xrefOffsetChanged wherever they are attached.
+	@param offset
+*/
+void MasterElement::setXrefOffset(const QPointF &offset)
+{
+	if (offset == m_xref_offset)
+		return;
+
+	m_xref_offset = offset;
+	emit xrefOffsetChanged(offset);
+}
+
+/**
 	@brief MasterElement::fromXml
-	Read the element as Element does, then the xref_hidden attribute.
-	A project written before this attribute existed has none, and its cross
-	references stay shown.
+	Read the element as Element does, then the xref_hidden attribute and
+	the offset of the cross reference. A project written before these
+	attributes existed has none: its cross references stay shown, at their
+	automatic place.
 */
 bool MasterElement::fromXml(QDomElement &e,
 			    QHash<int, Terminal *> &table_id_adr)
@@ -192,14 +209,17 @@ bool MasterElement::fromXml(QDomElement &e,
 	const bool ok = Element::fromXml(e, table_id_adr);
 	setXrefHidden(e.attribute(QStringLiteral("xref_hidden"),
 				  QStringLiteral("false")) == QLatin1String("true"));
+	setXrefOffset(QPointF(e.attribute(QStringLiteral("xref_dx")).toDouble(),
+			      e.attribute(QStringLiteral("xref_dy")).toDouble()));
 	return ok;
 }
 
 /**
 	@brief MasterElement::toXml
 	Write the element as Element does. The xref_hidden attribute is written
-	only when the cross reference is hidden, so that a project that never
-	uses it is saved byte for byte as before.
+	only when the cross reference is hidden, and xref_dx and xref_dy only
+	when it was moved, so that a project that never uses them is saved byte
+	for byte as before.
 */
 QDomElement MasterElement::toXml(QDomDocument &document,
 				 QHash<Terminal *, int> &table_adr_id) const
@@ -208,6 +228,14 @@ QDomElement MasterElement::toXml(QDomDocument &document,
 	if (m_xref_hidden)
 		element.setAttribute(QStringLiteral("xref_hidden"),
 				     QStringLiteral("true"));
+		//Same rule: written only for a cross reference the user moved
+	if (!m_xref_offset.isNull())
+	{
+		element.setAttribute(QStringLiteral("xref_dx"),
+				     QString::number(m_xref_offset.x()));
+		element.setAttribute(QStringLiteral("xref_dy"),
+				     QString::number(m_xref_offset.y()));
+	}
 	return element;
 }
 

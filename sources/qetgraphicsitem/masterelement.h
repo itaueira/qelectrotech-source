@@ -21,6 +21,7 @@
 #include "element.h"
 #include "../contactusage.h"
 #include <QHash>
+#include <QPointF>
 #include <QMetaObject>
 
 class CrossRefItem;
@@ -35,6 +36,7 @@ class MasterElement : public Element
 {
 	Q_OBJECT
 	Q_PROPERTY(bool xrefHidden READ isXrefHidden WRITE setXrefHidden NOTIFY xrefHiddenChanged)
+	Q_PROPERTY(QPointF xrefOffset READ xrefOffset WRITE setXrefOffset NOTIFY xrefOffsetChanged)
 
 	public:
 		explicit MasterElement(
@@ -66,9 +68,18 @@ class MasterElement : public Element
 		*/
 		bool isXrefHidden() const {return m_xref_hidden;}
 		void setXrefHidden(bool hidden);
+		/**
+			@brief How far the user moved the cross reference of this
+			master from the place it is given automatically, in the
+			coordinates of the item that holds it (the element, its label
+			or its texts group). Null when it was never moved.
+		*/
+		QPointF xrefOffset() const {return m_xref_offset;}
+		void setXrefOffset(const QPointF &offset);
 
 	signals:
 		void xrefHiddenChanged(bool hidden);
+		void xrefOffsetChanged(const QPointF &offset);
 
 	protected:
 		QVariant itemChange(
@@ -86,6 +97,7 @@ class MasterElement : public Element
 		CrossRefItem *m_Xref_item = nullptr;
 		bool m_first_scene_change = true;
 		bool m_xref_hidden = false;
+		QPointF m_xref_offset;
 		QHash<Element*, QMetaObject::Connection> m_slave_x_conn;
 		QHash<Element*, QMetaObject::Connection> m_slave_y_conn;
 };
