@@ -173,6 +173,8 @@ class QETDiagramEditor : public QETMainWindow
 		void rememberPlacedElement(const ElementsLocation &location);
 		void showElementPicker();
 		void showShortcutBar();
+		void replaceSelectedElements();
+		void replaceSelectionWith(const ElementsLocation &location);
 		void rebuildToolBars();
 		bool repeatLastCommand();
 		void generateTerminalBlock();
@@ -264,6 +266,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_catalog_assign = nullptr,///< Assign a catalog part to the selected components
 		*m_show_on_plate = nullptr, ///< Show the selected element on its mounting plate
 		*m_navigate = nullptr,      ///< Go to the other representation of the selected object
+		*m_replace_element = nullptr, ///< Put another element in the place of the selected ones
 		*m_paste_element_info,      ///< Copy the information of the copied element onto the selected elements (#1375)
 		*m_insert_last_element = nullptr; ///< Place the last placed element again
 		

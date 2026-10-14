@@ -251,6 +251,39 @@ void Conductor::watchLocationOf(Terminal *terminal)
 }
 
 /**
+	@brief Conductor::replaceTerminal
+	Dock at @a to the end of this conductor that is docked at @a from,
+	keeping everything else: uuid, number, properties, path profile. Used
+	when an element is replaced by another (SwapElementCommand).
+
+	Only the pointer changes here. Take the conductor off its folio before
+	and put it back after (Diagram::removeItem() and Diagram::addItem()):
+	that is what removes it from the conductors of @a from, adds it to those
+	of @a to and keeps the project database in step, and nothing should be
+	done twice.
+	@param from : a terminal this conductor is docked at
+	@param to : the terminal to dock at instead
+	@return false, and nothing changed, when @a from is not one of the two
+	ends
+*/
+bool Conductor::replaceTerminal(Terminal *from, Terminal *to)
+{
+	if (!from || !to) {
+		return false;
+	}
+	if (terminal1 == from) {
+		terminal1 = to;
+	} else if (terminal2 == from) {
+		terminal2 = to;
+	} else {
+		return false;
+	}
+
+	watchLocationOf(to);
+	return true;
+}
+
+/**
 	@brief Conductor::elementInformationChanged
 	@param old_info what the component said before
 	@param new_info what it says now

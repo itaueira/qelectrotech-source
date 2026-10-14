@@ -118,6 +118,7 @@ add_executable(
     src/terminalmove_test.cpp
     src/collectionloadgate_test.cpp
     src/collectionthreadbudget_test.cpp
+    src/terminalmatch_test.cpp
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
     src/drcrule_test.cpp
@@ -537,6 +538,10 @@ add_executable(
     # plantado e conferido. Só medição pega.
     ${QET_DIR}/sources/ElementsCollection/collectionthreadbudget.cpp
     ${QET_DIR}/sources/ElementsCollection/collectionthreadbudget.h
+    # Which terminal of a replacing element each terminal of the replaced one
+    # becomes (T54): two lists in, one out, no element and no folio.
+    ${QET_DIR}/sources/ElementsCollection/terminalmatch.cpp
+    ${QET_DIR}/sources/ElementsCollection/terminalmatch.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string
@@ -995,6 +1000,7 @@ if(TARGET qet_core)
         # o alinhamento: o Ctrl+D pela vista da folha, a numeracao da copia,
         # o rotulo digitado depois e o escravo ligado depois a um mestre.
         src/ui/pastealignment_test.cpp
+        src/ui/swapelement_test.cpp
         # A coluna de paginas das janelas de configuracao: icones e nomes
         # num eixo so, qualquer que seja o tamanho do nome.
         src/ui/configdialog_test.cpp)

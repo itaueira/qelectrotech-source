@@ -95,6 +95,7 @@ class Conductor : public QGraphicsObject
 		*/
 		void persistUuid() {m_persist_uuid = true;}
 		void setUuid(const QUuid &uuid) {m_uuid = uuid; m_persist_uuid = true;}	//saved from now on
+		bool replaceTerminal(Terminal *from, Terminal *to);
 		void updatePath(const QRectF & = QRectF());
 
 		//This method do nothing, it's only made to be used with Q_PROPERTY

@@ -60,10 +60,13 @@ class ElementPickerPopup : public QFrame
 		void popUpAt(const QPoint &global_pos);
 		void popUpShortcutBar(const QPoint &global_pos,
 				      ShortcutBarSettings::Context context);
+		void popUpToReplace(const QPoint &global_pos, const QString &query);
 
 	signals:
 			/// Emitted when the user picks an element; the popup has closed
 		void elementChosen(const ElementsLocation &location);
+			/// The same, when the picker was opened to replace the selection
+		void replacementChosen(const ElementsLocation &location);
 
 	protected:
 		void keyPressEvent(QKeyEvent *event) override;
@@ -73,6 +76,8 @@ class ElementPickerPopup : public QFrame
 	private:
 		void runSearch();
 		void chooseCurrent();
+		void choose(const ElementsLocation &location);
+		QString enterHint() const;
 		void showPalette();
 		void show(const QPoint &global_pos);
 		void setCommands(const QStringList &ids);
@@ -105,6 +110,8 @@ class ElementPickerPopup : public QFrame
 		int m_grip_press_width = 0;
 			/// Opened as the shortcut bar, as opposed to the plain picker
 		bool m_bar_mode = false;
+			/// Opened to replace the selected elements, not to place one
+		bool m_replace_mode = false;
 		ShortcutBarSettings::Context m_context = ShortcutBarSettings::Canvas;
 			/// Customising the bar in place
 		bool m_customising = false;

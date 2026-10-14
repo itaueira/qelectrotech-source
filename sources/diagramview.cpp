@@ -1901,6 +1901,9 @@ QList<QAction *> DiagramView::contextMenuActions() const
 				//asks for.
 			if (selectionHasElement()) {
 				list << qde->m_catalog_assign;
+					//Alt+Q: another element in the place of this one,
+					//with its wires (T54)
+				list << qde->m_replace_element;
 			}
 				//Only for one element, and one mounted on a plate: an entry
 				//for a component that is on no plate would open a window to

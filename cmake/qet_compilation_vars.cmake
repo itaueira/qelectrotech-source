@@ -779,6 +779,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ElementsCollection/symbolbuilder.h
   ${QET_DIR}/sources/ElementsCollection/symbolgroup.cpp
   ${QET_DIR}/sources/ElementsCollection/symbolgroup.h
+  ${QET_DIR}/sources/ElementsCollection/terminalmatch.cpp
+  ${QET_DIR}/sources/ElementsCollection/terminalmatch.h
   ${QET_DIR}/sources/ElementsCollection/terminaluuids.cpp
   ${QET_DIR}/sources/ElementsCollection/terminaluuids.h
   ${QET_DIR}/sources/ElementsCollection/xmlelementcollection.cpp
@@ -1244,6 +1246,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/mountpartcommand.h
   ${QET_DIR}/sources/undocommand/stretchmountedprofilecommand.cpp
   ${QET_DIR}/sources/undocommand/stretchmountedprofilecommand.h
+  ${QET_DIR}/sources/undocommand/swapelementcommand.cpp
+  ${QET_DIR}/sources/undocommand/swapelementcommand.h
 
   ${QET_DIR}/sources/utils/apppreferences.cpp
   ${QET_DIR}/sources/utils/apppreferences.h

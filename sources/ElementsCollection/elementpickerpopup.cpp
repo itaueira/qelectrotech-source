@@ -288,6 +288,7 @@ ElementPickerPopup::ElementPickerPopup(ElementsCollectionWidget *source,
 void ElementPickerPopup::popUpAt(const QPoint &global_pos)
 {
 	m_bar_mode = false;
+	m_replace_mode = false;
 	setCommands({});
 	show(global_pos);
 }
@@ -303,9 +304,37 @@ void ElementPickerPopup::popUpShortcutBar(const QPoint &global_pos,
 					  ShortcutBarSettings::Context context)
 {
 	m_bar_mode = true;
+	m_replace_mode = false;
 	m_context = context;
 	setCommands(ShortcutBarSettings::ids(context));
 	show(global_pos);
+}
+
+/**
+	@brief ElementPickerPopup::popUpToReplace
+	Show the picker at @a global_pos to choose the element that replaces the
+	selection: the choice is told by replacementChosen() instead of
+	elementChosen().
+
+	The search starts filled with @a query, selected, and already run: the
+	name of what is being replaced brings its look-alikes up at once, and
+	typing anything else simply overwrites it.
+	@param global_pos
+	@param query : usually the name of the first selected element
+*/
+void ElementPickerPopup::popUpToReplace(const QPoint &global_pos,
+					const QString &query)
+{
+	m_bar_mode = false;
+	m_replace_mode = true;
+	setCommands({});
+	show(global_pos);
+	if (!query.isEmpty())
+	{
+		m_search->setText(query);
+		m_search->selectAll();
+		runSearch();
+	}
 }
 
 /**
@@ -405,8 +434,7 @@ void ElementPickerPopup::setCommands(const QStringList &ids)
 			button->setToolTip(location.name());
 			button->setFocusPolicy(Qt::NoFocus);
 			connect(button, &QToolButton::clicked, this, [this, location]() {
-				hide();
-				emit elementChosen(location);
+				choose(location);
 			});
 			m_tiles << button;
 			continue;
@@ -766,7 +794,19 @@ void ElementPickerPopup::runSearch()
 	}
 	m_hint->setText(hits.isEmpty()
 			? tr("Aucun résultat")
-			: tr("Entrée pour insérer · Échap pour fermer"));
+			: enterHint());
+}
+
+/**
+	@brief ElementPickerPopup::enterHint
+	@return the hint line under the list: what Enter does depends on why the
+	picker was opened.
+*/
+QString ElementPickerPopup::enterHint() const
+{
+	return m_replace_mode
+			? tr("Entrée pour remplacer · Échap pour fermer")
+			: tr("Entrée pour insérer · Échap pour fermer");
 }
 
 /**
@@ -789,10 +829,24 @@ void ElementPickerPopup::chooseCurrent()
 		return;
 	}
 
+	choose(location);
+}
+
+/**
+	@brief ElementPickerPopup::choose
+	Close, then tell which element was chosen, through the signal of the
+	reason the picker was opened for.
+*/
+void ElementPickerPopup::choose(const ElementsLocation &location)
+{
 		//Close before emitting: placement mode wants the focus, and a popup
 		//still up would keep the grab.
 	hide();
-	emit elementChosen(location);
+	if (m_replace_mode) {
+		emit replacementChosen(location);
+	} else {
+		emit elementChosen(location);
+	}
 }
 
 /**
@@ -894,7 +948,7 @@ void ElementPickerPopup::showPalette()
 			tr("Palette vide — glissez des éléments dans votre collection "
 			   "personnelle, ou tapez pour rechercher"));
 	} else {
-		m_hint->setText(tr("Entrée pour insérer · Échap pour fermer"));
+		m_hint->setText(enterHint());
 		m_view->setCurrentIndex(m_model->index(0, 0));
 	}
 }

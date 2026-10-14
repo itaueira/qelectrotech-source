@@ -28,6 +28,7 @@
 #include "catalog/ui/catalogbrowserdialog.h"
 #include "undocommand/addgraphicsobjectcommand.h"
 #include "undocommand/explodeelementcommand.h"
+#include "undocommand/swapelementcommand.h"
 #include "undocommand/conductortextcommand.h"
 #include "catalog/ui/catalogreplacedialog.h"
 #include "catalog/ui/catalogimportdialog.h"
@@ -1051,6 +1052,21 @@ void QETDiagramEditor::setUpActions()
 	m_explode_element->setStatusTip(m_explode_element->toolTip());
 	connect(m_explode_element, &QAction::triggered,
 		this, &QETDiagramEditor::explodeSelection);
+
+		//Another element in the place of the selected ones, with their wires:
+		//the picker opens as Insert opens it, and what is chosen there
+		//replaces the selection instead of being placed (T54).
+	m_replace_element = new QAction(tr("Remplacer l'élément…"), this);
+	m_replace_element->setStatusTip(tr(
+		"Met un autre élément à la place des éléments sélectionnés, en "
+		"gardant leurs fils", "status bar tip"));
+	m_replace_element->setData("replace_element");
+	ShortcutManager::instance().registerAction(
+		m_replace_element, "diagrameditor.replace_element",
+		tr("Éditeur de schémas"), QKeySequence(Qt::ALT | Qt::Key_Q));
+	connect(m_replace_element, &QAction::triggered,
+		this, &QETDiagramEditor::replaceSelectedElements);
+	addAction(m_replace_element);
 
 	m_replace_part = new QAction(
 				tr("Remplacer une pièce…"), this);
@@ -3172,6 +3188,198 @@ void QETDiagramEditor::explodeSelection()
 	}
 }
 
+namespace
+{
+	/**
+		The elements selected on @a diagram, top to bottom then left to
+		right: the first one is the one whose name starts the search, and
+		the same selection always gives the same first one.
+	*/
+	QList<Element *> selectedElementsInOrder(Diagram *diagram)
+	{
+		QList<Element *> elements;
+		const QList<QGraphicsItem *> items = diagram->selectedItems();
+		for (QGraphicsItem *item : items)
+		{
+			if (Element *element = qgraphicsitem_cast<Element *>(item)) {
+				elements << element;
+			}
+		}
+		std::stable_sort(elements.begin(), elements.end(),
+				 [](const Element *a, const Element *b) {
+			if (!qFuzzyCompare(a->pos().y(), b->pos().y())) {
+				return a->pos().y() < b->pos().y();
+			}
+			return a->pos().x() < b->pos().x();
+		});
+		return elements;
+	}
+
+	/// How an element is called in a message: its label, or its name
+	QString elementLabel(Element *element)
+	{
+		const QString label = element->actualLabel();
+		return label.isEmpty() ? element->name() : label;
+	}
+}
+
+/**
+	@brief QETDiagramEditor::replaceSelectedElements
+	Open the element picker where the mouse is, to choose the element that
+	replaces the selected ones (T54). The search starts with the name of the
+	first of them, so that its look-alikes are listed straight away.
+*/
+void QETDiagramEditor::replaceSelectedElements()
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+
+	const QList<Element *> elements = selectedElementsInOrder(view->diagram());
+	if (elements.isEmpty()) {
+		return;
+	}
+
+	elementPicker()->popUpToReplace(QCursor::pos(), elements.first()->name());
+}
+
+/**
+	@brief QETDiagramEditor::replaceSelectionWith
+	Put the element at @a location in the place of each selected element,
+	with its wires, in one undoable step (T54). When a wire would have no
+	terminal to go to, or a cross-reference link would be lost, the user is
+	asked first, with the list.
+	@param location : the element chosen in the picker
+*/
+void QETDiagramEditor::replaceSelectionWith(const ElementsLocation &location)
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+	Diagram *diagram = view->diagram();
+
+	const QList<Element *> elements = selectedElementsInOrder(diagram);
+	if (elements.isEmpty()) {
+		return;
+	}
+
+		//Into the project once, as placing the element would do: the
+		//project keeps its own copy of every symbol it uses
+	ElementsLocation source(location);
+	const ElementsLocation in_project = diagram->project()->importElement(source);
+	if (!in_project.exist())
+	{
+		QMessageBox::warning(this, tr("Remplacer l'élément"),
+			tr("L'élément choisi n'a pas pu être ajouté au projet."));
+		return;
+	}
+	const ElementsLocation project_location(in_project.projectCollectionPath());
+
+	QList<SwapElementCommand::Plan> plans;
+	QStringList refusals;
+	for (Element *element : elements)
+	{
+		SwapElementCommand::Plan plan =
+				SwapElementCommand::plan(element, project_location);
+		if (plan.error.isEmpty()) {
+			plans << plan;
+		} else {
+			refusals << plan.error;
+		}
+	}
+
+		//The same wire can be lost on both of its ends, when both are
+		//replaced: it is counted once
+	QSet<Conductor *> kept;
+	QSet<Conductor *> lost;
+	QStringList details;
+	int lost_links = 0;
+	for (const SwapElementCommand::Plan &plan : std::as_const(plans))
+	{
+		for (Conductor *conductor : plan.moved_conductors) {
+			kept.insert(conductor);
+		}
+		for (Conductor *conductor : plan.lost_conductors)
+		{
+			if (lost.contains(conductor)) {
+				continue;
+			}
+			lost.insert(conductor);
+			const QString number = conductor->properties().text;
+			details << (number.isEmpty()
+				    ? tr("Fil sans numéro, sur %1")
+				      .arg(elementLabel(plan.old_element))
+				    : tr("Fil « %1 », sur %2")
+				      .arg(number, elementLabel(plan.old_element)));
+		}
+		for (Element *other : plan.lost_links)
+		{
+			++lost_links;
+			details << tr("Renvoi de %1 vers %2")
+				   .arg(elementLabel(plan.old_element), elementLabel(other));
+		}
+	}
+	kept.subtract(lost);
+
+	if (!plans.isEmpty() && (!lost.isEmpty() || lost_links))
+	{
+		QStringList text;
+		if (!lost.isEmpty()) {
+			text << tr("%n fil(s) sans borne dans le nouvel élément : "
+				   "il(s) sera(ont) supprimé(s).", "", lost.size());
+		}
+		if (lost_links) {
+			text << tr("%n renvoi(s) sera(ont) perdu(s).", "", lost_links);
+		}
+		text << tr("Ctrl+Z annule le remplacement.");
+
+		QMessageBox box(QMessageBox::Question, tr("Remplacer l'élément"),
+				text.join(QStringLiteral("\n")),
+				QMessageBox::NoButton, this);
+		box.setDetailedText(details.join(QStringLiteral("\n")));
+		QPushButton *replace = box.addButton(tr("Remplacer"),
+						     QMessageBox::AcceptRole);
+		box.addButton(QMessageBox::Cancel);
+		box.setDefaultButton(replace);
+		box.exec();
+		if (box.clickedButton() != replace)
+		{
+			for (SwapElementCommand::Plan &plan : plans) {
+				SwapElementCommand::discard(plan);
+			}
+			return;
+		}
+	}
+
+	if (!plans.isEmpty())
+	{
+		QUndoCommand *command = nullptr;
+		if (plans.size() == 1) {
+			command = new SwapElementCommand(plans.first());
+		} else {
+			command = new QUndoCommand(tr("remplacer %n élément(s)",
+						      "undo caption", plans.size()));
+			for (const SwapElementCommand::Plan &plan : std::as_const(plans)) {
+				new SwapElementCommand(plan, command);
+			}
+		}
+		diagram->undoStack().push(command);
+
+		statusBar()->showMessage(
+			tr("%n élément(s) remplacé(s)", "", plans.size())
+			+ QStringLiteral(" · ")
+			+ tr("%n fil(s) gardé(s)", "", kept.size()),
+			10000);
+	}
+
+	if (!refusals.isEmpty()) {
+		QMessageBox::information(this, tr("Remplacer l'élément"),
+					 refusals.join(QStringLiteral("\n\n")));
+	}
+}
+
 
 /**
 	@brief QETDiagramEditor::setConductorTextVisible
@@ -3451,6 +3659,7 @@ void QETDiagramEditor::setUpMenu()
 	QMenu *symbol_menu = menu_edition -> addMenu(tr("Symboles et circuits"));
 	symbol_menu -> addAction(m_create_symbol);
 	symbol_menu -> addAction(m_explode_element);
+	symbol_menu -> addAction(m_replace_element);
 	symbol_menu -> addSeparator();
 	symbol_menu -> addAction(m_generate_pinout);
 	symbol_menu -> addAction(m_generate_circuits);
@@ -4895,6 +5104,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 			    << m_rotate_group_selection
 			    << m_mirror_horizontal
 			    << m_mirror_vertical
+			    << m_replace_element
 			    << m_edit_selection
 			    << m_group_selected_texts
 			    << m_group_selection
@@ -4920,6 +5130,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 	m_find_element->setEnabled(selected_elements_count == 1);
 	m_mirror_horizontal->setEnabled(!ro && selected_elements_count);
 	m_mirror_vertical->setEnabled(!ro && selected_elements_count);
+	m_replace_element->setEnabled(!ro && selected_elements_count);
 
 		//Navigating answers « where is the other one », so it is offered as
 		//soon as there is one. Several used to keep the entry away - the
@@ -6045,6 +6256,8 @@ ElementPickerPopup *QETDiagramEditor::elementPicker()
 							  this);
 		connect(m_element_picker, &ElementPickerPopup::elementChosen,
 			this, &QETDiagramEditor::insertElementFromCollection);
+		connect(m_element_picker, &ElementPickerPopup::replacementChosen,
+			this, &QETDiagramEditor::replaceSelectionWith);
 	}
 	return m_element_picker;
 }
