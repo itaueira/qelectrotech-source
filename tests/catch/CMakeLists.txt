@@ -991,6 +991,10 @@ if(TARGET qet_core)
         # medido pela tinta, a caixa, os contatos clicaveis, o texto do
         # escravo, a gravacao e a pagina de configuracao.
         src/ui/xrefscale_test.cpp
+        # O rotulo da copia no lugar do rotulo do original, qualquer que seja
+        # o alinhamento: o Ctrl+D pela vista da folha, a numeracao da copia,
+        # o rotulo digitado depois e o escravo ligado depois a um mestre.
+        src/ui/pastealignment_test.cpp
         # A coluna de paginas das janelas de configuracao: icones e nomes
         # num eixo so, qualquer que seja o tamanho do nome.
         src/ui/configdialog_test.cpp)

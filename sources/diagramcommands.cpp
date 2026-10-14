@@ -254,19 +254,26 @@ void PasteDiagramCommand::redo()
 				dc.addValue("comment", "");
 				dc.addValue("location", "");
 
-				// Block alignment during setElementInformations
-				// for non-slaves, same as Element::fromXml() (line 890-896).
+				// The texts are emptied with their realignment on, so
+				// that an empty text keeps the anchor of its alignment:
+				// the right edge of a right-aligned label, the centre of
+				// a centred one. Whatever fills it afterwards - the
+				// numbering of the copy below, the user typing a label -
+				// realigns from that anchor. Emptied with the
+				// realignment blocked, the text kept its top left corner
+				// instead, and the label that filled it landed off by its
+				// own width, or half of it, from where the original's
+				// sits. Element::fromXml() blocks it for another reason:
+				// there the saved position is already the aligned one.
+				// A group lays its texts out from its own corner and
+				// keeps no anchor, so its update stays blocked.
 				if (!is_slave) {
-					for (DynamicElementTextItem *deti : e->dynamicTextItems())
-						deti->m_block_alignment = true;
 					for (auto *group : e->textGroups())
 						group->blockAlignmentUpdate(true);
 				}
 
 				e->setElementInformations(dc);
 
-				for (DynamicElementTextItem *deti : e->dynamicTextItems())
-					deti->m_block_alignment = false;
 				for (auto *group : e->textGroups())
 					group->blockAlignmentUpdate(false);
 			}
