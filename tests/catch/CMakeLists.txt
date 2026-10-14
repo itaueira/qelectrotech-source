@@ -1001,6 +1001,7 @@ if(TARGET qet_core)
         # o rotulo digitado depois e o escravo ligado depois a um mestre.
         src/ui/pastealignment_test.cpp
         src/ui/swapelement_test.cpp
+        src/ui/terminalinfofields_test.cpp
         # A coluna de paginas das janelas de configuracao: icones e nomes
         # num eixo so, qualquer que seja o tamanho do nome.
         src/ui/configdialog_test.cpp)

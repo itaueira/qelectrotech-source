@@ -149,8 +149,7 @@ TEST_CASE("T20 — the panel of an element offers no row for what the catalogue 
 	CHECK(applied.value(QStringLiteral("curve")) == before.value(QStringLiteral("curve")));
 }
 
-TEST_CASE("T20 — on a terminal the size of the part is hidden too, because a terminal "
-	  "has no field for it",
+TEST_CASE("T20 — on a terminal the size of the part has its own field, as on any component",
 	  "[t20][elementinfo]")
 {
 	UiBench::Project project(QStringLiteral("industrial.qet"));
@@ -159,8 +158,10 @@ TEST_CASE("T20 — on a terminal the size of the part is hidden too, because a t
 
 	Element *terminal = firstOfType(project, ElementData::Terminal);
 	REQUIRE(terminal != nullptr);
-		//The panel of a terminal shows a shorter list, without the size
-	REQUIRE_FALSE(QETInformation::terminalElementInfoKeys().contains(QStringLiteral("width")));
+		//Since T55 a terminal has the fields of any component, the size
+		//among them: until then its shorter list made the size one more
+		//key the panel had to keep without showing
+	REQUIRE(QETInformation::elementInfoKeys().contains(QStringLiteral("width")));
 
 	DiagramContext before = withPart(terminal->elementInformations());
 	before.addValue(QStringLiteral("width"),  QStringLiteral("5.2"));

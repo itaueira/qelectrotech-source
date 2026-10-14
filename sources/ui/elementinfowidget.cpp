@@ -422,12 +422,13 @@ void ElementInfoWidget::disableLiveEdit()
 */
 void ElementInfoWidget::buildInterface()
 {
-	QStringList keys;
-	if (m_element.data()->elementData().m_type == ElementData::Terminal) {
-		keys = QETInformation::terminalElementInfoKeys();
-	 } else {
-		keys = QETInformation::elementInfoKeys();
-	}
+		//A terminal gets the fields of any other component. It used to get
+		//a shorter list (QETInformation::terminalElementInfoKeys()), on the
+		//idea that the terminal strip holds its plant and location - but
+		//the strip keeps them for itself and hands nothing to its
+		//terminals, and a terminal outside any strip had no way at all to
+		//say where it is, although the terminal symbols show the plant.
+	QStringList keys = QETInformation::elementInfoKeys();
 
 		//"exclude_from_bom" is part of elementInfoKeys() because the project
 		//database builds the element_info table from that list, but it is not
@@ -491,9 +492,7 @@ void ElementInfoWidget::buildInterface()
 */
 QStringList ElementInfoWidget::predefinedKeys() const
 {
-	QStringList keys = (m_element.data()->elementData().m_type == ElementData::Terminal)
-			? QETInformation::terminalElementInfoKeys()
-			: QETInformation::elementInfoKeys();
+	QStringList keys = QETInformation::elementInfoKeys();
 
 	keys << QETInformation::ELMT_FORMULA_ID
 		 << QStringLiteral("auto_num_locked")
@@ -518,9 +517,7 @@ QStringList ElementInfoWidget::predefinedKeys() const
 */
 QStringList ElementInfoWidget::catalogOnlyKeys() const
 {
-	const QStringList shown = (m_element.data()->elementData().m_type == ElementData::Terminal)
-			? QETInformation::terminalElementInfoKeys()
-			: QETInformation::elementInfoKeys();
+	const QStringList shown = QETInformation::elementInfoKeys();
 
 	QStringList keys;
 	for (const QString &key : CatalogPhysicalView::keys())
