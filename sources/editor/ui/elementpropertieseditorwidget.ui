@@ -220,26 +220,36 @@
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
           <item row="0" column="0">
+           <widget class="QLabel" name="m_terminal_role_label">
+            <property name="text">
+             <string>Rôle</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="m_terminal_role_cb"/>
+          </item>
+          <item row="1" column="0">
            <widget class="QLabel" name="label_6">
             <property name="text">
              <string>Type</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
+          <item row="2" column="0">
            <widget class="QLabel" name="label_7">
             <property name="text">
              <string>Fonction</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
+          <item row="1" column="1">
            <widget class="QComboBox" name="m_terminal_type_cb"/>
           </item>
-          <item row="1" column="1">
+          <item row="2" column="1">
            <widget class="QComboBox" name="m_terminal_func_cb"/>
           </item>
-          <item row="2" column="0" colspan="2">
+          <item row="3" column="0" colspan="2">
            <widget class="QCheckBox" name="m_auto_num_locked_cb">
             <property name="styleSheet">
              <string>margin: 5px; font-weight: bold;</string>
@@ -249,7 +259,7 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="0" colspan="2">
+          <item row="4" column="0" colspan="2">
            <widget class="QCheckBox" name="m_potential_isolating_cb">
             <property name="styleSheet">
              <string>margin: 5px; font-weight: bold;</string>
@@ -259,7 +269,7 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="0" colspan="2">
+          <item row="5" column="0" colspan="2">
            <widget class="QCheckBox" name="m_strip_slave_cb">
             <property name="styleSheet">
              <string>margin: 5px; font-weight: bold;</string>
@@ -269,6 +279,26 @@
             </property>
             <property name="text">
              <string>Peut être esclave d'une borne de bornier</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QCheckBox" name="m_strip_limit_cb">
+            <property name="toolTip">
+             <string>Combien de bornes du schéma peuvent être liées à cette borne : 1 pour une borne simple, 2 pour une borne à deux étages.</string>
+            </property>
+            <property name="text">
+             <string>Nombre maximal de bornes liées</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QSpinBox" name="m_strip_limit_sb">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>1</number>
             </property>
            </widget>
           </item>

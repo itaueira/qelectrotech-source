@@ -333,18 +333,21 @@ TEST_CASE("CU-43.7 — the slave role of a terminal is set in the symbol editor 
 		CHECK_FALSE(found);
 	}
 
-	SECTION("the strip terminal is a kind of master the editor offers, with its limit")
+	SECTION("the strip terminal is a terminal the editor offers, with its limit")
 	{
+			//Since T56 it is chosen as a terminal whose role is the strip,
+			//and still saved as a master of the strip terminal kind
 		ElementData master;
 		master.m_type = ElementData::Master;
 		ElementPropertiesEditorWidget editor(master);
-		auto kinds = editor.findChild<QComboBox *>(QStringLiteral("m_master_type_cb"));
-		REQUIRE(kinds != nullptr);
-		const int index = kinds->findData(ElementData::StripTerminal);
-		REQUIRE(index >= 0);
-		kinds->setCurrentIndex(index);
-		editor.findChild<QCheckBox *>(QStringLiteral("max_slaves_checkbox"))->setChecked(true);
-		editor.findChild<QSpinBox *>(QStringLiteral("max_slaves_spinbox"))->setValue(2);
+		auto base = editor.findChild<QComboBox *>(QStringLiteral("m_base_type_cb"));
+		auto role = editor.findChild<QComboBox *>(QStringLiteral("m_terminal_role_cb"));
+		REQUIRE(base != nullptr);
+		REQUIRE(role != nullptr);
+		base->setCurrentIndex(base->findData(ElementData::Terminal));
+		role->setCurrentIndex(1);
+		editor.findChild<QCheckBox *>(QStringLiteral("m_strip_limit_cb"))->setChecked(true);
+		editor.findChild<QSpinBox *>(QStringLiteral("m_strip_limit_sb"))->setValue(2);
 		editor.findChild<QDialogButtonBox *>(QStringLiteral("m_buttonBox"))
 			->button(QDialogButtonBox::Ok)->click();
 		CHECK(editor.editedData().isStripTerminalMaster());

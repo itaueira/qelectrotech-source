@@ -75,6 +75,7 @@ class ElementPropertiesEditorWidget : public QDialog
 		void upDateInterface();
 		void setUpInterface();
 		void updateTree();
+		void updateTerminalRows();
 		void populateTree();
 		void populateSlaveGroupsTable();
 		void readSlaveGroupsFromTable();
@@ -100,6 +101,8 @@ class ElementPropertiesEditorWidget : public QDialog
 	private:
 		Ui::ElementPropertiesEditorWidget *ui;
 		ElementData m_data;
+			/// the entry "ground" of the terminal functions, see setUpInterface()
+		int m_ground_function_index = -1;
 
 		// PLC configuration widgets (created programmatically)
 		QGroupBox *m_plc_gb = nullptr;

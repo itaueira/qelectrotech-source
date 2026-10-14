@@ -48,6 +48,17 @@
 #include <QMenu>
 #include <QRegularExpressionValidator>
 
+namespace
+{
+		/// What a terminal symbol is drawn for: the schematic, or the folio
+		/// of its terminal strip. The second is saved as a master of the
+		/// strip terminal kind (T43), and is shown here as a terminal.
+	enum TerminalRole {
+		SchematicRole = 0,
+		StripRole = 1
+	};
+}
+
 QWidget* EditorDelegate::createEditor(QWidget *parent,
 		      const QStyleOptionViewItem &option,
 			  const QModelIndex &index) const
@@ -102,11 +113,33 @@ ElementPropertiesEditorWidget::~ElementPropertiesEditorWidget()
 */
 void ElementPropertiesEditorWidget::upDateInterface()
 {
+	const bool strip_terminal = m_data.isStripTerminalMaster();
+	const bool folio_report = m_data.m_type == ElementData::NextReport
+			|| m_data.m_type == ElementData::PreviousReport;
+	if (folio_report && ui->m_base_type_cb->findData(m_data.m_type) < 0)
+	{
+		ui->m_base_type_cb->addItem(m_data.m_type == ElementData::NextReport
+					    ? tr("Renvoi de folio suivant")
+					    : tr("Renvoi de folio précédent"),
+					    m_data.m_type);
+		ui->m_base_type_cb->setEnabled(false);
+	}
+
 	ui->m_base_type_cb->setCurrentIndex(
 				ui->m_base_type_cb->findData(
-					m_data.m_type));
-	
-	if (m_data.m_type == ElementData::Slave)
+					strip_terminal ? ElementData::Terminal : m_data.m_type));
+
+	if (strip_terminal)
+	{
+		ui->m_terminal_role_cb->setCurrentIndex(StripRole);
+		const bool limited = m_data.m_max_slaves != -1;
+		ui->m_strip_limit_cb->setChecked(limited);
+		ui->m_strip_limit_sb->setEnabled(limited);
+		if (limited) {
+			ui->m_strip_limit_sb->setValue(m_data.m_max_slaves);
+		}
+	}
+	else if (m_data.m_type == ElementData::Slave)
 	{
 		// If PLC Slave, select "Esclave PLC" in state combo (not in type combo)
 		if (m_data.m_slave_type == ElementData::PLCSlave) {
@@ -167,12 +200,23 @@ void ElementPropertiesEditorWidget::upDateInterface()
 			ui->m_slave_groups_table->setVisible(contacts);
 		}
 	} else if (m_data.m_type == ElementData::Terminal) {
-		ui->m_terminal_type_cb->setCurrentIndex(
-					ui->m_terminal_type_cb->findData(
-						m_data.m_terminal_type));
-		ui->m_terminal_func_cb->setCurrentIndex(
-					ui->m_terminal_func_cb->findData(
-						m_data.m_terminal_function));
+		ui->m_terminal_role_cb->setCurrentIndex(SchematicRole);
+		if (m_data.m_terminal_type == ElementData::TTGround)
+		{
+			ui->m_terminal_type_cb->setCurrentIndex(
+						ui->m_terminal_type_cb->findData(
+							ElementData::TTGeneric));
+			ui->m_terminal_func_cb->setCurrentIndex(m_ground_function_index);
+		}
+		else
+		{
+			ui->m_terminal_type_cb->setCurrentIndex(
+						ui->m_terminal_type_cb->findData(
+							m_data.m_terminal_type));
+			ui->m_terminal_func_cb->setCurrentIndex(
+						ui->m_terminal_func_cb->findData(
+							m_data.m_terminal_function));
+		}
 		ui->m_strip_slave_cb->setChecked(m_data.m_terminal_strip_slave);
 
 		const DiagramContext &info = m_data.m_informations;
@@ -194,11 +238,14 @@ void ElementPropertiesEditorWidget::upDateInterface()
 void ElementPropertiesEditorWidget::setUpInterface()
 {
 		// Type combo box
+		//The folio reports are left out: the arrows that are one already
+		//exist, and no new symbol is made of that kind. One that is opened
+		//gets its own type back, fixed, in upDateInterface(). And a terminal
+		//drawn on the folio of its strip is a terminal here, with its role,
+		//and not a kind of master (T56).
 	ui->m_base_type_cb->addItem (tr("Simple"),  ElementData::Simple);
 	ui->m_base_type_cb->addItem (tr("Maître"),  ElementData::Master);
 	ui->m_base_type_cb->addItem (tr("Esclave"), ElementData::Slave);
-	ui->m_base_type_cb->addItem (tr("Renvoi de folio suivant"),   ElementData::NextReport);
-	ui->m_base_type_cb->addItem (tr("Renvoi de folio précédent"), ElementData::PreviousReport);
 	ui->m_base_type_cb->addItem (tr("Bornier"), ElementData::Terminal);
 	ui->m_base_type_cb->addItem (tr("Vignette"), ElementData::Thumbnail);
 	ui->m_base_type_cb->addItem (tr("Définition de conducteur"), ElementData::ConductorDefinition);
@@ -220,19 +267,34 @@ void ElementPropertiesEditorWidget::setUpInterface()
 	ui->m_master_type_cb->addItem(tr("Organe de protection"), ElementData::Protection);
 	ui->m_master_type_cb->addItem(tr("Commutateur / bouton"), ElementData::Commutator);
 	ui->m_master_type_cb->addItem(tr("Module PLC"),           ElementData::PLC);
-	ui->m_master_type_cb->addItem(tr("Borne de bornier"),     ElementData::StripTerminal);
 	ui->m_master_type_cb->setMinimumWidth(150);
 
 		//Terminal option
+	ui->m_terminal_role_cb->addItem(tr("Schéma"));
+	ui->m_terminal_role_cb->addItem(tr("Bornier",
+					   "role of a terminal symbol: drawn on the folio of its terminal strip"));
+
 	ui->m_terminal_type_cb->addItem(tr("Générique"),    ElementData::TTGeneric);
 	ui->m_terminal_type_cb->addItem(tr("Fusible"),      ElementData::TTFuse);
 	ui->m_terminal_type_cb->addItem(tr("Séctionnable"), ElementData::TTSectional);
 	ui->m_terminal_type_cb->addItem(tr("Diode"),        ElementData::TTDiode);
-	ui->m_terminal_type_cb->addItem(tr("Terre"),        ElementData::TTGround);
 
+		//Ground is offered as what the terminal carries, next to phase and
+		//neutral, and not as a make of terminal next to fuse and diode. It
+		//is still saved as the ground type, so that the symbol reads the
+		//same everywhere, and a ground terminal is a generic one otherwise.
 	ui->m_terminal_func_cb->addItem(tr("Générique"), ElementData::TFGeneric);
 	ui->m_terminal_func_cb->addItem(tr("Phase"),     ElementData::TFPhase);
 	ui->m_terminal_func_cb->addItem(tr("Neutre"),    ElementData::TFNeutral);
+	m_ground_function_index = ui->m_terminal_func_cb->count();
+	ui->m_terminal_func_cb->addItem(tr("Terre"));
+
+	connect(ui->m_terminal_role_cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this, &ElementPropertiesEditorWidget::updateTerminalRows);
+	connect(ui->m_terminal_func_cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
+		this, &ElementPropertiesEditorWidget::updateTerminalRows);
+	connect(ui->m_strip_limit_cb, &QCheckBox::toggled,
+		ui->m_strip_limit_sb, &QWidget::setEnabled);
 
 	//Disable the edition of the first column of the information tree
 	//by this little workaround
@@ -370,7 +432,22 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 {
 	m_data.m_type = ui->m_base_type_cb->currentData().value<ElementData::Type>();
 
-	if (m_data.m_type == ElementData::Slave)
+		//A terminal drawn on the folio of its strip is saved as it always
+		//was: a master of the strip terminal kind (T43). Its limit is how
+		//many levels the terminal has: 1 for a single one, 2 for a two
+		//level one
+	const bool strip_terminal = m_data.m_type == ElementData::Terminal
+			&& ui->m_terminal_role_cb->currentIndex() == StripRole;
+	if (strip_terminal)
+	{
+		m_data.m_type = ElementData::Master;
+		m_data.m_master_type = ElementData::StripTerminal;
+		m_data.m_max_slaves = ui->m_strip_limit_cb->isChecked()
+				? ui->m_strip_limit_sb->value() : -1;
+		m_data.m_slave_contact_groups_enabled = false;
+		m_data.m_slave_contact_groups.clear();
+	}
+	else if (m_data.m_type == ElementData::Slave)
 	{
 		auto state_val = ui->m_state_cb->currentData();
 		if (state_val == ElementData::PLCSlave) {
@@ -406,8 +483,13 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 		}
 	} else if (m_data.m_type == ElementData::Terminal)
 	{
-		m_data.m_terminal_type = ui->m_terminal_type_cb->currentData().value<ElementData::TerminalType>();
-		m_data.m_terminal_function = ui->m_terminal_func_cb->currentData().value<ElementData::TerminalFunction>();
+		if (ui->m_terminal_func_cb->currentIndex() == m_ground_function_index) {
+			m_data.m_terminal_type = ElementData::TTGround;
+			m_data.m_terminal_function = ElementData::TFGeneric;
+		} else {
+			m_data.m_terminal_type = ui->m_terminal_type_cb->currentData().value<ElementData::TerminalType>();
+			m_data.m_terminal_function = ui->m_terminal_func_cb->currentData().value<ElementData::TerminalFunction>();
+		}
 		m_data.m_terminal_strip_slave = ui->m_strip_slave_cb->isChecked();
 	}
 
@@ -475,6 +557,37 @@ void ElementPropertiesEditorWidget::on_m_base_type_cb_currentIndexChanged(int in
 								  type_ == ElementData::Thumbnail));
 
 	updateTree();
+	updateTerminalRows();
+}
+
+/**
+	@brief ElementPropertiesEditorWidget::updateTerminalRows
+	Show the rows of the terminal box that its role asks for: the type, the
+	function and the options of a schematic terminal, or the limit of a
+	terminal drawn on the folio of its strip. And a ground terminal is a
+	generic one, so its type is set and left alone.
+*/
+void ElementPropertiesEditorWidget::updateTerminalRows()
+{
+	const bool strip = ui->m_terminal_role_cb->currentIndex() == StripRole;
+	for (QWidget *widget : {static_cast<QWidget *>(ui->label_6),
+				static_cast<QWidget *>(ui->m_terminal_type_cb),
+				static_cast<QWidget *>(ui->label_7),
+				static_cast<QWidget *>(ui->m_terminal_func_cb),
+				static_cast<QWidget *>(ui->m_auto_num_locked_cb),
+				static_cast<QWidget *>(ui->m_potential_isolating_cb),
+				static_cast<QWidget *>(ui->m_strip_slave_cb)}) {
+		widget->setVisible(!strip);
+	}
+	ui->m_strip_limit_cb->setVisible(strip);
+	ui->m_strip_limit_sb->setVisible(strip);
+
+	const bool ground = ui->m_terminal_func_cb->currentIndex() == m_ground_function_index;
+	if (ground) {
+		ui->m_terminal_type_cb->setCurrentIndex(
+					ui->m_terminal_type_cb->findData(ElementData::TTGeneric));
+	}
+	ui->m_terminal_type_cb->setEnabled(!ground);
 }
 
 /**

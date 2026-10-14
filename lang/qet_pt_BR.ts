@@ -7140,12 +7140,12 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
 <context>
     <name>EditorDelegate</name>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="64"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="75"/>
         <source>ex. 80.5</source>
         <translation>ex.: 80.5</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="65"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="76"/>
         <source>Nombre décimal avec un point comme séparateur (ex. 80.5)</source>
         <translation>Número decimal com ponto como separador (ex.: 80.5)</translation>
     </message>
@@ -7464,17 +7464,17 @@ O nome exibido do elemento é alterado separadamente nas propriedades do element
         <translation>Informações</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="452"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="453"/>
         <source>Ajouter une propriété personnalisée</source>
         <translation>Adicionar uma propriedade personalizada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="459"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="460"/>
         <source>Séparation de potentiel</source>
         <translation>Separação de potencial</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="463"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="464"/>
         <source>Exclure de la nomenclature</source>
         <translation>Excluir da lista de material</translation>
     </message>
@@ -7490,7 +7490,7 @@ O nome exibido do elemento é alterado separadamente nas propriedades do element
     </message>
     <message>
         <location filename="../sources/ui/elementinfowidget.cpp" line="213"/>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="600"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="597"/>
         <source>« %1 » est déjà le repère d&apos;un autre composant, au même endroit.</source>
         <translation>« %1 » já é a tag de outro componente, no mesmo lugar.</translation>
     </message>
@@ -7522,12 +7522,12 @@ Ir ver, ou guardar o duplicado sabendo disso?</translation>
         <translation>Ir ver o outro, ou manter a tag repetida?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="694"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="691"/>
         <source>Liste de matériaux absente</source>
         <translation>Lista de material ausente</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="695"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="692"/>
         <source>Aucun fichier de liste de matériaux n&apos;existe à cet emplacement :
 %1
 
@@ -7539,12 +7539,12 @@ Le créer ?</source>
 Criar?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="708"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="705"/>
         <source>Création impossible</source>
         <translation>Não foi possível criar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="709"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="706"/>
         <source>Impossible de créer le fichier :
 %1
 %2</source>
@@ -7553,83 +7553,83 @@ Criar?</translation>
 %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="994"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="991"/>
         <source>Numérotation automatique</source>
         <translation>Numeração automática</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1001"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="998"/>
         <source>…</source>
         <translation>…</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1002"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="999"/>
         <source>Ouvrir les numérotations d&apos;éléments du projet</source>
         <translation>Abrir as numerações de elementos do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1030"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1027"/>
         <source>Figer le nom</source>
         <translation>Congelar o nome</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1031"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1028"/>
         <source>Un nom figé n&apos;est pas changé par la numérotation automatique, et son numéro n&apos;est pas donné à un autre élément.</source>
         <translation>Um nome congelado não é alterado pela numeração automática, e o número dele não é dado a outro elemento.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1067"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1064"/>
         <source>Numéro</source>
         <translation>Número</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1071"/>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1135"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1068"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1132"/>
         <source>Seuls les numéros libres sont proposés : un élément qui doit garder son numéro réel peut le retrouver si personne ne l&apos;a.</source>
         <translation>Só os números livres são oferecidos: um elemento que deve manter seu número real pode recuperá-lo se ninguém o tiver.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1105"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1102"/>
         <source>%1  (actuel)</source>
         <translation>%1  (atual)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1107"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1104"/>
         <source>— (numéro inconnu)</source>
         <translation>— (número desconhecido)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1111"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1108"/>
         <source>%1  →  %2</source>
         <translation>%1  →  %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1133"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1130"/>
         <source>Le nom est figé : dégelez-le pour changer son numéro.</source>
         <translation>O nome está congelado: descongele-o para mudar o número.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1134"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1131"/>
         <source>Le numéro se choisit quand l&apos;élément garde sa numérotation.</source>
         <translation>O número só pode ser escolhido quando o elemento mantém sua numeração.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1199"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1196"/>
         <source>Aucune (nom saisi à la main)</source>
         <translation>Nenhuma (nome digitado à mão)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1218"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1215"/>
         <source>Formule propre : %1</source>
         <translation>Fórmula própria: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1258"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1255"/>
         <source>Nom figé</source>
         <translation>Nome congelado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1259"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1256"/>
         <source>Le nom de cet élément est figé.
 Changer sa numérotation le remplacera ou l&apos;effacera.
 
@@ -7736,9 +7736,9 @@ Continuar?</translation>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="27"/>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="193"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="225"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="752"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="889"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="235"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="865"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1002"/>
         <source>Type</source>
         <translation>Tipo</translation>
     </message>
@@ -7808,14 +7808,19 @@ Continuar?</translation>
         <translation>Elemento terminal</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="232"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="752"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="889"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="225"/>
+        <source>Rôle</source>
+        <translation>Papel</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="242"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="865"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1002"/>
         <source>Fonction</source>
         <translation>Função</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="268"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="278"/>
         <source>La borne reste dans son bornier, et peut en plus être liée à celle qui la représente sur le folio du bornier.</source>
         <translation>O borne continua na régua e pode também ser vinculado ao borne que o representa na folha da régua.</translation>
     </message>
@@ -7824,335 +7829,355 @@ Continuar?</translation>
         <translation type="vanished">O borne continua sendo borne: mantém o lugar na régua de bornes e transmite o potencial. Além disso, pode ser vinculado ao borne que o representa na folha da régua de bornes.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="271"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="281"/>
         <source>Peut être esclave d&apos;une borne de bornier</source>
-        <translation>Pode ser escravo de um borne de régua de bornes</translation>
+        <translation>Liga ao borne da régua</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="282"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="288"/>
+        <source>Combien de bornes du schéma peuvent être liées à cette borne : 1 pour une borne simple, 2 pour une borne à deux étages.</source>
+        <translation>Quantos bornes do esquema podem se ligar a este: 1 num borne simples, 2 num borne de dois níveis.</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="291"/>
+        <source>Nombre maximal de bornes liées</source>
+        <translation>Limite de bornes ligados</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="312"/>
         <source>Informations</source>
         <translation>Informações</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="292"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="322"/>
         <source>Nom</source>
         <translation>Nome</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="297"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="327"/>
         <source>Valeurs</source>
         <translation>Valores</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="197"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="212"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="579"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="246"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="259"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="692"/>
         <source>Simple</source>
         <translation>Simples</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="198"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="247"/>
         <source>Maître</source>
         <translation>Mestre</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="199"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="248"/>
         <source>Esclave</source>
         <translation>Escravo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="200"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="122"/>
         <source>Renvoi de folio suivant</source>
-        <translation>Próxima referência cruzada</translation>
+        <translation>Referência de folha (saída)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="201"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="123"/>
         <source>Renvoi de folio précédent</source>
-        <translation>Referência cruzada anterior</translation>
+        <translation>Referência de folha (chegada)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="202"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="249"/>
         <source>Bornier</source>
         <translation>Borne</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="203"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="250"/>
         <source>Vignette</source>
         <translation>Miniatura</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="204"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="251"/>
         <source>Définition de conducteur</source>
         <translation>Definição de condutor</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="207"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="570"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="254"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="683"/>
         <source>Normalement ouvert</source>
         <translation>Normalmente aberto</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="208"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="571"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="255"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="684"/>
         <source>Normalement fermé</source>
         <translation>Normalmente fechado</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="209"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="572"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="256"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="685"/>
         <source>Inverseur</source>
         <translation>Reversor</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="210"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="257"/>
         <source>Other</source>
         <translation>Outro</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="211"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="258"/>
         <source>Esclave PLC</source>
         <translation>Escravo CLP</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="213"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="580"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="260"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="693"/>
         <source>Puissance</source>
         <translation>Potência</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="214"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="581"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="261"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="694"/>
         <source>Temporisé travail</source>
         <translation>Temporizado ao trabalho</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="215"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="582"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="262"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="695"/>
         <source>Temporisé repos</source>
         <translation>Temporizado ao repouso</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="216"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="583"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="263"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="696"/>
         <source>Temporisé travail &amp; repos</source>
         <translation>Temporizado ao trabalho e ao repouso</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="219"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="266"/>
         <source>Bobine</source>
         <translation>Bobina</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="220"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="267"/>
         <source>Organe de protection</source>
         <translation>Elemento de proteção</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="221"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="268"/>
         <source>Commutateur / bouton</source>
         <translation>Comutador / botão</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="222"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="269"/>
         <source>Module PLC</source>
         <translation>Módulo CLP</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="223"/>
         <source>Borne de bornier</source>
-        <translation>Borne de régua de bornes</translation>
+        <translation type="vanished">Borne de régua de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="227"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="233"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="273"/>
+        <source>Schéma</source>
+        <translation>Esquema</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="274"/>
+        <source>Bornier</source>
+        <comment>role of a terminal symbol: drawn on the folio of its terminal strip</comment>
+        <translation>Régua de bornes</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="277"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="286"/>
         <source>Générique</source>
         <translation>Genérico</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="228"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="278"/>
         <source>Fusible</source>
         <translation>Fusível</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="229"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="279"/>
         <source>Séctionnable</source>
-        <translation>Selecionável</translation>
+        <translation>Seccionável</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="230"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="280"/>
         <source>Diode</source>
         <translation>Diodo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="234"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="287"/>
         <source>Phase</source>
         <translation>Fase</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="235"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="288"/>
         <source>Neutre</source>
         <translation>Neutro</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="552"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="637"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="706"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="709"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1252"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="665"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="750"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="819"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="822"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1365"/>
         <source>T%1</source>
         <translation>T%1</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="573"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="686"/>
         <source>Autre</source>
         <translation>Outro</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="724"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="837"/>
         <source>Configuration PLC</source>
         <translation>Configuração do CLP</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="729"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="842"/>
         <source>+</source>
         <translation>+</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="730"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="843"/>
         <source>-</source>
         <translation>-</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="752"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="889"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="865"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1002"/>
         <source>Adresse</source>
         <translation>Endereço</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="753"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="890"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="866"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1003"/>
         <source>Commentaire</source>
         <translation>Comentário</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="753"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="866"/>
         <source>Réf. croisée</source>
         <translation>Ref. cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="772"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1250"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="885"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1363"/>
         <source>Nb.</source>
         <translation>Nº</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="772"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="885"/>
         <source>T1</source>
         <translation>T1</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="839"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="952"/>
         <source>Police des en-têtes</source>
         <translation>Fonte dos cabeçalhos</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="840"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="953"/>
         <source>Configurer la police des en-têtes de colonnes</source>
         <translation>Configurar a fonte dos cabeçalhos de colunas</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="844"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="957"/>
         <source>Police du texte</source>
         <translation>Fonte do texto</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="845"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="958"/>
         <source>Configurer la police du texte dans les cellules</source>
         <translation>Configurar a fonte do texto nas células</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="849"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="962"/>
         <source>Afficher les en-têtes sur la feuille</source>
         <translation>Exibir os cabeçalhos na folha</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="850"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="963"/>
         <source>Afficher ou masquer les en-têtes de colonnes du tableau PLC sur la feuille</source>
         <translation>Exibir ou ocultar os cabeçalhos de colunas da tabela CLP na folha</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="862"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="975"/>
         <source>Saut %1 après:</source>
         <translation>Quebra %1 após:</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="868"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="981"/>
         <source>Aucun</source>
         <translation>Nenhum</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="876"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="989"/>
         <source>H. ligne:</source>
         <translation>Alt. linha:</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="881"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="910"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="994"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1023"/>
         <source> mm</source>
         <translation> mm</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="890"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1003"/>
         <source>Réf.</source>
         <translation>Ref.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="897"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1010"/>
         <source>Nom personnalisé de la colonne (vide = par défaut)</source>
         <translation>Nome personalizado da coluna (vazio = padrão)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="901"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1014"/>
         <source>Visible</source>
         <translation>Visível</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="934"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1047"/>
         <source>Coller depuis le presse-papiers</source>
         <translation>Colar da área de transferência</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1026"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1403"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1139"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1516"/>
         <source>Police des en-têtes: %1 %2pt</source>
         <translation>Fonte dos cabeçalhos: %1 %2pt</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1028"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1419"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1141"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1532"/>
         <source>Police du texte: %1 %2pt</source>
         <translation>Fonte do texto: %1 %2pt</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1400"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1513"/>
         <source>Police des en-têtes de colonnes</source>
         <translation>Fonte dos cabeçalhos de colunas</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1416"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="1529"/>
         <source>Police du texte des cellules</source>
         <translation>Fonte do texto das células</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="231"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.cpp" line="290"/>
         <source>Terre</source>
         <translation>Terra</translation>
     </message>
     <message>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="60"/>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="245"/>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="255"/>
         <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="265"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="275"/>
         <source>margin: 5px; font-weight: bold;</source>
         <translation>margin: 5px; font-weight: bold;</translation>
     </message>
@@ -8162,12 +8187,12 @@ Continuar?</translation>
         <translation>Excluir da lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="248"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="258"/>
         <source>Verrouiller la numérotation automatique</source>
         <translation>Travar a numeração automática</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="258"/>
+        <location filename="../sources/editor/ui/elementpropertieseditorwidget.ui" line="268"/>
         <source>Séparation de potentiel</source>
         <translation>Separação de potencial</translation>
     </message>
@@ -10045,7 +10070,7 @@ que você cria. Entradas de texto e números
     <message>
         <location filename="../sources/TerminalStrip/ui/freeterminaleditor.ui" line="112"/>
         <source>Sectionnable</source>
-        <translation>Secionável</translation>
+        <translation>Seccionável</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/freeterminaleditor.ui" line="117"/>
@@ -25372,22 +25397,22 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message>
-        <location filename="../sources/undocommand/swapelementcommand.cpp" line="94"/>
+        <location filename="../sources/undocommand/swapelementcommand.cpp" line="96"/>
         <source>L&apos;élément n&apos;est sur aucun folio.</source>
         <translation>O elemento não está em nenhuma folha.</translation>
     </message>
     <message>
-        <location filename="../sources/undocommand/swapelementcommand.cpp" line="98"/>
+        <location filename="../sources/undocommand/swapelementcommand.cpp" line="100"/>
         <source>« %1 » fait partie d&apos;un bornier : retirez-le du bornier pour le remplacer.</source>
         <translation>&quot;%1&quot; faz parte de uma régua de bornes: tire-o da régua para trocá-lo.</translation>
     </message>
     <message>
-        <location filename="../sources/undocommand/swapelementcommand.cpp" line="111"/>
+        <location filename="../sources/undocommand/swapelementcommand.cpp" line="113"/>
         <source>L&apos;élément choisi n&apos;a pas pu être chargé.</source>
         <translation>O elemento escolhido não pôde ser carregado.</translation>
     </message>
     <message>
-        <location filename="../sources/undocommand/swapelementcommand.cpp" line="260"/>
+        <location filename="../sources/undocommand/swapelementcommand.cpp" line="262"/>
         <source>remplacer %1 par %2</source>
         <comment>undo caption - the names of the two elements</comment>
         <translation>trocar %1 por %2</translation>
@@ -30635,7 +30660,7 @@ Os esquemas onde ele já foi inserido não mudam; só as inserções seguintes v
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="117"/>
         <source>Sectionnable</source>
-        <translation>Secionável</translation>
+        <translation>Seccionável</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="122"/>
