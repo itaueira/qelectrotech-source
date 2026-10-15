@@ -1003,6 +1003,9 @@ if(TARGET qet_core)
         src/ui/swapelement_test.cpp
         src/ui/terminalinfofields_test.cpp
         src/ui/elementtypes_test.cpp
+        # A abertura pela lista de recentes: o caminho que o menu entrega
+        # continua valendo enquanto quem abre poe o arquivo na lista.
+        src/ui/recentfiles_test.cpp
         # A coluna de paginas das janelas de configuracao: icones e nomes
         # num eixo so, qualquer que seja o tamanho do nome.
         src/ui/configdialog_test.cpp)

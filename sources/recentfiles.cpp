@@ -32,7 +32,17 @@ RecentFiles::RecentFiles(const QString &identifier, int size, QObject *parent) :
 	menu_(nullptr)
 {
 	mapper_ = new QSignalMapper(this);
-	connect(mapper_, &QSignalMapper::mappedString, this, &RecentFiles::fileOpeningRequested);
+		//The mapper hands over a reference into its own table of mappings,
+		//and whoever opens the file puts it at the top of this list, which
+		//rebuilds the menu and adds to that very table. When the table grows
+		//it moves elsewhere in memory, and the path still being read by the
+		//receiver is gone: the backup copy made just after the opening read
+		//freed memory, and either brought the program down or took the path
+		//of another file of the list. The receivers get a copy of their own.
+	connect(mapper_, &QSignalMapper::mappedString, this, [this](const QString &filepath) {
+		const QString requested_path(filepath);
+		emit fileOpeningRequested(requested_path);
+	});
 
 	extractFilesFromSettings();
 	buildMenu();
