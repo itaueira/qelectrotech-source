@@ -1006,6 +1006,9 @@ if(TARGET qet_core)
         # A abertura pela lista de recentes: o caminho que o menu entrega
         # continua valendo enquanto quem abre poe o arquivo na lista.
         src/ui/recentfiles_test.cpp
+        # Os elementos do projeto acompanham o simbolo: textos, terminais,
+        # tipo, e as versoes que a T45 nao alcancava.
+        src/ui/symboltextsync_test.cpp
         # A coluna de paginas das janelas de configuracao: icones e nomes
         # num eixo so, qualquer que seja o tamanho do nome.
         src/ui/configdialog_test.cpp)

@@ -26,8 +26,11 @@
 #include "qetgraphicsitem.h"
 #include "../properties/elementdata.h"
 
+#include <QDomDocument>
 #include <QHash>
 #include <QPicture>
+#include <QSet>
+#include <QUuid>
 #include <algorithm>
 
 class QETProject;
@@ -88,6 +91,8 @@ class Element : public QetGraphicsItem
 		bool definitionGeometryMatches(const QDomElement &definition) const;
 		bool definitionTerminalsMatch(const QDomElement &definition) const;
 		bool adoptDefinitionBox(const QDomElement &definition);
+		bool definitionKindMatches(const QDomElement &definition) const;
+		static Element *buildDetached(const QDomElement &definition);
 	private:
 		Element(const Element &);
 
@@ -239,6 +244,15 @@ class Element : public QetGraphicsItem
 		bool removeTextFromGroup(
 				DynamicElementTextItem *text,
 				ElementTextItemGroup *group);
+		QList<DynamicElementTextItem *> allDynamicTextItems() const;
+			/// The definition this element was built from, or last brought up
+			/// to date with: what its symbol was, for SymbolTextSync
+		QDomElement symbolBase() const;
+		void setSymbolBase(const QDomElement &definition);
+		static QDomDocument symbolOf(const QDomElement &definition);
+			/// The texts of the symbol removed from this element on a folio
+		QSet<QUuid> removedSymbolTexts() const {return m_removed_symbol_texts;}
+		void setRemovedSymbolTexts(const QSet<QUuid> &uuids) {m_removed_symbol_texts = uuids;}
 
 			//METHODS related to linked element
 		bool isFree() const;
@@ -361,6 +375,8 @@ class Element : public QetGraphicsItem
 		QString m_prefix;
 		QList <DynamicElementTextItem *> m_dynamic_text_list;
 		QList <ElementTextItemGroup *> m_texts_group;
+		QDomDocument m_symbol_base;
+		QSet<QUuid> m_removed_symbol_texts;
 
 };
 

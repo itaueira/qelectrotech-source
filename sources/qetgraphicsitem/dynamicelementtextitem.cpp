@@ -203,6 +203,11 @@ QDomElement DynamicElementTextItem::toXml(QDomDocument &dom_doc) const
 	root_element.setAttribute("y", QString::number(pos().y()));
 	root_element.setAttribute("rotation", QString::number(QET::correctAngle(rotation())));
 	root_element.setAttribute("uuid", m_uuid.toString());
+		//Written only for a text made from the symbol, so that the texts of
+		//a folio can follow the symbol when it changes (see SymbolTextSync)
+	if (!m_symbol_text_uuid.isNull()) {
+		root_element.setAttribute("symbol_text_uuid", m_symbol_text_uuid.toString());
+	}
 	root_element.setAttribute("frame", m_frame? "true" : "false");
 	root_element.setAttribute("text_width", QString::number(m_text_width));
 	root_element.setAttribute("font", QETUtils::fontToString(font()));
@@ -298,6 +303,7 @@ void DynamicElementTextItem::fromXml(const QDomElement &dom_elmt)
 	}
 
 	m_uuid = QUuid(dom_elmt.attribute("uuid", QUuid::createUuid().toString()));
+	m_symbol_text_uuid = QUuid(dom_elmt.attribute("symbol_text_uuid"));
 	setFrame(dom_elmt.attribute("frame", "false") == "true"? true : false);
 	setTextWidth(dom_elmt.attribute("text_width", QString::number(-1)).toDouble());
 	

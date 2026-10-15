@@ -29,6 +29,7 @@
 #include "undocommand/addgraphicsobjectcommand.h"
 #include "undocommand/explodeelementcommand.h"
 #include "undocommand/swapelementcommand.h"
+#include "undocommand/syncsymboltextscommand.h"
 #include "undocommand/conductortextcommand.h"
 #include "catalog/ui/catalogreplacedialog.h"
 #include "catalog/ui/catalogimportdialog.h"
@@ -1067,6 +1068,18 @@ void QETDiagramEditor::setUpActions()
 	connect(m_replace_element, &QAction::triggered,
 		this, &QETDiagramEditor::replaceSelectedElements);
 	addAction(m_replace_element);
+
+		//The texts of the selected elements as their symbol has them: the
+		//update of the drawings keeps what was changed on a folio, and this
+		//is the way back to the symbol (T58)
+	m_reset_symbol_texts = new QAction(tr("Rétablir les textes du symbole"), this);
+	m_reset_symbol_texts->setStatusTip(tr(
+		"Remet les textes des éléments sélectionnés comme leur symbole les a,"
+		" en gardant leurs valeurs", "status bar tip"));
+	m_reset_symbol_texts->setData("reset_symbol_texts");
+	connect(m_reset_symbol_texts, &QAction::triggered,
+		this, &QETDiagramEditor::resetSymbolTexts);
+	addAction(m_reset_symbol_texts);
 
 	m_replace_part = new QAction(
 				tr("Remplacer une pièce…"), this);
@@ -3660,6 +3673,7 @@ void QETDiagramEditor::setUpMenu()
 	symbol_menu -> addAction(m_create_symbol);
 	symbol_menu -> addAction(m_explode_element);
 	symbol_menu -> addAction(m_replace_element);
+	symbol_menu -> addAction(m_reset_symbol_texts);
 	symbol_menu -> addSeparator();
 	symbol_menu -> addAction(m_generate_pinout);
 	symbol_menu -> addAction(m_generate_circuits);
@@ -5105,6 +5119,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 			    << m_mirror_horizontal
 			    << m_mirror_vertical
 			    << m_replace_element
+			    << m_reset_symbol_texts
 			    << m_edit_selection
 			    << m_group_selected_texts
 			    << m_group_selection
@@ -5131,6 +5146,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 	m_mirror_horizontal->setEnabled(!ro && selected_elements_count);
 	m_mirror_vertical->setEnabled(!ro && selected_elements_count);
 	m_replace_element->setEnabled(!ro && selected_elements_count);
+	m_reset_symbol_texts->setEnabled(!ro && selected_elements_count);
 
 		//Navigating answers « where is the other one », so it is offered as
 		//soon as there is one. Several used to keep the entry away - the
@@ -6470,10 +6486,41 @@ void QETDiagramEditor::slot_reloadElementDrawings() {
 
 	const QStringList collection_dirs = EmbeddedElementRefresh::editableCollectionDirs();
 
-		//A terminal added, removed or moved can only be applied by building
-		//the elements again, so the project is reloaded - if the user agrees
-	const QStringList needing_reload =
-			EmbeddedElementRefresh::needingReload(project, collection_dirs);
+		//A symbol changed in the project and in a collection: which version
+		//stays is the user's call, and nothing here can make it for them
+	QSet<QString> taken_from_collection;
+	const QStringList changed_in_both =
+			EmbeddedElementRefresh::changedInBoth(project, collection_dirs);
+	if (!changed_in_both.isEmpty())
+	{
+		QStringList paths;
+		for (const QString &path : changed_in_both) {
+			paths << EmbeddedElementRefresh::collectionRelativePath(path);
+		}
+		QMessageBox question(QMessageBox::Question,
+							 tr("Recharger les dessins des éléments"),
+							 tr("%n élément(s) ont été modifiés dans le projet et dans la"
+								" collection. Utiliser la version de la collection ?",
+								"", changed_in_both.size()),
+							 QMessageBox::NoButton,
+							 this);
+		QPushButton *collection = question.addButton(tr("Utiliser la collection"),
+													  QMessageBox::AcceptRole);
+		question.addButton(tr("Garder le projet"), QMessageBox::RejectRole);
+		question.setDefaultButton(collection);
+		question.setDetailedText(paths.join(QLatin1Char('\n')));
+		question.exec();
+		if (question.clickedButton() == collection) {
+			taken_from_collection = QSet<QString>(changed_in_both.cbegin(),
+												  changed_in_both.cend());
+		}
+	}
+
+		//A terminal added, removed, moved, renamed or turned, or another kind
+		//of element, can only be applied by building the elements again, so
+		//the project is reloaded - if the user agrees
+	const QStringList needing_reload = EmbeddedElementRefresh::needingReload(
+				project, collection_dirs, taken_from_collection);
 	if (!needing_reload.isEmpty())
 	{
 		QMessageBox question(QMessageBox::Question,
@@ -6487,13 +6534,18 @@ void QETDiagramEditor::slot_reloadElementDrawings() {
 		question.setDetailedText(needing_reload.join(QLatin1Char('\n')));
 		question.exec();
 		if (question.clickedButton() == reload) {
-			reloadProjectFromMemory(project, collection_dirs);
+			reloadProjectFromMemory(project, collection_dirs, taken_from_collection);
 			return;
 		}
 	}
 
-	const EmbeddedElementRefresh::Report brought =
-			EmbeddedElementRefresh::bringFromCollections(project, collection_dirs);
+		//The newer versions and the texts of the placed elements, in one
+		//Ctrl+Z (T58)
+	EmbeddedElementRefresh::Report brought;
+	if (QUndoCommand *update = EmbeddedElementRefresh::updateCommand(
+				project, collection_dirs, taken_from_collection, &brought)) {
+		project->undoStack()->push(update);
+	}
 		//A copy corrected from a folio may come with another size or hotspot,
 		//which the redraw below would refuse: the elements take it first
 	EmbeddedElementRefresh::adoptBoxes(project);
@@ -6582,6 +6634,38 @@ void QETDiagramEditor::slot_reloadElementDrawings() {
 }
 
 /**
+	@brief QETDiagramEditor::resetSymbolTexts
+	Give the selected elements the texts of their symbol, as an element just
+	placed has them: what was moved, rewritten or restyled on the folio goes
+	back to the symbol, and so does a text of the symbol removed from them.
+	Their values - label, informations - stay, and so do the texts added on
+	the folio. One Ctrl+Z. See SymbolTextSync, in Reset.
+*/
+void QETDiagramEditor::resetSymbolTexts()
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+	QETProject *project = view->diagram()->project();
+	const QList<Element *> elements = DiagramContent(view->diagram()).m_elements;
+	if (!project || elements.isEmpty()) {
+		return;
+	}
+
+	auto *texts = new SyncSymbolTextsCommand(EmbeddedElementRefresh::textPlans(
+				project, SymbolTextSync::Mode::Reset, elements));
+	if (!texts->elements())
+	{
+		delete texts;
+		statusBar()->showMessage(tr("Les textes sont déjà ceux du symbole."), 4000);
+		return;
+	}
+	texts->setText(tr("Rétablir les textes du symbole"));
+	project->undoStack()->push(texts);
+}
+
+/**
 	@brief QETDiagramEditor::reloadProjectFromMemory
 	Bring every newer version of the editable collections into @p project,
 	the ones whose terminals changed included, and reload it the way opening
@@ -6600,7 +6684,8 @@ void QETDiagramEditor::slot_reloadElementDrawings() {
 	@param collection_dirs : the editable collections
 */
 void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
-											   const QStringList &collection_dirs)
+											   const QStringList &collection_dirs,
+											   const QSet<QString> &taken_from_collection)
 {
 	ProjectView *view = findProject(project);
 	if (!view || !view->closeElementEditors()) {
@@ -6610,8 +6695,20 @@ void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
 	DiagramView *shown = view->currentDiagram();
 	const int folio = shown ? project->diagrams().indexOf(shown->diagram()) : -1;
 
-	const EmbeddedElementRefresh::Report brought =
-			EmbeddedElementRefresh::bringFromCollections(project, collection_dirs, true);
+	EmbeddedElementRefresh::Report brought = EmbeddedElementRefresh::bringFromCollections(
+				project, collection_dirs, true, taken_from_collection);
+		//The texts before the reload: opening a project puts back the texts
+		//saved with each element, not those of its symbol (T58)
+	auto *texts = new SyncSymbolTextsCommand(EmbeddedElementRefresh::textPlans(project));
+	brought.text_elements = texts->elements();
+	brought.added_texts = texts->addedTexts();
+	brought.changed_texts = texts->changedTexts();
+	brought.removed_texts = texts->removedTexts();
+	if (texts->isEmpty()) {
+		delete texts;
+	} else {
+		project->undoStack()->push(texts);
+	}
 
 		//Hidden before it is dropped: dropping it only schedules its
 		//deletion, which the message boxes below would never let happen

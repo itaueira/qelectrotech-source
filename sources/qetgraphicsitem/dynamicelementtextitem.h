@@ -112,6 +112,10 @@ class DynamicElementTextItem : public DiagramTextItem
 		void setFrame(const bool frame);
 		bool frame() const;
 		QUuid uuid() const;
+			/// The uuid of the text of the symbol this text was made from,
+			/// null for a text added to the element on a folio
+		QUuid symbolTextUuid() const {return m_symbol_text_uuid;}
+		void setSymbolTextUuid(const QUuid &uuid) {m_symbol_text_uuid = uuid;}
 		void updateXref();
 		void setPlainText(const QString &text);
 			//Hide QGraphicsTextItem::textWidth(): with the width on "auto"
@@ -193,6 +197,7 @@ class DynamicElementTextItem : public DiagramTextItem
 		m_F_str;
 		DynamicElementTextItem::TextFrom m_text_from = UserText;
 		QUuid m_uuid;
+		QUuid m_symbol_text_uuid;
 		QMetaObject::Connection m_report_formula_con;
 		QList<QMetaObject::Connection>
 		m_formula_connection,

@@ -866,6 +866,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/qetgraphicsitem/dynamicelementtextitem.h
   ${QET_DIR}/sources/qetgraphicsitem/element.cpp
   ${QET_DIR}/sources/qetgraphicsitem/element.h
+  ${QET_DIR}/sources/qetgraphicsitem/symboltextsync.cpp
+  ${QET_DIR}/sources/qetgraphicsitem/symboltextsync.h
   ${QET_DIR}/sources/qetgraphicsitem/elementtextitemgroup.cpp
   ${QET_DIR}/sources/qetgraphicsitem/elementtextitemgroup.h
   ${QET_DIR}/sources/qetgraphicsitem/independenttextitem.cpp
@@ -1220,6 +1222,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/movediagramcommand.h
   ${QET_DIR}/sources/undocommand/refreshembeddedelementscommand.cpp
   ${QET_DIR}/sources/undocommand/refreshembeddedelementscommand.h
+  ${QET_DIR}/sources/undocommand/syncsymboltextscommand.cpp
+  ${QET_DIR}/sources/undocommand/syncsymboltextscommand.h
   ${QET_DIR}/sources/undocommand/removediagramcommand.cpp
   ${QET_DIR}/sources/undocommand/removediagramcommand.h
   ${QET_DIR}/sources/undocommand/setautonumcontextcommand.cpp

@@ -801,6 +801,7 @@ bool Element::buildFromXml(const QDomElement &xml_def_elmt, int *state)
 	{
 		if (state)
 			*state = 0;
+		setSymbolBase(xml_def_elmt);
 		m_state = QET::GIOK;
 		return(true);
 	}
@@ -892,6 +893,7 @@ DynamicElementTextItem *Element::parseDynamicText(
 	QDomElement dom(dom_element.cloneNode(true).toElement());
 	dom.setTagName(DynamicElementTextItem::xmlTagName());
 	deti->fromXml(dom);
+	deti->setSymbolTextUuid(QUuid(dom_element.attribute(QStringLiteral("uuid"))));
 	deti->m_uuid = QUuid::createUuid();
 	this->addDynamicTextItem(deti);
 	return deti;
@@ -1108,6 +1110,15 @@ bool Element::fromXml(QDomElement &e,
 		group->fromXml(qde);
 	}
 
+		//After the texts: adding them forgets them as removed
+	m_removed_symbol_texts.clear();
+	const QStringList removed = e.firstChildElement(QStringLiteral("dynamic_texts"))
+			.attribute(QStringLiteral("removed_symbol_texts"))
+			.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+	for (const QString &uuid : removed) {
+		m_removed_symbol_texts.insert(QUuid(uuid));
+	}
+
 		//load informations
 	DiagramContext dc;
 	dc.fromXml(e.firstChildElement(QStringLiteral("elementInformations")),
@@ -1307,6 +1318,19 @@ QDomElement Element::toXml(
 	QDomElement dyn_text = document.createElement(QStringLiteral("dynamic_texts"));
 	for (DynamicElementTextItem *deti : m_dynamic_text_list)
 		dyn_text.appendChild(deti->toXml(document));
+		//Written only when a text of the symbol was removed from this
+		//element, so that updating it from its symbol does not bring the
+		//text back (see SymbolTextSync)
+	if (!m_removed_symbol_texts.isEmpty())
+	{
+		QStringList removed;
+		for (const QUuid &uuid : m_removed_symbol_texts) {
+			removed << uuid.toString();
+		}
+		removed.sort();
+		dyn_text.setAttribute(QStringLiteral("removed_symbol_texts"),
+							  removed.join(QLatin1Char(' ')));
+	}
 
 	QDomElement texts_group = document.createElement(QStringLiteral("texts_groups"));
 
@@ -1365,6 +1389,7 @@ void Element::addDynamicTextItem(DynamicElementTextItem *deti)
 		deti->setParentItem(this);
 
 	m_dynamic_text_list.append(deti);
+	m_removed_symbol_texts.remove(deti->symbolTextUuid());
 
 		//On a mirrored element, the mirror of the text depends on the size
 		//and the rotation of the text, see keepReadable()
@@ -1396,11 +1421,20 @@ void Element::removeDynamicTextItem(DynamicElementTextItem *deti)
 		deti->resetTransform();
 	};
 
+		//A text of the symbol taken off this element stays off it when the
+		//element is brought up to date with its symbol
+	auto remember = [this, deti]() {
+		if (!deti->symbolTextUuid().isNull()) {
+			m_removed_symbol_texts.insert(deti->symbolTextUuid());
+		}
+	};
+
 	if (m_dynamic_text_list.contains(deti))
 	{
 		m_dynamic_text_list.removeOne(deti);
 		deti->setParentItem(nullptr);
 		forget();
+		remember();
 		emit textRemoved(deti);
 		return;
 	}
@@ -1413,6 +1447,7 @@ void Element::removeDynamicTextItem(DynamicElementTextItem *deti)
 			m_dynamic_text_list.removeOne(deti);
 			deti->setParentItem(nullptr);
 			forget();
+			remember();
 			emit textRemoved(deti);
 			return;
 		}
@@ -2371,6 +2406,66 @@ bool Element::definitionGeometryMatches(const QDomElement &definition) const
 	return definitionTerminalsMatch(definition);
 }
 
+namespace {
+
+	//One line per terminal of @p definition, with everything it says but its
+	//uuid, which the project keeps and the editor renews; sorted, so that
+	//the order of the parts in the file does not count
+QStringList terminalSignature(const QDomElement &definition)
+{
+	QStringList lines;
+	for (QDomElement description = definition.firstChildElement(QStringLiteral("description")) ;
+		 !description.isNull() ;
+		 description = description.nextSiblingElement(QStringLiteral("description")))
+	{
+		for (QDomElement terminal = description.firstChildElement(QStringLiteral("terminal")) ;
+			 !terminal.isNull() ;
+			 terminal = terminal.nextSiblingElement(QStringLiteral("terminal")))
+		{
+			QStringList attributes;
+			const QDomNamedNodeMap map = terminal.attributes();
+			for (int i = 0 ; i < map.count() ; ++i)
+			{
+				const QDomAttr attribute = map.item(i).toAttr();
+				if (attribute.name() == QLatin1String("uuid")) {
+					continue;
+				}
+				QString value = attribute.value();
+					//"10" and "10.0" are the same place
+				bool is_number = false;
+				const double number = value.toDouble(&is_number);
+				if (is_number) {
+					value = QString::number(qRound(number * 100) / 100.0);
+				}
+				attributes << attribute.name() + QLatin1Char('=') + value;
+			}
+			attributes.sort();
+			lines << attributes.join(QLatin1Char(';'));
+		}
+	}
+	lines.sort();
+	return lines;
+}
+
+	//What makes the kind of element @p definition describes: its link type,
+	//the one class of element it is built as, and its kind informations
+QString kindSignature(const QDomElement &definition)
+{
+	QStringList kind;
+	for (QDomElement info = definition.firstChildElement(QStringLiteral("kindInformations"))
+							 .firstChildElement(QStringLiteral("kindInformation")) ;
+		 !info.isNull() ;
+		 info = info.nextSiblingElement(QStringLiteral("kindInformation")))
+	{
+		kind << info.attribute(QStringLiteral("name")) + QLatin1Char('=') + info.text();
+	}
+	kind.sort();
+	return definition.attribute(QStringLiteral("link_type"), QStringLiteral("simple"))
+			+ QLatin1Char('|') + kind.join(QLatin1Char(';'));
+}
+
+}
+
 /**
 	@brief Element::definitionTerminalsMatch
 	The terminal half of definitionGeometryMatches(): whether @p definition
@@ -2402,6 +2497,15 @@ bool Element::definitionTerminalsMatch(const QDomElement &definition) const
 	}
 
 	if (new_terminals.size() != m_terminals.size()) {
+		return false;
+	}
+
+		//Everything else a terminal of the symbol says - name, type,
+		//orientation, role, label - against what this element was built
+		//from: none of it is read again by the redraw
+	if (!m_symbol_base.isNull()
+			&& terminalSignature(m_symbol_base.documentElement())
+			   != terminalSignature(definition)) {
 		return false;
 	}
 
@@ -2453,6 +2557,123 @@ bool Element::adoptDefinitionBox(const QDomElement &definition)
 	setSize(w, h);
 	setHotspot(QPoint(hot_x, hot_y));
 	return true;
+}
+
+/**
+	@brief Element::definitionKindMatches
+	Whether @p definition describes the same kind of element this one was
+	built from: the same link type, which is the class of element it is
+	built as (simple, master, slave, terminal...), and the same kind
+	informations (kind of contact, of coil...). None of it can change on an
+	element already built: it is built again, by reloading the project.
+	@param definition : the <definition> root of the element
+	@return true when it is the same kind, or when this element does not
+	know what it was built from
+*/
+bool Element::definitionKindMatches(const QDomElement &definition) const
+{
+	if (m_symbol_base.isNull()) {
+		return true;
+	}
+	return kindSignature(m_symbol_base.documentElement()) == kindSignature(definition);
+}
+
+/**
+	@brief Element::buildDetached
+	An element built from @p definition and nothing else: in no folio, with
+	no location and no drawing. Its texts are where the symbol puts them on
+	an element just placed, which is what SymbolTextSync compares the texts
+	of a placed element with.
+	@param definition : a <definition>
+	@return the element, owned by the caller
+*/
+Element *Element::buildDetached(const QDomElement &definition)
+{
+	int state = 0;
+	auto *element = new Element(ElementsLocation(), nullptr, &state);
+	element->buildFromXml(definition, &state);
+	element->setSymbolBase(definition);
+	return element;
+}
+
+/**
+	@brief Element::allDynamicTextItems
+	@return the dynamic texts of this element, those in its groups of texts
+	included
+*/
+QList<DynamicElementTextItem *> Element::allDynamicTextItems() const
+{
+	QList<DynamicElementTextItem *> texts = m_dynamic_text_list;
+	for (ElementTextItemGroup *group : m_texts_group) {
+		texts << group->texts();
+	}
+	return texts;
+}
+
+/**
+	@brief Element::symbolBase
+	@return the definition this element was built from, or last brought up
+	to date with, reduced to what its texts, terminals and kind need; null
+	when it was built from none
+*/
+QDomElement Element::symbolBase() const
+{
+	return m_symbol_base.documentElement();
+}
+
+/**
+	@brief Element::setSymbolBase
+	Keep @p definition, reduced by symbolOf(), as what this element's symbol
+	is. A copy, and not the node itself: the copy of the symbol a project
+	holds may be changed in place.
+	@param definition : a <definition>
+*/
+void Element::setSymbolBase(const QDomElement &definition)
+{
+	m_symbol_base = symbolOf(definition);
+}
+
+/**
+	@brief Element::symbolOf
+	A copy of @p definition without its drawing: names, kind, informations,
+	texts and terminals, which is what tells whether a symbol changed
+	something on an element besides its drawing. Reducing a reduced
+	definition gives it back as it is.
+	@param definition : a <definition>
+	@return the copy, empty for a null definition
+*/
+QDomDocument Element::symbolOf(const QDomElement &definition)
+{
+	QDomDocument symbol;
+	if (definition.isNull()) {
+		return symbol;
+	}
+
+	QDomElement root = symbol.importNode(definition, false).toElement();
+	symbol.appendChild(root);
+	for (QDomElement child = definition.firstChildElement() ;
+		 !child.isNull() ;
+		 child = child.nextSiblingElement())
+	{
+		if (child.tagName() != QLatin1String("description")) {
+			root.appendChild(symbol.importNode(child, true));
+			continue;
+		}
+
+		QDomElement description = symbol.importNode(child, false).toElement();
+		root.appendChild(description);
+		for (QDomElement part = child.firstChildElement() ;
+			 !part.isNull() ;
+			 part = part.nextSiblingElement())
+		{
+			if (part.tagName() == QLatin1String("dynamic_text")
+					|| part.tagName() == QLatin1String("terminal")
+					|| part.tagName() == QLatin1String("input")) {
+				description.appendChild(symbol.importNode(part, true));
+			}
+		}
+	}
+	return symbol;
 }
 
 /**

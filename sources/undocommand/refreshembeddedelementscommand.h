@@ -51,6 +51,11 @@ class RefreshEmbeddedElementsCommand : public QUndoCommand
 		{
 			QString embedded_path;
 			QDomDocument definition;
+				/// The record of the version the copy was taken from
+				/// (ElementOrigin), as the attributes of its <element>: kept
+				/// by the command, empty in what a caller gives it
+			QString origin_uuid;
+			QString origin_hash;
 		};
 
 		RefreshEmbeddedElementsCommand(QETProject *project,

@@ -18,6 +18,7 @@
 #ifndef ELEMENTORIGIN_H
 #define ELEMENTORIGIN_H
 
+#include <QString>
 #include <QUuid>
 
 class QDomElement;
@@ -47,6 +48,16 @@ class QDomElement;
 	keeps it, which is the whole point. QElectroTech versions that do not
 	know it leave it alone: it is an attribute of the collection, which a
 	project writes back as it read it.
+
+	The uuid alone misses what is changed without a new one: a symbol made
+	again by a generator that keeps its uuid on purpose, so as not to let go
+	of the conductors, or one edited by hand. So the copy also carries, in
+	origin_hash, a digest of the content it had when it was taken, every
+	uuid left out (contentHash()): the editor renews the symbol's own uuid
+	on every save, and opening a project completes those of the terminals.
+	It is written with origin_uuid, and given to the copies of an older
+	project when they are still as they were taken. A copy changed from a
+	folio before it existed has none, and only its uuid can tell.
 */
 namespace ElementOrigin
 {
@@ -54,6 +65,10 @@ namespace ElementOrigin
 	QUuid of(const QDomElement &collection_element);
 	void set(QDomElement collection_element, const QUuid &origin);
 	int stampMissing(const QDomElement &collection_directory);
+	QString canonicalText(const QDomElement &element, bool without_uuids);
+	QString contentHash(const QDomElement &definition);
+	QString hashOf(const QDomElement &collection_element);
+	void setHash(QDomElement collection_element, const QString &hash);
 }
 
 #endif // ELEMENTORIGIN_H

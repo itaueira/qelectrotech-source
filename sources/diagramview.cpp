@@ -1904,6 +1904,8 @@ QList<QAction *> DiagramView::contextMenuActions() const
 					//Alt+Q: another element in the place of this one,
 					//with its wires (T54)
 				list << qde->m_replace_element;
+					//The texts as the symbol has them (T58)
+				list << qde->m_reset_symbol_texts;
 			}
 				//Only for one element, and one mounted on a plate: an entry
 				//for a component that is on no plate would open a window to

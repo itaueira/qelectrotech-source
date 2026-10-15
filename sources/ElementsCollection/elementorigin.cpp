@@ -17,11 +17,14 @@
 */
 #include "elementorigin.h"
 
+#include <QCryptographicHash>
 #include <QDomElement>
+#include <QStringList>
 
 namespace {
 
 const QString origin_attribute = QStringLiteral("origin_uuid");
+const QString hash_attribute = QStringLiteral("origin_hash");
 
 }
 
@@ -88,12 +91,104 @@ int ElementOrigin::stampMissing(const QDomElement &collection_directory)
 		if (child.tagName() == QLatin1String("category")) {
 			stamped += stampMissing(child);
 		}
-		else if (child.tagName() == QLatin1String("element")
-				 && !child.hasAttribute(origin_attribute))
+		else if (child.tagName() == QLatin1String("element"))
 		{
-			set(child, definitionUuid(child.firstChildElement(QStringLiteral("definition"))));
-			++stamped;
+			const QDomElement definition = child.firstChildElement(QStringLiteral("definition"));
+			if (!child.hasAttribute(origin_attribute))
+			{
+				set(child, definitionUuid(definition));
+				++stamped;
+			}
+				//The content is only known while the copy is still the version
+				//it was taken as
+			if (!child.hasAttribute(hash_attribute)
+					&& definitionUuid(definition) == of(child)) {
+				setHash(child, contentHash(definition));
+			}
 		}
 	}
 	return stamped;
+}
+
+/**
+	@brief ElementOrigin::canonicalText
+	@p element written out the same way whatever the order of its
+	attributes and whatever its indentation: tag, attributes sorted by name,
+	then its children in order, text made only of spaces left out.
+	@param element : the element to write
+	@param without_uuids : leave out every uuid attribute and every <uuid>
+	child, which say which version a symbol is and not what it is
+	@return the text
+*/
+QString ElementOrigin::canonicalText(const QDomElement &element, bool without_uuids)
+{
+	QStringList attributes;
+	const QDomNamedNodeMap map = element.attributes();
+	for (int i = 0 ; i < map.count() ; ++i)
+	{
+		const QDomAttr attribute = map.item(i).toAttr();
+		if (without_uuids && attribute.name() == QLatin1String("uuid")) {
+			continue;
+		}
+		attributes << attribute.name() + QStringLiteral("=\"") + attribute.value() + QLatin1Char('"');
+	}
+	attributes.sort();
+
+	QString text = QLatin1Char('<') + element.tagName();
+	if (!attributes.isEmpty()) {
+		text += QLatin1Char(' ') + attributes.join(QLatin1Char(' '));
+	}
+	text += QLatin1Char('>');
+	for (QDomNode child = element.firstChild() ; !child.isNull() ; child = child.nextSibling())
+	{
+		if (child.isElement())
+		{
+			const QDomElement child_element = child.toElement();
+			if (without_uuids && child_element.tagName() == QLatin1String("uuid")) {
+				continue;
+			}
+			text += canonicalText(child_element, without_uuids);
+		}
+			//The indentation between two tags is kept by a project's
+			//collection and dropped by a file read from the disk: it says
+			//nothing of the symbol
+		else if ((child.isText() || child.isCDATASection())
+				 && !child.nodeValue().trimmed().isEmpty()) {
+			text += child.nodeValue();
+		}
+	}
+	return text + QStringLiteral("</") + element.tagName() + QLatin1Char('>');
+}
+
+/**
+	@brief ElementOrigin::contentHash
+	@return a digest of what @p definition draws and says, every uuid left
+	out: two saves of the same symbol give the same digest, and any change to
+	it gives another
+*/
+QString ElementOrigin::contentHash(const QDomElement &definition)
+{
+	return QString::fromLatin1(
+				QCryptographicHash::hash(canonicalText(definition, true).toUtf8(),
+										 QCryptographicHash::Sha1).toHex());
+}
+
+/**
+	@brief ElementOrigin::hashOf
+	@param collection_element : an <element> of a project's collection
+	@return the digest of the content its definition had when it was taken
+	from a collection, empty when that is not known
+*/
+QString ElementOrigin::hashOf(const QDomElement &collection_element)
+{
+	return collection_element.attribute(hash_attribute);
+}
+
+/**
+	@brief ElementOrigin::setHash
+	Record @p hash as the content @p collection_element was taken with
+*/
+void ElementOrigin::setHash(QDomElement collection_element, const QString &hash)
+{
+	collection_element.setAttribute(hash_attribute, hash);
 }

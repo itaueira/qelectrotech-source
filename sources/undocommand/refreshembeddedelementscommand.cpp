@@ -71,8 +71,16 @@ RefreshEmbeddedElementsCommand::RefreshEmbeddedElementsCommand(
 				fresh_element.firstChildElement(QStringLiteral("definition"));
 		TerminalUuids::fillMissingInDefinition(fresh_definition);
 
-		m_old << Change{change.embedded_path, copyOf(current)};
-		m_new << Change{change.embedded_path, copyOf(fresh_definition)};
+			//Undoing gives the copy back its record too: a copy changed in
+			//the project and replaced by the user's choice must still look
+			//changed afterwards
+		const QDomElement element_node = current.parentNode().toElement();
+		m_old << Change{change.embedded_path, copyOf(current),
+						element_node.attribute(QStringLiteral("origin_uuid")),
+						element_node.attribute(QStringLiteral("origin_hash"))};
+		m_new << Change{change.embedded_path, copyOf(fresh_definition),
+						ElementOrigin::definitionUuid(fresh_definition).toString(),
+						ElementOrigin::contentHash(fresh_definition)};
 	}
 
 	setText(QObject::tr("Mettre à jour %n élément(s) depuis la collection",
@@ -128,11 +136,19 @@ void RefreshEmbeddedElementsCommand::apply(const QList<Change> &definitions)
 		element_node.replaceChild(
 					current.ownerDocument().importNode(change.definition.documentElement(), true),
 					current);
-			//The copy is now the version it was taken from: a copy is only
-			//ever brought when it had not been saved again since, so on undo
-			//the old definition is its own origin too
-		ElementOrigin::set(element_node.toElement(),
-						   ElementOrigin::definitionUuid(change.definition.documentElement()));
+			//The record of the version the copy was taken from: the new
+			//version on redo, what the copy had on undo
+		QDomElement record = element_node.toElement();
+		if (change.origin_uuid.isEmpty()) {
+			record.removeAttribute(QStringLiteral("origin_uuid"));
+		} else {
+			record.setAttribute(QStringLiteral("origin_uuid"), change.origin_uuid);
+		}
+		if (change.origin_hash.isEmpty()) {
+			record.removeAttribute(QStringLiteral("origin_hash"));
+		} else {
+			record.setAttribute(QStringLiteral("origin_hash"), change.origin_hash);
+		}
 
 			//The panel of collections shows the project's copy too
 		emit collection->elementChanged(change.embedded_path);

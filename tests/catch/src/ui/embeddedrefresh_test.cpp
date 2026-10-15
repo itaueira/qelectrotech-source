@@ -565,9 +565,11 @@ TEST_CASE("CU-45.15 — Changed in the project and in the collection: the projec
 	REQUIRE(bench.element);
 	QETProject *project = bench.get();
 
+		//Two different corrections: since the T58 the same correction made
+		//on both sides is no conflict, the content being the same
 	const QDomDocument in_project = withBlock(bench.element);
 	REQUIRE(saveOverCopy(project, bench.path, in_project));
-	REQUIRE(writeInto(bench.company.path(), bench.path, withBlock(bench.element)));
+	REQUIRE(writeInto(bench.company.path(), bench.path, withBox(bench.element)));
 
 	const EmbeddedElementRefresh::Report report =
 			EmbeddedElementRefresh::bringFromCollections(project, bench.dirs());

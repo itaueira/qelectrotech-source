@@ -20,12 +20,16 @@
 
 #include <QDomDocument>
 #include <QList>
+#include <QSet>
 #include <QString>
 #include <QStringList>
+
+#include "../qetgraphicsitem/symboltextsync.h"
 
 class Element;
 class ElementsLocation;
 class QETProject;
+class QUndoCommand;
 
 /**
 	@brief The EmbeddedElementRefresh namespace
@@ -56,6 +60,17 @@ class QETProject;
 	reloading the project the way opening it does (reopened()), from what is
 	in memory and without saving: a conductor follows its terminal by uuid,
 	and one whose terminal is gone is left out and listed.
+
+	What changed is told by the content of the definitions, every uuid left
+	out (ElementOrigin::contentHash()), and by the uuid only when the
+	content the copy was taken with is not known: a symbol made again by a
+	generator keeps its uuid on purpose, and one saved without a change gets
+	a new one. A terminal renamed or turned, or another kind of element,
+	reloads the project like a terminal moved: none of it can change on an
+	element already built. A symbol moved to another directory of its
+	collection is found by its file name and the uuids of its parts, when
+	its old path is in no collection at all. The texts of the placed
+	elements follow their symbol too (textPlans(), SymbolTextSync).
 */
 namespace EmbeddedElementRefresh
 {
@@ -65,7 +80,7 @@ namespace EmbeddedElementRefresh
 		Ambiguous,        ///< the path is in more than one: its origin cannot be told
 		UpToDate,         ///< the same definition (same uuid) as the project's copy
 		Pending,          ///< a newer definition with the terminals of every placed element
-		TerminalsChanged, ///< a newer definition adding, removing or moving a terminal
+		TerminalsChanged, ///< a newer definition changing a terminal, or the kind of element
 		ChangedInProject  ///< a newer definition, and the copy was saved again too
 	};
 
@@ -74,9 +89,11 @@ namespace EmbeddedElementRefresh
 	{
 		QString embedded_path;     ///< "import/..." in the project's collection
 		QStringList source_files;  ///< absolute paths of the files found for it
-		QList<Element *> placed;   ///< the elements drawn from that copy
+		QList<Element *> placed;   ///< the elements drawn from that copy, none for a copy kept only
 		Outcome outcome = Outcome::NoSource;
 		QDomDocument source;       ///< the collection's definition, when newer
+		bool moved = false;        ///< found in another directory than the copy's path says
+		bool terminals_changed = false; ///< source adds, removes, moves or changes a terminal, or the kind
 	};
 
 	/// What bringFromCollections() did, for the message shown afterwards
@@ -87,6 +104,11 @@ namespace EmbeddedElementRefresh
 		QStringList ambiguous;         ///< one line per symbol, its path
 		QStringList changed_in_project;///< one line per symbol, its path
 		QStringList terminals_changed; ///< one line per placed element left as it was, its folio
+		QStringList moved;             ///< one line per symbol brought from another directory
+		int text_elements = 0;         ///< placed elements whose texts changed
+		int added_texts = 0;
+		int changed_texts = 0;
+		int removed_texts = 0;
 	};
 
 	QStringList editableCollectionDirs();
@@ -94,19 +116,33 @@ namespace EmbeddedElementRefresh
 				   const QStringList &collection_dirs);
 	QList<Element *> placedElements(QETProject *project,
 					const QString &embedded_path);
+	QString collectionRelativePath(const QString &embedded_path);
 	QList<Entry> survey(QETProject *project,
-			    const QStringList &collection_dirs);
-	QStringList needingReload(QETProject *project,
+			    const QStringList &collection_dirs,
+			    const QString &common_dir = QString());
+	QStringList changedInBoth(QETProject *project,
 				  const QStringList &collection_dirs);
+	QStringList needingReload(QETProject *project,
+				  const QStringList &collection_dirs,
+				  const QSet<QString> &taken_from_collection = QSet<QString>());
 	Report bringFromCollections(QETProject *project,
 				    const QStringList &collection_dirs,
-				    bool with_terminal_changes = false);
+				    bool with_terminal_changes = false,
+				    const QSet<QString> &taken_from_collection = QSet<QString>());
+	QUndoCommand *updateCommand(QETProject *project,
+				    const QStringList &collection_dirs,
+				    const QSet<QString> &taken_from_collection,
+				    Report *report);
+	QList<SymbolTextSync::Plan> textPlans(QETProject *project,
+					      SymbolTextSync::Mode mode = SymbolTextSync::Mode::Merge,
+					      const QList<Element *> &elements = QList<Element *>());
 	int adoptBoxes(QETProject *project);
 	QETProject *reopened(QETProject *project, QString *error = nullptr);
 	QStringList wiresLeftOut(QETProject *project);
 	QString reloadQuestion(int elements);
 	QString reloadReportText(const Report &report, int wires_left_out);
 	QString reportText(const Report &report);
+	QString textsText(const Report &report);
 	QStringList reportDetails(const Report &report);
 	QString describe(const Element *element);
 	QString savedNotice(const ElementsLocation &saved,
