@@ -29,6 +29,7 @@
 #include "../project/projectpropertieshandler.h"
 #include "../qet.h"
 #include "../qeticons.h"
+#include "../qetapp.h"
 #include "../qetproject.h"
 #include "../wiringrules.h"
 #include "../wiringruleswarning.h"
@@ -206,12 +207,34 @@ void ProjectMainConfigPage::applyProjectConf()
 		m_project -> setShowReportTags(show_report_tags_cb_ -> isChecked());
 		modified_project = true;
 	}
+		//Before the tags given below, which are born with it
+	bool tag_format_changed = false;
+	if (m_project -> reportTagFont() != m_report_tag_font) {
+		m_project -> setReportTagFont(m_report_tag_font);
+		tag_format_changed = true;
+	}
+	if (m_project -> reportTagColor() != m_report_tag_color) {
+		m_project -> setReportTagColor(m_report_tag_color);
+		tag_format_changed = true;
+	}
+	const auto tag_position = QETProject::ReportTagPosition(report_tag_position_cb_ -> currentData().toInt());
+	if (m_project -> reportTagPosition() != tag_position) {
+		m_project -> setReportTagPosition(tag_position);
+		tag_format_changed = true;
+	}
+	modified_project = modified_project || tag_format_changed;
 		//With either of them on, the arrows of a project saved before the
 		//tags get theirs, and their text when it is shown: one undo
 	if (reference_style == QETProject::ReferenceStyle::Tag || m_project -> showReportTags()) {
 		if (QUndoCommand *tag_all = ReportTags::tagAllCommand(m_project)) {
 			m_project -> undoStack() -> push(tag_all);
 			modified_project = true;
+		}
+	}
+		//And the tags already drawn take it, in one undo
+	if (tag_format_changed) {
+		if (QUndoCommand *format = ReportTags::formatCommand(m_project)) {
+			m_project -> undoStack() -> push(format);
 		}
 	}
 
@@ -310,6 +333,47 @@ void ProjectMainConfigPage::initWidgets()
 	report_tag_prefix_le_ -> setToolTip(tr("Pour les renvois créés ensuite : les repères déjà donnés ne changent pas.",
 										   "tooltip"));
 
+		//How the tags are drawn: applied to every tag of the project, in
+		//one undo, and to the ones given afterwards
+	report_tag_font_label_ = new QLabel(tr("Police du repère :", "label when configuring"));
+	report_tag_font_pb_ = new QPushButton();
+	report_tag_font_pb_ -> setToolTip(tr("Par défaut, celle de la référence de chaque renvoi.", "tooltip"));
+	connect(report_tag_font_pb_, &QPushButton::clicked, this, [this]() {
+		QFont current = QETApp::diagramTextsFont(9);
+		if (!m_report_tag_font.isEmpty()) {
+			current.fromString(m_report_tag_font);
+		}
+		bool ok = false;
+		const QFont chosen = QFontDialog::getFont(&ok, current, this, tr("Police du repère"));
+		if (ok) {
+			m_report_tag_font = chosen.toString();
+			updateReportTagFormatWidgets();
+		}
+	});
+	report_tag_font_reset_pb_ = new QPushButton(tr("Par défaut", "button label"));
+	report_tag_font_reset_pb_ -> setToolTip(tr("Reprendre la police de la référence de chaque renvoi.", "tooltip"));
+	connect(report_tag_font_reset_pb_, &QPushButton::clicked, this, [this]() {
+		m_report_tag_font.clear();
+		updateReportTagFormatWidgets();
+	});
+	report_tag_color_label_ = new QLabel(tr("Couleur du repère :", "label when configuring"));
+	report_tag_color_pb_ = new QPushButton();
+	connect(report_tag_color_pb_, &QPushButton::clicked, this, [this]() {
+		const QColor chosen = QColorDialog::getColor(m_report_tag_color, this, tr("Couleur du repère"));
+		if (chosen.isValid()) {
+			m_report_tag_color = chosen;
+			updateReportTagFormatWidgets();
+		}
+	});
+	report_tag_position_label_ = new QLabel(tr("Position du repère :", "label when configuring"));
+	report_tag_position_cb_ = new QComboBox();
+	report_tag_position_cb_ -> addItem(tr("Au-dessus du renvoi", "report tag position"),
+									   int(QETProject::ReportTagPosition::Above));
+	report_tag_position_cb_ -> addItem(tr("Au-dessous du renvoi", "report tag position"),
+									   int(QETProject::ReportTagPosition::Below));
+	report_tag_position_cb_ -> setToolTip(tr("Les repères déjà placés y sont remis, même déplacés à la main.",
+											 "tooltip"));
+
 		//How many wires a terminal may take (discussion #1158)
 	wiring_rules_gb_ = new QGroupBox(tr("Conducteurs par borne", "group box title"));
 	use_application_rules_cb_ = new QCheckBox(tr("Utiliser les réglages de l'application", "checkbox label"));
@@ -391,6 +455,22 @@ void ProjectMainConfigPage::initLayout()
 	report_tag_prefix_layout -> addWidget(report_tag_prefix_le_);
 	report_tag_prefix_layout -> addStretch();
 	references_layout -> addLayout(report_tag_prefix_layout);
+	QHBoxLayout *report_tag_font_layout = new QHBoxLayout();
+	report_tag_font_layout -> addWidget(report_tag_font_label_);
+	report_tag_font_layout -> addWidget(report_tag_font_pb_);
+	report_tag_font_layout -> addWidget(report_tag_font_reset_pb_);
+	report_tag_font_layout -> addStretch();
+	references_layout -> addLayout(report_tag_font_layout);
+	QHBoxLayout *report_tag_color_layout = new QHBoxLayout();
+	report_tag_color_layout -> addWidget(report_tag_color_label_);
+	report_tag_color_layout -> addWidget(report_tag_color_pb_);
+	report_tag_color_layout -> addStretch();
+	references_layout -> addLayout(report_tag_color_layout);
+	QHBoxLayout *report_tag_position_layout = new QHBoxLayout();
+	report_tag_position_layout -> addWidget(report_tag_position_label_);
+	report_tag_position_layout -> addWidget(report_tag_position_cb_);
+	report_tag_position_layout -> addStretch();
+	references_layout -> addLayout(report_tag_position_layout);
 	main_layout0 -> addWidget(folio_references_gb_);
 	main_layout0 -> addSpacing(10);
 
@@ -433,6 +513,11 @@ void ProjectMainConfigPage::readValuesFromProject()
 													int(m_project -> referenceStyle()))));
 	show_report_tags_cb_ -> setChecked(m_project -> showReportTags());
 	report_tag_prefix_le_ -> setText(m_project -> reportTagPrefix());
+	m_report_tag_font = m_project -> reportTagFont();
+	m_report_tag_color = m_project -> reportTagColor();
+	report_tag_position_cb_ -> setCurrentIndex(qMax(0, report_tag_position_cb_ -> findData(
+														int(m_project -> reportTagPosition()))));
+	updateReportTagFormatWidgets();
 
 		//The rules that apply: the project's own or the application's
 	const WiringRules::Settings wiring_rules = m_project -> wiringRules();
@@ -461,6 +546,34 @@ void ProjectMainConfigPage::updateWiringRulesWidgets()
 	max_wires_label_ -> setEnabled(own);
 	max_wires_sb_ -> setEnabled(own);
 	one_wire_per_report_cb_ -> setEnabled(own);
+}
+
+/**
+	@brief ProjectMainConfigPage::updateReportTagFormatWidgets
+	Show the font and the colour chosen for the tags on their buttons.
+*/
+void ProjectMainConfigPage::updateReportTagFormatWidgets()
+{
+	QFont font;
+	if (!m_report_tag_font.isEmpty() && font.fromString(m_report_tag_font))
+	{
+		QString described = QStringLiteral("%1 %2").arg(font.family()).arg(font.pointSizeF());
+		if (font.bold()) {
+			described += QStringLiteral(", ") + tr("gras", "font style");
+		}
+		if (font.italic()) {
+			described += QStringLiteral(", ") + tr("italique", "font style");
+		}
+		report_tag_font_pb_ -> setText(described);
+	} else {
+		report_tag_font_pb_ -> setText(tr("Celle de la référence", "report tag font"));
+	}
+	report_tag_font_reset_pb_ -> setEnabled(!m_report_tag_font.isEmpty());
+
+	QPixmap swatch(16, 16);
+	swatch.fill(m_report_tag_color);
+	report_tag_color_pb_ -> setIcon(QIcon(swatch));
+	report_tag_color_pb_ -> setText(m_report_tag_color.name());
 }
 
 /**

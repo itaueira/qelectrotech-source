@@ -535,3 +535,144 @@ TEST_CASE("CU-59.7 — The options, the tags and a moved tag text come back when
 	CHECK(reopened_text->isVisible());
 	CHECK(reopened_text->toPlainText() == tags.first());
 }
+
+TEST_CASE("CU-59.9 — The font and the colour of the tags, set in the project",
+		  "[T59][reporttags]")
+{
+	UiBench::Project bench(example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	QETProject *project = bench.project();
+	project->setShowReportTags(true);
+	tagAll(project);
+	const QList<Element *> reports = ReportTags::reports(project);
+	REQUIRE_FALSE(reports.isEmpty());
+
+	QHash<Element *, QString> font_before;
+	for (Element *report : reports) {
+		REQUIRE(ReportTags::tagText(report));
+		font_before.insert(report, ReportTags::tagText(report)->font().toString());
+	}
+
+	QFont chosen(QStringLiteral("Courier New"), 14);
+	chosen.setBold(true);
+	project->setReportTagFont(chosen.toString());
+	project->setReportTagColor(QColor(Qt::red));
+	QUndoCommand *format = ReportTags::formatCommand(project);
+	REQUIRE(format);
+	project->undoStack()->push(format);
+
+	for (Element *report : reports)
+	{
+		CAPTURE(ReportTags::tagOf(report).toStdString());
+		DynamicElementTextItem *text = ReportTags::tagText(report);
+		CHECK(text->font().family() == chosen.family());
+		CHECK(text->font().pointSizeF() == Approx(14));
+		CHECK(text->font().bold());
+		CHECK(text->color() == QColor(Qt::red));
+			//Centred above the arrow
+		const QRectF tag_box = text->mapRectToParent(text->boundingRect());
+		const QRectF arrow_box = report->boundingRect();
+		CHECK(tag_box.bottom() == Approx(arrow_box.top()).margin(0.5));
+		CHECK(tag_box.center().x() == Approx(arrow_box.center().x()).margin(0.5));
+	}
+
+		//A new arrow is born with them
+	Element *arrow = placeArrow(reports.first(), reports.first()->diagram(), QPointF(120, 120));
+	REQUIRE(arrow);
+	DynamicElementTextItem *born = ReportTags::tagText(arrow);
+	REQUIRE(born);
+	CHECK(born->font().family() == chosen.family());
+	CHECK(born->font().bold());
+	CHECK(born->color() == QColor(Qt::red));
+
+		//One Ctrl+Z for every tag that was there: the arrow added comes off
+		//first, then the formatting
+	project->undoStack()->undo();
+	project->undoStack()->undo();
+	for (Element *report : reports)
+	{
+		CAPTURE(ReportTags::tagOf(report).toStdString());
+		CHECK(ReportTags::tagText(report)->font().toString() == font_before.value(report));
+		CHECK(ReportTags::tagText(report)->color() == QColor(Qt::black));
+	}
+}
+
+TEST_CASE("CU-59.10 — The tags below the arrows",
+		  "[T59][reporttags]")
+{
+	UiBench::Project bench(example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	QETProject *project = bench.project();
+	project->setShowReportTags(true);
+	tagAll(project);
+	const QList<Element *> reports = ReportTags::reports(project);
+	REQUIRE_FALSE(reports.isEmpty());
+
+	project->setReportTagPosition(QETProject::ReportTagPosition::Below);
+	QUndoCommand *format = ReportTags::formatCommand(project);
+	REQUIRE(format);
+	project->undoStack()->push(format);
+
+	auto below = [](const Element *report) {
+		const DynamicElementTextItem *text = ReportTags::tagText(report);
+		const QRectF tag_box = text->mapRectToParent(text->boundingRect());
+		const QRectF arrow_box = report->boundingRect();
+		return qAbs(tag_box.top() - arrow_box.bottom()) < 0.5
+				&& qAbs(tag_box.center().x() - arrow_box.center().x()) < 0.5;
+	};
+	for (Element *report : reports) {
+		CAPTURE(ReportTags::tagOf(report).toStdString());
+		CHECK(below(report));
+	}
+	Element *arrow = placeArrow(reports.first(), reports.first()->diagram(), QPointF(120, 120));
+	REQUIRE(arrow);
+	REQUIRE(ReportTags::tagText(arrow));
+	CHECK(below(arrow));
+
+		//Nothing left to do: a second time gives no command
+	CHECK(ReportTags::formatCommand(project) == nullptr);
+}
+
+TEST_CASE("CU-59.11 — The formatting of the tags saved and reopened",
+		  "[T59][reporttags]")
+{
+	UiBench::ScratchProject bench(UiBench::fileContent(UiBench::examplePath(example)));
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+
+	bench->setShowReportTags(true);
+	QDomElement written = bench->toXml().documentElement().firstChildElement(QStringLiteral("folio_references"));
+	CHECK_FALSE(written.hasAttribute(QStringLiteral("report_tag_font")));
+	CHECK_FALSE(written.hasAttribute(QStringLiteral("report_tag_color")));
+	CHECK_FALSE(written.hasAttribute(QStringLiteral("report_tag_position")));
+
+	QFont chosen(QStringLiteral("Courier New"), 11);
+	chosen.setItalic(true);
+	bench->setReportTagFont(chosen.toString());
+	bench->setReportTagColor(QColor(QStringLiteral("#1e64c8")));
+	bench->setReportTagPosition(QETProject::ReportTagPosition::Below);
+	tagAll(bench.project());
+	REQUIRE_FALSE(ReportTags::reports(bench.project()).isEmpty());
+
+	REQUIRE(bench.saveAndReopen());
+	INFO(bench.error().toStdString());
+	CHECK(bench->reportTagFont() == chosen.toString());
+	CHECK(bench->reportTagColor() == QColor(QStringLiteral("#1e64c8")));
+	CHECK(bench->reportTagPosition() == QETProject::ReportTagPosition::Below);
+
+		//And the tags drawn with them come back drawn so
+	const QList<Element *> reopened = ReportTags::reports(bench.project());
+	REQUIRE_FALSE(reopened.isEmpty());
+	for (Element *report : reopened)
+	{
+		CAPTURE(ReportTags::tagOf(report).toStdString());
+		const DynamicElementTextItem *text = ReportTags::tagText(report);
+		REQUIRE(text);
+		CHECK(text->font().italic());
+		CHECK(text->color() == QColor(QStringLiteral("#1e64c8")));
+		const QRectF tag_box = text->mapRectToParent(text->boundingRect());
+		CHECK(tag_box.top() == Approx(report->boundingRect().bottom()).margin(0.5));
+	}
+}

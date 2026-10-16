@@ -51,10 +51,12 @@ namespace ReportTags
 	void give(Element *report, QETProject *project);
 	void renewRepeated(const QList<Element *> &pasted, QETProject *project);
 	QUndoCommand *tagAllCommand(QETProject *project);
+	QUndoCommand *formatCommand(QETProject *project);
 
 	bool isTagText(const DynamicElementTextItem *text);
 	DynamicElementTextItem *tagText(const Element *report);
-	DynamicElementTextItem *newTagText(Element *report, const QString &tag);
+	DynamicElementTextItem *newTagText(Element *report, const QString &tag,
+									   QETProject *project);
 }
 
 #endif // REPORTTAGS_H

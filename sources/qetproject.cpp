@@ -1557,6 +1557,74 @@ void QETProject::setReportTagPrefix(const QString &prefix)
 }
 
 /**
+	@brief QETProject::reportTagFont
+	@return the font of the tags of the folio reports, as QFont::toString()
+	writes it; empty for the font of the reference each arrow shows, which
+	is what a tag had before it could be chosen
+*/
+QString QETProject::reportTagFont() const {
+	return m_report_tag_font;
+}
+
+/**
+	@brief QETProject::setReportTagFont
+	@param font : as QFont::toString() writes it, empty for the font of
+	the reference of each arrow. The tags already drawn change with
+	ReportTags::formatCommand().
+*/
+void QETProject::setReportTagFont(const QString &font)
+{
+	if (font == m_report_tag_font) {
+		return;
+	}
+	m_report_tag_font = font;
+	emit folioReferencesChanged();
+}
+
+/**
+	@brief QETProject::reportTagColor
+	@return the colour of the tags of the folio reports, black unless changed
+*/
+QColor QETProject::reportTagColor() const {
+	return m_report_tag_color;
+}
+
+/**
+	@brief QETProject::setReportTagColor
+	@param color
+*/
+void QETProject::setReportTagColor(const QColor &color)
+{
+	if (!color.isValid() || color == m_report_tag_color) {
+		return;
+	}
+	m_report_tag_color = color;
+	emit folioReferencesChanged();
+}
+
+/**
+	@brief QETProject::reportTagPosition
+	@return where the tag of a folio report is put: above the arrow unless
+	changed. To its left or right is the reference it shows.
+*/
+QETProject::ReportTagPosition QETProject::reportTagPosition() const {
+	return m_report_tag_position;
+}
+
+/**
+	@brief QETProject::setReportTagPosition
+	@param position
+*/
+void QETProject::setReportTagPosition(ReportTagPosition position)
+{
+	if (position == m_report_tag_position) {
+		return;
+	}
+	m_report_tag_position = position;
+	emit folioReferencesChanged();
+}
+
+/**
 	@brief QETProject::nextReportTagNumber
 	The number of the next folio report tag: one more than @p highest_found,
 	the highest the folios have now, and than any given in this session.
@@ -2695,6 +2763,14 @@ void QETProject::readFolioReferencesXml(QDomDocument &xml_project)
 			== QLatin1String("true");
 	m_report_tag_prefix = references.attribute(QStringLiteral("report_tag_prefix"),
 											   QStringLiteral("S"));
+	m_report_tag_font = references.attribute(QStringLiteral("report_tag_font"));
+	const QColor color(references.attribute(QStringLiteral("report_tag_color"),
+											QStringLiteral("#000000")));
+	m_report_tag_color = color.isValid() ? color : QColor(Qt::black);
+	m_report_tag_position = references.attribute(QStringLiteral("report_tag_position"))
+			== QLatin1String("below")
+			? ReportTagPosition::Below
+			: ReportTagPosition::Above;
 }
 
 /**
@@ -2926,7 +3002,10 @@ void QETProject::writeWireHopsXml(QDomElement &xml_element)
 void QETProject::writeFolioReferencesXml(QDomElement &xml_element)
 {
 	if (m_reference_style == ReferenceStyle::Position && !m_show_report_tags
-			&& m_report_tag_prefix == QLatin1String("S")) {
+			&& m_report_tag_prefix == QLatin1String("S")
+			&& m_report_tag_font.isEmpty()
+			&& m_report_tag_color == QColor(Qt::black)
+			&& m_report_tag_position == ReportTagPosition::Above) {
 		return;
 	}
 	QDomElement references = xml_element.ownerDocument()
@@ -2937,6 +3016,15 @@ void QETProject::writeFolioReferencesXml(QDomElement &xml_element)
 	references.setAttribute(QStringLiteral("show_report_tags"),
 							m_show_report_tags ? QStringLiteral("true") : QStringLiteral("false"));
 	references.setAttribute(QStringLiteral("report_tag_prefix"), m_report_tag_prefix);
+	if (!m_report_tag_font.isEmpty()) {
+		references.setAttribute(QStringLiteral("report_tag_font"), m_report_tag_font);
+	}
+	if (m_report_tag_color != QColor(Qt::black)) {
+		references.setAttribute(QStringLiteral("report_tag_color"), m_report_tag_color.name());
+	}
+	if (m_report_tag_position != ReportTagPosition::Above) {
+		references.setAttribute(QStringLiteral("report_tag_position"), QStringLiteral("below"));
+	}
 	xml_element.appendChild(references);
 }
 

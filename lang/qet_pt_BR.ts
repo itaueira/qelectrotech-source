@@ -6655,17 +6655,17 @@ Este ajuste é próprio desta folha e fica gravado no projeto.</translation>
         <translation>Editar texto do elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="888"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="908"/>
         <source>texte</source>
         <translation>texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1082"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1102"/>
         <source>Déplacer la référence croisée</source>
         <translation>Mover a referência cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1274"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1294"/>
         <source>Redimensionner un texte d&apos;élément</source>
         <translation>Redimensionar um texto de elemento</translation>
     </message>
@@ -16904,66 +16904,66 @@ Uma cópia dele foi mantida em:
 <context>
     <name>ProjectAutoNumConfigPage</name>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="525"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="638"/>
         <source>Numérotation auto</source>
         <translation>Autonumeração</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="587"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1161"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="700"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1274"/>
         <source>Conducteurs</source>
         <translation>Condutores</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="602"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="715"/>
         <source>N°</source>
         <translation>Nº</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="602"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="715"/>
         <source>Nom</source>
         <translation>Nome</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="602"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="715"/>
         <source>Folio</source>
         <translation>Folha</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="602"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="715"/>
         <source>Élément</source>
         <translation>Elemento</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="602"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="715"/>
         <source>Figé</source>
         <translation>Congelado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="609"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="722"/>
         <source>Attribuer un numéro libre…</source>
         <translation>Atribuir um número livre…</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="610"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="874"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="723"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="987"/>
         <source>Donner à l&apos;élément sélectionné un numéro que personne n&apos;a : il garde sa numérotation, seul son numéro change.</source>
         <translation>Dar ao elemento selecionado um número que ninguém tem: ele mantém a numeração, só o número muda.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="618"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1163"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="731"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1276"/>
         <source>Eléments</source>
         <translation>Elementos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="623"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1165"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="736"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1278"/>
         <source>Folios</source>
         <translation>Folhas</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="627"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="740"/>
         <source>Numérotation auto des folios</source>
         <translation>Autonumeração da folha</translation>
     </message>
@@ -16972,7 +16972,7 @@ Uma cópia dele foi mantida em:
         <translation type="vanished">Nome da nova numeração</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="582"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="695"/>
         <source>Management</source>
         <translation>Gestão</translation>
     </message>
@@ -16981,37 +16981,37 @@ Uma cópia dele foi mantida em:
         <translation type="vanished">Sem Nome</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="630"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="743"/>
         <source>Importer depuis un autre projet...</source>
         <translation>Importar de outro projeto...</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="632"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="745"/>
         <source>Reprendre les numérotations automatiques enregistrées dans un autre projet</source>
         <translation>Reutilizar as numerações automáticas salvas em outro projeto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="821"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="934"/>
         <source>figé</source>
         <translation>congelado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="829"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="942"/>
         <source>— libre —</source>
         <translation>— livre —</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="830"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="943"/>
         <source>aucun élément n&apos;a ce numéro (supprimé ou renuméroté)</source>
         <translation>nenhum elemento tem este número (apagado ou renumerado)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="847"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="960"/>
         <source>Aucun élément ne suit cette numérotation</source>
         <translation>Nenhum elemento segue esta numeração</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="848"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="961"/>
         <source>%n élément(s) suivent cette numérotation, dont %1 au nom figé</source>
         <translation>
             <numerusform>%n elemento segue esta numeração, %1 com nome congelado</numerusform>
@@ -17019,7 +17019,7 @@ Uma cópia dele foi mantida em:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="850"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="963"/>
         <source> ; %n numéro(s) sans élément</source>
         <translation>
             <numerusform> ; %n número sem elemento</numerusform>
@@ -17027,49 +17027,49 @@ Uma cópia dele foi mantida em:
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="872"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="985"/>
         <source>Cette numérotation a plusieurs numéros (ou un numéro par folio) : on ne peut pas en choisir un à la main.</source>
         <translation>Esta numeração tem vários números (ou um número por folha): não dá para escolher um manualmente.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="889"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1002"/>
         <source>Attribuer un numéro libre</source>
         <translation>Atribuir um número livre</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="895"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1008"/>
         <source>Le nom de cet élément est figé : dégelez-le d&apos;abord.</source>
         <translation>O nome deste elemento está congelado: descongele-o antes.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="900"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1013"/>
         <source>Aucun numéro n&apos;est libre.</source>
         <translation>Nenhum número está livre.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="905"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1018"/>
         <source>%1  →  %2</source>
         <translation>%1  →  %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="911"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1024"/>
         <source>Numéro libre pour l&apos;élément « %1 » (%2) :</source>
         <translation>Número livre para o elemento «%1» (%2):</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="962"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1597"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1075"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1710"/>
         <source>Nom de la numérotation :</source>
         <translation>Nome da numeração:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="991"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1081"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1104"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1194"/>
         <source>Modifier la numérotation</source>
         <translation>Modificar a numeração</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="992"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1105"/>
         <source>%n élément(s) suivent cette numérotation et vont changer de formule et de nom.</source>
         <translation>
             <numerusform>%n elemento segue esta numeração e vai mudar de fórmula e de nome.</numerusform>
@@ -17077,21 +17077,21 @@ Uma cópia dele foi mantida em:
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1013"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1066"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1619"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1670"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1126"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1179"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1732"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1783"/>
         <source>Nouvelle numérotation</source>
         <translation>Nova numeração</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1038"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1641"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1151"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1754"/>
         <source>Renommer la numérotation</source>
         <translation>Renomear a numeração</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1082"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1195"/>
         <source>La numérotation « %1 » ne peut pas être modifiée : %n élément(s) au nom figé la suivent.
 Dégelez-les d&apos;abord (voir la liste), ou renommez seulement la numérotation.</source>
         <translation>
@@ -17102,85 +17102,85 @@ Descongele-os antes (veja a lista), ou renomeie só a numeração.</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1121"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1234"/>
         <source>Importer les numérotations d&apos;un projet</source>
         <translation>Importar as numerações de um projeto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1123"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1236"/>
         <source>Projet QElectroTech (*.qet)</source>
         <translation>Projeto QElectroTech (*.qet)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1130"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1137"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1243"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1250"/>
         <source>Import impossible</source>
         <translation>Não foi possível importar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1131"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1244"/>
         <source>Impossible d&apos;ouvrir %1</source>
         <translation>Não foi possível abrir %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1138"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1251"/>
         <source>%1 n&apos;est pas un projet QElectroTech valide.</source>
         <translation>%1 não é um projeto válido do QElectroTech.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1147"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1229"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1260"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1342"/>
         <source>Aucune numérotation</source>
         <translation>Nenhuma numeração</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1148"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1230"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1261"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1343"/>
         <source>Ce projet ne contient aucune numérotation automatique.</source>
         <translation>Este projeto não contém nenhuma numeração automática.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1169"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1282"/>
         <source>Numérotations à importer</source>
         <translation>Numerações a importar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1172"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1285"/>
         <source>Numérotations trouvées dans %1 :</source>
         <translation>Numerações encontradas em %1:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1210"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1323"/>
         <source>%1 : %2 (existe déjà)</source>
         <translation>%1: %2 (já existe)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1235"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1348"/>
         <source>Remplacer les numérotations de même nom</source>
         <translation>Substituir as numerações com o mesmo nome</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1249"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1362"/>
         <source>Importer des numérotations</source>
         <translation>Importar numerações</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1330"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1443"/>
         <source>Import terminé</source>
         <translation>Importação concluída</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1331"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1444"/>
         <source>%1 numérotation(s) importée(s), %2 conservée(s) telles quelles.</source>
         <translation>%1 numeração(ões) importada(s), %2 mantida(s) como estava(m).</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1334"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1447"/>
         <source>%1 numérotation(s) importée(s).</source>
         <translation>%1 numeração(ões) importada(s).</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1336"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1449"/>
         <source>%n numérotation(s) suivie(s) par des éléments au nom figé n&apos;ont pas été remplacées.</source>
         <translation>
             <numerusform>%n numeração seguida por elementos de nome congelado não foi substituída.</numerusform>
@@ -17188,7 +17188,7 @@ Descongele-os antes (veja a lista), ou renomeie só a numeração.</numerusform>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1340"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1453"/>
         <source>%n élément(s) ont changé de formule.</source>
         <translation>
             <numerusform>%n elemento mudou de fórmula.</numerusform>
@@ -17196,13 +17196,13 @@ Descongele-os antes (veja a lista), ou renomeie só a numeração.</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1357"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1699"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1470"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1812"/>
         <source>Supprimer la numérotation</source>
         <translation>Apagar a numeração</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1358"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1471"/>
         <source>%n élément(s) suivent la numérotation « %1 », elle ne peut pas être supprimée.
 Donnez-leur une autre numérotation ou un nom fixe d&apos;abord.</source>
         <translation>
@@ -17213,12 +17213,12 @@ Dê a eles outra numeração ou um nome fixo antes.</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1582"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1695"/>
         <source>Aucun folio ne nomme cette numérotation</source>
         <translation>Nenhuma folha nomeia esta numeração</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1583"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1696"/>
         <source>%n folio(s) nomment cette numérotation</source>
         <translation>
             <numerusform>%n folha nomeia esta numeração</numerusform>
@@ -17226,12 +17226,12 @@ Dê a eles outra numeração ou um nome fixo antes.</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1586"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1699"/>
         <source>Aucun folio ne suit cette numérotation</source>
         <translation>Nenhuma folha segue esta numeração</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1587"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1700"/>
         <source>%n folio(s) suivent cette numérotation</source>
         <translation>
             <numerusform>%n folha segue esta numeração</numerusform>
@@ -17239,7 +17239,7 @@ Dê a eles outra numeração ou um nome fixo antes.</numerusform>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1700"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="1813"/>
         <source>%n folio(s) suivent la numérotation « %1 », elle ne peut pas être supprimée.
 Donnez-leur une autre numérotation d&apos;abord.</source>
         <translation>
@@ -17340,203 +17340,285 @@ Dê a elas outra numeração antes.</numerusform>
 <context>
     <name>ProjectMainConfigPage</name>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="147"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="148"/>
         <source>Général</source>
         <comment>configuration page title</comment>
         <translation>Geral</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="253"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="276"/>
         <source>Titre du projet :</source>
         <comment>label when configuring</comment>
         <translation>Título do projeto:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="255"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="278"/>
         <source>Ce titre sera disponible pour tous les folios de ce projet en tant que %projecttitle.</source>
         <comment>informative label</comment>
         <translation>Este título é disponibilizado para todas as folhas do projeto como %projecttitle.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="257"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="280"/>
         <source>Vous pouvez définir ci-dessous des propriétés personnalisées qui seront disponibles pour tous les folios de ce projet (typiquement pour les cartouches).</source>
         <comment>informative label</comment>
         <translation>Você pode definir propriedades personalizadas que estarão disponíveis para todas as folhas deste projeto (normalmente para os blocos de legenda).</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="266"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="289"/>
         <source>Temps passé sur ce projet :</source>
         <comment>label when configuring</comment>
         <translation>Tempo gasto neste projeto:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="268"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="291"/>
         <source>Suivre le temps passé sur ce projet (uniquement enregistré localement dans ce fichier)</source>
         <comment>checkbox label</comment>
         <translation>Registrar o tempo gasto neste projeto (salvo apenas localmente neste arquivo)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="269"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="292"/>
         <source>Réinitialiser</source>
         <comment>button label</comment>
         <translation>Redefinir</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="273"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="296"/>
         <source>Croisements de conducteurs :</source>
         <comment>label when configuring</comment>
         <translation>Cruzamentos de condutores:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="275"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="298"/>
         <source>Sans saut</source>
         <comment>wire crossings</comment>
         <translation>Sem salto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="277"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="300"/>
         <source>Saut sur les conducteurs horizontaux</source>
         <comment>wire crossings</comment>
         <translation>Salto nos condutores horizontais</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="279"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="302"/>
         <source>Saut sur les conducteurs verticaux</source>
         <comment>wire crossings</comment>
         <translation>Salto nos condutores verticais</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="281"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="304"/>
         <source>Dessine un petit arc là où deux conducteurs se croisent sans être reliés. Seul le dessin change : aucun élément n&apos;est ajouté et aucun conducteur n&apos;est coupé.</source>
         <comment>tooltip</comment>
         <translation>Desenha um pequeno arco onde dois condutores se cruzam sem estar ligados. Só o desenho muda: nenhum elemento é adicionado e nenhum condutor é cortado.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="286"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="309"/>
         <source>Garder horizontaux les textes des symboles pivotés</source>
         <comment>checkbox label</comment>
         <translation>Manter na horizontal os textos dos símbolos girados</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="288"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="311"/>
         <source>Les textes dessinés dans un symbole et les noms de ses bornes restent lisibles quand le symbole est pivoté : leur cadre tourne avec le symbole, pas le texte. Décochez pour qu&apos;ils tournent avec le symbole, comme avant.</source>
         <comment>tooltip</comment>
         <translation>Os textos desenhados em um símbolo e os nomes dos terminais dele continuam legíveis quando o símbolo é girado: o quadro deles gira com o símbolo, não o texto. Desmarque para que girem com o símbolo, como antes.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="294"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="317"/>
         <source>Références sur les folios</source>
         <comment>group box title</comment>
         <translation>Referências nas folhas</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="295"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="318"/>
         <source>Les références indiquent :</source>
         <comment>label when configuring</comment>
         <translation>As referências indicam:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="297"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="320"/>
         <source>Folio, ligne et colonne</source>
         <comment>reference style</comment>
         <translation>Folha, linha e coluna</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="299"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="322"/>
         <source>Folio et repère</source>
         <comment>reference style</comment>
         <translation>Folha e tag</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="301"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="324"/>
         <source>Avec le repère, un renvoi indique 3-S12 et un contact indique 6-K1, le folio et le label de sa bobine.</source>
         <comment>tooltip</comment>
         <translation>Com a tag, uma referência de folha indica 3-S12, e um contato indica 6-K1: a folha e a tag da sua bobina.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="304"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="327"/>
         <source>Afficher le repère des renvois de folio</source>
         <comment>checkbox label</comment>
         <translation>Mostrar a tag das referências de folha</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="305"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="328"/>
         <source>Chaque renvoi reçoit un repère à sa création. Il se déplace, mais ne se modifie pas.</source>
         <comment>tooltip</comment>
         <translation>Cada referência de folha recebe uma tag ao ser criada. A tag se move, mas não se edita.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="307"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="330"/>
         <source>Préfixe du repère :</source>
         <comment>label when configuring</comment>
         <translation>Prefixo da tag:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="310"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="333"/>
         <source>Pour les renvois créés ensuite : les repères déjà donnés ne changent pas.</source>
         <comment>tooltip</comment>
         <translation>Vale para as referências de folha criadas depois: as tags já dadas não mudam.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="314"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="338"/>
+        <source>Police du repère :</source>
+        <comment>label when configuring</comment>
+        <translation>Fonte da tag:</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="340"/>
+        <source>Par défaut, celle de la référence de chaque renvoi.</source>
+        <comment>tooltip</comment>
+        <translation>Por padrão, a fonte do texto de referência de cada referência de folha.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="347"/>
+        <source>Police du repère</source>
+        <translation>Fonte da tag</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="353"/>
+        <source>Par défaut</source>
+        <comment>button label</comment>
+        <translation>Padrão</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="354"/>
+        <source>Reprendre la police de la référence de chaque renvoi.</source>
+        <comment>tooltip</comment>
+        <translation>Voltar à fonte do texto de referência de cada referência de folha.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="359"/>
+        <source>Couleur du repère :</source>
+        <comment>label when configuring</comment>
+        <translation>Cor da tag:</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="362"/>
+        <source>Couleur du repère</source>
+        <translation>Cor da tag</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="368"/>
+        <source>Position du repère :</source>
+        <comment>label when configuring</comment>
+        <translation>Posição da tag:</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="370"/>
+        <source>Au-dessus du renvoi</source>
+        <comment>report tag position</comment>
+        <translation>Acima</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="372"/>
+        <source>Au-dessous du renvoi</source>
+        <comment>report tag position</comment>
+        <translation>Abaixo</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="374"/>
+        <source>Les repères déjà placés y sont remis, même déplacés à la main.</source>
+        <comment>tooltip</comment>
+        <translation>As tags já colocadas voltam para lá, mesmo as movidas à mão.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="378"/>
         <source>Conducteurs par borne</source>
         <comment>group box title</comment>
         <translation>Condutores por terminal</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="315"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="379"/>
         <source>Utiliser les réglages de l&apos;application</source>
         <comment>checkbox label</comment>
         <translation>Usar os ajustes do aplicativo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="316"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="380"/>
         <source>Les réglages de Configurer QElectroTech &gt; Général s&apos;appliquent. Décochez pour donner à ce projet ses propres réglages, enregistrés dans le projet.</source>
         <comment>tooltip</comment>
         <translation>Valem os ajustes de Configurar o QElectroTech &gt; Geral. Desmarque para dar a este projeto ajustes próprios, salvos no projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="329"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="393"/>
         <source>Nombre maximal de conducteurs par borne :</source>
         <comment>label when configuring</comment>
         <translation>Número máximo de condutores por terminal:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="332"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="396"/>
         <source>Sans limite</source>
         <comment>wires per terminal</comment>
         <translation>Sem limite</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="333"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="397"/>
         <source>Un nouveau conducteur qui dépasserait ce nombre sur une borne est refusé. Les conducteurs déjà dessinés ne sont pas modifiés. 4 correspond à deux embouts doubles, un de chaque côté de la vis.</source>
         <comment>tooltip</comment>
         <translation>Um novo condutor que passasse desse número em um terminal é recusado. Os condutores já desenhados não são alterados. 4 corresponde a duas ponteiras duplas, uma de cada lado do parafuso.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="337"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="401"/>
         <source>Un seul conducteur par renvoi de folio</source>
         <comment>checkbox label</comment>
         <translation>Um único condutor por referência de folha</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="338"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="402"/>
         <source>Un renvoi de folio est un point virtuel : il ne reçoit qu&apos;un conducteur, celui qui continue sur l&apos;autre folio.</source>
         <comment>tooltip</comment>
         <translation>Uma referência de folha é um ponto virtual: recebe só um condutor, o que continua na outra folha.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="341"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="405"/>
         <source>Ces règles sont désactivées pour tous les projets (Configurer QElectroTech &gt; Général).</source>
         <comment>informative label</comment>
         <translation>Estas regras estão desativadas para todos os projetos (Configurar o QElectroTech &gt; Geral).</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="423"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="477"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="503"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="590"/>
         <source>%1 h %2 min</source>
         <comment>hours and minutes of time spent on a project</comment>
         <translation>%1 h %2 min</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="562"/>
+        <source>gras</source>
+        <comment>font style</comment>
+        <translation>negrito</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="565"/>
+        <source>italique</source>
+        <comment>font style</comment>
+        <translation>itálico</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="569"/>
+        <source>Celle de la référence</source>
+        <comment>report tag font</comment>
+        <translation>A da referência</translation>
     </message>
 </context>
 <context>
@@ -21356,17 +21438,17 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         <translation>Editar as propriedades do elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1577"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1593"/>
         <source>Annuler</source>
         <translation>Desfazer</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1578"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1594"/>
         <source>Refaire</source>
         <translation>Refazer</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1616"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1632"/>
         <source>Profondeur</source>
         <comment>toolbar title</comment>
         <translation>Profundidade</translation>
@@ -21392,52 +21474,52 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         <translation>Restaurar zoom</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1653"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1669"/>
         <source>Ajouter une ligne</source>
         <translation>Adicionar uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1654"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1670"/>
         <source>Ajouter un rectangle</source>
         <translation>Adicionar um retângulo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1655"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1671"/>
         <source>Ajouter une ellipse</source>
         <translation>Adicionar uma elipse</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1656"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1672"/>
         <source>Ajouter un polygone</source>
         <translation>Adicionar um polígono</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1657"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1673"/>
         <source>Ajouter du texte</source>
         <translation>Adicionar texto</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1658"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1674"/>
         <source>Ajouter un arc de cercle</source>
         <translation>Adicionar um arco</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1659"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1675"/>
         <source>Ajouter une borne</source>
         <translation>Adicionar um terminal</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1660"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1676"/>
         <source>Ajouter un champ texte dynamique</source>
         <translation>Adicione um campo de texto dinâmico</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1677"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1693"/>
         <source>Double-click pour terminer la forme, Click droit pour annuler le dernier point</source>
         <translation>Clique duas vezes para completar a forma, clique com o botão direito para cancelar o último ponto</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1681"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1697"/>
         <source>Parties</source>
         <comment>toolbar title</comment>
         <translation>Partes</translation>
@@ -21463,32 +21545,32 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         <translation>Colar a partir de...</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="926"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="936"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="942"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="952"/>
         <source>[Modifié]</source>
         <comment>window title tag</comment>
         <translation>[Modificado]</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="940"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="956"/>
         <source> [lecture seule]</source>
         <comment>window title tag</comment>
         <translation> [somente leitura]</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1890"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1906"/>
         <source>Aucune modification</source>
         <translation>Sem modificações</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1935"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1951"/>
         <source>Éditeur d&apos;éléments</source>
         <comment>status bar message</comment>
         <translation>Editor de elementos</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1021"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1177"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1037"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1193"/>
         <source>%n partie(s) sélectionnée(s).</source>
         <translation>
             <numerusform>%n parte selecionada.</numerusform>
@@ -21496,29 +21578,29 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         </translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1253"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1269"/>
         <source>Absence de borne</source>
         <comment>warning title</comment>
         <translation>Sem terminais</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1254"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1270"/>
         <source>&lt;br&gt;En l&apos;absence de borne, l&apos;élément ne pourra être relié à d&apos;autres éléments par l&apos;intermédiaire de conducteurs.</source>
         <comment>warning description</comment>
         <translation>&lt;br&gt;Na ausência de terminais, o elemento não poderá ser conectado a outros elementos por meio de fios.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1275"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1291"/>
         <source>Absence de borne</source>
         <translation>Sem terminais</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1276"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1292"/>
         <source>&lt;br&gt;&lt;b&gt;Erreur&lt;/b&gt; :&lt;br&gt;Les reports de folio doivent posséder une seul borne.&lt;br&gt;&lt;b&gt;Solution&lt;/b&gt; :&lt;br&gt;Verifier que l&apos;élément ne possède qu&apos;une seul borne</source>
         <translation>&lt;br&gt;&lt;b&gt;Erro&lt;/b&gt;:&lt;br&gt;Os relatórios de folha devem ter um único terminal.&lt;br&gt;&lt;b&gt;Solução&lt;/b&gt;:&lt;br&gt;Verifique se o elemento tem somente um único terminal</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1344"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1360"/>
         <source>&lt;br&gt;%n borne(s) sans nom : la liste de câblage ne pourra pas les désigner.</source>
         <translation>
             <numerusform>&lt;br&gt;%n terminal sem nome: a lista de fiação não vai poder identificá-lo.</numerusform>
@@ -21526,13 +21608,13 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         </translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1354"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1370"/>
         <source>La vérification de cet élément a généré</source>
         <comment>message box content</comment>
         <translation>A verificação deste elemento gerou</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1357"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1373"/>
         <source> %n erreur(s)</source>
         <comment>errors</comment>
         <translation>
@@ -21541,204 +21623,204 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         </translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1362"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1378"/>
         <source> et</source>
         <translation> e</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1374"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1390"/>
         <source>&lt;b&gt;%1&lt;/b&gt; : %2</source>
         <comment>warning title: warning description</comment>
         <translation>&lt;b&gt;%1&lt;/b&gt;: %2</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1381"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1397"/>
         <source>Erreurs</source>
         <translation>Erros</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1384"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1400"/>
         <source>Avertissements</source>
         <translation>Avisos</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="259"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="262"/>
         <source>Le fichier %1 n&apos;existe pas.</source>
         <comment>message box content</comment>
         <translation>O arquivo %1 não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="98"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="101"/>
         <source>Afficher</source>
         <comment>menu entry</comment>
         <translation>Exibir</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="265"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2265"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="268"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2281"/>
         <source>Impossible d&apos;ouvrir le fichier %1.</source>
         <comment>message box content</comment>
         <translation>Não é possível abrir o arquivo %1.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="272"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2270"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="275"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2286"/>
         <source>Ce fichier n&apos;est pas un document XML valide</source>
         <comment>message box content</comment>
         <translation>Este arquivo não é um documento XML válido</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="278"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2276"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="281"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2292"/>
         <source>Erreur</source>
         <comment>toolbar title</comment>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="289"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="365"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="292"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="368"/>
         <source>Édition en lecture seule</source>
         <comment>message box title</comment>
         <translation>Edição em modo somente de leitura</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="290"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="366"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="293"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="369"/>
         <source>Vous n&apos;avez pas les privilèges nécessaires pour modifier cet élement. Il sera donc ouvert en lecture seule.</source>
         <comment>message box content</comment>
         <translation>Você não tem as permissões necessárias para editar este elemento. Portanto ele será aberto em modo somente de leitura.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="327"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="393"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="330"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="396"/>
         <source>Erreur</source>
         <comment>message box title</comment>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="328"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="331"/>
         <source>Impossible d&apos;écrire dans ce fichier</source>
         <comment>message box content</comment>
         <translation>Não é possível escrever neste arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="394"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="397"/>
         <source>Impossible d&apos;enregistrer l&apos;élément</source>
         <comment>message box content</comment>
         <translation>Não é possível salvar o elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="437"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="440"/>
         <source>Éléments déjà posés</source>
         <translation>Elementos já posicionados</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="439"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="442"/>
         <source>Recharger maintenant</source>
         <translation>Renderizar agora</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="440"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="443"/>
         <source>Plus tard</source>
         <translation>Depois</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="580"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="713"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="596"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="729"/>
         <source> mm</source>
         <translation> mm</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="612"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="628"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="656"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="667"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1689"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="644"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="672"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="683"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1705"/>
         <source>Insérer une image</source>
         <translation>Inserir uma imagem</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="629"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="645"/>
         <source>Images (*.png *.jpg *.jpeg *.svg)</source>
         <translation>Imagens (*.png *.jpg *.jpeg *.svg)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="657"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="673"/>
         <source>Impossible de lire l&apos;image %1.</source>
         <translation>Não é possível ler a imagem %1.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="668"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="684"/>
         <source>L&apos;image pèse %1 Mo, et une copie sera gardée dans chaque projet qui utilise ce symbole. L&apos;insérer quand même ?</source>
         <translation>A imagem pesa %1 MB, e uma cópia será mantida em cada projeto que usa este símbolo. Inserir mesmo assim?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="700"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="716"/>
         <source>Dimensions de l&apos;image</source>
         <translation>Dimensões da imagem</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="702"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="718"/>
         <source>La taille réelle de la pièce, en millimètre. L&apos;image est étirée à ces dimensions, qui restent modifiables ensuite.</source>
         <translation>O tamanho real da peça, em milímetros. A imagem é esticada para essas dimensões, que continuam editáveis depois.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="720"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="736"/>
         <source>Largeur :</source>
         <translation>Largura:</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="721"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="737"/>
         <source>Hauteur :</source>
         <translation>Altura:</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="724"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="740"/>
         <source>Garder les proportions du fichier</source>
         <translation>Manter as proporções do arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="796"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="812"/>
         <source>Dessin 2D de la pièce, en millimètres</source>
         <translation>Desenho 2D da peça, em milímetros</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="922"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="938"/>
         <source>Dessin 2D — %1</source>
         <translation>Desenho 2D — %1</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="923"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="939"/>
         <source>nouvelle pièce</source>
         <translation>nova peça</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="983"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="999"/>
         <source>Trop de primitives, liste non générée: %1</source>
         <translation>Primitivas em excesso, lista não gerada: %1</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1296"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1312"/>
         <source>Nombre de bornes incorrect</source>
         <translation>Número de terminais incorreto</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1297"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1313"/>
         <source>&lt;br&gt;&lt;b&gt;Erreur&lt;/b&gt; :&lt;br&gt;Les définitions de conducteur ne peuvent posséder qu&apos;une seule borne.&lt;br&gt;&lt;b&gt;Solution&lt;/b&gt; :&lt;br&gt;Vérifier que l&apos;élément ne possède qu&apos;une seule borne</source>
         <translation>&lt;br&gt;&lt;b&gt;Erro&lt;/b&gt;:&lt;br&gt;Definição de condutor só pode ter um terminal.&lt;br&gt;&lt;b&gt;Solução&lt;/b&gt;:&lt;br&gt;Confira se o elemento tem só um terminal</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1319"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1335"/>
         <source>Noms de bornes en double</source>
         <translation>Nomes de bornes duplicados</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1320"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1336"/>
         <source>&lt;br&gt;&lt;b&gt;Erreur&lt;/b&gt; :&lt;br&gt;Plusieurs bornes portent le même nom : %1.&lt;br&gt;&lt;b&gt;Solution&lt;/b&gt; :&lt;br&gt;Donner un nom unique à chaque borne, par exemple N.1 et N.2. Les bornes concernées sont sélectionnées.</source>
         <translation>&lt;br&gt;&lt;b&gt;Erro&lt;/b&gt;:&lt;br&gt;Vários bornes têm o mesmo nome: %1.&lt;br&gt;&lt;b&gt;Solução&lt;/b&gt;:&lt;br&gt;Dê um nome único a cada borne, por exemplo N.1 e N.2. Os bornes em questão estão selecionados.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1343"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1359"/>
         <source>Bornes sans nom</source>
         <translation>Terminais sem nome</translation>
     </message>
@@ -21750,99 +21832,99 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         </translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1482"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1498"/>
         <source>Enregistrer le dessin 2D ?</source>
         <comment>dialog title</comment>
         <translation>Salvar o desenho 2D?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1483"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1499"/>
         <source>Voulez-vous enregistrer le dessin 2D de la pièce %1 ?</source>
         <translation>Deseja salvar o desenho 2D da peça %1?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1581"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1582"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1586"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1587"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1588"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1589"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1590"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1591"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1592"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1593"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1594"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1595"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1596"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1597"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1598"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1599"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1602"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1603"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1604"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1605"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1606"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1607"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1608"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1609"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1610"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1611"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1612"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1613"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1614"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1615"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1618"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1619"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1621"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1622"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1626"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1630"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1634"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1640"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1645"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1638"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1642"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1646"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1647"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1648"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1704"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1735"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1650"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1656"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1661"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1662"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1663"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1664"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1720"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1751"/>
         <source>Éditeur d&apos;élément</source>
         <translation>Editor de elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1638"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1654"/>
         <source>Mettre l&apos;élément à l&apos;échelle...</source>
         <translation>Escalar o elemento...</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1678"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1694"/>
         <source>Ajouter un texte d&apos;élément non éditable dans les schémas</source>
         <translation>Adicionar texto de elemento não editável em diagramas</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1679"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1695"/>
         <source>Ajouter un texte d&apos;élément pouvant être édité dans les schémas</source>
         <translation>Adicione texto do elemento que pode ser editado em diagramas</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1690"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1706"/>
         <source>Insérer la photo de la pièce, ou le dessin de sa fiche technique, dans le dessin 2D, aux dimensions réelles</source>
         <translation>Inserir a foto da peça, ou o desenho da sua folha de dados, no desenho 2D, nas dimensões reais</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1700"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1716"/>
         <source>Afficher le cadre de fond</source>
         <translation>Exibir o quadro de fundo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1708"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1724"/>
         <source>Taille du cadre de fond...</source>
         <translation>Tamanho do quadro de fundo...</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1711"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1727"/>
         <source>Taille du cadre de fond</source>
         <translation>Tamanho do quadro de fundo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1716"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1722"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1732"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1738"/>
         <source> px</source>
         <translation> px</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1718"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1734"/>
         <source>Largeur</source>
         <translation>Largura</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1724"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1740"/>
         <source>Hauteur</source>
         <translation>Altura</translation>
     </message>
@@ -21861,61 +21943,61 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         <translation type="vanished">O desenho da peça vista de frente, em milímetros, como ela aparece na placa de montagem. Ele não aparece nas folhas.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1924"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1940"/>
         <source>X: %1  Y: %2</source>
         <translation>X: %1  Y: %2</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1930"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1946"/>
         <source>X: %1 mm  Y: %2 mm</source>
         <translation>X: %1 mm  Y: %2 mm</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2158"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2174"/>
         <source>Exporter en SVG</source>
         <comment>dialog title</comment>
         <translation>Exportar em SVG</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2160"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2176"/>
         <source>Image SVG (*.svg)</source>
         <comment>filetypes allowed when exporting an element to SVG</comment>
         <translation>Imagem SVG (*.svg)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2171"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2187"/>
         <source>Échec de l&apos;export</source>
         <translation>Falha na exportação</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2172"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2188"/>
         <source>Impossible d&apos;écrire dans le fichier « %1 ».</source>
         <translation>Não foi possível gravar no arquivo « %1 ».</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2357"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2373"/>
         <source>Avertissement</source>
         <translation>Aviso</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2357"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2373"/>
         <source>L&apos;import d&apos;un dxf volumineux peut prendre du temps 
 veuillez patienter durant l&apos;import...</source>
         <translation>A importação de um dxf grande pode levar tempo
 aguarde enquanto importa...</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2399"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2415"/>
         <source>Importer un élément à redimensionner</source>
         <translation>Importar um elemento para redimensionar</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2401"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2417"/>
         <source>Éléments QElectroTech (*.elmt)</source>
         <translation>Elementos QElectroTech (*.elmt)</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1364"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1380"/>
         <source> %n avertissement(s)</source>
         <comment>warnings</comment>
         <translation>
@@ -21924,99 +22006,99 @@ aguarde enquanto importa...</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1424"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1440"/>
         <source>Impossible d&apos;ouvrir le fichier</source>
         <comment>message box title</comment>
         <translation>Não é possível abrir o arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1426"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1442"/>
         <source>Il semblerait que le fichier %1 que vous essayez d&apos;ouvrir n&apos;existe pas ou plus.</source>
         <translation>Aparentemente o arquivo %1 que você está tentando abrir não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2221"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2237"/>
         <source>Recharger l&apos;élément</source>
         <comment>dialog title</comment>
         <translation>Recarregar o elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2222"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2238"/>
         <source>Vous avez efffectué des modifications sur cet élément. Si vous le rechargez, ces modifications seront perdues. Voulez-vous vraiment recharger l&apos;élément ?</source>
         <comment>dialog content</comment>
         <translation>Este elemento foi alterado desde que foi salvo pela última vez. Se você recarregar, essas alterações serão perdidas. Você realmente quer recarregar o elemento?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2025"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2055"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2124"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2041"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2071"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2140"/>
         <source>Echec de l&apos;enregistrement</source>
         <translation>Falha ao salvar</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2025"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2055"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2124"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2041"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2071"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2140"/>
         <source>L&apos;enregistrement à échoué,
 les conditions requises ne sont pas valides</source>
         <translation>Falha ao salvar,
 as condições não são válidas</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2094"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2110"/>
         <source>Enregistrer sous</source>
         <comment>dialog title</comment>
         <translation>Salvar como</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2096"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2112"/>
         <source>Éléments QElectroTech (*.elmt)</source>
         <comment>filetypes allowed when saving an element file</comment>
         <translation>Elementos QElectroTech (*.elmt)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1495"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1511"/>
         <source>Enregistrer l&apos;élément en cours ?</source>
         <comment>dialog title</comment>
         <translation>Salvar o elemento atual?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1497"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1513"/>
         <source>Voulez-vous enregistrer l&apos;élément %1 ?</source>
         <comment>dialog content - %1 is an element name</comment>
         <translation>Deseja salvar o elemento %1?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="902"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="918"/>
         <source>Ouvrir un fichier</source>
         <comment>dialog title</comment>
         <translation>Abrir um arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="904"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="920"/>
         <source>Éléments QElectroTech (*.elmt);;Fichiers XML (*.xml);;Tous les fichiers (*)</source>
         <comment>filetypes allowed when opening an element file</comment>
         <translation>Elementos QElectroTech (*.elmt);;Arquivos XML (*.xml);;Todos arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="342"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="348"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2291"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2297"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="345"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="351"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2307"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2313"/>
         <source>Élément inexistant.</source>
         <comment>message box title</comment>
         <translation>Elemento inexistente.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="349"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2298"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="352"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2314"/>
         <source>L&apos;élément n&apos;existe pas.</source>
         <comment>message box content</comment>
         <translation>Este elemento não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="343"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2292"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="346"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2308"/>
         <source>Le chemin virtuel choisi ne correspond pas à un élément.</source>
         <comment>message box content</comment>
         <translation>O caminho virtual escolhido não corresponde a um elemento.</translation>
@@ -22282,12 +22364,12 @@ as condições não são válidas</translation>
         <translation>%1 [Modificado]</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2093"/>
+        <location filename="../sources/qetproject.cpp" line="2161"/>
         <source>Système de contacts modifié</source>
         <translation>Sistema de contatos modificado</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2094"/>
+        <location filename="../sources/qetproject.cpp" line="2162"/>
         <source>Le nouvel élément définit des groupes de contacts esclaves.
 Les éléments esclaves existants ne seront pas automatiquement assignés. Vous devrez relier manuellement les esclaves et assigner les groupes de contacts.
 
@@ -22298,19 +22380,19 @@ Os elementos escravos existentes não serão atribuídos automaticamente. Você 
 Deseja continuar?</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2182"/>
+        <location filename="../sources/qetproject.cpp" line="2250"/>
         <source>Une erreur s&apos;est produite durant l&apos;intégration du modèle.</source>
         <comment>error message</comment>
         <translation>Ocorreu um erro durante a integração do modelo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2344"/>
+        <location filename="../sources/qetproject.cpp" line="2412"/>
         <source>Avertissement</source>
         <comment>message box title</comment>
         <translation>Aviso</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2346"/>
+        <location filename="../sources/qetproject.cpp" line="2414"/>
         <source>Ce document semble avoir été enregistré avec une version %1
  qui est ultérieure à votre version ! 
 Vous utilisez actuellement QElectroTech en version %2</source>
@@ -22319,7 +22401,7 @@ Vous utilisez actuellement QElectroTech en version %2</source>
 Você está usando o QElectroTech na versão %2</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2351"/>
+        <location filename="../sources/qetproject.cpp" line="2419"/>
         <source>.
  Il est alors possible que l&apos;ouverture de tout ou partie de ce document échoue.
 Que désirez vous faire ?</source>
@@ -22328,32 +22410,32 @@ Que désirez vous faire ?</source>
 O que você deseja fazer?</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2371"/>
+        <location filename="../sources/qetproject.cpp" line="2439"/>
         <source>Avertissement </source>
         <comment>message box title</comment>
         <translation>Aviso </translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2372"/>
+        <location filename="../sources/qetproject.cpp" line="2440"/>
         <source>Le projet que vous tentez d&apos;ouvrir est partiellement compatible avec votre version %1 de QElectroTech.
 </source>
         <translation>O projeto que você está tentando abrir é parcialmente compatível com sua versão %1 do QElectroTech.
 </translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2375"/>
+        <location filename="../sources/qetproject.cpp" line="2443"/>
         <source>Afin de le rendre totalement compatible veuillez ouvrir ce même projet avec la version 0.8, ou 0.80 de QElectroTech et sauvegarder le projet et l&apos;ouvrir à  nouveau avec cette version.
 Que désirez vous faire ?</source>
         <translation>Para torná-lo totalmente compatível, abra este mesmo projeto com a versão 0.8 ou 0.80 do QElectroTech e salve o projeto e abra-o novamente com esta versão.
 O que você deseja fazer?</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2541"/>
+        <location filename="../sources/qetproject.cpp" line="2609"/>
         <source>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Ouverture du projet en cours...&lt;/b&gt;&lt;br/&gt;Création des folios&lt;/p&gt;</source>
         <translation>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Abrindo o projeto atual...&lt;/b&gt;&lt;br/&gt;Criação das folhas&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2595"/>
+        <location filename="../sources/qetproject.cpp" line="2663"/>
         <source>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Ouverture du projet en cours...&lt;/b&gt;&lt;br/&gt;Mise en place des références croisées&lt;/p&gt;</source>
         <translation>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Abertura do projeto...&lt;/b&gt;&lt;br/&gt;Configurando referências cruzadas&lt;/p&gt;</translation>
     </message>
@@ -22873,7 +22955,7 @@ O que você deseja fazer?</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="434"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="559"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="672"/>
         <source>Titre</source>
         <translation>Título</translation>
     </message>
@@ -24379,7 +24461,7 @@ Deseja substituí-lo?</translation>
         <translation>Abra um elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2350"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2366"/>
         <source>Importer un fichier dxf</source>
         <translation>Importar um arquivo dxf</translation>
     </message>
@@ -24567,7 +24649,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="745"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="112"/>
         <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="128"/>
-        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="559"/>
+        <location filename="../sources/ui/configpage/projectconfigpages.cpp" line="672"/>
         <source>Folio</source>
         <translation>Folha</translation>
     </message>
@@ -25564,9 +25646,14 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/reporttags.cpp" line="259"/>
+        <location filename="../sources/qetgraphicsitem/reporttags.cpp" line="284"/>
         <source>Donner un repère aux renvois de folio</source>
         <translation>Dar tag às referências de folha</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/reporttags.cpp" line="306"/>
+        <source>Formater les repères des renvois de folio</source>
+        <translation>Formatar as tags das referências de folha</translation>
     </message>
 </context>
 <context>

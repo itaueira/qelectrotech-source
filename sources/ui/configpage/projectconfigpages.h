@@ -124,6 +124,7 @@ class ProjectMainConfigPage : public ProjectConfigPage {
 
 	private slots:
 	void resetUsageTracker();
+	void updateReportTagFormatWidgets();
 	void updateWiringRulesWidgets();
 
 	// attributes
@@ -146,6 +147,16 @@ class ProjectMainConfigPage : public ProjectConfigPage {
 	QCheckBox *show_report_tags_cb_;
 	QLabel *report_tag_prefix_label_;
 	QLineEdit *report_tag_prefix_le_;
+	QLabel *report_tag_font_label_;
+	QPushButton *report_tag_font_pb_;
+	QPushButton *report_tag_font_reset_pb_;
+	QLabel *report_tag_color_label_;
+	QPushButton *report_tag_color_pb_;
+	QLabel *report_tag_position_label_;
+	QComboBox *report_tag_position_cb_;
+		/// The font and the colour chosen for the tags, applied with the page
+	QString m_report_tag_font;
+	QColor m_report_tag_color;
 	QGroupBox *wiring_rules_gb_;
 	QCheckBox *use_application_rules_cb_;
 	QLabel *max_wires_label_;

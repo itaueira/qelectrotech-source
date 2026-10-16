@@ -257,6 +257,16 @@ class QETProject : public QObject
 		QString reportTagPrefix() const;
 		void setReportTagPrefix(const QString &prefix);
 		int nextReportTagNumber(int highest_found);
+			/// How the tag given to the folio reports is drawn, when shown:
+			/// its font (none: the font of the reference of the arrow), its
+			/// colour and its place, above or below the arrow (T59)
+		enum class ReportTagPosition { Above, Below };
+		QString reportTagFont() const;
+		void setReportTagFont(const QString &font);
+		QColor reportTagColor() const;
+		void setReportTagColor(const QColor &color);
+		ReportTagPosition reportTagPosition() const;
+		void setReportTagPosition(ReportTagPosition position);
 		WiringRules::Settings wiringRules() const;
 		WiringRules::Settings projectWiringRules() const;
 		void setWiringRules(const WiringRules::Settings &rules);
@@ -652,6 +662,10 @@ class QETProject : public QObject
 		ReferenceStyle m_reference_style = ReferenceStyle::Position;
 		bool m_show_report_tags = false;
 		QString m_report_tag_prefix = QStringLiteral("S");
+			/// See reportTagFont(), reportTagColor(), reportTagPosition()
+		QString m_report_tag_font;
+		QColor m_report_tag_color = QColor(Qt::black);
+		ReportTagPosition m_report_tag_position = ReportTagPosition::Above;
 			/// The highest number given to a folio report tag in this
 			/// session, see nextReportTagNumber()
 		int m_last_report_tag_number = 0;

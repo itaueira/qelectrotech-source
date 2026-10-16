@@ -23,11 +23,13 @@
 #include "../qetproject.h"
 #include "../undocommand/addelementtextcommand.h"
 #include "../undocommand/changeelementinformationcommand.h"
+#include "../QPropertyUndoCommand/qpropertyundocommand.h"
 #include "dynamicelementtextitem.h"
 #include "element.h"
 #include "elementtextitemgroup.h"
 
 #include <QHash>
+#include <QLineF>
 #include <QMap>
 #include <QPointer>
 #include <QUndoCommand>
@@ -60,6 +62,29 @@ namespace
 			}
 		}
 		return false;
+	}
+
+	/// The font of the tag of @p report: the one chosen for the project,
+	/// or the font of the reference the arrow shows. False when neither
+	/// says, and the text keeps the default font of a text
+	bool tagFont(const Element *report, const QETProject *project, QFont *font)
+	{
+		if (project && !project->reportTagFont().isEmpty() && font->fromString(project->reportTagFont())) {
+			return true;
+		}
+		return referenceFont(report, font);
+	}
+
+	/// Where a tag of @p size goes on @p report: centred above or below the
+	/// arrow, in the coordinates of the arrow
+	QPointF tagPlace(const Element *report, const QSizeF &size,
+					 QETProject::ReportTagPosition position)
+	{
+		const QRectF body = report->boundingRect();
+		const qreal x = body.center().x() - size.width() / 2.0;
+		return position == QETProject::ReportTagPosition::Below
+				? QPointF(x, body.bottom())
+				: QPointF(x, body.top() - size.height());
 	}
 
 	void setTag(Element *report, const QString &tag)
@@ -169,7 +194,7 @@ void ReportTags::give(Element *report, QETProject *project)
 		setTag(report, nextTag(project));
 	}
 	if (project->showReportTags() && !tagText(report)) {
-		report->addDynamicTextItem(newTagText(report, tagOf(report)));
+		report->addDynamicTextItem(newTagText(report, tagOf(report), project));
 	}
 }
 
@@ -208,7 +233,7 @@ void ReportTags::renewRepeated(const QList<Element *> &pasted, QETProject *proje
 			setTag(element, nextTag(project));
 		}
 		if (project->showReportTags() && !tagText(element)) {
-			element->addDynamicTextItem(newTagText(element, tagOf(element)));
+			element->addDynamicTextItem(newTagText(element, tagOf(element), project));
 		}
 	}
 }
@@ -261,7 +286,56 @@ QUndoCommand *ReportTags::tagAllCommand(QETProject *project)
 		new ChangeElementInformationCommand(infos, command);
 	}
 	for (Element *report : without_text) {
-		new AddElementTextCommand(report, newTagText(report, tags.value(report)), command);
+		new AddElementTextCommand(report, newTagText(report, tags.value(report), project), command);
+	}
+	return command;
+}
+
+/**
+	@brief ReportTags::formatCommand
+	@return the command that gives every tag of @p project the font, the
+	colour and the place the project sets for them, one undo for all;
+	nullptr when every tag already has them. A tag moved by hand is put
+	back in its place: changing the place is what this is for.
+*/
+QUndoCommand *ReportTags::formatCommand(QETProject *project)
+{
+	if (!project) {
+		return nullptr;
+	}
+	auto *command = new QUndoCommand(QObject::tr("Formater les repères des renvois de folio"));
+	for (Element *report : reports(project))
+	{
+		DynamicElementTextItem *text = tagText(report);
+		if (!text) {
+			continue;
+		}
+		const QFont old_font = text->font();
+		QFont font = old_font;
+		tagFont(report, project, &font);
+		const QColor color = project->reportTagColor();
+
+			//The size it will have in its new font
+		const QPointF old_pos = text->pos();
+		text->setFont(font);
+		const QSizeF size = text->boundingRect().size();
+		text->setFont(old_font);
+		text->setPos(old_pos);
+		const QPointF pos = tagPlace(report, size, project->reportTagPosition());
+
+		if (font != old_font) {
+			new QPropertyUndoCommand(text, "font", old_font, font, command);
+		}
+		if (color != text->color()) {
+			new QPropertyUndoCommand(text, "color", text->color(), color, command);
+		}
+		if (QLineF(pos, old_pos).length() > 0.01) {
+			new QPropertyUndoCommand(text, "pos", old_pos, pos, command);
+		}
+	}
+	if (command->childCount() == 0) {
+		delete command;
+		return nullptr;
 	}
 	return command;
 }
@@ -300,28 +374,33 @@ DynamicElementTextItem *ReportTags::tagText(const Element *report)
 
 /**
 	@brief ReportTags::newTagText
-	@return a new text of @p report showing its tag, centred above the
-	arrow, in the font of the reference the arrow shows. Not yet one of the
-	texts of @p report: Element::addDynamicTextItem() or an
-	AddElementTextCommand makes it one.
+	@return a new text of @p report showing its tag, drawn as @p project
+	sets the tags: its font - the reference's unless one was chosen -, its
+	colour, centred above or below the arrow. Not yet one of the texts of
+	@p report: Element::addDynamicTextItem() or an AddElementTextCommand
+	makes it one.
 	@param tag : the tag it is about to show, to centre it on: the
 	information may still be empty, when a command gives both
 */
-DynamicElementTextItem *ReportTags::newTagText(Element *report, const QString &tag)
+DynamicElementTextItem *ReportTags::newTagText(Element *report, const QString &tag,
+											   QETProject *project)
 {
 	auto *text = new DynamicElementTextItem(report);
 	QFont font;
-	if (referenceFont(report, &font)) {
+	if (tagFont(report, project, &font)) {
 		text->setFont(font);
+	}
+	if (project) {
+		text->setColor(project->reportTagColor());
 	}
 	text->setInfoName(QETInformation::ELMT_REPORT_TAG);
 	text->setTextFrom(DynamicElementTextItem::ElementInfo);
 
 	const QString shown = text->toPlainText();
 	text->setPlainText(tag);
-	const QRectF box = text->boundingRect();
-	const QRectF body = report->boundingRect();
-	text->setPos(body.center().x() - box.width() / 2.0, body.top() - box.height());
+	const QSizeF size = text->boundingRect().size();
+	text->setPos(tagPlace(report, size, project ? project->reportTagPosition()
+												: QETProject::ReportTagPosition::Above));
 	text->setPlainText(shown);
 	return text;
 }
