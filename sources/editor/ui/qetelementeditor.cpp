@@ -29,6 +29,7 @@
 #include "../../ElementsCollection/embeddedelementrefresh.h"
 #include "../../qetdiagrameditor.h"
 #include "../../projectview.h"
+#include "../../qetproject.h"
 #include "../../factory/elementpicturefactory.h"
 #include "../graphicspart/customelementpart.h"
 #include "../elementitemeditor.h"
@@ -63,7 +64,9 @@
 #include "scaleelementdialog.h"
 #include "../../toolbarsettings.h"
 
+#include <QPointer>
 #include <QSettings>
+#include <QTimer>
 #include <QActionGroup>
 #include <QFileDialog>
 #include <QSvgGenerator>
@@ -452,10 +455,23 @@ void QETElementEditor::noticePlacedElements(const ElementsLocation &location)
 			for (ProjectView *view : editor->openedProjects()) {
 				opened_here = opened_here || view->project() == project;
 			}
-			if (opened_here) {
-				editor->reloadElementDrawings(project);
-				break;
+			if (!opened_here) {
+				continue;
 			}
+				//Once this save is over, from the event loop, and not from here:
+				//when a terminal changed, the reload reopens the project and
+				//closes the editors of its symbols first - this one among them,
+				//which would be torn down under the call still running in it,
+				//and the program crashed. Dropped if the project or the window
+				//was closed in between.
+			const QPointer<QETDiagramEditor> diagram_editor(editor);
+			const QPointer<QETProject> reloaded(project);
+			QTimer::singleShot(0, editor, [diagram_editor, reloaded]() {
+				if (diagram_editor && reloaded) {
+					diagram_editor->reloadElementDrawings(reloaded);
+				}
+			});
+			break;
 		}
 	}
 }
