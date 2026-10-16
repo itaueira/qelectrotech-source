@@ -119,24 +119,29 @@ namespace EmbeddedElementRefresh
 	QString collectionRelativePath(const QString &embedded_path);
 	QList<Entry> survey(QETProject *project,
 			    const QStringList &collection_dirs,
-			    const QString &common_dir = QString());
+			    const QString &common_dir = QString(),
+			    const QString &only_path = QString());
 	QStringList changedInBoth(QETProject *project,
-				  const QStringList &collection_dirs);
+				  const QStringList &collection_dirs,
+				  const QString &only_path = QString());
 	QStringList needingReload(QETProject *project,
 				  const QStringList &collection_dirs,
-				  const QSet<QString> &taken_from_collection = QSet<QString>());
+				  const QSet<QString> &taken_from_collection = QSet<QString>(),
+				  const QString &only_path = QString());
 	Report bringFromCollections(QETProject *project,
 				    const QStringList &collection_dirs,
 				    bool with_terminal_changes = false,
-				    const QSet<QString> &taken_from_collection = QSet<QString>());
+				    const QSet<QString> &taken_from_collection = QSet<QString>(),
+				    const QString &only_path = QString());
 	QUndoCommand *updateCommand(QETProject *project,
 				    const QStringList &collection_dirs,
 				    const QSet<QString> &taken_from_collection,
-				    Report *report);
+				    Report *report,
+				    const QString &only_path = QString());
 	QList<SymbolTextSync::Plan> textPlans(QETProject *project,
 					      SymbolTextSync::Mode mode = SymbolTextSync::Mode::Merge,
 					      const QList<Element *> &elements = QList<Element *>());
-	int adoptBoxes(QETProject *project);
+	int adoptBoxes(QETProject *project, const QString &only_path = QString());
 	QETProject *reopened(QETProject *project, QString *error = nullptr);
 	QStringList wiresLeftOut(QETProject *project);
 	QString reloadQuestion(int elements);
@@ -150,6 +155,15 @@ namespace EmbeddedElementRefresh
 			    const QStringList &collection_dirs);
 	QList<QETProject *> projectsPlacing(const ElementsLocation &saved,
 					    const QList<QETProject *> &projects);
+
+	/// What "Recharger maintenant" of the notice looks at (savedScope())
+	struct Scope
+	{
+		QStringList collection_dirs; ///< the collections to bring a newer version from
+		QString only_path;           ///< the copies to look at, "import/..."
+	};
+	Scope savedScope(const ElementsLocation &saved,
+			 const QStringList &collection_dirs);
 	QString noticeFor(const QString &embedded_path,
 			  const QDomElement &definition,
 			  const QList<QETProject *> &projects,

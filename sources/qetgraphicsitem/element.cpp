@@ -2760,9 +2760,21 @@ bool Element::definitionGeometryMatches(const QDomElement &definition) const
 
 namespace {
 
-	//One line per terminal of @p definition, with everything it says but its
-	//uuid, which the project keeps and the editor renews; sorted, so that
-	//the order of the parts in the file does not count
+	//"10" and "10.0" are the same place
+QString rounded(qreal value)
+{
+	return QString::number(qRound(value * 100) / 100.0);
+}
+
+	//One line per terminal of @p definition, with everything a terminal is
+	//read with (TerminalData::fromXml()) but its uuid, which the project
+	//keeps and the editor renews; sorted, so that the order of the parts in
+	//the file does not count.
+	//What is compared is what the program reads, not the attributes as they
+	//are written: the symbol editor writes type="Generic" on a terminal that
+	//had no type, which is read as Generic all the same, and comparing the
+	//text took every symbol saved once in the editor for one whose
+	//terminals had changed - and the project was reloaded for it.
 QStringList terminalSignature(const QDomElement &definition)
 {
 	QStringList lines;
@@ -2774,25 +2786,32 @@ QStringList terminalSignature(const QDomElement &definition)
 			 !terminal.isNull() ;
 			 terminal = terminal.nextSiblingElement(QStringLiteral("terminal")))
 		{
-			QStringList attributes;
-			const QDomNamedNodeMap map = terminal.attributes();
-			for (int i = 0 ; i < map.count() ; ++i)
-			{
-				const QDomAttr attribute = map.item(i).toAttr();
-				if (attribute.name() == QLatin1String("uuid")) {
-					continue;
-				}
-				QString value = attribute.value();
-					//"10" and "10.0" are the same place
-				bool is_number = false;
-				const double number = value.toDouble(&is_number);
-				if (is_number) {
-					value = QString::number(qRound(number * 100) / 100.0);
-				}
-				attributes << attribute.name() + QLatin1Char('=') + value;
+			TerminalData data;
+			if (!data.fromXml(terminal)) {
+				continue;
 			}
-			attributes.sort();
-			lines << attributes.join(QLatin1Char(';'));
+			QStringList read = {
+				QStringLiteral("x=") + rounded(data.m_pos.x()),
+				QStringLiteral("y=") + rounded(data.m_pos.y()),
+				QStringLiteral("name=") + data.m_name,
+				QStringLiteral("orientation=") + Qet::orientationToString(data.m_orientation),
+				QStringLiteral("type=") + TerminalData::typeToString(data.m_type),
+				QStringLiteral("role=") + CatalogPin::roleToString(data.m_role),
+				QStringLiteral("pair=") + data.m_pair,
+				QStringLiteral("potential=") + data.m_potential};
+			if (data.m_show_name) {
+				read << QStringLiteral("label=%1,%2;%3;%4;%5;%6;%7;%8")
+						.arg(rounded(data.m_label_pos.x()), rounded(data.m_label_pos.y()),
+							 data.m_label_font.toString(), rounded(data.m_label_rotation),
+							 QString::number(static_cast<int>(data.m_label_halignment)),
+							 QString::number(static_cast<int>(data.m_label_valignment)),
+							 data.m_label_frame ? QStringLiteral("frame") : QString(),
+							 data.m_label_color.name());
+			}
+			if (data.m_use_master_label) {
+				read << QStringLiteral("master_label=") + QString::number(data.m_master_label_index);
+			}
+			lines << read.join(QLatin1Char(';'));
 		}
 	}
 	lines.sort();

@@ -24,6 +24,7 @@
 #include "../../../../sources/ElementsCollection/xmlelementcollection.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontent.h"
+#include "../../../../sources/editor/ui/qetelementeditor.h"
 #include "../../../../sources/factory/elementpicturefactory.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
@@ -889,4 +890,166 @@ TEST_CASE("CU-45.19 — The reload needs no save and leaves the file on the disk
 	CHECK(reloaded->projectWasModified());
 	CHECK_FALSE(reloaded->changedOnDisk());
 	CHECK(bytesOf(project->filePath()) == on_disk);
+}
+
+namespace
+{
+	/// The terminals of @p definition, as many as there are
+	QList<QDomElement> terminalElements(const QDomDocument &definition)
+	{
+		QList<QDomElement> terminals;
+		for (QDomElement terminal = terminalsOf(definition).firstChildElement(QStringLiteral("terminal"));
+			 !terminal.isNull();
+			 terminal = terminal.nextSiblingElement(QStringLiteral("terminal"))) {
+			terminals << terminal;
+		}
+		return terminals;
+	}
+
+	/// A placed element of @p project drawn from a copy under import/ other
+	/// than @p not_path, with a terminal
+	Element *otherImportedElement(QETProject *project, const QString &not_path)
+	{
+		for (Diagram *diagram : project->diagrams())
+		{
+			const DiagramContent content(diagram, false);
+			for (Element *element : content.m_elements)
+			{
+				const QString path = element->location().collectionPath(false);
+				if (path.startsWith(import_prefix) && path != not_path
+						&& !element->terminals().isEmpty()) {
+					return element;
+				}
+			}
+		}
+		return nullptr;
+	}
+}
+
+/*
+	Measured on 16/10/2026 on a real project: only a text of the folio
+	report arrow was changed in the symbol editor, and "Recharger maintenant"
+	of its notice reloaded the project for twelve elements, leaving out
+	eight wires. Two causes, one case each.
+*/
+
+TEST_CASE("T62 — Saved again by the symbol editor, terminals untouched: no reload",
+		  "[embeddedrefresh][T62]")
+{
+	Bench bench(GENERATE(from_range(examples)));
+	REQUIRE(bench.element);
+	const QString path = bench.path;
+
+		//The copy as an old symbol has it, its terminals with no type, and
+		//the elements built from it
+	QDomDocument typeless = copyOf(bench.element);
+	for (QDomElement terminal : terminalElements(typeless)) {
+		terminal.removeAttribute(QStringLiteral("type"));
+	}
+	REQUIRE(saveOverCopy(bench.get(), path, typeless));
+	REQUIRE(bench.project.saveAndReopen());
+	QETProject *project = bench.get();
+	const QList<Element *> placed = EmbeddedElementRefresh::placedElements(project, path);
+	REQUIRE_FALSE(placed.isEmpty());
+
+		//Opened and saved in the symbol editor, nothing changed
+	const ElementsLocation location(path, project);
+	{
+		QETElementEditor editor;
+		editor.fromLocation(location);
+		REQUIRE(editor.toLocation(location));
+	}
+
+		//What the editor wrote: a type on every terminal, which is the
+		//difference this case is about - without it the case proves nothing
+	QDomDocument saved;
+	saved.appendChild(saved.importNode(ElementsLocation(path, project).xml(), true));
+	const QList<QDomElement> terminals = terminalElements(saved);
+	REQUIRE_FALSE(terminals.isEmpty());
+	for (const QDomElement &terminal : terminals) {
+		REQUIRE(terminal.attribute(QStringLiteral("type")) == QStringLiteral("Generic"));
+	}
+
+	for (const Element *element : placed) {
+		CHECK(element->definitionTerminalsMatch(saved.documentElement()));
+	}
+	CHECK(EmbeddedElementRefresh::needingReload(project, {}, {}, path).isEmpty());
+}
+
+TEST_CASE("T62 — The reload of the notice looks at the saved symbol and nothing else",
+		  "[embeddedrefresh][T62]")
+{
+	Bench bench(GENERATE(from_range(examples)));
+	REQUIRE(bench.element);
+	QETProject *project = bench.get();
+
+		//Another symbol of the project has, in the company collection, a
+		//version whose terminals moved: the whole command reloads for it
+	Element *other = otherImportedElement(project, bench.path);
+	REQUIRE(other);
+	const QString other_path = other->location().collectionPath(false);
+	REQUIRE(writeInto(bench.company.path(), other_path, withMovedTerminals(other)));
+	const QStringList whole = EmbeddedElementRefresh::needingReload(project, bench.dirs());
+	REQUIRE(whole.contains(EmbeddedElementRefresh::describe(other)));
+
+	SECTION("saved in the project's copy: no collection is asked")
+	{
+		QDomDocument saved = copyOf(bench.element);
+		newRevision(saved);
+		REQUIRE(saveOverCopy(project, bench.path, saved));
+
+		const EmbeddedElementRefresh::Scope scope = EmbeddedElementRefresh::savedScope(
+					ElementsLocation(bench.path, project), bench.dirs());
+		CHECK(scope.collection_dirs.isEmpty());
+		CHECK(scope.only_path == bench.path);
+
+		CHECK(EmbeddedElementRefresh::needingReload(
+				  project, scope.collection_dirs, {}, scope.only_path).isEmpty());
+		CHECK(EmbeddedElementRefresh::changedInBoth(
+				  project, scope.collection_dirs, scope.only_path).isEmpty());
+		EmbeddedElementRefresh::Report report;
+		std::unique_ptr<QUndoCommand> update(EmbeddedElementRefresh::updateCommand(
+				project, scope.collection_dirs, {}, &report, scope.only_path));
+		CHECK(report.brought_symbols == 0);
+		CHECK(report.terminals_changed.isEmpty());
+	}
+
+	SECTION("saved in a collection: that symbol is brought, and only it")
+	{
+			//A copy under import/ once. One under import/import/ - a symbol
+			//placed from another project's own collection - is not reached by
+			//the notice of a symbol saved in a collection. Looked for, and not
+			//taken from the bench: the order of the elements of a folio is not
+			//the same from one run to the next
+		Element *saved_element = nullptr;
+		for (Diagram *diagram : project->diagrams()) {
+			for (Element *element : DiagramContent(diagram, false).m_elements) {
+				const QString path = element->location().collectionPath(false);
+				if (!saved_element && path != other_path && path.startsWith(import_prefix)
+						&& path == import_prefix
+								   + EmbeddedElementRefresh::collectionRelativePath(path)) {
+					saved_element = element;
+				}
+			}
+		}
+		REQUIRE(saved_element);
+		const QString saved_path = saved_element->location().collectionPath(false);
+		REQUIRE(writeInto(bench.company.path(), saved_path, withBlock(saved_element)));
+
+		const ElementsLocation saved(QStringLiteral("company://")
+									 + EmbeddedElementRefresh::collectionRelativePath(saved_path));
+		REQUIRE(saved.isFileSystem());
+		const EmbeddedElementRefresh::Scope scope =
+				EmbeddedElementRefresh::savedScope(saved, bench.dirs());
+		CHECK(scope.collection_dirs == bench.dirs());
+		CHECK(scope.only_path == saved_path);
+
+		CHECK(EmbeddedElementRefresh::needingReload(
+				  project, scope.collection_dirs, {}, scope.only_path).isEmpty());
+		EmbeddedElementRefresh::Report report;
+		std::unique_ptr<QUndoCommand> update(EmbeddedElementRefresh::updateCommand(
+				project, scope.collection_dirs, {}, &report, scope.only_path));
+		CHECK(report.brought_symbols == 1);
+		CHECK(report.terminals_changed.isEmpty());
+	}
 }

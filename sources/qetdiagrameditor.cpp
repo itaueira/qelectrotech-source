@@ -6947,15 +6947,31 @@ void QETDiagramEditor::slot_reloadElementDrawings() {
 */
 void QETDiagramEditor::reloadElementDrawings(QETProject *project)
 {
-	if (!project) return;
+	reloadElementDrawings(project, EmbeddedElementRefresh::editableCollectionDirs(),
+						  QString());
+}
 
-	const QStringList collection_dirs = EmbeddedElementRefresh::editableCollectionDirs();
+/**
+	@brief QETDiagramEditor::reloadElementDrawings
+	The same, limited to the copies at @p only_path and the elements placed
+	from them, and to the collections @p collection_dirs: what the notice of
+	the editor of symbols runs for the symbol just saved, and nothing else
+	(EmbeddedElementRefresh::savedScope()).
+	@param project : a project open in this editor
+	@param collection_dirs : the collections to bring a newer version from
+	@param only_path : the copies to look at; every copy when empty
+*/
+void QETDiagramEditor::reloadElementDrawings(QETProject *project,
+											 const QStringList &collection_dirs,
+											 const QString &only_path)
+{
+	if (!project) return;
 
 		//A symbol changed in the project and in a collection: which version
 		//stays is the user's call, and nothing here can make it for them
 	QSet<QString> taken_from_collection;
 	const QStringList changed_in_both =
-			EmbeddedElementRefresh::changedInBoth(project, collection_dirs);
+			EmbeddedElementRefresh::changedInBoth(project, collection_dirs, only_path);
 	if (!changed_in_both.isEmpty())
 	{
 		QStringList paths;
@@ -6985,7 +7001,7 @@ void QETDiagramEditor::reloadElementDrawings(QETProject *project)
 		//of element, can only be applied by building the elements again, so
 		//the project is reloaded - if the user agrees
 	const QStringList needing_reload = EmbeddedElementRefresh::needingReload(
-				project, collection_dirs, taken_from_collection);
+				project, collection_dirs, taken_from_collection, only_path);
 	if (!needing_reload.isEmpty())
 	{
 		QMessageBox question(QMessageBox::Question,
@@ -6999,7 +7015,8 @@ void QETDiagramEditor::reloadElementDrawings(QETProject *project)
 		question.setDetailedText(needing_reload.join(QLatin1Char('\n')));
 		question.exec();
 		if (question.clickedButton() == reload) {
-			reloadProjectFromMemory(project, collection_dirs, taken_from_collection);
+			reloadProjectFromMemory(project, collection_dirs, taken_from_collection,
+									only_path);
 			return;
 		}
 	}
@@ -7008,12 +7025,12 @@ void QETDiagramEditor::reloadElementDrawings(QETProject *project)
 		//Ctrl+Z (T58)
 	EmbeddedElementRefresh::Report brought;
 	if (QUndoCommand *update = EmbeddedElementRefresh::updateCommand(
-				project, collection_dirs, taken_from_collection, &brought)) {
+				project, collection_dirs, taken_from_collection, &brought, only_path)) {
 		project->undoStack()->push(update);
 	}
 		//A copy corrected from a folio may come with another size or hotspot,
 		//which the redraw below would refuse: the elements take it first
-	EmbeddedElementRefresh::adoptBoxes(project);
+	EmbeddedElementRefresh::adoptBoxes(project, only_path);
 
 	QList<Element *> elements;
 	QSet<QString> dropped_locations;
@@ -7022,6 +7039,10 @@ void QETDiagramEditor::reloadElementDrawings(QETProject *project)
 		DiagramContent content(diagram, false);
 		for (Element *elmt : content.m_elements)
 		{
+			if (!only_path.isEmpty()
+					&& elmt->location().collectionPath(false) != only_path) {
+				continue;
+			}
 			elements << elmt;
 			const QString key = elmt->location().toString();
 			if (!dropped_locations.contains(key))
@@ -7147,10 +7168,15 @@ void QETDiagramEditor::resetSymbolTexts()
 	the windows tied to the old project are gone.
 	@param project : the current project
 	@param collection_dirs : the editable collections
+	@param taken_from_collection : the copies changed in the project and in a
+	collection whose collection version the user chose
+	@param only_path : the copies to bring and whose elements' texts follow
+	their symbol; every copy when empty
 */
 void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
 											   const QStringList &collection_dirs,
-											   const QSet<QString> &taken_from_collection)
+											   const QSet<QString> &taken_from_collection,
+											   const QString &only_path)
 {
 	ProjectView *view = findProject(project);
 	if (!view || !view->closeElementEditors()) {
@@ -7161,10 +7187,17 @@ void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
 	const int folio = shown ? project->diagrams().indexOf(shown->diagram()) : -1;
 
 	EmbeddedElementRefresh::Report brought = EmbeddedElementRefresh::bringFromCollections(
-				project, collection_dirs, true, taken_from_collection);
+				project, collection_dirs, true, taken_from_collection, only_path);
 		//The texts before the reload: opening a project puts back the texts
 		//saved with each element, not those of its symbol (T58)
-	auto *texts = new SyncSymbolTextsCommand(EmbeddedElementRefresh::textPlans(project));
+	const QList<Element *> following = only_path.isEmpty()
+			? QList<Element *>()
+			: EmbeddedElementRefresh::placedElements(project, only_path);
+	auto *texts = new SyncSymbolTextsCommand(
+				only_path.isEmpty() || !following.isEmpty()
+				? EmbeddedElementRefresh::textPlans(project, SymbolTextSync::Mode::Merge,
+													following)
+				: QList<SymbolTextSync::Plan>());
 	brought.text_elements = texts->elements();
 	brought.added_texts = texts->addedTexts();
 	brought.changed_texts = texts->changedTexts();

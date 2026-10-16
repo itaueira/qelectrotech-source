@@ -448,6 +448,9 @@ void QETElementEditor::noticePlacedElements(const ElementsLocation &location)
 	}
 	const QList<QETProject *> projects = EmbeddedElementRefresh::projectsPlacing(
 				location, QETApp::registeredProjects().values());
+		//This symbol and nothing else: the notice is about it
+	const EmbeddedElementRefresh::Scope scope = EmbeddedElementRefresh::savedScope(
+				location, EmbeddedElementRefresh::editableCollectionDirs());
 	for (QETProject *project : projects) {
 		for (QETDiagramEditor *editor : QETApp::diagramEditors())
 		{
@@ -466,9 +469,10 @@ void QETElementEditor::noticePlacedElements(const ElementsLocation &location)
 				//was closed in between.
 			const QPointer<QETDiagramEditor> diagram_editor(editor);
 			const QPointer<QETProject> reloaded(project);
-			QTimer::singleShot(0, editor, [diagram_editor, reloaded]() {
+			QTimer::singleShot(0, editor, [diagram_editor, reloaded, scope]() {
 				if (diagram_editor && reloaded) {
-					diagram_editor->reloadElementDrawings(reloaded);
+					diagram_editor->reloadElementDrawings(reloaded, scope.collection_dirs,
+														  scope.only_path);
 				}
 			});
 			break;

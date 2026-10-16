@@ -212,8 +212,11 @@ class QETDiagramEditor : public QETMainWindow
 		void slot_cableNumbering();
 		void slot_reloadElementDrawings();
 		void reloadElementDrawings(QETProject *project);
+		void reloadElementDrawings(QETProject *project, const QStringList &collection_dirs,
+					   const QString &only_path);
 		void reloadProjectFromMemory(QETProject *project, const QStringList &collection_dirs,
-					     const QSet<QString> &taken_from_collection = QSet<QString>());
+					     const QSet<QString> &taken_from_collection = QSet<QString>(),
+					     const QString &only_path = QString());
 #ifdef QET_HAS_SCRIPTING
 		void slot_runScript();
 		void rebuildScriptActions();

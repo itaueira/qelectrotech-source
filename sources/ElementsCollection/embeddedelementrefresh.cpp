@@ -288,12 +288,15 @@ QList<Element *> EmbeddedElementRefresh::placedElements(
 	@param project : the project
 	@param collection_dirs : the editable collections
 	@param common_dir : the QElectroTech collection, by default the program's
+	@param only_path : the one copy to survey, "import/..."; every copy when
+	empty
 	@return one entry per copy, in no particular order
 */
 QList<EmbeddedElementRefresh::Entry> EmbeddedElementRefresh::survey(
 		QETProject *project,
 		const QStringList &collection_dirs,
-		const QString &common_dir)
+		const QString &common_dir,
+		const QString &only_path)
 {
 	QList<Entry> entries;
 	const QHash<QString, QList<Element *>> placed = placedByPath(project);
@@ -303,6 +306,9 @@ QList<EmbeddedElementRefresh::Entry> EmbeddedElementRefresh::survey(
 
 	for (const auto &copy : importedCopies(project))
 	{
+		if (!only_path.isEmpty() && copy.first != only_path) {
+			continue;
+		}
 		Entry entry;
 		entry.embedded_path = copy.first;
 		entry.placed = placed.value(copy.first);
@@ -390,13 +396,14 @@ QList<EmbeddedElementRefresh::Entry> EmbeddedElementRefresh::survey(
 	keep
 */
 QStringList EmbeddedElementRefresh::changedInBoth(QETProject *project,
-												  const QStringList &collection_dirs)
+												  const QStringList &collection_dirs,
+												  const QString &only_path)
 {
 	QStringList paths;
 	if (!project || project->isReadOnly()) {
 		return paths;
 	}
-	for (const Entry &entry : survey(project, collection_dirs)) {
+	for (const Entry &entry : survey(project, collection_dirs, QString(), only_path)) {
 		if (entry.outcome == Outcome::ChangedInProject) {
 			paths << entry.embedded_path;
 		}
@@ -431,7 +438,8 @@ EmbeddedElementRefresh::Report collect(
 		const QStringList &collection_dirs,
 		bool with_terminal_changes,
 		const QSet<QString> &taken_from_collection,
-		QList<RefreshEmbeddedElementsCommand::Change> &changes)
+		QList<RefreshEmbeddedElementsCommand::Change> &changes,
+		const QString &only_path)
 {
 	using namespace EmbeddedElementRefresh;
 	Report report;
@@ -439,7 +447,7 @@ EmbeddedElementRefresh::Report collect(
 		return report;
 	}
 
-	for (Entry entry : survey(project, collection_dirs))
+	for (Entry entry : survey(project, collection_dirs, QString(), only_path))
 	{
 		if (entry.outcome == Outcome::ChangedInProject
 				&& taken_from_collection.contains(entry.embedded_path)) {
@@ -518,17 +526,20 @@ EmbeddedElementRefresh::Report collect(
 	A copy changed in the project and in a collection is brought when its
 	path is in @p taken_from_collection, which is the user's answer; it is
 	left and listed otherwise.
+
+	With @p only_path, only the copy at that path is looked at.
 	@return what was done and what was left, for the message
 */
 EmbeddedElementRefresh::Report EmbeddedElementRefresh::bringFromCollections(
 		QETProject *project,
 		const QStringList &collection_dirs,
 		bool with_terminal_changes,
-		const QSet<QString> &taken_from_collection)
+		const QSet<QString> &taken_from_collection,
+		const QString &only_path)
 {
 	QList<RefreshEmbeddedElementsCommand::Change> changes;
 	const Report report = collect(project, collection_dirs, with_terminal_changes,
-								  taken_from_collection, changes);
+								  taken_from_collection, changes, only_path);
 	if (!changes.isEmpty()) {
 		project->undoStack()->push(new RefreshEmbeddedElementsCommand(project, changes));
 	}
@@ -551,17 +562,20 @@ EmbeddedElementRefresh::Report EmbeddedElementRefresh::bringFromCollections(
 	a collection whose collection version the user chose
 	@param report : filled with what is brought and what is left, and with
 	the count of texts
+	@param only_path : the one copy to look at, and the elements placed from
+	it; every copy and every element when empty
 	@return the command, to push; nullptr when there is nothing to do
 */
 QUndoCommand *EmbeddedElementRefresh::updateCommand(
 		QETProject *project,
 		const QStringList &collection_dirs,
 		const QSet<QString> &taken_from_collection,
-		Report *report)
+		Report *report,
+		const QString &only_path)
 {
 	QList<RefreshEmbeddedElementsCommand::Change> changes;
 	const Report brought = collect(project, collection_dirs, false,
-								   taken_from_collection, changes);
+								   taken_from_collection, changes, only_path);
 	if (report) {
 		*report = brought;
 	}
@@ -575,8 +589,12 @@ QUndoCommand *EmbeddedElementRefresh::updateCommand(
 	}
 
 	QList<Element *> placed;
-	for (Diagram *diagram : project->diagrams()) {
-		placed << DiagramContent(diagram, false).m_elements;
+	if (only_path.isEmpty()) {
+		for (Diagram *diagram : project->diagrams()) {
+			placed << DiagramContent(diagram, false).m_elements;
+		}
+	} else {
+		placed = placedElements(project, only_path);
 	}
 	const QHash<QString, SymbolTextSync::Consensus> common = consensusByCopy(placed);
 
@@ -624,14 +642,16 @@ QUndoCommand *EmbeddedElementRefresh::updateCommand(
 	stands for a terminal renamed, turned or given another type, and for
 	another kind of element. A symbol changed in the project and in a
 	collection counts when the user took the collection's version, in
-	@p taken_from_collection.
+	@p taken_from_collection. With @p only_path, only the copy at that path
+	and the elements placed from it are looked at.
 	@return one line per element, with its folio; empty when nothing needs
 	the project to be reloaded, or when it is read-only
 */
 QStringList EmbeddedElementRefresh::needingReload(
 		QETProject *project,
 		const QStringList &collection_dirs,
-		const QSet<QString> &taken_from_collection)
+		const QSet<QString> &taken_from_collection,
+		const QString &only_path)
 {
 	QStringList lines;
 	if (!project || project->isReadOnly()) {
@@ -639,7 +659,7 @@ QStringList EmbeddedElementRefresh::needingReload(
 	}
 
 	QSet<const Element *> listed;
-	for (const Entry &entry : survey(project, collection_dirs))
+	for (const Entry &entry : survey(project, collection_dirs, QString(), only_path))
 	{
 		const bool taken = entry.outcome == Outcome::ChangedInProject
 				&& entry.terminals_changed
@@ -658,7 +678,9 @@ QStringList EmbeddedElementRefresh::needingReload(
 		const DiagramContent content(diagram, false);
 		for (const Element *element : content.m_elements)
 		{
-			if (listed.contains(element)) {
+			if (listed.contains(element)
+					|| (!only_path.isEmpty()
+						&& element->location().collectionPath(false) != only_path)) {
 				continue;
 			}
 			const QDomElement definition = element->location().xml();
@@ -732,9 +754,11 @@ QList<SymbolTextSync::Plan> EmbeddedElementRefresh::textPlans(
 	only visual: the box of an element is never saved, it is read from the
 	definition when the element is built. Nothing is pushed on the undo
 	stack and the project is not marked as modified.
+	@param only_path : the copy whose elements are looked at; every element
+	when empty
 	@return the number of elements given a new box
 */
-int EmbeddedElementRefresh::adoptBoxes(QETProject *project)
+int EmbeddedElementRefresh::adoptBoxes(QETProject *project, const QString &only_path)
 {
 	int adopted = 0;
 	if (!project) {
@@ -745,6 +769,10 @@ int EmbeddedElementRefresh::adoptBoxes(QETProject *project)
 		const DiagramContent content(diagram, false);
 		for (Element *element : content.m_elements)
 		{
+			if (!only_path.isEmpty()
+					&& element->location().collectionPath(false) != only_path) {
+				continue;
+			}
 			const QDomElement definition = element->location().xml();
 			if (!definition.isNull()
 					&& !element->definitionGeometryMatches(definition)
@@ -1071,6 +1099,41 @@ QList<QETProject *> EmbeddedElementRefresh::projectsPlacing(
 		}
 	}
 	return placing;
+}
+
+/**
+	@brief EmbeddedElementRefresh::savedScope
+	What "Recharger maintenant" of the notice looks at once the symbol at
+	@p saved was saved: that symbol, and nothing else.
+
+	A copy saved in a project needs no collection: it is what the folio
+	must follow, and asking the collections about it would take the copy
+	just saved for one changed in the project and in a collection. A symbol
+	saved in a collection is brought from @p collection_dirs, and only it.
+
+	The whole survey of "Recharger les dessins des éléments" is not run from
+	the notice: measured on 16/10/2026 on a real project, saving the arrow
+	in the editor brought, with it, the versions of a terminal block and of
+	a sensor that the company collection holds from another project - found
+	there by their file name - and reloading for them left out eight wires
+	of a folio nobody had touched.
+	@param saved : where the symbol was saved
+	@param collection_dirs : the editable collections
+	@return the collections and the path of the copies to look at; an empty
+	path for a location the notice says nothing about
+*/
+EmbeddedElementRefresh::Scope EmbeddedElementRefresh::savedScope(
+		const ElementsLocation &saved,
+		const QStringList &collection_dirs)
+{
+	Scope scope;
+	if (saved.isProject()) {
+		scope.only_path = saved.collectionPath(false);
+	} else if (saved.isFileSystem() && saved.isWritable()) {
+		scope.only_path = import_prefix + saved.collectionPath(false);
+		scope.collection_dirs = collection_dirs;
+	}
+	return scope;
 }
 
 /**
