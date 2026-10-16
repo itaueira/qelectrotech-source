@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "diagram.h"
+#include "griddots.h"
 #include "autoNum/elementautonumschemecommand.h"
 
 #include "ElementsCollection/elementcollectionhandler.h"
@@ -385,18 +386,6 @@ void Diagram::drawBackground(QPainter *p, const QRectF &r) {
 		qreal limit_x = rect.x() + rect.width();
 		qreal limit_y = rect.y() + rect.height();
 
-		int g_x = (int)ceil(rect.x());
-		while (g_x % xGrid) ++ g_x;
-		int g_y = (int)ceil(rect.y());
-		while (g_y % yGrid) ++ g_y;
-
-		QPolygon points;
-		for (int gx = g_x ; gx < limit_x ; gx += xGrid) {
-			for (int gy = g_y ; gy < limit_y ; gy += yGrid) {
-				points << QPoint(gx, gy);
-			}
-		}
-
 		qreal zoom_factor = p->transform().m11();
 		int minWidthPen = settings.value(QStringLiteral("diagrameditor/grid_pointsize_min"), 1).toInt();
 		int maxWidthPen = settings.value(QStringLiteral("diagrameditor/grid_pointsize_max"), 1).toInt();
@@ -416,8 +405,27 @@ void Diagram::drawBackground(QPainter *p, const QRectF &r) {
 						pen.setWidth(maxWidthPen);
 		}
 		p -> setPen(pen);
+
+			//A small grid seen from afar puts the dots closer than their
+			//own width, so only every few of them are drawn - still points
+			//of the grid, so what is seen stays where things snap.
+		const int x_step = xGrid * GridDots::stride(xGrid, zoom_factor, pen.width());
+		const int y_step = yGrid * GridDots::stride(yGrid, zoom_factor, pen.width());
 		if (zoom_factor > 0.5) // no grid below ... !
-				p -> drawPoints(points);
+		{
+			int g_x = (int)ceil(rect.x());
+			while (g_x % x_step) ++ g_x;
+			int g_y = (int)ceil(rect.y());
+			while (g_y % y_step) ++ g_y;
+
+			QPolygon points;
+			for (int gx = g_x ; gx < limit_x ; gx += x_step) {
+				for (int gy = g_y ; gy < limit_y ; gy += y_step) {
+					points << QPoint(gx, gy);
+				}
+			}
+			p -> drawPoints(points);
+		}
 
 			//The finer grid, under the main one and fainter than it, so the
 			//main grid stays the one the eye lands on: it is the one the
@@ -450,7 +458,7 @@ void Diagram::drawBackground(QPainter *p, const QRectF &r) {
 				for (int gy = fy ; gy < limit_y ; gy += fine_y) {
 						//The main grid already drew these, and drawing them
 						//again in a fainter pen only makes them muddy.
-					if (gx % xGrid == 0 && gy % yGrid == 0) {
+					if (gx % x_step == 0 && gy % y_step == 0) {
 						continue;
 					}
 					fine_points << QPoint(gx, gy);

@@ -335,6 +335,8 @@ QUuid QETProject::derivedItemUuid(const QString &kind, const QString &key)
 */
 void QETProject::init()
 {
+	m_auto_conductor = defaultAutoConductor();
+
 	connect(&m_titleblocks_collection, &TitleBlockTemplatesCollection::changed, this, &QETProject::updateDiagramsTitleBlockTemplate);
 	connect(&m_titleblocks_collection, &TitleBlockTemplatesCollection::aboutToRemove, this, &QETProject::removeDiagramsTitleBlockTemplate);
 
@@ -1402,6 +1404,28 @@ void QETProject::setAutoConductor(bool ac)
 {
 	if (ac != m_auto_conductor)
 		m_auto_conductor = ac;
+}
+
+/**
+	@brief QETProject::defaultAutoConductor
+	@return whether a project starts with the auto conductor on: the last
+	choice made with its button, on when none was ever made. It is a choice
+	of the user and not of the project, so it is not saved in the file.
+*/
+bool QETProject::defaultAutoConductor()
+{
+	return QSettings().value(QStringLiteral("diagrameditor/auto_conductor"), true).toBool();
+}
+
+/**
+	@brief QETProject::setDefaultAutoConductor
+	Remember @p ac for the projects opened from now on, see
+	defaultAutoConductor(). The projects already open keep theirs.
+	@param ac
+*/
+void QETProject::setDefaultAutoConductor(bool ac)
+{
+	QSettings().setValue(QStringLiteral("diagrameditor/auto_conductor"), ac);
 }
 
 /**

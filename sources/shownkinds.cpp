@@ -19,10 +19,31 @@
 
 #include <QGraphicsItem>
 #include <QGraphicsScene>
+#include <QSettings>
+#include <QStringList>
+
+#include <iterator>
 
 namespace
 {
 	bool hidden[ShownKinds::KindCount] = {};
+
+		/// The name each kind is saved under, in the order of Kind: a name
+		/// and not the number, so a kind added to the enum does not shift
+		/// what was saved
+	const char *const saved_names[] = {
+		"symbol_texts",
+		"wire_numbers",
+		"free_texts",
+		"shapes",
+		"pictures",
+		"tables",
+		"cross_references"
+	};
+	static_assert(std::size(saved_names) == ShownKinds::KindCount,
+				  "every kind needs the name it is saved under");
+
+	const QString settings_key = QStringLiteral("diagrameditor/hidden_kinds");
 }
 
 /**
@@ -41,6 +62,34 @@ void ShownKinds::setShown(Kind kind, bool shown)
 {
 	if (kind < KindCount) {
 		hidden[kind] = !shown;
+	}
+}
+
+/**
+	Write the hidden kinds to the settings, for restore() to read when the
+	program opens again.
+*/
+void ShownKinds::save()
+{
+	QStringList names;
+	for (int kind = 0 ; kind < KindCount ; ++kind) {
+		if (hidden[kind]) {
+			names << QLatin1String(saved_names[kind]);
+		}
+	}
+	QSettings().setValue(settings_key, names);
+}
+
+/**
+	Hide the kinds save() wrote, and show every other one. Nothing saved
+	shows everything, as the program always did. Items already on a scene
+	change when apply() is called on it.
+*/
+void ShownKinds::restore()
+{
+	const QStringList names = QSettings().value(settings_key).toStringList();
+	for (int kind = 0 ; kind < KindCount ; ++kind) {
+		hidden[kind] = names.contains(QLatin1String(saved_names[kind]));
 	}
 }
 

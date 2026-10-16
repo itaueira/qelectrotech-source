@@ -134,6 +134,9 @@ add_executable(
     # A regra e um cabecalho so, sem tela: o ProjectView que guarda uma esta
     # no C_uitests.
     src/navigationhistory_test.cpp
+    # Which dots of the folio grid are drawn: a header only, like the one
+    # above.
+    src/griddots_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -1011,7 +1014,9 @@ if(TARGET qet_core)
         src/ui/symboltextsync_test.cpp
         # A coluna de paginas das janelas de configuracao: icones e nomes
         # num eixo so, qualquer que seja o tamanho do nome.
-        src/ui/configdialog_test.cpp)
+        src/ui/configdialog_test.cpp
+        # The auto conductor and the grid start the way they were left.
+        src/ui/rememberedtoggles_test.cpp)
 
     target_link_libraries(
         C_uitests

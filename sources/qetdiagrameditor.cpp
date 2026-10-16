@@ -572,6 +572,9 @@ void QETDiagramEditor::setUpActions()
 	m_auto_conductor->setStatusTip (tr("Utiliser la création automatique de conducteur(s) quand cela est possible", "Status tip of auto conductor"));
 	m_auto_conductor->setCheckable (true);
 	connect(m_auto_conductor, &QAction::triggered, [this](bool ac) {
+			//Remembered, so the next project and the next session start
+			//the way it was left
+		QETProject::setDefaultAutoConductor(ac);
 		if (ProjectView *pv = currentProjectView())
 			pv->project()->setAutoConductor(ac);
 	});
@@ -610,6 +613,10 @@ void QETDiagramEditor::setUpActions()
 	m_draw_grid->setCheckable(true);
 	m_draw_grid->setChecked(settings.value("diagrameditor/grid_display_startup", true).toBool());
 	connect(m_draw_grid, &QAction::triggered, [this](bool checked) {
+			//The same setting as "Afficher la grille par défaut" in the
+			//preferences: the folios opened later, in this session or the
+			//next, show the grid the way it was left
+		QSettings().setValue(QStringLiteral("diagrameditor/grid_display_startup"), checked);
 		foreach (ProjectView *prjv, this->openedProjects())
 			foreach (Diagram *d, prjv->project()->diagrams()) {
 				d->setDisplayGrid(checked);
@@ -651,6 +658,8 @@ void QETDiagramEditor::setUpActions()
 	m_draw_guides->setCheckable(true);
 	m_draw_guides->setChecked(settings.value("diagrameditor/guides_display_startup", false).toBool());
 	connect(m_draw_guides, &QAction::triggered, [this](bool checked) {
+			//Remembered like the grid, in the setting of the preferences
+		QSettings().setValue(QStringLiteral("diagrameditor/guides_display_startup"), checked);
 		foreach (ProjectView *prjv, this->openedProjects())
 			foreach (Diagram *d, prjv->project()->diagrams()) {
 				d->setDisplayGuides(checked);
@@ -700,6 +709,7 @@ void QETDiagramEditor::setUpActions()
 		action->setData(int(kind.first));
 		connect(action, &QAction::triggered, this, [kind](bool checked) {
 			ShownKinds::setShown(kind.first, checked);
+			ShownKinds::save();
 			for (QETProject *project : QETApp::registeredProjects())
 				for (Diagram *diagram : project->diagrams())
 					ShownKinds::apply(diagram, kind.first);

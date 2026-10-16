@@ -237,6 +237,8 @@ class QETProject : public QObject
 		void setFreezeNewConductors(bool);
 
 		bool autoConductor () const;
+		static bool defaultAutoConductor();
+		static void setDefaultAutoConductor(bool ac);
 		bool autoBreakConductor () const;
 		bool autoElement () const;
 		bool autoFolio () const;

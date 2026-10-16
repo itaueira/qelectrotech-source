@@ -37,10 +37,13 @@ class QGraphicsScene;
 	state can only veto what they ask for: showing a kind again brings back
 	only what was hidden for it, never what an item hid itself.
 
-	The state is for the whole application and is not saved: it is a way of
-	looking at the folios, like the grid. Hidden items are left out of
-	printing and exports, and Qt does not select them, so nothing hidden is
-	copied, moved or deleted by accident.
+	The state is for the whole application, a way of looking at the folios
+	like the grid, and not part of any project. save() and restore() keep it
+	in the settings, so the program opens the way it was left. Hidden items
+	are left out of printing and exports, and Qt does not select them, so
+	nothing hidden is copied, moved or deleted by accident - which is why
+	the status bar says how many kinds are hidden from the moment the
+	program opens.
 
 	This part knows nothing of Diagram, so it can be tested on a plain scene.
 */
@@ -66,6 +69,9 @@ namespace ShownKinds
 	bool isShown(Kind kind);
 	void setShown(Kind kind, bool shown);
 	int hiddenCount();
+
+	void save();
+	void restore();
 
 	void tag(QGraphicsItem *item, Kind kind);
 	void setVisible(QGraphicsItem *item, bool visible);

@@ -251,6 +251,7 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/folionavigationbuttons.h
   ${QET_DIR}/sources/genericpanel.cpp
   ${QET_DIR}/sources/genericpanel.h
+  ${QET_DIR}/sources/griddots.h
   ${QET_DIR}/sources/itemgroups.cpp
   ${QET_DIR}/sources/itemgroups.h
   ${QET_DIR}/sources/shownkinds.cpp
