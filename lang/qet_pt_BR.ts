@@ -11188,12 +11188,12 @@ que você criar. Entradas de texto e números
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1176"/>
         <source>DiagramEditor xGrid</source>
-        <translation>Editor de diagrama  Grade X</translation>
+        <translation>Editor de diagrama Grade X</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1143"/>
         <source>DiagramEditor yGrid</source>
-        <translation>Editor de diagrama  Grade Y</translation>
+        <translation>Editor de diagrama Grade Y</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="45"/>
@@ -19554,7 +19554,7 @@ Para gravar um arquivo para uma versão do QElectroTech que não abre %2, use Ar
         <location filename="../sources/qetapp.cpp" line="2553"/>
         <source>Configure QElectroTech</source>
         <comment>window title</comment>
-        <translation>Configurar  o QElectroTech</translation>
+        <translation>Configurar o QElectroTech</translation>
     </message>
     <message>
         <location filename="../sources/qetapp.cpp" line="2654"/>
