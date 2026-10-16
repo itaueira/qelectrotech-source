@@ -343,6 +343,26 @@ void DynamicElementTextItem::fromXml(const QDomElement &dom_elmt)
 	
 		//Force the update of the displayed text
 	setTextFrom(m_text_from);
+
+		//What a text of a folio report shows is worked out, not read: the
+		//reference to the other end, its tag, a property of its wire. Read
+		//again over a text already showing it - the texts of a symbol
+		//brought in line (T62) - the text was emptied above, and
+		//setInfoName() only works it out again when the information changes,
+		//which a text read again with the same one does not
+	if (m_parent_element
+		&& ((m_parent_element.data()->linkType() & Element::AllReport)
+			|| m_parent_element.data()->linkType() == Element::ConductorDefinition))
+	{
+		if (isReportLabel()) {
+			updateReportText();
+		} else if (m_text_from == ElementInfo && m_info_name == QETInformation::ELMT_REPORT_TAG) {
+			setPlainText(paintedInfoValue(m_parent_element.data()->elementInformations(),
+										  m_info_name));
+		} else {
+			conductorPropertiesChanged();
+		}
+	}
 	
 		//QString::toDouble() accepts "nan"/"inf"/"-inf" as a successful
 		//conversion, so a corrupted or hand-edited file can hand this a

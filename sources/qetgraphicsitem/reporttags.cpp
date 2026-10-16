@@ -267,13 +267,19 @@ QUndoCommand *ReportTags::tagAllCommand(QETProject *project)
 }
 
 /**
-	@return true if @p text shows the tag of its folio report
+	@return true if @p text is the text the program gave its folio report
+	to show its tag. A text of the symbol may show the tag too - a symbol
+	drawn to show it, or its reference text made to - and that one is the
+	symbol's: it follows the symbol (T62), whatever the project says of
+	showing the tags. What tells them apart is that a text of the symbol is
+	linked to it, and the program's never is.
 */
 bool ReportTags::isTagText(const DynamicElementTextItem *text)
 {
 	return text
 		&& text->textFrom() == DynamicElementTextItem::ElementInfo
-		&& text->infoName() == QETInformation::ELMT_REPORT_TAG;
+		&& text->infoName() == QETInformation::ELMT_REPORT_TAG
+		&& text->symbolTextUuid().isNull();
 }
 
 /**

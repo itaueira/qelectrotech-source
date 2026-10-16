@@ -284,6 +284,20 @@ TEST_CASE("CU-62.1 — A folio report follows the text box of its symbol",
 	const QString path = busiest.first;
 	CAPTURE(path.toStdString(), busiest.second.size());
 
+		//What each arrow shows before anything: the reference to the other
+		//end, which no update may lose
+	QHash<Element *, QString> reference_at_start;
+	int linked = 0;
+	for (Element *report : busiest.second)
+	{
+		reference_at_start.insert(report, referenceText(report)->toPlainText());
+		if (!report->linkedElements().isEmpty()) {
+			++linked;
+			REQUIRE_FALSE(referenceText(report)->toPlainText().isEmpty());
+		}
+	}
+	REQUIRE(linked > 0);
+
 	QDomDocument definition = modernCopy(project, path);
 	QDomElement symbol_reference = referenceTextOf(definition);
 	REQUIRE_FALSE(symbol_reference.isNull());
@@ -303,6 +317,7 @@ TEST_CASE("CU-62.1 — A folio report follows the text box of its symbol",
 		CAPTURE(report->uuid().toString().toStdString());
 		CHECK(references == 1);
 		CHECK_FALSE(referenceText(report)->symbolTextUuid().isNull());
+		CHECK(referenceText(report)->toPlainText() == reference_at_start.value(report));
 	}
 
 		//Where each arrow's reference sits, and what it shows; one of them
@@ -541,4 +556,92 @@ TEST_CASE("CU-62.3 — The tag is not taken for a text of the symbol put where i
 	CHECK(tag->symbolTextUuid().isNull());
 	CHECK(tag->font().toString() == tag_font);
 	CHECK(tag->toPlainText() == ReportTags::tagOf(arrow));
+}
+
+TEST_CASE("CU-62.6 — What the reference text of the arrow shows, changed in the symbol and back",
+		  "[T62][reportsync]")
+{
+	UiBench::Project bench(example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	QETProject *project = bench.project();
+	const bool show_tags = GENERATE(false, true);
+	CAPTURE(show_tags);
+	project->setShowReportTags(show_tags);
+	if (QUndoCommand *tag_all = ReportTags::tagAllCommand(project)) {
+		project->undoStack()->push(tag_all);
+	}
+	const auto busiest = busiestReport(project);
+	REQUIRE_FALSE(busiest.second.isEmpty());
+	QHash<Element *, QString> reference_shown;
+	for (Element *report : busiest.second)
+	{
+		reference_shown.insert(report, referenceText(report)->toPlainText());
+		if (!report->linkedElements().isEmpty()) {
+			REQUIRE_FALSE(reference_shown.value(report).isEmpty());
+		}
+	}
+	QDomDocument definition = modernCopy(project, busiest.first);
+
+	auto setInfo = [&](const QString &from, const QString &to) {
+		definition = copyAt(project, busiest.first);
+		bool done = false;
+		for (QDomElement text = descriptionOf(definition).firstChildElement(QStringLiteral("dynamic_text"));
+			 !text.isNull();
+			 text = text.nextSiblingElement(QStringLiteral("dynamic_text")))
+		{
+			QDomElement info = text.firstChildElement(QStringLiteral("info_name"));
+			if (text.attribute(QStringLiteral("text_from")) == QLatin1String("ElementInfo")
+					&& info.text() == from) {
+				info.removeChild(info.firstChild());
+				info.appendChild(definition.createTextNode(to));
+				done = true;
+			}
+		}
+		REQUIRE(done);
+		newRevision(definition);
+		saveAndReload(project, busiest.first, definition);
+	};
+
+		//The reference text of the symbol made to show the tag of the arrow
+	setInfo(QStringLiteral("label"), QETInformation::ELMT_REPORT_TAG);
+	for (Element *report : busiest.second)
+	{
+		CAPTURE(report->uuid().toString().toStdString());
+		int showing_tag = 0;
+		for (DynamicElementTextItem *text : report->allDynamicTextItems()) {
+			if (text->textFrom() == DynamicElementTextItem::ElementInfo
+					&& text->infoName() == QETInformation::ELMT_REPORT_TAG
+					&& !text->symbolTextUuid().isNull()) {
+				++showing_tag;
+				CHECK(text->toPlainText() == ReportTags::tagOf(report));
+				CHECK(text->isVisible());
+			}
+		}
+		CHECK(showing_tag == 1);
+	}
+
+		//And back to the reference
+	setInfo(QETInformation::ELMT_REPORT_TAG, QStringLiteral("label"));
+	for (Element *report : busiest.second)
+	{
+		CAPTURE(report->uuid().toString().toStdString());
+		int references = 0;
+		for (DynamicElementTextItem *text : report->allDynamicTextItems()) {
+			if (text->textFrom() == DynamicElementTextItem::ElementInfo
+					&& text->infoName() == QETInformation::ELMT_LABEL) {
+				++references;
+				CHECK(text->toPlainText() == reference_shown.value(report));
+				CHECK(text->isVisible());
+			}
+		}
+		CHECK(references == 1);
+			//The program's tag, untouched
+		DynamicElementTextItem *tag = ReportTags::tagText(report);
+		CHECK((tag != nullptr) == show_tags);
+		if (tag) {
+			CHECK(tag->symbolTextUuid().isNull());
+			CHECK(tag->toPlainText() == ReportTags::tagOf(report));
+		}
+	}
 }
