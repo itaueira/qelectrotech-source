@@ -17,15 +17,12 @@
 */
 #include <catch2/catch.hpp>
 
-#include <QCheckBox>
 #include <QDir>
 #include <QSettings>
 #include <QTemporaryDir>
-#include <QTest>
 
 #include "qt_catch_tostring.h"
 
-#include "../../../sources/ui/backupdialog.h"
 #include "../../../sources/utils/apppreferences.h"
 
 /*
@@ -42,12 +39,9 @@
 	writer of the same key disagreeing about what its absence means is the
 	whole of it, and that is what these cases pin.
 
-	The second is not silent at all, it is just tiring: the backup copy
-	question was asked on every single open and the answer was never kept.
-	What it needs is three states and not two, because "do not ask again"
-	does not say what should happen in place of the question - and a way back
-	from the preference page, or the check box becomes a door that locks from
-	the outside.
+	The second was the question of a copy made each time a project is
+	opened. That copy is no longer made - the versions kept when a project is
+	saved took its place (T40, 2026-10-16) - and its cases went with it.
 
 	Nothing here touches the settings of whoever runs the suite: every case
 	works on a QSettings of its own, in a temporary directory that goes away
@@ -133,143 +127,6 @@ TEST_CASE("T40 — an omitted border-columns key means to the page what it means
 		REQUIRE(AppPreferences::borderColumnsFromZero(settings));
 		REQUIRE(settings.value(AppPreferences::borderColumnsFromZeroKey(),
 				       CONSUMER_OMITTED_VALUE).toBool());
-	}
-}
-
-TEST_CASE("T40 — a fresh profile asks about the backup copy, and the answer survives the file",
-	  "[t40][preferences][backup]")
-{
-	QTemporaryDir dir;
-	REQUIRE(dir.isValid());
-	QSettings settings(settingsPath(dir), QSettings::IniFormat);
-
-	REQUIRE(AppPreferences::backupPolicy(settings) == AppPreferences::BackupPolicy::Ask);
-
-	SECTION("each of the three states goes to the file and comes back")
-	{
-		const auto policy = GENERATE(AppPreferences::BackupPolicy::Ask,
-					     AppPreferences::BackupPolicy::Always,
-					     AppPreferences::BackupPolicy::Never);
-
-		AppPreferences::setBackupPolicy(settings, policy);
-		settings.sync();
-
-		QSettings read_again(settingsPath(dir), QSettings::IniFormat);
-		REQUIRE(AppPreferences::backupPolicy(read_again) == policy);
-	}
-
-	SECTION("what is written is a word, so that the file can be read by a person")
-	{
-		AppPreferences::setBackupPolicy(settings, AppPreferences::BackupPolicy::Never);
-		REQUIRE(settings.value(AppPreferences::backupPolicyKey()).toString()
-			== QStringLiteral("never"));
-	}
-
-	SECTION("reading is tolerant, and what it cannot read it errs towards asking")
-	{
-			//A file written by a newer version, or edited by hand into
-			//nonsense. Falling back on asking is the state that decides
-			//nothing in the user's name.
-		settings.setValue(AppPreferences::backupPolicyKey(), QStringLiteral("sometimes"));
-		REQUIRE(AppPreferences::backupPolicy(settings) == AppPreferences::BackupPolicy::Ask);
-
-		settings.setValue(AppPreferences::backupPolicyKey(), 2);
-		REQUIRE(AppPreferences::backupPolicy(settings) == AppPreferences::BackupPolicy::Ask);
-
-		settings.setValue(AppPreferences::backupPolicyKey(), QString());
-		REQUIRE(AppPreferences::backupPolicy(settings) == AppPreferences::BackupPolicy::Ask);
-	}
-}
-
-TEST_CASE("T40 — the tick and the answer are two different things", "[t40][preferences][backup]")
-{
-	using Policy = AppPreferences::BackupPolicy;
-
-	SECTION("untouched box: the answer is for this project only")
-	{
-			//This is what keeps the box safe to leave alone. Answering yes
-			//once must not make every later project copy itself in silence.
-		REQUIRE(AppPreferences::policyForAnswer(true, false, Policy::Ask) == Policy::Ask);
-		REQUIRE(AppPreferences::policyForAnswer(false, false, Policy::Ask) == Policy::Ask);
-	}
-
-	SECTION("ticked box: the answer being given is what gets kept")
-	{
-		REQUIRE(AppPreferences::policyForAnswer(true, true, Policy::Ask) == Policy::Always);
-		REQUIRE(AppPreferences::policyForAnswer(false, true, Policy::Ask) == Policy::Never);
-	}
-
-	SECTION("a policy already in force is not moved by an untouched box")
-	{
-		REQUIRE(AppPreferences::policyForAnswer(true, false, Policy::Never) == Policy::Never);
-		REQUIRE(AppPreferences::policyForAnswer(false, false, Policy::Always) == Policy::Always);
-	}
-}
-
-TEST_CASE("T40 — the check box is not a door that locks from the outside",
-	  "[t40][preferences][backup]")
-{
-	/*
-		The whole point of the second half of the request: whoever ticks the
-		box has to be able to undo it without editing a settings file by hand.
-		What the preference page writes is this same key, so putting Ask back
-		is what makes the question come back - and it is asserted here rather
-		than trusted, because a page writing a key of its own would look
-		exactly as correct from the page.
-	*/
-	QTemporaryDir dir;
-	REQUIRE(dir.isValid());
-	QSettings settings(settingsPath(dir), QSettings::IniFormat);
-
-		//The user ticks the box and answers no: from now on, no question and
-		//no copy.
-	AppPreferences::setBackupPolicy(
-		settings,
-		AppPreferences::policyForAnswer(false, true, AppPreferences::backupPolicy(settings)));
-	REQUIRE(AppPreferences::backupPolicy(settings) == AppPreferences::BackupPolicy::Never);
-
-		//And then he goes to the preference page and puts it back.
-	AppPreferences::setBackupPolicy(settings, AppPreferences::BackupPolicy::Ask);
-	REQUIRE(AppPreferences::backupPolicy(settings) == AppPreferences::BackupPolicy::Ask);
-}
-
-TEST_CASE("T40 — the dialogue reports the tick and decides nothing", "[t40][preferences][backup]")
-{
-	BackupDialog dialog;
-		//The layout is never activated on a dialogue nobody shows, and the
-		//click below needs the box to have the geometry it will have on
-		//screen rather than the default one it is born with.
-	dialog.adjustSize();
-
-	auto *box = dialog.findChild<QCheckBox *>();
-	REQUIRE(box != nullptr);
-
-	SECTION("it is born unticked, which is what keeps a fresh profile asking")
-	{
-		REQUIRE_FALSE(box->isChecked());
-		REQUIRE_FALSE(dialog.rememberChoice());
-	}
-
-	SECTION("a click on it is what the caller sees")
-	{
-			//click() and not setChecked(): what has to be proved is that the
-			//box the user reaches is the one the accessor reads, so the run
-			//has to go through QAbstractButton - nextCheckState(), toggled(),
-			//clicked() - and not straight to the property.
-			//
-			//It is click() and not QTest::mouseClick(box, ..., rect().center())
-			//because a synthetic click carries a POSITION, and a dialogue that
-			//was never shown gives its children no usable one: measured here,
-			//the first version of this case failed on exactly that, with the
-			//box left unticked and the code under test never reached. The
-			//assertion below records the geometry so the next reader does not
-			//have to rediscover it - and so the day somebody shows the dialogue
-			//and the rect stops being empty, the reason this line exists is
-			//still written down.
-		CHECK(box->rect().isEmpty() == (box->width() == 0));
-		box->click();
-		REQUIRE(box->isChecked());
-		REQUIRE(dialog.rememberChoice());
 	}
 }
 

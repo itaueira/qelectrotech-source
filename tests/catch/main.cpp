@@ -1,6 +1,9 @@
 #define CATCH_CONFIG_RUNNER
 #include <QtWidgets/QApplication>
+#include <QTemporaryDir>
 #include <catch2/catch.hpp>
+
+#include "../../sources/utils/previousversions.h"
 
 int main(int argc, char** argv)
 {
@@ -34,5 +37,13 @@ int main(int argc, char** argv)
 	}
 
 	QApplication app(argc, argv);
+
+	// A project saved twice keeps a version of itself, and the versions go
+	// in the user's documents (PreviousVersions): not in those of whoever
+	// runs the suites. Here, for the whole run, in a directory that goes away
+	// with it.
+	QTemporaryDir versions;
+	PreviousVersions::setRoot(versions.path());
+
 	return Catch::Session().run(argc, argv);
 }

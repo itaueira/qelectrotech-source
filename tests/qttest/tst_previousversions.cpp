@@ -48,10 +48,16 @@ class tst_previousversions : public QObject
 	}
 
 private slots:
-	void initTestCase() { QVERIFY(m_dir.isValid()); }
+	void initTestCase()
+	{
+		QVERIFY(m_dir.isValid());
+			// Not into the documents of whoever runs the tests
+		PreviousVersions::setRoot(m_dir.filePath(QStringLiteral("versions")));
+	}
+	void cleanupTestCase() { PreviousVersions::setRoot(QString()); }
 
 	// Each save keeps the file as it was, newest first, named by the time
-	// that version was saved, in "<name>-backups" beside it; only the
+	// that version was saved, in the project's folder of versions; only the
 	// newest are kept
 	void keepsTheNewest()
 	{
@@ -66,7 +72,8 @@ private slots:
 		QCOMPARE(read(kept.at(0)), QByteArray("version 6"));
 		QCOMPARE(read(kept.at(2)), QByteArray("version 4"));
 		QCOMPARE(QFileInfo(kept.at(0)).fileName(), QStringLiteral("plant 2026-10-16 08-06-00.qetz"));
-		QCOMPARE(QFileInfo(kept.at(0)).absolutePath(), m_dir.filePath(QStringLiteral("plant-backups")));
+		QCOMPARE(QFileInfo(kept.at(0)).absolutePath(), PreviousVersions::folder(project));
+		QVERIFY(PreviousVersions::folder(project).startsWith(m_dir.filePath(QStringLiteral("versions/plant ("))));
 			// The project itself is untouched
 		QCOMPARE(read(project), QByteArray("version 6"));
 	}

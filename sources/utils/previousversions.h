@@ -23,18 +23,31 @@
 
 /**
 	@brief The PreviousVersions namespace
-	The versions of a project file kept before it is saved over, as KiCad
-	and AutoCAD keep theirs: a copy of the file as it was goes in a folder
-	beside it, "<name>-backups", named by the time that version was saved
+	The versions of a project file kept before it is saved over: a copy of
+	the file as it was, named by the time that version was saved
 	("industrial 2026-10-16 08-30-12.qetz"), and only the newest are kept.
 	The file is copied, never moved: a save that fails leaves it in place.
+
+	The copies go in a folder of the user's, one sub-folder per project, and
+	not beside the project: a project folder is what people share, send and
+	look into, and a copy left in it at every save is clutter there. The
+	sub-folder is named by the project and a short code of the folder it is
+	in, so that two projects of the same name do not share their versions -
+	the oldest of one would be dropped to keep the other's.
 */
 namespace PreviousVersions
 {
 		/// How many versions to keep (Settings > General > Projects); 0 keeps none
 	int count();
 	void setCount(int count);
-		/// The folder the versions of @p file_path go in
+		/// The folder holding the versions of every project: by default
+		/// "QElectroTech/Previous versions" in the user's documents
+	QString root();
+		/// Put the versions under @p root instead, for this run only; an
+		/// empty one goes back to the default. For the tests, which must not
+		/// write into the documents of whoever runs them.
+	void setRoot(const QString &root);
+		/// The folder the versions of @p file_path go in, under root()
 	QString folder(const QString &file_path);
 		/// The versions kept of @p file_path, newest first
 	QStringList kept(const QString &file_path);

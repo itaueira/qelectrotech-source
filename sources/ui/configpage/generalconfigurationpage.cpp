@@ -37,12 +37,15 @@
 #include "../prefixconfigurationdialog.h"
 #include "../nokde/kcolorbutton.h"
 #include <QCoreApplication>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFontDialog>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSettings>
+#include <QUrl>
 
 #include "../../diagram.h"
 #include "../../qetproject.h"
@@ -225,21 +228,17 @@ GeneralConfigurationPage::GeneralConfigurationPage(QWidget *parent) :
 	ui->m_border_0->setChecked(AppPreferences::borderColumnsFromZero(settings));
 	ui->m_autosave_sb->setValue(settings.value("diagrameditor/autosave-interval", 0).toInt());
 
-		//The backup copy question of a project being opened. Three states,
-		//because "do not ask again" alone does not say what to do in place
-		//of the question.
-	ui->m_backup_policy_cb->addItem(tr("Ask every time", "backup copy policy"),
-					AppPreferences::backupPolicyToString(AppPreferences::BackupPolicy::Ask));
-	ui->m_backup_policy_cb->addItem(tr("Always make the copy", "backup copy policy"),
-					AppPreferences::backupPolicyToString(AppPreferences::BackupPolicy::Always));
-	ui->m_backup_policy_cb->addItem(tr("Never make the copy", "backup copy policy"),
-					AppPreferences::backupPolicyToString(AppPreferences::BackupPolicy::Never));
-	ui->m_backup_policy_cb->setCurrentIndex(
-		ui->m_backup_policy_cb->findData(
-			AppPreferences::backupPolicyToString(
-				AppPreferences::backupPolicy(settings))));
 	ui->m_project_lock->setChecked(settings.value("projectlock/enabled", true).toBool());
 	ui->m_previous_versions_sb->setValue(PreviousVersions::count());
+		//Where the versions are: out of the project folder, so it has to be
+		//said somewhere, and opened from here
+	ui->m_previous_versions_folder->setText(
+		tr("Kept in %1", "the folder of the previous versions")
+		.arg(QDir::toNativeSeparators(PreviousVersions::root())));
+	connect(ui->m_previous_versions_open, &QPushButton::clicked, this, []() {
+		QDir().mkpath(PreviousVersions::root());
+		QDesktopServices::openUrl(QUrl::fromLocalFile(PreviousVersions::root()));
+	});
 	
 	QString fontInfos = settings.value("diagramitemfont", "Liberation Sans").toString() + " " +
 			settings.value("diagramitemsize", "9").toString() + " (" +
@@ -418,10 +417,6 @@ void GeneralConfigurationPage::applyConf()
 		settings,
 		AppPreferences::colorSchemeFromString(
 			ui->m_color_scheme_cb->currentData().toString()));
-	AppPreferences::setBackupPolicy(
-		settings,
-		AppPreferences::backupPolicyFromString(
-			ui->m_backup_policy_cb->currentData().toString()));
 
 		//hdpi
 	QetSettings::setHdpiScaleFactorRoundingPolicy(ui->m_hdpi_round_policy_cb->currentData().toString());

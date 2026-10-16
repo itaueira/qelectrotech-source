@@ -130,6 +130,9 @@ add_executable(
     src/foliovariables_test.cpp
     src/projectrevision_test.cpp
     src/apppreferences_test.cpp
+    # Where the versions kept at each save go: a folder of the user's, one
+    # per project, and nothing in the project's folder (T25).
+    src/previousversions_test.cpp
     # O caminho de folhas que Voltar e Avancar refazem, como num navegador.
     # A regra e um cabecalho so, sem tela: o ProjectView que guarda uma esta
     # no C_uitests.
@@ -405,15 +408,10 @@ add_executable(
     # the program behaves impeccably while doing it.
     ${QET_DIR}/sources/utils/apppreferences.cpp
     ${QET_DIR}/sources/utils/apppreferences.h
-    # And the dialogue that asks the question, which is here for the same
-    # reason the symbol preview is: a widget can be built and clicked without
-    # a screen (QT_QPA_PLATFORM=offscreen in main.cpp). It depends on nothing
-    # but Qt - no QETApp, no project - and what it does not do is decide: it
-    # reports the tick, and the rule above turns the tick and the answer into
-    # a stored policy. Who calls it is QETDiagramEditor, which needs a
-    # project open and stays out.
-    ${QET_DIR}/sources/ui/backupdialog.cpp
-    ${QET_DIR}/sources/ui/backupdialog.h
+    # The versions of a project kept before it is saved over: files and
+    # QSettings, no project.
+    ${QET_DIR}/sources/utils/previousversions.cpp
+    ${QET_DIR}/sources/utils/previousversions.h
     # What a design rule declares about itself, and the register that holds
     # the rules. QString and QHash, and QCoreApplication only for the word
     # the panel shows: no project, no data base, no folio - which is what
@@ -1017,7 +1015,10 @@ if(TARGET qelectrotech_objects)
         src/ui/reporttags_test.cpp
         # A symbol saved in the symbol editor reaches the folio and the file:
         # the folio reports follow their symbol, the project is changed.
-        src/ui/reportsymbolsync_test.cpp)
+        src/ui/reportsymbolsync_test.cpp
+        # A project saved twice leaves nothing in its folder: the version kept
+        # goes in the folder of versions (T25).
+        src/ui/projectversions_test.cpp)
 
     target_link_libraries(
         C_uitests

@@ -23,10 +23,14 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSettings>
+#include <QStandardPaths>
 
 namespace {
 const QString CountKey = QStringLiteral("diagrameditor/previous-versions");
 constexpr int DefaultCount = 5;
+
+	//setRoot(), for this run only
+QString root_override;
 
 	//What a version of @p info is named, without the extension: its base
 	//name and a time
@@ -55,10 +59,31 @@ void PreviousVersions::setCount(int count)
 	QSettings().setValue(CountKey, qMax(0, count));
 }
 
+QString PreviousVersions::root()
+{
+	if (!root_override.isEmpty()) return root_override;
+	return QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+			.filePath(QStringLiteral("QElectroTech/Previous versions"));
+}
+
+void PreviousVersions::setRoot(const QString &root)
+{
+	root_override = root;
+}
+
 QString PreviousVersions::folder(const QString &file_path)
 {
 	const QFileInfo info(file_path);
-	return info.absoluteDir().filePath(info.completeBaseName() + QStringLiteral("-backups"));
+		//The folder the project is in, the way it was written does not
+		//count: "C:/a/b", "C:\\a\\b" and, on Windows, "c:/A/b" are one folder
+	QString where = QDir::cleanPath(info.absolutePath());
+#ifdef Q_OS_WIN
+	where = where.toLower();
+#endif
+	const QString code = QString::fromLatin1(
+				QCryptographicHash::hash(where.toUtf8(), QCryptographicHash::Sha1)
+				.toHex().left(8));
+	return QDir(root()).filePath(QStringLiteral("%1 (%2)").arg(info.completeBaseName(), code));
 }
 
 QStringList PreviousVersions::kept(const QString &file_path)

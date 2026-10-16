@@ -125,7 +125,6 @@
 #include "ui/navigatechoicedialog.h"
 #include "ui/assemblystatedialog.h"
 #include "ui/diagrampropertieseditordockwidget.h"
-#include "ui/backupdialog.h"
 #include "ui/dialogwaiting.h"
 #include "undocommand/addelementtextcommand.h"
 #include "utils/apppreferences.h"
@@ -4624,38 +4623,10 @@ bool QETDiagramEditor::openAndAddProject(
 		box.exec();
 	}
 
-		//Whether a backup copy is made is a preference of the workstation and
-		//not a property of the project: two people opening the same project
-		//do not have to agree about it, so it lives in QSettings and nothing
-		//of it is written into the .qet.
-		//
-		//The question used to be asked on every single open and the answer
-		//was never kept. It is kept now when the user ticks the box, and
-		//because "do not ask again" alone does not say what to do in place of
-		//the question, the stored preference has three states. The way back
-		//is Settings > General > Projects.
-		//
-		//The question is not asked when nobody is there to answer: an
-		//assistant opening a project in live mode would wait on a window it
-		//cannot see. A workstation set to "always" still gets its copy.
-	const AppPreferences::BackupPolicy backup_policy = AppPreferences::backupPolicy();
-	bool make_backup = (backup_policy == AppPreferences::BackupPolicy::Always);
-	if (interactive && backup_policy == AppPreferences::BackupPolicy::Ask)
-	{
-		BackupDialog backup_dialog(this);
-		make_backup = (backup_dialog.exec() == QDialog::Accepted);
-		AppPreferences::setBackupPolicy(
-			AppPreferences::policyForAnswer(make_backup,
-							backup_dialog.rememberChoice(),
-							backup_policy));
-	}
-	if (make_backup)
-	{
-		QString backup_path = filepath_info.absolutePath() + QDir::separator() +
-			QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm") + "_" +
-			filepath_info.fileName();
-		QFile::copy(filepath, backup_path);
-	}
+		//No copy of the file is made on opening it: the versions kept when the
+		//project is saved (PreviousVersions) protect it from a bad save, in a
+		//folder of the user's, and a copy beside the project at every opening
+		//filled the folder people share with files nobody asked for (T40).
 
 	return true;
 }

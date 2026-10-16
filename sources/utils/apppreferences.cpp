@@ -24,15 +24,6 @@
 namespace AppPreferences
 {
 	/**
-		@brief backupPolicyKey
-		@return the settings key holding the backup copy policy
-	*/
-	QString backupPolicyKey()
-	{
-		return QStringLiteral("backup/copy-on-open");
-	}
-
-	/**
 		@brief colorSchemeKey
 		@return the settings key holding the colour scheme.
 		Read by main.cpp before the first window exists, which is why it has
@@ -51,113 +42,6 @@ namespace AppPreferences
 	QString borderColumnsFromZeroKey()
 	{
 		return QStringLiteral("border-columns_0");
-	}
-
-	/**
-		@brief backupPolicyToString
-		@param policy
-		@return the text written in the settings file for @a policy.
-		Text and not a number: a settings file is edited by hand when
-		something goes wrong, and 2 says nothing about what it means.
-	*/
-	QString backupPolicyToString(BackupPolicy policy)
-	{
-		switch (policy)
-		{
-			case BackupPolicy::Always:
-				return QStringLiteral("always");
-			case BackupPolicy::Never:
-				return QStringLiteral("never");
-			case BackupPolicy::Ask:
-				break;
-		}
-		return QStringLiteral("ask");
-	}
-
-	/**
-		@brief backupPolicyFromString
-		@param text
-		@return the policy named by @a text, Ask for anything else.
-		Reading is tolerant: a settings file written by a newer version, or
-		edited by hand into nonsense, falls back on asking - which is the
-		state that costs the user nothing and takes no decision in his name.
-	*/
-	BackupPolicy backupPolicyFromString(const QString &text)
-	{
-		if (text == QLatin1String("always")) {
-			return BackupPolicy::Always;
-		}
-		if (text == QLatin1String("never")) {
-			return BackupPolicy::Never;
-		}
-		return BackupPolicy::Ask;
-	}
-
-	/**
-		@brief backupPolicy
-		@param settings
-		@return the backup policy stored in @a settings
-	*/
-	BackupPolicy backupPolicy(const QSettings &settings)
-	{
-		return backupPolicyFromString(
-			settings.value(backupPolicyKey(),
-				       backupPolicyToString(BackupPolicy::Ask))
-			.toString());
-	}
-
-	/**
-		@brief backupPolicy
-		@return the backup policy of the running application
-	*/
-	BackupPolicy backupPolicy()
-	{
-		QSettings settings;
-		return backupPolicy(settings);
-	}
-
-	/**
-		@brief setBackupPolicy
-		@param settings
-		@param policy
-	*/
-	void setBackupPolicy(QSettings &settings, BackupPolicy policy)
-	{
-		settings.setValue(backupPolicyKey(), backupPolicyToString(policy));
-	}
-
-	/**
-		@brief setBackupPolicy
-		@param policy
-	*/
-	void setBackupPolicy(BackupPolicy policy)
-	{
-		QSettings settings;
-		setBackupPolicy(settings, policy);
-	}
-
-	/**
-		@brief policyForAnswer
-		What an answer to the question means for the stored preference.
-		@param accepted true when the user asked for the copy to be made
-		@param remember true when the user ticked "do not ask again"
-		@param current the policy in force when the question was asked
-		@return the policy to store
-		@sa BackupDialog
-
-		The answer and the memory of it are two different things, and this is
-		the one place where they are put together. Without the tick the answer
-		is for this project only and the preference does not move - which is
-		what makes the box safe to leave alone.
-	*/
-	BackupPolicy policyForAnswer(bool accepted,
-				     bool remember,
-				     BackupPolicy current)
-	{
-		if (!remember) {
-			return current;
-		}
-		return accepted ? BackupPolicy::Always : BackupPolicy::Never;
 	}
 
 	/**

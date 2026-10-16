@@ -366,6 +366,23 @@
         </widget>
        </item>
        <item row="9" column="0">
+        <widget class="QLabel" name="m_previous_versions_folder">
+         <property name="toolTip">
+          <string>The folder of previous versions. Each project has a folder of its own in it.</string>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::TextSelectableByMouse</set>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="2">
+        <widget class="QPushButton" name="m_previous_versions_open">
+         <property name="text">
+          <string>Open the folder</string>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0">
         <widget class="QCheckBox" name="m_project_lock">
          <property name="toolTip">
           <string>A small hidden file beside the project says who has it open. Someone else opening it is told, and can open it read-only. Turn this off if your shared drive does not cope with it.</string>
@@ -381,16 +398,6 @@
           <string>Do not store the labels of items in the copy paste</string>
          </property>
         </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="m_backup_policy_label">
-         <property name="text">
-          <string>Backup copy when a project is opened</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="2">
-        <widget class="QComboBox" name="m_backup_policy_cb"/>
        </item>
        <item row="5" column="0">
         <widget class="QCheckBox" name="m_enable_scripting">
@@ -418,14 +425,14 @@
           <string>Previous versions kept when saving a project</string>
          </property>
          <property name="toolTip">
-          <string>Before a project is saved, the file as it was is copied to a folder beside it, named after the project with "-backups". Only the newest are kept.</string>
+          <string>Before a project is saved, the file as it was is copied to the folder of previous versions, out of the project folder, if it changed since the last version kept. Only the newest are kept.</string>
          </property>
         </widget>
        </item>
        <item row="8" column="2">
         <widget class="QSpinBox" name="m_previous_versions_sb">
          <property name="toolTip">
-          <string>Before a project is saved, the file as it was is copied to a folder beside it, named after the project with "-backups". Only the newest are kept.</string>
+          <string>Before a project is saved, the file as it was is copied to the folder of previous versions, out of the project folder, if it changed since the last version kept. Only the newest are kept.</string>
          </property>
          <property name="specialValueText">
           <string>None</string>
@@ -435,7 +442,7 @@
          </property>
         </widget>
        </item>
-       <item row="10" column="0">
+       <item row="11" column="0">
         <spacer name="verticalSpacer_2">
          <property name="orientation">
           <enum>Qt::Vertical</enum>

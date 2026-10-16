@@ -49,20 +49,6 @@ class QSettings;
 namespace AppPreferences
 {
 		/**
-			What to do about the backup copy when a project is opened.
-
-			Three states, and not two: "do not ask again" alone does not say
-			what should happen in place of the question, and a check box that
-			can only mean yes would be a door that locks from the outside.
-		*/
-	enum class BackupPolicy
-	{
-		Ask,	///< show the question, which is what a fresh profile does
-		Always,	///< copy without asking
-		Never	///< do not copy and do not ask
-	};
-
-		/**
 			Which palette the interface is drawn with.
 
 			Light is the factory default, and deliberately not System: the
@@ -77,19 +63,8 @@ namespace AppPreferences
 		System	///< whatever the desktop says
 	};
 
-	QString backupPolicyKey();
 	QString colorSchemeKey();
 	QString borderColumnsFromZeroKey();
-
-	QString backupPolicyToString(BackupPolicy policy);
-	BackupPolicy backupPolicyFromString(const QString &text);
-	BackupPolicy backupPolicy(const QSettings &settings);
-	BackupPolicy backupPolicy();
-	void setBackupPolicy(QSettings &settings, BackupPolicy policy);
-	void setBackupPolicy(BackupPolicy policy);
-	BackupPolicy policyForAnswer(bool accepted,
-				     bool remember,
-				     BackupPolicy current);
 
 	QString colorSchemeToString(ColorScheme scheme);
 	ColorScheme colorSchemeFromString(const QString &text);
