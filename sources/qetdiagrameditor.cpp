@@ -709,7 +709,6 @@ void QETDiagramEditor::setUpActions()
 		action->setData(int(kind.first));
 		connect(action, &QAction::triggered, this, [kind](bool checked) {
 			ShownKinds::setShown(kind.first, checked);
-			ShownKinds::save();
 			for (QETProject *project : QETApp::registeredProjects())
 				for (Diagram *diagram : project->diagrams())
 					ShownKinds::apply(diagram, kind.first);

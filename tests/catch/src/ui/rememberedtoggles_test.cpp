@@ -19,7 +19,6 @@
 
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/qetproject.h"
-#include "../../../../sources/shownkinds.h"
 
 #include <catch2/catch.hpp>
 
@@ -31,7 +30,7 @@
 
 /*
 	The buttons that switch something on and off start the way they were
-	left: the auto conductor, the grid, the guides and View > Show. The
+	left: the auto conductor, the grid and the guides. The
 	buttons themselves live in QETDiagramEditor, which this suite cannot
 	build (see contextmenuassign_test.cpp): what is checked here is what
 	each button stores and what every project or folio opened afterwards
@@ -49,7 +48,6 @@ namespace
 	const QString auto_conductor_key = QStringLiteral("diagrameditor/auto_conductor");
 	const QString grid_key = QStringLiteral("diagrameditor/grid_display_startup");
 	const QString guides_key = QStringLiteral("diagrameditor/guides_display_startup");
-	const QString hidden_kinds_key = QStringLiteral("diagrameditor/hidden_kinds");
 
 	/// Puts a setting back the way it was, whatever the case did to it
 	class KeepSetting
@@ -75,34 +73,6 @@ namespace
 			bool m_had;
 			QVariant m_value;
 	};
-
-	/// Puts the kinds shown in this process back the way they were
-	class KeepShownKinds
-	{
-		public:
-			KeepShownKinds()
-			{
-				for (int kind = 0 ; kind < ShownKinds::KindCount ; ++kind) {
-					m_shown[kind] = ShownKinds::isShown(ShownKinds::Kind(kind));
-				}
-			}
-			~KeepShownKinds()
-			{
-				for (int kind = 0 ; kind < ShownKinds::KindCount ; ++kind) {
-					ShownKinds::setShown(ShownKinds::Kind(kind), m_shown[kind]);
-				}
-			}
-
-		private:
-			bool m_shown[ShownKinds::KindCount];
-	};
-
-	void showEveryKind()
-	{
-		for (int kind = 0 ; kind < ShownKinds::KindCount ; ++kind) {
-			ShownKinds::setShown(ShownKinds::Kind(kind), true);
-		}
-	}
 
 	/**
 		@return @p area of @p folio drawn at @p zoom pixels per folio unit
@@ -201,56 +171,6 @@ TEST_CASE("CU-60.2 — The grid and the guides start the way they were last left
 		CAPTURE(folio->title().toStdString());
 		CHECK(folio->displayGrid() == grid);
 		CHECK(folio->displayGuides() == guides);
-	}
-}
-
-TEST_CASE("CU-60.3 — The kinds hidden from View > Show come back hidden",
-		  "[T60][shownkinds]")
-{
-	KeepSetting keep(hidden_kinds_key);
-	KeepShownKinds keep_kinds;
-
-	SECTION("two hidden, the program opened again: the same two")
-	{
-		showEveryKind();
-		ShownKinds::setShown(ShownKinds::Tables, false);
-		ShownKinds::setShown(ShownKinds::CrossReferences, false);
-		ShownKinds::save();
-
-			//What a program opening again starts from
-		showEveryKind();
-		ShownKinds::restore();
-
-		CHECK_FALSE(ShownKinds::isShown(ShownKinds::Tables));
-		CHECK_FALSE(ShownKinds::isShown(ShownKinds::CrossReferences));
-		for (const auto kind : {ShownKinds::SymbolTexts, ShownKinds::WireNumbers,
-								ShownKinds::FreeTexts, ShownKinds::Shapes,
-								ShownKinds::Pictures}) {
-			CAPTURE(int(kind));
-			CHECK(ShownKinds::isShown(kind));
-		}
-			//What the status bar counts
-		CHECK(ShownKinds::hiddenCount() == 2);
-	}
-
-	SECTION("shown again and saved: shown on the next opening")
-	{
-		ShownKinds::setShown(ShownKinds::Tables, false);
-		ShownKinds::save();
-		ShownKinds::setShown(ShownKinds::Tables, true);
-		ShownKinds::save();
-
-		ShownKinds::setShown(ShownKinds::Tables, false);
-		ShownKinds::restore();
-		CHECK(ShownKinds::isShown(ShownKinds::Tables));
-	}
-
-	SECTION("nothing saved: every kind shown, as it always was")
-	{
-		QSettings().remove(hidden_kinds_key);
-		ShownKinds::setShown(ShownKinds::Shapes, false);
-		ShownKinds::restore();
-		CHECK(ShownKinds::hiddenCount() == 0);
 	}
 }
 

@@ -40,7 +40,6 @@
 #include "qetproject.h"
 #include "qtextorientationspinboxwidget.h"
 #include "recentfiles.h"
-#include "shownkinds.h"
 #include "titleblock/qettemplateeditor.h"
 #include "titleblock/templatescollection.h"
 #include "titleblocktemplate.h"
@@ -2972,8 +2971,6 @@ void QETApp::initConfiguration()
 					QStringLiteral("diagrameditor/display-empty-fields"),
 					false).toBool();
 	}
-		//The kinds hidden with View > Show, as they were left
-	ShownKinds::restore();
 
 	// create configuration files if necessary
 	// cree les dossiers de configuration si necessaire
