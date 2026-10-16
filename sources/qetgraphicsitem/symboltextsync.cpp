@@ -23,6 +23,7 @@
 #include "../textanchor.h"
 #include "dynamicelementtextitem.h"
 #include "element.h"
+#include "reporttags.h"
 
 #include <QHash>
 #include <QLineF>
@@ -30,6 +31,7 @@
 #include <QStringList>
 #include <QTransform>
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 
@@ -40,6 +42,12 @@ const qreal same_place = 0.05;
 	//How far an anchor may be for a text saved before texts remembered
 	//their symbol text to be taken as that text, when its content differs
 const qreal near_place = 0.5;
+	//How far a text made from an old field of its symbol may sit from where
+	//that field is converted today and still be taken as never moved: the
+	//field kept only a size, and its place follows the height of the font
+	//the machine had when the element was placed; a text moved by hand is
+	//moved by a step of the grid of texts or more
+const qreal converted_place = 3.0;
 
 	//The attributes of a text compared one by one. Its content (where the
 	//text comes from and what it says) is compared as a whole, its colour
@@ -189,13 +197,16 @@ QList<QPair<QUuid, DynamicElementTextItem *>> symbolTexts(const Element *element
 
 /**
 	@brief SymbolTextSync::syncs
-	@return whether the texts of @p element follow its symbol. A folio
-	report's text is its cross reference, not a text of the symbol, so a
-	report is left alone.
+	@return whether the texts of @p element follow its symbol: those of
+	every element, a folio report's too. What the text of a folio report
+	shows is the reference to the other end, worked out from the formula
+	of the project and not taken from the symbol; where it sits and how it
+	is drawn follow the symbol like any other text. The tag of a folio
+	report is the program's and never a text of the symbol (see linksOf()).
 */
 bool SymbolTextSync::syncs(const Element *element)
 {
-	return element && !(element->linkType() & Element::AllReport);
+	return element != nullptr;
 }
 
 /**
@@ -271,36 +282,30 @@ struct Links
 	QSet<DynamicElementTextItem *> guessed;
 };
 
-	//The texts of @p element linked to @p reference, the texts of the symbol
-	//it is compared with; a uuid already remembered counts when it is in
-	//@p reference or in @p also
-Links linksOf(Element *element,
-			  const QList<QPair<QUuid, DynamicElementTextItem *>> &reference,
-			  const QHash<QUuid, DynamicElementTextItem *> &also)
+	//The texts of @p element that may be texts of its symbol: all of them
+	//but the tag of a folio report, which the program gives, and which
+	//guessing by kind and place could take for the reference text next to it
+QList<DynamicElementTextItem *> linkableTexts(const Element *element)
 {
-	Links links;
-	QSet<QUuid> known;
-	for (const auto &text : reference) {
-		known.insert(text.first);
-	}
-	const QList<DynamicElementTextItem *> placed_texts = element->allDynamicTextItems();
-	for (DynamicElementTextItem *text : placed_texts)
-	{
-		const QUuid uuid = text->symbolTextUuid();
-		if (!uuid.isNull() && !links.linked.contains(uuid)
-				&& (known.contains(uuid) || also.contains(uuid))) {
-			links.link.insert(text, uuid);
-			links.linked.insert(uuid);
-		}
-	}
+	QList<DynamicElementTextItem *> texts = element->allDynamicTextItems();
+	texts.erase(std::remove_if(texts.begin(), texts.end(),
+							   [](DynamicElementTextItem *text) {
+		return ReportTags::isTagText(text);
+	}), texts.end());
+	return texts;
+}
 
-		//A text saved before texts remembered it, or made from another
-		//symbol: by kind and content at the same place, then by kind and
-		//content, then by kind at the same place - a fixed text rewritten on
-		//the folio is still that text, and must not get its old content back
-		//as a text of its own
-	const QList<std::function<bool(const QDomElement &, const QDomElement &,
-								   const QPointF &, const QPointF &)>> passes = {
+using Pass = std::function<bool(const QDomElement &, const QDomElement &,
+								const QPointF &, const QPointF &)>;
+
+	//The ways a text saved without its symbol text is taken for one, the
+	//surest first: by kind and content at the same place, then by kind and
+	//content, then by kind at the same place - a fixed text rewritten on the
+	//folio is still that text, and must not get its old content back as a
+	//text of its own
+const QList<Pass> &guessPasses()
+{
+	static const QList<Pass> passes = {
 		[](const QDomElement &a, const QDomElement &b, const QPointF &pa, const QPointF &pb) {
 			return key(a) == key(b) && samePlace(pa, pb, near_place);},
 		[](const QDomElement &a, const QDomElement &b, const QPointF &, const QPointF &) {
@@ -309,7 +314,16 @@ Links linksOf(Element *element,
 			return a.attribute(QStringLiteral("text_from")) == b.attribute(QStringLiteral("text_from"))
 					&& samePlace(pa, pb, near_place);}
 	};
-	for (const auto &pass : passes)
+	return passes;
+}
+
+	//The texts of @p placed_texts not linked yet in @p links, guessed among
+	//the texts of @p candidates not linked yet
+void guessLinks(const QList<DynamicElementTextItem *> &placed_texts,
+				const QList<QPair<QUuid, DynamicElementTextItem *>> &candidates,
+				Links &links)
+{
+	for (const Pass &pass : guessPasses())
 	{
 		for (DynamicElementTextItem *text : placed_texts)
 		{
@@ -318,7 +332,7 @@ Links linksOf(Element *element,
 			}
 			const QDomDocument text_document = xmlOf(text);
 			const QPointF text_anchor = SymbolTextSync::anchorOf(text);
-			for (const auto &candidate : reference)
+			for (const auto &candidate : candidates)
 			{
 				if (links.linked.contains(candidate.first)) {
 					continue;
@@ -335,6 +349,51 @@ Links linksOf(Element *element,
 			}
 		}
 	}
+}
+
+	//The text among @p candidates that @p text is, guessed the same way,
+	//or nullptr
+DynamicElementTextItem *guessAmong(DynamicElementTextItem *text,
+								   const QList<DynamicElementTextItem *> &candidates)
+{
+	const QDomDocument text_document = xmlOf(text);
+	const QPointF text_anchor = SymbolTextSync::anchorOf(text);
+	for (const Pass &pass : guessPasses()) {
+		for (DynamicElementTextItem *candidate : candidates)
+		{
+			const QDomDocument candidate_document = xmlOf(candidate);
+			if (pass(text_document.documentElement(), candidate_document.documentElement(),
+					 text_anchor, SymbolTextSync::anchorOf(candidate))) {
+				return candidate;
+			}
+		}
+	}
+	return nullptr;
+}
+
+	//The texts of @p element linked to @p reference, the texts of the symbol
+	//it is compared with; a uuid already remembered counts when it is in
+	//@p reference or in @p also
+Links linksOf(Element *element,
+			  const QList<QPair<QUuid, DynamicElementTextItem *>> &reference,
+			  const QHash<QUuid, DynamicElementTextItem *> &also)
+{
+	Links links;
+	QSet<QUuid> known;
+	for (const auto &text : reference) {
+		known.insert(text.first);
+	}
+	const QList<DynamicElementTextItem *> placed_texts = linkableTexts(element);
+	for (DynamicElementTextItem *text : placed_texts)
+	{
+		const QUuid uuid = text->symbolTextUuid();
+		if (!uuid.isNull() && !links.linked.contains(uuid)
+				&& (known.contains(uuid) || also.contains(uuid))) {
+			links.link.insert(text, uuid);
+			links.linked.insert(uuid);
+		}
+	}
+	guessLinks(placed_texts, reference, links);
 	return links;
 }
 
@@ -484,9 +543,49 @@ SymbolTextSync::Plan SymbolTextSync::plan(Element *element,
 		before_by_uuid.insert(text.first, text.second);
 	}
 
-	const Links links = linksOf(element,
-								mode == Mode::Reset ? now_texts : before_texts,
-								mode == Mode::Reset ? before_by_uuid : now_by_uuid);
+	Links links = linksOf(element,
+						  mode == Mode::Reset ? now_texts : before_texts,
+						  mode == Mode::Reset ? before_by_uuid : now_by_uuid);
+
+		//A symbol saved before its texts had a uuid - the <input> fields of
+		//old symbols - and saved again by the symbol editor, which gives each
+		//one a uuid: its texts are new to the symbol, but the element has had
+		//them all along. Taken for new, they would be added next to the texts
+		//it already shows, and those would never follow the symbol again. So
+		//a text of the element still without one is matched to them, and
+		//what the symbol had before is the old field it was made from (T62)
+	QHash<DynamicElementTextItem *, DynamicElementTextItem *> made_from;
+	if (mode == Mode::Merge && before)
+	{
+		QList<DynamicElementTextItem *> old_fields;
+		for (DynamicElementTextItem *text : before->allDynamicTextItems()) {
+			if (text->symbolTextUuid().isNull()) {
+				old_fields << text;
+			}
+		}
+		QList<QPair<QUuid, DynamicElementTextItem *>> new_texts;
+		for (const auto &now_text : now_texts) {
+			if (!before_by_uuid.contains(now_text.first) && !links.linked.contains(now_text.first)) {
+				new_texts << now_text;
+			}
+		}
+		if (!old_fields.isEmpty() && !new_texts.isEmpty())
+		{
+			const QList<DynamicElementTextItem *> linked_already = links.link.keys();
+			guessLinks(linkableTexts(element), new_texts, links);
+			for (auto it = links.link.cbegin() ; it != links.link.cend() ; ++it)
+			{
+				if (linked_already.contains(it.key())) {
+					continue;
+				}
+				if (DynamicElementTextItem *field = guessAmong(it.key(), old_fields))
+				{
+					made_from.insert(it.key(), field);
+					old_fields.removeOne(field);
+				}
+			}
+		}
+	}
 
 	for (DynamicElementTextItem *text : element->allDynamicTextItems())
 	{
@@ -514,7 +613,7 @@ SymbolTextSync::Plan SymbolTextSync::plan(Element *element,
 
 		const Values placed = valuesOf(text);
 		const Values now_values = valuesOf(now_text);
-		Values before_values = valuesOf(before_by_uuid.value(uuid, now_text));
+		Values before_values = valuesOf(made_from.value(text, before_by_uuid.value(uuid, now_text)));
 			//An element saved before it remembered its symbol text: what most
 			//elements of its copy share is what the symbol had
 		if (links.guessed.contains(text) && common.contains(uuid))
@@ -527,6 +626,13 @@ SymbolTextSync::Plan SymbolTextSync::plan(Element *element,
 				before_values.anchor = shared.anchor;
 			}
 		}
+
+			//A text made from an old field of its symbol, now saved as a text
+			//of its own: it differs from the field converted today by what
+			//the field never said - the family of its font, and so a little
+			//of its place - and takes the symbol's values, but a place it
+			//was moved to by hand
+		const bool converted = made_from.contains(text);
 
 		Change change;
 		change.text = text;
@@ -556,7 +662,8 @@ SymbolTextSync::Plan SymbolTextSync::plan(Element *element,
 				&& changedOnlyInSymbol(QStringLiteral("role"));
 		auto follows = [&](const QString &field) {
 			return placed.fields.value(field) != now_values.fields.value(field)
-					&& (mode == Mode::Reset || becomes_another || changedOnlyInSymbol(field));
+					&& (mode == Mode::Reset || becomes_another || converted
+						|| changedOnlyInSymbol(field));
 		};
 
 		for (const QString &attribute : compared_attributes)
@@ -601,7 +708,8 @@ SymbolTextSync::Plan SymbolTextSync::plan(Element *element,
 		if (change.move)
 		{
 			const bool symbol_moved = !samePlace(before_values.anchor, now_values.anchor, same_place);
-			const bool element_moved = !samePlace(placed.anchor, before_values.anchor, same_place);
+			const bool element_moved = !samePlace(placed.anchor, before_values.anchor,
+												  converted ? converted_place : same_place);
 			if (!samePlace(placed.anchor, now_values.anchor, same_place)
 					&& (mode == Mode::Reset || becomes_another
 						|| (symbol_moved && !element_moved)))

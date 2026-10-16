@@ -1044,6 +1044,36 @@ QString EmbeddedElementRefresh::savedNotice(
 }
 
 /**
+	@brief EmbeddedElementRefresh::projectsPlacing
+	@return the projects of @p projects that have the symbol just saved at
+	@p saved placed, the ones savedNotice() counts: the project itself for
+	a copy saved in a project, every project placing the copy of a symbol
+	saved in a collection. What "Recharger maintenant" of the notice
+	reloads (T62).
+*/
+QList<QETProject *> EmbeddedElementRefresh::projectsPlacing(
+		const ElementsLocation &saved,
+		const QList<QETProject *> &projects)
+{
+	QString embedded_path;
+	QList<QETProject *> looked_in;
+	if (saved.isProject()) {
+		embedded_path = saved.collectionPath(false);
+		looked_in = {saved.project()};
+	} else if (saved.isFileSystem() && saved.isWritable()) {
+		embedded_path = import_prefix + saved.collectionPath(false);
+		looked_in = projects;
+	}
+	QList<QETProject *> placing;
+	for (QETProject *project : looked_in) {
+		if (project && !placedElements(project, embedded_path).isEmpty()) {
+			placing << project;
+		}
+	}
+	return placing;
+}
+
+/**
 	@brief EmbeddedElementRefresh::noticeFor
 	The notice of savedNotice(), for the copies at @p embedded_path of
 	@p projects, once @p definition has been saved.

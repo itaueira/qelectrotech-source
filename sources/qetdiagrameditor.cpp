@@ -6490,7 +6490,18 @@ void QETDiagramEditor::slot_terminalNumbering() {
 	without removing anything - see reloadProjectFromMemory().
 */
 void QETDiagramEditor::slot_reloadElementDrawings() {
-	QETProject *project = currentProject();
+	reloadElementDrawings(currentProject());
+}
+
+/**
+	@brief QETDiagramEditor::reloadElementDrawings
+	"Recharger les dessins des éléments" for @p project, which needs not be
+	the current one: the editor of symbols runs it from the notice it shows
+	once a symbol placed in a project is saved (T62).
+	@param project : a project open in this editor
+*/
+void QETDiagramEditor::reloadElementDrawings(QETProject *project)
+{
 	if (!project) return;
 
 	const QStringList collection_dirs = EmbeddedElementRefresh::editableCollectionDirs();

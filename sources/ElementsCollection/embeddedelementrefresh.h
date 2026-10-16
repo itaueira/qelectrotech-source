@@ -148,6 +148,8 @@ namespace EmbeddedElementRefresh
 	QString savedNotice(const ElementsLocation &saved,
 			    const QList<QETProject *> &projects,
 			    const QStringList &collection_dirs);
+	QList<QETProject *> projectsPlacing(const ElementsLocation &saved,
+					    const QList<QETProject *> &projects);
 	QString noticeFor(const QString &embedded_path,
 			  const QDomElement &definition,
 			  const QList<QETProject *> &projects,

@@ -27,6 +27,8 @@
 #include "../../recentfiles.h"
 #include "../../elementscollectioncache.h"
 #include "../../ElementsCollection/embeddedelementrefresh.h"
+#include "../../qetdiagrameditor.h"
+#include "../../projectview.h"
 #include "../../factory/elementpicturefactory.h"
 #include "../graphicspart/customelementpart.h"
 #include "../elementitemeditor.h"
@@ -430,7 +432,32 @@ void QETElementEditor::noticePlacedElements(const ElementsLocation &location)
 	if (notice.isEmpty()) {
 		return;
 	}
-	QET::QetMessageBox::information(this, tr("Éléments déjà posés"), notice);
+		//The notice does what it says instead of only saying where: the
+		//reload is one click from here (T62)
+	QMessageBox box(QMessageBox::Information, tr("Éléments déjà posés"), notice,
+					QMessageBox::NoButton, this);
+	QPushButton *reload = box.addButton(tr("Recharger maintenant"), QMessageBox::AcceptRole);
+	box.addButton(tr("Plus tard"), QMessageBox::RejectRole);
+	box.setDefaultButton(reload);
+	box.exec();
+	if (box.clickedButton() != reload) {
+		return;
+	}
+	const QList<QETProject *> projects = EmbeddedElementRefresh::projectsPlacing(
+				location, QETApp::registeredProjects().values());
+	for (QETProject *project : projects) {
+		for (QETDiagramEditor *editor : QETApp::diagramEditors())
+		{
+			bool opened_here = false;
+			for (ProjectView *view : editor->openedProjects()) {
+				opened_here = opened_here || view->project() == project;
+			}
+			if (opened_here) {
+				editor->reloadElementDrawings(project);
+				break;
+			}
+		}
+	}
 }
 
 /**

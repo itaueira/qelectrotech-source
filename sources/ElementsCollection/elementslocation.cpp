@@ -788,6 +788,10 @@ bool ElementsLocation::setXml(const QDomDocument &xml_document) const
 			parent_node.appendChild(xml_document
 						.documentElement()
 						.cloneNode(true));
+				//The project is changed and has to be saved, as for any
+				//other change: without this nothing asks, and closing it
+				//loses the symbol (T62)
+			project()->setModified(true);
 			return true;
 		}
 		//Element doesn't exist, we create the element
@@ -799,12 +803,16 @@ bool ElementsLocation::setXml(const QDomDocument &xml_document) const
 
 			if (match.hasMatch())
 			{
-				return project()
+				const bool added = project()
 					->embeddedElementCollection()
 					->addElementDefinition(
 						match.captured(1),
 						match.captured(2),
 						xml_document.documentElement());
+				if (added) {
+					project()->setModified(true);
+				}
+				return added;
 			}
 			else
 			{
