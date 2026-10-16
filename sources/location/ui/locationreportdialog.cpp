@@ -72,7 +72,7 @@ namespace
 		switch (element->linkType())
 		{
 			case Element::Terminale:
-				return QObject::tr("Borne");
+				return QObject::tr("Terminal");
 			case Element::Master:
 				return QObject::tr("Maître");
 			case Element::Slave:

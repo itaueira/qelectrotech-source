@@ -551,9 +551,6 @@ add_executable(
     # de estilo mora no SymbolShape, que é onde a string mora.
     ${QET_DIR}/sources/ElementsCollection/ui/symbolpreview.cpp
     ${QET_DIR}/sources/ElementsCollection/ui/symbolpreview.h
-    ${QET_DIR}/sources/environment/filediskstate.h
-    ${QET_DIR}/sources/environment/projectlock.cpp
-    ${QET_DIR}/sources/environment/projectlock.h
     ${QET_DIR}/sources/environment/qetenvironment.cpp
     ${QET_DIR}/sources/environment/qetenvironment.h
     # A régua de bornes vista como estrutura, e a regra que decide o que o
@@ -673,17 +670,17 @@ endif ()
 # It is a separate executable on purpose. C_unittests lists its sources by
 # hand, and that hand-written list is a contract: it records that those rules
 # can be computed without a sheet, an element or a project. Linking it against
-# qet_core would erase the contract - everything would compile, and the day a
+# qelectrotech_objects would erase the contract - everything would compile, and the day a
 # pure rule started needing an Element nobody would notice.
 #
 # So the split is: C_unittests stays as it is, and anything that has to open a
-# real project lands here, where qet_core brings the whole program in.
+# real project lands here, where qelectrotech_objects brings the whole program in.
 #
-# Guarded by if(TARGET qet_core) because this directory can also be configured
+# Guarded by if(TARGET qelectrotech_objects) because this directory can also be configured
 # on its own, from tests/catch/, with no parent project - which is what the
 # QET_DIR fallback above exists for. In that mode the target does not exist
 # and only C_unittests is built.
-if(TARGET qet_core)
+if(TARGET qelectrotech_objects)
     add_executable(
         C_uitests
         main.cpp
@@ -718,7 +715,6 @@ if(TARGET qet_core)
         src/ui/renumberproject_test.cpp
         src/ui/assemblymark_test.cpp
         src/ui/createsymbol_test.cpp
-        src/ui/cable_test.cpp
         src/ui/dashedwire_test.cpp
         src/ui/ioimport_test.cpp
         src/ui/ioassign_test.cpp
@@ -1028,7 +1024,7 @@ if(TARGET qet_core)
         PUBLIC
         Catch2::Catch2
         PRIVATE
-        qet_core
+        qelectrotech_objects
         Qt::Test)
 
     # ${QET_DIR} for the same reason as above: diagramcontext.h includes

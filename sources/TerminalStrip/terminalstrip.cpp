@@ -1025,8 +1025,18 @@ bool TerminalStrip::fromXml(QDomElement &xml_element)
 	auto xml_layout = xml_element.firstChildElement(QStringLiteral("layout"));
 	if (!xml_layout.isNull())
 	{
-			//Get all free elements terminal of the project
-		const ElementProvider ep(m_project);
+			//The folios holding its terminals are built (lazy folios):
+			//a strip is read with the project, before the database could
+			//tell where any symbol is
+		QSet<QUuid> terminals;
+		const QDomNodeList xml_reals = xml_layout.elementsByTagName(RealTerminal::xmlTagName());
+		for (int i = 0 ; i < xml_reals.size() ; ++i)
+			terminals.insert(QUuid(xml_reals.at(i).toElement().attribute(QStringLiteral("element_uuid"))));
+		m_project->buildFoliosHoldingSymbols(terminals);
+
+			//Get all free elements terminal of the project: its own are on
+			//the folios just built
+		const ElementProvider ep(m_project->builtFolios());
 		auto free_terminals = ep.freeTerminal();
 
 			//Read each physical terminal
@@ -1038,6 +1048,7 @@ bool TerminalStrip::fromXml(QDomElement &xml_element)
 			for (auto &xml_real : QETXML::findInDomElement(xml_physical, RealTerminal::xmlTagName()))
 			{
 				const auto uuid_ = QUuid(xml_real.attribute(QStringLiteral("element_uuid")));
+				bool found = false;
 				for (auto terminal_elmt : std::as_const(free_terminals))
 				{
 					if (terminal_elmt->uuid() == uuid_)
@@ -1046,8 +1057,14 @@ bool TerminalStrip::fromXml(QDomElement &xml_element)
 							//Remove the actual terminal element from the vector, they dicrease the size
 							//of the vector and so each iteration have less terminal element to check
 						free_terminals.removeOne(terminal_elmt);
+						found = true;
 						break;
 					}
+				}
+				if (!found) {
+					qWarning() << "TerminalStrip::fromXml: strip" << name()
+							   << "lists terminal" << uuid_.toString()
+							   << "but no free terminal symbol has this uuid; it is left out";
 				}
 			}
 

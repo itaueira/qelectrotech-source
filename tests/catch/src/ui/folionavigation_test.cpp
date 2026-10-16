@@ -453,13 +453,14 @@ TEST_CASE("T49 — Ctrl+Alt with an arrow is left to the window with a component
 		}
 	}
 
-	SECTION("Alt and an arrow moves the selection, Ctrl+Alt and an arrow does not")
+	SECTION("Ctrl and an arrow moves the selection, Ctrl+Alt and an arrow does not")
 	{
 		const QPointF where = component->pos();
 
-			//The fine move. Without it, "it did not move" below would prove
-			//nothing.
-		press(Qt::Key_Right, Qt::AltModifier);
+			//The fine move - Ctrl and an arrow since the upstream swapped it
+			//with Alt (110a16348). Without it, "it did not move" below would
+			//prove nothing.
+		press(Qt::Key_Right, Qt::ControlModifier);
 		REQUIRE(component->pos() != where);
 		const QPointF moved = component->pos();
 

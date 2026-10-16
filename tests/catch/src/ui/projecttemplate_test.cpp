@@ -21,7 +21,7 @@
 
 #include "../../../../sources/bordertitleblock.h"
 #include "../../../../sources/diagram.h"
-#include "../../../../sources/environment/projectlock.h"
+#include "../../../../sources/projectlock.h"
 #include "../../../../sources/environment/qetenvironment.h"
 #include "../../../../sources/project/projecttemplate.h"
 #include "../../../../sources/qetproject.h"
@@ -201,7 +201,7 @@ TEST_CASE("T26 — o projeto criado a partir de um modelo não aponta para o mod
 		//Nothing was written beside the template either: no in-use lock is
 		//taken on it, because it was read and not opened.
 	CHECK(QFileInfo::exists(source.path()));
-	CHECK_FALSE(ProjectLock(source.path()).exists());
+	CHECK_FALSE(QFileInfo::exists(ProjectLock::lockPathFor(source.path())));
 
 	delete project;
 }

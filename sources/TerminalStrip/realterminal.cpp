@@ -19,8 +19,8 @@
 #include "terminalstrip.h"
 #include "../qetgraphicsitem/terminalelement.h"
 #include "physicalterminal.h"
+#include "terminalcolor.h"
 #include "../qetgraphicsitem/conductor.h"
-#include "../cable/cable.h"
 #include "../diagram.h"
 #include "../qetproject.h"
 
@@ -63,83 +63,6 @@ namespace
 		return written.join(entrySeparator());
 	}
 
-		/// A wire of a cable, and the cable it is a wire of
-	struct CarriedWire
-	{
-		Cable *cable = nullptr;
-		CableWire wire;
-	};
-
-	/**
-		@brief The cable wires that carry the conductors of @a element.
-
-		@return one entry per conductor of @a element that a wire of a cable
-		of the project names, in the order Element::conductors() gives them -
-		docked top to bottom and left to right, which does not move between
-		runs.
-
-		Matched by uuid and never by the resolved pointer, on purpose: a wire
-		read from a file knows its conductor by uuid alone until somebody
-		calls Cable::resolve(), and a strip asked before that resolution has
-		to answer the same thing as one asked after it. Conductor::fromXml()
-		mints a uuid for a conductor that has none, so there is always one to
-		match against.
-
-		The index is built once per call rather than the cables being walked
-		again for every conductor. Two wires naming the same conductor is a
-		project already broken - Cable::resolve() counts it as a duplicate -
-		and here the first one answers, which is a choice and not an
-		accident.
-	*/
-	QVector<CarriedWire> carriedWiresOf(const Element *element)
-	{
-		QVector<CarriedWire> carried;
-
-		if (!element ||
-			!element->diagram() ||
-			!element->diagram()->project()) {
-			return carried;
-		}
-
-		const auto cables = element->diagram()->project()->cables();
-		if (cables.isEmpty()) {
-			return carried;
-		}
-
-		QHash<QUuid, CarriedWire> by_conductor;
-		for (Cable *cable : cables)
-		{
-			if (!cable) {
-				continue;
-			}
-
-			const auto wires = cable->wires();
-			for (const CableWire &wire : wires)
-			{
-				if (wire.conductorUuid().isNull() ||
-					by_conductor.contains(wire.conductorUuid())) {
-					continue;
-				}
-
-				by_conductor.insert(wire.conductorUuid(),
-						    CarriedWire{cable, wire});
-			}
-		}
-
-		const auto conductors = element->conductors();
-		for (const Conductor *conductor : conductors)
-		{
-			const auto uuid = conductor->uuid();
-			if (uuid.isNull() ||
-				!by_conductor.contains(uuid)) {
-				continue;
-			}
-
-			carried.append(by_conductor.value(uuid));
-		}
-
-		return carried;
-	}
 }
 
 /**
@@ -277,67 +200,6 @@ QString RealTerminal::Xref() const
 }
 
 /**
- * @brief RealTerminal::cables
- * @return the label of every cable reaching this terminal, once each.
- *
- * Once each because a cable that carries two conductors of the same terminal
- * is still one cable, and a column reading "W1, W1" says nothing the column
- * reading "W1" did not already say.
- *
- * A cable nobody named answers the unnamed mark rather than an empty string:
- * the terminal is in a cable either way, and a blank cell would say the
- * opposite.
- */
-QStringList RealTerminal::cables() const
-{
-	QStringList list_;
-
-	const auto carried = carriedWiresOf(m_element.data());
-	for (const CarriedWire &entry : carried)
-	{
-		const auto label = entry.cable->label().isEmpty()
-				   ? unnamedEntry()
-				   : entry.cable->label();
-
-		if (!list_.contains(label)) {
-			list_ << label;
-		}
-	}
-
-	return list_;
-}
-
-/**
- * @brief RealTerminal::cableWires
- * @return how each conductor of this terminal is identified inside its cable.
- *
- * The colour of the wire, its number failing that. A cable is coloured or
- * numbered and not both - there are manufacturers of each kind - which is why
- * the two share one column instead of having one each.
- *
- * A wire with neither answers the unnamed mark, so that the entry keeps its
- * place beside the conductor it belongs to: the entries of this list and the
- * conductors a cable carries are meant to be read side by side, and a dropped
- * entry would shift every one after it.
- */
-QStringList RealTerminal::cableWires() const
-{
-	QStringList list_;
-
-	const auto carried = carriedWiresOf(m_element.data());
-	for (const CarriedWire &entry : carried)
-	{
-		const auto written = entry.wire.color().isEmpty()
-				     ? entry.wire.number()
-				     : entry.wire.color();
-
-		list_ << (written.isEmpty() ? unnamedEntry() : written);
-	}
-
-	return list_;
-}
-
-/**
  * @brief RealTerminal::conductors
  * @return the number of every conductor docked to this terminal.
  *
@@ -370,18 +232,110 @@ QStringList RealTerminal::conductors() const
 
 /**
  * @brief RealTerminal::cable
- * @return
+ * @return The name of the cable (hose) connected to this terminal.
+ * The value is stored in the informations of the element.
  */
 QString RealTerminal::cable() const {
-	return joinedCell(cables());
+	if (m_element) {
+		return m_element->elementData().m_informations.value(cableInfoKey()).toString();
+	}
+	return QString();
 }
 
 /**
  * @brief RealTerminal::cableWire
- * @return
+ * @return The color / number of the wire of the cable, connected to this terminal.
  */
 QString RealTerminal::cableWire() const {
-	return joinedCell(cableWires());
+	if (m_element) {
+		return m_element->elementData().m_informations.value(cableWireInfoKey()).toString();
+	}
+	return QString();
+}
+
+/**
+ * @brief RealTerminal::isShield
+ * @return true if this terminal is the shield of the cable
+ * and not one of its wires.
+ */
+bool RealTerminal::isShield() const {
+	if (m_element) {
+		return QET::infoFlagIsTrue(
+			m_element->elementData().m_informations.value(shieldInfoKey()).toString());
+	}
+	return false;
+}
+
+/**
+ * @brief RealTerminal::color
+ * @return The color set by the user for this terminal, drawn in the
+ * terminal strip. An invalid color mean that the user did not set a color.
+ * The value is stored in the informations of the element.
+ * @sa stripeColor
+ */
+QColor RealTerminal::color() const
+{
+	QColor main_, stripe_;
+	if (m_element) {
+		TerminalColor::parse(m_element->elementData().m_informations.value(colorInfoKey()).toString(),
+							 &main_, &stripe_);
+	}
+	return main_;
+}
+
+/**
+ * @brief RealTerminal::stripeColor
+ * @return The second color of a two-tone color (green/yellow for example)
+ * or an invalid color if the color of this terminal is plain or not set.
+ */
+QColor RealTerminal::stripeColor() const
+{
+	QColor main_, stripe_;
+	if (m_element) {
+		TerminalColor::parse(m_element->elementData().m_informations.value(colorInfoKey()).toString(),
+							 &main_, &stripe_);
+	}
+	return stripe_;
+}
+
+/**
+ * @brief RealTerminal::section
+ * @return The section in mm2 set by the user for this terminal
+ * or 0 if no section was set.
+ * The value is stored in the informations of the element,
+ * with the dot as decimal separator, whatever the locale.
+ */
+qreal RealTerminal::section() const
+{
+	if (m_element)
+	{
+		bool ok_ = false;
+		const auto section_ = m_element->elementData().m_informations.value(sectionInfoKey()).toString().toDouble(&ok_);
+		if (ok_ && section_ > 0) {
+			return section_;
+		}
+	}
+	return 0;
+}
+
+/**
+ * @brief RealTerminal::widthMm
+ * @return The width in mm of this terminal (the width of the terminal
+ * sold by the manufacturer), set by the user, or 0 if no width was set.
+ * The value is stored in the informations of the element,
+ * with the dot as decimal separator, whatever the locale.
+ */
+qreal RealTerminal::widthMm() const
+{
+	if (m_element)
+	{
+		bool ok_ = false;
+		const auto width_ = m_element->elementData().m_informations.value(widthInfoKey()).toString().toDouble(&ok_);
+		if (ok_ && width_ > 0) {
+			return width_;
+		}
+	}
+	return 0;
 }
 
 /**

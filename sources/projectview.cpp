@@ -303,7 +303,9 @@ bool ProjectView::tryClosing()
 		QString filepath = askUserForFilePath();
 		if (filepath.isEmpty()) return(false); // users may cancel the closing
 	}
-	QETResult result = m_project -> write();
+	bool cancelled = false;
+	QETResult result = writeProject(&cancelled);
+	if (cancelled) return(false);
 	updateWindowTitle();
 	if (!result.isOk()) emit(errorEncountered(result.errorMessage()));
 	return(result.isOk());
@@ -356,8 +358,8 @@ int ProjectView::tryClosingDiagrams()
 	if (title.isEmpty()) title = "QElectroTech ";
 
 	int close_dialog = QMessageBox::question(this, title,
-								   tr("Le projet à été modifié.\n"
-									  "Voulez-vous enregistrer les modifications ?"),
+								   tr("The project was modified.\n"
+									  "Do you want to save changes?"),
 								   QMessageBox::Save | QMessageBox::Discard
 								   | QMessageBox::Cancel,
 								   QMessageBox::Save);
@@ -374,11 +376,18 @@ int ProjectView::tryClosingDiagrams()
 */
 QString ProjectView::askUserForFilePath(bool assign) {
 	// ask the user for a filepath in order to save the project
+	const QString qet_filter = tr("Project QElectroTech (*.qet)", "filetypes allowed when saving a project file");
+	const QString qetz_filter = tr("Zipped project QElectroTech (*.qetz)", "filetypes allowed when saving a project file");
+		//A project is saved as a .qetz unless a .qet is chosen
+		//(stage D1)
+	QString selected_filter = qetz_filter;
 	QString filepath = QFileDialog::getSaveFileName(
 		this,
-		tr("Enregistrer sous", "dialog title"),
-		m_project -> currentDir() + "/" + tr("sansnom") + ".qet",
-		tr("Projet QElectroTech (*.qet)", "filetypes allowed when saving a project file")
+		tr("Save as", "dialog title"),
+		m_project -> currentDir() + "/" + tr("untitled")
+				+ (selected_filter == qetz_filter ? ".qetz" : ".qet"),
+		qetz_filter + ";;" + qet_filter,
+		&selected_filter
 	);
 
 	// if no filepath is provided, return an empty string
@@ -394,9 +403,25 @@ QString ProjectView::askUserForFilePath(bool assign) {
 	// extension at all whenever the portal didn't (bugtracker #270).
 	// Stripping any existing suffix first and re-appending it once is
 	// correct either way.
-	if (filepath.endsWith(".qet", Qt::CaseInsensitive))
-		filepath.chop(4);
-	filepath += ".qet";
+	// Zipped (.qetz) when that file type is chosen, or when the name typed
+	// says .qetz anywhere in its trailing extensions: typing "plan.qetz"
+	// over the selected "untitled" of "untitled.qet" gives "plan.qetz.qet"
+	// with the GTK dialog, and still means a .qetz.
+	bool zipped = selected_filter == qetz_filter;
+	for (;;) {
+		if (filepath.endsWith(".qetz", Qt::CaseInsensitive)) {
+			filepath.chop(5);
+			zipped = true;
+		} else if (filepath.endsWith(".qet", Qt::CaseInsensitive)) {
+			filepath.chop(4);
+		} else {
+			break;
+		}
+	}
+	filepath += zipped ? ".qetz" : ".qet";
+
+		//Not onto a file someone else has open
+	if (!refuseIfLockedByOther(filepath)) return(QString());
 
 	if (assign) {
 		// assign the provided filepath to the currently edited project
@@ -407,12 +432,32 @@ QString ProjectView::askUserForFilePath(bool assign) {
 }
 
 /**
+	@brief ProjectView::refuseIfLockedByOther
+	@return false, after telling the user, when another session holds the
+	lock of the file @p filepath this project is about to be saved to
+*/
+bool ProjectView::refuseIfLockedByOther(const QString &filepath)
+{
+	if (!ProjectLock::mayTake()) return(true);
+	const ProjectLock::Holder holder = ProjectLock::liveHolder(
+				filepath, m_project && m_project->lock() ? m_project->lock()->session() : QString());
+	if (!holder.valid) return(true);
+	QMessageBox::warning(
+		this,
+		tr("Project in use", "message box title"),
+		tr("%1 is open by %2 on %3. Choose another file name, or save again "
+		   "once it has been closed there.")
+			.arg(QFileInfo(filepath).fileName(), holder.user, holder.host));
+	return(false);
+}
+
+/**
 	@return the QETResult object to be returned when it appears this project
 	view is not associated to any project.
 */
 QETResult ProjectView::noProjectResult() const
 {
-	QETResult no_project(tr("aucun projet affiché", "error message"), false);
+	QETResult no_project(tr("no active project", "error message"), false);
 	return(no_project);
 }
 
@@ -435,8 +480,8 @@ void ProjectView::removeDiagram(DiagramView *diagram_view, bool silent)
 		//Ask confirmation to user.
 		int answer = QET::QetMessageBox::question(
 			this,
-			tr("Supprimer le folio ?", "message box title"),
-												  tr("Êtes-vous sûr de vouloir supprimer ce folio du projet ?", "message box content"),
+			tr("Delete this sheet ?", "message box title"),
+												  tr("Are you sure you want to delete this sheet from the project?", "message box content"),
 												  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
 											QMessageBox::No
 		);
@@ -810,6 +855,76 @@ QETResult ProjectView::saveAs()
 }
 
 /**
+	@brief ProjectView::saveCopyForOlderVersions
+	Ask for a .qet path and write the project there, for a version of
+	QElectroTech that cannot open a .qetz. The project keeps its file.
+	@return a QETResult object reflecting the situation; a valid one if
+	the operation was cancelled
+*/
+QETResult ProjectView::saveCopyForOlderVersions()
+{
+	if (!m_project) return(noProjectResult());
+
+	QString base = m_project->filePath().isEmpty()
+			? m_project->currentDir() + "/" + tr("untitled")
+			: m_project->filePath();
+	for (const QString &suffix : {QStringLiteral(".qetz"), QStringLiteral(".qet")})
+		if (base.endsWith(suffix, Qt::CaseInsensitive)) base.chop(suffix.size());
+	QString path = QFileDialog::getSaveFileName(
+				this,
+				tr("Save a copy for an older QElectroTech", "dialog title"),
+				base + ".qet",
+				tr("Project QElectroTech (*.qet)", "filetypes allowed when saving a project file"));
+	if (path.isEmpty()) return(QETResult());
+	if (!path.endsWith(".qet", Qt::CaseInsensitive)) path += ".qet";
+	return(m_project->writeCopyForOlderVersions(path));
+}
+
+/**
+	@brief ProjectView::writeProject
+	Write the project file. If the file was changed on disk since this QET
+	read or wrote it, ask what to do first: a plain save would replace
+	the other change.
+	@param cancelled set to true if the user gave up, or chose to save a
+	copy and did not complete it: nothing was saved to the project's file
+	@return the result of the write
+*/
+QETResult ProjectView::writeProject(bool *cancelled)
+{
+	*cancelled = false;
+	QDateTime when;
+	if (!m_project -> changedOnDisk(&when)) {
+		return(m_project -> write());
+	}
+
+	const QString name = QFileInfo(m_project -> writeTarget()).fileName();
+	QMessageBox box(QMessageBox::Warning,
+					tr("File changed on disk", "message box title"),
+					tr("Someone else changed %1 on disk at %2 since you opened it.\n\n"
+					   "Saving over it would lose their changes.")
+						.arg(name, QLocale::system().toString(when, QLocale::ShortFormat)),
+					QMessageBox::NoButton, this);
+	QPushButton *copy_button = box.addButton(tr("Save as a copy"), QMessageBox::AcceptRole);
+	QPushButton *overwrite_button = box.addButton(tr("Overwrite"), QMessageBox::DestructiveRole);
+	box.addButton(QMessageBox::Cancel);
+	box.setDefaultButton(copy_button);
+	box.setEscapeButton(QMessageBox::Cancel);
+	box.exec();
+
+	if (box.clickedButton() == overwrite_button) {
+		return(m_project -> write(true));
+	}
+	if (box.clickedButton() == copy_button) {
+		QETResult result = saveAs();
+			//The Save As dialog was cancelled: the project is still modified
+		if (m_project -> projectWasModified()) *cancelled = true;
+		return(result);
+	}
+	*cancelled = true;
+	return(QETResult());
+}
+
+/**
 	Save project content, then write the project file. May
 	call saveAs if no filepath was provided before.
 	@return a QETResult object reflecting the situation; note that a valid
@@ -825,8 +940,36 @@ QETResult ProjectView::doSave()
 		return(saveAs());
 	}
 
+		//A project read from a .qet is saved as a .qetz beside it: say so,
+		//and ask before replacing a .qetz already there
+	if (m_project->savesBesideOpenedFile()) {
+		const QString beside = m_project->besideContainerPath();
+		if (!refuseIfLockedByOther(beside)) return(QETResult());
+		const QString message = tr("This project was opened from %1. It is saved as %2, "
+								   "beside it, in the zipped project format; %1 stays as "
+								   "it is.\n\nTo write a file for a version of "
+								   "QElectroTech that cannot open %2, use File > Save a "
+								   "copy for an older QElectroTech.")
+				.arg(QFileInfo(m_project->filePath()).fileName(), QFileInfo(beside).fileName());
+		if (QFileInfo::exists(beside)) {
+			if (QET::QetMessageBox::question(
+						this, tr("Save as a zipped project", "message box title"),
+						message + QStringLiteral("\n\n")
+						+ tr("%1 already exists. Replace it?").arg(QFileInfo(beside).fileName()),
+						QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel)
+					!= QMessageBox::Yes) {
+				return(QETResult());
+			}
+		} else {
+			QET::QetMessageBox::information(
+						this, tr("Save as a zipped project", "message box title"), message);
+		}
+	}
+
 	// write to file
-	QETResult result = m_project -> write();
+	bool cancelled = false;
+	QETResult result = writeProject(&cancelled);
+	if (cancelled) return(QETResult());
 	updateWindowTitle();
 	// This marks the stack's current index as the new "saved" point (so isClean()/cleanChanged() correctly
 	// resume tracking unsaved changes from here) without discarding the undo history. Edits made before this save 
@@ -851,16 +994,16 @@ int ProjectView::cleanProject()
 	if (m_project -> isReadOnly()) {
 		QET::QetMessageBox::critical(
 			this,
-			tr("Projet en lecture seule", "message box title"),
-			tr("Ce projet est en lecture seule. Il n'est donc pas possible de le nettoyer.", "message box content")
+			tr("Read-only project", "message box title"),
+			tr("This project is read-only. Thus it can not be cleaned.", "message box content")
 		);
 		return(0);
 	}
 
 	// construit un petit dialogue pour parametrer le nettoyage
-	QCheckBox *clean_tbt		= new QCheckBox(tr("Supprimer les modèles de cartouche inutilisés dans le projet"));
-	QCheckBox *clean_elements   = new QCheckBox(tr("Supprimer les éléments inutilisés dans le projet"));
-	QCheckBox *clean_categories = new QCheckBox(tr("Supprimer les catégories vides"));
+	QCheckBox *clean_tbt		= new QCheckBox(tr("delete unused templates in the project"));
+	QCheckBox *clean_elements   = new QCheckBox(tr("Delete unused elements in  the project"));
+	QCheckBox *clean_categories = new QCheckBox(tr("Delete empty categories"));
 	QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
 	clean_tbt		-> setChecked(true);
@@ -872,7 +1015,7 @@ int ProjectView::cleanProject()
 	clean_dialog.setWindowFlags(Qt::Sheet);
 #endif
 
-	clean_dialog.setWindowTitle(tr("Nettoyer le projet", "window title"));
+	clean_dialog.setWindowTitle(tr("Clean project", "window title"));
 	QVBoxLayout *clean_dialog_layout = new QVBoxLayout();
 	clean_dialog_layout -> addWidget(clean_tbt);
 	clean_dialog_layout -> addWidget(clean_elements);
@@ -906,13 +1049,13 @@ int ProjectView::cleanProject()
 */
 void ProjectView::initActions()
 {
-	m_add_new_diagram = new QAction(QET::Icons::AddFolio, tr("Ajouter un folio"), this);
+	m_add_new_diagram = new QAction(QET::Icons::AddFolio, tr("Add a sheet"), this);
 	connect(m_add_new_diagram, &QAction::triggered, [this](){this->m_project->addNewDiagram();});
 	
-	m_first_view = new QAction(QET::Icons::ArrowLeftDouble, tr("Revenir au debut du projet"),this);
+	m_first_view = new QAction(QET::Icons::ArrowLeftDouble, tr("Go back to the start of the project"),this);
 	connect(m_first_view, &QAction::triggered, [this](){this->m_tab->setCurrentWidget(firstDiagram());});
 	
-	m_end_view = new QAction(QET::Icons::ArrowRightDouble, tr("Aller à la fin du projet"),this);
+	m_end_view = new QAction(QET::Icons::ArrowRightDouble, tr("Go to the end of the project"),this);
 	connect(m_end_view, &QAction::triggered, [this](){this->m_tab->setCurrentWidget(lastDiagram());});
 
 		// button to scroll one page left
@@ -936,7 +1079,7 @@ void ProjectView::initWidgets()
 	fallback_widget_ = new QWidget();
 	fallback_label_ = new QLabel(
 		tr(
-			"Ce projet ne contient aucun folio",
+			"This project does not contain any sheet",
 			"label displayed when a project contains no diagram"
 		)
 	);
@@ -1043,18 +1186,18 @@ void ProjectView::loadDiagrams()
 {
 	if (!m_project) return;
 
-	setDisplayFallbackWidget(m_project -> diagrams().isEmpty());
+		//The folios' items are built when their tab is first shown
+		//(tabChanged()), not here: a tab needs only the folio's own data
+	setDisplayFallbackWidget(m_project -> folios().isEmpty());
 
 	auto dialog = DialogWaiting::instance();
 	if(dialog)
 	{
-		dialog->setTitle( tr("<p align=\"center\">"
-												"<b>Ouverture du projet en cours...</b><br/>"
-												"Création des onglets de folio :"
-												"</p>"));
+		dialog->setTitle( tr("<p align=\"center\"><b>Opening the project "
+												"...</b><br/>Creating sheet tabs :</p>"));
 	}
 
-	for(auto diagram : m_project->diagrams())
+	for(auto diagram : m_project->folios())
 	{
 		if(dialog)
 		{
@@ -1091,7 +1234,7 @@ void ProjectView::updateWindowTitle()
 	if (m_project) {
 		title = m_project -> pathNameTitle();
 	} else {
-		title = tr("Projet", "window title for a project-less ProjectView");
+		title = tr("Project", "window title for a project-less ProjectView");
 	}
 	setWindowTitle(title);
 }
@@ -1288,6 +1431,12 @@ void ProjectView::rebuildDiagramsMap()
 */
 void ProjectView::tabChanged(int tab_id)
 {
+		//A folio opened without its items (lazy folios) is built when
+		//its tab is first shown. Read the tab itself: the first tab is
+		//shown while loadDiagrams() is still filling m_diagram_ids
+	if (auto dv = qobject_cast<DiagramView *>(m_tab->widget(tab_id)))
+		dv->buildFolio();
+
 	if (tab_id == -1)
 		setDisplayFallbackWidget(true);
 	else if(m_tab->count() == 1)

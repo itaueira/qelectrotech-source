@@ -136,7 +136,8 @@ void FolioAutonumberingW::on_m_autonumber_tabs_rb_clicked()
 	if (ui->m_from_cb->count()<=0){
 		ui->m_from_cb->clear();
 		ui->m_from_cb->addItem("");
-		foreach (Diagram *diagram, project_->diagrams()){
+			//Titles only: folios() builds nothing
+		foreach (Diagram *diagram, project_->folios()){
 			ui->m_from_cb->addItem(diagram->title());
 		}
 	}
@@ -164,9 +165,9 @@ void FolioAutonumberingW::on_m_from_cb_currentIndexChanged(int)
 	ui->m_to_cb->clear();
 	if (index > 0){
 		ui->m_to_cb->setEnabled(true);
-		for (int i=index;i<project_->diagrams().size();i++)
-			ui->m_to_cb->addItem(project_
-					     ->diagrams().at(i)->title());
+		const QList<Diagram *> folios = project_->folios();
+		for (int i=index;i<folios.size();i++)
+			ui->m_to_cb->addItem(folios.at(i)->title());
 		applyEnable(true);
 	}
 	else{
@@ -189,20 +190,21 @@ void FolioAutonumberingW::on_buttonBox_clicked(QAbstractButton *button)
 		case QDialogButtonBox::HelpRole:
 			QMessageBox::information (
 						this,
-						tr("Folio Autonumbering",
+						tr("Sheet Autonumbering",
 						   "title window"),
-						tr("C'est ici que vous pouvez définir la manière dont seront numérotés les nouveaux folios.\n"
-						   "-Une numérotation est composée d'une variable minimum.\n"
-						   "-Vous pouvez ajouter ou supprimer une variable de numérotation par le biais des boutons - et +.\n"
-						   "-Une variable de numérotation comprend : un type, une valeur et une incrémentation.\n"
-
-						   "\n-les types \"Chiffre 1\", \"Chiffre 01\" et \"Chiffre 001\", représentent un type numérique défini dans le champ \"Valeur\", "
-						   "qui s'incrémente à chaque nouveau folio de la valeur du champ \"Incrémentation\".\n"
-						   "-\"Chiffre 01\" et \"Chiffre 001\", sont respectivement représentés sur le schéma par deux et trois digits minimum.\n"
-						   "Si le chiffre défini dans le champ Valeur possède moins de digits que le type choisi,"
-						   "celui-ci sera précédé par un ou deux 0 afin de respecter son type.\n"
-
-						   "\n-Le type \"Texte\", représente un texte fixe.\nLe champ \"Incrémentation\" n'est pas utilisé.\n",
+						tr("This is where you can define how the new sheets will be numbered.\n"
+						   "-A numbering is composed of a minimum variable.\n"
+						   "-You can add or delete a dialing variable through the - and + buttons.\n"
+						   "A numbering variable includes: a type, a value and an increment.\n"
+						   "\n"
+						   "-the \"Digit 1\", \"Digit 01\" and \"Digit 001\" types represent a numeric type defined in the \"Value\" field, which "
+						   "increments each new sheet by the value of the \"Incrementation\" field.\n"
+						   "- \"Digit 01\" and \"Digit 001\", are respectively represented on the diagram by two and three digits minimum.\n"
+						   "If the digit defined in the Value field has fewer digits than the chosen type, it will be preceded by one or two 0s in "
+						   "order to respect its type.\n"
+						   "\n"
+						   "-Type \"Text\", represents a fixed text.\n"
+						   "The \"Incrementation\" field is not used.\n",
 						   "help dialog about the folio autonumerotation"
 						   ));
 			break;

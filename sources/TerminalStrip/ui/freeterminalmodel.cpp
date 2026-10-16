@@ -226,9 +226,9 @@ QVariant FreeTerminalModel::headerData(int section, Qt::Orientation orientation,
 		{
 			switch (section) {
 				case LABEL_CELL:    return tr("Label");
-				case XREF_CELL:     return tr("Référence croisé");
+				case XREF_CELL:     return tr("Cross-reference");
 				case TYPE_CELL:     return tr("Type");
-				case FUNCTION_CELL: return tr("Fonction");
+				case FUNCTION_CELL: return tr("Function");
 				case LED_CELL:      return tr("led");
 				default : return QVariant();
 			}
@@ -400,7 +400,7 @@ void FreeTerminalModel::fillTerminalVector()
         std::sort(free_terminal_vector.begin(), free_terminal_vector.end(),
                   [](TerminalElement *a, TerminalElement *b)
                   {
-                      return QETUtils::sortBeginIntString(a->elementData().m_informations.value(QETInformation::ELMT_LABEL).toString(),
+                      return QETUtils::naturalLessThan(a->elementData().m_informations.value(QETInformation::ELMT_LABEL).toString(),
                                                           b->elementData().m_informations.value(QETInformation::ELMT_LABEL).toString());
                   });
 
@@ -429,6 +429,11 @@ QWidget *FreeTerminalModelDelegate::createEditor(QWidget *parent, const QStyleOp
 		qcb->addItem(ElementData::translatedTerminalType(ElementData::TTSectional), ElementData::TTSectional);
 		qcb->addItem(ElementData::translatedTerminalType(ElementData::TTDiode),     ElementData::TTDiode);
 		qcb->addItem(ElementData::translatedTerminalType(ElementData::TTGround),    ElementData::TTGround);
+		qcb->addItem(ElementData::translatedTerminalType(ElementData::TTAntiParallelDiodes), ElementData::TTAntiParallelDiodes);
+		qcb->addItem(ElementData::translatedTerminalType(ElementData::TTResistor),     ElementData::TTResistor);
+		qcb->addItem(ElementData::translatedTerminalType(ElementData::TTVaristor),     ElementData::TTVaristor);
+		qcb->addItem(ElementData::translatedTerminalType(ElementData::TTTestSocket),   ElementData::TTTestSocket);
+		qcb->addItem(ElementData::translatedTerminalType(ElementData::TTDiodeReversed), ElementData::TTDiodeReversed);
 
 		return qcb;
 	}

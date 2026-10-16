@@ -102,6 +102,13 @@ else()
     message(STATUS "Qt Qml module not available: JavaScript scripting (--run) disabled")
 endif()
 
+# The zip container of a .qetz project is read and written with the bundled
+# miniz (sources/container/miniz): in memory only, and without timestamps so
+# that saving the same project twice gives the same bytes. The names must not
+# clash with the zlib Qt links. Every target including miniz.h needs the same
+# three, hence directory-wide.
+add_compile_definitions(MINIZ_NO_TIME MINIZ_NO_STDIO MINIZ_NO_ZLIB_COMPATIBLE_NAMES)
+
 # The crash handler writes a backtrace into the dump. Detecting this with
 # __has_include(<execinfo.h>) is not enough: the header is present on FreeBSD
 # too, but backtrace() lives in a separate libexecinfo there, so the compile
@@ -141,7 +148,7 @@ option(PACKAGE_TESTS "Build the tests" ON)
 # add_subdirectory(tests) is issued at the very bottom of this file, not here.
 # Two reasons, both load-bearing:
 #
-#   1. A test target links qet_core, and a target can only be referenced after
+#   1. A test target links qelectrotech_objects, and a target can only be referenced after
 #      it has been created.
 #
 #   2. add_definitions() is directory-scoped: it only reaches subdirectories
@@ -152,31 +159,29 @@ option(PACKAGE_TESTS "Build the tests" ON)
 #      changes the class layout on that very macro. Same class, two layouts,
 #      one link: an ODR violation, which does not fail to build, it corrupts
 #      at run time. Nothing the test target currently compiles includes
-#      qetproject.h, so the defect was latent; linking qet_core wakes it up.
+#      qetproject.h, so the defect was latent; linking qelectrotech_objects wakes it up.
 
 # als laatse
 include(cmake/define_definitions.cmake)
 
-# Everything the program is made of, minus main(), in one object library.
-#
-# The point is that a test target can link it. A test that opens a project and
-# looks at the resulting sheet needs a live QETProject, Diagram and Element,
-# and their transitive closure is most of sources/ - not a list anyone
-# maintains by hand. The older test target does maintain such a list, on
-# purpose and unchanged; see tests/catch/CMakeLists.txt for why.
-#
-# OBJECT, not STATIC: the object files are handed to the linker one by one, so
-# Qt resources and static initialisers behave exactly as they do today. A
-# static library would drop the object holding qelectrotech.qrc, because
-# nothing references it by symbol.
-set(QET_CORE_SRC_FILES ${QET_SRC_FILES})
-list(REMOVE_ITEM QET_CORE_SRC_FILES ${QET_DIR}/sources/main.cpp)
-
-add_library(qet_core OBJECT
-    ${QET_CORE_SRC_FILES}
+# The application's code, compiled once, as an object library: the
+# executable is main.cpp linked with it, and tests that need the real
+# classes (a folio, its view, the editor window) link it too.
+set(QET_MAIN_FILE ${QET_DIR}/sources/main.cpp)
+list(REMOVE_ITEM QET_SRC_FILES ${QET_MAIN_FILE})
+add_library(
+    ${PROJECT_NAME}_objects
+    OBJECT
+    ${QET_RES_FILES}
+    ${QET_SRC_FILES}
     ${QET_DIR}/qelectrotech.qrc
     ${QET_DIR}/ico/icon-themes.qrc
 )
+# The definitions above are set for this whole directory; a test target
+# lives in tests/ and gets them from here, through the library.
+get_directory_property(QET_DIRECTORY_DEFINITIONS COMPILE_DEFINITIONS)
+target_compile_definitions(${PROJECT_NAME}_objects
+    INTERFACE ${QET_DIRECTORY_DEFINITIONS})
 
 # On Windows, WIN32 sets /SUBSYSTEM:WINDOWS to suppress the console window.
 # Qt automatically links qtmain.lib which provides the WinMain entry point,
@@ -190,8 +195,7 @@ if(WIN32)
     add_executable(
         ${PROJECT_NAME}
         WIN32
-        ${QET_RES_FILES}
-        ${QET_DIR}/sources/main.cpp
+        ${QET_MAIN_FILE}
         ${QM_FILES}
     )
     # Our own manifest (it declares longPathAware). MSVC merges a .manifest
@@ -209,13 +213,11 @@ if(WIN32)
 else()
     add_executable(
         ${PROJECT_NAME}
-        ${QET_RES_FILES}
-        ${QET_DIR}/sources/main.cpp
+        ${QET_MAIN_FILE}
         ${QM_FILES}
     )
 endif()
-
-target_link_libraries(${PROJECT_NAME} PRIVATE qet_core)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_objects)
 
 if(QET_SPACEMOUSE_BACKEND_SPNAV_ENABLED)
     list(APPEND QET_SPACEMOUSE_LIBRARIES PkgConfig::SPNAV)
@@ -283,10 +285,10 @@ elseif(Qt6_VERSION VERSION_LESS "6.7")
     )
 
     # Automatically creates the update_translations umbrella target.
-    # qet_core, not the executable: lupdate scans the sources of the target it
+    # qelectrotech_objects, not the executable: lupdate scans the sources of the target it
     # is given, and in this fork the executable holds only main.cpp.
     qt_add_lupdate(
-        qet_core
+        ${PROJECT_NAME}_objects
         TS_FILES ${TS_FILES}
     )
 
@@ -299,8 +301,7 @@ else()
     )
 
     qt_add_lupdate(
-        # qet_core, not the executable: that is where the sources are.
-        SOURCE_TARGETS qet_core
+        SOURCE_TARGETS ${PROJECT_NAME}_objects
         TS_FILES ${TS_FILES}
         LUPDATE_TARGET update_translations
         NO_GLOBAL_TARGET
@@ -326,7 +327,7 @@ if(QET_ENABLE_PCH)
             "QET_ENABLE_PCH needs CMake 3.16 or newer (found ${CMAKE_VERSION}); "
             "building without precompiled headers.")
     else()
-        target_precompile_headers(qet_core PRIVATE
+        target_precompile_headers(${PROJECT_NAME}_objects PRIVATE
             "$<$<COMPILE_LANGUAGE:CXX>:<QtCore/QtCore$<ANGLE-R>>"
             "$<$<COMPILE_LANGUAGE:CXX>:<QtGui/QtGui$<ANGLE-R>>"
             "$<$<COMPILE_LANGUAGE:CXX>:<QtWidgets/QtWidgets$<ANGLE-R>>"
@@ -336,12 +337,12 @@ if(QET_ENABLE_PCH)
     endif()
 endif()
 
-# On qet_core, and PUBLIC rather than PRIVATE: whatever links this library
+# On qelectrotech_objects, and PUBLIC rather than PRIVATE: whatever links this library
 # compiles against the same headers and links the same libraries the sources
-# were built with. The executable gets all of it by linking qet_core, so
+# were built with. The executable gets all of it by linking qelectrotech_objects, so
 # nothing is lost by moving these off the executable.
 target_link_libraries(
-    qet_core
+    ${PROJECT_NAME}_objects
     PUBLIC
     pugixml::pugixml
     SingleApplication::SingleApplication
@@ -352,7 +353,7 @@ target_link_libraries(
 )
 
 target_include_directories(
-    qet_core
+    ${PROJECT_NAME}_objects
     PUBLIC
     ${QET_DIR}/sources/titleblock
     ${QET_DIR}/sources/ui
@@ -386,11 +387,12 @@ target_include_directories(
     ${QET_DIR}/sources/print
     ${QET_DIR}/sources/svg
     ${QET_DIR}/sources/materiallist
+    ${QET_DIR}/sources/cablelist
 )
 
 if(NOT BUILD_WITH_KF)
     target_include_directories(
-        qet_core
+        ${PROJECT_NAME}_objects
         PUBLIC
         ${QET_DIR}/sources/ui/nokde
     )
@@ -425,7 +427,7 @@ if (NOT MINGW)
 endif()
 
 # Added last, deliberately: see the note next to option(PACKAGE_TESTS) above.
-# By this point qet_core exists and cmake/define_definitions.cmake has run, so
+# By this point qelectrotech_objects exists and cmake/define_definitions.cmake has run, so
 # the test targets both can link the program and are compiled with the same
 # definitions as the program.
 if(PACKAGE_TESTS)

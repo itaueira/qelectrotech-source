@@ -17,6 +17,7 @@
 */
 #include "diagramimageitem.h"
 #include "../darkimagerendering.h"
+#include "cropgeometry.h"
 #include "../shownkinds.h"
 
 #include "../PropertiesEditor/propertieseditordialog.h"
@@ -33,6 +34,7 @@
 #include "../utils/qetutils.h"
 #include "../QetGraphicsItemModeler/qetgraphicshandleritem.h"
 
+#include <QKeyEvent>
 #include <QAction>
 #include <QBuffer>
 #include <QFileDialog>
@@ -40,6 +42,9 @@
 #include <QFontMetricsF>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QImageWriter>
+#include <QPainterPath>
+#include <QtMath>
+#include <QGraphicsView>
 #include <QMenu>
 #include <QMessageBox>
 #include <QTextStream>
@@ -98,7 +103,92 @@ DiagramImageItem::~DiagramImageItem()
 	@param widget the QWidget where we draw the pixmap
 */
 void DiagramImageItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-	DarkImageRendering::paintPixmap(painter, pixmap_, m_adapt_to_dark_theme);
+	if (isCropping())
+	{
+		// The whole original, dimmed, with the region being kept drawn
+		// over it at full strength and outlined. In a dark scene this is
+		// a picture like any other: kept out of the scene's inversion
+		// unless the picture adapts to the dark theme, as
+		// DarkImageRendering::paintPixmap() does for the plain picture.
+		Q_UNUSED(option); Q_UNUSED(widget);
+		const QPointF origin = -QPointF(m_crop_rect.topLeft());
+		const QRectF previewRect(origin, QSizeF(m_crop_preview.size()));
+		DarkImageRendering::Context *context = DarkImageRendering::current;
+		const bool boundary = context && context->painter == painter
+				&& m_adapt_to_dark_theme != context->invertScene;
+		if (boundary) context->flush(context->invertScene, QRect());
+		painter -> save();
+		painter -> setOpacity(0.3);
+		painter -> drawPixmap(origin, m_crop_preview);
+		painter -> setOpacity(1.0);
+		painter -> drawPixmap(cropFrameLocal(), m_crop_preview, m_pending_crop);
+		const QRectF f = cropFrameLocal();
+		QPen frame(Qt::black);
+		frame.setCosmetic(true);
+		frame.setWidth(1);
+		painter -> setPen(frame);
+		painter -> setBrush(Qt::NoBrush);
+		painter -> drawRect(f);
+
+		// Crop bars, as photo editors draw them: an L at each corner and a
+		// short bar in the middle of each side, black on a white outline
+		// so they show on dark pictures too, and the same size on screen
+		// whatever the zoom or the picture's own scale.
+		const QTransform t = painter -> worldTransform();
+		const qreal px = 1.0 / qMax(1e-6, qSqrt(qAbs(t.m11() * t.m22() - t.m12() * t.m21())));
+		const qreal corner = qMin(18 * px, qMin(f.width(), f.height()) / 2);
+		const qreal side = qMin(10 * px, qMin(f.width(), f.height()) / 4);
+		QPainterPath bars;
+		auto l = [&bars](QPointF a, QPointF b, QPointF c) {
+			bars.moveTo(a); bars.lineTo(b); bars.lineTo(c);
+		};
+		l(f.topLeft() + QPointF(0, corner), f.topLeft(), f.topLeft() + QPointF(corner, 0));
+		l(f.topRight() - QPointF(corner, 0), f.topRight(), f.topRight() + QPointF(0, corner));
+		l(f.bottomRight() - QPointF(0, corner), f.bottomRight(), f.bottomRight() - QPointF(corner, 0));
+		l(f.bottomLeft() + QPointF(corner, 0), f.bottomLeft(), f.bottomLeft() - QPointF(0, corner));
+		const QPointF c = f.center();
+		bars.moveTo(c.x() - side, f.top());    bars.lineTo(c.x() + side, f.top());
+		bars.moveTo(c.x() - side, f.bottom()); bars.lineTo(c.x() + side, f.bottom());
+		bars.moveTo(f.left(), c.y() - side);   bars.lineTo(f.left(), c.y() + side);
+		bars.moveTo(f.right(), c.y() - side);  bars.lineTo(f.right(), c.y() + side);
+		painter -> setRenderHint(QPainter::Antialiasing, true);
+		QPen outline(Qt::white, 7, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
+		outline.setCosmetic(true);
+		painter -> setPen(outline);
+		painter -> drawPath(bars);
+		QPen bar(Qt::black, 4, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
+		bar.setCosmetic(true);
+		painter -> setPen(bar);
+		painter -> drawPath(bars);
+		painter -> restore();
+		if (boundary)
+			context->flush(m_adapt_to_dark_theme, painter->worldTransform().mapRect(previewRect)
+						   .toAlignedRect().adjusted(-2, -2, 2, 2));
+		return;
+	}
+
+		// SVG export with smaller pictures: a copy four times the size the
+		// picture is drawn at, when that is smaller than the picture. An
+		// SVG stores what it is given, so a photo shown at a tenth of its
+		// size would otherwise be written whole.
+	const QTransform world = painter -> worldTransform();
+	const qreal drawn_scale = std::sqrt(std::abs(world.determinant()));
+	const QSize small_size = (QSizeF(pixmap_.size()) * drawn_scale * 4).toSize();
+	if (diagram() && diagram() -> smallPictures() && !pixmap_.isNull()
+			&& small_size.width() < pixmap_.width()
+			&& small_size.height() < pixmap_.height()
+			&& !small_size.isEmpty())
+	{
+		const QPixmap small = pixmap_.scaled(small_size, Qt::IgnoreAspectRatio,
+											 Qt::SmoothTransformation);
+		painter -> save();
+		painter -> scale(qreal(pixmap_.width()) / small.width(),
+						 qreal(pixmap_.height()) / small.height());
+		DarkImageRendering::paintPixmap(painter, small, m_adapt_to_dark_theme);
+		painter -> restore();
+	}
+	else
+		DarkImageRendering::paintPixmap(painter, pixmap_, m_adapt_to_dark_theme);
 
 	Q_UNUSED(option); Q_UNUSED(widget);
 
@@ -212,6 +302,11 @@ void DiagramImageItem::setPixmap(const QPixmap &pixmap) {
 */
 void DiagramImageItem::setImageSource(const ImageSource &source)
 {
+	// An undo or redo that changes the picture under a crop being edited
+	// ends that crop: its frame and its preview were made for the source
+	// that is replaced here. Nothing is applied, since this may run
+	// inside an undo command.
+	finishCropMode(false);
 	m_base_pixmap = source.base;
 	m_crop_rect = source.crop;
 	m_transparent_colors = source.colors;
@@ -460,6 +555,11 @@ QPointF DiagramImageItem::handlePosition(int index) const
 {
 	const qreal w = pixmap_.width(), h = pixmap_.height();
 	const HandleRole role = m_handleRoles.at(index);
+	if (role == HandleRole::CropEdge)
+	{
+		const QRectF frame = cropFrameLocal();
+		return frame.topLeft() + handleNaturalPosition(index, frame.width(), frame.height());
+	}
 	if (role == HandleRole::Resize)
 		return handleNaturalPosition(index, w, h);
 	if (role == HandleRole::Rotate)
@@ -478,6 +578,24 @@ QPointF DiagramImageItem::handlePosition(int index) const
 */
 void DiagramImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+	if (isCropping())
+	{
+		// Inside the crop frame: move it. On the dimmed rest: done.
+		if (event->button() == Qt::LeftButton)
+		{
+			if (cropFrameLocal().contains(event->pos()))
+			{
+				m_crop_moving = true;
+				m_crop_move_start = event->pos();
+				m_crop_move_origin = m_pending_crop;
+			}
+			else
+				finishCropMode(true);
+		}
+		event->accept();
+		return;
+	}
+
 	const bool wasAlreadySelected = isSelected();
 	event->ignore();
 	QetGraphicsItem::mousePressEvent(event);
@@ -491,11 +609,66 @@ void DiagramImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 }
 
 /**
+	@brief DiagramImageItem::mouseMoveEvent
+	In crop mode, a drag inside the crop frame moves it over the
+	original; the picture itself stays where it is.
+*/
+void DiagramImageItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (isCropping())
+	{
+		if (m_crop_moving)
+		{
+			m_pending_crop = CropGeometry::moveWithin(m_crop_move_origin,
+					event->pos() - m_crop_move_start, QRectF(m_base_pixmap.rect()));
+			repositionHandles();
+			update();
+		}
+		event->accept();
+		return;
+	}
+	QetGraphicsItem::mouseMoveEvent(event);
+}
+
+void DiagramImageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (isCropping())
+	{
+		m_crop_moving = false;
+		event->accept();
+		return;
+	}
+	QetGraphicsItem::mouseReleaseEvent(event);
+}
+
+/**
+	@brief DiagramImageItem::mouseDoubleClickEvent
+	Double-click crops the picture directly on the folio, and applies the
+	crop when it is already being edited. The properties stay in the
+	context menu.
+*/
+void DiagramImageItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (event->button() != Qt::LeftButton)
+	{
+		QetGraphicsItem::mouseDoubleClickEvent(event);
+		return;
+	}
+	if (isCropping())
+		finishCropMode(true);
+	else
+		enterCropMode();
+	event->accept();
+}
+
+/**
 	@brief DiagramImageItem::toggleHandleMode
 */
 void DiagramImageItem::toggleHandleMode()
 {
 	prepareGeometryChange();
+	if (isCropping())
+		return;
 	m_handleMode = (m_handleMode == HandleMode::Size) ? HandleMode::RotateSkew : HandleMode::Size;
 	rebuildHandles();
 	refreshInteractionHints();
@@ -516,7 +689,13 @@ DiagramImageItem::HandleMode DiagramImageItem::nextHandleMode() const
 */
 QString DiagramImageItem::handleModeLabel(HandleMode mode)
 {
-	return (mode == HandleMode::Size) ? tr("redimensionner") : tr("pivoter/incliner");
+	switch (mode)
+	{
+		case HandleMode::Size: return tr("resize");
+		case HandleMode::RotateSkew: return tr("rotate/skew");
+		case HandleMode::Crop: return tr("crop");
+	}
+	return QString();
 }
 
 /**
@@ -532,7 +711,7 @@ QString DiagramImageItem::handleModeLabel(HandleMode mode)
 void DiagramImageItem::updateModeHint()
 {
 	setToolTip(isSelected()
-			? tr("Cliquer : mode %1").arg(handleModeLabel(nextHandleMode()))
+			? tr("Click: mode %1").arg(handleModeLabel(nextHandleMode()))
 			: QString());
 }
 
@@ -569,10 +748,12 @@ void DiagramImageItem::refreshInteractionHints()
 */
 QString DiagramImageItem::currentModeStatusHint() const
 {
+	if (isCropping())
+		return tr("Crop: drag the handles or the frame -- Enter, double-click or click elsewhere: apply; Escape: cancel");
 	QString hint = (m_handleMode == HandleMode::Size)
-			? tr("Glisser un coin/bord : redimensionner (Ctrl = depuis le centre, Maj = conserver les proportions)")
-			: tr("Glisser un coin : pivoter (Maj = par pas de 15°) ; glisser un bord : incliner (Maj = par pas de 15°) ; point rouge : déplacer le centre de rotation");
-	hint += tr(" -- %1 : mode %2").arg(tr("Cliquer"), handleModeLabel(nextHandleMode()));
+			? tr("Drag a corner/edge: resize (Ctrl = from center, Shift = keep proportions)")
+			: tr("Drag a corner: rotate (Shift = 15° steps); drag an edge: skew (Shift = 15° steps); red point: move the rotation center");
+	hint += tr(" -- %1: mode %2").arg(tr("Click"), handleModeLabel(nextHandleMode()));
 	return hint;
 }
 
@@ -599,6 +780,10 @@ void DiagramImageItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 */
 void DiagramImageItem::clearHandles()
 {
+	// The handles go (deselected, or another handle mode): a drag of one
+	// of them cannot end with its release any more.
+	if (m_vector_index != -1)
+		endHandleDrag();
 	if (!m_handler_vector.isEmpty())
 	{
 		qDeleteAll(m_handler_vector);
@@ -631,6 +816,7 @@ QColor DiagramImageItem::colorForHandleRole(HandleRole role)
 		case HandleRole::Rotate: return Qt::darkGreen;
 		case HandleRole::SkewEdge: return QColor(255, 140, 0);
 		case HandleRole::Pivot: return Qt::red;
+		case HandleRole::CropEdge: return Qt::transparent;   // paint() draws crop bars instead
 	}
 	return Qt::blue;
 }
@@ -639,10 +825,11 @@ QString DiagramImageItem::hintForHandleRole(HandleRole role)
 {
 	switch (role)
 	{
-		case HandleRole::Resize: return tr("Glisser : redimensionner (Maj = conserver les proportions, Ctrl = depuis le centre)");
-		case HandleRole::Rotate: return tr("Glisser : pivoter (Maj = par pas de 15°)");
-		case HandleRole::SkewEdge: return tr("Glisser : incliner (Maj = par pas de 15°)");
-		case HandleRole::Pivot: return tr("Glisser : déplacer le centre de rotation");
+		case HandleRole::Resize: return tr("Drag: resize (Shift = keep proportions, Ctrl = from center)");
+		case HandleRole::Rotate: return tr("Drag: rotate (Shift = 15° steps)");
+		case HandleRole::SkewEdge: return tr("Drag: skew (Shift = 15° steps)");
+		case HandleRole::Pivot: return tr("Drag: move the rotation center");
+		case HandleRole::CropEdge: return tr("Drag: crop (Enter = apply, Escape = cancel)");
 	}
 	return QString();
 }
@@ -651,7 +838,12 @@ void DiagramImageItem::rebuildHandles()
 {
 	clearHandles();
 
-	if (m_handleMode == HandleMode::Size)
+	if (m_handleMode == HandleMode::Crop)
+	{
+		for (int i = 0; i < 8; ++i)
+			m_handleRoles << HandleRole::CropEdge;
+	}
+	else if (m_handleMode == HandleMode::Size)
 	{
 		for (int i = 0; i < 8; ++i)
 			m_handleRoles << HandleRole::Resize;
@@ -679,6 +871,13 @@ void DiagramImageItem::rebuildHandles()
 		h->setColor(colorForHandleRole(m_handleRoles.at(i)));
 		h->setToolTip(hintForHandleRole(m_handleRoles.at(i)));
 		h->setAcceptHoverEvents(true);
+		if (m_handleRoles.at(i) == HandleRole::CropEdge)
+		{
+			static const Qt::CursorShape cursors[8] = {
+				Qt::SizeFDiagCursor, Qt::SizeVerCursor, Qt::SizeBDiagCursor, Qt::SizeHorCursor,
+				Qt::SizeHorCursor, Qt::SizeBDiagCursor, Qt::SizeVerCursor, Qt::SizeFDiagCursor};
+			h->setCursor(cursors[i]);
+		}
 		scene()->addItem(h);
 		h->installSceneEventFilter(this);
 	}
@@ -726,17 +925,22 @@ bool DiagramImageItem::sceneEventFilter(QGraphicsItem *watched, QEvent *event)
 
 	if (event->type() == QEvent::GraphicsSceneMousePress)
 	{
+		m_drag_cancelled = false;
 		handlerMousePressEvent(index, static_cast<QGraphicsSceneMouseEvent *>(event)->modifiers());
 		return true;
 	}
 	if (event->type() == QEvent::GraphicsSceneMouseMove)
 	{
-		handlerMouseMoveEvent(index, static_cast<QGraphicsSceneMouseEvent *>(event));
+		if (!m_drag_cancelled)
+			handlerMouseMoveEvent(index, static_cast<QGraphicsSceneMouseEvent *>(event));
 		return true;
 	}
 	if (event->type() == QEvent::GraphicsSceneMouseRelease)
 	{
-		handlerMouseReleaseEvent(index);
+		if (m_drag_cancelled)
+			m_drag_cancelled = false;
+		else
+			handlerMouseReleaseEvent(index);
 		return true;
 	}
 	if (event->type() == QEvent::GraphicsSceneHoverEnter)
@@ -806,6 +1010,12 @@ void DiagramImageItem::handlerMousePressEvent(int index, Qt::KeyboardModifiers m
 	m_original_pos = pos();
 	m_original_transform = m_transform;
 	m_original_pivotIsCustom = m_pivotIsCustom;
+	// The handle has the mouse, not the keyboard: ask the view for the
+	// keys for the length of the drag, so that Escape reaches
+	// keyPressEvent() and not the view's own Escape, which clears the
+	// selection.
+	if (diagram())
+		diagram()->setKeyboardItem(this);
 
 	if (m_handleRoles.at(index) == HandleRole::Resize)
 	{
@@ -833,7 +1043,9 @@ void DiagramImageItem::handlerMouseMoveEvent(int index, QGraphicsSceneMouseEvent
 {
 	const HandleRole role = m_handleRoles.at(index);
 
-	if (role == HandleRole::Resize)
+	if (role == HandleRole::CropEdge)
+		dragCropHandle(index, event->scenePos());
+	else if (role == HandleRole::Resize)
 		dragResize(index, mapFromScene(event->scenePos()), event->modifiers());
 	else if (role == HandleRole::Rotate)
 		dragRotateHandle(index, event->scenePos(), event->modifiers());          // index IS the corner slot (0-3): Rotate handles are always first
@@ -896,14 +1108,14 @@ void DiagramImageItem::handlerMouseReleaseEvent(int index)
 						undo = new QPropertyUndoCommand(this, "scaleFactorY", m_original_transform.scaleY, m_transform.scaleY);
 				}
 				if (undo)
-					undo->setText(tr("Redimensionner une image"));
+					undo->setText(tr("Resize an image"));
 				break;
 
 			case HandleRole::Rotate:
 				if (!qFuzzyCompare(m_transform.rotation, m_original_transform.rotation))
 				{
 					undo = new QPropertyUndoCommand(this, "rotationAngle", m_original_transform.rotation, m_transform.rotation);
-					undo->setText(tr("Faire pivoter une image"));
+					undo->setText(tr("Rotate an image"));
 				}
 				break;
 
@@ -913,13 +1125,13 @@ void DiagramImageItem::handlerMouseReleaseEvent(int index)
 				else if (!qFuzzyCompare(m_transform.skewY, m_original_transform.skewY))
 					undo = new QPropertyUndoCommand(this, "skewY", m_original_transform.skewY, m_transform.skewY);
 				if (undo)
-					undo->setText(tr("Incliner une image"));
+					undo->setText(tr("Skew an image"));
 				break;
 
 			case HandleRole::Pivot:
 				if (m_transform.pivot != m_original_transform.pivot)
 				{
-					undo = new QUndoCommand(tr("Déplacer le centre de rotation d'une image"));
+					undo = new QUndoCommand(tr("Move an image's rotation center"));
 					new QPropertyUndoCommand(this, "pos", m_original_pos, pos(), undo);
 					new QPropertyUndoCommand(this, "rawPivot", m_original_transform.pivot, m_transform.pivot, undo);
 					// dragPivot() marked the pivot as hand-placed; undoing
@@ -929,6 +1141,9 @@ void DiagramImageItem::handlerMouseReleaseEvent(int index)
 				else
 					m_pivotIsCustom = m_original_pivotIsCustom;   // dragged back to where it was: nothing to undo
 				break;
+
+			case HandleRole::CropEdge:
+				break;   // nothing is undone until the crop is applied
 		}
 
 		if (undo)
@@ -940,7 +1155,7 @@ void DiagramImageItem::handlerMouseReleaseEvent(int index)
 			// apart); this only still matters if some future role is
 			// ever added without setting one of its own.
 			if (undo->text().isEmpty())
-				undo->setText(tr("Modifier une image"));
+				undo->setText(tr("Edit an image"));
 
 			// Every push here is one complete, finished gesture (press,
 			// drag, release) -- never a continuation of an earlier one.
@@ -959,7 +1174,84 @@ void DiagramImageItem::handlerMouseReleaseEvent(int index)
 		}
 	}
 
+	endHandleDrag();
+}
+
+/**
+	@brief DiagramImageItem::keyPressEvent
+	The view sends keys here only while one of the picture's handles is
+	dragged (see handlerMousePressEvent()) or while it is cropped (see
+	enterCropMode()). While cropping, Enter applies the crop and Escape
+	drops it; otherwise Escape cancels the drag. Any other key is left to
+	the view.
+*/
+void DiagramImageItem::keyPressEvent(QKeyEvent *event)
+{
+	if (isCropping())
+	{
+		const int key = event->key();
+		if (key == Qt::Key_Escape || key == Qt::Key_Return || key == Qt::Key_Enter)
+		{
+			if (m_vector_index != -1)
+				m_drag_cancelled = true;   // swallow the rest of a handle drag
+			finishCropMode(key != Qt::Key_Escape);
+			event->accept();
+			return;
+		}
+	}
+	if (event->key() == Qt::Key_Escape && m_vector_index != -1)
+	{
+		cancelHandleDrag();
+		event->accept();
+		return;
+	}
+	QetGraphicsItem::keyPressEvent(event);
+}
+
+/**
+	@brief DiagramImageItem::endHandleDrag
+	The drag is over: no handle is dragged any more, and the keyboard
+	goes back to the view.
+*/
+void DiagramImageItem::endHandleDrag()
+{
 	m_vector_index = -1;
+	if (!isCropping())   // crop mode keeps the keys until it ends
+		releaseKeyboardItem();
+}
+
+/**
+	@brief DiagramImageItem::releaseKeyboardItem
+	The view's shortcuts get the keys again.
+*/
+void DiagramImageItem::releaseKeyboardItem()
+{
+	if (diagram() && diagram()->keyboardItem() == this)
+		diagram()->setKeyboardItem(nullptr);
+}
+
+/**
+	@brief DiagramImageItem::cancelHandleDrag
+	Put the picture back exactly as it was when the handle was pressed --
+	transform, pivot (Resize moves it for the drag) and position -- and
+	ignore the rest of the mouse gesture, so its release pushes no undo
+	command.
+*/
+void DiagramImageItem::cancelHandleDrag()
+{
+	prepareGeometryChange();
+	m_deferHandleReposition = true;
+	m_transform = m_original_transform;
+	m_pivotIsCustom = m_original_pivotIsCustom;   // a pivot drag marks it as hand-placed
+	// Not the snapping setPos(): see handlerMousePressEvent().
+	QGraphicsObject::setPos(m_original_pos);
+	setTransform(m_transform.toMatrix());
+	m_deferHandleReposition = false;
+	emit transformChanged();
+	repositionHandles();
+	endHandleDrag();
+	m_drag_cancelled = true;
+	clearStatusHint();
 }
 
 /**
@@ -1155,7 +1447,7 @@ void DiagramImageItem::restoreAspectRatio()
 		return;
 
 	auto *undo = new QPropertyUndoCommand(this, "scaleFactorY", m_transform.scaleY, m_transform.scaleX);
-	undo->setText(tr("Restaurer les proportions d'une image"));
+	undo->setText(tr("Restore an image's proportions"));
 	diagram()->undoStack().push(undo);
 }
 
@@ -1168,7 +1460,7 @@ void DiagramImageItem::restoreAspectRatio()
 */
 void DiagramImageItem::saveImageAs()
 {
-	saveImagePixmapAs(pixmap_, tr("Enregistrer l'image sous..."), !m_transparent_colors.isEmpty());
+	saveImagePixmapAs(pixmap_, tr("Save image as..."), !m_transparent_colors.isEmpty());
 }
 
 /**
@@ -1182,7 +1474,7 @@ void DiagramImageItem::saveImageAs()
 */
 void DiagramImageItem::saveOriginalImageAs()
 {
-	saveImagePixmapAs(m_base_pixmap, tr("Enregistrer l'image d'origine sous..."), false);
+	saveImagePixmapAs(m_base_pixmap, tr("Save original image as..."), false);
 }
 
 /**
@@ -1211,9 +1503,9 @@ void DiagramImageItem::saveImagePixmapAs(const QPixmap &pixmap, const QString &d
 	// entirely, defaulting to PNG even when JPEG or BMP had been
 	// explicitly chosen).
 	const QList<QPair<QString, QString>> filters = {
-		{tr("Image PNG (*.png)"), QStringLiteral("png")},
-		{tr("Image JPEG (*.jpg *.jpeg)"), QStringLiteral("jpg")},
-		{tr("Image BMP (*.bmp)"), QStringLiteral("bmp")},
+		{tr("PNG image (*.png)"), QStringLiteral("png")},
+		{tr("JPEG image (*.jpg *.jpeg)"), QStringLiteral("jpg")},
+		{tr("BMP image (*.bmp)"), QStringLiteral("bmp")},
 		// SVG here always means a raster image wrapped in an SVG
 		// container (an <image> element embedding this same pixmap as
 		// base64 PNG), never a true vector export -- this item only
@@ -1221,12 +1513,12 @@ void DiagramImageItem::saveImagePixmapAs(const QPixmap &pixmap, const QString &d
 		// SVG file, since that file was rasterized once at import time
 		// and its vector information is already gone by the time this
 		// runs.
-		{tr("Image SVG (*.svg)"), QStringLiteral("svg")},
+		{tr("SVG image (*.svg)"), QStringLiteral("svg")},
 	};
 	QStringList filterStrings;
 	for (const auto &f : filters)
 		filterStrings << f.first;
-	filterStrings << tr("Tous les fichiers (*)");
+	filterStrings << tr("All files (*)");
 
 	QString selectedFilter;
 	QString path = QFileDialog::getSaveFileName(
@@ -1273,9 +1565,9 @@ void DiagramImageItem::saveImagePixmapAs(const QPixmap &pixmap, const QString &d
 	if (hasTransparency && !formatPreservesAlpha)
 	{
 		if (QMessageBox::warning(parentWidget,
-				tr("Transparence non conservée"),
-				tr("Ce format ne prend pas en charge la transparence : l'image sera enregistrée "
-				   "telle qu'elle était avant l'application de la couleur transparente. Continuer ?"),
+				tr("Transparency not preserved"),
+				tr("This format does not support transparency: the image will be saved as it was "
+				   "before the transparent colour was applied. Continue?"),
 				QMessageBox::Yes | QMessageBox::Cancel) != QMessageBox::Yes)
 			return;
 
@@ -1291,8 +1583,8 @@ void DiagramImageItem::saveImagePixmapAs(const QPixmap &pixmap, const QString &d
 	if (!ok)
 	{
 		QMessageBox::warning(parentWidget,
-				tr("Échec de l'enregistrement"),
-				tr("Impossible d'enregistrer l'image à cet emplacement."));
+				tr("Saving failed"),
+				tr("Unable to save the image to this location."));
 	}
 }
 
@@ -1341,6 +1633,9 @@ QVariant DiagramImageItem::itemChange(GraphicsItemChange change, const QVariant 
 			rebuildHandles();
 		else
 		{
+			// Clicking elsewhere on the folio applies a crop in progress.
+			if (isCropping())
+				finishCropMode(true);
 			prepareGeometryChange();
 			clearHandles();
 			m_handleMode = HandleMode::Size;
@@ -1356,6 +1651,13 @@ QVariant DiagramImageItem::itemChange(GraphicsItemChange change, const QVariant 
 	{
 		if (!m_deferHandleReposition)
 			repositionHandles();
+	}
+	else if (change == ItemSceneChange)
+	{
+		// Leaving the folio (undoing the picture's insertion, for one)
+		// drops a crop in progress while diagram() is still there to
+		// give the keys back to the view.
+		finishCropMode(false);
 	}
 	else if (change == ItemSceneHasChanged)
 	{
@@ -1398,6 +1700,20 @@ QPixmap DiagramImageItem::computeDisplayPixmap(const QPixmap &base, const QRect 
 */
 QRectF DiagramImageItem::boundingRect() const
 {
+	if (isCropping())
+	{
+		// Room for the crop bars, which are drawn a few screen pixels
+		// wide over the edge of the original.
+		qreal zoom = 1.0;
+		if (scene() && !scene()->views().isEmpty())
+		{
+			const QTransform t = scene()->views().first()->transform() * sceneTransform();
+			zoom = qSqrt(qAbs(t.m11() * t.m22() - t.m12() * t.m21()));
+		}
+		const qreal m = 8.0 / qMax(1e-6, zoom);
+		return imageRect().united(QRectF(-QPointF(m_crop_rect.topLeft()), m_base_pixmap.size()))
+				.adjusted(-m, -m, m, m);
+	}
 	if (m_label.isEmpty())
 		return imageRect();
 	return imageRect().united(labelRect());
@@ -1452,7 +1768,7 @@ void DiagramImageItem::updateLabelScale()
 */
 QString DiagramImageItem::name() const
 {
-	return tr("une image");
+	return tr("image");
 }
 
 namespace {
@@ -1493,6 +1809,71 @@ const QByteArray &DiagramImageItem::encodedPng(const QPixmap &pixmap, QByteArray
 */
 bool DiagramImageItem::fromXml(const QDomElement &e)
 {
+	return fromXml(e, QByteArray());
+}
+
+/**
+	@brief DiagramImageItem::fromXml
+	Load this image from xml element e, its picture being @p picture, not
+	the base64 text of @p e, unless @p picture is empty. A .qetz keeps its
+	pictures as files (QetContainer::join()).
+*/
+bool DiagramImageItem::fromXml(const QDomElement &e, const QByteArray &picture)
+{
+	Picture p = pictureOf(e, picture);
+	decodePicture(p);
+	return fromXml(e, std::move(p));
+}
+
+/**
+	@brief DiagramImageItem::pictureOf
+	@return the picture of @p e, @p picture unless it is empty, else the
+	base64 text of @p e, still encoded : decodePicture() does the slow part.
+	Reads the DOM, so GUI thread only.
+*/
+DiagramImageItem::Picture DiagramImageItem::pictureOf(const QDomElement &e,
+													  const QByteArray &picture)
+{
+	Picture p;
+	p.bytes = picture;
+	if (p.bytes.isEmpty())
+	{
+		// From the first text node only, not e.text(): that also collects
+		// the text of every child element, so on a cropped or colour-keyed
+		// picture it carries <image_base>'s bytes too.
+		const QDomNode image_node = e.firstChild();
+		if (image_node.isText())
+			p.base64 = image_node.toText().data();
+		else
+			p.found = false;
+	}
+	return p;
+}
+
+/**
+	@brief DiagramImageItem::decodePicture
+	Decodes the base64 text and the picture file of @p picture. Touches
+	nothing else, so it can run in any thread : a large photo takes about
+	a quarter of a second, and Diagram::fromXml() decodes a folio's
+	pictures in parallel.
+*/
+void DiagramImageItem::decodePicture(Picture &picture)
+{
+	if (picture.bytes.isEmpty() && !picture.base64.isEmpty())
+	{
+		picture.bytes = QByteArray::fromBase64(picture.base64.toLatin1());
+		picture.base64.clear();
+	}
+	picture.image = QImage::fromData(picture.bytes);
+}
+
+/**
+	@brief DiagramImageItem::fromXml
+	Load this image from xml element e, its picture already decoded by
+	decodePicture().
+*/
+bool DiagramImageItem::fromXml(const QDomElement &e, Picture picture)
+{
 	if (e.tagName() != "image") {
 		return (false);
 	}
@@ -1501,28 +1882,17 @@ bool DiagramImageItem::fromXml(const QDomElement &e)
 	const QUuid uuid(e.attribute(QStringLiteral("uuid")));
 	if (!uuid.isNull() && uuid != m_uuid) setUuid(uuid);
 
-	QDomNode image_node = e.firstChild();
-	if (!image_node.isText()) {
+	if (!picture.found) {
 		return (false);
 	}
+	const QByteArray array = picture.bytes;
 
-	//load xml image to QByteArray
-	QByteArray array;
-	array = QByteArray::fromBase64(e.text().toLatin1());
-
-	//Set QPixmap from the array
-	QPixmap pixmap;
-	pixmap.loadFromData(array);
+	//Set QPixmap from the decoded picture
+	QPixmap pixmap = QPixmap::fromImage(std::move(picture.image));
 	setPixmap(pixmap);
-	// From the first text node only, not e.text(): that also collects the
-	// text of every child element, so on a cropped or colour-keyed picture
-	// it carries <image_base>'s bytes too. loadFromData() stops at the end
-	// of the first PNG and never notices; a cache written back verbatim
-	// would.
-	const QByteArray ownArray = QByteArray::fromBase64(image_node.toText().data().toLatin1());
-	if (isPng(ownArray) && !pixmap_.isNull())
+	if (isPng(array) && !pixmap_.isNull())
 	{
-		m_png_cache = ownArray;
+		m_png_cache = array;
 		m_png_cache_key = pixmap_.cacheKey();
 	}
 
@@ -1595,6 +1965,18 @@ bool DiagramImageItem::fromXml(const QDomElement &e)
 		m_crop_rect = m_crop_rect.intersected(m_base_pixmap.rect());
 		if (m_crop_rect.isEmpty())
 			m_crop_rect = m_base_pixmap.rect();
+
+		// The picture shown is always exactly the crop's size. When it is
+		// not, the crop is stale: older versions saved it after the crop
+		// was undone (fixed in #1310), with the uncropped picture shown.
+		// The next edit would apply that crop again, and undoing the edit
+		// would show the cropped picture. Keep what was shown instead.
+		if (hasCrop && pixmap.size() != m_crop_rect.size())
+		{
+			if (pixmap.size() != m_base_pixmap.size())
+				m_base_pixmap = pixmap;
+			m_crop_rect = m_base_pixmap.rect();
+		}
 	}
 
 	// Baseline: the plain "rotation"/"size" attributes, understood by
@@ -1605,7 +1987,12 @@ bool DiagramImageItem::fromXml(const QDomElement &e)
 	// pivot), the same two-tier fallback QetShapeItem's own fromXml()
 	// already uses for its identical <transform> element.
 	m_transform.rotation = e.attribute("rotation").toDouble();
-	m_transform.scaleX = e.attribute("size").toDouble();
+		//A missing, unreadable, non-finite or zero size would scale the
+		//picture to nothing (and a resave wrote size="0" back): use 1,
+		//the size a picture is added with, as the <transform> branch does
+	bool size_ok = false;
+	const qreal size = e.attribute("size").toDouble(&size_ok);
+	m_transform.scaleX = (size_ok && qIsFinite(size) && size != 0) ? size : 1;
 	m_transform.scaleY = m_transform.scaleX;
 	m_transform.pivot = imageRect().center();
 	m_pivotIsCustom = false;
@@ -1778,36 +2165,45 @@ void DiagramImageItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 		{
 			QScopedPointer<QMenu> menu(new QMenu());
 
-			QAction *replace = menu.data()->addAction(tr("Remplacer l'image..."));
+			QAction *replace = menu.data()->addAction(tr("Replace the image..."));
 			connect(replace, &QAction::triggered, this, &DiagramImageItem::replaceImage);
 
-			QAction *saveAs = menu.data()->addAction(tr("Enregistrer l'image sous..."));
+			QAction *saveAs = menu.data()->addAction(tr("Save image as..."));
 			connect(saveAs, &QAction::triggered, this, &DiagramImageItem::saveImageAs);
 
-			QAction *saveOriginalAs = menu.data()->addAction(tr("Enregistrer l'image d'origine sous..."));
+			QAction *saveOriginalAs = menu.data()->addAction(tr("Save original image as..."));
 			connect(saveOriginalAs, &QAction::triggered, this, &DiagramImageItem::saveOriginalImageAs);
 
-			QAction *transparentColor = menu.data()->addAction(tr("Couleur transparente..."));
+			QAction *transparentColor = menu.data()->addAction(tr("Transparent color..."));
 			transparentColor->setIcon(QET::Icons::EditOpacity);
 			connect(transparentColor, &QAction::triggered, this, &DiagramImageItem::setTransparentColor);
 
-			QAction *cropAction = menu.data()->addAction(tr("Rogner..."));
+			QAction *cropHere = menu.data()->addAction(tr("Crop on the folio"));
+			cropHere->setIcon(QET::Icons::TransformCrop);
+			connect(cropHere, &QAction::triggered, this, &DiagramImageItem::enterCropMode);
+
+			QAction *cropAction = menu.data()->addAction(tr("Crop..."));
 			cropAction->setIcon(QET::Icons::TransformCrop);
 			connect(cropAction, &QAction::triggered, this, &DiagramImageItem::crop);
 
-			QAction *mirrorH = menu.data()->addAction(tr("Miroir horizontal"));
+			QAction *resetCropAction = menu.data()->addAction(tr("Reset crop"));
+			resetCropAction->setEnabled(m_crop_rect != m_base_pixmap.rect());
+			connect(resetCropAction, &QAction::triggered, this, &DiagramImageItem::resetCrop);
+
+			QAction *mirrorH = menu.data()->addAction(tr("Horizontal mirror"));
 			mirrorH->setIcon(QET::Icons::ImageFlipHorizontal);
-			QAction *mirrorV = menu.data()->addAction(tr("Miroir vertical"));
+			QAction *mirrorV = menu.data()->addAction(tr("Vertical mirror"));
 			mirrorV->setIcon(QET::Icons::ImageFlipVertical);
 			connect(mirrorH, &QAction::triggered, this, [this]() { mirror(true); });
 			connect(mirrorV, &QAction::triggered, this, [this]() { mirror(false); });
 
-			QAction *restoreRatio = menu.data()->addAction(tr("Restaurer les proportions"));
+			QAction *restoreRatio = menu.data()->addAction(tr("Restore proportions"));
 			connect(restoreRatio, &QAction::triggered, this, &DiagramImageItem::restoreAspectRatio);
 
-			// menu.data()->addSeparator();
-			// QAction *properties = menu.data()->addAction(tr("Propriétés..."));
-			// connect(properties, &QAction::triggered, this, &DiagramImageItem::editProperty);
+			// Double-click crops now, so the properties are opened from here.
+			menu.data()->addSeparator();
+			QAction *properties = menu.data()->addAction(tr("Properties..."));
+			connect(properties, &QAction::triggered, this, &DiagramImageItem::editProperty);
 
 			menu.data()->addSeparator();
 			menu.data()->addActions(d_view->contextMenuActions());
@@ -1837,7 +2233,7 @@ void DiagramImageItem::replaceImage()
 
 	QWidget *parentWidget = diagram()->views().isEmpty() ? nullptr : diagram()->views().first();
 	const QString fileName = QFileDialog::getOpenFileName(
-			parentWidget, tr("Selectionner une image..."),
+			parentWidget, tr("Select an image ..."),
 			QETApp::pictureDir(), tr("Image Files (*.png *.jpg *.jpeg *.bmp *.svg)"));
 	if (fileName.isEmpty())
 		return;
@@ -1845,7 +2241,7 @@ void DiagramImageItem::replaceImage()
 	QImage image(fileName);
 	if (image.isNull())
 	{
-		QMessageBox::critical(parentWidget, tr("Erreur"), tr("Impossible de charger l'image."));
+		QMessageBox::critical(parentWidget, tr("Error"), tr("Unable to load the image."));
 		return;
 	}
 
@@ -1859,7 +2255,7 @@ void DiagramImageItem::replaceImage()
 	const ImageSource oldSource = imageSource();
 	const ImageSource newSource{newPixmap, newPixmap.rect(), {}};
 
-	pushImageSourceChange(tr("Remplacer une image"), oldSource, newSource);
+	pushImageSourceChange(tr("Replace an image"), oldSource, newSource);
 }
 
 /**
@@ -1900,7 +2296,7 @@ void DiagramImageItem::mirror(bool horizontal)
 		newSource.crop = QRect(m_crop_rect.left(), m_base_pixmap.height() - m_crop_rect.top() - m_crop_rect.height(),
 				m_crop_rect.width(), m_crop_rect.height());
 
-	pushImageSourceChange(horizontal ? tr("Miroir horizontal d'une image") : tr("Miroir vertical d'une image"),
+	pushImageSourceChange(horizontal ? tr("Horizontal mirror of an image") : tr("Vertical mirror of an image"),
 						  oldSource, newSource);
 }
 
@@ -1933,7 +2329,7 @@ void DiagramImageItem::setTransparentColor()
 	ImageSource newSource = oldSource;
 	newSource.colors = dialog.pickedColors();
 
-	pushImageSourceChange(tr("Définir une couleur transparente"), oldSource, newSource);
+	pushImageSourceChange(tr("Set a transparent color"), oldSource, newSource);
 }
 
 /**
@@ -1975,6 +2371,94 @@ void DiagramImageItem::crop()
 		return;
 
 	applyCrop(dialog.cropRect());
+}
+
+/**
+	@brief DiagramImageItem::enterCropMode
+	Crop the picture directly on the folio: the whole original is shown,
+	dimmed outside the region kept, and handles move the crop's edges.
+	Nothing changes until finishCropMode() applies it.
+*/
+void DiagramImageItem::enterCropMode()
+{
+	if (!diagram() || diagram()->isReadOnly() || m_base_pixmap.isNull() || isCropping())
+		return;
+	setSelected(true);
+	prepareGeometryChange();
+	m_pending_crop = QRectF(m_crop_rect);
+	m_crop_preview = computeDisplayPixmap(m_base_pixmap, m_base_pixmap.rect(), m_transparent_colors);
+	m_handleMode = HandleMode::Crop;
+	rebuildHandles();
+	// Enter and Escape end the crop: the view sends keys here first, before
+	// its own Enter (repeat the last command) and Escape (clear the
+	// selection, which would apply the crop).
+	diagram()->setKeyboardItem(this);
+	refreshInteractionHints();
+	showStatusHint(currentModeStatusHint());
+	update();
+}
+
+/**
+	@brief DiagramImageItem::finishCropMode
+	Leave crop mode, applying the crop when @a apply is true -- one undo
+	step, see applyCrop() -- and dropping it otherwise.
+*/
+void DiagramImageItem::finishCropMode(bool apply)
+{
+	if (!isCropping())
+		return;
+	prepareGeometryChange();
+	const QRect crop = CropGeometry::toPixels(m_pending_crop);
+	m_handleMode = HandleMode::Size;
+	releaseKeyboardItem();
+	m_crop_moving = false;
+	m_crop_preview = QPixmap();
+	if (isSelected())
+		rebuildHandles();
+	else
+		clearHandles();
+	clearStatusHint();
+	refreshInteractionHints();
+	update();
+	if (apply)
+		applyCrop(crop);
+}
+
+/**
+	@brief DiagramImageItem::resetCrop
+	Show the whole original again, as one undoable step.
+*/
+void DiagramImageItem::resetCrop()
+{
+	finishCropMode(false);
+	applyCrop(m_base_pixmap.rect());
+}
+
+/**
+	@brief DiagramImageItem::cropFrameLocal
+	@return the crop being edited, in the item's own coordinates, where
+	the current crop's top-left corner is (0, 0).
+*/
+QRectF DiagramImageItem::cropFrameLocal() const
+{
+	return m_pending_crop.translated(-QPointF(m_crop_rect.topLeft()));
+}
+
+/**
+	@brief DiagramImageItem::dragCropHandle
+	Move the crop edges held by handle @a index to @a scenePos, mapped
+	through the picture's transform, so a rotated or scaled picture is
+	cropped along its own sides.
+*/
+void DiagramImageItem::dragCropHandle(int index, const QPointF &scenePos)
+{
+	const QPointF basePoint = mapFromScene(scenePos) + QPointF(m_crop_rect.topLeft());
+	const CropGeometry::Edges edges = CropGeometry::edgesForHandle(
+				handleNaturalPosition(index, 2, 2), QSizeF(2, 2));
+	m_pending_crop = CropGeometry::dragEdges(m_pending_crop, edges, basePoint,
+											 QRectF(m_base_pixmap.rect()), 4.0);
+	repositionHandles();
+	update();
 }
 
 /**
@@ -2033,7 +2517,7 @@ bool DiagramImageItem::applyCrop(const QRect &cropRect)
 	const QPointF newOriginPoint = QRectF(QPointF(), QSizeF(newCropRect.size())).center();
 	const QPointF newPos = cropCenterScene - newOriginPoint;
 
-	auto *undo = new QUndoCommand(tr("Rogner une image"));
+	auto *undo = new QUndoCommand(tr("Crop an image"));
 	new QPropertyUndoCommand(this, "imageSource", QVariant::fromValue(oldSource),
 							 QVariant::fromValue(newSource), undo);
 	new QPropertyUndoCommand(this, "pos", oldPos, newPos, undo);

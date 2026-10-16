@@ -18,10 +18,12 @@
 #ifndef TERMINALSTRIPDRAWER_H
 #define TERMINALSTRIPDRAWER_H
 
+#include <QColor>
 #include <QPointer>
 #include <QUuid>
 
 #include "properties/terminalstriplayoutpattern.h"
+#include "../../properties/elementdata.h"
 
 class QPainter;
 class TerminalStrip;
@@ -35,6 +37,18 @@ namespace TerminalStripDrawer
 	 * If mouse don't hover a Xref the value is set to -1;
 	 */
 	struct hoverTerminal{
+		int physical{-1};
+		int real{-1};
+	};
+
+	/**
+	 * @brief The XrefRect struct
+	 * Where the xref text of a real terminal was drawn, in the coordinates
+	 * of the item, with the physical and real index of that terminal.
+	 * Filled by paint(): used to make the xref clickable in an exported PDF.
+	 */
+	struct XrefRect{
+		QRectF rect;
 		int physical{-1};
 		int real{-1};
 	};
@@ -56,6 +70,21 @@ namespace TerminalStripDrawer
             virtual bool isBridged() const = 0;
             virtual AbstractBridgeInterface* bridge() const = 0;
 			virtual QString xref() const = 0;
+			//Type and led are only used to draw the symbol of the terminal.
+			//They are not pure virtual, so an implementation can ignore them.
+			virtual ElementData::TerminalType type() const { return ElementData::TTGeneric; }
+			virtual bool isLed() const { return false; }
+			//Cable (hose) connected to the terminal, drawn under the strip.
+			virtual QString cable() const { return QString(); }
+			virtual QString cableWire() const { return QString(); }
+			virtual bool isShield() const { return false; }
+			//Color and width (mm) of the terminal, only used to draw the terminal.
+			//An invalid color means "no override" : the default color of the type is used.
+			//A width <= 0 means "unknown" : the default width of the layout is used.
+			virtual QColor color() const { return QColor(); }
+			//Second color of a two-tone color (like green/yellow), drawn as stripes over color()
+			virtual QColor stripeColor() const { return QColor(); }
+			virtual qreal widthMm() const { return 0; }
     };
 
 	class AbstractPhysicalTerminalInterface
@@ -96,6 +125,7 @@ namespace TerminalStripDrawer
 			bool mouseHoverXref() const;
 			bool needUpdate();
 			hoverTerminal hoveredXref() const;
+			QVector<XrefRect> xrefRects() const;
 
         private:
             qreal height() const;
@@ -109,6 +139,7 @@ namespace TerminalStripDrawer
 			QRectF m_united_xref_text_rect;
 			bool m_last_mouse_pos_in_xrefs_rect{false};
 			hoverTerminal m_hovered_xref;
+			QVector<XrefRect> m_xref_rects;
     };
 }
 

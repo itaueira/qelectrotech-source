@@ -17,6 +17,7 @@
 */
 #include "linkelementcommand.h"
 
+#include "../cable/cablemanager.h"
 #include "../conductorautonumerotation.h"
 #include "../diagram.h"
 #include "../diagramposition.h"
@@ -61,6 +62,23 @@ static QString plcCrossRefText(Element *master, Element *slave)
 }
 
 /**
+	@brief refreshCableLabelsForReport
+	A folio report carries a cable core over to the next sheet, so
+	making or breaking such a link changes which wires belong to which
+	cable. Work the cable fields out again straight away, so the wire
+	coming out of the linked arrow shows the cable right after the link
+	is made -- and drops it right after the link is taken away.
+	@param element the element the link was made or broken on
+*/
+static void refreshCableLabelsForReport(Element *element)
+{
+	if (!element || !(element->linkType() & Element::AllReport)) return;
+	if (Diagram *diagram = element->diagram()) {
+		CableManager::refreshLabels(diagram->project());
+	}
+}
+
+/**
 	@brief LinkElementCommand::LinkElementCommand
 	Constructor
 	@param element_ : element where we work the link / unlink
@@ -72,7 +90,7 @@ LinkElementCommand::LinkElementCommand(Element *element_, QUndoCommand *parent):
 	m_first_redo (true)
 {
 	m_linked_before = m_linked_after = m_element->linkedElements();
-	setText(QObject::tr("Éditer les référence croisé", "edite the cross reference"));
+	setText(QObject::tr("Edit the cross reference", "edite the cross reference"));
 }
 
 /**
@@ -333,6 +351,7 @@ void LinkElementCommand::undo()
 
 	makeLink(m_linked_before);
 	restoreStripTerminalInformations();
+	refreshCableLabelsForReport(m_element);
 	QUndoCommand::undo();
 }
 
@@ -361,6 +380,7 @@ void LinkElementCommand::redo()
 		}
 		m_first_redo = false;
 	}
+	refreshCableLabelsForReport(m_element);
 	QUndoCommand::redo();
 }
 

@@ -62,44 +62,44 @@ ElementsPanelWidget::ElementsPanelWidget(QWidget *parent) : QWidget(parent) {
 	elements_panel = new ElementsPanel(this);
 
 	// initialise les actions
-	open_directory           = new QAction(QET::Icons::FolderOpen,             tr("Ouvrir le dossier correspondant"),     this);
-	copy_path                = new QAction(QET::Icons::IC_CopyFile,            tr("Copier le chemin"),                    this);
-	prj_activate             = new QAction(QET::Icons::ProjectFile,            tr("Basculer vers ce projet"),             this);
-	prj_close                = new QAction(QET::Icons::DocumentClose,          tr("Fermer ce projet"),                    this);
-	prj_edit_prop            = new QAction(QET::Icons::DialogInformation,      tr("Propriétés du projet"),          this);
-	prj_prop_diagram         = new QAction(QET::Icons::DialogInformation,      tr("Propriétés du folio"),       this);
-	prj_add_diagram          = new QAction(QET::Icons::DiagramAdd,              tr("Ajouter un folio"),                this);
-	prj_insert_diagram_above = new QAction(QET::Icons::DiagramAdd,              tr("Insérer un folio au-dessus"),      this);
-	prj_insert_diagram_below = new QAction(QET::Icons::DiagramAdd,              tr("Insérer un folio en dessous"),     this);
-	prj_duplicate_diagram   = new QAction(QET::Icons::IC_CopyFile,              tr("Copier et coller"),               this);
-	prj_del_diagram          = new QAction(QET::Icons::DiagramDelete,          tr("Supprimer ce folio"),              this);
-	prj_move_diagram_up      = new QAction(QET::Icons::GoUp,                   tr("Remonter ce folio"),               this);
-	prj_move_diagram_down    = new QAction(QET::Icons::GoDown,                 tr("Abaisser ce folio"),               this);
-	prj_move_diagram_upx10   = new QAction(QET::Icons::GoUpDouble,             tr("Remonter ce folio x10"),           this);
-	prj_move_diagram_upx100  = new QAction(QET::Icons::GoUpDouble,             tr("Remonter ce folio x100"),           this);
-	prj_move_diagram_top     = new QAction(QET::Icons::GoTop,                  tr("Remonter ce folio au debut"),               this);
-	prj_move_diagram_downx10 = new QAction(QET::Icons::GoDownDouble,           tr("Abaisser ce folio x10"),           this);
-	prj_move_diagram_downx100 = new QAction(QET::Icons::GoDownDouble,           tr("Abaisser ce folio x100"),           this);
-	tbt_add               = new QAction(QET::Icons::TitleBlock,                tr("Nouveau modèle"),                   this);
-	tbt_edit              = new QAction(QET::Icons::TitleBlock,                tr("Éditer ce modèle"),              this);
-	tbt_remove            = new QAction(QET::Icons::TitleBlock,                tr("Supprimer ce modèle"),              this);
+	open_directory           = new QAction(QET::Icons::FolderOpen,             tr("Open the underlying directory"),     this);
+	copy_path                = new QAction(QET::Icons::IC_CopyFile,            tr("Copy full path to clipboard"),                    this);
+	prj_activate             = new QAction(QET::Icons::ProjectFile,            tr("Activate this project"),             this);
+	prj_close                = new QAction(QET::Icons::DocumentClose,          tr("Close this project"),                    this);
+	prj_edit_prop            = new QAction(QET::Icons::DialogInformation,      tr("Project properties"),          this);
+	prj_prop_diagram         = new QAction(QET::Icons::DialogInformation,      tr("Sheet properties"),       this);
+	prj_add_diagram          = new QAction(QET::Icons::DiagramAdd,              tr("Add a sheet"),                this);
+	prj_insert_diagram_above = new QAction(QET::Icons::DiagramAdd,              tr("Insert a sheet number above"),      this);
+	prj_insert_diagram_below = new QAction(QET::Icons::DiagramAdd,              tr("Insert a sheet number below"),     this);
+	prj_duplicate_diagram   = new QAction(QET::Icons::IC_CopyFile,              tr("Copy and paste"),               this);
+	prj_del_diagram          = new QAction(QET::Icons::DiagramDelete,          tr("Delete this sheet"),              this);
+	prj_move_diagram_up      = new QAction(QET::Icons::GoUp,                   tr("Move this sheet up"),               this);
+	prj_move_diagram_down    = new QAction(QET::Icons::GoDown,                 tr("Move down this sheet"),               this);
+	prj_move_diagram_upx10   = new QAction(QET::Icons::GoUpDouble,             tr("Move this sheet up x10"),           this);
+	prj_move_diagram_upx100  = new QAction(QET::Icons::GoUpDouble,             tr("Move this sheet up x100"),           this);
+	prj_move_diagram_top     = new QAction(QET::Icons::GoTop,                  tr("Move this sheet to the beginning"),               this);
+	prj_move_diagram_downx10 = new QAction(QET::Icons::GoDownDouble,           tr("Move down this sheet x10"),           this);
+	prj_move_diagram_downx100 = new QAction(QET::Icons::GoDownDouble,           tr("Move down this sheet x100"),           this);
+	tbt_add               = new QAction(QET::Icons::TitleBlock,                tr("New template"),                   this);
+	tbt_edit              = new QAction(QET::Icons::TitleBlock,                tr("Edit this template"),              this);
+	tbt_remove            = new QAction(QET::Icons::TitleBlock,                tr("Delete this template"),              this);
 
 
-	ShortcutManager::instance().registerAction(prj_del_diagram, "panel.delete_diagram", tr("Panneau des éléments"), QKeySequence(Qt::Key_Delete));
-	ShortcutManager::instance().registerAction(prj_move_diagram_up, "panel.move_diagram_up", tr("Panneau des éléments"), QKeySequence(Qt::Key_F3));
-	ShortcutManager::instance().registerAction(prj_move_diagram_down, "panel.move_diagram_down", tr("Panneau des éléments"), QKeySequence(Qt::Key_F4));
-	ShortcutManager::instance().registerAction(prj_move_diagram_top, "panel.move_diagram_top", tr("Panneau des éléments"), QKeySequence(Qt::Key_F5));
-	ShortcutManager::instance().registerAction(prj_move_diagram_downx10, "panel.move_diagram_downx10", tr("Panneau des éléments"), QKeySequence(Qt::Key_F6));
-	ShortcutManager::instance().registerAction(prj_move_diagram_downx100, "panel.move_diagram_downx100", tr("Panneau des éléments"), QKeySequence(Qt::Key_F7));
-	ShortcutManager::instance().registerAction(prj_move_diagram_upx10, "panel.move_diagram_upx10", tr("Panneau des éléments"), QKeySequence(Qt::Key_F8));
-	ShortcutManager::instance().registerAction(prj_move_diagram_upx100, "panel.move_diagram_upx100", tr("Panneau des éléments"), QKeySequence(Qt::Key_F9));
+	ShortcutManager::instance().registerAction(prj_del_diagram, "panel.delete_diagram", tr("Elements panel"), QKeySequence(Qt::Key_Delete));
+	ShortcutManager::instance().registerAction(prj_move_diagram_up, "panel.move_diagram_up", tr("Elements panel"), QKeySequence(Qt::Key_F3));
+	ShortcutManager::instance().registerAction(prj_move_diagram_down, "panel.move_diagram_down", tr("Elements panel"), QKeySequence(Qt::Key_F4));
+	ShortcutManager::instance().registerAction(prj_move_diagram_top, "panel.move_diagram_top", tr("Elements panel"), QKeySequence(Qt::Key_F5));
+	ShortcutManager::instance().registerAction(prj_move_diagram_downx10, "panel.move_diagram_downx10", tr("Elements panel"), QKeySequence(Qt::Key_F6));
+	ShortcutManager::instance().registerAction(prj_move_diagram_downx100, "panel.move_diagram_downx100", tr("Elements panel"), QKeySequence(Qt::Key_F7));
+	ShortcutManager::instance().registerAction(prj_move_diagram_upx10, "panel.move_diagram_upx10", tr("Elements panel"), QKeySequence(Qt::Key_F8));
+	ShortcutManager::instance().registerAction(prj_move_diagram_upx100, "panel.move_diagram_upx100", tr("Elements panel"), QKeySequence(Qt::Key_F9));
 
 
 
 	// initialise le champ de texte pour filtrer avec une disposition horizontale
 	filter_textfield = new QLineEdit(this);
 	filter_textfield -> setClearButtonEnabled(true);
-	filter_textfield -> setPlaceholderText(tr("Filtrer"));
+	filter_textfield -> setPlaceholderText(tr("Filter"));
 
 
 	context_menu = new QMenu(this);
@@ -473,14 +473,16 @@ void ElementsPanelWidget::updateButtons()
 		if (!selected_diagrams.isEmpty()) {
 			QETProject *selected_diagram_project = selected_diagrams.first() -> project();
 			bool is_writable           = !(selected_diagram_project -> isReadOnly());
-			int project_diagrams_count = selected_diagram_project -> diagrams().count();
+				//Positions only: folios() does not build the folios' items
+			const QList<Diagram *> folios = selected_diagram_project -> folios();
+			int project_diagrams_count = folios.count();
 
 			// Find the highest (min) and lowest (max) index among the selection
 			int min_position = project_diagrams_count;
 			int max_position = -1;
 
 			for (Diagram *diagram : selected_diagrams) {
-				int pos = selected_diagram_project -> diagrams().indexOf(diagram);
+				int pos = folios.indexOf(diagram);
 				if (pos < min_position) min_position = pos;
 				if (pos > max_position) max_position = pos;
 			}
@@ -830,38 +832,15 @@ void ElementsPanelWidget::duplicateDiagram()
 				// KEY of the conductor table, and its insert is a plain INSERT,
 				// so a duplicated uuid fails and the wire silently disappears
 				// from the wiring list and the per-element wire count.
-				// The new uuid is also what keeps the duplicated folio out of
-				// the cables of the original one: a cable's wire names its
-				// conductor by uuid, and no wire names these.
 				cond->newUuid();
 
-				// And the cable attribute is the mirror of that membership,
-				// written by the program, not typed by the user. It came
-				// through the XML with the rest; left alone it would name a
-				// cable this conductor is not in.
-				//
-				// Reset conductor labels too when "erase-label-on-copy" is
-				// active, matching PasteDiagramCommand::redo() - "erase on
-				// copy" means erase, not "replace with the project default
-				// new-conductor text" (see issue #413).
-				//
-				// The two questions share one read/write of the properties:
-				// each side of the merge wrote its own, and setting them
-				// twice would make the second read undo the first.
-				ConductorProperties cp = cond->properties();
-				bool cp_changed = false;
-				if (!cp.m_cable.isEmpty())
-				{
-					cp.m_cable.clear();
-					cp_changed = true;
-				}
-				if (erase_labels && !cp.text.isEmpty())
-				{
-					cp.text = QString();
-					cp_changed = true;
-				}
-				if (cp_changed)
-				{
+				// Reset conductor labels when "erase-label-on-copy" is
+				// active, matching PasteDiagramCommand::redo() -
+				// "erase on copy" means erase, not "replace with the
+				// project's default new-conductor text" (see issue #413).
+				if (erase_labels) {
+					ConductorProperties cp = cond->properties();
+					cp.text = "";
 					cond->setProperties(cp);
 				}
 			}

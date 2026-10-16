@@ -19,6 +19,7 @@
 #define REALTERMINAL_H
 
 #include <QSharedPointer>
+#include <QColor>
 #include <QDomElement>
 #include <QStringList>
 #include "../properties/elementdata.h"
@@ -66,29 +67,6 @@ class RealTerminal
 		QString Xref() const;
 
 		/**
-			@return the label of every cable one of the conductors of this
-			terminal belongs to, once each, in the order the conductors are
-			docked.
-
-			Empty for a terminal no cable reaches, which is the common case
-			and the honest answer: a project without cables has nothing to
-			say here.
-		*/
-		QStringList cables() const;
-
-		/**
-			@return how each conductor of this terminal is identified inside
-			its cable - the colour of the wire, its number failing that - one
-			entry per conductor that a cable carries, in the same order.
-
-			Colour first and number second because a cable is one or the
-			other and not both: a manufacturer either colours the wires or
-			numbers them, which is what the column of the strip manager says
-			with its own name.
-		*/
-		QStringList cableWires() const;
-
-		/**
 			@return the number of every conductor docked to this terminal, in
 			the order they are docked - top to bottom, left to right, as
 			Element::conductors() gives them.
@@ -100,10 +78,24 @@ class RealTerminal
 		*/
 		QStringList conductors() const;
 
-		/// @return cables(), written for a single cell
 		QString cable() const;
-		/// @return cableWires(), written for a single cell
 		QString cableWire() const;
+		bool isShield() const;
+		QColor color() const;
+		QColor stripeColor() const;
+		qreal section() const;
+		qreal widthMm() const;
+
+		//Keys used to store the cable data in the element informations
+		static QString cableInfoKey()     { return QStringLiteral("terminal_cable"); }
+		static QString cableWireInfoKey() { return QStringLiteral("terminal_cable_wire"); }
+		static QString shieldInfoKey()    { return QStringLiteral("terminal_shield"); }
+		//Keys used to store the color and the section (mm2) of the terminal
+		static QString colorInfoKey()     { return QStringLiteral("terminal_color"); }
+		static QString sectionInfoKey()   { return QStringLiteral("terminal_section"); }
+		//Key used to store the width (mm) of the terminal, drawn in the terminal strip
+		static QString widthInfoKey()     { return QStringLiteral("terminal_width"); }
+
 		/// @return conductors(), written for a single cell
 		QString conductor() const;
 

@@ -76,7 +76,7 @@ void ProjectTemplate::detachFromFile(QETProject *project)
 
 		//What was remembered of the template file on disk describes a file
 		//this project no longer has anything to do with.
-	project->captureDiskState();
+	project->rememberDiskState();
 
 		//Nothing on any disk holds what is in memory now, so it is modified
 		//by definition - and closing it has to ask.

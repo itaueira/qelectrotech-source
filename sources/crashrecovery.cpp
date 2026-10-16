@@ -17,7 +17,6 @@
 */
 #include "crashrecovery.h"
 
-#include "environment/projectlock.h"
 #include "logging/qetlogger.h"
 #include "qetapp.h"
 
@@ -30,12 +29,74 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QDateTime>
 #include <QFileInfo>
+#include <QHostInfo>
 #include <QTextStream>
 #include <QUrl>
 
+#if defined(Q_OS_WIN)
+	// Keep windows.h from defining min/max and dragging in the world: both
+	// break Qt headers that come after it.
+#	ifndef WIN32_LEAN_AND_MEAN
+#		define WIN32_LEAN_AND_MEAN
+#	endif
+#	ifndef NOMINMAX
+#		define NOMINMAX
+#	endif
+#	include <windows.h>
+#else
+#	include <cerrno>
+#	include <csignal>
+#endif
+
 namespace
 {
+	/// Who runs this session, as the operating system names the account
+	QString sessionUser()
+	{
+		const QStringList candidates = { QStringLiteral("USERNAME"),
+						 QStringLiteral("USER"),
+						 QStringLiteral("LOGNAME") };
+		for (const QString &candidate : candidates)
+		{
+			const QString value = qEnvironmentVariable(candidate.toLatin1().constData());
+			if (!value.isEmpty()) {
+				return value;
+			}
+		}
+		return QStringLiteral("?");
+	}
+
+	/// The machine this session runs on
+	QString sessionMachine()
+	{
+		const QString name = QHostInfo::localHostName();
+		return name.isEmpty() ? QStringLiteral("?") : name;
+	}
+
+	/// @return true when a process of this machine is still running
+	bool processIsAlive(qint64 pid)
+	{
+		if (pid <= 0) {
+			return false;
+		}
+#if defined(Q_OS_WIN)
+		HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE,
+					    static_cast<DWORD>(pid));
+		if (!handle) {
+			return false;
+		}
+		DWORD exit_code = 0;
+		const bool alive = GetExitCodeProcess(handle, &exit_code)
+				   && exit_code == STILL_ACTIVE;
+		CloseHandle(handle);
+		return alive;
+#else
+		return ::kill(static_cast<pid_t>(pid), 0) == 0 || errno == EPERM;
+#endif
+	}
+
 	/// Latched by beginSession(), read by everything else.
 	bool s_previous_ended_abruptly = false;
 	/// The marker this run wrote, empty while no session is open.
@@ -47,9 +108,8 @@ namespace
 	const auto marker_suffix = QStringLiteral(".marker");
 
 	/**
-		What a session marker says. The same four fields, in the same
-		plain "key=value" shape, as the lock ProjectLock writes next to a
-		project -- and for the same reason: when something goes wrong at
+		What a session marker says: four fields in a plain "key=value"
+		shape. When something goes wrong at
 		six in the evening, a file somebody can open in Notepad and delete
 		beats a clever mechanism nobody can inspect.
 	*/
@@ -129,8 +189,8 @@ namespace
 		}
 
 		QTextStream stream(&file);
-		stream << "user=" << ProjectLock::currentUser() << '\n'
-		       << "machine=" << ProjectLock::currentMachine() << '\n'
+		stream << "user=" << sessionUser() << '\n'
+		       << "machine=" << sessionMachine() << '\n'
 		       << "pid=" << QCoreApplication::applicationPid() << '\n'
 		       << "since=" << QDateTime::currentDateTime().toString(Qt::ISODate) << '\n';
 		file.close();
@@ -175,12 +235,12 @@ namespace
 			// only mistake that costs anything here is not offering.
 			return true;
 		}
-		if (marker.machine.compare(ProjectLock::currentMachine(),
+		if (marker.machine.compare(sessionMachine(),
 					   Qt::CaseInsensitive) != 0) {
 			// Another machine, on a shared or roaming data directory.
 			// There is no way to tell from here whether that session
 			// is alive, so it is not judged -- the same answer
-			// ProjectLock gives to the same question.
+			// the project lock gives to the same question.
 			return false;
 		}
 		if (marker.pid == QCoreApplication::applicationPid()) {
@@ -189,7 +249,7 @@ namespace
 			// already handed its id to us.
 			return true;
 		}
-		return !ProjectLock::processIsAlive(marker.pid);
+		return !processIsAlive(marker.pid);
 	}
 }
 
@@ -257,7 +317,7 @@ void CrashRecovery::beginSession()
 	s_previous_ended_abruptly = abrupt;
 
 	const QString marker_path = dir.absoluteFilePath(
-		markerFileName(ProjectLock::currentMachine(),
+		markerFileName(sessionMachine(),
 			       QCoreApplication::applicationPid()));
 	if (writeMarker(marker_path)) {
 		s_marker_path = marker_path;

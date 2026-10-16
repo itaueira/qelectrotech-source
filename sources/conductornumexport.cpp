@@ -19,12 +19,13 @@
 #include "qetproject.h"
 #include "qetapp.h"
 #include "diagram.h"
-#include "diagramcontent.h"
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/conductortextitem.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/terminal.h"
 #include "utils/csvwriter.h"
+#include "dataBase/projectdatabase.h"
+#include "properties/elementdata.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -164,12 +165,12 @@ bool ConductorNumExport::toCsv()
 		//save in csv file in same directory as project by default
 	QString dir = m_project->currentDir();
 	if (dir.isEmpty()) dir = QETApp::documentDir();
-	QString name = dir % "/" % QObject::tr("numero_de_fileries_") % m_project->title() % ".csv";
+	QString name = dir % "/" % QObject::tr("number_of_wiring_") % m_project->title() % ".csv";
 	//    if(!name.endsWith(".csv")) {
 	//        name += ".csv";
 	//    }
 
-	QString filename = QFileDialog::getSaveFileName(m_parent_widget, QObject::tr("Enregister sous... "), name, QObject::tr("Fichiers csv (*.csv)"));
+	QString filename = QFileDialog::getSaveFileName(m_parent_widget, QObject::tr("Save As... "), name, QObject::tr("Files csv (*.csv)"));
 	if (filename.isEmpty())
 	{
 			//The user closed the save dialog. Nothing was written and
@@ -180,7 +181,7 @@ bool ConductorNumExport::toCsv()
 	QFile file(filename);
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
 	{
-		QMessageBox::critical(m_parent_widget, QObject::tr("Erreur"),
+		QMessageBox::critical(m_parent_widget, QObject::tr("Error"),
 							  QObject::tr("Le fichier « %1 » n'a pas pu être écrit.").arg(filename) %
 							  "\n\n" % file.errorString());
 		return false;
@@ -197,7 +198,7 @@ bool ConductorNumExport::toCsv()
 	const QString failure = QETCsv::writeError(stream, file);
 	if (!failure.isEmpty())
 	{
-		QMessageBox::critical(m_parent_widget, QObject::tr("Erreur"),
+		QMessageBox::critical(m_parent_widget, QObject::tr("Error"),
 							  QObject::tr("L'écriture du fichier « %1 » a échoué.").arg(filename) %
 							  "\n\n" % failure);
 		return false;
@@ -289,10 +290,30 @@ void ConductorNumExport::fillHash()
 {
 	//We used this rx to avoid insert num composed only withe white space.
 	QRegularExpression rx("^ *$");
-	for (Diagram *d : m_project->diagrams())
+	auto count = [this](const QString &num) {
+		m_hash.insert(num, m_hash.value(num, 0) + 1);
+	};
+		//The folios not built (lazy folios): their wires from the
+		//project database, by the same rules
+	QList<QUuid> unbuilt;
+	for (Diagram *d : m_project->folios())
+		if (!d->isLoaded()) unbuilt << d->uuid();
+	for (const auto &wire : m_project->dataBase()->wiresOnFolios(unbuilt))
 	{
-		DiagramContent dc(d, false);
-		for (Conductor *c : dc.conductors())
+		if (wire.text.isEmpty() || wire.text.contains(rx)) {
+			continue;
+		}
+		const bool report1 = ElementData::typeFromString(wire.kind1) & ElementData::AllReport;
+		const bool report2 = ElementData::typeFromString(wire.kind2) & ElementData::AllReport;
+		if (!(report1 && report2)) {
+			count(wire.text);
+		}
+	}
+	for (Diagram *d : m_project->builtFolios())
+	{
+			//Its wires only: a DiagramContent would follow their
+			//potentials onto other folios, building those not built
+		for (Conductor *c : d->conductors())
 		{
 			QString num = c->textItem()->toPlainText();
 			if (num.isEmpty() || num.contains(rx)) {

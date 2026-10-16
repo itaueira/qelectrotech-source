@@ -217,10 +217,22 @@ void SingleLineProperties::drawPen(QPainter *painter,
 */
 void SingleLineProperties::toXml(QDomElement &e) const
 {
-	e.setAttribute("ground",  hasGround  ? "true" : "false");
-	e.setAttribute("neutral", hasNeutral ? "true" : "false");
-	e.setAttribute("phase",   phases);
-	if (isPen()) e.setAttribute("pen", "true");
+	for (const auto &attribute : attributes())
+		e.setAttribute(attribute.first, attribute.second);
+}
+
+/**
+	@brief SingleLineProperties::attributes
+	@return the attributes toXml() writes, in its order
+*/
+QList<QPair<QString, QString>> SingleLineProperties::attributes() const
+{
+	QList<QPair<QString, QString>> a;
+	a << qMakePair(QStringLiteral("ground"), QString::fromLatin1(hasGround ? "true" : "false"));
+	a << qMakePair(QStringLiteral("neutral"), QString::fromLatin1(hasNeutral ? "true" : "false"));
+	a << qMakePair(QStringLiteral("phase"), QString::number(phases));
+	if (isPen()) a << qMakePair(QStringLiteral("pen"), QStringLiteral("true"));
+	return a;
 }
 
 /**
@@ -268,41 +280,66 @@ ConductorProperties::~ConductorProperties()
 */
 void ConductorProperties::toXml(QDomElement &e) const
 {
-	e.setAttribute("type", typeToString(type));
+	for (const auto &attribute : attributes())
+		e.setAttribute(attribute.first, attribute.second);
+}
+
+/**
+	@brief ConductorProperties::attributes
+	@return the attributes toXml() writes, in the order it writes them: the
+	project database stores a placed wire's properties as these.
+*/
+QList<QPair<QString, QString>> ConductorProperties::attributes() const
+{
+	QList<QPair<QString, QString>> a;
+	auto add = [&a](const char *name, const QString &value) {
+		a << qMakePair(QString::fromLatin1(name), value);
+	};
+	add("type", typeToString(type));
 
 	if (color != QColor(Qt::black))
-		e.setAttribute("color", color.name());
+		add("color", color.name());
 
-	e.setAttribute("bicolor", m_bicolor? "true" : "false");
-	e.setAttribute("color2", m_color_2.name());
-	e.setAttribute("dash-size", QString::number(m_dash_size));
+	add("bicolor", m_bicolor? "true" : "false");
+	add("color2", m_color_2.name());
+	add("dash-size", QString::number(m_dash_size));
 
 	if (type == Single)
-		singleLineProperties.toXml(e);
+		a << singleLineProperties.attributes();
 
-	e.setAttribute("num", text);
-	e.setAttribute("text_color", text_color.name());
-	e.setAttribute("formula", m_formula);
-	e.setAttribute("cable", m_cable);
-	e.setAttribute("bus", m_bus);
-	e.setAttribute("function", m_function);
-	e.setAttribute("tension_protocol", m_tension_protocol);
-	e.setAttribute("conductor_color", m_wire_color);
-	e.setAttribute("conductor_section", m_wire_section);
-	e.setAttribute("numsize", QString::number(text_size));
-	e.setAttribute("condsize", QString::number(cond_size));
-	e.setAttribute("displaytext", m_show_text);
-	e.setAttribute("onetextperfolio", m_one_text_per_folio);
-	e.setAttribute("vertirotatetext", QString::number(verti_rotate_text));
-	e.setAttribute("horizrotatetext", QString::number(horiz_rotate_text));
+	add("num", text);
+	add("text_color", text_color.name());
+	add("formula", m_formula);
+	add("cable", m_cable);
+	if (!m_cable_uuid.isNull())
+	{
+			//Only written when there is a cable: a conductor which is no
+			//part of one keeps whatever cable text it had and no reference
+			//at all, so a hand written value is never mistaken for a
+			//generated one.
+		add("cable_uuid", m_cable_uuid.toString());
+		add("cable_slot", QString::number(m_cable_slot));
+	}
+	add("bus", m_bus);
+	add("function", m_function);
+	add("tension_protocol", m_tension_protocol);
+	add("conductor_color", m_wire_color);
+	add("conductor_section", m_wire_section);
+	add("numsize", QString::number(text_size));
+	add("condsize", QString::number(cond_size));
+	add("displaytext", QString::number(m_show_text));
+	add("onetextperfolio", QString::number(m_one_text_per_folio));
+	add("vertirotatetext", QString::number(verti_rotate_text));
+	add("horizrotatetext", QString::number(horiz_rotate_text));
 
 	QMetaEnum me = QMetaEnum::fromType<Qt::Alignment>();
-	e.setAttribute("horizontal-alignment", me.valueToKey(m_horizontal_alignment));
-	e.setAttribute("vertical-alignment", me.valueToKey(m_vertical_alignment));
+	add("horizontal-alignment", QString::fromLatin1(me.valueToKey(m_horizontal_alignment)));
+	add("vertical-alignment", QString::fromLatin1(me.valueToKey(m_vertical_alignment)));
 
 	QString conductor_style = writeStyle();
 	if (!conductor_style.isEmpty())
-		e.setAttribute("style", conductor_style);
+		add("style", conductor_style);
+	return a;
 }
 
 
@@ -343,6 +380,8 @@ void ConductorProperties::fromXml(QDomElement &e)
 	text_color = (xml_text_color.isValid()? xml_text_color : QColor(Qt::black));
 	m_formula            = e.attribute("formula");
 	m_cable              = e.attribute("cable");
+	m_cable_uuid         = QUuid(e.attribute("cable_uuid"));
+	m_cable_slot         = e.attribute("cable_slot", QString::number(-1)).toInt();
 	m_bus                = e.attribute("bus");
 	m_function           = e.attribute("function");
 	m_tension_protocol   = e.attribute("tension_protocol");
@@ -436,7 +475,10 @@ void ConductorProperties::fromSettings(QSettings &settings, const QString &prefi
 	m_wire_color         = settings.value(prefix + "conductor_color", "").toString();
 	m_wire_section       = settings.value(prefix + "conductor_section", "").toString();
 	text_size            = settings.value(prefix + "textsize", "7").toInt();
-	cond_size            = settings.value(prefix + "size", "1").toInt();
+		// Saved with QString::number(cond_size): a decimal such as 1.4,
+		// which toInt() would read as 0.
+	cond_size            = settings.value(prefix + "size", "1").toDouble();
+	if (!qIsFinite(cond_size) || cond_size <= 0) cond_size = 1;
 	m_show_text          = settings.value(prefix + "displaytext", true).toBool();
 	m_one_text_per_folio = settings.value(prefix + "onetextperfolio", false).toBool();
 	verti_rotate_text    = settings.value((prefix + "vertirotatetext"), "270").toDouble();
@@ -810,6 +852,32 @@ void ConductorProperties::applyChanges(const ConductorProperties &before,
 }
 
 /**
+	@brief ConductorProperties::applyTensionProtocolChange
+	Copy into this the voltage / protocol when it differs between before
+	and after, and leave every other attribute as it is. This is the one
+	property a function separated terminal element lets through
+	(@see Conductor::functionSeparatedConductors): the voltage /
+	protocol describes the electrical node itself, while the text, the
+	function, the wire color... describe one side of the separation and
+	stay local to it.
+
+	Both arguments describe one edit -- what was shown to the user, and
+	what the user made of it -- so that only an edit which really
+	changed the voltage / protocol passes it on. Passing the far wire's
+	own properties as @a before instead would make every edit overwrite
+	its voltage: the two sides differ on that field just as often as
+	not, so the comparison would hold no matter what was edited.
+	@param before : the properties as they were shown to the user
+	@param after : the properties after the user's edit
+*/
+void ConductorProperties::applyTensionProtocolChange(const ConductorProperties &before,
+						     const ConductorProperties &after)
+{
+	if (before.m_tension_protocol != after.m_tension_protocol)
+		m_tension_protocol = after.m_tension_protocol;
+}
+
+/**
 	@brief ConductorProperties::defaultProperties
 	@return the default properties stored in the setting file
 */
@@ -841,6 +909,8 @@ bool ConductorProperties::operator==(const ConductorProperties &other) const
 		other.text_color == text_color &&\
 		other.m_formula == m_formula &&\
 		other.m_cable == m_cable &&\
+		other.m_cable_uuid == m_cable_uuid &&\
+		other.m_cable_slot == m_cable_slot &&\
 		other.m_bus == m_bus &&\
 		other.m_function == m_function &&\
 		other.m_tension_protocol == m_tension_protocol &&\

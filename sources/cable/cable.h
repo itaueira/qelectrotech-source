@@ -18,170 +18,359 @@
 #ifndef CABLE_H
 #define CABLE_H
 
-#include "cablewire.h"
-
 #include <QHash>
 #include <QList>
 #include <QObject>
 #include <QPointer>
+#include <QPointF>
+#include <QStringList>
 #include <QUuid>
-#include <QVector>
 
-class Conductor;
-class Diagram;
-class QETProject;
-class CableReport;
+class QDomDocument;
+class QDomElement;
 
 /**
-	@brief A cable of the project: what it is, and which wire carries what.
+	@brief One core of a cable which is wired to a conductor of the drawing.
 
-	This class holds the data and the configuration of a cable but not the
-	visual aspect, the same division TerminalStrip states for a terminal
-	strip. It belongs to the project, not to a folio, which is what lets one
-	cable enter on folio 3 and leave on folio 7 and still be one cable with
-	one line in a cable list - the wires it carries are conductors of
-	different folios, and the cable never notices.
+	A cable owns its assignment: this is the only place in QElectroTech
+	which knows that core number 3 of cable 15W1 lands on such a
+	conductor. The conductor itself only carries the text the assignment
+	generates (15W1:br), written back by CableManager::refreshLabels(),
+	so the text can never drift away from the cable it comes from.
+*/
+struct CableCore
+{
+		/// Core number inside the cable, 0 based, from 0 to coreCount()-1
+	int core = -1;
+		/// The part carrying the slash drawn for this core
+	QUuid part;
+		/// The conductor this core lands on, null when the core is free
+	QUuid conductor;
+		/// Where the slash sits, in the coordinates of its own part
+	QPointF position;
 
-	The mould is deliberately mixed, and it is worth saying which half came
-	from where.
+		///Two assignments are the same when they say the same thing, so
+		///undo can tell a gesture which changed something from one which
+		///merely put the slash back where it already was
+	friend bool operator==(const CableCore &a, const CableCore &b)
+	{
+		return a.core == b.core && a.part == b.part
+				&& a.conductor == b.conductor && a.position == b.position;
+	}
+	friend bool operator!=(const CableCore &a, const CableCore &b)
+	{
+		return !(a == b);
+	}
+};
 
-	From TerminalStrip: a data object owned by the project through QObject
-	parenting, an xmlTagName() of its own, toXml()/fromXml() of its own, and
-	a block written on the root of the .qet next to <terminal_strips>.
+/**
+	@brief One drawn section of a cable: the trunk line of one folio.
 
-	From IoWiring: everything below the cable. A wire is a value in a
-	vector, not a QSharedPointer with a back reference. The weight of
-	TerminalStrip is that graph - RealTerminal, PhysicalTerminal, the levels
-	and the bridges - and it exists because a member of a strip has an
-	identity several owners point at. A wire of a cable has no such need: it
-	belongs to one cable, is never grouped and is never shared. Taking the
-	graph would have bought nothing and would have brought along the very
-	defect this class exists to avoid, which lives in it.
+	The geometry is kept as plain data rather than as a pointer to the
+ graphics item, because the folio owns the item and deletes it when the
+ folio is deleted, while the cable outlives it (it may have another
+ part on another folio).
+*/
+struct CablePartData
+{
+	QUuid uuid;
+	QUuid diagram;
+	QPointF p1;
+	QPointF p2;
 
-	That defect is in TerminalStrip::fromXml(): a member uuid that does not
-	match any free terminal is dropped with no else branch, and a physical
-	terminal that loses all of its members disappears. Here a wire that does
-	not find its conductor is kept as a marked spare - CableWire::Orphan -
-	and the fact goes into a CableReport the caller can read. See
-	@ref resolve().
+	bool isHorizontal() const {return qFuzzyCompare(p1.y(), p2.y());}
+};
 
-	The conductors are never touched. A wire points at a conductor by uuid;
-	no conductor points back, and nothing here writes inside a <conductor>
-	element.
+/**
+	@brief How one of the texts of a cable is written.
+
+	Both fields may say nothing at all, and that is the normal case:
+	the cable then writes that text the way the preferences offer it
+	(QETApp::cableTextsFont() and QETApp::cableCoreFont()), so picking
+	another default in the preferences reaches every cable which has
+	not been given a font of its own.
+
+	The texts of a cable are kept in one hash rather than one pair of
+	members each, so that a new text can be added without dragging a
+	new field through the whole code. They are named the way the file
+	writes them:
+	"designation", "type", "installation", "location", "length" for the
+	five texts written next to the trunk line, and "cores" for the
+	colour labels of the cores -- which have no alignment, being turned
+	by a quarter along their own line.
+*/
+struct CableTextFormat
+{
+		///The font, in the stable description QETUtils::fontToString()
+		///writes; empty when this cable follows the preferences
+	QString font;
+		///Qt::AlignLeft, Qt::AlignHCenter or Qt::AlignRight; 0 when the
+		///text goes on ending where it always did, before the line
+	int alignment = 0;
+
+	bool operator==(const CableTextFormat &other) const
+	{
+		return font == other.font && alignment == other.alignment;
+	}
+	bool operator!=(const CableTextFormat &other) const
+	{
+		return !(*this == other);
+	}
+};
+
+/**
+	@brief Everything about a cable the user may type in or tick, and
+	whether what he typed is written on the sheet at all.
+
+	It is kept as a whole so that one undo step can put a whole edit
+	back, and so the selection panel and the dialog always offer exactly
+	the same fields in the same order.
+*/
+struct CableProperties
+{
+		///Name of the cable, e.g. 15W1 -- the head of the label
+	QString designation;
+		/**
+			Where that name comes from: false while the program worked
+			it out of the numbering rule, true from the moment it was
+			typed in. Nothing shows it and no field edits it -- it
+			travels with the fields so that undo puts it back with them,
+			and so that numbering the whole project over again knows
+			which names were never the rule's to begin with and may be
+			left alone.
+		*/
+	bool designation_by_hand = false;
+		///Kind of cable, e.g. H07RN-F 4G1,5
+	QString type;
+		///Installation the cable belongs to
+	QString installation;
+		///Place the cable runs through
+	QString location;
+		///Length, typed in by hand
+	QString length;
+
+		///What of that is written next to the trunk line of the drawing
+	bool show_designation = true;
+	bool show_type = true;
+	bool show_installation = true;
+	bool show_location = true;
+	bool show_length = true;
+
+		///How each text is written -- font and alignment, keyed by the
+		///names listed on CableTextFormat. A text which is not in here
+		///follows what the preferences say, which is where a cable
+		///freshly drawn stands for all of them.
+	QHash<QString, CableTextFormat> texts;
+
+		///How far the label at the left of the trunk line is nudged from
+		///where it has always stood. It is a nudge on the drawing only,
+		///and it moves the whole label as one thing: installation, place
+		///and designation over the line, the type and the length under
+		///it -- while the line, the slashes and the wiring keep standing
+		///exactly where they were.
+	QPointF text_offset;
+		///How far the row of colours is nudged from the slashes it names.
+		///Again on the drawing only: the slashes, the entries they mark
+		///and every wire behind them stay where they are, and so does the
+		///row itself when the trunk line is moved.
+	QPointF core_offset;
+
+	bool operator==(const CableProperties &other) const
+	{
+		return designation == other.designation
+				&& designation_by_hand == other.designation_by_hand
+				&& type == other.type
+				&& installation == other.installation
+				&& location == other.location
+				&& length == other.length
+				&& show_designation == other.show_designation
+				&& show_type == other.show_type
+				&& show_installation == other.show_installation
+				&& show_location == other.show_location
+				&& show_length == other.show_length
+				&& texts == other.texts
+				&& text_offset == other.text_offset
+				&& core_offset == other.core_offset;
+	}
+	bool operator!=(const CableProperties &other) const
+	{
+		return !(*this == other);
+	}
+};
+
+/**
+	@brief Everything about a cable which its type decides, taken as one
+	block so that changing the type is one single step.
+
+	The cores go with the type rather than with the text fields: taking a
+	type with fewer cores takes those cores off the drawing, and undoing
+	has to bring their marks back along with the name and the colours.
+*/
+struct CableTypeState
+{
+		///Kind of cable, e.g. H07RN-F 4G1,5
+	QString type;
+		///How many cores that type has
+	int core_count = 0;
+		///The colour of each of them, in core order
+	QStringList core_colors;
+		///The cores the cable really holds at this moment
+	QList<CableCore> cores;
+
+	bool operator==(const CableTypeState &other) const
+	{
+		return type == other.type
+				&& core_count == other.core_count
+				&& core_colors == other.core_colors
+				&& cores == other.cores;
+	}
+	bool operator!=(const CableTypeState &other) const
+	{
+		return !(*this == other);
+	}
+};
+
+/**
+	@brief The Cable class is the project wide object a drawn cable line
+	stands for.
+
+	It carries what the user fills in -- the type, the number, BMK,
+	installation, location -- together with what QElectroTech works out:
+	how many cores the type has, which colour each core has, which cores
+	are wired to which conductor, and which folios the cable runs on.
+
+	Properties belong to the cable, never to one of its parts: editing
+	the type or the number anywhere changes it for every part.
 */
 class Cable : public QObject
 {
-	Q_OBJECT
+		Q_OBJECT
 
 	public:
-		explicit Cable(QETProject *project);
-		Cable(const QString &label, QETProject *project);
+		explicit Cable(QObject *parent = nullptr);
 
-		QETProject *project() const;
+		//Identity
+		QUuid uuid() const;
+		void setUuid(const QUuid &uuid);
 
-		/// What the drawing calls this cable, "W1" and the like
-		QString label() const {return m_label;}
-		void setLabel(const QString &label) {m_label = label;}
+		//Properties the user fills in
+		QString designation() const;
+		void setDesignation(const QString &designation);
+			/**
+				True when the name of this cable was typed in rather
+				than worked out of the numbering rule: numbering the
+				whole project over asks before it takes such a name.
+			*/
+		bool designationByHand() const;
+		void setDesignationByHand(bool by_hand);
+		QString bmk() const;
+		void setBmk(const QString &bmk);
+		QString installation() const;
+		void setInstallation(const QString &installation);
+		QString location() const;
+		void setLocation(const QString &location);
+		QString length() const;
+		void setLength(const QString &length);
 
-		QUuid uuid() const {return m_uuid;}
+			///Every field of the cable, and what of it is drawn on the sheet
+		CableProperties properties() const;
+		void setProperties(const CableProperties &properties);
 
-		/// The part code of the cable in the catalogue, CatalogPart::code
-		QString partCode() const {return m_part_code;}
-		void setPartCode(const QString &code) {m_part_code = code;}
+		//Type, copied from the cable type file when the cable is created
+		QString type() const;
+		void setType(const QString &type);
+		int coreCount() const;
+		void setCoreCount(int count);
+		QStringList coreColors() const;
+		void setCoreColors(const QStringList &colors);
+		///Everything the type of this cable decides, taken as one block
+	CableTypeState typeState() const;
+		///Put back a state taken with typeState(), in one single pass
+	void applyTypeState(const CableTypeState &state);
 
-		bool isShielded() const {return m_shielded;}
-		void setShielded(bool shielded) {m_shielded = shielded;}
+		//Cores
+		QList<CableCore> usedCores() const;
+		bool hasCore(int core) const;
+		CableCore core(int core) const;
+		void setCore(const CableCore &core);
+			///Write a whole set of assignments in place of another
+		void setCores(const QList<CableCore> &cores);
+		void removeCore(int core);
+		int usedCoreCount() const;
+		int freeCoreCount() const;
+		///The lowest core number which is free, -1 when none is
+		int firstFreeCore() const;
+		///The colour of a core, as written in the cable type file
+		QString colorOfCore(int core) const;
+		///The text a conductor of this core shows, e.g. "15W1:br"
+		QString labelOfCore(int core) const;
 
-		/**
-			@return how many wires the cable has, spares included.
+		//Parts
+		QList<CablePartData> parts() const;
+		bool hasPart(const QUuid &part) const;
+		CablePartData part(const QUuid &part) const;
+		void addPart(const CablePartData &part);
+		void removePart(const QUuid &part);
+		void setPartGeometry(const QUuid &part, const QPointF &p1, const QPointF &p2);
+		void setPartDiagram(const QUuid &part, const QUuid &diagram);
+			///Carry the colour labels of one section along when that
+			///section is moved as a whole (paste, duplicate, a selection
+			///being moved with everything else on it)
+		void movePartCores(const QUuid &part, const QPointF &delta);
 
-			There is no second count kept beside the vector, on purpose: a
-			stored figure and a vector are two truths, and they part company
-			on the first edit that forgets one of them. setWireCount() is
-			what keeps them the same thing by having only one of them.
-		*/
-		int wireCount() const {return m_wires.count();}
+		//Serialisation
+		QDomElement toXml(QDomDocument &document) const;
+		void fromXml(const QDomElement &element);
 
-		/**
-			@brief Give the cable @a count wires.
-
-			Wires are added as spares, numbered on from the ones already
-			there, and removed from the end. Removing a wire that carries a
-			conductor only forgets the link; the conductor itself is a
-			conductor of a folio and is not this class's to delete.
-		*/
-		void setWireCount(int count);
-
-		QVector<CableWire> wires() const {return m_wires;}
-		/// @return the wire at @a index, or a default wire when out of range
-		CableWire wire(int index) const;
-		/// @return the wire numbered @a number, or a default wire when there is none
-		CableWire wireByNumber(const QString &number) const;
-		bool setWire(int index, const CableWire &wire);
-		void appendWire(const CableWire &wire);
-
-		/// @return the wires that name a conductor which is not there
-		QVector<CableWire> lostWires() const;
-
-		/**
-			@return the folios this cable runs through, once each, in the
-			order of the project.
-
-			Empty for a cable whose wires are all spares. This is what makes
-			"the same cable on two folios" answerable without a window: one
-			cable, two folios, one entry in a list.
-		*/
-		QList<Diagram *> folios() const;
-
-		static QString xmlTagName() {return QStringLiteral("cable");}
-		QDomElement toXml(QDomDocument &xml_document) const;
-		bool fromXml(const QDomElement &xml_element);
-
-		/**
-			@brief Every conductor of @a project, by uuid.
-
-			@param project
-			@param report : when not null, gets the count of the conductors
-			that share a uuid with another one.
-
-			Built once and handed to resolve() for each cable, rather than
-			walked again per cable: a project of fifty folios has thousands
-			of conductors and a handful of cables.
-		*/
-		static QHash<QUuid, Conductor *> conductorsOf(const QETProject *project,
-							      CableReport *report = nullptr);
-
-		/**
-			@brief Link each wire to the conductor it names.
-
-			@param index : as returned by conductorsOf()
-			@param report : when not null, gets what this cable found
-
-			A wire that names nothing stays a spare. A wire whose conductor
-			is in @a index becomes Occupied. A wire whose conductor is not
-			there becomes a marked spare and gets a line in @a report - it
-			is not dropped, and it does not become an ordinary spare either,
-			because "the designer left this empty" and "this lost its wire"
-			are not the same fact and only one of them needs telling.
-
-			Safe to call again at any time. Nothing is remembered between
-			calls: the answer is recomputed from the uuids the wires hold, so
-			a conductor that comes back - an undone deletion - makes its wire
-			whole again on the next call.
-		*/
-		void resolve(const QHash<QUuid, Conductor *> &index,
-			     CableReport *report = nullptr);
-
-		/// Convenience: build the index from project() and resolve against it
-		void resolve(CableReport *report = nullptr);
+	signals:
+		void changed();
 
 	private:
-		QString m_label;
-		QUuid m_uuid = QUuid::createUuid();
-		QString m_part_code;
-		bool m_shielded = false;
-		QVector<CableWire> m_wires;
-		QPointer<QETProject> m_project;
+		QUuid m_uuid;
+		QString m_designation;
+			///< where that name comes from (see designationByHand)
+		bool m_designation_by_hand = false;
+		QString m_bmk;
+		QString m_installation;
+		QString m_location;
+		QString m_length;
+		QString m_type;
+		int m_core_count = 0;
+		QStringList m_core_colors;
+		QList<CableCore> m_cores;
+		QList<CablePartData> m_parts;
+			///What the label next to the trunk line is allowed to show
+		bool m_show_designation = true;
+		bool m_show_type = true;
+		bool m_show_installation = true;
+		bool m_show_location = true;
+		bool m_show_length = true;
+			///The texts this cable writes its own way, by the names
+			///listed on CableTextFormat; everything not in here follows
+			///what the preferences say
+		QHash<QString, CableTextFormat> m_texts;
+			///How far the label at the left of the line and the row of
+			///colours are nudged on the drawing: distances nothing else
+			///in the project ever looks at
+		QPointF m_text_offset;
+		QPointF m_core_offset;
+};
+
+/**
+	@brief One core which was taken away from another cable.
+
+	A conductor belongs to one cable only, so drawing a second cable
+	across wires a first one already holds takes those cores away from
+	it. That has to be remembered where it is decided, so that undoing
+	the second cable gives the first one its cores back instead of
+	leaving those conductors with a blank cable field forever.
+*/
+struct CableCoreTaken
+{
+		///The cable the core was taken from; null when it is gone
+	QPointer<Cable> cable;
+		///The core exactly as the other cable held it
+	CableCore core;
 };
 
 #endif // CABLE_H

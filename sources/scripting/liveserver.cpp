@@ -193,22 +193,24 @@ void LiveServer::askAndStart(QWidget *parent)
 		return;
 	}
 
-	QMessageBox box(QMessageBox::Warning, tr("Mode direct"),
-			tr("Le mode direct est activé : un assistant IA connecté "
-			   "pourra exécuter des scripts sur le projet ouvert.\n\n"
-			   "Chaque action s'annule d'un Ctrl+Z, et le bouton "
-			   "« Arrêter » de la barre d'état coupe la connexion.\n\n"
-			   "Ce réglage se trouve dans Configurer QElectroTech > Général > "
-			   "Projets."),
+	QMessageBox box(QMessageBox::Warning, tr("Live mode"),
+			tr("Live mode is on: a connected AI assistant will be able to run "
+			   "scripts on the open project.\n"
+			   "\n"
+			   "Each action is undone with one Ctrl+Z, and the “Stop” button "
+			   "in the status bar closes the connection.\n"
+			   "\n"
+			   "This setting is in Configure QElectroTech > General > "
+			   "Projects."),
 			QMessageBox::NoButton, parent);
-	QPushButton *go = box.addButton(tr("&Continuer"), QMessageBox::AcceptRole);
-	box.addButton(tr("&Pas pour cette session"), QMessageBox::RejectRole);
-	QPushButton *off = box.addButton(tr("&Désactiver"), QMessageBox::DestructiveRole);
+	QPushButton *go = box.addButton(tr("&Continue"), QMessageBox::AcceptRole);
+	box.addButton(tr("&Not this session"), QMessageBox::RejectRole);
+	QPushButton *off = box.addButton(tr("&Turn off"), QMessageBox::DestructiveRole);
 	box.setDefaultButton(go);
-	auto *remember = new QCheckBox(tr("Ne plus demander au démarrage"), &box);
-	remember->setToolTip(tr("Le mode direct s'ouvrira à chaque démarrage. Pour être "
-				"de nouveau averti, désactivez-le puis réactivez-le dans "
-				"Configurer QElectroTech > Général > Projets."));
+	auto *remember = new QCheckBox(tr("Don't ask again at start"), &box);
+	remember->setToolTip(tr("Live mode will open at every start. To be warned again, "
+				"turn it off and back on in Configure QElectroTech > "
+				"General > Projects."));
 	box.setCheckBox(remember);
 	box.exec();
 
@@ -845,12 +847,12 @@ QJsonObject LiveServer::print(const QJsonObject &request)
 				? QStringLiteral("this computer has no default printer")
 				: QStringLiteral("no printer called \"%1\" (printers: %2)")
 				  .arg(name, QPrinterInfo::availablePrinterNames().join(QStringLiteral(", "))));
-		QMessageBox box(QMessageBox::Question, tr("Impression"),
-				tr("L'assistant veut imprimer %n folio(s) de « %1 » sur « %2 ».", "", int(folios.count()))
+		QMessageBox box(QMessageBox::Question, tr("Print"),
+				tr("The assistant wants to print %n folios of “%1” on “%2”.", "", int(folios.count()))
 				.arg(project->title(), info.printerName()),
 				QMessageBox::NoButton, e);
-		QPushButton *go = box.addButton(tr("&Imprimer"), QMessageBox::AcceptRole);
-		box.addButton(tr("&Annuler"), QMessageBox::RejectRole);
+		QPushButton *go = box.addButton(tr("&Print"), QMessageBox::AcceptRole);
+		box.addButton(tr("&Cancel"), QMessageBox::RejectRole);
 		box.setDefaultButton(go);
 		box.exec();
 		if (box.clickedButton() != go) return failure(QStringLiteral("refused by the user"));
@@ -917,9 +919,11 @@ QJsonObject LiveServer::snapshot(const QString &raw_path)
 	if (raw_path.trimmed().isEmpty() || info.isRelative())
 		return failure(QStringLiteral("path must be absolute"));
 	if (info.exists()) return failure(QStringLiteral("%1 already exists").arg(raw_path));
-	QDomDocument xml(project->toXml());
 	QString error;
-	if (!QET::writeXmlFile(xml, info.absoluteFilePath(), &error))
+	if (QETProject::isContainerPath(info.absoluteFilePath())
+			? !project->writeContainerFile(info.absoluteFilePath(), &error)
+			: ![&]() { QDomDocument xml(project->toXml());
+					   return QET::writeXmlFile(xml, info.absoluteFilePath(), &error); }())
 		return failure(QStringLiteral("snapshot not written: %1").arg(error));
 	return {{QStringLiteral("ok"), true}, {QStringLiteral("path"), info.absoluteFilePath()},
 		{QStringLiteral("folio"), e->currentDiagramView()
@@ -939,7 +943,7 @@ QJsonObject LiveServer::changes(const QJsonObject &request)
 	QETProject *project = e ? e->currentProject() : nullptr;
 	if (!project) return failure(QStringLiteral("no project is open in QElectroTech"));
 	QUndoStack *stack = project->undoStack();
-	const QString prefix = tr("Assistant : %1").arg(QString());
+	const QString prefix = tr("Assistant: %1").arg(QString());
 	const int since = request.value(QStringLiteral("since")).toInt(-1);
 	QJsonArray steps;
 	int assistant = 0, user = 0;
@@ -972,7 +976,7 @@ QJsonObject LiveServer::undoLast()
 	if (!project) return failure(QStringLiteral("no project is open in QElectroTech"));
 	QUndoStack *stack = project->undoStack();
 	const QString text = stack->text(stack->index() - 1);
-	const QString prefix = tr("Assistant : %1").arg(QString());
+	const QString prefix = tr("Assistant: %1").arg(QString());
 	if (!stack->canUndo() || !text.startsWith(prefix))
 		return failure(QStringLiteral("the last step is not the assistant's (\"%1\"); "
 					      "only the user undoes their own").arg(text));
@@ -1020,10 +1024,10 @@ QJsonObject LiveServer::screenshot()
 bool LiveServer::confirm(const QString &name, const QString &source)
 {
 	QDialog dialog(editor());
-	dialog.setWindowTitle(tr("L'assistant veut exécuter un script"));
+	dialog.setWindowTitle(tr("The assistant wants to run a script"));
 	auto *layout = new QVBoxLayout(&dialog);
 	layout->addWidget(new QLabel(
-		tr("« %1 » sur le projet ouvert. Une fois exécuté, Ctrl+Z l'annule.")
+		tr("“%1” on the open project. Once it has run, Ctrl+Z undoes it.")
 		.arg(name.isEmpty() ? tr("script") : name), &dialog));
 	auto *text = new QPlainTextEdit(source, &dialog);
 	text->setReadOnly(true);
@@ -1031,9 +1035,9 @@ bool LiveServer::confirm(const QString &name, const QString &source)
 	text->setMinimumSize(520, 220);
 	layout->addWidget(text);
 	auto *buttons = new QDialogButtonBox(&dialog);
-	QPushButton *run = buttons->addButton(tr("&Exécuter"), QDialogButtonBox::AcceptRole);
-	buttons->addButton(tr("&Refuser"), QDialogButtonBox::RejectRole);
-	QPushButton *always = buttons->addButton(tr("&Toujours"),
+	QPushButton *run = buttons->addButton(tr("&Run"), QDialogButtonBox::AcceptRole);
+	buttons->addButton(tr("&Decline"), QDialogButtonBox::RejectRole);
+	QPushButton *always = buttons->addButton(tr("&Always"),
 						 QDialogButtonBox::AcceptRole);
 	layout->addWidget(buttons);
 	QPushButton *clicked = nullptr;

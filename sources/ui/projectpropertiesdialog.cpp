@@ -33,7 +33,7 @@
 ProjectPropertiesDialog::ProjectPropertiesDialog(QETProject *project, QWidget *parent)
 {
 	m_properties_dialog = new ConfigDialog (parent);
-	m_properties_dialog -> setWindowTitle(QObject::tr("Propriétés du projet", "window title"));
+	m_properties_dialog -> setWindowTitle(QObject::tr("Project properties", "window title"));
 	m_properties_dialog -> addPage(new ProjectMainConfigPage(project));
 
 	NewDiagramPage *newDiagramPage = new NewDiagramPage(project,parent,this);
@@ -92,6 +92,20 @@ void ProjectPropertiesDialog::changeToFolio()
 			static_cast <ProjectAutoNumConfigPage*>(
 				m_properties_dialog->pages.at(2));
 	autoNumPage->changeToTab(3);
+}
+
+/**
+	@brief ProjectPropertiesDialog::changeToCable
+	Change the current displayed tab to the cable numbering tab.
+	The caller is the cable tool, which opens this window when it finds
+	that the project numbers its cables by no rule at all.
+*/
+void ProjectPropertiesDialog::changeToCable()
+{
+	ProjectAutoNumConfigPage *autoNumPage =
+			static_cast <ProjectAutoNumConfigPage*>(
+				m_properties_dialog->pages.at(2));
+	autoNumPage->changeToCableTab();
 }
 
 /**

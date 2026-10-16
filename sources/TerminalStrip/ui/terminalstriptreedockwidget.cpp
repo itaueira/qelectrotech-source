@@ -27,6 +27,7 @@
 #include "../../qetgraphicsitem/terminalelement.h"
 #include "../terminalstrip.h"
 #include "../../qetinformation.h"
+#include "../../utils/qetutils.h"
 #include "freeterminalmodel.h"
 
 #include <QApplication>
@@ -302,18 +303,18 @@ void TerminalStripTreeDockWidget::buildTree()
 
 	auto title_ = m_project->title();
 	if (title_.isEmpty()) {
-		title_ = tr("Projet sans titre");
+		title_ = tr("Untitled project");
 	}
 
 	QStringList strl{title_};
 	new QTreeWidgetItem(ui->m_tree_view, strl, Root);
 
-	QStringList ftstrl(tr("Bornes indépendante"));
+	QStringList ftstrl(tr("Independent terminals"));
 	new QTreeWidgetItem(ui->m_tree_view, ftstrl, FreeTerminal);
 
 	auto ts_vector = m_project->terminalStrip();
 	std::sort(ts_vector.begin(), ts_vector.end(), [](TerminalStrip *a, TerminalStrip *b) {
-		return a->name() < b->name();
+		return QETUtils::naturalLessThan(a->name(), b->name());
 	});
 
 	for (const auto &ts : std::as_const(ts_vector)) {
@@ -444,7 +445,7 @@ void TerminalStripTreeDockWidget::addFreeTerminal()
 		const auto label_a = shown_.value(a);
 		const auto label_b = shown_.value(b);
 		if (label_a != label_b) {
-			return label_a < label_b;
+			return QETUtils::naturalLessThan(label_a, label_b);
 		}
 
 		const auto pos_a = a->scenePos();

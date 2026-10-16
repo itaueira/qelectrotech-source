@@ -214,6 +214,8 @@ class DynamicElementTextItem : public DiagramTextItem
 		bool m_slave_xref_dragging = false;
 		QPointF m_slave_xref_drag_from;
 		qreal m_text_width = -1;
+			/// The text was emptied with its alignment kept (setPlainText())
+		bool m_emptied_aligned = false;
 		QPointF m_initial_position;
 		bool m_keep_visual_rotation = true;
 		bool m_rotation_point_center = false;

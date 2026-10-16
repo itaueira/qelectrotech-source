@@ -89,6 +89,7 @@ class Terminal : public QGraphicsObject
 		QString   contactPair         () const;
 		TerminalData::Type terminalType() const;
 		TerminalStrip *parentTerminalStrip() const;
+		QString potential() const;
 		bool useMasterLabel() const { return d->m_use_master_label; }
 		void setUseMasterLabel(bool use);
 		int masterLabelIndex() const { return d->m_master_label_index; }
@@ -176,6 +177,7 @@ inline int Terminal::conductorsCount() const
 }
 
 QList<Terminal *> relatedPotentialTerminal (const Terminal *terminal,
-						const bool all_diagram = true);
+						const bool all_diagram = true,
+						const bool ignore_function_separation = false);
 
 #endif

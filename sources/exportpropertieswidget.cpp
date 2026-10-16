@@ -68,6 +68,7 @@ ExportProperties ExportPropertiesWidget::exportProperties() const
 	export_properties.draw_colored_conductors = draw_colored_conductors -> isChecked();
 	export_properties.dxf_blocks              = dxf_blocks -> isChecked();
 	export_properties.dxf_attributes          = dxf_attributes -> isChecked();
+	export_properties.svg_small_pictures      = svg_small_pictures -> isChecked();
 	export_properties.exported_area           = export_border -> isChecked() ? QET::BorderArea : QET::ElementsArea;
 	
 	return(export_properties);
@@ -94,6 +95,7 @@ void ExportPropertiesWidget::setExportProperties(const ExportProperties &export_
 	dxf_blocks              -> setChecked(export_properties.dxf_blocks);
 	dxf_attributes          -> setChecked(export_properties.dxf_attributes);
 	dxf_attributes          -> setEnabled(export_properties.dxf_blocks);
+	svg_small_pictures      -> setChecked(export_properties.svg_small_pictures);
 	
 	if (export_properties.exported_area == QET::BorderArea) {
 		export_border -> setChecked(true);
@@ -125,6 +127,7 @@ void ExportPropertiesWidget::setPrintingMode(bool mode) {
 	export_border       -> setVisible(!mode);
 	export_elements     -> setVisible(!mode);
 	draw_bg_transparent -> setVisible(!mode);
+	svg_small_pictures  -> setVisible(!mode);
 }
 
 /**
@@ -136,7 +139,7 @@ void ExportPropertiesWidget::slot_chooseADirectory()
 {
 	QString user_dir = QFileDialog::getExistingDirectory(
 		this,
-		tr("Exporter dans le dossier", "dialog title"),
+		tr("Export in the directory", "dialog title"),
 		dirpath -> text()
 	);
 	if (!user_dir.isEmpty()) {
@@ -157,12 +160,12 @@ void ExportPropertiesWidget::build()
 	
 	/* le dialogue comprend une ligne permettant d'indiquer un chemin de dossier (hboxLayout) */
 	QHBoxLayout *hboxLayout = new QHBoxLayout();
-	dirpath_label = new QLabel(tr("Dossier cible :"), this);
+	dirpath_label = new QLabel(tr("Target directory:"), this);
 	dirpath = new QLineEdit(this);
 	QCompleter *completer = new QCompleter(this);
 	completer -> setModel(new QFileSystemModel(completer));
 	dirpath -> setCompleter(completer);
-	button_browse = new QPushButton(tr("Parcourir"), this);
+	button_browse = new QPushButton(tr("Browse"), this);
 	hboxLayout -> addWidget(dirpath_label);
 	hboxLayout -> addWidget(dirpath);
 	hboxLayout -> addWidget(button_browse);
@@ -172,7 +175,7 @@ void ExportPropertiesWidget::build()
 	
 	/* une ligne permettant de choisir le format (hboxLayout1) */
 	QHBoxLayout *hboxLayout1 = new QHBoxLayout();
-	format_label = new QLabel(tr("Format :"), this);
+	format_label = new QLabel(tr("Format:"), this);
 	hboxLayout1 -> addWidget(format_label);
 	hboxLayout1 -> addWidget(format = new QComboBox(this));
 	format -> addItem(tr("PNG (*.png)"),    "PNG");
@@ -185,56 +188,61 @@ void ExportPropertiesWidget::build()
 	vboxLayout -> addLayout(hboxLayout1);
 	
 	/* un cadre permettant de specifier les options de l'image finale */
-	QGroupBox *groupbox_options = new QGroupBox(tr("Options de rendu", "groupbox title"));
+	QGroupBox *groupbox_options = new QGroupBox(tr("Rendering options", "groupbox title"));
 	QGridLayout *optionshlayout = new QGridLayout(groupbox_options);
 	
 	// Choix de la zone du schema a exporter
 	exported_content_choices = new QButtonGroup(groupbox_options);
-	export_border = new QRadioButton(tr("Exporter entièrement le folio"), groupbox_options);
+	export_border = new QRadioButton(tr("Export the whole sheet"), groupbox_options);
 	optionshlayout -> addWidget(export_border, 0, 0);
 	exported_content_choices -> addButton(export_border);
-	export_elements = new QRadioButton(tr("Exporter seulement les éléments"), groupbox_options);
+	export_elements = new QRadioButton(tr("Export elements only"), groupbox_options);
 	optionshlayout -> addWidget(export_elements, 0, 1);
 	exported_content_choices -> addButton(export_elements);
 	
 	// dessiner la grille
-	draw_grid = new QCheckBox(tr("Dessiner la grille"), groupbox_options);
+	draw_grid = new QCheckBox(tr("Draw the grid"), groupbox_options);
 	optionshlayout -> addWidget(draw_grid, 1, 1);
 	
 	// dessiner le cadre
-	draw_border = new QCheckBox(tr("Dessiner le cadre"), groupbox_options);
+	draw_border = new QCheckBox(tr("Draw the border"), groupbox_options);
 	optionshlayout -> addWidget(draw_border, 1, 0);
 	
 	// dessiner le cartouche
-	draw_titleblock = new QCheckBox(tr("Dessiner le cartouche"), groupbox_options);
+	draw_titleblock = new QCheckBox(tr("Draw the title block"), groupbox_options);
 	optionshlayout -> addWidget(draw_titleblock, 2, 0);
 	
 	// dessiner les bornes
-	draw_terminals = new QCheckBox(tr("Dessiner les bornes"), groupbox_options);
+	draw_terminals = new QCheckBox(tr("Draw terminals"), groupbox_options);
 	optionshlayout -> addWidget(draw_terminals, 2, 1);
 	
 	// dessiner les noms des bornes
-	draw_terminal_names = new QCheckBox(tr("Dessiner les noms des bornes"), groupbox_options);
+	draw_terminal_names = new QCheckBox(tr("Draw the names of the terminals"), groupbox_options);
 	optionshlayout -> addWidget(draw_terminal_names, 3, 0);
 	
 	// conserver les couleurs des conducteurs
-	draw_colored_conductors = new QCheckBox(tr("Conserver les couleurs des conducteurs"), groupbox_options);
+	draw_colored_conductors = new QCheckBox(tr("Keep conductors colors"), groupbox_options);
 	optionshlayout -> addWidget(draw_colored_conductors, 3, 1);
 	
 	// use transparent background for SVG-Export
-	draw_bg_transparent = new QCheckBox(tr("SVG: fond transparent"), groupbox_options);
+	draw_bg_transparent = new QCheckBox(tr("SVG-background transparent"), groupbox_options);
 	optionshlayout -> addWidget(draw_bg_transparent, 4, 0);
 
 	// each symbol as a DXF block (issue #1339)
-	dxf_blocks = new QCheckBox(tr("DXF : symboles en blocs"), groupbox_options);
-	dxf_blocks -> setToolTip(tr("Chaque symbole devient un bloc DXF, sélectionnable d'un clic dans un logiciel de CAO"));
+	dxf_blocks = new QCheckBox(tr("DXF: symbols as blocks"), groupbox_options);
+	dxf_blocks -> setToolTip(tr("Each symbol becomes a DXF block, selectable with one click in CAD software"));
 	optionshlayout -> addWidget(dxf_blocks, 4, 1);
 
 	// with blocks, a symbol's texts as attributes of its block
-	dxf_attributes = new QCheckBox(tr("DXF : textes des symboles en attributs"), groupbox_options);
-	dxf_attributes -> setToolTip(tr("Les textes d'un symbole (repère, fonction...) deviennent des attributs de son bloc. LibreCAD n'affiche pas les attributs."));
+	dxf_attributes = new QCheckBox(tr("DXF: symbol texts as attributes"), groupbox_options);
+	dxf_attributes -> setToolTip(tr("A symbol's texts (label, function...) become attributes of its block. LibreCAD does not show attributes."));
 	optionshlayout -> addWidget(dxf_attributes, 5, 1);
 	connect(dxf_blocks, &QCheckBox::toggled, dxf_attributes, &QCheckBox::setEnabled);
+
+	// pictures not at full resolution in an SVG: a much smaller file
+	svg_small_pictures = new QCheckBox(tr("SVG: smaller pictures"), groupbox_options);
+	svg_small_pictures -> setToolTip(tr("Pictures are stored at four times the size they have on the folio instead of their full resolution: a much smaller file, still sharp when printed"));
+	optionshlayout -> addWidget(svg_small_pictures, 5, 0);
 	
 	vboxLayout -> addWidget(groupbox_options);
 	
@@ -252,6 +260,7 @@ void ExportPropertiesWidget::build()
 	setTabOrder(draw_colored_conductors, draw_bg_transparent);
 	setTabOrder(draw_bg_transparent, dxf_blocks);
 	setTabOrder(dxf_blocks, dxf_attributes);
+	setTabOrder(draw_bg_transparent, svg_small_pictures);
 	
 	// connexion du bouton permettant le choix du repertoire
 	connect(button_browse, &QPushButton::released, this, &ExportPropertiesWidget::slot_chooseADirectory);	
@@ -269,6 +278,7 @@ void ExportPropertiesWidget::build()
 	connect(draw_colored_conductors, &QCheckBox::stateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(dxf_blocks, &QCheckBox::stateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(dxf_attributes, &QCheckBox::stateChanged, this, &ExportPropertiesWidget::optionChanged);
+	connect(svg_small_pictures, &QCheckBox::stateChanged, this, &ExportPropertiesWidget::optionChanged);
 #else
 	connect(draw_grid, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(draw_border, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
@@ -279,5 +289,6 @@ void ExportPropertiesWidget::build()
 	connect(draw_colored_conductors, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(dxf_blocks, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(dxf_attributes, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
+	connect(svg_small_pictures, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
 #endif
 }

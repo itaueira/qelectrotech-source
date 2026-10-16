@@ -15,6 +15,7 @@
 	You should have received a copy of the GNU General Public License
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "../../container/qetcontainer.h"
 #include "projectconfigpages.h"
 
 #include "../autoNum/autonumschemecommand.h"
@@ -145,7 +146,7 @@ ProjectMainConfigPage::~ProjectMainConfigPage()
 */
 QString ProjectMainConfigPage::title() const
 {
-	return(tr("Général", "configuration page title"));
+	return(tr("General", "configuration page title"));
 }
 
 /**
@@ -273,12 +274,12 @@ QString ProjectMainConfigPage::projectTitle() const
 */
 void ProjectMainConfigPage::initWidgets()
 {
-	title_label_ = new QLabel(tr("Titre du projet :", "label when configuring"));
+	title_label_ = new QLabel(tr("Project title :", "label when configuring"));
 	title_value_ = new QLineEdit();
-	title_information_ = new QLabel(tr("Ce titre sera disponible pour tous les folios de ce projet en tant que %projecttitle.", "informative label"));
+	title_information_ = new QLabel(tr("This title is made available to all child sheets as %projecttitle.", "informative label"));
 	project_variables_label_ = new QLabel(
 		tr(
-			"Vous pouvez définir ci-dessous des propriétés personnalisées qui seront disponibles pour tous les folios de ce projet (typiquement pour les cartouches).",
+			"You may define below custom properties that will be made available to all sheets of the project (typically to use within title blocks).",
 			 "informative label"
 		)
 	);
@@ -286,31 +287,31 @@ void ProjectMainConfigPage::initWidgets()
 	project_variables_ = new DiagramContextWidget();
 	project_variables_ -> setContext(DiagramContext());
 
-	usage_label_ = new QLabel(tr("Temps passé sur ce projet :", "label when configuring"));
+	usage_label_ = new QLabel(tr("Time spent on this project:", "label when configuring"));
 	usage_value_ = new QLabel();
-	usage_enabled_cb_ = new QCheckBox(tr("Suivre le temps passé sur ce projet (uniquement enregistré localement dans ce fichier)", "checkbox label"));
-	usage_reset_pb_ = new QPushButton(tr("Réinitialiser", "button label"));
+	usage_enabled_cb_ = new QCheckBox(tr("Track the time spent on this project (recorded locally in this file only)", "checkbox label"));
+	usage_reset_pb_ = new QPushButton(tr("Reset", "button label"));
 	connect(usage_reset_pb_, &QPushButton::clicked, this, &ProjectMainConfigPage::resetUsageTracker);
 
 		//Hops where two conductors cross without being connected (issue #436)
-	wire_hops_label_ = new QLabel(tr("Croisements de conducteurs :", "label when configuring"));
+	wire_hops_label_ = new QLabel(tr("Conductor crossings:", "label when configuring"));
 	wire_hops_cb_ = new QComboBox();
-	wire_hops_cb_ -> addItem(tr("Sans saut", "wire crossings"),
+	wire_hops_cb_ -> addItem(tr("No hop", "wire crossings"),
 							 WireHops::toString(WireHops::Mode::None));
-	wire_hops_cb_ -> addItem(tr("Saut sur les conducteurs horizontaux", "wire crossings"),
+	wire_hops_cb_ -> addItem(tr("Hop on horizontal conductors", "wire crossings"),
 							 WireHops::toString(WireHops::Mode::Horizontal));
-	wire_hops_cb_ -> addItem(tr("Saut sur les conducteurs verticaux", "wire crossings"),
+	wire_hops_cb_ -> addItem(tr("Hop on vertical conductors", "wire crossings"),
 							 WireHops::toString(WireHops::Mode::Vertical));
-	wire_hops_cb_ -> setToolTip(tr("Dessine un petit arc là où deux conducteurs se croisent sans être reliés. "
-								   "Seul le dessin change : aucun élément n'est ajouté et aucun conducteur n'est coupé.",
+	wire_hops_cb_ -> setToolTip(tr("Draws a small arc where two conductors cross without being connected. Only the "
+								   "drawing changes: no element is added and no conductor is cut.",
 								   "tooltip"));
 
 		//Texts of turned symbols kept horizontal
-	upright_symbol_texts_cb_ = new QCheckBox(tr("Garder horizontaux les textes des symboles pivotés",
+	upright_symbol_texts_cb_ = new QCheckBox(tr("Keep the texts of rotated elements horizontal",
 												"checkbox label"));
-	upright_symbol_texts_cb_ -> setToolTip(tr("Les textes dessinés dans un symbole et les noms de ses bornes restent "
-											  "lisibles quand le symbole est pivoté : leur cadre tourne avec le symbole, "
-											  "pas le texte. Décochez pour qu'ils tournent avec le symbole, comme avant.",
+	upright_symbol_texts_cb_ -> setToolTip(tr("Texts drawn in an element and the names of its terminals stay readable "
+											  "when the element is rotated: their frame turns with the element, not the "
+											  "text. Uncheck to make them turn with the element, as before.",
 											  "tooltip"));
 
 		//How the references on the folios name their other end (T59)
@@ -375,10 +376,10 @@ void ProjectMainConfigPage::initWidgets()
 											 "tooltip"));
 
 		//How many wires a terminal may take (discussion #1158)
-	wiring_rules_gb_ = new QGroupBox(tr("Conducteurs par borne", "group box title"));
-	use_application_rules_cb_ = new QCheckBox(tr("Utiliser les réglages de l'application", "checkbox label"));
-	use_application_rules_cb_ -> setToolTip(tr("Les réglages de Configurer QElectroTech > Général s'appliquent. "
-											   "Décochez pour donner à ce projet ses propres réglages, enregistrés dans le projet.",
+	wiring_rules_gb_ = new QGroupBox(tr("Conductors per terminal", "group box title"));
+	use_application_rules_cb_ = new QCheckBox(tr("Use the application settings", "checkbox label"));
+	use_application_rules_cb_ -> setToolTip(tr("The settings in Configure QElectroTech > General apply. Untick to give this "
+											   "project its own settings, saved in the project.",
 											   "tooltip"));
 	connect(use_application_rules_cb_, &QCheckBox::toggled, this, [this](bool use) {
 			//Show the values that will apply: the application's, or the
@@ -390,20 +391,20 @@ void ProjectMainConfigPage::initWidgets()
 		}
 		updateWiringRulesWidgets();
 	});
-	max_wires_label_ = new QLabel(tr("Nombre maximal de conducteurs par borne :", "label when configuring"));
+	max_wires_label_ = new QLabel(tr("Maximum conductors per terminal:", "label when configuring"));
 	max_wires_sb_ = new QSpinBox();
 	max_wires_sb_ -> setRange(0, 99);
-	max_wires_sb_ -> setSpecialValueText(tr("Sans limite", "wires per terminal"));
-	max_wires_sb_ -> setToolTip(tr("Un nouveau conducteur qui dépasserait ce nombre sur une borne est refusé. "
-								   "Les conducteurs déjà dessinés ne sont pas modifiés. "
-								   "4 correspond à deux embouts doubles, un de chaque côté de la vis.",
+	max_wires_sb_ -> setSpecialValueText(tr("No limit", "wires per terminal"));
+	max_wires_sb_ -> setToolTip(tr("A new conductor that would take a terminal past this number is refused. "
+								   "Conductors already drawn are not changed. 4 means two twin ferrules, one "
+								   "on each side of the screw.",
 								   "tooltip"));
-	one_wire_per_report_cb_ = new QCheckBox(tr("Un seul conducteur par renvoi de folio", "checkbox label"));
-	one_wire_per_report_cb_ -> setToolTip(tr("Un renvoi de folio est un point virtuel : il ne reçoit qu'un conducteur, "
-											 "celui qui continue sur l'autre folio.",
+	one_wire_per_report_cb_ = new QCheckBox(tr("Only one conductor per sheet reference", "checkbox label"));
+	one_wire_per_report_cb_ -> setToolTip(tr("A sheet reference is a virtual point: it takes only one conductor, the "
+											 "one that continues on the other sheet.",
 											 "tooltip"));
-	wiring_rules_off_label_ = new QLabel(tr("Ces règles sont désactivées pour tous les projets "
-											"(Configurer QElectroTech > Général).",
+	wiring_rules_off_label_ = new QLabel(tr("These rules are turned off for every project "
+											"(Configure QElectroTech > General).",
 											"informative label"));
 	wiring_rules_off_label_ -> setWordWrap(true);
 }
@@ -635,7 +636,7 @@ ProjectAutoNumConfigPage::ProjectAutoNumConfigPage (QETProject *project,
 */
 QString ProjectAutoNumConfigPage::title() const
 {
-	return tr("Numérotation auto");
+	return tr("Auto Numbering");
 }
 
 /**
@@ -650,9 +651,20 @@ QIcon ProjectAutoNumConfigPage::icon() const
 
 /**
 	@brief ProjectAutoNumConfigPage::applyProjectConf
+	Save what this page has to save when the window is confirmed.
+	The cable rule is written from here as well as by its own Apply
+	button: the cable tool asks the project for that rule the moment
+	he tries to draw a cable, so filling it in and confirming this
+	window only to be asked once more would be a surprise. A rule he
+	has not finished filling in is left alone, and a page he has not
+	touched leaves the project exactly as it was.
 */
 void ProjectAutoNumConfigPage::applyProjectConf()
-{}
+{
+	if (m_saw_cable && m_saw_cable->isModified() && m_saw_cable->isValid()) {
+		saveContextCable();
+	}
+}
 
 namespace {
 /**
@@ -669,7 +681,7 @@ QWidget *schemeTab(SelectAutonumW *saw, QGroupBox *&box, QTableWidget *&table)
 	box = new QGroupBox(tab);
 	auto *box_layout = new QVBoxLayout(box);
 	table = new QTableWidget(0, 2, box);
-	table->setHorizontalHeaderLabels({QObject::tr("Folio"), QObject::tr("Titre")});
+	table->setHorizontalHeaderLabels({QObject::tr("Sheet"), QObject::tr("Title")});
 	table->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	table->setSelectionBehavior(QAbstractItemView::SelectRows);
 	table->verticalHeader()->setVisible(false);
@@ -697,7 +709,7 @@ void ProjectAutoNumConfigPage::initWidgets()
 		//Conductor tab
 	m_saw_conductor = new SelectAutonumW(1);
 	m_saw_conductor->setExplicitNaming();
-	tab_widget->addTab(schemeTab(m_saw_conductor, m_conductor_users_box, m_conductor_users), tr("Conducteurs"));
+	tab_widget->addTab(schemeTab(m_saw_conductor, m_conductor_users_box, m_conductor_users), tr("Conductors"));
 	
 		//Element tab
 	m_saw_element = new SelectAutonumW(0);
@@ -712,38 +724,44 @@ void ProjectAutoNumConfigPage::initWidgets()
 	m_element_users_box = new QGroupBox(element_tab);
 	auto *users_layout = new QVBoxLayout(m_element_users_box);
 	m_element_users = new QTableWidget(0, 5, m_element_users_box);
-	m_element_users->setHorizontalHeaderLabels({tr("N°"), tr("Nom"), tr("Folio"), tr("Élément"), tr("Figé")});
+	m_element_users->setHorizontalHeaderLabels({tr("No."), tr("Name"), tr("Sheet"), tr("Element"), tr("Frozen")});
 	m_element_users->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_element_users->setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_element_users->verticalHeader()->setVisible(false);
 	m_element_users->horizontalHeader()->setStretchLastSection(true);
 	m_element_users->setAlternatingRowColors(true);
 	users_layout->addWidget(m_element_users);
-	m_assign_number_pb = new QPushButton(tr("Attribuer un numéro libre…"), m_element_users_box);
-	m_assign_number_pb->setToolTip(tr("Donner à l'élément sélectionné un numéro que personne n'a : "
-									  "il garde sa numérotation, seul son numéro change."));
+	m_assign_number_pb = new QPushButton(tr("Assign a free number…"), m_element_users_box);
+	m_assign_number_pb->setToolTip(tr("Give the selected element a number nobody has: it keeps its "
+									  "numbering, only its number changes."));
 	m_assign_number_pb->setEnabled(false);
 	users_layout->addWidget(m_assign_number_pb, 0, Qt::AlignLeft);
 	connect(m_assign_number_pb, &QPushButton::clicked, this, &ProjectAutoNumConfigPage::assignFreeNumber);
 	connect(m_element_users, &QTableWidget::itemSelectionChanged,
 			this, &ProjectAutoNumConfigPage::updateAssignNumberButton);
 	element_layout->addWidget(m_element_users_box, 1);
-	tab_widget->addTab(element_tab, tr("Eléments"));
+	tab_widget->addTab(element_tab, tr("Elements"));
 	
 		//Folio Tab
 	m_saw_folio = new SelectAutonumW(2);
 	m_saw_folio->setExplicitNaming();
-	tab_widget->addTab(schemeTab(m_saw_folio, m_folio_users_box, m_folio_users), tr("Folios"));
+	tab_widget->addTab(schemeTab(m_saw_folio, m_folio_users_box, m_folio_users), tr("Sheets"));
+
+		//Cable tab: one rule only, so the row which lists the available
+		//numberings stays hidden and there is nothing to choose between.
+	m_saw_cable = new SelectAutonumW(3);
+	m_saw_cable->setSingleRuleMode(true);
+	tab_widget->addTab(m_saw_cable, tr("Cables"));
 	
 		//AutoNumbering Tab
 	m_faw = new FolioAutonumberingW(project());
-	tab_widget->addTab(m_faw, tr("Numérotation auto des folios"));
+	tab_widget->addTab(m_faw, tr("Sheet Auto Numbering"));
 	
 	m_import_pb = new QPushButton(
-				tr("Importer depuis un autre projet..."), this);
+				tr("Import from another project..."), this);
 	m_import_pb->setToolTip(
-				tr("Reprendre les numérotations automatiques "
-				   "enregistrées dans un autre projet"));
+				tr("Reuse the automatic numbering saved in "
+				   "another project"));
 
 	QHBoxLayout *button_layout = new QHBoxLayout();
 	button_layout->addStretch();
@@ -768,6 +786,7 @@ void ProjectAutoNumConfigPage::readValuesFromProject()
 	m_saw_conductor->contextComboBox()->clear();
 	m_saw_element->contextComboBox()->clear();
 	m_saw_folio->contextComboBox()->clear();
+	m_saw_cable->contextComboBox()->clear();
 
 		//Conductor Tab
 	refreshSchemes(SchemeKind::Conductor, m_project->conductorCurrentAutoNum());
@@ -777,6 +796,25 @@ void ProjectAutoNumConfigPage::readValuesFromProject()
 	
 		//Folio Tab
 	refreshSchemes(SchemeKind::Folio, QString());
+
+		//Cable tab: the rule goes straight into the editor, since with the
+		//row of available numberings hidden he can never pick it out of
+		//the combo box himself. With no rule at all the editor shows an
+		//empty one to fill in, exactly like a numbering which has just
+		//been opened for the first time.
+	const QStringList strlk(m_project->cableAutoNum().keys());
+	m_saw_cable->contextComboBox()->addItems(strlk);
+	const QString cable_rule = m_project->cableCurrentAutoNum();
+	const bool cable_rule_ok = !cable_rule.isEmpty()
+			&& !m_project->cableAutoNum(cable_rule).isEmpty();
+	if (cable_rule_ok) {
+		m_saw_cable->setContext(m_project->cableAutoNum(cable_rule));
+	} else {
+		m_saw_cable->setContext(NumerotationContext());
+	}
+		//The button which takes the rule away is only worth showing when
+		//there is one, and only clickable when the project allows changes.
+	m_saw_cable->setRuleRemovable(cable_rule_ok && !m_project->isReadOnly());
 	
 		//Folio AutoNumbering Tab
 	m_faw->setContext(m_project->folioAutoNum().keys());
@@ -790,6 +828,15 @@ void ProjectAutoNumConfigPage::adjustReadOnly()
 {
 	if (m_import_pb && m_project) {
 		m_import_pb->setDisabled(m_project->isReadOnly());
+	}
+		//The button which takes the cable numbering rule away does the
+		//same thing as the import button: nothing while the project
+		//cannot be written.
+	if (m_saw_cable && m_project) {
+		const QString title = m_project->cableCurrentAutoNum();
+		m_saw_cable->setRuleRemovable(!m_project->isReadOnly()
+									  && !title.isEmpty()
+									  && !m_project->cableAutoNum(title).isEmpty());
 	}
 }
 
@@ -822,6 +869,11 @@ void ProjectAutoNumConfigPage::buildConnections()
 	connect(m_saw_folio, &SelectAutonumW::newClicked,    this, &ProjectAutoNumConfigPage::newContextFolio);
 	connect(m_saw_folio, &SelectAutonumW::renameClicked, this, &ProjectAutoNumConfigPage::renameContextFolio);
 	connect(m_saw_folio->contextComboBox(), &QComboBox::textActivated, this, &ProjectAutoNumConfigPage::updateContextFolio);
+
+		//Cable tab: one rule, so there is no name to pick in the hidden
+		//combo box -- applying always writes the single rule.
+	connect(m_saw_cable, &SelectAutonumW::applyPressed,  this, &ProjectAutoNumConfigPage::saveContextCable);
+	connect(m_saw_cable, &SelectAutonumW::removeClicked, this, &ProjectAutoNumConfigPage::removeContextCable);
 
 		//	Auto Folio Numbering
 	connect(m_faw, &FolioAutonumberingW::applyPressed, this, &ProjectAutoNumConfigPage::applyAutoNum);
@@ -931,7 +983,7 @@ void ProjectAutoNumConfigPage::refreshElementUsers()
 				entry.element->elementInformations().value(QStringLiteral("label")).toString(),
 				entry.element->diagram() ? QString::number(entry.element->diagram()->folioIndex() + 1) : QString(),
 				entry.element->name(),
-				is_frozen ? tr("figé") : QString()};
+				is_frozen ? tr("frozen") : QString()};
 		}
 		else
 		{
@@ -939,8 +991,8 @@ void ProjectAutoNumConfigPage::refreshElementUsers()
 			cells = QStringList{
 				entry.to > entry.number ? QStringLiteral("%1 – %2").arg(entry.number).arg(entry.to)
 										: QString::number(entry.number),
-				tr("— libre —"), QString(),
-				tr("aucun élément n'a ce numéro (supprimé ou renuméroté)"), QString()};
+				tr("— free —"), QString(),
+				tr("no element has this number (deleted or renumbered)"), QString()};
 		}
 		for (int column = 0 ; column < cells.size() ; ++column) {
 			auto *item = new QTableWidgetItem(cells.at(column));
@@ -957,10 +1009,10 @@ void ProjectAutoNumConfigPage::refreshElementUsers()
 	m_element_users->resizeColumnsToContents();
 	m_element_users_box->setTitle(
 				users.isEmpty()
-				? tr("Aucun élément ne suit cette numérotation")
-				: tr("%n élément(s) suivent cette numérotation, dont %1 au nom figé", "", users.size())
+				? tr("No element follows this numbering")
+				: tr("%n elements follow this numbering, %1 with a frozen name", "", users.size())
 				  .arg(frozen)
-				  + (gaps ? tr(" ; %n numéro(s) sans élément", "", gaps) : QString()));
+				  + (gaps ? tr("; %n numbers without an element", "", gaps) : QString()));
 	updateAssignNumberButton();
 }
 
@@ -982,10 +1034,10 @@ void ProjectAutoNumConfigPage::updateAssignNumberButton()
 	m_assign_number_pb->setEnabled(element && supported && !m_project->isReadOnly());
 	m_assign_number_pb->setToolTip(
 				!supported
-				? tr("Cette numérotation a plusieurs numéros (ou un numéro par folio) : "
-					 "on ne peut pas en choisir un à la main.")
-				: tr("Donner à l'élément sélectionné un numéro que personne n'a : "
-					 "il garde sa numérotation, seul son numéro change."));
+				? tr("This numbering has several numbers (or one number per sheet): one "
+					 "cannot be chosen by hand.")
+				: tr("Give the selected element a number nobody has: it keeps its "
+					 "numbering, only its number changes."));
 }
 
 /**
@@ -999,18 +1051,18 @@ void ProjectAutoNumConfigPage::assignFreeNumber()
 	const int row = m_element_users->currentRow();
 	Element *element = row >= 0 ? m_element_rows.value(row).data() : nullptr;
 	const QString title = m_saw_element->contextComboBox()->currentText();
-	const QString caption = tr("Attribuer un numéro libre");
+	const QString caption = tr("Assign a free number");
 	if (!element || m_project->isReadOnly()) {
 		return;
 	}
 	if (element->isFreezeLabel()) {
 		QMessageBox::information(this, caption,
-								 tr("Le nom de cet élément est figé : dégelez-le d'abord."));
+								 tr("This element's name is frozen: unfreeze it first."));
 		return;
 	}
 	const QList<int> numbers = ElementAutoNumSchemeCommand::freeNumbers(m_project, title, element);
 	if (numbers.isEmpty()) {
-		QMessageBox::information(this, caption, tr("Aucun numéro n'est libre."));
+		QMessageBox::information(this, caption, tr("No number is free."));
 		return;
 	}
 	QStringList items;
@@ -1021,7 +1073,7 @@ void ProjectAutoNumConfigPage::assignFreeNumber()
 	bool ok = false;
 	const QString chosen = QInputDialog::getItem(
 				this, caption,
-				tr("Numéro libre pour l'élément « %1 » (%2) :")
+				tr("Free number for element “%1” (%2):")
 				.arg(element->elementInformations().value(QStringLiteral("label")).toString(), element->name()),
 				items, 0, false, &ok);
 	if (!ok) {
@@ -1072,7 +1124,7 @@ QString ProjectAutoNumConfigPage::askElementSchemeName(const QString &title,
 	for (;;)
 	{
 		bool ok = false;
-		name = QInputDialog::getText(this, title, tr("Nom de la numérotation :"),
+		name = QInputDialog::getText(this, title, tr("Numbering name:"),
 									 QLineEdit::Normal, name, &ok);
 		if (!ok) {
 			return QString();
@@ -1101,9 +1153,9 @@ bool ProjectAutoNumConfigPage::pushElementSchemeCommand(ElementAutoNumSchemeComm
 	{
 		if (!RenumberPreviewDialog::confirm(
 					this,
-					tr("Modifier la numérotation"),
-					tr("%n élément(s) suivent cette numérotation et vont "
-					   "changer de formule et de nom.", "", changed),
+					tr("Modify numbering"),
+					tr("%n elements follow this numbering and will change "
+					   "formula and name.", "", changed),
 					cmd->changes(), {})) {
 			delete cmd;
 			return false;
@@ -1123,7 +1175,7 @@ void ProjectAutoNumConfigPage::newContextElement()
 	if (m_project->isReadOnly()) {
 		return;
 	}
-	const QString name = askElementSchemeName(tr("Nouvelle numérotation"),
+	const QString name = askElementSchemeName(tr("New numbering"),
 											  QString(), QString());
 	if (name.isEmpty()) {
 		return;
@@ -1148,7 +1200,7 @@ void ProjectAutoNumConfigPage::renameContextElement()
 	if (m_project->isReadOnly() || !m_project->elementAutoNum().contains(old_title)) {
 		return;
 	}
-	const QString name = askElementSchemeName(tr("Renommer la numérotation"),
+	const QString name = askElementSchemeName(tr("Rename numbering"),
 											  old_title, old_title);
 	if (name.isEmpty() || name == old_title) {
 		return;
@@ -1176,7 +1228,7 @@ void ProjectAutoNumConfigPage::saveContextElement()
 	if (!m_project->elementAutoNum().contains(title))
 	{
 			//No numbering yet: the definition needs a name
-		shown = askElementSchemeName(tr("Nouvelle numérotation"),
+		shown = askElementSchemeName(tr("New numbering"),
 									 QString(), QString());
 		if (shown.isEmpty()) {
 			return;
@@ -1191,11 +1243,11 @@ void ProjectAutoNumConfigPage::saveContextElement()
 					m_project, title, wanted).size())
 		{
 			QMessageBox::warning(
-						this, tr("Modifier la numérotation"),
-						tr("La numérotation « %1 » ne peut pas être modifiée : "
-						   "%n élément(s) au nom figé la suivent.\n"
-						   "Dégelez-les d'abord (voir la liste), ou renommez seulement la "
-						   "numérotation.", "", frozen).arg(title));
+						this, tr("Modify numbering"),
+						tr("The “%1” numbering cannot be modified: %n elements with a "
+						   "frozen name follow it.\n"
+						   "Unfreeze them first (see the list), or just rename the "
+						   "numbering.", "", frozen).arg(title));
 			refreshElementSchemes(title);   //Back to the definition the project has
 			return;
 		}
@@ -1211,6 +1263,66 @@ void ProjectAutoNumConfigPage::saveContextElement()
 	if (pushElementSchemeCommand(cmd)) {
 		refreshElementSchemes(shown);
 	}
+}
+
+/**
+	@brief ProjectAutoNumConfigPage::saveContextCable
+	Save the cable numbering rule into the project.
+
+	There is one rule only, and it has no name the user could have typed
+	(the row which holds those names is hidden): it always goes in under
+	the fixed name, and it is the rule in use from the moment it exists.
+*/
+void ProjectAutoNumConfigPage::saveContextCable()
+{
+	if (!m_project || m_project->isReadOnly()) return;
+
+	const QString title = QETProject::cableAutoNumRuleName();
+	m_project->addCableAutoNum(title, m_saw_cable->toNumContext());
+	m_project->setCurrentCableAutoNum(title);
+
+		//Keep the hidden combo box in step with what the project holds,
+		//so the next reading of this page shows the rule just saved.
+	if (m_saw_cable->contextComboBox()->findText(title) == -1) {
+		m_saw_cable->contextComboBox()->addItem(title);
+	}
+	m_saw_cable->contextComboBox()->setCurrentText(title);
+		//There is a rule now, so there is something to take away again.
+	m_saw_cable->setRuleRemovable(true);
+		//This is applied straight away rather than at the end of the
+		//window, so the project has to say so itself: otherwise the rule
+		//would be dropped by a Cancel which comes after it.
+	m_project->setModified(true);
+}
+
+/**
+	@brief ProjectAutoNumConfigPage::removeContextCable
+	Take the cable numbering rule out of the project. The project then
+	numbers its cables by no rule at all -- they are called W until one
+	is defined again -- and the cable tool asks once more whether one
+	should be defined.
+*/
+void ProjectAutoNumConfigPage::removeContextCable()
+{
+	if (!m_project || m_project->isReadOnly()) return;
+
+	const QString title = m_project->cableCurrentAutoNum();
+	if (title.isEmpty()) return;
+
+	m_project->removeCableAutoNum(title);
+	const int idx = m_saw_cable->contextComboBox()->findText(title);
+	if (idx != -1) {
+		m_saw_cable->contextComboBox()->removeItem(idx);
+	}
+	m_saw_cable->contextComboBox()->setCurrentText(QString());
+	m_saw_cable->setContext(NumerotationContext());
+		//No rule left, so the button which takes one away goes too. And
+		//having just taken the rule away means numbering cables by hand
+		//again: the question of defining one comes back the next time a
+		//cable is drawn, so it is not held back in this project any more.
+	m_saw_cable->setRuleRemovable(false);
+	m_project->setCableAskNumbering(true);
+	m_project->setModified(true);
 }
 
 /**
@@ -1231,24 +1343,24 @@ void ProjectAutoNumConfigPage::importFromProject()
 
 	const QString path = QFileDialog::getOpenFileName(
 				this,
-				tr("Importer les numérotations d'un projet"),
+				tr("Import numbering from a project"),
 				m_project->currentDir(),
-				tr("Projet QElectroTech (*.qet)"));
+				QETProject::openFileFilter());
 	if (path.isEmpty()) {
 		return;
 	}
 
 	QFile file(path);
 	if (!file.open(QIODevice::ReadOnly)) {
-		QMessageBox::warning(this, tr("Import impossible"),
-					 tr("Impossible d'ouvrir %1").arg(path));
+		QMessageBox::warning(this, tr("Import not possible"),
+					 tr("Unable to open %1").arg(path));
 		return;
 	}
 
 	QDomDocument doc;
-	if (!doc.setContent(&file)) {
-		QMessageBox::warning(this, tr("Import impossible"),
-					 tr("%1 n'est pas un projet QElectroTech valide.")
+	if (!QetContainer::readDocument(file.readAll(), &doc)) {
+		QMessageBox::warning(this, tr("Import not possible"),
+					 tr("%1 is not a valid QElectroTech project.")
 					 .arg(QFileInfo(path).fileName()));
 		return;
 	}
@@ -1257,8 +1369,8 @@ void ProjectAutoNumConfigPage::importFromProject()
 	const QDomNodeList newdiagrams =
 			doc.elementsByTagName(QStringLiteral("newdiagrams"));
 	if (newdiagrams.isEmpty()) {
-		QMessageBox::information(this, tr("Aucune numérotation"),
-					 tr("Ce projet ne contient aucune numérotation automatique."));
+		QMessageBox::information(this, tr("No numbering"),
+					 tr("This project does not contain any automatic numbering."));
 		return;
 	}
 	const QDomElement root = newdiagrams.at(0).toElement();
@@ -1271,18 +1383,18 @@ void ProjectAutoNumConfigPage::importFromProject()
 	};
 	const QList<Category> categories {
 		{QStringLiteral("conductors_autonums"),
-		 QStringLiteral("conductor_autonum"), tr("Conducteurs")},
+		 QStringLiteral("conductor_autonum"), tr("Conductors")},
 		{QStringLiteral("element_autonums"),
-		 QStringLiteral("element_autonum"), tr("Eléments")},
+		 QStringLiteral("element_autonum"), tr("Elements")},
 		{QStringLiteral("folio_autonums"),
-		 QStringLiteral("folio_autonum"), tr("Folios")}
+		 QStringLiteral("folio_autonum"), tr("Sheets")}
 	};
 
 	QDialog dialog(this);
-	dialog.setWindowTitle(tr("Numérotations à importer"));
+	dialog.setWindowTitle(tr("Numbering to import"));
 	QVBoxLayout *layout = new QVBoxLayout(&dialog);
 	layout->addWidget(new QLabel(
-				  tr("Numérotations trouvées dans %1 :")
+				  tr("Numbering found in %1:")
 				  .arg(QFileInfo(path).fileName()), &dialog));
 
 	QListWidget *list = new QListWidget(&dialog);
@@ -1320,7 +1432,7 @@ void ProjectAutoNumConfigPage::importFromProject()
 			}
 
 			QListWidgetItem *item = new QListWidgetItem(
-						exists ? tr("%1 : %2 (existe déjà)")
+						exists ? tr("%1: %2 (already exists)")
 							 .arg(category.label, title)
 					       : QStringLiteral("%1 : %2")
 							 .arg(category.label, title),
@@ -1339,13 +1451,13 @@ void ProjectAutoNumConfigPage::importFromProject()
 	}
 
 	if (contexts.isEmpty()) {
-		QMessageBox::information(this, tr("Aucune numérotation"),
-					 tr("Ce projet ne contient aucune numérotation automatique."));
+		QMessageBox::information(this, tr("No numbering"),
+					 tr("This project does not contain any automatic numbering."));
 		return;
 	}
 
 	QCheckBox *overwrite_cb = new QCheckBox(
-				tr("Remplacer les numérotations de même nom"), &dialog);
+				tr("Replace numbering with the same name"), &dialog);
 	layout->addWidget(overwrite_cb);
 
 	QDialogButtonBox *buttons = new QDialogButtonBox(
@@ -1359,7 +1471,7 @@ void ProjectAutoNumConfigPage::importFromProject()
 	}
 
 	int imported = 0, skipped = 0, conductors = 0, relabelled = 0, blocked = 0;
-	m_project->undoStack()->beginMacro(tr("Importer des numérotations"));
+	m_project->undoStack()->beginMacro(tr("Import numberings"));
 	for (int row = 0 ; row < list->count() ; ++row)
 	{
 		QListWidgetItem *item = list->item(row);
@@ -1440,17 +1552,17 @@ void ProjectAutoNumConfigPage::importFromProject()
 	}
 
 	QMessageBox::information(
-				this, tr("Import terminé"),
-				(skipped ? tr("%1 numérotation(s) importée(s), "
-						  "%2 conservée(s) telles quelles.")
+				this, tr("Import complete"),
+				(skipped ? tr("%1 numbering(s) imported, %2 "
+						  "kept unchanged.")
 					   .arg(imported).arg(skipped)
-					 : tr("%1 numérotation(s) importée(s).").arg(imported))
+					 : tr("%1 numbering(s) imported.").arg(imported))
 				+ (blocked ? QStringLiteral("\n")
-							 + tr("%n numérotation(s) suivie(s) par des éléments au nom figé "
-								  "n'ont pas été remplacées.", "", blocked)
+							 + tr("%n numberings followed by elements with a frozen name were "
+								  "not replaced.", "", blocked)
 						   : QString())
 				+ (relabelled ? QStringLiteral("\n")
-								+ tr("%n élément(s) ont changé de formule.", "", relabelled)
+								+ tr("%n elements changed formula.", "", relabelled)
 							  : QString()));
 }
 
@@ -1467,10 +1579,10 @@ void ProjectAutoNumConfigPage::removeContextElement()
 	if (const int used = m_project->elementsUsingElementAutoNum(title).size())
 	{
 		QMessageBox::information(
-					this, tr("Supprimer la numérotation"),
-					tr("%n élément(s) suivent la numérotation « %1 », elle ne "
-					   "peut pas être supprimée.\nDonnez-leur une autre "
-					   "numérotation ou un nom fixe d'abord.", "", used)
+					this, tr("Delete numbering"),
+					tr("%n elements follow the “%1” numbering, so it cannot be "
+					   "deleted.\n"
+					   "Give them another numbering or a fixed name first.", "", used)
 					.arg(title));
 		return;
 	}
@@ -1692,12 +1804,12 @@ void ProjectAutoNumConfigPage::refreshSchemeUsers(SchemeKind kind)
 	table->resizeColumnsToContents();
 	if (kind == SchemeKind::Folio) {
 		box->setTitle(users.isEmpty()
-					  ? tr("Aucun folio ne nomme cette numérotation")
-					  : tr("%n folio(s) nomment cette numérotation", "", users.size()));
+					  ? tr("No sheet names this numbering")
+					  : tr("%n sheets name this numbering", "", users.size()));
 	} else {
 		box->setTitle(users.isEmpty()
-					  ? tr("Aucun folio ne suit cette numérotation")
-					  : tr("%n folio(s) suivent cette numérotation", "", users.size()));
+					  ? tr("No sheet follows this numbering")
+					  : tr("%n sheets follow this numbering", "", users.size()));
 	}
 }
 
@@ -1707,7 +1819,7 @@ QString ProjectAutoNumConfigPage::askSchemeName(SchemeKind kind, const QString &
 	for (;;)
 	{
 		bool ok = false;
-		name = QInputDialog::getText(this, title, tr("Nom de la numérotation :"),
+		name = QInputDialog::getText(this, title, tr("Numbering name:"),
 									 QLineEdit::Normal, name, &ok);
 		if (!ok) {
 			return QString();
@@ -1729,7 +1841,7 @@ void ProjectAutoNumConfigPage::newScheme(SchemeKind kind)
 	if (m_project->isReadOnly()) {
 		return;
 	}
-	const QString name = askSchemeName(kind, tr("Nouvelle numérotation"), QString(), QString());
+	const QString name = askSchemeName(kind, tr("New numbering"), QString(), QString());
 	if (name.isEmpty()) {
 		return;
 	}
@@ -1751,7 +1863,7 @@ void ProjectAutoNumConfigPage::renameScheme(SchemeKind kind)
 	if (m_project->isReadOnly() || !AutoNumSchemeCommand::contains(m_project, kind, old_title)) {
 		return;
 	}
-	const QString name = askSchemeName(kind, tr("Renommer la numérotation"), old_title, old_title);
+	const QString name = askSchemeName(kind, tr("Rename numbering"), old_title, old_title);
 	if (name.isEmpty() || name == old_title) {
 		return;
 	}
@@ -1780,7 +1892,7 @@ void ProjectAutoNumConfigPage::saveScheme(SchemeKind kind)
 	AutoNumSchemeCommand *cmd = nullptr;
 	if (!AutoNumSchemeCommand::contains(m_project, kind, title))
 	{
-		shown = askSchemeName(kind, tr("Nouvelle numérotation"), QString(), QString());
+		shown = askSchemeName(kind, tr("New numbering"), QString(), QString());
 		if (shown.isEmpty()) {
 			return;
 		}
@@ -1809,9 +1921,9 @@ void ProjectAutoNumConfigPage::removeScheme(SchemeKind kind)
 	if (const int used = AutoNumSchemeCommand::usersOf(m_project, kind, title).size())
 	{
 		QMessageBox::information(
-					this, tr("Supprimer la numérotation"),
-					tr("%n folio(s) suivent la numérotation « %1 », elle ne peut pas être "
-					   "supprimée.\nDonnez-leur une autre numérotation d'abord.", "", used)
+					this, tr("Delete numbering"),
+					tr("%n sheets follow the “%1” numbering, so it cannot be deleted.\n"
+					   "Give them another numbering first.", "", used)
 					.arg(title));
 		return;
 	}
@@ -1831,4 +1943,15 @@ void ProjectAutoNumConfigPage::changeToTab(int i)
 	if (m_tab_widget && i >= 0 && i < m_tab_widget->count()) {
 		m_tab_widget->setCurrentIndex(i);
 	}
+}
+
+/**
+	@brief ProjectAutoNumConfigPage::changeToCableTab
+	Show the cable tab -- the one the cable tool opens when it finds out
+	that the project has no numbering rule yet.
+*/
+void ProjectAutoNumConfigPage::changeToCableTab()
+{
+		//Tabs in order : Management, Conductors, Elements, Folios, Cables
+	changeToTab(4);
 }

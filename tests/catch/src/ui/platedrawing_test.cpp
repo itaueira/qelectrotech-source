@@ -655,10 +655,10 @@ TEST_CASE("T44 — opening renews the copy from the catalogue, and so does savin
 		}
 		REQUIRE(scratch->write().isOk());
 
-		QFile saved(scratch.filePath());
-		REQUIRE(saved.open(QIODevice::ReadOnly));
+			//The file written: a project read from a .qet is saved as a
+			//.qetz beside it, and fileContent() reads either
 		QDomDocument document;
-		REQUIRE(document.setContent(saved.readAll()));
+		REQUIRE(document.setContent(UiBench::fileContent(scratch->filePath())));
 		const QDomElement copy = document.documentElement()
 				.firstChildElement(MountingLayout::tagName())
 				.firstChildElement(QStringLiteral("part_drawings"))
@@ -761,7 +761,7 @@ TEST_CASE("CU-44.19 — the drawing of a part is modified from the plate, into t
 	REQUIRE(drawing->layoutDrawingScene()->items().size() >= 1);
 
 		//A line drawn with the tool, and saved
-	actionNamed(*drawing, QStringLiteral("Ajouter une ligne"))->trigger();
+	actionNamed(*drawing, QStringLiteral("Add a line"))->trigger();
 	ElementScene *scene = drawing->elementScene();
 	sendMouse(scene, QEvent::GraphicsSceneMousePress, QPointF(0, 45));
 	sendMouse(scene, QEvent::GraphicsSceneMouseRelease, QPointF(0, 45));

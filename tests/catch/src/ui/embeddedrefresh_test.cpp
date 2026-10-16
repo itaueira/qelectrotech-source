@@ -887,6 +887,6 @@ TEST_CASE("CU-45.19 — The reload needs no save and leaves the file on the disk
 	CHECK(reloaded->title() == QStringLiteral("Not saved yet"));
 	CHECK(reloaded->filePath() == project->filePath());
 	CHECK(reloaded->projectWasModified());
-	CHECK_FALSE(reloaded->changedOnDiskByOthers());
+	CHECK_FALSE(reloaded->changedOnDisk());
 	CHECK(bytesOf(project->filePath()) == on_disk);
 }

@@ -86,9 +86,15 @@ TEST_CASE("CU-56.1 — The editor offers six base types, and a terminal its role
 	CHECK(masters.count() == 4);
 	CHECK_FALSE(masters.contains(ElementData::StripTerminal));
 
+		//Every kind of terminal but ground, which is offered as a function;
+		//the five after the diode are the upstream's, since 2026-10
 	const QList<int> types = dataOf(child<QComboBox>(dialog, "m_terminal_type_cb"));
 	CHECK(types == QList<int>{ElementData::TTGeneric, ElementData::TTFuse,
-				  ElementData::TTSectional, ElementData::TTDiode});
+				  ElementData::TTSectional, ElementData::TTDiode,
+				  ElementData::TTAntiParallelDiodes, ElementData::TTResistor,
+				  ElementData::TTVaristor, ElementData::TTTestSocket,
+				  ElementData::TTDiodeReversed});
+	CHECK_FALSE(types.contains(ElementData::TTGround));
 
 		//Ground comes last among the functions
 	CHECK(child<QComboBox>(dialog, "m_terminal_func_cb")->count() == 4);

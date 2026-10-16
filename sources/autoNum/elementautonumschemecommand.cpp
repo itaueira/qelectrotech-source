@@ -55,14 +55,14 @@ QString ElementAutoNumSchemeCommand::nameProblem(const QETProject *project,
 												 const QString &ignored_title)
 {
 	if (QETProject::normalizedAutoNumName(name).isEmpty()) {
-		return tr("Le nom de la numérotation ne peut pas être vide.");
+		return tr("The numbering name cannot be empty.");
 	}
 	if (!project) {
 		return QString();
 	}
 	const QString clash = project->elementAutoNumNameClash(name, ignored_title);
 	if (!clash.isEmpty()) {
-		return tr("Une numérotation nommée « %1 » existe déjà.").arg(clash);
+		return tr("A numbering named “%1” already exists.").arg(clash);
 	}
 	return QString();
 }
@@ -369,10 +369,19 @@ ElementAutoNumSchemeCommand::NumberSupport ElementAutoNumSchemeCommand::numberSu
 std::optional<int> ElementAutoNumSchemeCommand::numberOf(const NumberSupport &support,
 														 const Element *element)
 {
-	if (!support.supported || !element) {
+	if (!element) {
 		return std::nullopt;
 	}
-	const autonum::sequentialNumbers seq = element->sequenceStruct();
+	return numberOf(support, element->sequenceStruct());
+}
+
+/// @return the number the sequential numbers @p seq give, if the scheme knows it
+std::optional<int> ElementAutoNumSchemeCommand::numberOf(const NumberSupport &support,
+														 const autonum::sequentialNumbers &seq)
+{
+	if (!support.supported) {
+		return std::nullopt;
+	}
 	const QStringList &list = support.type == QLatin1String("unit") ? seq.unit
 							: support.type == QLatin1String("ten") ? seq.ten
 							: seq.hundred;
@@ -385,14 +394,18 @@ std::optional<int> ElementAutoNumSchemeCommand::numberOf(const NumberSupport &su
 }
 
 namespace {
-/// The elements of @p project which follow the scheme @p title and are not slaves or reports
-QVector<Element *> numberedFollowers(const QETProject *project, const QString &title)
+/// The symbols of @p project which follow the scheme @p title and are not
+/// slaves or reports, built or not (QETProject::symbolNumbering())
+QList<QETProject::SymbolNumbering> numberedFollowers(const QETProject *project, const QString &title)
 {
-	QVector<Element *> list;
-	const auto followers = project->elementsUsingElementAutoNum(title);
-	for (Element *el : followers) {
-		if (el->linkType() != Element::Slave && !(el->linkType() & Element::AllReport)) {
-			list << el;
+	QList<QETProject::SymbolNumbering> list;
+	const QUuid id = project->elementAutoNumId(title);
+	if (id.isNull()) {
+		return list;
+	}
+	for (const auto &symbol : project->symbolNumbering()) {
+		if (symbol.numbered && !symbol.formula.isEmpty() && symbol.scheme == id) {
+			list << symbol;
 		}
 	}
 	return list;
@@ -411,13 +424,10 @@ QSet<QString> ElementAutoNumSchemeCommand::labelsHeldBesides(const QETProject *p
 	if (!project) {
 		return labels;
 	}
-	for (Diagram *d : project->diagrams()) {
-		for (QGraphicsItem *item : d->items()) {
-			if (auto *el = qgraphicsitem_cast<Element *>(item)) {
-				if (el != element) {
-					labels << el->elementInformations().value(QETInformation::ELMT_LABEL).toString();
-				}
-			}
+		//Folios not built yet answer from what building them would give
+	for (const auto &symbol : project->symbolNumbering()) {
+		if (symbol.element != element) {
+			labels << symbol.label;
 		}
 	}
 	labels.remove(QString());
@@ -453,8 +463,8 @@ std::optional<ElementAutoNumSchemeCommand::CounterConflict> ElementAutoNumScheme
 
 	CounterConflict conflict;
 	conflict.counter = counter;
-	for (const Element *el : numberedFollowers(project, title)) {
-		if (const auto number = numberOf(support, el)) {
+	for (const auto &symbol : numberedFollowers(project, title)) {
+		if (const auto number = numberOf(support, symbol.sequence)) {
 			if (*number >= counter) {
 				++conflict.count;
 				conflict.highest = std::max(conflict.highest, *number);
@@ -486,8 +496,8 @@ QList<ElementAutoNumSchemeCommand::GapRange> ElementAutoNumSchemeCommand::gapRan
 		return ranges;
 	}
 	QSet<int> used;
-	for (const Element *el : numberedFollowers(project, title)) {
-		if (const auto number = numberOf(support, el)) {
+	for (const auto &symbol : numberedFollowers(project, title)) {
+		if (const auto number = numberOf(support, symbol.sequence)) {
 			used << *number;
 		}
 	}
@@ -559,22 +569,19 @@ QList<int> ElementAutoNumSchemeCommand::freeNumbers(const QETProject *project,
 
 	QSet<int> used;
 	int highest = context.itemAt(support.partIndex).value(1).toInt();
-	for (const Element *el : numberedFollowers(project, title)) {
-		if (el == element) continue;
-		if (const auto number = numberOf(support, el)) {
+	for (const auto &symbol : numberedFollowers(project, title)) {
+		if (symbol.element == element) continue;
+		if (const auto number = numberOf(support, symbol.sequence)) {
 			used << *number;
 			highest = std::max(highest, *number);
 		}
 	}
 
 	QSet<QString> labels;
-	for (Diagram *d : project->diagrams()) {
-		for (QGraphicsItem *item : d->items()) {
-			if (auto *el = qgraphicsitem_cast<Element *>(item)) {
-				if (el != element) {
-					labels << el->elementInformations().value(QETInformation::ELMT_LABEL).toString();
-				}
-			}
+		//Folios not built yet answer from what building them would give
+	for (const auto &symbol : project->symbolNumbering()) {
+		if (symbol.element != element) {
+			labels << symbol.label;
 		}
 	}
 	labels.remove(QString());
@@ -615,24 +622,24 @@ RenumberElementsCommand *ElementAutoNumSchemeCommand::assignNumber(QETProject *p
 		return nullptr;
 	};
 	if (!project || !element || !element->diagram()) {
-		return fail(tr("Cet élément n'est dans aucun folio."));
+		return fail(tr("This element is not in any sheet."));
 	}
 	const DiagramContext info = element->elementInformations();
 	const QString title = project->elementAutoNumTitle(
 				QUuid(info.value(QETInformation::ELMT_FORMULA_ID).toString()));
 	if (title.isEmpty()) {
-		return fail(tr("Cet élément ne suit aucune numérotation."));
+		return fail(tr("This element does not follow any numbering."));
 	}
 	const NumerotationContext context = project->elementAutoNum().value(title);
 	const NumberSupport support = numberSupport(context);
 	if (!support.supported) {
-		return fail(tr("La numérotation « %1 » n'a pas un seul numéro : on ne peut pas en choisir un à la main.").arg(title));
+		return fail(tr("The “%1” numbering does not have a single number: one cannot be chosen by hand.").arg(title));
 	}
 	if (number < 1) {
-		return fail(tr("Le numéro doit être au moins 1."));
+		return fail(tr("The number must be at least 1."));
 	}
 	if (!freeNumbers(project, title, element, 100000).contains(number)) {
-		return fail(tr("Le numéro %1 n'est pas libre.").arg(number));
+		return fail(tr("Number %1 is not free.").arg(number));
 	}
 
 	const QString formula = autonum::numerotationContextToFormula(context);
@@ -662,7 +669,7 @@ RenumberElementsCommand *ElementAutoNumSchemeCommand::assignNumber(QETProject *p
 	}
 	return new RenumberElementsCommand(project, {change},
 									   {{title, context}}, {{title, counter}},
-									   tr("Attribuer le numéro %1").arg(number), parent);
+									   tr("Assign number %1").arg(number), parent);
 }
 
 /**
@@ -826,7 +833,7 @@ RenumberElementsCommand *ElementAutoNumSchemeCommand::assign(
 		return nullptr;
 	}
 	return numberElements(project, title, todo,
-						  tr("Appliquer la numérotation %1").arg(title),
+						  tr("Apply numbering %1").arg(title),
 						  FreezeRule::Unfrozen, parent);
 }
 
@@ -1075,7 +1082,7 @@ int ElementAutoNumSchemeCommand::numberPasted(
 	for (auto it = schemes.constBegin() ; it != schemes.constEnd() ; ++it)
 	{
 		if (numberElements(project, it.key(), it.value(),
-						   tr("Numéroter les éléments collés (%1)").arg(it.key()),
+						   tr("Number pasted elements (%1)").arg(it.key()),
 						   FreezeRule::NewElementPolicy, parent)) {
 			count += it.value().size();
 		}
@@ -1111,7 +1118,7 @@ ElementAutoNumSchemeCommand *ElementAutoNumSchemeCommand::create(
 	cmd->m_after = after;
 	cmd->m_current_before = project->elementCurrentAutoNum();
 	cmd->m_current_after = make_current ? after.title : cmd->m_current_before;
-	cmd->setText(tr("Créer la numérotation d'éléments %1").arg(after.title));
+	cmd->setText(tr("Create element numbering %1").arg(after.title));
 	return cmd;
 }
 
@@ -1213,10 +1220,10 @@ ElementAutoNumSchemeCommand *ElementAutoNumSchemeCommand::edit(
 	}
 
 	if (renamed && !redefined) {
-		cmd->setText(tr("Renommer la numérotation d'éléments %1 en %2")
+		cmd->setText(tr("Rename element numbering %1 to %2")
 					 .arg(before.title, after.title));
 	} else {
-		cmd->setText(tr("Modifier la numérotation d'éléments %1").arg(after.title));
+		cmd->setText(tr("Modify element numbering %1").arg(after.title));
 	}
 	return cmd;
 }
@@ -1248,7 +1255,7 @@ ElementAutoNumSchemeCommand *ElementAutoNumSchemeCommand::remove(
 	cmd->m_current_after = cmd->m_current_before == title
 						   ? QString()
 						   : cmd->m_current_before;
-	cmd->setText(tr("Supprimer la numérotation d'éléments %1").arg(title));
+	cmd->setText(tr("Delete element numbering %1").arg(title));
 	return cmd;
 }
 

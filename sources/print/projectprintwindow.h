@@ -96,6 +96,7 @@ class ProjectPrintWindow : public QMainWindow
 		void saveReloadDiagramParameters(Diagram *diagram, const ExportProperties &options, bool save);
 		QList<Diagram *> selectedDiagram() const;
 		void exportToPDF();
+		void setOrientationForDiagram(Diagram *diagram);
 
 
 	private:
@@ -108,6 +109,7 @@ class ProjectPrintWindow : public QMainWindow
 		QList<PdfLinks::ComponentInfo> m_componentInfoList;
 		/// One bookmark per selected sheet, rebuilt on every preview repaint.
 		QList<PdfLinks::OutlineEntry> m_outline_entries;
+		bool m_printing = false;
 };
 
 #endif // PROJECTPRINTWINDOW_H

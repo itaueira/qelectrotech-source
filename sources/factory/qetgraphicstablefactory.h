@@ -35,6 +35,7 @@ class QetGraphicsTableFactory
 		static void createAndAddNomenclature(Diagram *diagram,
 						     const QString &initial_query = QString());
 		static void createAndAddSummary(Diagram *diagram);
+		static void createAndAddCableList(Diagram *diagram);
 			// Public so a caller that has already built and configured an
 			// AddTableDialog itself (never shown or exec'd -- the two
 			// methods above always exec() one, which the scripting API

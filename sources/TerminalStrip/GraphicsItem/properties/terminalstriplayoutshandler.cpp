@@ -17,16 +17,41 @@
 */
 #include "terminalstriplayoutshandler.h"
 
+#include <QDomDocument>
 #include <QObject>
 
 TerminalStripLayoutsHandler::TerminalStripLayoutsHandler()
 {
 
 	m_default_layout = QSharedPointer<TerminalStripLayoutPattern>::create();
-	m_default_layout->m_name = QObject::tr("Disposition par défaut");
+	m_default_layout->m_name = QObject::tr("Default layout");
 }
 
 QSharedPointer<TerminalStripLayoutPattern> TerminalStripLayoutsHandler::defaultLayout()
 {
 	return m_default_layout;
+}
+
+/**
+ * @brief TerminalStripLayoutsHandler::toXml
+ * Append the default layout (font included) as a child of @a parent_element
+ * @param parent_element
+ */
+void TerminalStripLayoutsHandler::toXml(QDomElement &parent_element) const
+{
+	auto document = parent_element.ownerDocument();
+	parent_element.appendChild(m_default_layout->toXml(document));
+}
+
+/**
+ * @brief TerminalStripLayoutsHandler::fromXml
+ * Load the default layout from the child of @a parent_element, if any.
+ * The existing layout object is modified in place because the terminal
+ * strip items share it.
+ * @param parent_element
+ */
+void TerminalStripLayoutsHandler::fromXml(const QDomElement &parent_element)
+{
+	m_default_layout->fromXml(
+		parent_element.firstChildElement(TerminalStripLayoutPattern::xmlTagName()));
 }

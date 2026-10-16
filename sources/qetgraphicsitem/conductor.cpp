@@ -26,6 +26,7 @@
 #include "../conductorsegmentprofile.h"
 #include "../dataBase/projectdatabase.h"
 #include "../diagram.h"
+#include "../dataBase/projectdatabase.h"
 #include "../diagramcommands.h"
 #include "../location/locationboundary.h"
 #include "../qetdiagrameditor.h"
@@ -157,6 +158,8 @@ Conductor::Conductor(Terminal *p1, Terminal* p2) :
 	setZValue(11);
 	m_previous_z_value = zValue();
 	m_uuid = QUuid::createUuid();
+	static quint64 created = 0;
+	m_creation_rank = ++created;
 
 		//Add this conductor to the list of conductors of each of the two terminals
 	bool ajout_p1 = terminal1 -> addConductor(this);
@@ -1339,6 +1342,7 @@ void Conductor::pointsToSegments(const QList<QPointF>& points_list) {
 */
 bool Conductor::fromXml(QDomElement &dom_element)
 {
+	const QUuid old_uuid = m_uuid;
 		//Older project files have no conductor uuid attribute at all --
 		//generate one on load, same treatment terminal uuids got when
 		//that field was introduced (see terminal1/terminal2 handling in
@@ -1354,6 +1358,7 @@ bool Conductor::fromXml(QDomElement &dom_element)
 			//single load-and-resave (see #754).
 		m_uuid = QUuid::createUuid();
 	}
+	uuidChanged(old_uuid);
 
 		//"nan" and "inf" parse as numbers; a non-finite position is kept at 0
 	const qreal x = dom_element.attribute("x", nullptr).toDouble();
@@ -1367,13 +1372,18 @@ bool Conductor::fromXml(QDomElement &dom_element)
 	pr.fromXml(dom_element);
 
 		//Load Sequential Values
-	if (dom_element.hasAttribute("sequ_1") || dom_element.hasAttribute("sequf_1") || dom_element.hasAttribute("seqt_1") || dom_element.hasAttribute("seqtf_1") || dom_element.hasAttribute("seqh_1") || dom_element.hasAttribute("sequf_1"))
+	if (dom_element.hasAttribute("sequ_1") || dom_element.hasAttribute("sequf_1") || dom_element.hasAttribute("seqt_1") || dom_element.hasAttribute("seqtf_1") || dom_element.hasAttribute("seqh_1") || dom_element.hasAttribute("seqhf_1"))
 		ConductorXmlRetroCompatibility::loadSequential(dom_element, this);
 	else
 		m_autoNum_seq.fromXml(dom_element.firstChildElement("sequentialNumbers"));
 
 	m_freeze_label = dom_element.attribute("freezeLabel") == "true" ? true : false;
 
+		//Changed through the project database while its folio was not
+		//built (lazy folios): the change, not what the file says
+	if (diagram() && diagram()->project())
+		if (const auto edited = diagram()->project()->dataBase()->takeUnbuiltWireEdit(m_uuid))
+			pr = *edited;
 	setProperties(pr);
 
 	return retval;
@@ -1387,11 +1397,16 @@ bool Conductor::fromXml(QDomElement &dom_element)
 	@param table_adr_id :
 	Hash stockant les correspondances entre les ids des
 	bornes dans le document XML et leur adresse en memoire
+	@param shared_uuids : uuids carried by more than one symbol of the
+	folio. An end on such a symbol is written by its terminal id, as for a
+	terminal without uuid: by uuid it would reopen on the first symbol
+	carrying it (#1408).
 	@return Un element XML representant le conducteur
 */
 QDomElement Conductor::toXml(QDomDocument &dom_document,
 				 QHash<Terminal *,
-				 int> &table_adr_id) const
+				 int> &table_adr_id,
+				 const QSet<QUuid> &shared_uuids) const
 {
 	QDomElement dom_element = dom_document.createElement("conductor");
 
@@ -1401,7 +1416,8 @@ QDomElement Conductor::toXml(QDomDocument &dom_document,
 	dom_element.setAttribute("y", QString::number(pos().y()));
 	
 	// Terminal is uniquely identified by the uuid of the terminal and the element
-	if (terminal1->uuid().isNull()) {
+	if (terminal1->uuid().isNull()
+		|| shared_uuids.contains(terminal1->parentElement()->uuid())) {
 		// legacy method to identify the terminal
 		dom_element.setAttribute("terminal1", table_adr_id.value(terminal1)); // for backward compatibility
 	} else {
@@ -1417,7 +1433,8 @@ QDomElement Conductor::toXml(QDomDocument &dom_document,
 		dom_element.setAttribute("terminalname1", terminal1->name());
 	}
 
-	if (terminal2->uuid().isNull()) {
+	if (terminal2->uuid().isNull()
+		|| shared_uuids.contains(terminal2->parentElement()->uuid())) {
 		// legacy method to identify the terminal
 		dom_element.setAttribute("terminal2", table_adr_id.value(terminal2)); // for backward compatibility
 	} else {
@@ -1453,7 +1470,7 @@ QDomElement Conductor::toXml(QDomDocument &dom_document,
 	dom_element.appendChild(dom_seq);
 
 		// Export the properties and text
-	m_properties. toXml(dom_element);
+	properties().toXml(dom_element);
 	if(m_text_item->wasMovedByUser())
 	{
 		dom_element.setAttribute("userx", QString::number(m_text_item->pos().x()));
@@ -1953,6 +1970,7 @@ void Conductor::refreshText()
 				m_properties.text = m_properties.m_formula;
 				m_text_item->setPlainText(m_properties.text);
 			}
+			storeProperties();
 		}
 		else
 		{
@@ -2058,6 +2076,7 @@ void Conductor::setProperties(const ConductorProperties &property)
 	calculateTextItemPosition();
 	update();
 
+	storeProperties();
 	emit propertiesChange();
 }
 
@@ -2067,7 +2086,100 @@ void Conductor::setProperties(const ConductorProperties &property)
 */
 ConductorProperties Conductor::properties() const
 {
+	if (projectDataBase *store = placedStore())
+		return store->conductorProperties(m_uuid);
 	return(m_properties);
+}
+
+/**
+	@brief Conductor::placedStore
+	@return the project database holding this wire's properties
+	or nullptr if it is not placed in a
+	project, or shares its uuid with another wire for the moment a copy
+	takes to get its own
+*/
+projectDataBase *Conductor::placedStore() const
+{
+	Diagram *d = diagram();
+	QETProject *project = d ? d->project() : nullptr;
+	projectDataBase *store = project ? project->dataBase() : nullptr;
+	return store && store->hasConductorProperties(m_uuid)
+			&& store->placedConductorCount(m_uuid) == 1 ? store : nullptr;
+}
+
+/**
+	@brief Conductor::storeProperties
+	Write this wire's properties to its project's store, once it is placed:
+	every change of a placed wire's properties comes through here.
+*/
+void Conductor::storeProperties()
+{
+	Diagram *d = diagram();
+	QETProject *project = d ? d->project() : nullptr;
+	if (project && project->dataBase() && project->dataBase()->hasConductorProperties(m_uuid))
+		project->dataBase()->conductorPropertiesStored(this, m_properties);
+}
+
+/**
+	@brief Conductor::newUuid
+	Make a new uuid for this conductor; its stored properties and its row
+	follow it.
+*/
+void Conductor::newUuid()
+{
+	setUuid(QUuid::createUuid());
+}
+
+/**
+	@brief Conductor::setUuid
+	@param uuid : the uuid of this conductor, saved from now on
+*/
+void Conductor::setUuid(const QUuid &uuid)
+{
+	const QUuid old_uuid = m_uuid;
+	m_uuid = uuid;
+	m_persist_uuid = true;
+	uuidChanged(old_uuid);
+}
+
+/**
+	@brief Conductor::uuidChanged
+	Tell the project's store this placed wire's uuid changed from
+	@p old_uuid (a paste renews it, a file gives it).
+*/
+void Conductor::uuidChanged(const QUuid &old_uuid)
+{
+	Diagram *d = diagram();
+	QETProject *project = d ? d->project() : nullptr;
+	if (project && project->dataBase())
+		project->dataBase()->conductorUuidChanged(this, old_uuid);
+}
+
+/**
+	@brief Conductor::setCableReference
+	Record the cable core this conductor shows, together with the label
+	that assignment generates. Called only by CableManager, which works
+	the values out from the cable itself: the user never types them.
+	@param label the generated cable field, e.g. "15W1:br", empty to
+	detach the conductor from its cable
+	@param cable_uuid the cable this conductor is a core of
+	@param slot which core of that cable it shows, -1 when none
+*/
+void Conductor::setCableReference(const QString &label,
+								  const QUuid &cable_uuid,
+								  int slot)
+{
+	if (m_properties.m_cable == label
+		&& m_properties.m_cable_uuid == cable_uuid
+		&& m_properties.m_cable_slot == slot) {
+		return;
+	}
+
+	m_properties.m_cable = label;
+	m_properties.m_cable_uuid = cable_uuid;
+	m_properties.m_cable_slot = slot;
+	storeProperties();
+	emit propertiesChange();
 }
 
 /**
@@ -2106,12 +2218,12 @@ void Conductor::displayedTextChanged()
 		//into one notice to the data base instead of one per row.
 	QUndoCommand *undo = new GroupedUpdateCommand(
 			diagram() ? diagram()->project() : nullptr,
-			tr("Modifier les propriétés d'un conducteur", "undo caption"));
+			tr("Edit conductor properties", "undo caption"));
 	new QPropertyUndoCommand(this, "properties", old_value, new_value, undo);
 
 	if (!relatedPotentialConductors().isEmpty())
 	{
-		undo->setText(tr("Modifier les propriétés de plusieurs conducteurs", "undo caption"));
+		undo->setText(tr("Edit the properties of several conductors", "undo caption"));
 
 		foreach (Conductor *potential_conductor, relatedPotentialConductors())
 		{
@@ -2135,9 +2247,16 @@ void Conductor::displayedTextChanged()
 	@param all_diagram : if true search in all diagram of the project,
 	false search only in the parent diagram of this conductor
 	@param t_list : a list of terminal already found for this potential.
+	@param ignore_function_separation : if true, a terminal element whose
+	function separation is enabled does not stop the search, and the
+	conductors of both its sides are returned as one potential. Only
+	functionSeparatedConductors() passes true.
+	@sa functionSeparatedConductors
 	@return  a QSet of conductor at the same potential.
 */
-QSet<Conductor *> Conductor::relatedPotentialConductors(const bool all_diagram, QList <Terminal *> *t_list)
+QSet<Conductor *> Conductor::relatedPotentialConductors(const bool all_diagram,
+							QList <Terminal *> *t_list,
+							const bool ignore_function_separation)
 {
 	bool declar_t_list = false;
 	if (t_list == nullptr)
@@ -2160,7 +2279,8 @@ QSet<Conductor *> Conductor::relatedPotentialConductors(const bool all_diagram, 
 
 				//Get the other terminals of the parent element of @terminal, who share the same potential
 				//This is use for element type "folio report" and "terminal element"
-			for (Terminal *t : relatedPotentialTerminal(terminal, all_diagram))
+			for (Terminal *t : relatedPotentialTerminal(terminal, all_diagram,
+								ignore_function_separation))
 			{
 				if (!t_list->contains(t))
 				{
@@ -2172,7 +2292,8 @@ QSet<Conductor *> Conductor::relatedPotentialConductors(const bool all_diagram, 
 			other_conductors_list_t.removeAll(this);
 				//Get the conductors at the same potential for each conductors of other_conductors_list_t
 			for (Conductor *c : other_conductors_list_t) {
-				other_conductors += c->relatedPotentialConductors(all_diagram, t_list);
+				other_conductors += c->relatedPotentialConductors(all_diagram, t_list,
+								  ignore_function_separation);
 			}
 
 			other_conductors += QSet<Conductor*>(other_conductors_list_t.begin(),other_conductors_list_t.end());
@@ -2183,6 +2304,36 @@ QSet<Conductor *> Conductor::relatedPotentialConductors(const bool all_diagram, 
 
 	if (declar_t_list) delete t_list;
 	return(other_conductors);
+}
+
+/**
+	@brief Conductor::functionSeparatedConductors
+	Return the conductors that belong to this conductor's potential only
+	by crossing a function separated terminal element -- a terminal
+	element whose function separation checkbox (element information
+	potential_isolating) is enabled, the checkbox the user ticks to stop
+	sharing a terminal's properties with the other side of the terminal.
+
+	Those conductors are deliberately not part of
+	relatedPotentialConductors(): no property may be copied over them
+	by default. One does cross that separation, though: the voltage /
+	protocol, which describes the electrical node itself. Callers that
+	push it over the whole potential use this method to reach the other
+	side (@see ConductorProperties::applyTensionProtocolChange).
+
+	It is simply the potential computed with the separations ignored,
+	minus the potential that respects them.
+	@param all_diagram : if true search in all diagram of the project,
+	false search only in the parent diagram of this conductor
+	@return a QSet of conductor, this conductor excluded
+*/
+QSet<Conductor *> Conductor::functionSeparatedConductors(const bool all_diagram)
+{
+	QSet<Conductor *> separated = relatedPotentialConductors(all_diagram, nullptr, true);
+	separated.subtract(relatedPotentialConductors(all_diagram));
+	separated.remove(this);
+
+	return separated;
 }
 
 /**

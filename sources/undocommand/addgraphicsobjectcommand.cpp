@@ -38,7 +38,7 @@ AddGraphicsObjectCommand::AddGraphicsObjectCommand(QGraphicsObject *qgo, Diagram
 	m_diagram(diagram),
 	m_pos(pos)
 {
-	setText(QObject::tr("Ajouter ") + itemText());
+	setText(QObject::tr("Add ") + itemText());
 	m_diagram->qgiManager().manage(m_item);
 		//A folio report is born with its tag: placed, from the context
 		//menu or by a script, every arrow comes through here (T59)
@@ -92,10 +92,10 @@ QString AddGraphicsObjectCommand::itemText() const
 	if (auto qgi = dynamic_cast<QetGraphicsItem *>(m_item.data())) {
 		return qgi->name();
 	} else if (dynamic_cast<IndependentTextItem *>(m_item.data())) {
-		return QObject::tr("un champ texte");
+		return QObject::tr("a text field");
 	} else if (dynamic_cast<Conductor *>(m_item.data())) {
-		return QObject::tr("un conducteur");
+		return QObject::tr("a conductor");
 	} else {
-		return QObject::tr("un element graphique");
+		return QObject::tr("a graphic element");
 	}
 }

@@ -20,6 +20,9 @@
 #include "../../qet.h"
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
+#include "../../TerminalStrip/terminalcatalog.h"
+#include "../../TerminalStrip/terminalcolor.h"
+#include "../../TerminalStrip/realterminal.h"
 #include "ui_elementpropertieseditorwidget.h"
 
 #include "../../qet.h"
@@ -36,7 +39,11 @@
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
+#include <QIcon>
 #include <QLabel>
+#include <QLocale>
+#include <QRegularExpression>
 #include <QPushButton>
 #include <QClipboard>
 #include <QApplication>
@@ -72,14 +79,113 @@ QWidget* EditorDelegate::createEditor(QWidget *parent,
 			auto *line_edit = new QLineEdit(parent);
 			auto *validator = new QETInformation::NumericInfoValidator(line_edit);
 			line_edit->setValidator(validator);
-			line_edit->setPlaceholderText(tr("ex. 80.5"));
-			line_edit->setToolTip(tr("Nombre décimal avec un point comme séparateur (ex. 80.5)"));
+			line_edit->setPlaceholderText(tr("e.g. 80.5"));
+			line_edit->setToolTip(tr("Decimal number with a dot as separator (e.g. 80.5)"));
 			return line_edit;
 		}
 
 		return QItemDelegate::createEditor(parent, option, index);
 	}
 	return nullptr;
+}
+
+namespace {
+/**
+ * @brief leadingNumber
+ * Extract the first number of a text like "2,5 mm²" or "5.1 mm - WAGO".
+ * The comma and the dot are both accepted as decimal separator.
+ * @return the number, or 0 if the text is empty or has no number.
+ */
+double leadingNumber(const QString &text)
+{
+	static const QRegularExpression re(QStringLiteral("(\\d+(?:[.,]\\d+)?)"));
+	const auto match = re.match(text);
+	if (!match.hasMatch())
+		return 0;
+	auto number = match.captured(1);
+	number.replace(QLatin1Char(','), QLatin1Char('.'));
+	return number.toDouble();
+}
+
+/// The manufacturer combo box of the terminal group box, created by the code.
+QComboBox *manufacturerCombo(QWidget *width_cb)
+{
+	return width_cb->parentWidget()->findChild<QComboBox *>(QStringLiteral("m_terminal_manufacturer_cb"));
+}
+
+/// Insert a "Manufacturer" row in the grid layout of the terminal group box, just before the width row.
+QComboBox *createManufacturerCombo(QComboBox *width_cb)
+{
+	auto *parent_ = width_cb->parentWidget();
+	auto *grid_ = qobject_cast<QGridLayout *>(parent_ ? parent_->layout() : nullptr);
+	if (!grid_)
+		return nullptr;
+
+	int row_ = 0, column_ = 0, row_span_ = 0, column_span_ = 0;
+	const auto index_ = grid_->indexOf(width_cb);
+	if (index_ < 0)
+		return nullptr;
+	grid_->getItemPosition(index_, &row_, &column_, &row_span_, &column_span_);
+
+	//Move down the rows from the width row
+	QList<QPair<QWidget *, QPair<int,int>>> moved_;
+	for (int i = 0; i < grid_->count(); ++i) {
+		int r = 0, c = 0, rs = 0, cs = 0;
+		grid_->getItemPosition(i, &r, &c, &rs, &cs);
+		if (r >= row_ && grid_->itemAt(i)->widget()) {
+			moved_.append({grid_->itemAt(i)->widget(), {r, c}});
+		}
+	}
+	for (const auto &m : moved_) {
+		grid_->removeWidget(m.first);
+	}
+	for (const auto &m : moved_) {
+		grid_->addWidget(m.first, m.second.first + 1, m.second.second);
+	}
+
+	auto *label_ = new QLabel(QObject::tr("Manufacturer"), parent_);
+	auto *cb_ = new QComboBox(parent_);
+	cb_->setObjectName(QStringLiteral("m_terminal_manufacturer_cb"));
+	grid_->addWidget(label_, row_, 0);
+	grid_->addWidget(cb_, row_, 1);
+	return cb_;
+}
+
+/// Value of a terminal size combo (picked in the list or typed).
+double comboValue(const QComboBox *cb)
+{
+	return leadingNumber(cb->currentText());
+}
+
+/// Color of a terminal combo as "#rrggbb" or "#rrggbb/#rrggbb" (empty = none).
+/// A text which is not understood keeps the value the combo was loaded with.
+QString colorSpec(const QComboBox *cb)
+{
+	const auto index = cb->findText(cb->currentText());
+	if (index >= 0)
+		return cb->itemData(index).toString();
+
+	QColor main_, stripe_;
+	if (TerminalColor::parse(cb->currentText(), &main_, &stripe_))
+		return TerminalColor::toSpec(main_, stripe_);
+	return cb->property("origSpec").toString();
+}
+
+/// Set the text of an editable combo : select the item with this value or write the value.
+void setComboValue(QComboBox *cb, double value, const QString &suffix)
+{
+	if (value <= 0) {
+		cb->setCurrentIndex(0);
+		return;
+	}
+	for (int i = 1; i < cb->count(); ++i) {
+		if (qFuzzyCompare(1 + cb->itemData(i).toDouble(), 1 + value)) {
+			cb->setCurrentIndex(i);
+			return;
+		}
+	}
+	cb->setCurrentText(QLocale().toString(value, 'g', 6) + suffix);
+}
 }
 
 /**
@@ -119,8 +225,8 @@ void ElementPropertiesEditorWidget::upDateInterface()
 	if (folio_report && ui->m_base_type_cb->findData(m_data.m_type) < 0)
 	{
 		ui->m_base_type_cb->addItem(m_data.m_type == ElementData::NextReport
-					    ? tr("Renvoi de folio suivant")
-					    : tr("Renvoi de folio précédent"),
+					    ? tr("Next sheet reference")
+					    : tr("Previous sheet reference"),
 					    m_data.m_type);
 		ui->m_base_type_cb->setEnabled(false);
 	}
@@ -224,6 +330,12 @@ void ElementPropertiesEditorWidget::upDateInterface()
 			QET::infoFlagIsTrue(info.value(QStringLiteral("auto_num_locked")).toString()));
 		ui->m_potential_isolating_cb->setChecked(
 			QET::infoFlagIsTrue(info.value(QStringLiteral("potential_isolating")).toString()));
+
+		//Section (mm2) and width (mm), stored with the dot as decimal separator
+		populateTerminalSizeCombos(
+			info.value(RealTerminal::sectionInfoKey()).toString().toDouble(),
+			info.value(RealTerminal::widthInfoKey()).toString().toDouble());
+		populateTerminalColorCombo(info.value(RealTerminal::colorInfoKey()).toString());
 	}
 
 	ui->m_exclude_from_bom_cb->setChecked(
@@ -244,29 +356,29 @@ void ElementPropertiesEditorWidget::setUpInterface()
 		//drawn on the folio of its strip is a terminal here, with its role,
 		//and not a kind of master (T56).
 	ui->m_base_type_cb->addItem (tr("Simple"),  ElementData::Simple);
-	ui->m_base_type_cb->addItem (tr("Maître"),  ElementData::Master);
-	ui->m_base_type_cb->addItem (tr("Esclave"), ElementData::Slave);
-	ui->m_base_type_cb->addItem (tr("Bornier"), ElementData::Terminal);
-	ui->m_base_type_cb->addItem (tr("Vignette"), ElementData::Thumbnail);
-	ui->m_base_type_cb->addItem (tr("Définition de conducteur"), ElementData::ConductorDefinition);
+	ui->m_base_type_cb->addItem (tr("Master"),  ElementData::Master);
+	ui->m_base_type_cb->addItem (tr("Slave"), ElementData::Slave);
+	ui->m_base_type_cb->addItem (tr("Terminal block"), ElementData::Terminal);
+	ui->m_base_type_cb->addItem (tr("Thumbnail"), ElementData::Thumbnail);
+	ui->m_base_type_cb->addItem (tr("Conductor definition"), ElementData::ConductorDefinition);
 
 		// Slave option
-	ui->m_state_cb->addItem(tr("Normalement ouvert"),       ElementData::NO);
-	ui->m_state_cb->addItem(tr("Normalement fermé"),        ElementData::NC);
-	ui->m_state_cb->addItem(tr("Inverseur"),                ElementData::SW);
+	ui->m_state_cb->addItem(tr("Switch normally open"),       ElementData::NO);
+	ui->m_state_cb->addItem(tr("Switch normally closed"),        ElementData::NC);
+	ui->m_state_cb->addItem(tr("switch"),                ElementData::SW);
 	ui->m_state_cb->addItem(tr("Other"),                    ElementData::Other);
-	ui->m_state_cb->addItem(tr("Esclave PLC"),              ElementData::PLCSlave);
+	ui->m_state_cb->addItem(tr("PLC slave"),              ElementData::PLCSlave);
 	ui->m_type_cb->addItem(tr("Simple"),                    ElementData::SSimple);
-	ui->m_type_cb->addItem(tr("Puissance"),                 ElementData::Power);
-	ui->m_type_cb->addItem(tr("Temporisé travail"),         ElementData::DelayOn);
-	ui->m_type_cb->addItem(tr("Temporisé repos"),           ElementData::DelayOff);
-	ui->m_type_cb->addItem(tr("Temporisé travail & repos"), ElementData::delayOnOff);
+	ui->m_type_cb->addItem(tr("Power switch"),                 ElementData::Power);
+	ui->m_type_cb->addItem(tr("Switch-on delayed"),         ElementData::DelayOn);
+	ui->m_type_cb->addItem(tr("Switch-off delayed"),           ElementData::DelayOff);
+	ui->m_type_cb->addItem(tr("Switch-on  and off delayed"), ElementData::delayOnOff);
 
 		//Master option
-	ui->m_master_type_cb->addItem(tr("Bobine"),               ElementData::Coil);
-	ui->m_master_type_cb->addItem(tr("Organe de protection"), ElementData::Protection);
-	ui->m_master_type_cb->addItem(tr("Commutateur / bouton"), ElementData::Commutator);
-	ui->m_master_type_cb->addItem(tr("Module PLC"),           ElementData::PLC);
+	ui->m_master_type_cb->addItem(tr("coil"),               ElementData::Coil);
+	ui->m_master_type_cb->addItem(tr("Organ of protection"), ElementData::Protection);
+	ui->m_master_type_cb->addItem(tr("Switch / button"), ElementData::Commutator);
+	ui->m_master_type_cb->addItem(tr("PLC module"),           ElementData::PLC);
 	ui->m_master_type_cb->setMinimumWidth(150);
 
 		//Terminal option
@@ -274,20 +386,25 @@ void ElementPropertiesEditorWidget::setUpInterface()
 	ui->m_terminal_role_cb->addItem(tr("Bornier",
 					   "role of a terminal symbol: drawn on the folio of its terminal strip"));
 
-	ui->m_terminal_type_cb->addItem(tr("Générique"),    ElementData::TTGeneric);
-	ui->m_terminal_type_cb->addItem(tr("Fusible"),      ElementData::TTFuse);
-	ui->m_terminal_type_cb->addItem(tr("Séctionnable"), ElementData::TTSectional);
+	ui->m_terminal_type_cb->addItem(tr("Generic"),    ElementData::TTGeneric);
+	ui->m_terminal_type_cb->addItem(tr("Fuse"),      ElementData::TTFuse);
+	ui->m_terminal_type_cb->addItem(tr("Sectionable"), ElementData::TTSectional);
 	ui->m_terminal_type_cb->addItem(tr("Diode"),        ElementData::TTDiode);
+	ui->m_terminal_type_cb->addItem(tr("Anti-parallel diodes"), ElementData::TTAntiParallelDiodes);
+	ui->m_terminal_type_cb->addItem(tr("Resistor"),      ElementData::TTResistor);
+	ui->m_terminal_type_cb->addItem(tr("Varistor"),      ElementData::TTVaristor);
+	ui->m_terminal_type_cb->addItem(tr("Test socket"),   ElementData::TTTestSocket);
+	ui->m_terminal_type_cb->addItem(tr("Diode (reversed)"), ElementData::TTDiodeReversed);
 
 		//Ground is offered as what the terminal carries, next to phase and
 		//neutral, and not as a make of terminal next to fuse and diode. It
 		//is still saved as the ground type, so that the symbol reads the
 		//same everywhere, and a ground terminal is a generic one otherwise.
-	ui->m_terminal_func_cb->addItem(tr("Générique"), ElementData::TFGeneric);
+	ui->m_terminal_func_cb->addItem(tr("Generic"), ElementData::TFGeneric);
 	ui->m_terminal_func_cb->addItem(tr("Phase"),     ElementData::TFPhase);
-	ui->m_terminal_func_cb->addItem(tr("Neutre"),    ElementData::TFNeutral);
+	ui->m_terminal_func_cb->addItem(tr("Neutral"),    ElementData::TFNeutral);
 	m_ground_function_index = ui->m_terminal_func_cb->count();
-	ui->m_terminal_func_cb->addItem(tr("Terre"));
+	ui->m_terminal_func_cb->addItem(tr("Ground"));
 
 	connect(ui->m_terminal_role_cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &ElementPropertiesEditorWidget::updateTerminalRows);
@@ -425,6 +542,131 @@ void ElementPropertiesEditorWidget::populateTree()
 }
 
 /**
+	@brief ElementPropertiesEditorWidget::populateTerminalSizeCombos
+	Fill the section and width combo boxes of the terminal group box
+	and select @a section (mm2) and @a width (mm), 0 means "none".
+	The combo boxes are editable : a value not in the list can be typed.
+*/
+void ElementPropertiesEditorWidget::populateTerminalSizeCombos(double section, double width)
+{
+	QSignalBlocker blocker(ui->m_terminal_section_cb);
+	ui->m_terminal_section_cb->clear();
+	ui->m_terminal_section_cb->addItem(tr("None (default)"), 0.0);
+	for (const auto section_ : TerminalCatalog::sections()) {
+		ui->m_terminal_section_cb->addItem(
+			TerminalCatalog::sectionText(section_, tr("%1 mm²").arg(QLocale().toString(section_, 'g', 6))),
+			section_);
+	}
+	setComboValue(ui->m_terminal_section_cb, section, tr(" mm²"));
+
+	auto *man_cb = manufacturerCombo(ui->m_terminal_width_cb);
+	if (!man_cb) {
+		man_cb = createManufacturerCombo(ui->m_terminal_width_cb);
+		if (man_cb) {
+			connect(man_cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
+					this, [this]() { refreshTerminalWidthCombo(); });
+		}
+	}
+	if (man_cb) {
+		QSignalBlocker man_blocker(man_cb);
+		man_cb->clear();
+		man_cb->addItem(tr("All manufacturers"), QString());
+		for (const auto &name_ : TerminalCatalog::manufacturers()) {
+			man_cb->addItem(name_, name_);
+		}
+	}
+	connect(ui->m_terminal_section_cb, QOverload<int>::of(&QComboBox::currentIndexChanged),
+			this, [this]() { refreshTerminalWidthCombo(); });
+	connect(ui->m_terminal_section_cb->lineEdit(), &QLineEdit::editingFinished,
+			this, [this]() { refreshTerminalWidthCombo(); });
+
+	refreshTerminalWidthCombo();
+	setComboValue(ui->m_terminal_width_cb, width, tr(" mm"));
+}
+
+/**
+	@brief ElementPropertiesEditorWidget::populateTerminalColorCombo
+	Fill the color combo box with the palette of the terminal strip
+	and select @a spec ("#rrggbb" or "#rrggbb/#rrggbb", empty = none).
+	The combo box is editable : a color can be typed as a name or as "#rrggbb".
+*/
+void ElementPropertiesEditorWidget::populateTerminalColorCombo(const QString &spec)
+{
+	auto *cb = ui->m_terminal_color_cb;
+	cb->setProperty("origSpec", spec);
+	cb->clear();
+	cb->addItem(tr("None (default)"), QString());
+	for (const auto &entry : TerminalColor::palette())
+	{
+		QColor main_, stripe_;
+		TerminalColor::parse(TerminalColor::specOf(entry), &main_, &stripe_);
+		cb->addItem(QIcon(TerminalColor::swatch(main_, stripe_)),
+					TerminalColor::translatedName(entry),
+					TerminalColor::specOf(entry));
+	}
+
+	if (spec.isEmpty()) {
+		cb->setCurrentIndex(0);
+		return;
+	}
+	const auto index = cb->findData(spec);
+	if (index >= 0) {
+		cb->setCurrentIndex(index);
+	} else {
+		//The color is not in the palette, keep it in the list
+		QColor main_, stripe_;
+		TerminalColor::parse(spec, &main_, &stripe_);
+		cb->addItem(QIcon(TerminalColor::swatch(main_, stripe_)), spec, spec);
+		cb->setCurrentIndex(cb->count() - 1);
+	}
+}
+
+/**
+	@brief ElementPropertiesEditorWidget::refreshTerminalWidthCombo
+	List the manufacturer terminals compatible with the selected section.
+	If the section has no match in the catalog (or is not set),
+	all the widths are listed. The current width is kept.
+*/
+void ElementPropertiesEditorWidget::refreshTerminalWidthCombo()
+{
+	const auto current_width = comboValue(ui->m_terminal_width_cb);
+	const auto section = comboValue(ui->m_terminal_section_cb);
+
+	auto item_text = [](const TerminalCatalog::WidthEntry &entry) {
+		return tr("%1 mm").arg(QLocale().toString(entry.mm, 'g', 6))
+			   + QStringLiteral(" - ") + QString::fromUtf8(entry.label);
+	};
+
+	const auto *man_cb = manufacturerCombo(ui->m_terminal_width_cb);
+	const auto manufacturer = man_cb ? man_cb->currentData().toString() : QString();
+	auto manufacturer_ok = [&manufacturer](const TerminalCatalog::WidthEntry &entry) {
+		return manufacturer.isEmpty() || manufacturer == QString::fromUtf8(entry.manufacturer);
+	};
+
+	//Prefer the terminals of the selected section, if the selected manufacturer has some
+	bool has_compatible_entry = false;
+	if (section > 0) {
+		for (const auto &entry : TerminalCatalog::widthEntries()) {
+			if (manufacturer_ok(entry) && qFuzzyCompare(1 + entry.section, 1 + section)) {
+				has_compatible_entry = true;
+				break;
+			}
+		}
+	}
+
+	QSignalBlocker blocker(ui->m_terminal_width_cb);
+	ui->m_terminal_width_cb->clear();
+	ui->m_terminal_width_cb->addItem(tr("None (default)"), 0.0);
+	for (const auto &entry : TerminalCatalog::widthEntries()) {
+		if (manufacturer_ok(entry)
+			&& (!has_compatible_entry || qFuzzyCompare(1 + entry.section, 1 + section))) {
+			ui->m_terminal_width_cb->addItem(item_text(entry), entry.mm);
+		}
+	}
+	setComboValue(ui->m_terminal_width_cb, current_width, tr(" mm"));
+}
+
+/**
 	@brief ElementPropertiesEditorWidget::on_m_buttonBox_accepted
 	Action on button accepted : the new information is set
 */
@@ -515,6 +757,25 @@ void ElementPropertiesEditorWidget::on_m_buttonBox_accepted()
 			m_data.m_informations.addValue(QStringLiteral("potential_isolating"), QStringLiteral("true"));
 		else
 			m_data.m_informations.remove(QStringLiteral("potential_isolating"));
+
+		//Section and width : stored with the dot as decimal separator, whatever the locale
+		const auto section_ = comboValue(ui->m_terminal_section_cb);
+		if (section_ > 0)
+			m_data.m_informations.addValue(RealTerminal::sectionInfoKey(), QString::number(section_, 'g', 6));
+		else
+			m_data.m_informations.remove(RealTerminal::sectionInfoKey());
+
+		const auto width_ = comboValue(ui->m_terminal_width_cb);
+		if (width_ > 0)
+			m_data.m_informations.addValue(RealTerminal::widthInfoKey(), QString::number(width_, 'g', 6));
+		else
+			m_data.m_informations.remove(RealTerminal::widthInfoKey());
+
+		const auto color_ = colorSpec(ui->m_terminal_color_cb);
+		if (!color_.isEmpty())
+			m_data.m_informations.addValue(RealTerminal::colorInfoKey(), color_);
+		else
+			m_data.m_informations.remove(RealTerminal::colorInfoKey());
 	}
 
 	if (ui->m_exclude_from_bom_cb->isChecked())
@@ -680,20 +941,20 @@ void ElementPropertiesEditorWidget::populateSlaveGroupsTable()
 
 		// Type column
 		auto *type_cb = new QComboBox(ui->m_slave_groups_table);
-		type_cb->addItem(tr("Normalement ouvert"), ElementData::NO);
-		type_cb->addItem(tr("Normalement fermé"), ElementData::NC);
-		type_cb->addItem(tr("Inverseur"), ElementData::SW);
-		type_cb->addItem(tr("Autre"), ElementData::Other);
+		type_cb->addItem(tr("Switch normally open"), ElementData::NO);
+		type_cb->addItem(tr("Switch normally closed"), ElementData::NC);
+		type_cb->addItem(tr("switch"), ElementData::SW);
+		type_cb->addItem(tr("Other", "fr: Autre"), ElementData::Other);
 		type_cb->setCurrentIndex(type_cb->findData(group.type));
 		ui->m_slave_groups_table->setCellWidget(i, 0, type_cb);
 
 		// Subtype column
 		auto *subtype_cb = new QComboBox(ui->m_slave_groups_table);
 		subtype_cb->addItem(tr("Simple"), ElementData::SSimple);
-		subtype_cb->addItem(tr("Puissance"), ElementData::Power);
-		subtype_cb->addItem(tr("Temporisé travail"), ElementData::DelayOn);
-		subtype_cb->addItem(tr("Temporisé repos"), ElementData::DelayOff);
-		subtype_cb->addItem(tr("Temporisé travail & repos"), ElementData::delayOnOff);
+		subtype_cb->addItem(tr("Power switch"), ElementData::Power);
+		subtype_cb->addItem(tr("Switch-on delayed"), ElementData::DelayOn);
+		subtype_cb->addItem(tr("Switch-off delayed"), ElementData::DelayOff);
+		subtype_cb->addItem(tr("Switch-on  and off delayed"), ElementData::delayOnOff);
 		subtype_cb->setCurrentIndex(subtype_cb->findData(group.subtype));
 		ui->m_slave_groups_table->setCellWidget(i, 1, subtype_cb);
 
@@ -834,7 +1095,7 @@ void ElementPropertiesEditorWidget::readSlaveGroupsFromTable()
 void ElementPropertiesEditorWidget::createPlcConfigWidgets()
 {
 	// Create PLC group box
-	m_plc_gb = new QGroupBox(tr("Configuration PLC"), ui->m_master_gb);
+	m_plc_gb = new QGroupBox(tr("PLC Configuration"), ui->m_master_gb);
 	auto *plc_layout = new QVBoxLayout(m_plc_gb);
 
 	// Toolbar
@@ -862,8 +1123,8 @@ void ElementPropertiesEditorWidget::createPlcConfigWidgets()
 	m_plc_table = new QTableWidget(splitter);
 	m_plc_table->setColumnCount(5);
 	m_plc_table->setHorizontalHeaderLabels({
-		tr("Type"), tr("Adresse"), tr("Fonction"),
-		tr("Commentaire"), tr("Réf. croisée")
+		tr("Type"), tr("Address"), tr("Function"),
+		tr("Annotation"), tr("Cross-reference")
 	});
 	m_plc_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
 	m_plc_table->horizontalHeader()->setSectionsMovable(true);
@@ -949,18 +1210,18 @@ void ElementPropertiesEditorWidget::createPlcConfigWidgets()
 	// Font settings
 	auto *font_layout = new QHBoxLayout();
 
-	m_plc_header_font_btn = new QPushButton(tr("Police des en-têtes"), m_plc_gb);
-	m_plc_header_font_btn->setToolTip(tr("Configurer la police des en-têtes de colonnes"));
+	m_plc_header_font_btn = new QPushButton(tr("Header font"), m_plc_gb);
+	m_plc_header_font_btn->setToolTip(tr("Set the font for column headers"));
 	connect(m_plc_header_font_btn, &QPushButton::clicked, this, &ElementPropertiesEditorWidget::plcSelectHeaderFont);
 	font_layout->addWidget(m_plc_header_font_btn);
 
-	m_plc_cell_font_btn = new QPushButton(tr("Police du texte"), m_plc_gb);
-	m_plc_cell_font_btn->setToolTip(tr("Configurer la police du texte dans les cellules"));
+	m_plc_cell_font_btn = new QPushButton(tr("Text font"), m_plc_gb);
+	m_plc_cell_font_btn->setToolTip(tr("Set the text font in the cells"));
 	connect(m_plc_cell_font_btn, &QPushButton::clicked, this, &ElementPropertiesEditorWidget::plcSelectCellFont);
 	font_layout->addWidget(m_plc_cell_font_btn);
 
-	m_plc_show_headers_cb = new QCheckBox(tr("Afficher les en-têtes sur la feuille"), m_plc_gb);
-	m_plc_show_headers_cb->setToolTip(tr("Afficher ou masquer les en-têtes de colonnes du tableau PLC sur la feuille"));
+	m_plc_show_headers_cb = new QCheckBox(tr("Show headers on the sheet"), m_plc_gb);
+	m_plc_show_headers_cb->setToolTip(tr("Show or hide the column headings of the PLC table on the sheet"));
 	m_plc_show_headers_cb->setChecked(true);
 	font_layout->addWidget(m_plc_show_headers_cb);
 
@@ -972,13 +1233,13 @@ void ElementPropertiesEditorWidget::createPlcConfigWidgets()
 
 	for (int i = 0; i < 4; ++i) {
 		m_plc_break_checkboxes[i] = new QCheckBox(
-			tr("Saut %1 après:").arg(i + 1), m_plc_gb);
+			tr("Jump to %1 after:").arg(i + 1), m_plc_gb);
 		settings_layout->addWidget(m_plc_break_checkboxes[i], i, 0);
 
 		m_plc_break_spinboxes[i] = new QSpinBox(m_plc_gb);
 		m_plc_break_spinboxes[i]->setMinimum(0);
 		m_plc_break_spinboxes[i]->setMaximum(128);
-		m_plc_break_spinboxes[i]->setSpecialValueText(tr("Aucun"));
+		m_plc_break_spinboxes[i]->setSpecialValueText(tr("None"));
 		m_plc_break_spinboxes[i]->setEnabled(false);
 		settings_layout->addWidget(m_plc_break_spinboxes[i], i, 1);
 
@@ -986,7 +1247,7 @@ void ElementPropertiesEditorWidget::createPlcConfigWidgets()
 			m_plc_break_spinboxes[i], &QSpinBox::setEnabled);
 	}
 
-	settings_layout->addWidget(new QLabel(tr("H. ligne:"), m_plc_gb), 4, 0);
+	settings_layout->addWidget(new QLabel(tr("Line H:"), m_plc_gb), 4, 0);
 	m_plc_row_height_spinbox = new QSpinBox(m_plc_gb);
 	m_plc_row_height_spinbox->setMinimum(4);
 	m_plc_row_height_spinbox->setMaximum(30);
@@ -999,15 +1260,15 @@ void ElementPropertiesEditorWidget::createPlcConfigWidgets()
 
 	// Column name, visibility and width
 	auto *col_layout = new QHBoxLayout();
-	QStringList col_names = {tr("Type"), tr("Adresse"), tr("Fonction"),
-							 tr("Commentaire"), tr("Réf.")};
+	QStringList col_names = {tr("Type"), tr("Address"), tr("Function"),
+							 tr("Annotation"), tr("Ref.")};
 
 	for (int i = 0; i < 5; ++i) {
 		auto *col_widget = new QVBoxLayout();
 
 		auto *le = new QLineEdit(m_plc_gb);
 		le->setPlaceholderText(col_names.at(i));
-		le->setToolTip(tr("Nom personnalisé de la colonne (vide = par défaut)"));
+		le->setToolTip(tr("Custom column name (blank = default)"));
 		m_plc_col_name_edits.append(le);
 		col_widget->addWidget(le);
 
@@ -1044,7 +1305,7 @@ void ElementPropertiesEditorWidget::createPlcConfigWidgets()
 	m_plc_table->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(m_plc_table, &QTableWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
 		QMenu menu;
-		menu.addAction(tr("Coller depuis le presse-papiers"), this, &ElementPropertiesEditorWidget::plcPasteFromClipboard);
+		menu.addAction(tr("Paste from the clipboard"), this, &ElementPropertiesEditorWidget::plcPasteFromClipboard);
 		menu.exec(m_plc_table->mapToGlobal(pos));
 	});
 }
@@ -1136,9 +1397,9 @@ void ElementPropertiesEditorWidget::populatePlcTable()
 		m_plc_cell_font = QETApp::diagramTextsFont();
 		m_plc_cell_font.setPointSize(8);
 	}
-	m_plc_header_font_btn->setText(tr("Police des en-têtes: %1 %2pt")
+	m_plc_header_font_btn->setText(tr("Heading font size: %1 %2pt")
 		.arg(m_plc_header_font.family()).arg(m_plc_header_font.pointSize()));
-	m_plc_cell_font_btn->setText(tr("Police du texte: %1 %2pt")
+	m_plc_cell_font_btn->setText(tr("Font size: %1 %2pt")
 		.arg(m_plc_cell_font.family()).arg(m_plc_cell_font.pointSize()));
 	m_plc_show_headers_cb->setChecked(plc_data.showHeaders);
 
@@ -1510,10 +1771,10 @@ void ElementPropertiesEditorWidget::plcSelectHeaderFont()
 {
 	bool ok;
 	QFont font = QFontDialog::getFont(&ok, m_plc_header_font, this,
-		tr("Police des en-têtes de colonnes"));
+		tr("Column header formatting"));
 	if (ok) {
 		m_plc_header_font = font;
-		m_plc_header_font_btn->setText(tr("Police des en-têtes: %1 %2pt")
+		m_plc_header_font_btn->setText(tr("Heading font size: %1 %2pt")
 			.arg(font.family()).arg(font.pointSize()));
 	}
 }
@@ -1526,10 +1787,10 @@ void ElementPropertiesEditorWidget::plcSelectCellFont()
 {
 	bool ok;
 	QFont font = QFontDialog::getFont(&ok, m_plc_cell_font, this,
-		tr("Police du texte des cellules"));
+		tr("Cell text font"));
 	if (ok) {
 		m_plc_cell_font = font;
-		m_plc_cell_font_btn->setText(tr("Police du texte: %1 %2pt")
+		m_plc_cell_font_btn->setText(tr("Font size: %1 %2pt")
 			.arg(font.family()).arg(font.pointSize()));
 	}
 }

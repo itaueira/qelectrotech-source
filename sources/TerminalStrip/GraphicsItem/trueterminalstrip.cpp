@@ -128,6 +128,46 @@ namespace TerminalStripDrawer
 		}
 	}
 
+	ElementData::TerminalType TrueRealTerminal::type() const
+	{
+		return m_real ? m_real->type() : ElementData::TTGeneric;
+	}
+
+	bool TrueRealTerminal::isLed() const
+	{
+		return m_real ? m_real->isLed() : false;
+	}
+
+	QString TrueRealTerminal::cable() const
+	{
+		return m_real ? m_real->cable() : QString();
+	}
+
+	QString TrueRealTerminal::cableWire() const
+	{
+		return m_real ? m_real->cableWire() : QString();
+	}
+
+	bool TrueRealTerminal::isShield() const
+	{
+		return m_real ? m_real->isShield() : false;
+	}
+
+	QColor TrueRealTerminal::color() const
+	{
+		return m_real ? m_real->color() : QColor();
+	}
+
+	QColor TrueRealTerminal::stripeColor() const
+	{
+		return m_real ? m_real->stripeColor() : QColor();
+	}
+
+	qreal TrueRealTerminal::widthMm() const
+	{
+		return m_real ? m_real->widthMm() : 0;
+	}
+
     TrueBridge::TrueBridge(QSharedPointer<TerminalStripBridge> bridge) :
         m_bridge { bridge }
     {}

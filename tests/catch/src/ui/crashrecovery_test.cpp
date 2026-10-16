@@ -16,7 +16,6 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "../../../../sources/crashrecovery.h"
-#include "../../../../sources/environment/projectlock.h"
 
 #include <catch2/catch.hpp>
 
@@ -24,6 +23,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
+#include <QHostInfo>
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QTextStream>
@@ -101,7 +101,7 @@ namespace
 		process is alive is the whole question the scan answers.
 	*/
 	bool writeMarker(const QString &directory, qint64 pid,
-			 const QString &machine = ProjectLock::currentMachine())
+			 const QString &machine = QHostInfo::localHostName())
 	{
 		QString safe_machine;
 		for (const QChar &character : machine)

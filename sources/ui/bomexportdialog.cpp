@@ -161,8 +161,8 @@ int BOMExportDialog::exec()
 			//save in csv file in same directory as project by default
 		QString dir = m_project->currentDir();
 		if (dir.isEmpty()) dir = QETApp::documentDir();
-		QString file_name = dir % "/" % tr("nomenclature_") % QString(m_project ->title() % ".csv");
-		QString file_path = QFileDialog::getSaveFileName(this, tr("Enregister sous... "), file_name, tr("Fichiers csv (*.csv)"));
+		QString file_name = dir % "/" % tr("parts list_") % QString(m_project ->title() % ".csv");
+		QString file_path = QFileDialog::getSaveFileName(this, tr("Save As... "), file_name, tr("Files csv (*.csv)"));
 		QFile file(file_path);
 		if (!file_path.isEmpty())
 		{
@@ -178,7 +178,7 @@ int BOMExportDialog::exec()
 
 			if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
 			{
-				QMessageBox::critical(this, tr("Erreur"),
+				QMessageBox::critical(this, tr("Error"),
 									  tr("Le fichier « %1 » n'a pas pu être écrit.").arg(file_path)+
 									  "\n\n"+file.errorString());
 				return r;
@@ -194,7 +194,7 @@ int BOMExportDialog::exec()
 			const QString failure = QETCsv::writeError(stream, file);
 			if (!failure.isEmpty())
 			{
-				QMessageBox::critical(this, tr("Erreur"),
+				QMessageBox::critical(this, tr("Error"),
 									  tr("L'écriture du fichier « %1 » a échoué.").arg(file_path)
 									  + "\n\n" + failure);
 				return r;
@@ -352,7 +352,7 @@ QString BOMExportDialog::getBom()
 	if (!query_.exec())
 	{
 		qWarning() << "BOMExportDialog::getBom : query failed :" << query_.lastError();
-		QMessageBox::critical(this, tr("Erreur"),
+		QMessageBox::critical(this, tr("Error"),
 							  tr("La nomenclature n'a pas pu être extraite du projet.")+
 							  "\n\n"+query_.lastError().text());
 			//return_string is left null here on purpose: that is how exec()
@@ -383,9 +383,9 @@ QString BOMExportDialog::getBom()
 				if (field_name == "position") {
 					header_name << tr("Position");
 				} else if (field_name == "diagram_position") {
-					header_name << tr("Position du folio");
+					header_name << tr("Sheet position");
 				} else if (field_name == "designation_qty") {
-					header_name << tr("Quantité numéro d'article", "Special field with name : designation quantity");
+					header_name << tr("Designation quantity", "Special field with name : designation quantity");
 				} else {
 						//An info key with no translation gives back an empty
 						//string, and an empty header cell names no column. The

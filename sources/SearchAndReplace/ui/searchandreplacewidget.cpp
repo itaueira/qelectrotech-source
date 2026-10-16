@@ -158,54 +158,54 @@ void SearchAndReplaceWidget::setUpTreeItems()
 {
 	m_root_qtwi = new QTreeWidgetItem(ui->m_tree_widget);
 	m_root_qtwi->setIcon(0, QET::Icons::ProjectProperties);
-	m_root_qtwi->setText(0, tr("Correspondance :"));
+	m_root_qtwi->setText(0, tr("Correspondence:"));
 	m_root_qtwi->setCheckState(0, Qt::Checked);
 	m_category_qtwi.append(m_root_qtwi);
 
 	m_folio_qtwi = new QTreeWidgetItem(m_root_qtwi);
 	m_folio_qtwi->setIcon(0, QET::Icons::Diagram);
-	m_folio_qtwi->setText(0, tr("Folios"));
+	m_folio_qtwi->setText(0, tr("Sheets"));
 	m_folio_qtwi->setCheckState(0, Qt::Checked);
 	m_category_qtwi.append(m_folio_qtwi);
 
 	m_indi_text_qtwi = new QTreeWidgetItem(m_root_qtwi);
 	m_indi_text_qtwi->setIcon(0, QET::Icons::PartText);
-	m_indi_text_qtwi->setText(0, tr("Champs texte"));
+	m_indi_text_qtwi->setText(0, tr("Text fields"));
 	m_indi_text_qtwi->setCheckState(0, Qt::Checked);
 	m_category_qtwi.append(m_indi_text_qtwi);
 
 	m_elements_qtwi = new QTreeWidgetItem(m_root_qtwi);
 	m_elements_qtwi->setIcon(0, QET::Icons::Element);
-	m_elements_qtwi->setText(0, tr("Eléments"));
+	m_elements_qtwi->setText(0, tr("Elements"));
 	m_elements_qtwi->setCheckState(0, Qt::Checked);
 	m_category_qtwi.append(m_elements_qtwi);
 
 	m_simple_elmt_qtwi = new QTreeWidgetItem(m_elements_qtwi);
-	m_simple_elmt_qtwi->setText(0, tr("Eléments simple"));
+	m_simple_elmt_qtwi->setText(0, tr("Simple elements"));
 	m_simple_elmt_qtwi->setIcon(0, QET::Icons::Element);
 	m_simple_elmt_qtwi->setCheckState(0, Qt::Checked);
 	m_qtwi_elmts.append(m_simple_elmt_qtwi);
 
 	m_master_elmt_qtwi= new QTreeWidgetItem(m_elements_qtwi);
-	m_master_elmt_qtwi->setText(0, tr("Eléments maître"));
+	m_master_elmt_qtwi->setText(0, tr("Master elements"));
 	m_master_elmt_qtwi->setIcon(0, QET::Icons::ElementMaster);
 	m_master_elmt_qtwi->setCheckState(0, Qt::Checked);
 	m_qtwi_elmts.append(m_master_elmt_qtwi);
 
 	m_slave_elmt_qtwi = new QTreeWidgetItem(m_elements_qtwi);
-	m_slave_elmt_qtwi->setText(0, tr("Eléments esclave"));
+	m_slave_elmt_qtwi->setText(0, tr("Slave elements"));
 	m_slave_elmt_qtwi->setIcon(0, QET::Icons::ElementSlave);
 	m_slave_elmt_qtwi->setCheckState(0, Qt::Checked);
 	m_qtwi_elmts.append(m_slave_elmt_qtwi);
 
 	m_report_elmt_qtwi = new QTreeWidgetItem(m_elements_qtwi);
-	m_report_elmt_qtwi->setText(0, tr("Eléments report de folio"));
+	m_report_elmt_qtwi->setText(0, tr("Sheet reference elements"));
 	m_report_elmt_qtwi->setIcon(0, QET::Icons::FolioXrefComing);
 	m_report_elmt_qtwi->setCheckState(0, Qt::Checked);
 	m_qtwi_elmts.append(m_report_elmt_qtwi);
 
 	m_terminal_elmt_qtwi = new QTreeWidgetItem(m_elements_qtwi);
-	m_terminal_elmt_qtwi->setText(0, tr("Eléments bornier"));
+	m_terminal_elmt_qtwi->setText(0, tr("Terminal elements"));
 	m_terminal_elmt_qtwi->setIcon(0, QET::Icons::ElementTerminal);
 	m_terminal_elmt_qtwi->setCheckState(0, Qt::Checked);
 	m_qtwi_elmts.append(m_terminal_elmt_qtwi);
@@ -213,7 +213,7 @@ void SearchAndReplaceWidget::setUpTreeItems()
 
 	m_conductor_qtwi = new QTreeWidgetItem(m_root_qtwi);
 	m_conductor_qtwi->setIcon(0, QET::Icons::Conductor);
-	m_conductor_qtwi->setText(0, tr("Conducteurs"));
+	m_conductor_qtwi->setText(0, tr("Conductors"));
 	m_conductor_qtwi->setCheckState(0, Qt::Checked);
 	m_category_qtwi.append(m_conductor_qtwi);
 
@@ -308,7 +308,7 @@ void SearchAndReplaceWidget::fillItemsList()
 
 	m_indi_text_qtwi->sortChildren(0, Qt::AscendingOrder);
 
-	for (Conductor *c : dc.m_potential_conductors)
+	for (Conductor *c : dc.potentialConductors())
 	{
 		QTreeWidgetItem *qtwi = new QTreeWidgetItem(m_conductor_qtwi);
 		qtwi->setText(0, c->properties().text);
@@ -362,7 +362,7 @@ void SearchAndReplaceWidget::addElement(Element *element)
 		str += ("   ");
 	str += element->elementInformations().value("comment").toString();
 	if (str.isEmpty())
-		str = tr("Inconnue");
+		str = tr("Unknown");
 	qtwi->setText(0, str);
 	qtwi->setCheckState(0, Qt::Checked);
 	qtwi->setData(0, Qt::UserRole, searchTerms(element));
@@ -464,9 +464,9 @@ void SearchAndReplaceWidget::search()
  */
 void SearchAndReplaceWidget::setUpActions()
 {
-	m_select_elements   = new QAction(QET::Icons::Element,   tr("Sélectionner les éléments de ce folio"),    ui->m_tree_widget);
-	m_select_conductors = new QAction(QET::Icons::Conductor, tr("Sélectionner les conducteurs de ce folio"), ui->m_tree_widget);
-	m_select_texts      = new QAction(QET::Icons::PartText,  tr("Sélectionner les textes de ce folio"),      ui->m_tree_widget);
+	m_select_elements   = new QAction(QET::Icons::Element,   tr("Select the elements of this sheet"),    ui->m_tree_widget);
+	m_select_conductors = new QAction(QET::Icons::Conductor, tr("Select the conductors of this sheet"), ui->m_tree_widget);
+	m_select_texts      = new QAction(QET::Icons::PartText,  tr("Select the texts of this sheet"),      ui->m_tree_widget);
 }
 
 /**
@@ -1171,8 +1171,8 @@ void SearchAndReplaceWidget::on_m_folio_pb_clicked()
 	if (result == QDialogButtonBox::AcceptRole)
 	{
 		QString text = ui->m_folio_pb->text();
-		if (!text.endsWith(tr(" [édité]"))) {
-			text.append(tr(" [édité]"));
+		if (!text.endsWith(tr(" [edited]"))) {
+			text.append(tr(" [edited]"));
 		}
 		ui->m_folio_pb->setText(text);
 		m_worker.m_titleblock_properties =
@@ -1181,8 +1181,8 @@ void SearchAndReplaceWidget::on_m_folio_pb_clicked()
 	else if (result == QDialogButtonBox::ResetRole)
 	{
 		QString text = ui->m_folio_pb->text();
-		if (text.endsWith(tr(" [édité]"))) {
-			text.remove(tr(" [édité]"));
+		if (text.endsWith(tr(" [edited]"))) {
+			text.remove(tr(" [edited]"));
 		}
 		ui->m_folio_pb->setText(text);
 		m_worker.m_titleblock_properties = TitleBlockProperties();
@@ -1202,7 +1202,7 @@ void SearchAndReplaceWidget::on_m_replace_pb_clicked()
 	if (!m_category_qtwi.contains(qtwi)
 			&& qtwi->checkState(0) == Qt::Checked)
 	{
-		if (ui->m_folio_pb->text().endsWith(tr(" [édité]")) &&
+		if (ui->m_folio_pb->text().endsWith(tr(" [edited]")) &&
 			m_diagram_hash.contains(qtwi))
 		{
 			QPointer<Diagram> d = m_diagram_hash.value(qtwi);
@@ -1210,7 +1210,7 @@ void SearchAndReplaceWidget::on_m_replace_pb_clicked()
 				m_worker.replaceDiagram(d.data());
 			}
 		}
-		else if (ui->m_element_pb->text().endsWith(tr(" [édité]")) &&
+		else if (ui->m_element_pb->text().endsWith(tr(" [edited]")) &&
 				 m_element_hash.contains(qtwi))
 		{
 			QPointer<Element> e = m_element_hash.value(qtwi);
@@ -1229,7 +1229,7 @@ void SearchAndReplaceWidget::on_m_replace_pb_clicked()
 			}
 
 		}
-		else if (ui->m_conductor_pb->text().endsWith(tr(" [édité]")) &&
+		else if (ui->m_conductor_pb->text().endsWith(tr(" [edited]")) &&
 				 m_conductor_hash.contains(qtwi))
 		{
 			QPointer<Conductor> c = m_conductor_hash.value(qtwi);
@@ -1239,7 +1239,7 @@ void SearchAndReplaceWidget::on_m_replace_pb_clicked()
 		}
 
 			//Replace advanced
-		if (ui->m_advanced_replace_pb->text().endsWith(tr(" [édité]")))
+		if (ui->m_advanced_replace_pb->text().endsWith(tr(" [edited]")))
 		{
 			QList <Diagram *>dl;
 			QList <Element *>el;
@@ -1293,20 +1293,20 @@ void SearchAndReplaceWidget::on_m_replace_pb_clicked()
 */
 void SearchAndReplaceWidget::on_m_replace_all_pb_clicked()
 {
-	if (ui->m_folio_pb->text().endsWith(tr(" [édité]"))) {
+	if (ui->m_folio_pb->text().endsWith(tr(" [edited]"))) {
 		m_worker.replaceDiagram(selectedDiagram());
 	}
-	if (ui->m_element_pb->text().endsWith(tr(" [édité]"))) {
+	if (ui->m_element_pb->text().endsWith(tr(" [edited]"))) {
 		m_worker.replaceElement(selectedElement());
 	}
 	if (!ui->m_replace_le->text().isEmpty()) {
 		m_worker.m_indi_text = ui->m_replace_le->text();
 		m_worker.replaceIndiText(selectedText() );
 	}
-	if (ui->m_conductor_pb->text().endsWith(tr(" [édité]"))) {
+	if (ui->m_conductor_pb->text().endsWith(tr(" [edited]"))) {
 		m_worker.replaceConductor(selectedConductor());
 	}
-	if (ui->m_advanced_replace_pb->text().endsWith(tr(" [édité]"))) {
+	if (ui->m_advanced_replace_pb->text().endsWith(tr(" [edited]"))) {
 
 		m_worker.replaceAdvanced(selectedDiagram(),
 					 selectedElement(),
@@ -1333,8 +1333,8 @@ void SearchAndReplaceWidget::on_m_element_pb_clicked()
 	if (result == QDialogButtonBox::AcceptRole)
 	{
 		QString text = ui->m_element_pb->text();
-		if (!text.endsWith(tr(" [édité]"))) {
-			text.append(tr(" [édité]"));
+		if (!text.endsWith(tr(" [edited]"))) {
+			text.append(tr(" [edited]"));
 		}
 		ui->m_element_pb->setText(text);
 		m_worker.m_element_context = dialog->context();
@@ -1342,8 +1342,8 @@ void SearchAndReplaceWidget::on_m_element_pb_clicked()
 	else if (result == QDialogButtonBox::ResetRole)
 	{
 		QString text = ui->m_element_pb->text();
-		if (text.endsWith(tr(" [édité]"))) {
-			text.remove(tr(" [édité]"));
+		if (text.endsWith(tr(" [edited]"))) {
+			text.remove(tr(" [edited]"));
 		}
 		ui->m_element_pb->setText(text);
 		m_worker.m_element_context = DiagramContext();
@@ -1386,8 +1386,8 @@ void SearchAndReplaceWidget::on_m_conductor_pb_clicked()
 	if (result == QDialogButtonBox::AcceptRole)
 	{
 		QString text = ui->m_conductor_pb->text();
-		if (!text.endsWith(tr(" [édité]"))) {
-			text.append(tr(" [édité]"));
+		if (!text.endsWith(tr(" [edited]"))) {
+			text.append(tr(" [edited]"));
 		}
 		ui->m_conductor_pb->setText(text);
 		m_worker.m_conductor_properties = dialog->properties();
@@ -1395,8 +1395,8 @@ void SearchAndReplaceWidget::on_m_conductor_pb_clicked()
 	else if (result == QDialogButtonBox::ResetRole)
 	{
 		QString text = ui->m_conductor_pb->text();
-		if (text.endsWith(tr(" [édité]"))) {
-			text.remove(tr(" [édité]"));
+		if (text.endsWith(tr(" [edited]"))) {
+			text.remove(tr(" [edited]"));
 		}
 		ui->m_conductor_pb->setText(text);
 		m_worker.m_conductor_properties =
@@ -1418,8 +1418,8 @@ void SearchAndReplaceWidget::on_m_advanced_replace_pb_clicked()
 	if (result == QDialogButtonBox::AcceptRole)
 	{
 		QString text = ui->m_advanced_replace_pb->text();
-		if (!text.endsWith(tr(" [édité]"))) {
-			text.append(tr(" [édité]"));
+		if (!text.endsWith(tr(" [edited]"))) {
+			text.append(tr(" [edited]"));
 		}
 		ui->m_advanced_replace_pb->setText(text);
 		m_worker.m_advanced_struct = dialog->advancedStruct();
@@ -1427,8 +1427,8 @@ void SearchAndReplaceWidget::on_m_advanced_replace_pb_clicked()
 	else if (result == QDialogButtonBox::ResetRole)
 	{
 		QString text = ui->m_advanced_replace_pb->text();
-		if (text.endsWith(tr(" [édité]"))) {
-			text.remove(tr(" [édité]"));
+		if (text.endsWith(tr(" [edited]"))) {
+			text.remove(tr(" [edited]"));
 		}
 		ui->m_advanced_replace_pb->setText(text);
 		m_worker.m_advanced_struct = advancedReplaceStruct();

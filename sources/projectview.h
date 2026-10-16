@@ -138,6 +138,8 @@ class ProjectView : public QWidget
 		QETResult save();
 		QETResult saveAs();
 		QETResult doSave();
+		QETResult writeProject(bool *cancelled);
+		QETResult saveCopyForOlderVersions();
 		int cleanProject();
 		void updateWindowTitle();
 		void updateTabTitle(DiagramView *);
@@ -170,6 +172,7 @@ class ProjectView : public QWidget
 		bool tryClosingElementEditors();
 		int tryClosingDiagrams();
 		QString askUserForFilePath(bool = true);
+		bool refuseIfLockedByOther(const QString &filepath);
 		QETResult noProjectResult() const;
 		void showFromHistory(DiagramView *diagram_view);
 

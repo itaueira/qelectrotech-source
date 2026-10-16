@@ -26,6 +26,8 @@
 #include "../terminalstrip.h"
 #include "../UndoCommand/addterminaltostripcommand.h"
 
+#include <QSortFilterProxyModel>
+
 /**
  * @brief FreeTerminalEditor::FreeTerminalEditor
  * @param project
@@ -40,8 +42,23 @@ FreeTerminalEditor::FreeTerminalEditor(QETProject *project, QWidget *parent) :
 	ui->m_table_view->setItemDelegate(new FreeTerminalModelDelegate(ui->m_table_view));
 
     m_model = new FreeTerminalModel(m_project, this);
-	ui->m_table_view->setModel(m_model);
-	ui->m_table_view->setCurrentIndex(m_model->index(0,0));
+
+		//The view works on a filtered proxy of the model. The filter is a plain,
+		//case insensitive "contains" on the label, so typing Z1 shows Z1:1, Z1:2...
+		//Not dynamic : an edited label must not vanish from the table while it is typed.
+	m_proxy_model = new QSortFilterProxyModel(this);
+	m_proxy_model->setSourceModel(m_model);
+	m_proxy_model->setFilterKeyColumn(FreeTerminalModel::Label);
+	m_proxy_model->setFilterCaseSensitivity(Qt::CaseInsensitive);
+	m_proxy_model->setDynamicSortFilter(false);
+	ui->m_table_view->setModel(m_proxy_model);
+	ui->m_table_view->setCurrentIndex(m_proxy_model->index(0,0));
+
+	connect(ui->m_filter_le, &QLineEdit::textChanged, this, [this](const QString &text)
+	{
+		m_proxy_model->setFilterFixedString(text);
+		selectionChanged();
+	});
 		//Selected rows can be dragged onto a strip of the terminal strip tree
 	ui->m_table_view->setDragEnabled(true);
 	ui->m_table_view->setDragDropMode(QAbstractItemView::DragOnly);
@@ -56,8 +73,9 @@ FreeTerminalEditor::FreeTerminalEditor(QETProject *project, QWidget *parent) :
 	connect(ui->m_table_view->selectionModel(), &QItemSelectionModel::selectionChanged,
 			this, &FreeTerminalEditor::selectionChanged);
 
-	connect(ui->m_table_view, &QAbstractItemView::doubleClicked, this, [this](const QModelIndex &index)
+	connect(ui->m_table_view, &QAbstractItemView::doubleClicked, this, [this](const QModelIndex &proxy_index)
 	{
+		const auto index = m_proxy_model->mapToSource(proxy_index);
 		if (m_model->columnTypeForIndex(index) == FreeTerminalModel::XRef)
 		{
 			auto mrtd = m_model->dataAtRow(index.row());
@@ -121,7 +139,7 @@ void FreeTerminalEditor::apply()
 	const auto modified_data = m_model->modifiedModelRealTerminalData();
 	if (modified_data.size())
 	{
-		m_project->undoStack()->beginMacro(tr("Modifier des propriétés de borniers"));
+		m_project->undoStack()->beginMacro(tr("Modify terminal strip properties"));
 
 		for (const auto &data_ : modified_data)
 		{
@@ -184,7 +202,7 @@ void FreeTerminalEditor::on_m_type_cb_activated(int index)
 
 		for (auto model_index : index_list)
 		{
-			auto type_index = m_model->index(model_index.row(), FreeTerminalModel::Type, model_index.parent());
+			auto type_index = m_model->index(m_proxy_model->mapToSource(model_index).row(), FreeTerminalModel::Type);
 			if (type_index.isValid())
 			{
 				ElementData::TerminalType override_type;
@@ -199,6 +217,16 @@ void FreeTerminalEditor::on_m_type_cb_activated(int index)
 						override_type = ElementData::TTDiode; break;
 					case 4:
 						override_type = ElementData::TTGround; break;
+					case 5:
+						override_type = ElementData::TTAntiParallelDiodes; break;
+					case 6:
+						override_type = ElementData::TTResistor; break;
+					case 7:
+						override_type = ElementData::TTVaristor; break;
+					case 8:
+						override_type = ElementData::TTTestSocket; break;
+					case 9:
+						override_type = ElementData::TTDiodeReversed; break;
 					default:
 						override_type = ElementData::TTGeneric; break;
 				}
@@ -217,7 +245,7 @@ void FreeTerminalEditor::on_m_function_cb_activated(int index)
 
 		for (auto model_index : index_list)
 		{
-			auto function_index = m_model->index(model_index.row(), FreeTerminalModel::Function, model_index.parent());
+			auto function_index = m_model->index(m_proxy_model->mapToSource(model_index).row(), FreeTerminalModel::Function);
 			if (function_index.isValid())
 			{
 				ElementData::TerminalFunction override_function;
@@ -246,7 +274,7 @@ void FreeTerminalEditor::on_m_led_cb_activated(int index)
 
 		for (auto model_index : index_list)
 		{
-			auto led_index = m_model->index(model_index.row(), FreeTerminalModel::Led, model_index.parent());
+			auto led_index = m_model->index(m_proxy_model->mapToSource(model_index).row(), FreeTerminalModel::Led);
 
 			if (led_index.isValid()) {
 				m_model->setData(led_index,
@@ -260,7 +288,10 @@ void FreeTerminalEditor::on_m_led_cb_activated(int index)
 void FreeTerminalEditor::on_m_move_pb_clicked()
 {
 		//Get the selected real terminal
-	const auto index_list = ui->m_table_view->selectionModel()->selectedIndexes();
+	QModelIndexList index_list;
+	for (const auto &proxy_index : ui->m_table_view->selectionModel()->selectedIndexes()) {
+		index_list.append(m_proxy_model->mapToSource(proxy_index));
+	}
 	const auto real_t_vector = m_model->realTerminalForIndex(index_list);
 
 		//Get the terminal strip who receive the real terminal
@@ -319,13 +350,13 @@ void FreeTerminalEditor::selectionChanged()
 
 		//Say why the button is disabled, the most basic reason first
 	if (!has_strip) {
-		ui->m_move_pb->setToolTip(tr("Le projet n'a aucun bornier : créez-en un avec le bouton +"));
+		ui->m_move_pb->setToolTip(tr("The project has no terminal strip: create one with the + button"));
 	} else if (has_pending) {
-		ui->m_move_pb->setToolTip(tr("Appliquez ou annulez les modifications en cours avant de déplacer"));
+		ui->m_move_pb->setToolTip(tr("Apply or cancel the current changes before moving"));
 	} else if (!has_selection) {
-		ui->m_move_pb->setToolTip(tr("Sélectionnez dans le tableau les bornes à déplacer"));
+		ui->m_move_pb->setToolTip(tr("Select the terminals to move in the table"));
 	} else {
-		ui->m_move_pb->setToolTip(tr("Déplacer les bornes sélectionnées vers le bornier choisi"));
+		ui->m_move_pb->setToolTip(tr("Move the selected terminals to the chosen terminal block"));
 	}
 }
 

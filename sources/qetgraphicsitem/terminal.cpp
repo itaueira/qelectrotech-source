@@ -80,7 +80,7 @@ void Terminal::init()
 
 	setAcceptHoverEvents(true);
 	setAcceptedMouseButtons(Qt::LeftButton);
-	setToolTip(QObject::tr("Borne", "tooltip"));
+	setToolTip(QObject::tr("Terminal", "tooltip"));
 	setZValue(Z);
 }
 
@@ -661,8 +661,8 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 							 : nullptr;
 		if (full) {
 			QToolTip::showText(e->screenPos(),
-							   tr("Cette borne a déjà %n conducteur(s), la limite du projet. "
-								  "Ajoutez une borne pour raccorder un conducteur de plus.",
+							   tr("This terminal already has %n conductors, the project's "
+								  "limit. Add a terminal to connect one more conductor.",
 								  "wire refused by the wires-per-terminal limit",
 								  full->wireLimit()));
 		}
@@ -1190,6 +1190,18 @@ TerminalData::Type Terminal::terminalType() const
 }
 
 /**
+	@brief Terminal::potential
+	@return this terminal's own potential-group identifier (@see
+	TerminalData::m_potential).
+	An author-chosen grouping used only
+	within a single multi-terminal element.
+*/
+QString Terminal::potential() const
+{
+	return d->m_potential;
+}
+
+/**
 	@brief Terminal::setUseMasterLabel
 	Set whether this terminal uses a label from the master's contact group
 	@param use true to use master label
@@ -1220,15 +1232,43 @@ void Terminal::setMasterLabelIndex(int index)
 	@param terminal : to start search
 	@param all_diagram :if true return all related terminal,
 	false return only terminal in the same diagram of t
+	@param ignore_function_separation : if true, a parent element whose
+	function separation (element information potential_isolating) is
+	enabled does not keep its terminals apart: they all count as one
+	potential, the way they do when the option is disabled. Only the
+	callers that need the conductors a separation hides -- so that the
+	one property still allowed to cross it, the voltage / protocol, can
+	be applied there (@see Conductor::functionSeparatedConductors) --
+	pass true; every other caller keeps the default.
 	@return the list of terminal at the same potential
 */
 QList<Terminal *> relatedPotentialTerminal (
-		const Terminal *terminal, const bool all_diagram)
+		const Terminal *terminal, const bool all_diagram,
+		const bool ignore_function_separation)
 {
 	// If terminal parent element is a folio report.
 	if (all_diagram && terminal -> parentElement() -> linkType() & Element::AllReport)
 	{
+			//The report's partner on a folio not built yet (lazy folios)
+			//is built, so that a potential is followed as far as when every
+			//folio is; not while folios are being read or built, which
+			//would build whole report chains
+		Element *report = terminal->parentElement();
+		const QSet<QUuid> waiting = report->pendingLinks();
+		QETProject *project = report->diagram() ? report->diagram()->project() : nullptr;
+		if (!waiting.isEmpty() && project
+				&& project->state() != QETProject::ProjectParsingRunning) {
+			project->buildFoliosHoldingSymbols(waiting);
+		}
 		QList <Element *> elmt_list = terminal -> parentElement() -> linkedElements();
+			//A partner built alone (stage D5b) has no wires
+			//yet: its folio is built
+		if (!elmt_list.isEmpty() && project && elmt_list.first()->diagram()
+				&& !elmt_list.first()->diagram()->isLoaded()
+				&& project->state() != QETProject::ProjectParsingRunning) {
+			project->buildFolios({elmt_list.first()->diagram()});
+			elmt_list = terminal->parentElement()->linkedElements();
+		}
 		if (!elmt_list.isEmpty())
 		{
 			return (elmt_list.first()->terminals());
@@ -1237,10 +1277,28 @@ QList<Terminal *> relatedPotentialTerminal (
 	// If terminal parent element is a Terminal element.
 	else if (terminal -> parentElement() -> linkType() & Element::Terminale)
 	{
-		// English: Check if the user activated the potential isolation checkbox for this terminal
-		if (QET::infoFlagIsTrue(terminal->parentElement()->elementInformations().value(QStringLiteral("potential_isolating")).toString())) {
-			// English: Potential is isolated. Return an empty list so it does not propagate to the other side.
-			return QList<Terminal *>();
+		// English: Check if the user activated the function separation
+		// checkbox for this terminal (the checkbox that used to be called
+		// potential separation -- the stored flag is still
+		// "potential_isolating" so existing elements keep their setting).
+		if (!ignore_function_separation
+			&& QET::infoFlagIsTrue(terminal->parentElement()->elementInformations().value(QStringLiteral("potential_isolating")).toString())) {
+			// English: The terminals are function separated -- but terminals
+			// sharing this terminal's own, non-empty potential-group
+			// identifier (@see TerminalData::m_potential, set per-terminal in
+			// the element editor) still belong to the same physical terminal
+			// and stay linked to each other. An empty/unset potential on
+			// every terminal reproduces the previous, fully-separated
+			// behavior exactly, so existing elements are unaffected.
+			const QString this_potential = terminal->potential();
+			QList<Terminal *> same_potential;
+			if (!this_potential.isEmpty()) {
+				for (Terminal *t : terminal->parentElement()->terminals()) {
+					if (t != terminal && t->potential() == this_potential)
+						same_potential << t;
+				}
+			}
+			return same_potential;
 		}
 
 		QList <Terminal *> terminals = terminal->parentElement()->terminals();

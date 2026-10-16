@@ -131,7 +131,7 @@ DynamicElementTextItem::DynamicElementTextItem(Element *parent_element) :
 {
 	ShownKinds::tag(this, ShownKinds::SymbolTexts);
 	setFont(QETApp::dynamicTextsItemFont());
-	setText(tr("Texte"));
+	setText(tr("Text"));
 	setParentItem(parent_element);
 	QSettings settings;
 	setRotation(settings.value("dynamic_text_rotation", 0).toInt());
@@ -142,7 +142,7 @@ DynamicElementTextItem::DynamicElementTextItem(Element *parent_element) :
 		if(this->m_parent_element && this->m_parent_element->diagram())
 		{
 			QUndoCommand *undo = new QPropertyUndoCommand(this, "text", old_str, new_str);
-			undo->setText(tr("Éditer un texte d'élément"));
+			undo->setText(tr("Edit an element text"));
 			this->m_parent_element->diagram()->undoStack().push(undo);
 		}
 	});
@@ -1291,7 +1291,7 @@ void DynamicElementTextItem::handlerMouseReleaseEvent(QetGraphicsHandlerItem *ha
 	{
 		auto *undo = new QPropertyUndoCommand(this, "textWidth", QVariant(m_resize_original_width), QVariant(new_width));
 		undo->setAnimated(true, false);
-		undo->setText(tr("Redimensionner un texte d'élément"));
+		undo->setText(tr("Resize an element text"));
 		m_parent_element->diagram()->undoStack().push(undo);
 	}
 }
@@ -1707,7 +1707,9 @@ void DynamicElementTextItem::setPotentialConductor()
 			m_watched_conductor = c_list.first();
 			connect(m_watched_conductor.data(), &Conductor::propertiesChange, this, &DynamicElementTextItem::conductorPropertiesChanged);
 		}
-		else if(m_watched_conductor.isNull() && m_other_report)
+		else if(m_watched_conductor.isNull() && m_other_report
+				//A report symbol can have no terminal (some older collections')
+				&& !m_other_report.data()->terminals().isEmpty())
 		{
 			if (!m_other_report.data()->terminals().first()->conductors().isEmpty())
 			{
@@ -2045,12 +2047,36 @@ void DynamicElementTextItem::setPlainText(const QString &text)
 
 
 	bool update_alignment = true;
+	bool parsing_only = false;
 	if (diagram() && (diagram()->project()->state() == QETProject::ProjectParsingRunning))
+	{
 		update_alignment = false;
+		parsing_only = true;
+	}
 	if (m_parent_element.data()->state() == QET::GIBuildingFromXml ||
 		m_parent_element.data()->state() == QET::GILoadingFromXml)
+	{
 		update_alignment = false;
-	
+		parsing_only = false;
+	}
+
+		//A text emptied with its alignment kept (the project not being
+		//opened) is filled again the same way, even if the project is
+		//being opened by then: lazy folios build the folios left late with
+		//the project in that state, and the text would stay where emptying
+		//moved it (F119)
+	if (text.isEmpty())
+		m_emptied_aligned = update_alignment;
+	else if (!toPlainText().isEmpty())
+		m_emptied_aligned = false;
+	else if (parsing_only && m_emptied_aligned)
+	{
+		update_alignment = true;
+		m_emptied_aligned = false;
+	}
+	else
+		m_emptied_aligned = false;
+
 	if (update_alignment) {
 		prepareAlignment();
 	}

@@ -330,7 +330,7 @@ void CatalogProjectActions::showMissingPartReport(QETProject *project, QWidget *
 	QTableWidget *table = new QTableWidget(&dialog);
 	table->setColumnCount(3);
 	table->setHorizontalHeaderLabels({ QObject::tr("Repère"),
-					   QObject::tr("Folio"),
+					   QObject::tr("Sheet"),
 					   QObject::tr("Symbole") });
 	table->setSelectionBehavior(QAbstractItemView::SelectRows);
 	table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -742,7 +742,7 @@ void CatalogProjectActions::showMissingPhysicalViewReport(QETProject *project,
 	QTableWidget *table = new QTableWidget(&dialog);
 	table->setColumnCount(5);
 	table->setHorizontalHeaderLabels({ QObject::tr("Repère"),
-					   QObject::tr("Folio"),
+					   QObject::tr("Sheet"),
 					   QObject::tr("Code"),
 					   QObject::tr("Désignation"),
 					   QObject::tr("Manque") });

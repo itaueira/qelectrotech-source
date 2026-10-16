@@ -59,7 +59,13 @@ class TerminalStripEditor : public QWidget
 		*/
 		void message(const QString &text);
 
+	protected:
+		bool eventFilter(QObject *watched, QEvent *event) override;
+
 	private:
+		void copySelectionToClipboard();
+		void pasteFromClipboard();
+		void clearSelectedTexts();
         void clear();
 		void spanMultiLevelTerminals();
 		void selectionChanged();
@@ -75,6 +81,7 @@ class TerminalStripEditor : public QWidget
 		void on_m_type_cb_activated(int index);
 		void on_m_function_cb_activated(int index);
 		void on_m_led_cb_activated(int index);
+		void on_m_cable_apply_pb_clicked();
 		void on_m_bridge_terminals_pb_clicked();
 		void on_m_unbridge_terminals_pb_clicked();
 		void on_m_bridge_color_cb_activated(const QColor &col);

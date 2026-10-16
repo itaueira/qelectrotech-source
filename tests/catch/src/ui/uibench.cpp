@@ -17,6 +17,7 @@
 */
 #include "uibench.h"
 
+#include "../../../../sources/container/qetcontainer.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontent.h"
 #include "../../../../sources/diagramcontext.h"
@@ -57,6 +58,13 @@ bool UiBench::opensWithoutDialog(const QString &file_path, QString *reason)
 	QFile file(file_path);
 	if (!file.open(QIODevice::ReadOnly)) {
 		return refuse(QStringLiteral("cannot be read: %1").arg(file_path));
+	}
+
+		//A .qetz is a zip, not a document to parse here. The one a test
+		//opens is the one saveAndReopen() just wrote, in this version's
+		//format, so it raises no compatibility dialog.
+	if (QETProject::isContainerPath(file_path)) {
+		return true;
 	}
 
 	QDomDocument document;
@@ -178,7 +186,20 @@ QString UiBench::fileContent(const QString &path)
 	if (!file.open(QIODevice::ReadOnly)) {
 		return QString();
 	}
-	return QString::fromUtf8(file.readAll());
+	const QByteArray content = file.readAll();
+
+		//A .qetz holds the project document in parts: answered with the
+		//whole document, as the program reads it back, so that a test
+		//asking what was written asks what a reopening finds
+	if (QetContainer::isZip(content))
+	{
+		QDomDocument document;
+		if (!QetContainer::readDocument(content, &document)) {
+			return QString();
+		}
+		return document.toString(4);
+	}
+	return QString::fromUtf8(content);
 }
 
 UiBench::ScratchProject::ScratchProject(const QString &xml_content,
@@ -268,6 +289,9 @@ bool UiBench::ScratchProject::saveAndReopen()
 		return false;
 	}
 
+		//Reopened from the file written, which is not always the file
+		//opened: a project read from a .qet is saved as a .qetz beside it
+	m_file_path = m_project->filePath();
 	delete m_project;
 	m_project = nullptr;
 	open();

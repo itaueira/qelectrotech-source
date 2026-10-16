@@ -21,6 +21,7 @@
 #include "qet.h"
 #include <QColor>
 #include <QSettings>
+#include <QUuid>
 
 class QPainter;
 
@@ -38,6 +39,7 @@ class SingleLineProperties {
 	bool isPen() const;
 	void draw(QPainter *, QET::ConductorSegmentType, const QRectF &);
 	void toXml(QDomElement &) const;
+	QList<QPair<QString, QString>> attributes() const;
 	void fromXml(QDomElement &);
 	void toSettings(QSettings &, const QString & = QString()) const;
 	void fromSettings(QSettings &, const QString & = QString());
@@ -97,6 +99,14 @@ class ConductorProperties
 		m_bus,
 		m_cable;
 
+			/// The cable of the project this conductor is a core of, null
+			/// when it belongs to no cable. The text shown in m_cable is
+			/// generated from the cable and never typed in: this reference
+			/// plus the slot below is all it takes to work it out again.
+		QUuid m_cable_uuid;
+			/// Which core of that cable this conductor shows, -1 when none
+		int m_cable_slot = -1;
+
 		int
 		text_size,
 		m_dash_size = 1;
@@ -121,6 +131,7 @@ class ConductorProperties
 
 		// methods
 		void toXml(QDomElement &) const;
+		QList<QPair<QString, QString>> attributes() const;
 		void fromXml(QDomElement &);
 		void toSettings(QSettings &, const QString & = QString()) const;
 		void fromSettings(QSettings &, const QString & = QString());
@@ -128,6 +139,8 @@ class ConductorProperties
 		void applyForEqualAttributes(QList<ConductorProperties> list);
 		void applyChanges(const ConductorProperties &before,
 				  const ConductorProperties &after);
+		void applyTensionProtocolChange(const ConductorProperties &before,
+					      const ConductorProperties &after);
 
 		static ConductorProperties defaultProperties();
 

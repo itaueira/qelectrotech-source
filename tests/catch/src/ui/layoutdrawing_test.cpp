@@ -396,8 +396,8 @@ namespace {
 		Catalog catalog;
 	};
 
-	const QString add_rectangle = QStringLiteral("Ajouter un rectangle");
-	const QString add_line      = QStringLiteral("Ajouter une ligne");
+	const QString add_rectangle = QStringLiteral("Add a rectangle");
+	const QString add_line      = QStringLiteral("Add a line");
 }
 
 TEST_CASE("CU-44.4 — the symbol is a symbol again: no 2D tab, and no drawing in the file",
@@ -442,8 +442,8 @@ TEST_CASE("CU-44.5 — the editor of the drawing of a part has the drawing, and 
 	CHECK(editor.windowTitle().contains(QStringLiteral("LC1D09")));
 
 		//No terminal and no dynamic text on a plate; the shapes all there
-	CHECK_FALSE(editorAction(editor, QStringLiteral("Ajouter une borne"))->isEnabled());
-	CHECK_FALSE(editorAction(editor, QStringLiteral("Ajouter un champ texte dynamique"))->isEnabled());
+	CHECK_FALSE(editorAction(editor, QStringLiteral("Add a terminal"))->isEnabled());
+	CHECK_FALSE(editorAction(editor, QStringLiteral("Add a dynamic text field"))->isEnabled());
 	CHECK(editorAction(editor, add_rectangle)->isEnabled());
 	CHECK(editorAction(editor, add_line)->isEnabled());
 

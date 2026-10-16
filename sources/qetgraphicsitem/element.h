@@ -28,6 +28,7 @@
 
 #include <QDomDocument>
 #include <QHash>
+#include <QSet>
 #include <QPicture>
 #include <QSet>
 #include <QUuid>
@@ -43,6 +44,8 @@ class QUndoCommand;
 /**
 	This is the base class for electrical elements.
 */
+class projectDataBase;
+
 class Element : public QetGraphicsItem
 {
 	friend class DiagramEventAddElement;
@@ -137,8 +140,9 @@ class Element : public QetGraphicsItem
 		}
 
 			//METHODS related to information
-		DiagramContext elementInformations()const
-		{return m_data.m_informations;}
+		DiagramContext elementInformations()const;
+			/// This symbol's own copy of its information, whatever the store holds
+		DiagramContext ownInformations() const {return m_data.m_informations;}
 		virtual void setElementInformations(DiagramContext dc);
 
 		ElementData elementData() const;
@@ -260,6 +264,9 @@ class Element : public QetGraphicsItem
 		virtual void unlinkAllElements() {}
 		virtual void unlinkElement(Element *) {}
 		virtual void initLink(QETProject *);
+		QSet<QUuid> pendingLinks() const;
+		bool keepsSavedLinks() const {return !tmp_uuids_link.isEmpty();}
+		QList<std::pair<QUuid, int>> waitingLinks() const;
 			/**
 				Resolve tmp_uuids_link against a caller-supplied candidate
 				list instead of a project-wide search (bugtracker #607).
@@ -297,8 +304,8 @@ class Element : public QetGraphicsItem
 		 */
 		QString linkTypeToString() const;
 
-		void newUuid() {m_uuid = QUuid::createUuid();} 	//create new uuid for this element
-		void setUuid(const QUuid &uuid) {m_uuid = uuid;}
+		void newUuid() {setUuid(QUuid::createUuid());} 	//create new uuid for this element
+		void setUuid(const QUuid &uuid);
 
 	protected:
 		void drawAxes(QPainter *, const QStyleOptionGraphicsItem *);
@@ -314,6 +321,23 @@ class Element : public QetGraphicsItem
 		DynamicElementTextItem *parseDynamicText(
 				const QDomElement &dom_element);
 		Terminal *parseTerminal(const QDomElement &dom_element);
+		void matchMovedTerminals(const QList<QDomElement> &records,
+								 const QSet<int> &matched_records,
+								 const QSet<Terminal *> &matched_terminals,
+								 QHash<int, Terminal *> &id_adr);
+
+	public:
+		Terminal *terminalFromOldPlace(const QUuid &old_place_uuid) const;
+		bool terminalWasMoved(const Terminal *terminal) const;
+
+	private:
+			/// How far, in x and y, a terminal may have moved from where
+			/// a project saved it and still be recognised
+		static constexpr qreal moved_terminal_reach = 5.0;
+			/// Terminals paired with a saved one that was elsewhere,
+			/// and the uuid derived from that old place
+		QHash<QUuid, Terminal *> m_old_place_terminals;
+		QSet<Terminal *> m_moved_terminals;
 
 		//Reimplemented from QGraphicsItem
 	public:
@@ -366,6 +390,9 @@ class Element : public QetGraphicsItem
 		QList<QPointF> plcTablePositions() const { return m_plc_table_positions; }
 
 	private:
+		void restoreSavedLinkOrder();
+		void storeInformation();
+		projectDataBase *placedStore() const;
 		bool m_must_highlight = false;
 		QSize   dimensions;
 		QPoint  hotspot_coord;
@@ -409,15 +436,14 @@ inline QUuid Element::uuid() const
 
 /**
 	@brief Element::linkedElements
-	@return the list of linked elements, the list is sorted by position
+	@return the list of linked elements, sorted by position. A sorted copy:
+	the element's own list keeps the order it is saved in.
 */
 inline QList <Element *> Element::linkedElements()
 {
-	 std::sort(
-				 connected_elements.begin(),
-				 connected_elements.end(),
-				 comparPos);
-	return connected_elements;
+	QList <Element *> sorted = connected_elements;
+	std::sort(sorted.begin(), sorted.end(), comparPos);
+	return sorted;
 }
 
 #endif

@@ -56,6 +56,7 @@ workspace policy applies exactly as it does over stdio.
 
 from __future__ import annotations
 
+import atexit
 import datetime
 import json
 import re
@@ -97,9 +98,78 @@ def _root(path: str) -> ET.Element:
     if not p.is_file():
         raise ValueError(f"no such file: {p}")
     try:
-        return ET.parse(p).getroot()
+        return ET.parse(_as_qet(p)).getroot()
     except ET.ParseError as exc:
         raise ValueError(f"{p.name} is not parseable XML: {exc}") from exc
+
+
+# --------------------------------------------------------------------------
+# zipped projects (.qetz)
+# --------------------------------------------------------------------------
+
+# A .qetz is QElectroTech's zipped project: a database and one file per
+# folio. The tools that read a project's XML read the .qet QElectroTech
+# saves from it, so they read what QElectroTech reads, whatever the zipped
+# format holds; one copy per version of the file (path, size, time).
+# Only the newest few are kept, and the server removes them when it exits.
+_QETZ_COPIES: dict = {}
+_QETZ_COPIES_MAX = 8
+
+
+def _forget_qetz_copy(key) -> None:
+    out = _QETZ_COPIES.pop(key, None)
+    if out is not None:
+        shutil.rmtree(out.parent, ignore_errors=True)
+
+
+@atexit.register
+def _forget_qetz_copies() -> None:
+    for key in list(_QETZ_COPIES):
+        _forget_qetz_copy(key)
+
+
+def _is_qetz(path) -> bool:
+    return str(path).lower().endswith(".qetz")
+
+
+def _as_qet(path) -> Path:
+    """The file the XML tools read for `path`: itself, or for a .qetz the
+    .qet QElectroTech saves from it (made with the configured binary)."""
+    p = Path(path).expanduser()
+    if not _is_qetz(p):
+        return p
+    if not p.is_file():
+        raise ValueError(f"no such file: {p}")
+    st = p.stat()
+    key = (str(p.resolve()), st.st_size, st.st_mtime_ns)
+    cached = _QETZ_COPIES.get(key)
+    if cached is not None and cached.is_file():
+        _QETZ_COPIES[key] = _QETZ_COPIES.pop(key)   # newest last
+        return cached
+    binary = resolve_binary()
+    if not binary:
+        raise ValueError(f"{p.name} is a zipped project (.qetz): reading it needs "
+                         "QElectroTech; set QET_BINARY")
+    folder = Path(tempfile.mkdtemp(prefix="qet-mcp-qetz-"))
+    out = folder / (p.stem + ".qet")
+    # Saving as .qet builds every folio: allow a big project its time
+    result = _run_qet(str(binary), ["--resave", str(p), str(out)], timeout=900)
+    # A run that timed out or failed may have left part of a .qet behind
+    if not result.get("ok") or not out.is_file() or out.stat().st_size == 0:
+        shutil.rmtree(folder, ignore_errors=True)
+        if result.get("timed_out"):
+            detail = f"timed out after {result.get('timeout_s')} s"
+        else:
+            detail = (result.get("stderr") or result.get("stdout") or "").strip()[-400:]
+        raise ValueError(f"QElectroTech could not read {p.name}"
+                         + (f": {detail}" if detail else ""))
+    # An older version of the same file is not read again
+    for old in [k for k in _QETZ_COPIES if k[0] == key[0]]:
+        _forget_qetz_copy(old)
+    _QETZ_COPIES[key] = out
+    while len(_QETZ_COPIES) > _QETZ_COPIES_MAX:
+        _forget_qetz_copy(next(iter(_QETZ_COPIES)))
+    return out
 
 
 def _element_info(el: ET.Element) -> dict:
@@ -795,23 +865,35 @@ def _num(v) -> float:
 
 
 def tool_scan(directory: str, tag: str = "conductor",
-              attribute: str = "cable", recursive: bool = True) -> dict:
-    """Sweep every .qet in a directory, counting how many <tag> carry a
+              attribute: str = "cable", recursive: bool = True,
+              max_qetz: int = 20) -> dict:
+    """Sweep every .qet and .qetz in a directory, counting how many <tag> carry a
     non-empty `attribute`.
 
     This is the corpus question: "3190 conductors, 0 cable values across
     25 projects" is exactly one call to this tool.
+
+    Each .qetz is read by QElectroTech saving it as a .qet, which can take
+    minutes for a big project, so only the first `max_qetz` are read; the
+    others are listed as skipped.
     """
     d = Path(directory).expanduser()
     if not d.is_dir():
         raise ValueError(f"not a directory: {d}")
-    files = sorted(d.rglob("*.qet") if recursive else d.glob("*.qet"))
+    files = sorted([f for pattern in ("*.qet", "*.qetz")
+                    for f in (d.rglob(pattern) if recursive else d.glob(pattern))])
     total = non_empty = 0
-    per_file, values, unreadable = [], {}, []
+    per_file, values, unreadable, skipped = [], {}, [], []
+    qetz_read = 0
     for f in files:
+        if _is_qetz(f):
+            if qetz_read >= max_qetz:
+                skipped.append(f.name)
+                continue
+            qetz_read += 1
         try:
-            root = ET.parse(f).getroot()
-        except ET.ParseError as exc:
+            root = ET.parse(_as_qet(f)).getroot()
+        except (ET.ParseError, ValueError) as exc:
             unreadable.append({"file": f.name, "error": str(exc)})
             continue
         n = ne = 0
@@ -826,6 +908,9 @@ def tool_scan(directory: str, tag: str = "conductor",
         per_file.append({"file": f.name, tag: n, "non_empty": ne})
     return {
         "directory": str(d), "files": len(files), "unreadable": unreadable,
+        **({"skipped_qetz": skipped,
+            "note": f"only the first {max_qetz} .qetz were read (max_qetz)"}
+           if skipped else {}),
         "tag": tag, "attribute": attribute,
         "total": total, "non_empty": non_empty,
         "distinct_values": sorted(values.items(), key=lambda kv: -kv[1])[:25],
@@ -896,19 +981,32 @@ def tool_element_info(path: str) -> dict:
     }
 
 
-def _launch_executable(src: Path, sandbox: Path, windows: bool) -> Path:
-    """The executable _run_qet() starts: a private copy, except on Windows.
+def _copies_executable(platform: str = sys.platform) -> bool:
+    """Whether _run_qet() runs a private copy of QElectroTech on @p platform:
+    not on Windows or macOS (see _launch_executable())."""
+    return platform not in ("win32", "darwin")
+
+
+def _launch_executable(src: Path, sandbox: Path, copy: bool) -> Path:
+    """The executable _run_qet() starts: a private copy when @p copy is set,
+    otherwise the original.
 
     The copy gives each run its own SingleApplication key, which is derived
-    from the executable's path. On Windows a program loads its DLLs from its
-    own folder, so a copy on its own dies before main() (0xC0000135, DLL not
-    found) and nothing could ever be exported or edited there. Run the
-    original instead: every flag this server passes is a CLI export flag or
-    --run, and QElectroTech handles both and returns before it constructs
-    SingleApplication (main.cpp), so there is no instance to be handed to.
-    The copy stays elsewhere for builds from before that early return.
+    from the executable's path. Two systems cannot run a copy:
+
+    - Windows: a program loads its DLLs from its own folder, so a copy on
+      its own dies before main() (0xC0000135, DLL not found).
+    - macOS: a copy taken out of the signed .app bundle is killed at launch
+      (exit 137) and has lost the path to the bundle's Qt frameworks
+      (qelectrotech-source-mirror#1178).
+
+    There, run the original instead: every flag this server passes is a CLI
+    export flag or --run, and QElectroTech handles both and returns before
+    it constructs SingleApplication (main.cpp), so there is no instance to
+    be handed to. The copy stays elsewhere for builds from before that
+    early return.
     """
-    if windows:
+    if not copy:
         return src
     exe = sandbox / f"qet-mcp-{os.getpid()}"
     shutil.copy2(src, exe)
@@ -943,13 +1041,35 @@ def _launch_env(env: dict, home: Path, windows: bool) -> dict:
     return env
 
 
-def _collection_setting(collection: PurePath) -> str:
-    """The settings file that points QElectroTech at @p collection.
+def _collection_setting(collection: PurePath | None = None,
+                        custom: PurePath | None = None,
+                        company: PurePath | None = None) -> str:
+    """The settings file that points QElectroTech at its collections.
 
     Forward slashes: Qt reads a backslash in these files as an escape, so a
     Windows path written as-is arrives mangled."""
-    return ("[elements-collections]\n"
-            f"common-collection-path={collection.as_posix()}\n")
+    lines = ["[elements-collections]"]
+    for key, path in (("common", collection), ("custom", custom), ("company", company)):
+        if path is not None:
+            lines.append(f"{key}-collection-path={path.as_posix()}")
+    return "\n".join(lines) + "\n"
+
+
+def _user_collections() -> dict:
+    """The user and company collections of the QElectroTech this server
+    works with, as qet-assistant.json names them: {"custom": Path, ...}.
+
+    The sandbox's own HOME hides them: on Linux QElectroTech finds the user
+    collection under XDG_DATA_HOME, which the sandbox replaces, so a
+    custom:// path failed there while the same call worked on macOS
+    (qelectrotech-source-mirror#1450). Only folders that exist are kept."""
+    folders = (assistant_info() or {}).get("folders") or {}
+    found = {}
+    for scheme in ("custom", "company"):
+        named = folders.get(f"elements_{scheme}")
+        if isinstance(named, str) and named and Path(named).is_dir():
+            found[scheme] = Path(named)
+    return found
 
 
 def _run_qet(binary: str, args: list[str], timeout: int = 180,
@@ -970,7 +1090,11 @@ def _run_qet(binary: str, args: list[str], timeout: int = 180,
     that has never run `make install` does not exist. Every "common://..."
     path then fails to resolve and the only symptom is addElement()
     reporting "does not resolve to an element" for a file that is plainly
-    there. elements_dir writes the one setting that fixes it. The file name
+    there. elements_dir writes the one setting that fixes it. The user and
+    company collections are written too, from qet-assistant.json, so that
+    custom:// and company:// paths resolve as they do in the application;
+    on Linux the sandbox's XDG_DATA_HOME would otherwise hide the user
+    collection (#1450). The file name
     is not free-choice: QSettings derives it from the organisation and
     application names main.cpp sets before this branch runs. It is written
     twice: QElectroTech/QElectroTech.ini is what a QElectroTech that knows
@@ -996,18 +1120,22 @@ def _run_qet(binary: str, args: list[str], timeout: int = 180,
         raise ValueError(f"not an executable: {src}")
     with tempfile.TemporaryDirectory(prefix="qet-mcp-") as tmp:
         sandbox = Path(tmp)
-        exe = _launch_executable(src, sandbox, os.name == "nt")
+        exe = _launch_executable(src, sandbox, _copies_executable())
         home = sandbox / "home"
         (home / ".config").mkdir(parents=True)
         (home / ".local" / "share").mkdir(parents=True)
+        coll = None
         if elements_dir:
             coll = Path(elements_dir).expanduser()
             if not coll.is_dir():
                 raise ValueError(f"no such elements directory: {coll}")
+        user = _user_collections()
+        if coll or user:
             cfg = home / ".config" / "QElectroTech"
             cfg.mkdir(parents=True, exist_ok=True)
+            setting = _collection_setting(coll, user.get("custom"), user.get("company"))
             for name in ("QElectroTech.ini", "QElectroTech.conf"):
-                (cfg / name).write_text(_collection_setting(coll), encoding="utf-8")
+                (cfg / name).write_text(setting, encoding="utf-8")
         if script is not None:
             script_path = sandbox / "qet-mcp-edit.js"
             script_path.write_text(script, encoding="utf-8")
@@ -2454,16 +2582,35 @@ def _index_cache_file(root: Path) -> Path:
     return Path(base) / f"element-index-{digest}.json"
 
 
-_INDEX_CACHE_FORMAT = 1
+_INDEX_CACHE_FORMAT = 2
 
 
-def _load_index_cache(root: Path, sig) -> list | None:
+def _collection_prefix(root: Path) -> str:
+    """What goes before a path relative to root to make it a collection path.
+
+    "custom://" for the user collection and "company://" for the company
+    one, as qet-assistant.json names them, with the folder's own place in
+    the collection when root is a folder inside one. Any other directory is
+    taken to be a common collection: that is what qet_edit's elements_dir
+    makes of it, so common:// is what places a symbol found there.
+    """
+    resolved = root.resolve()
+    for scheme, folder in _user_collections().items():
+        try:
+            rel = resolved.relative_to(folder.resolve()).as_posix()
+        except ValueError:
+            continue
+        return f"{scheme}://" + ("" if rel == "." else rel + "/")
+    return "common://"
+
+
+def _load_index_cache(root: Path, sig, prefix: str) -> list | None:
     try:
         data = json.loads(_index_cache_file(root).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     if (data.get("format") != _INDEX_CACHE_FORMAT or data.get("root") != str(root)
-            or tuple(data.get("sig") or ()) != tuple(sig)):
+            or data.get("prefix") != prefix or tuple(data.get("sig") or ()) != tuple(sig)):
         return None
     items = data.get("items") or []
     for it in items:
@@ -2471,7 +2618,7 @@ def _load_index_cache(root: Path, sig) -> list | None:
     return items
 
 
-def _save_index_cache(root: Path, sig, items: list) -> None:
+def _save_index_cache(root: Path, sig, prefix: str, items: list) -> None:
     """Best effort: a cache that cannot be written only costs the next
     start its 6 s; it never fails a search."""
     path = _index_cache_file(root)
@@ -2479,7 +2626,8 @@ def _save_index_cache(root: Path, sig, items: list) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(".tmp")
         tmp.write_text(json.dumps({
-            "format": _INDEX_CACHE_FORMAT, "root": str(root), "sig": list(sig),
+            "format": _INDEX_CACHE_FORMAT, "root": str(root), "prefix": prefix,
+            "sig": list(sig),
             "items": [dict(it, haystack=sorted(it["haystack"])) for it in items]}),
             encoding="utf-8")
         os.replace(tmp, path)
@@ -2493,16 +2641,19 @@ def _index_collection(root: Path) -> list:
     Cached for the life of the process and rebuilt when the file count or
     the newest modification time changes -- which is what makes a symbol
     written by qet_element_build findable straight away, without the caller
-    knowing there is an index at all.
+    knowing there is an index at all. The paths carry the scheme of the
+    collection that root is in (_collection_prefix), so the index is
+    rebuilt when that changes too.
     """
     key = str(root.resolve())
     sig = _collection_signature(root)
+    prefix = _collection_prefix(root)
     cached = _ELEMENT_INDEX.get(key)
-    if cached and cached["sig"] == sig:
+    if cached and cached["sig"] == sig and cached["prefix"] == prefix:
         return cached["items"]
-    items = _load_index_cache(root.resolve(), sig)
+    items = _load_index_cache(root.resolve(), sig, prefix)
     if items is not None:
-        _ELEMENT_INDEX[key] = {"sig": sig, "items": items}
+        _ELEMENT_INDEX[key] = {"sig": sig, "prefix": prefix, "items": items}
         return items
 
     items = []
@@ -2522,7 +2673,7 @@ def _index_collection(root: Path) -> list:
         terminals = [t.get("name") or "" for t in ordered]
         rel = f.relative_to(root).as_posix()
         items.append({
-            "path": "common://" + rel,
+            "path": prefix + rel,
             "file": str(f),
             "name": names.get("en") or names.get("fr") or next(iter(names.values()), ""),
             "names": names,
@@ -2534,8 +2685,8 @@ def _index_collection(root: Path) -> list:
             "width": d.get("width"), "height": d.get("height"),
             "haystack": frozenset(_search_words(" ".join([*names.values(), rel, kind]))),
         })
-    _ELEMENT_INDEX[key] = {"sig": sig, "items": items}
-    _save_index_cache(root.resolve(), sig, items)
+    _ELEMENT_INDEX[key] = {"sig": sig, "prefix": prefix, "items": items}
+    _save_index_cache(root.resolve(), sig, prefix, items)
     return items
 
 
@@ -2547,9 +2698,12 @@ def tool_element_search(directory: str, query: str = "", link_type: str | None =
     Matches every word of query against all the translated names, the
     element's path and its kind, ignoring case and accents -- so a French
     or German search finds the same symbol an English one does. Results
-    carry a common:// path that qet_edit's add_element takes directly, and
-    the terminal names in the order add_conductor indexes them -- which is
-    top to bottom then left to right, not the order the file lists them.
+    carry a path that qet_edit's add_element takes directly (custom:// in
+    the user collection, company:// in the company one, common:// anywhere
+    else, which qet_edit places when given the same directory as
+    elements_dir), and the terminal names in the order add_conductor
+    indexes them -- which is top to bottom then left to right, not the
+    order the file lists them.
     """
     root = Path(directory).expanduser()
     if not root.is_dir():
@@ -3850,8 +4004,10 @@ def scripts_dir() -> Path:
 
 SERVER_INSTRUCTIONS = (
     "This server works with QElectroTech, a free editor for electrical "
-    "diagrams. A project (.qet) holds folios (sheets) of symbols "
-    "(elements) joined by wires (conductors). Folio indexes count from 0.\n"
+    "diagrams. A project (.qet, or .qetz: the same project zipped) holds "
+    "folios (sheets) of symbols (elements) joined by wires (conductors). "
+    "Every tool takes either; a .qetz is read through QElectroTech, so the "
+    "first read of a big one takes a while. Folio indexes count from 0.\n"
     "Start with qet_about: where QElectroTech keeps things, what is "
     "switched on, the stored scripts, and house_style -- this "
     "installation's own drawing conventions if the user set any. Follow "
@@ -4785,10 +4941,12 @@ TOOLS = [
     },
     {
         "name": "qet_scan",
-        "description": "Sweep every .qet in a directory and count how many nodes of "
-                       "a given tag carry a non-empty attribute, with the distinct "
-                       "values found. For corpus questions such as how many "
-                       "conductors in the shipped examples have a cable value.",
+        "description": "Sweep every .qet and .qetz in a directory and count how many "
+                       "nodes of a given tag carry a non-empty attribute, with the "
+                       "distinct values found. For corpus questions such as how many "
+                       "conductors in the shipped examples have a cable value. Each "
+                       ".qetz is read through QElectroTech, which can take minutes "
+                       "for a big project: only the first max_qetz are read.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -4796,12 +4954,14 @@ TOOLS = [
                 "tag": {"type": "string", "default": "conductor"},
                 "attribute": {"type": "string", "default": "cable"},
                 "recursive": {"type": "boolean", "default": True},
+                "max_qetz": {"type": "integer", "default": 20},
             },
             "required": ["directory"],
         },
         "handler": lambda a: tool_scan(a["directory"], a.get("tag", "conductor"),
                                        a.get("attribute", "cable"),
-                                       a.get("recursive", True)),
+                                       a.get("recursive", True),
+                                       a.get("max_qetz", 20)),
     },
     {
         "name": "qet_element_info",
@@ -5140,7 +5300,9 @@ TOOLS = [
                                    "elements/ directory. Required for \"common://\" "
                                    "paths: the sandboxed run has no settings of its "
                                    "own and would not find the collection otherwise. "
-                                   "An absolute .elmt path works without it.",
+                                   "An absolute .elmt path works only for a file "
+                                   "inside a collection: this one, the user's or "
+                                   "the company's.",
                 },
                 "timeout": {"type": "integer", "default": 180},
             },
@@ -5246,8 +5408,11 @@ TOOLS = [
         "name": "qet_element_search",
         "description": "Find a symbol in an element collection by name (any "
                        "language, ignoring case and accents), link type, kind or "
-                       "terminal count. Results carry a common:// path that "
-                       "qet_edit's add_element takes directly, and the terminal "
+                       "terminal count. Results carry a path that qet_edit's "
+                       "add_element takes directly: custom:// in the user "
+                       "collection, company:// in the company one, common:// "
+                       "in any other directory, which needs that directory "
+                       "as qet_edit's elements_dir. Also the terminal "
                        "names in add_conductor's index order (top-to-bottom, then "
                        "left-to-right; not file order). Indexes the "
                        "collection on first use and re-indexes when it changes, so "

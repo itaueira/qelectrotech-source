@@ -44,6 +44,7 @@ namespace QET {
 		extern QIcon ArrowRightDouble;
 		extern QIcon Autoconnect;
 		extern QIcon BringForward;
+		extern QIcon Cable;
 		extern QIcon Cancel;
 		extern QIcon Company;
 		extern QIcon Conductor;
@@ -81,6 +82,8 @@ namespace QET {
 		extern QIcon EditDelete;
 		extern QIcon EditOpacity;
 		extern QIcon EditPaste;
+		extern QIcon CopyElementTextFormat;
+		extern QIcon ApplyElementTextFormat;
 		extern QIcon EditRedo;
 		extern QIcon EditRename;
 		extern QIcon EditSelectAll;
@@ -241,6 +244,7 @@ namespace QET {
 		extern QIcon listDrawings;
 		extern QIcon AutoNum;
 		extern QIcon TerminalStrip;
+		extern QIcon GenericDevice;
 		extern QIcon QETManual;
 		extern QIcon QETDonate;
 		extern QIcon QETDownload;

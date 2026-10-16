@@ -61,7 +61,7 @@ PasteDiagramCommand::PasteDiagramCommand( Diagram *dia, const DiagramContent &c,
 	filter(DiagramContent::Elements|DiagramContent::TextFields|DiagramContent::Images|DiagramContent::ConductorsToMove | DiagramContent::Shapes),
 	first_redo(true)
 {
-	setText(QObject::tr("coller %1", "undo caption - %1 is a sentence listing the content to paste").arg(content.sentence(filter)));
+	setText(QObject::tr("paste %1", "undo caption - %1 is a sentence listing the content to paste").arg(content.sentence(filter)));
 	diagram -> qgiManager().manage(content.items(filter));
 }
 
@@ -147,29 +147,10 @@ void PasteDiagramCommand::redo()
 		}
 
 		//make new uuid for every pasted conductor, because old uuid are
-		//the uuid of the copied conductor. This is also what keeps a
-		//pasted wire out of the original cable: a cable's wire reaches
-		//its conductor by uuid (CableWire::conductorUuid()), so a copy
-		//that kept the original uuid would join the original cable with
-		//nobody asking. Deliberately outside the "erase label on copy"
-		//setting below: identity is not a label, and a duplicated uuid is
-		//a broken project whatever the user set.
+		//the uuid of the copied conductor
 		const QList <Conductor *> all_pasted_conductors = content.conductors();
-		for (Conductor *c : all_pasted_conductors)
-		{
+		for (Conductor *c : all_pasted_conductors) {
 			c -> newUuid();
-
-			//The cable attribute is the one-line mirror of that same
-			//membership, written by the program rather than typed by the
-			//user, and it travels literally through the XML the copy is
-			//made of. Left alone it would name a cable this conductor is
-			//not in. The mirror follows the membership: both go.
-			ConductorProperties cp = c -> properties();
-			if (!cp.m_cable.isEmpty())
-			{
-				cp.m_cable.clear();
-				c -> setProperties(cp);
-			}
 		}
 		for (IndependentTextItem *t : std::as_const(content.m_text_fields)) {
 			t -> newUuid();
@@ -408,7 +389,7 @@ CutDiagramCommand::CutDiagramCommand(
 	setText(
 		QString(
 			QObject::tr(
-				"couper %1",
+				"cut %1",
 				"undo caption - %1 is a sentence listing the content to cut"
 			).arg(content.sentence(DiagramContent::All))
 		)
@@ -521,7 +502,7 @@ void MoveConductorsTextsCommand::regenerateTextLabel()
 	setText(
 		QString(
 			QObject::tr(
-				"déplacer %1",
+				"move %1",
 				"undo caption - %1 is a sentence listing the moved content"
 			).arg(moved_content_sentence)
 		)
@@ -542,7 +523,7 @@ ChangeDiagramTextCommand::ChangeDiagramTextCommand(
 	const QString &after,
 	QUndoCommand *parent
 ) :
-	QUndoCommand(QObject::tr("modifier le texte", "undo caption"), parent),
+	QUndoCommand(QObject::tr("modify text", "undo caption"), parent),
 	text_item(dti),
 	text_before(before),
 	text_after(after),
@@ -594,7 +575,7 @@ ChangeConductorCommand::ChangeConductorCommand(
 	Qt::Corner path_t,
 	QUndoCommand *parent
 ) :
-	QUndoCommand(QObject::tr("modifier un conducteur", "undo caption"), parent),
+	QUndoCommand(QObject::tr("modify a conductor", "undo caption"), parent),
 	conductor(c),
 	old_profile(old_p),
 	new_profile(new_p),
@@ -665,7 +646,7 @@ ResetConductorCommand::ResetConductorCommand(
 {
 	setText(
 		QObject::tr(
-			"Réinitialiser %1",
+			"Reset %1",
 			"undo caption - %1 is a sentence listing the reset content"
 		).arg(QET::ElementsAndConductorsSentence(0, cp.count()))
 	);
@@ -715,7 +696,7 @@ ChangeBorderCommand::ChangeBorderCommand(Diagram *dia,
 					 const BorderProperties &new_bp,
 					 QUndoCommand *parent) :
 	QUndoCommand(
-		QObject::tr("modifier les dimensions du folio", "undo caption"),
+		QObject::tr("change the sheet size", "undo caption"),
 		parent),
 	diagram(dia),
 	old_properties(old_bp),

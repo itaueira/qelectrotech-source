@@ -37,14 +37,33 @@ QList<ElementAutoNumSchemeCommand::Scheme> PasteNumberingImport::copiedBy(const 
 	elements follow and the project does not have.
 	@param parent : parent of the question
 	@param copied : the numberings the copy carries
+	@param extra : commands the copy brings beside the paste itself
+	(the cable lines of a fragment, for example); they are pushed inside
+	the same macro, so one Ctrl+Z undoes all of it at once.
 */
 void PasteNumberingImport::push(QWidget *parent,
 								Diagram *diagram,
 								const DiagramContent &content,
-								const QList<ElementAutoNumSchemeCommand::Scheme> &copied)
+								const QList<ElementAutoNumSchemeCommand::Scheme> &copied,
+								const QList<QUndoCommand *> &extra)
 {
 	QETProject *project = diagram->project();
 	auto *paste = new PasteDiagramCommand(diagram, content);
+
+		//The paste and the commands beside it are one step: only the
+		//macros really need more than the single push.
+	const auto push_all = [&]() {
+		if (extra.isEmpty()) {
+			diagram->undoStack().push(paste);
+			return;
+		}
+		diagram->undoStack().beginMacro(paste->text());
+		diagram->undoStack().push(paste);
+		for (QUndoCommand *cmd : extra) {
+			diagram->undoStack().push(cmd);
+		}
+		diagram->undoStack().endMacro();
+	};
 
 	QList<ElementAutoNumSchemeCommand::Scheme> missing;
 	if (project && !copied.isEmpty()
@@ -52,7 +71,7 @@ void PasteNumberingImport::push(QWidget *parent,
 		missing = ElementAutoNumSchemeCommand::missingForPaste(project, copied, content.m_elements);
 	}
 	if (missing.isEmpty()) {
-		diagram->undoStack().push(paste);
+		push_all();
 		return;
 	}
 
@@ -62,15 +81,16 @@ void PasteNumberingImport::push(QWidget *parent,
 	}
 	const auto answer = QET::QetMessageBox::question(
 				parent,
-				tr("Numérotation absente de ce projet"),
-				tr("Les éléments collés suivent %n numérotation(s) qui n'existe(nt) pas dans ce projet : %1.\n\n"
-				   "Les importer ? Les éléments recevront alors les prochains numéros, à partir de 1. "
-				   "Sinon ils seront collés sans numérotation.", "", static_cast<int>(missing.size()))
+				tr("Numbering missing from this project"),
+				tr("The pasted elements follow %n numberings that do not exist in this project: %1.\n"
+				   "\n"
+				   "Import them? The elements will then receive the next numbers, starting from 1. Otherwise "
+				   "they will be pasted without numbering.", "", static_cast<int>(missing.size()))
 				.arg(names.join(QStringLiteral(", "))),
 				QMessageBox::Yes | QMessageBox::No,
 				QMessageBox::Yes);
 	if (answer != QMessageBox::Yes) {
-		diagram->undoStack().push(paste);
+		push_all();
 		return;
 	}
 
@@ -90,5 +110,8 @@ void PasteNumberingImport::push(QWidget *parent,
 		}
 	}
 	diagram->undoStack().push(paste);
+	for (QUndoCommand *cmd : extra) {
+		diagram->undoStack().push(cmd);
+	}
 	diagram->undoStack().endMacro();
 }

@@ -24,6 +24,10 @@
 #include "location/mountinglayout.h"
 #include "QPropertyUndoCommand/qpropertyundocommand.h"
 #include "diagramcommands.h"
+#include "cable/addcablecommand.h"
+#include "cable/cablecopy.h"
+#include "cable/cablepart.h"
+#include "cable/editcablecommand.h"
 #include "diagramevent/diagrameventaddelement.h"
 #include "diagramevent/diagrameventaddmacro.h"
 #include "dvevent/dveventinterface.h"
@@ -33,6 +37,7 @@
 #include "qetgraphicsitem/conductortextitem.h"
 #include "qetgraphicsitem/crossrefitem.h"
 #include "qetgraphicsitem/element.h"
+#include "qetgraphicsitem/diagramimageitem.h"
 #include "qetgraphicsitem/independenttextitem.h"
 #include "qeticons.h"
 #include "qetpalette.h"
@@ -43,7 +48,9 @@
 #include "utils/conductorcreator.h"
 #include "undocommand/addgraphicsobjectcommand.h"
 #include "diagram.h"
+#include "foliogrid.h"
 #include "diagramcontexttoolbar.h"
+#include "imagedrop.h"
 #include "diagramgestureoverlay.h"
 #include "gesturesettings.h"
 #include "shortcutbarsettings.h"
@@ -51,12 +58,14 @@
 #include "ElementsCollection/xmlelementcollection.h"
 #include "NameList/nameslist.h"
 #include "elementdialog.h"
+#include "genericdevice/genericdevicewizard.h"
 #include "qetapp.h"
 #include "qetgraphicsitem/element.h"
 #include "qetinformation.h"
 #include "qetversion.h"
 #include <QApplication>
 #include <QDropEvent>
+#include <QMessageBox>
 #include <QPainter>
 #include <QPointer>
 #include <QSet>
@@ -65,6 +74,29 @@
 #include <algorithm>
 
 static bool hasCabinetInfo(const DiagramContext &infos);
+
+/**
+	@brief batchWith
+	Keep two undo steps together so one Ctrl+Z takes the whole thing
+	back in one go.
+
+	The batch also keeps the name the undo history shows for what the
+	user actually did: BatchCommand's own name says "Supprimer", which
+	is what it was first written for and would be misleading for a paste
+	or a duplicate.
+	@param first the step already assembled, may be null
+	@param second the step to add; ownership goes to the result
+	@return both steps as one command, or the only one of them
+*/
+static QUndoCommand *batchWith(QUndoCommand *first, QUndoCommand *second)
+{
+	if (!first) return second;
+	if (!second) return first;
+
+	auto *batched = new BatchCommand(first, second);
+	if (!first->text().isEmpty()) batched->setText(first->text());
+	return batched;
+}
 
 /**
 	Constructeur
@@ -80,9 +112,9 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 	setInteractive(true);
 
 	QString whatsthis = tr(
-		"Ceci est la zone dans laquelle vous concevez vos schémas en y ajoutant"
-		" des éléments et en posant des conducteurs entre leurs bornes. Il est"
-		" également possible d'ajouter des textes indépendants.",
+		"In this area you conceive your diagrams by adding elements and "
+		"conductors between their terminals. You may also add independent "
+		"texts.",
 		"\"What's this?\" tip"
 	);
 	setWhatsThis(whatsthis);
@@ -104,17 +136,17 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 	m_diagram->loadElmtFolioSeq();
 	m_diagram->loadCndFolioSeq();
 
-	m_paste_here = new QAction(QET::Icons::EditPaste, tr("Coller ici", "context menu action"), this);
+	m_paste_here = new QAction(QET::Icons::EditPaste, tr("Paste Here", "context menu action"), this);
 	connect(m_paste_here, &QAction::triggered, this, &DiagramView::pasteHere);
 
-	m_multi_paste = new QAction(QET::Icons::EditPaste, tr("Collage multiple"), this);
+	m_multi_paste = new QAction(QET::Icons::EditPaste, tr("Multiple paste"), this);
 	connect(m_multi_paste, &QAction::triggered, [this]() {
 		MultiPasteDialog d(this->m_diagram, this);
 		d.exec();
 	});
 
 	// Setup the action to create a template
-	m_create_template = new QAction(tr("Créer un template", "context menu action"), this);
+	m_create_template = new QAction(tr("Create a template", "context menu action"), this);
 	connect(m_create_template, &QAction::triggered, this, &DiagramView::createTemplateFromSelection);
 
 		//Puts back where they are placed automatically the cross references
@@ -127,11 +159,11 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 	});
 
 		//Setup the action to generate cabinet placement thumbnails (discussion #602)
-	m_generate_cabinet_thumbnail = new QAction(tr("Générer une vignette d'armoire", "context menu action"), this);
+	m_generate_cabinet_thumbnail = new QAction(tr("Make a cabinet thumbnail", "context menu action"), this);
 	connect(m_generate_cabinet_thumbnail, &QAction::triggered, this, &DiagramView::generateCabinetThumbnails);
 
 		//Filled each time the context menu opens, see updateFolioReportMenu()
-	m_folio_report_menu = new QMenu(tr("Renvoi de folio"), this);
+	m_folio_report_menu = new QMenu(tr("Sheet reference"), this);
 
 		//setup three separators, to be use in context menu
 	for(int i=0 ; i<3 ; ++i)
@@ -187,7 +219,7 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 
 			// prepare a color dialog showing the initial conductor color
 		QPointer<QColorDialog> color_dialog = new QColorDialog(this);
-		color_dialog->setWindowTitle(tr("Choisir la nouvelle couleur de ce conducteur"));
+		color_dialog->setWindowTitle(tr("Choose the new color for this conductor"));
 #ifdef Q_OS_MACOS
 		color_dialog -> setWindowFlags(Qt::Sheet);
 #endif
@@ -210,7 +242,7 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 				new_value.setValue(initial_properties);
 
 				QPropertyUndoCommand *undo = new QPropertyUndoCommand(edited_conductor, "properties", old_value, new_value);
-				undo->setText(tr("Modifier les propriétés d'un conducteur", "undo caption"));
+				undo->setText(tr("Edit conductor properties", "undo caption"));
 				m_diagram->undoStack().push(undo);
 
 					// remember it for the next conductor drawn this session,
@@ -234,7 +266,14 @@ DiagramView::~DiagramView()
 	@param e le QDragEnterEvent correspondant au drag'n drop tente
 */
 void DiagramView::dragEnterEvent(QDragEnterEvent *e) {
-	if (e -> mimeData() -> hasFormat("application/x-qet-element-uri")) {
+	// Picture files from the file manager are checked first: a file drag
+	// also carries its path as text, which would otherwise become a text.
+	// Any other file (a .qet project...) is left to the main window.
+	if (!ImageDrop::imageFiles(e -> mimeData()).isEmpty()) {
+		e -> acceptProposedAction();
+	} else if (ImageDrop::hasOnlyOtherUrls(e -> mimeData())) {
+		e -> ignore();
+	} else if (e -> mimeData() -> hasFormat("application/x-qet-element-uri")) {
 		e -> acceptProposedAction();
 	} else if (e -> mimeData() -> hasFormat("application/x-qet-titleblock-uri")) {
 		e -> acceptProposedAction();
@@ -250,7 +289,9 @@ void DiagramView::dragEnterEvent(QDragEnterEvent *e) {
 	@param e le QDragMoveEvent correspondant au drag'n drop tente
 */
 void DiagramView::dragMoveEvent(QDragMoveEvent *e) {
-	if (e -> mimeData() -> hasFormat("text/plain")) e -> acceptProposedAction();
+	if (!ImageDrop::imageFiles(e -> mimeData()).isEmpty()) e -> acceptProposedAction();
+	else if (ImageDrop::hasOnlyOtherUrls(e -> mimeData())) e -> ignore();
+	else if (e -> mimeData() -> hasFormat("text/plain")) e -> acceptProposedAction();
 	else e-> ignore();
 }
 
@@ -260,7 +301,11 @@ void DiagramView::dragMoveEvent(QDragMoveEvent *e) {
 */
 void DiagramView::dropEvent(QDropEvent *e) {
 
-	if (e -> mimeData() -> hasFormat("application/x-qet-element-uri")) {
+	if (!ImageDrop::imageFiles(e -> mimeData()).isEmpty()) {
+		handleImageFilesDrop(e);
+	} else if (ImageDrop::hasOnlyOtherUrls(e -> mimeData())) {
+		e -> ignore();
+	} else if (e -> mimeData() -> hasFormat("application/x-qet-element-uri")) {
 		handleElementDrop(e);
 	} else if (e -> mimeData() -> hasFormat("application/x-qet-titleblock-uri")) {
 		handleTitleBlockDrop(e);
@@ -424,6 +469,87 @@ void DiagramView::handleTextDrop(QDropEvent *e) {
 }
 
 /**
+	@brief DiagramView::handleImageFilesDrop
+	Add the picture files dropped from the file manager. A single one is
+	centred on the drop point and kept inside the frame; a picture too
+	large for the folio is scaled down to leave a free margin of
+	ImageDrop::frameMargin to the frame on every side. Several pictures
+	are spread side by side in a grid over that same area
+	(ImageDrop::gridLayout). One undo step removes them all. Files that cannot be used are
+	listed once, after the others have been placed.
+	@param e the QDropEvent describing the current drag'n drop
+*/
+void DiagramView::handleImageFilesDrop(QDropEvent *e)
+{
+	if (m_diagram -> isReadOnly()) return;
+	e -> acceptProposedAction();
+
+	const QStringList files = ImageDrop::imageFiles(e -> mimeData());
+	const QPointF drop_pos = mapToScene(e -> position().toPoint());
+	const QRectF frame = m_diagram -> border_and_titleblock.insideBorderRect();
+
+	QStringList refused;
+	QList<DiagramImageItem *> items;
+	for (const QString &file : files)
+	{
+		QString error;
+		const QImage image = ImageDrop::load(file, &error);
+		if (image.isNull())
+			refused << tr("%1: %2").arg(QFileInfo(file).fileName(), error);
+		else
+			items << new DiagramImageItem(QPixmap::fromImage(image));
+	}
+
+	// Where each picture goes, as it will look on the folio: one picture
+	// is centred on the drop point and fitted to the frame, several are
+	// spread over the frame in a grid.
+	QList<QRectF> targets;
+	if (items.size() == 1)
+	{
+		const QSizeF size = items.first() -> mapRectToScene(items.first() -> boundingRect()).size();
+		const qreal scale = ImageDrop::fitScale(size, frame);
+		QRectF r(QPointF(), size * scale);
+		r.moveCenter(drop_pos);
+		targets << ImageDrop::keepInside(r, scale < 1.0 ? ImageDrop::innerFrame(frame) : frame);
+	}
+	else
+	{
+		QList<QSizeF> sizes;
+		for (DiagramImageItem *item : items)
+			sizes << item -> mapRectToScene(item -> boundingRect()).size();
+		targets = ImageDrop::gridLayout(sizes, ImageDrop::innerFrame(frame));
+	}
+
+	auto *undo = new QUndoCommand();
+	const int placed = int(items.size());
+	for (int i = 0 ; i < placed ; ++i)
+	{
+		DiagramImageItem *item = items.at(i);
+		const QRectF natural = item -> mapRectToScene(item -> boundingRect());
+		const qreal scale = natural.width() > 0 ? targets.at(i).width() / natural.width() : 1.0;
+		if (scale < 1.0) {
+			item -> setScaleFactorX(scale);
+			item -> setScaleFactorY(scale);
+		}
+		const QPointF offset = item -> mapRectToScene(item -> boundingRect()).topLeft() - item -> pos();
+		new AddGraphicsObjectCommand(item, m_diagram, targets.at(i).topLeft() - offset, undo);
+	}
+
+	if (placed) {
+		undo -> setText(placed == 1 ? tr("Add an image")
+									: tr("Add %n image(s)", nullptr, placed));
+		m_diagram -> undoStack().push(undo);
+	} else {
+		delete undo;
+	}
+
+	if (!refused.isEmpty())
+		QMessageBox::warning(this, tr("Images not added"),
+							 tr("These files could not be added:") + "\n\n"
+							 + refused.join("\n"));
+}
+
+/**
 	Set the Diagram in visualisation mode
 */
 void DiagramView::setVisualisationMode()
@@ -552,8 +678,29 @@ void DiagramView::cut()
 {
 	copy();
 	DiagramContent cut_content(m_diagram);
+		//A cable line is not held by DiagramContent: it leaves with a
+		//command of its own, which takes the cable itself away too when
+		//no line of it is left on the folio.
+	QList<CablePart *> cable_cut;
+	for (QGraphicsItem *item : m_diagram->selectedItems()) {
+		if (auto *part = qgraphicsitem_cast<CablePart *>(item)) {
+			cable_cut << part;
+		}
+	}
+
 	m_diagram -> clearSelection();
-	m_diagram -> undoStack().push(new CutDiagramCommand(m_diagram, cut_content));
+
+	if (cable_cut.isEmpty()) {
+		m_diagram -> undoStack().push(new CutDiagramCommand(m_diagram, cut_content));
+		return;
+	}
+
+	QUndoCommand *command = nullptr;
+	if (cut_content.count()) {
+		command = new CutDiagramCommand(m_diagram, cut_content);
+	}
+	command = batchWith(command, new RemoveCableCommand(m_diagram, cable_cut));
+	m_diagram -> undoStack().push(command);
 }
 
 /**
@@ -563,7 +710,12 @@ void DiagramView::cut()
 void DiagramView::copy()
 {
 	QClipboard *clipboard = QApplication::clipboard();
-	QString content_clipboard = m_diagram -> toXml(false, true).toString(4);
+	QDomDocument document = m_diagram -> toXml(false, true);
+		//A drawn cable line is not one of the folio's items -- the cable
+		//owns it -- so it travels in a block of its own, beside the XML
+		//of the folio rather than in it.
+	CableCopy::write(m_diagram, document);
+	QString content_clipboard = document.toString(4);
 	if (clipboard -> supportsSelection()) clipboard -> setText(content_clipboard, QClipboard::Selection);
 	clipboard -> setText(content_clipboard);
 }
@@ -584,16 +736,52 @@ void DiagramView::paste(const QPointF &pos, QClipboard::Mode clipboard_mode) {
 	if (!document_xml.setContent(text_clipboard)) return;
 
 	DiagramContent content_pasted;
-	m_diagram->fromXml(document_xml, pos, false, &content_pasted);
+		//A cable line is not part of a DiagramContent: it comes back
+		//through its own list, carrying the colour labels it was copied
+		//with, and each of them is given the wire it happens to stand
+		//on at the place it has just been put -- none at all, when that
+		//place holds no wire, in which case the labels go on standing
+		//on the line to be wired when it is pulled into place.
+	QList<CablePart *> cable_pasted;
+	m_diagram->fromXml(document_xml, pos, false, &content_pasted, &cable_pasted);
+	const QList<CableCopy::Wired> wired = CableCopy::wire(
+			m_diagram, cable_pasted,
+			content_pasted.conductors(DiagramContent::AnyConductor));
 
 		//If something was really added to diagram, we create an undo object.
-	if (content_pasted.count())
+	if (content_pasted.count() || !wired.isEmpty())
 	{
 		m_diagram -> clearSelection();
+
+			//One single step for the whole paste, cable lines included:
+			//undoing has to take back everything which came out of the
+			//clipboard in one go, and redoing has to put it all back.
+		QList<QUndoCommand *> cable_commands;
+		for (const CableCopy::Wired &line : std::as_const(wired)) {
+			if (!line.part) continue;
+			auto *added = new AddCableCommand(line.part->cable(), line.part.data(),
+											  m_diagram, true, line.taken);
+			added->setText(QCoreApplication::translate("CableCopy", "Paste a cable"));
+			cable_commands << added;
+		}
+			//The copies end up selected, like everything else a paste
+			//just added, so the next Ctrl+V or Ctrl+D carries on from them
+		for (const CableCopy::Wired &line : std::as_const(wired)) {
+			if (line.part) line.part->setSelected(true);
+		}
+
 			//Asks whether to import the numberings the copy brings, if the
-			//project has not got them
+			//project has not got them; the paste itself and the cable lines
+			//travel inside the same step of the undo stack.
 		PasteNumberingImport::push(this, m_diagram, content_pasted,
-								   PasteNumberingImport::copiedBy(document_xml));
+								   PasteNumberingImport::copiedBy(document_xml),
+								   cable_commands);
+			//The stack has just renewed the identity of a pasted
+			//conductor: the cores are pointed at the wires again and
+			//the cable fields written out once more, so the entries
+			//the copy was given as it was put down are on the wires it
+			//has actually landed on.
+		CableCopy::repoint(wired);
 		adjustSceneRect();
 	}
 }
@@ -656,30 +844,58 @@ void DiagramView::duplicate(const QPoint &stepOffset)
 	if (selection.isEmpty()) return;
 
 	QSettings settings;
-	const int x_grid = settings.value(QStringLiteral("diagrameditor/Xgrid"),
-									  Diagram::xGrid).toInt();
-	const int y_grid = settings.value(QStringLiteral("diagrameditor/Ygrid"),
-									  Diagram::yGrid).toInt();
+	const int x_grid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+	const int y_grid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
 	const QPointF offset(stepOffset.x() * x_grid, stepOffset.y() * y_grid);
 
 	// Mirrors copy(), but does not touch the system clipboard: Ctrl+D
 	// should not clobber whatever the user last copied with Ctrl+C.
 	QDomDocument document = m_diagram->toXml(false, true);
+	CableCopy::write(m_diagram, document);
 
 	DiagramContent pasted;
+	QList<CablePart *> cable_pasted;
 	// No position argument -- see the function comment above for why
 	// the offset is not passed here.
-	m_diagram->fromXml(document, QPointF(), false, &pasted);
-	if (!pasted.count()) return;
+	m_diagram->fromXml(document, QPointF(), false, &pasted, &cable_pasted);
+	if (!pasted.count() && cable_pasted.isEmpty()) return;
 
 	const int movable = DiagramContent::Elements | DiagramContent::TextFields
 					   | DiagramContent::Images | DiagramContent::Shapes
 					   | DiagramContent::Tables | DiagramContent::TerminalStrip;
 	for (QGraphicsItem *item : pasted.items(movable))
 		item->setPos(item->pos() + offset);
+		//The new line is stamped beside the original like everything
+		//else -- and only after that, because where each colour label
+		//ends up decides which wire it is going to take
+	for (CablePart *part : std::as_const(cable_pasted))
+		if (part) part->setPos(part->pos() + offset);
+
+	const QList<CableCopy::Wired> wired = CableCopy::wire(
+			m_diagram, cable_pasted,
+			pasted.conductors(DiagramContent::AnyConductor));
 
 	m_diagram->clearSelection();
-	m_diagram->undoStack().push(new PasteDiagramCommand(m_diagram, pasted));
+
+	QUndoCommand *command = nullptr;
+	if (pasted.count()) {
+		command = new PasteDiagramCommand(m_diagram, pasted);
+	}
+	for (const CableCopy::Wired &line : std::as_const(wired)) {
+		if (!line.part) continue;
+		auto *added = new AddCableCommand(line.part->cable(), line.part.data(),
+										  m_diagram, true, line.taken);
+		added->setText(QCoreApplication::translate("CableCopy", "Duplicate a cable"));
+		command = batchWith(command, added);
+	}
+	for (const CableCopy::Wired &line : std::as_const(wired)) {
+		if (line.part) line.part->setSelected(true);
+	}
+	if (command) m_diagram->undoStack().push(command);
+		//Same as a paste: the stack has renewed the identity of the
+		//pasted conductors, so the cores are pointed at the wires again
+		//and the cable fields written out once more.
+	CableCopy::repoint(wired);
 	adjustSceneRect();
 }
 
@@ -709,22 +925,59 @@ void DiagramView::mousePressEvent(QMouseEvent *e)
 		m_press_pos = e->position().toPoint();
 	}
 
+		//A line which waits for the click putting one of its cores down
+		//owns the right button as well: that click says "no" to the core,
+		//so it neither starts the quick command ring nor reaches the
+		//sheet. It is the context menu of this very click which ends the
+		//wait (see contextMenuEvent()), which is why nothing is ended
+		//here: the menu is then cancelled instead of opened, and no menu
+		//can open out of a click meant to say "no" -- neither QET's own
+		//nor the platform's, which arrives with the press on X11 and with
+		//the release on Windows.
+	if (e->button() == Qt::RightButton && CablePart::placingPart()) {
+		e->accept();
+		return;
+	}
+
 		//Right button: a click opens the context menu on release, a drag is
 		//a gesture (DiagramGestureOverlay). Left alone while a text is edited.
 	m_swallow_native_menu = false;
 	m_gesture_over_tool = false;
+
+		//A right click on the running cable tool belongs to the tool
+		//alone: it cancels the line being drawn, and ending the tool puts
+		//the context menu policy of the views back before this very click
+		//is over. The platform then still sends its own context menu for
+		//the same click -- on X11 with the press, on Windows with the
+		//release -- and the menu would open on the click which was meant
+		//to cancel. So it is swallowed here, the way a gesture swallows
+		//it further down; the next press which no tool handles puts this
+		//flag back to false. No other tool is touched: they hand the
+		//button back and are surrounded by the ring, as they always were.
+	if (e->button() == Qt::RightButton && m_diagram
+	    && m_diagram->cableToolIsRunning()) {
+		m_swallow_native_menu = true;
+	}
 	if (e->button() == Qt::RightButton
 	    && DiagramGestureOverlay::isEnabled()
-	    && !m_diagram->focusItem())
+	    && !m_diagram->focusItem()
+	    && !m_diagram->cableToolIsRunning())
 	{
+			//The right button draws the quick command ring, or opens the
+			//context menu on release. The cable tool alone does not let go
+			//of it: while it runs no gesture is tracked at all, because
+			//tracking one would both pop the ring up in the middle of the
+			//drawing and take the tool away from the click meant to
+			//cancel it (see mouseMoveEvent, which ends the tool as soon
+			//as a gesture is recognised).
 		m_gesture_tracking = true;
 		m_gesture_origin = e->position().toPoint();
 		m_context_toolbar->hide();
 
-			//A tool is running, often one a gesture just started. A right
-			//click still goes to it -- it cancels or finishes the tool -- so
-			//the press carries on to the scene. A drag ends the tool and
-			//shows the ring (see mouseMoveEvent).
+			//Another tool is running, often one a gesture just started. A
+			//right click still goes to it -- it cancels or finishes the
+			//tool -- so the press carries on to the scene. A drag ends the
+			//tool and shows the ring (see mouseMoveEvent).
 		if (m_diagram->eventInterfaceIsRunning()) {
 			m_gesture_over_tool = true;
 		}
@@ -946,7 +1199,7 @@ void DiagramView::mouseReleaseEvent(QMouseEvent *e)
 		{
 				//Popup a menu with an action to create conductors between
 				//all selected terminals.
-			QAction *act = new QAction(tr("Connecter les bornes sélectionnées"), this);
+			QAction *act = new QAction(tr("Connect the selected terminals"), this);
 			QPolygonF polygon_ = m_free_rubberband;
 			connect(act, &QAction::triggered, [this, polygon_]()
 			{
@@ -1169,6 +1422,17 @@ void DiagramView::keyPressEvent(QKeyEvent *e)
 	if (m_event_interface && m_event_interface->keyPressEvent(e))
 		return;
 
+		//An item in a state Escape must end -- a picture while one of its
+		//handles is dragged -- sees each key before the shortcuts below,
+		//which would otherwise clear the selection under it.
+	QGraphicsObject *keyboard_item = m_diagram ? m_diagram->keyboardItem() : nullptr;
+	if (keyboard_item && keyboard_item->scene() == m_diagram) {
+		e->ignore();
+		m_diagram->sendEvent(keyboard_item, e);
+		if (e->isAccepted())
+			return;
+	}
+
 	ProjectView *current_project = this->diagramEditor()->currentProjectView();
 	DiagramContent dc(m_diagram);
 	switch(e -> key())
@@ -1181,6 +1445,15 @@ void DiagramView::keyPressEvent(QKeyEvent *e)
 				//hands focus to the next widget.
 			if (m_diagram && m_diagram->eventInterfaceIsRunning()) {
 				QGraphicsView::keyPressEvent(e);  // let the active tool see it
+				return;
+			}
+				//A line waiting for the click putting a core down has the
+				//first call on Escape: it lets that core go back to being
+				//a free one and lets the mouse go, while everything else
+				//-- the selection included -- stays as it is, so that
+				//Escape keeps doing one thing at a time.
+			if (CablePart::cancelPlacing()) {
+				e->accept();
 				return;
 			}
 			if (m_diagram && !m_diagram->selectedItems().isEmpty()) {
@@ -1369,7 +1642,7 @@ QString DiagramView::title() const
 	QString view_title;
 	QString diagram_title(m_diagram -> title());
 	if (diagram_title.isEmpty()) {
-		view_title = tr("Sans titre", "what to display for untitled diagrams");
+		view_title = tr("Untitled", "what to display for untitled diagrams");
 	} else {
 		view_title = diagram_title;
 	}
@@ -1383,6 +1656,25 @@ QString DiagramView::title() const
 void DiagramView::editDiagramProperties()
 {
 	DiagramPropertiesDialog::diagramPropertiesDialog(m_diagram, diagramEditor());
+}
+
+/**
+	@brief DiagramView::buildFolio
+	Build the items of the folio this view shows, and those of the folios
+	its cross-references need, if the project was opened without them
+	(lazy folios); then fit the view to them.
+*/
+void DiagramView::buildFolio()
+{
+	if (QETProject *project = m_diagram->project()) {
+		if (!project->unloadedFolioCount()) {
+			return;
+		}
+		project->buildFolioToShow(m_diagram);
+	} else {
+		m_diagram->ensureLoaded();
+	}
+	adjustSceneRect();
 }
 
 /**
@@ -1859,6 +2151,8 @@ QList<QAction *> DiagramView::contextMenuActions() const
 			list << qde->m_cut;
 			list << qde->m_copy;
 			list << m_multi_paste;
+			list << qde->m_copy_text_format;
+			list << qde->m_apply_text_format;
 			list << qde->m_paste_element_info;
 			list << m_separators.at(0);
 				//Going to the other representation of what is under the
@@ -1974,11 +2268,66 @@ bool DiagramView::selectionHasElement() const
 }
 
 /**
+	@brief DiagramView::cableCoreMenu
+	The menu of one single core, opened where he right-clicked: taking
+	that core off its line, which is the exact opposite of the menu the
+	free cores offer in the panel, of putting one down on a line.
+
+	Only the colour labels count -- a right-click anywhere else on the
+	line is still about the line itself, and opens the folio's own menu
+	instead. Nothing is changed until he picks the entry, so opening the
+	menu and clicking it away leaves everything standing as it was.
+	@param menu_pos where he right-clicked, in view coordinates
+	@param global_pos the same place, in global coordinates
+	@return true when that menu was the one to open
+*/
+bool DiagramView::cableCoreMenu(const QPoint &menu_pos, const QPoint &global_pos)
+{
+	if (!m_diagram || m_diagram->isReadOnly()) return false;
+
+	const QPointF scene_pos = mapToScene(menu_pos);
+	auto *part = qgraphicsitem_cast<CablePart *>(
+		m_diagram->itemAt(scene_pos, transform()));
+	if (!part) return false;
+
+	const int core = part->coreAt(scene_pos);
+	if (core < 0) return false;
+
+		//The line he takes a core off is the one on the sheet, so it is
+		//also the one the panel beside it edits from now on.
+	if (!part->isSelected()) {
+		m_diagram->clearSelection();
+		part->setSelected(true);
+	}
+
+	QMenu menu(this);
+	QAction *take = menu.addAction(tr("Remove this core from the line"));
+	take->setIcon(QET::Icons::Cable);
+
+	if (menu.exec(global_pos) == take) {
+		part->takeCoreOffLine(core);
+	}
+	return true;
+}
+
+/**
 	@brief DiagramView::contextMenuEvent
 	@param e
 */
 void DiagramView::contextMenuEvent(QContextMenuEvent *e)
 {
+		//A line which waits for the click putting one of its cores down
+		//takes this very event: the right button ends that wait and no
+		//menu opens out of a click meant to say "no". Being asked here
+		//first is what makes it work for every way a menu can come up --
+		//the gesture ring's own menu, the platform's (with the press on
+		//X11, with the release on Windows) and the one raised from the
+		//keyboard -- so the menu never has to be closed after the fact.
+	if (CablePart::cancelPlacing()) {
+		e->accept();
+		return;
+	}
+
 	QPoint menu_pos = e->pos();
 	QPoint menu_global_pos = e->globalPos();
 
@@ -2027,6 +2376,16 @@ void DiagramView::contextMenuEvent(QContextMenuEvent *e)
 	}
 	else
 	{
+			//A colour label standing on a line asks about that one core
+			//rather than about the whole sheet: the very opposite of the
+			//menu the free cores offer, of putting one down on a line.
+			//It comes first, so that a core drawn over something else
+			//still belongs to its own line.
+		if (cableCoreMenu(menu_pos, menu_global_pos)) {
+			e->accept();
+			return;
+		}
+
 		QGraphicsView::contextMenuEvent(e);
 		if(e->isAccepted())
 		return;
@@ -2237,11 +2596,11 @@ void DiagramView::createTemplateFromSelection()
 		for (QETDiagramEditor *qde : QETApp::diagramEditors())
 			qde->templateSaved(template_location);
 
-		QMessageBox::information(this, tr("Modèle enregistré"),
-								 tr("Le modèle a été enregistré avec succès sous :\n%1").arg(full_path));
+		QMessageBox::information(this, tr("Registered template"),
+								 tr("The template has been successfully saved as :\n%1").arg(full_path));
 	} else {
 		qDebug() << "Error: Could not open file for writing:" << full_path;
-		QMessageBox::critical(this, tr("Erreur"), tr("Le fichier n'a pas pu être écrit."));
+		QMessageBox::critical(this, tr("Error"), tr("The file could not be written."));
 	}
 }
 
@@ -2403,6 +2762,64 @@ void DiagramView::generateCabinetThumbnails()
 	if (created) {
 		project->setModified(true);
 	}
+}
+
+/**
+	@brief DiagramView::addGenericDevice
+	Edit > Add > Generic device. Open the wizard; on Finish, write the box
+	it describes as an ordinary symbol into the folder "Generic devices" of
+	this project's embedded collection and put it on the cursor, ready to
+	be placed. The file name carries a short uuid, so two devices given the
+	same name never overwrite each other.
+*/
+void DiagramView::addGenericDevice()
+{
+	QETProject *project = m_diagram ? m_diagram->project() : nullptr;
+	if (!project || project->isReadOnly() || m_diagram->isReadOnly()) {
+		return;
+	}
+	XmlElementCollection *collection = project->embeddedElementCollection();
+	if (!collection) {
+		return;
+	}
+
+		//Measured with the fonts the folio draws with, so names fit
+	const GenericDevice::Fonts fonts{QETApp::diagramTextsFont(7),
+					 QETApp::dynamicTextsItemFont(9)};
+	GenericDeviceWizard wizard(fonts, this);
+	if (wizard.exec() != QDialog::Accepted) {
+		return;
+	}
+	const GenericDevice::Spec spec = wizard.spec();
+
+	const QString dir_name = QStringLiteral("Generic devices");
+	const QString dir_path = QStringLiteral("import/") + dir_name;
+	if (!collection->exist(dir_path))
+	{
+		NamesList dir_names;
+		dir_names.addName(QStringLiteral("en"), dir_name);
+			//Stored per language, like an element's names: not tr(), which
+			//would store the interface's language under "en"
+		dir_names.addName(QStringLiteral("fr"), QStringLiteral("Appareils génériques"));
+		if (!collection->createDir(QStringLiteral("import"), dir_name, dir_names)) {
+			return;
+		}
+	}
+
+	const QString file_name = QET::stringToFileName(spec.name)
+				  + QLatin1Char('-')
+				  + QUuid::createUuid().toString(QUuid::Id128).left(8)
+				  + QStringLiteral(".elmt");
+	QDomDocument doc;
+	const QDomElement definition = GenericDevice::toDefinition(
+				spec, fonts, doc, QetVersion::currentVersion().toString());
+	if (!collection->addElementDefinition(dir_path, file_name, definition)) {
+		return;
+	}
+	project->setModified(true);
+
+	const ElementsLocation location(dir_path + QLatin1Char('/') + file_name, project);
+	startElementPlacement(location, defaultPlacementPos());
 }
 
 /**

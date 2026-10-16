@@ -21,12 +21,14 @@
 #include "../conductorproperties.h"
 
 #include <QGraphicsPathItem>
+#include <QSet>
 #include <QUuid>
 
 class ConductorProfile;
 class DiagramContext;
 class ConductorSegmentProfile;
 class Diagram;
+class projectDataBase;
 class Terminal;
 class ConductorSegment;
 class ConductorTextItem;
@@ -80,7 +82,7 @@ class Conductor : public QGraphicsObject
 		Diagram *diagram() const;
 		ConductorTextItem *textItem() const;
 		QUuid uuid() const {return m_uuid;}
-		void newUuid() {m_uuid = QUuid::createUuid(); m_persist_uuid = true;}	//create new uuid for this conductor
+		void newUuid();	//create new uuid for this conductor
 		/**
 		@brief persistUuid
 		Say that this conductor identity has to reach the file.
@@ -88,13 +90,13 @@ class Conductor : public QGraphicsObject
 		fromXml() clears m_persist_uuid for a project whose conductors carry
 		no uuid, so that a legacy file is not rewritten with a fresh random
 		one on every load-and-resave (#754). That is right for a conductor
-		nobody names -- and wrong for one a cable wire points at, because
-		the wire records the conductor by uuid: dropped from the file, the
-		conductor comes back with a different identity and the wire that
-		named it is orphaned. Whoever writes the reference says so here.
+		nobody names -- and wrong for one something else records by uuid:
+		dropped from the file, the conductor comes back with a different
+		identity and whatever named it is orphaned. Whoever writes the
+		reference says so here.
 		*/
 		void persistUuid() {m_persist_uuid = true;}
-		void setUuid(const QUuid &uuid) {m_uuid = uuid; m_persist_uuid = true;}	//saved from now on
+		void setUuid(const QUuid &uuid);	//saved from now on
 		bool replaceTerminal(Terminal *from, Terminal *to);
 		void updatePath(const QRectF & = QRectF());
 
@@ -123,7 +125,8 @@ class Conductor : public QGraphicsObject
 		QDomElement toXml (
 				QDomDocument &,
 				QHash<Terminal *,
-				int> &) const;
+				int> &,
+				const QSet<QUuid> &shared_uuids = QSet<QUuid>()) const;
 	private:
 		bool pathFromXml(const QDomElement &);
 
@@ -138,6 +141,20 @@ class Conductor : public QGraphicsObject
 				bool only_text = false);
 		void setProperties(const ConductorProperties &property);
 		ConductorProperties properties() const;
+			/// This wire's own copy of its properties, whatever the store holds
+		ConductorProperties ownProperties() const {return m_properties;}
+			/// The order wires were made in this session: a project's are
+			/// made in the order its file lists them
+		quint64 creationRank() const {return m_creation_rank;}
+			/// Records which cable core this conductor shows and writes the
+			/// label that assignment generates (15W1:br) into its cable
+			/// field. Deliberately not routed through
+			/// setPropertyToPotential(): a core of a cable belongs to this
+			/// conductor alone and must never spill over a pass-through
+			/// terminal onto the neighbouring half conductor.
+		void setCableReference(const QString &label,
+							   const QUuid &cable_uuid,
+							   int slot);
 
 		void setProfile(const ConductorProfile &, Qt::Corner);
 		ConductorProfile profile(Qt::Corner) const;
@@ -149,7 +166,10 @@ class Conductor : public QGraphicsObject
 		virtual void setHighlighted(Highlight);
 		QSet<Conductor *> relatedPotentialConductors(
 				const bool all_diagram = true,
-				QList <Terminal *> *t_list=nullptr);
+				QList <Terminal *> *t_list=nullptr,
+				const bool ignore_function_separation = false);
+		QSet<Conductor *> functionSeparatedConductors(
+				const bool all_diagram = true);
 		QETDiagramEditor* diagramEditor() const;
 		void editProperty ();
 
@@ -251,6 +271,10 @@ class Conductor : public QGraphicsObject
 			/// file had none -- toXml() must not persist that value, or
 			/// every reload mints and saves a new random one (see #754).
 		bool m_persist_uuid = true;
+		quint64 m_creation_rank = 0;
+		void uuidChanged(const QUuid &old_uuid);
+		projectDataBase *placedStore() const;
+		void storeProperties();
 
 			/// QPen et QBrush objects used to draw conductors
 		static QPen conductor_pen;

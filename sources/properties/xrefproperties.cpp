@@ -67,6 +67,7 @@ XRefProperties::XRefProperties()
 	m_prefix_keys << "power" << "delay" << "switch";
 	m_master_label = "%f-%l%c";
 	m_slave_label = "(%f-%l%c)";
+	m_font = QString();
 	m_offset = 0;
 	m_slave_offset = 0;
 	m_xref_pos = Qt::AlignBottom;
@@ -109,6 +110,7 @@ void XRefProperties::toSettings(QSettings &settings,
 	settings.setValue(prefix % "master_label", master_label);
 	QString slave_label = m_slave_label;
 	settings.setValue(prefix % "slave_label", slave_label);
+	settings.setValue(prefix % "font", m_font);
 
 
 	QMetaEnum var = QMetaEnum::fromType<Qt::Alignment>();
@@ -141,6 +143,7 @@ void XRefProperties::fromSettings(const QSettings &settings,
 	setScale(settings.value(prefix % "scale", 100).toInt());
 	m_master_label = settings.value(prefix % "master_label", "%f-%l%c").toString();
 	m_slave_label = settings.value(prefix % "slave_label", "(%f-%l%c)").toString();
+	m_font = settings.value(prefix % "font").toString();
 
 	m_xref_pos = xrefPosFromKey(settings.value(prefix % "xrefpos").toString());
 
@@ -186,6 +189,14 @@ QDomElement XRefProperties::toXml(QDomDocument &xml_document) const
 	xml_element.setAttribute("master_label", master_label);
 	QString slave_label = m_slave_label;
 	xml_element.setAttribute("slave_label", slave_label);
+		//Only the cable cross-reference has a font of its own, and only
+		//it ever sets one. Writing the attribute unconditionally put
+		//font="" on every cross-reference type of every project the
+		//program saved; a file which does not hold the attribute reads
+		//back as no font, which is what all of them are.
+	if (!m_font.isEmpty()) {
+		xml_element.setAttribute("font", m_font);
+	}
 	foreach (QString key, m_prefix.keys()) {
 		xml_element.setAttribute(key % "prefix", m_prefix.value(key));
 	}
@@ -215,6 +226,7 @@ bool XRefProperties::fromXml(const QDomElement &xml_element) {
 	setScale(xml_element.attribute("scale", "100").toInt());
 	m_master_label = xml_element.attribute("master_label", "%f-%l%c");
 	m_slave_label = xml_element.attribute("slave_label","(%f-%l%c)");
+	m_font = xml_element.attribute("font");
 	foreach (QString key, m_prefix_keys) {
 		m_prefix.insert(key, xml_element.attribute(key % "prefix"));
 	}
@@ -224,15 +236,17 @@ bool XRefProperties::fromXml(const QDomElement &xml_element) {
 /**
 	@brief XRefProperties::defaultProperties
 	@return the default properties stored in the setting file
-	For the xref, there are 2 properties.
-	For coil, stored with the string "coil" in the returned QHash.
-	For protection, stored with the string "protection" in the returned QHash.
+	One entry per kind of element which shows a cross reference, stored
+	under its own key: "coil", "protection", "commutator", "plc" -- and
+	"cable", which is not an element at all: it is the reference a cable
+	writes in the label of each of its sections when the cable runs on
+	several folios.
 */
 QHash<QString, XRefProperties> XRefProperties::defaultProperties()
 {
 	QHash <QString, XRefProperties> hash;
 	QStringList keys;
-	keys << "coil" << "protection" << "commutator" << "plc" << "strip_terminal";
+	keys << "coil" << "protection" << "commutator" << "plc" << "strip_terminal" << "cable";
 
 	QSettings settings;
 
@@ -241,6 +255,13 @@ QHash<QString, XRefProperties> XRefProperties::defaultProperties()
 		XRefProperties properties;
 		QString str("diagrameditor/defaultxref");
 		properties.fromSettings(settings, str += key);
+
+			//A cable takes the very same default text as a relay master
+			//and the other types, "%f-%l%c": what it names is then the
+			//other section of the cable -- the folio it stands on and
+			//the place it stands at there, which is what an element
+			//points at as well. No default of its own, so that setting
+			//the five of them apart needs no thought at all.
 		hash.insert(key, properties);
 	}
 
@@ -260,7 +281,8 @@ bool XRefProperties::operator ==(const XRefProperties &xrp) const{
 			&& m_slave_offset== xrp.m_slave_offset
 			&& m_scale       == xrp.m_scale
 			&& m_xref_pos    == xrp.m_xref_pos
-			&& m_slave_label == xrp.m_slave_label);
+			&& m_slave_label == xrp.m_slave_label
+			&& m_font        == xrp.m_font);
 }
 
 bool XRefProperties::operator !=(const XRefProperties &xrp) const

@@ -45,7 +45,7 @@
 	file, whose cells produce their final text through the same substitution
 	the folio uses, and the preview item that paints them. TitleBlockTemplate
 	reaches QETApp - one call, for the font of a cell - so it only links here,
-	where qet_core brings the whole program in.
+	where qelectrotech_objects brings the whole program in.
 
 	The three ways a variable reaches a cell are all in the template below,
 	because each of them was broken in its own way:
@@ -245,14 +245,17 @@ TEST_CASE("T26 — a célula diz o nome do atributo no editor, e a folha não mu
 
 	SECTION("na folha, o campo que ninguém preencheu continua vazio")
 	{
+			// A cell showing its label joins it to the value with " %1: %2",
+			// the English source the upstream writes since 2026-10 - the
+			// suite runs with no translation. Portuguese keeps " %1 : %2".
 		const DiagramContext nothing_filled_in;
 
 		CHECK(tbt.finalTextForCell(*bare_in_value, nothing_filled_in)
-		      == QStringLiteral(" Autor : "));
+		      == QStringLiteral(" Autor: "));
 		CHECK(tbt.finalTextForCell(*braced_in_value, nothing_filled_in)
-		      == QStringLiteral(" Revisor : "));
+		      == QStringLiteral(" Revisor: "));
 		CHECK(tbt.finalTextForCell(*braced_in_label, nothing_filled_in)
-		      == QStringLiteral("  : Quadro"));
+		      == QStringLiteral(" : Quadro"));
 		CHECK(tbt.finalTextForCell(*fixed_text, nothing_filled_in)
 		      == QStringLiteral(" Escala 100%"));
 	}
@@ -268,15 +271,15 @@ TEST_CASE("T26 — a célula diz o nome do atributo no editor, e a folha não mu
 		CHECK(tbt.finalTextForCell(
 			      *bare_in_value,
 			      editorContextFor(&tbt, bare_in_value))
-		      == QStringLiteral(" Autor : [author]"));
+		      == QStringLiteral(" Autor: [author]"));
 		CHECK(tbt.finalTextForCell(
 			      *braced_in_value,
 			      editorContextFor(&tbt, braced_in_value))
-		      == QStringLiteral(" Revisor : [revisor_4]"));
+		      == QStringLiteral(" Revisor: [revisor_4]"));
 		CHECK(tbt.finalTextForCell(
 			      *braced_in_label,
 			      editorContextFor(&tbt, braced_in_label))
-		      == QStringLiteral(" [setor] : Quadro"));
+		      == QStringLiteral(" [setor]: Quadro"));
 
 		// And the fixed text is fixed in the editor too: nothing in it is
 		// a reference, so there is no name to put anywhere.
@@ -297,11 +300,11 @@ TEST_CASE("T26 — a célula diz o nome do atributo no editor, e a folha não mu
 					 QStringLiteral("Automação")));
 
 		CHECK(tbt.finalTextForCell(*bare_in_value, project)
-		      == QStringLiteral(" Autor : Fulano de Tal"));
+		      == QStringLiteral(" Autor: Fulano de Tal"));
 		CHECK(tbt.finalTextForCell(*braced_in_value, project)
-		      == QStringLiteral(" Revisor : Beltrano"));
+		      == QStringLiteral(" Revisor: Beltrano"));
 		CHECK(tbt.finalTextForCell(*braced_in_label, project)
-		      == QStringLiteral(" Automação : Quadro"));
+		      == QStringLiteral(" Automação: Quadro"));
 		CHECK(tbt.finalTextForCell(*fixed_text, project)
 		      == QStringLiteral(" Escala 100%"));
 	}
