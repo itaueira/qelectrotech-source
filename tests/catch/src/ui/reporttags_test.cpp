@@ -36,6 +36,8 @@
 #include <QCoreApplication>
 #include <QDomDocument>
 #include <QGraphicsSceneMouseEvent>
+#include <QTransform>
+#include <QtMath>
 #include <QUndoStack>
 
 #include <algorithm>
@@ -91,6 +93,32 @@ namespace
 
 	/// The elements of @p diagram in the order the sheet is read, so that a
 	/// case picks the same one every time: Diagram::elements() has no order
+	/// The box of the tag of @p report and the arrow's, as the tag reads
+	/// them: turned back by the tag's angle, in the arrow's coordinates.
+	/// For an arrow and a tag that are not turned, the arrow's coordinates
+	QPair<QRectF, QRectF> asTagReads(const Element *report)
+	{
+		const DynamicElementTextItem *text = ReportTags::tagText(report);
+		QTransform back;
+		back.rotate(-text->rotation());
+		return qMakePair(back.mapRect(text->mapRectToParent(text->boundingRect())),
+						 back.mapRect(report->boundingRect()));
+	}
+
+	/// The angle @p item is drawn at on the folio, in [0, 360)
+	qreal sceneAngle(const QGraphicsItem *item)
+	{
+		const QTransform transform = item->sceneTransform();
+		return QET::correctAngle(qRadiansToDegrees(qAtan2(transform.m12(), transform.m11())), true);
+	}
+
+	/// How far apart two angles are, the short way round
+	qreal angleBetween(qreal a, qreal b)
+	{
+		const qreal d = QET::correctAngle(a - b, true);
+		return qMin(d, 360.0 - d);
+	}
+
 	QList<Element *> inReadingOrder(const Diagram *diagram)
 	{
 		QList<Element *> elements = diagram->elements();
@@ -570,9 +598,8 @@ TEST_CASE("CU-59.9 — The font and the colour of the tags, set in the project",
 		CHECK(text->font().pointSizeF() == Approx(14));
 		CHECK(text->font().bold());
 		CHECK(text->color() == QColor(Qt::red));
-			//Centred above the arrow
-		const QRectF tag_box = text->mapRectToParent(text->boundingRect());
-		const QRectF arrow_box = report->boundingRect();
+			//Centred above the arrow, as the tag reads
+		const auto [tag_box, arrow_box] = asTagReads(report);
 		CHECK(tag_box.bottom() == Approx(arrow_box.top()).margin(0.5));
 		CHECK(tag_box.center().x() == Approx(arrow_box.center().x()).margin(0.5));
 	}
@@ -616,9 +643,7 @@ TEST_CASE("CU-59.10 — The tags below the arrows",
 	project->undoStack()->push(format);
 
 	auto below = [](const Element *report) {
-		const DynamicElementTextItem *text = ReportTags::tagText(report);
-		const QRectF tag_box = text->mapRectToParent(text->boundingRect());
-		const QRectF arrow_box = report->boundingRect();
+		const auto [tag_box, arrow_box] = asTagReads(report);
 		return qAbs(tag_box.top() - arrow_box.bottom()) < 0.5
 				&& qAbs(tag_box.center().x() - arrow_box.center().x()) < 0.5;
 	};
@@ -672,7 +697,57 @@ TEST_CASE("CU-59.11 — The formatting of the tags saved and reopened",
 		REQUIRE(text);
 		CHECK(text->font().italic());
 		CHECK(text->color() == QColor(QStringLiteral("#1e64c8")));
-		const QRectF tag_box = text->mapRectToParent(text->boundingRect());
-		CHECK(tag_box.top() == Approx(report->boundingRect().bottom()).margin(0.5));
+		const auto [tag_box, arrow_box] = asTagReads(report);
+		CHECK(tag_box.top() == Approx(arrow_box.bottom()).margin(0.5));
+	}
+}
+
+TEST_CASE("T59 — On an arrow turned half a turn, the tag reads the way its reference does",
+		  "[T59][reporttags]")
+{
+	UiBench::Project bench(example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	QETProject *project = bench.project();
+	project->setShowReportTags(true);
+
+		//Turned before it has a tag, as the arrows of a project saved before
+		//the tags were (CU-59.5); its reference keeps reading upright
+	Element *arrow = nullptr;
+	for (Element *report : ReportTags::reports(project)) {
+		if (referenceText(report) && !ReportTags::tagText(report)) {
+			arrow = report;
+			break;
+		}
+	}
+	REQUIRE(arrow);
+	const DynamicElementTextItem *reference = referenceText(arrow);
+	REQUIRE(angleBetween(sceneAngle(reference), 0) < 0.01);
+	arrow->setRotation(QET::correctAngle(arrow->rotation() + 180, true));
+	REQUIRE(angleBetween(sceneAngle(reference), 0) < 0.01);
+
+	tagAll(project);
+	DynamicElementTextItem *tag = ReportTags::tagText(arrow);
+	REQUIRE(tag);
+	CAPTURE(arrow->rotation(), tag->rotation(), sceneAngle(tag));
+	CHECK(angleBetween(sceneAngle(tag), sceneAngle(reference)) < 0.01);
+		//Above on the folio, not above the arrow as it is turned
+	CHECK(tag->sceneBoundingRect().bottom() == Approx(arrow->sceneBoundingRect().top()).margin(0.5));
+	CHECK(tag->sceneBoundingRect().center().x()
+		  == Approx(arrow->sceneBoundingRect().center().x()).margin(0.5));
+
+	SECTION("a tag read upside down is turned back by the formatting, in its one undo")
+	{
+		const qreal right = tag->rotation();
+		const qreal wrong = QET::correctAngle(right + 180, true);
+		tag->setRotation(wrong);
+		QUndoCommand *format = ReportTags::formatCommand(project);
+		REQUIRE(format);
+		project->undoStack()->push(format);
+		CHECK(angleBetween(tag->rotation(), right) < 0.01);
+		CHECK(tag->sceneBoundingRect().bottom() == Approx(arrow->sceneBoundingRect().top()).margin(0.5));
+
+		project->undoStack()->undo();
+		CHECK(angleBetween(tag->rotation(), wrong) < 0.01);
 	}
 }

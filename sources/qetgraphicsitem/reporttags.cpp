@@ -32,6 +32,7 @@
 #include <QLineF>
 #include <QMap>
 #include <QPointer>
+#include <QTransform>
 #include <QUndoCommand>
 
 #include <algorithm>
@@ -48,20 +49,46 @@ namespace
 		return texts;
 	}
 
-	/// The font of the reference @p report shows, for its tag to look like it
-	bool referenceFont(const Element *report, QFont *font)
+	/// The text of @p report that shows its reference, nullptr if none
+	const DynamicElementTextItem *referenceText(const Element *report)
 	{
 		for (DynamicElementTextItem *text : textsOf(report))
 		{
 			if ((text->textFrom() == DynamicElementTextItem::ElementInfo
 				 && text->infoName() == QETInformation::ELMT_LABEL)
-				|| text->textFrom() == DynamicElementTextItem::CompositeText)
-			{
-				*font = text->font();
-				return true;
+				|| text->textFrom() == DynamicElementTextItem::CompositeText) {
+				return text;
 			}
 		}
+		return nullptr;
+	}
+
+	/// The font of the reference @p report shows, for its tag to look like it
+	bool referenceFont(const Element *report, QFont *font)
+	{
+		if (const DynamicElementTextItem *reference = referenceText(report)) {
+			*font = reference->font();
+			return true;
+		}
 		return false;
+	}
+
+	/// The angle the tag of @p report is turned by, in the coordinates of
+	/// the arrow: the reference's, so that both read the same way up. A text
+	/// keeps the angle it had on the folio when its arrow is turned
+	/// (DynamicElementTextItem::keepVisualRotation()), and a tag created
+	/// unturned on an arrow turned 180° was read upside down - measured on
+	/// a real project on 16/10/2026. Without a reference, upright on the folio.
+	qreal tagRotation(const Element *report)
+	{
+		if (const DynamicElementTextItem *reference = referenceText(report)) {
+			qreal rotation = reference->rotation();
+			if (const ElementTextItemGroup *group = reference->parentGroup()) {
+				rotation += group->rotation();
+			}
+			return QET::correctAngle(rotation, true);
+		}
+		return QET::correctAngle(-report->rotation(), true);
 	}
 
 	/// The font of the tag of @p report: the one chosen for the project,
@@ -75,16 +102,28 @@ namespace
 		return referenceFont(report, font);
 	}
 
-	/// Where a tag of @p size goes on @p report: centred above or below the
-	/// arrow, in the coordinates of the arrow
-	QPointF tagPlace(const Element *report, const QSizeF &size,
+	/// Where @p text goes on @p report once turned by @p rotation: centred
+	/// above or below the arrow as the tag reads - above is above on the
+	/// folio for a tag upright on the folio, whichever way the arrow is
+	/// turned. In the coordinates of the arrow, as the text's pos().
+	/// @param box : the text's bounding rect, in the font and with the text it
+	/// is about to have
+	QPointF tagPlace(const Element *report, const DynamicElementTextItem *text,
+					 const QRectF &box, qreal rotation,
 					 QETProject::ReportTagPosition position)
 	{
-		const QRectF body = report->boundingRect();
-		const qreal x = body.center().x() - size.width() / 2.0;
-		return position == QETProject::ReportTagPosition::Below
+		QTransform turn;
+		turn.rotate(rotation);
+			//The arrow as the tag reads it
+		const QRectF body = turn.inverted().mapRect(report->boundingRect());
+		const qreal x = body.center().x() - box.width() / 2.0;
+		const QPointF corner = position == QETProject::ReportTagPosition::Below
 				? QPointF(x, body.bottom())
-				: QPointF(x, body.top() - size.height());
+				: QPointF(x, body.top() - box.height());
+			//A text is turned about its transform origin: its box's corner
+			//lands on pos + origin + turn(box corner - origin)
+		const QPointF origin = text->transformOriginPoint();
+		return turn.map(corner) - origin - turn.map(box.topLeft() - origin);
 	}
 
 	void setTag(Element *report, const QString &tag)
@@ -314,20 +353,26 @@ QUndoCommand *ReportTags::formatCommand(QETProject *project)
 		QFont font = old_font;
 		tagFont(report, project, &font);
 		const QColor color = project->reportTagColor();
+		const qreal old_rotation = text->rotation();
+		const qreal rotation = tagRotation(report);
 
-			//The size it will have in its new font
+			//The box it will have in its new font
 		const QPointF old_pos = text->pos();
 		text->setFont(font);
-		const QSizeF size = text->boundingRect().size();
+		const QRectF box = text->boundingRect();
 		text->setFont(old_font);
 		text->setPos(old_pos);
-		const QPointF pos = tagPlace(report, size, project->reportTagPosition());
+		const QPointF pos = tagPlace(report, text, box, rotation, project->reportTagPosition());
 
 		if (font != old_font) {
 			new QPropertyUndoCommand(text, "font", old_font, font, command);
 		}
 		if (color != text->color()) {
 			new QPropertyUndoCommand(text, "color", text->color(), color, command);
+		}
+			//A tag read upside down, from before it took its reference's angle
+		if (!qFuzzyCompare(QET::correctAngle(old_rotation, true) + 1.0, rotation + 1.0)) {
+			new QPropertyUndoCommand(text, "rotation", old_rotation, rotation, command);
 		}
 		if (QLineF(pos, old_pos).length() > 0.01) {
 			new QPropertyUndoCommand(text, "pos", old_pos, pos, command);
@@ -376,9 +421,10 @@ DynamicElementTextItem *ReportTags::tagText(const Element *report)
 	@brief ReportTags::newTagText
 	@return a new text of @p report showing its tag, drawn as @p project
 	sets the tags: its font - the reference's unless one was chosen -, its
-	colour, centred above or below the arrow. Not yet one of the texts of
-	@p report: Element::addDynamicTextItem() or an AddElementTextCommand
-	makes it one.
+	colour, centred above or below the arrow, and turned the way the
+	reference is, so that both read the same way up. Not yet one of the
+	texts of @p report: Element::addDynamicTextItem() or an
+	AddElementTextCommand makes it one.
 	@param tag : the tag it is about to show, to centre it on: the
 	information may still be empty, when a command gives both
 */
@@ -396,11 +442,15 @@ DynamicElementTextItem *ReportTags::newTagText(Element *report, const QString &t
 	text->setInfoName(QETInformation::ELMT_REPORT_TAG);
 	text->setTextFrom(DynamicElementTextItem::ElementInfo);
 
+	const qreal rotation = tagRotation(report);
+	text->setRotation(rotation);
+
 	const QString shown = text->toPlainText();
 	text->setPlainText(tag);
-	const QSizeF size = text->boundingRect().size();
-	text->setPos(tagPlace(report, size, project ? project->reportTagPosition()
-												: QETProject::ReportTagPosition::Above));
+	const QRectF box = text->boundingRect();
+	text->setPos(tagPlace(report, text, box, rotation,
+						  project ? project->reportTagPosition()
+								  : QETProject::ReportTagPosition::Above));
 	text->setPlainText(shown);
 	return text;
 }
