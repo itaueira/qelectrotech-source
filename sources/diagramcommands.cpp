@@ -30,6 +30,7 @@
 #include "qetproject.h"
 #include "qetgraphicsitem/independenttextitem.h"
 #include "qetgraphicsitem/qetshapeitem.h"
+#include "qetgraphicsitem/reporttags.h"
 #include "qetinformation.h"
 #include "qgimanager.h"
 
@@ -367,6 +368,11 @@ void PasteDiagramCommand::redo()
 			}
 			diagram -> setItemGroup(item, renewed_groups.value(source_group));
 		}
+
+			//A copied folio report carries the tag of the arrow it was
+			//copied from: it gets the next one. A cut arrow pasted back is
+			//alone with its tag, and keeps it (T59).
+		ReportTags::renewRepeated(elmts_list, project);
 	}
 	else
 	{

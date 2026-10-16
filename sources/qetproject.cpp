@@ -1485,6 +1485,94 @@ void QETProject::setUprightSymbolTexts(bool upright)
 }
 
 /**
+	@brief QETProject::referenceStyle
+	@return how the references on the folios name their other end: by its
+	folio, row and column, as they always did, or by its folio and its tag
+	- the tag of a folio report, the label of a master or a slave (T59)
+*/
+QETProject::ReferenceStyle QETProject::referenceStyle() const {
+	return m_reference_style;
+}
+
+/**
+	@brief QETProject::setReferenceStyle
+	Set how the references name their other end, and have every reference of
+	the project written again: the folio reports reread their formula, the
+	masters and the slaves their cross reference.
+	@param style
+*/
+void QETProject::setReferenceStyle(ReferenceStyle style)
+{
+	if (style == m_reference_style) {
+		return;
+	}
+	m_reference_style = style;
+	emit folioReferencesChanged();
+	emit reportPropertiesChanged(m_default_report_properties, m_default_report_properties);
+	emit XRefPropertiesChanged();
+}
+
+/**
+	@brief QETProject::showReportTags
+	@return whether the tag of each folio report is shown next to it. Every
+	folio report has one; this only says if it is seen (T59)
+*/
+bool QETProject::showReportTags() const {
+	return m_show_report_tags;
+}
+
+/**
+	@brief QETProject::setShowReportTags
+	@param show
+*/
+void QETProject::setShowReportTags(bool show)
+{
+	if (show == m_show_report_tags) {
+		return;
+	}
+	m_show_report_tags = show;
+	emit folioReferencesChanged();
+}
+
+/**
+	@brief QETProject::reportTagPrefix
+	@return what the tag of a new folio report starts with, "S" unless
+	changed. The tags already given keep theirs.
+*/
+QString QETProject::reportTagPrefix() const {
+	return m_report_tag_prefix;
+}
+
+/**
+	@brief QETProject::setReportTagPrefix
+	@param prefix
+*/
+void QETProject::setReportTagPrefix(const QString &prefix)
+{
+	if (prefix == m_report_tag_prefix) {
+		return;
+	}
+	m_report_tag_prefix = prefix;
+	emit folioReferencesChanged();
+}
+
+/**
+	@brief QETProject::nextReportTagNumber
+	The number of the next folio report tag: one more than @p highest_found,
+	the highest the folios have now, and than any given in this session.
+	Two folio reports tagged before either is on a folio - the two arrows
+	of a pasted pair - so never get the same number.
+	@param highest_found : the highest number of a tag with the prefix on
+	the folios
+	@return the number, now taken
+*/
+int QETProject::nextReportTagNumber(int highest_found)
+{
+	m_last_report_tag_number = qMax(m_last_report_tag_number, highest_found) + 1;
+	return m_last_report_tag_number;
+}
+
+/**
 	@brief QETProject::wiringRules
 	@return how many wires a terminal of this project may take
 	(discussion #1158): the project's own rules when it sets them,
@@ -1681,6 +1769,7 @@ QDomDocument QETProject::toXml()
 	writeUsageXml(project_root);
 	writeWireHopsXml(project_root);
 	writeSymbolTextsXml(project_root);
+	writeFolioReferencesXml(project_root);
 	writeWiringRulesXml(project_root);
 
 	// Properties for news diagrams
@@ -2366,6 +2455,7 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 	readUsageXml(xml_project);
 	readWireHopsXml(xml_project);
 	readSymbolTextsXml(xml_project);
+	readFolioReferencesXml(xml_project);
 	readWiringRulesXml(xml_project);
 
 		//Load the default properties for the new diagrams
@@ -2588,6 +2678,26 @@ void QETProject::readSymbolTextsXml(QDomDocument &xml_project)
 }
 
 /**
+	@brief QETProject::readFolioReferencesXml
+	Read the <folio_references> element of the project, if any. A project
+	without it names its references by position and shows no tag, as it
+	always did.
+	@param xml_project : the xml description of the project
+*/
+void QETProject::readFolioReferencesXml(QDomDocument &xml_project)
+{
+	const QDomElement references = xml_project.documentElement()
+			.firstChildElement(QStringLiteral("folio_references"));
+	m_reference_style = references.attribute(QStringLiteral("style")) == QLatin1String("tag")
+			? ReferenceStyle::Tag
+			: ReferenceStyle::Position;
+	m_show_report_tags = references.attribute(QStringLiteral("show_report_tags"))
+			== QLatin1String("true");
+	m_report_tag_prefix = references.attribute(QStringLiteral("report_tag_prefix"),
+											   QStringLiteral("S"));
+}
+
+/**
 	@brief QETProject::readWiringRulesXml
 	Read the <wiring_rules> element of the project, if any.
 	A project without it sets no rule.
@@ -2804,6 +2914,30 @@ void QETProject::writeWireHopsXml(QDomElement &xml_element)
 			.createElement(QStringLiteral("wire_crossings"));
 	crossings.setAttribute(QStringLiteral("hop"), WireHops::toString(m_wire_hops));
 	xml_element.appendChild(crossings);
+}
+
+/**
+	@brief QETProject::writeFolioReferencesXml
+	Export how the references are written and whether the tags of the folio
+	reports are shown, as a <folio_references> child of \a xml_element.
+	Written only when something differs from the default, so a project that
+	never used it saves exactly as before.
+*/
+void QETProject::writeFolioReferencesXml(QDomElement &xml_element)
+{
+	if (m_reference_style == ReferenceStyle::Position && !m_show_report_tags
+			&& m_report_tag_prefix == QLatin1String("S")) {
+		return;
+	}
+	QDomElement references = xml_element.ownerDocument()
+			.createElement(QStringLiteral("folio_references"));
+	references.setAttribute(QStringLiteral("style"),
+							m_reference_style == ReferenceStyle::Tag ? QStringLiteral("tag")
+																	 : QStringLiteral("position"));
+	references.setAttribute(QStringLiteral("show_report_tags"),
+							m_show_report_tags ? QStringLiteral("true") : QStringLiteral("false"));
+	references.setAttribute(QStringLiteral("report_tag_prefix"), m_report_tag_prefix);
+	xml_element.appendChild(references);
 }
 
 /**

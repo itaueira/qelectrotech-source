@@ -222,6 +222,7 @@ QHash<QString, QString> QETInformation::titleblockTranslatedKeyHashVar()
 QStringList QETInformation::folioReportInfoKeys()
 {
 	QStringList list = { ELMT_LABEL,
+						 ELMT_REPORT_TAG,
 						 COND_FUNCTION,
 						 COND_TENSION_PROTOCOL,
 						 COND_COLOR,
@@ -233,6 +234,7 @@ QHash<QString, QString> QETInformation::folioReportInfoKeyToVar()
 {
 	QHash <QString, QString> H_;
 	H_.insert(ELMT_LABEL,            infoToVar(ELMT_LABEL));
+	H_.insert(ELMT_REPORT_TAG,       infoToVar(ELMT_REPORT_TAG));
 	H_.insert(COND_FUNCTION,         infoToVar(COND_FUNCTION));
 	H_.insert(COND_TENSION_PROTOCOL, infoToVar(COND_TENSION_PROTOCOL));
 	H_.insert(COND_COLOR,            infoToVar(COND_COLOR));
@@ -452,6 +454,7 @@ QString QETInformation::translatedInfoKey(const QString &info)
 	else if (info == PROJECT_SAVED_FILE_PATH)          return QObject::tr("Chemin du fichier enregistré");
 	else if (info == ELMT_FORMULA)                     return QObject::tr("Formule du label");
 	else if (info == ELMT_LABEL)                       return QObject::tr("Label");
+	else if (info == ELMT_REPORT_TAG)                  return QObject::tr("Repère du renvoi");
 	else if (info == ELMT_COMMENT)                     return QObject::tr("Commentaire");
 	else if (info == ELMT_FUNCTION)                    return QObject::tr("Fonction");
 	else if (info == ELMT_DESCRIPTION)                 return QObject::tr("Description textuelle");

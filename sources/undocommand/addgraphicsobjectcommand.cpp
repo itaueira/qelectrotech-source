@@ -18,6 +18,8 @@
 #include "addgraphicsobjectcommand.h"
 #include "../qetgraphicsitem/qetgraphicsitem.h"
 #include "../qetgraphicsitem/independenttextitem.h"
+#include "../qetgraphicsitem/element.h"
+#include "../qetgraphicsitem/reporttags.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../diagram.h"
 
@@ -38,6 +40,11 @@ AddGraphicsObjectCommand::AddGraphicsObjectCommand(QGraphicsObject *qgo, Diagram
 {
 	setText(QObject::tr("Ajouter ") + itemText());
 	m_diagram->qgiManager().manage(m_item);
+		//A folio report is born with its tag: placed, from the context
+		//menu or by a script, every arrow comes through here (T59)
+	if (auto *element = qobject_cast<Element *>(m_item.data())) {
+		ReportTags::give(element, m_diagram->project());
+	}
 }
 
 /**

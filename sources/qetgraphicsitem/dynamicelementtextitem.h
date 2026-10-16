@@ -165,6 +165,7 @@ class DynamicElementTextItem : public DiagramTextItem
 		void clearFormulaConnection();
 		void updateReportFormulaConnection();
 		void updateReportText();
+		void updateReportTagVisibility();
 		void updateLabel();
 		void conductorWasAdded(Conductor *conductor);
 		void conductorWasRemoved(Conductor *conductor);

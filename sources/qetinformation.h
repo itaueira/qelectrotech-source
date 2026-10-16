@@ -42,6 +42,12 @@ namespace QETInformation
 {
 	/** Default information related to element **/
 	static QString ELMT_LABEL                        = "label";
+	/**
+		The tag of a folio report: S1, S2... given when the arrow is
+		created, and never changed or edited after. What the reference at
+		the other end shows when the project names references by tag.
+	*/
+	static QString ELMT_REPORT_TAG                   = "report_tag";
 	static QString ELMT_FORMULA                      = "formula";
 	/**
 		Uuid of the project's element numbering scheme the element's

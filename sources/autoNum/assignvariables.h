@@ -80,6 +80,9 @@ namespace autonum
 		bool has_element = false;
 		DiagramPosition element_position;
 		QString element_prefix;
+			/// an element's tag (%T): the tag of a folio report, the label
+			/// of anything else, see AssignVariables::referenceTag()
+		QString element_tag;
 			/// a conductor's %wf, %wv, %wc and %ws
 		bool has_conductor = false;
 		QString wire_function;
@@ -100,6 +103,9 @@ namespace autonum
 			static QString formulaToLabel (QString formula, sequentialNumbers &seqStruct, const FormulaContext &context);
 			static QString replaceVariable (const QString &formula, const DiagramContext &dc);
 			static QString genericXref (const Element *element);
+			static QString referenceToLabel (const QString &formula, sequentialNumbers &seqStruct, const Element *referenced);
+			static QString referenceTag (const Element *element);
+			static QString positionToTag (const QString &formula);
 
 		private:
 			AssignVariables(const QString& formula, const sequentialNumbers& seqStruct, const FormulaContext &context);

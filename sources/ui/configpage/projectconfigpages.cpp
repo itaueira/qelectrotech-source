@@ -33,6 +33,7 @@
 #include "../wiringrules.h"
 #include "../wiringruleswarning.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qetgraphicsitem/reporttags.h"
 #include "../diagram.h"
 #include "../borderpropertieswidget.h"
 #include "../conductorpropertieswidget.h"
@@ -190,6 +191,30 @@ void ProjectMainConfigPage::applyProjectConf()
 		modified_project = true;
 	}
 
+		//The prefix first: the arrows tagged below take the new one
+	const QString report_tag_prefix = report_tag_prefix_le_ -> text().trimmed();
+	if (m_project -> reportTagPrefix() != report_tag_prefix) {
+		m_project -> setReportTagPrefix(report_tag_prefix);
+		modified_project = true;
+	}
+	const auto reference_style = QETProject::ReferenceStyle(reference_style_cb_ -> currentData().toInt());
+	if (m_project -> referenceStyle() != reference_style) {
+		m_project -> setReferenceStyle(reference_style);
+		modified_project = true;
+	}
+	if (m_project -> showReportTags() != show_report_tags_cb_ -> isChecked()) {
+		m_project -> setShowReportTags(show_report_tags_cb_ -> isChecked());
+		modified_project = true;
+	}
+		//With either of them on, the arrows of a project saved before the
+		//tags get theirs, and their text when it is shown: one undo
+	if (reference_style == QETProject::ReferenceStyle::Tag || m_project -> showReportTags()) {
+		if (QUndoCommand *tag_all = ReportTags::tagAllCommand(m_project)) {
+			m_project -> undoStack() -> push(tag_all);
+			modified_project = true;
+		}
+	}
+
 		//Following the application's rules stores nothing in the project
 	WiringRules::Settings wiring_rules;
 	if (!use_application_rules_cb_ -> isChecked()) {
@@ -265,6 +290,26 @@ void ProjectMainConfigPage::initWidgets()
 											  "pas le texte. Décochez pour qu'ils tournent avec le symbole, comme avant.",
 											  "tooltip"));
 
+		//How the references on the folios name their other end (T59)
+	folio_references_gb_ = new QGroupBox(tr("Références sur les folios", "group box title"));
+	reference_style_label_ = new QLabel(tr("Les références indiquent :", "label when configuring"));
+	reference_style_cb_ = new QComboBox();
+	reference_style_cb_ -> addItem(tr("Folio, ligne et colonne", "reference style"),
+								   int(QETProject::ReferenceStyle::Position));
+	reference_style_cb_ -> addItem(tr("Folio et repère", "reference style"),
+								   int(QETProject::ReferenceStyle::Tag));
+	reference_style_cb_ -> setToolTip(tr("Avec le repère, un renvoi indique 3-S12 et un contact indique 6-K1, "
+										 "le folio et le label de sa bobine.",
+										 "tooltip"));
+	show_report_tags_cb_ = new QCheckBox(tr("Afficher le repère des renvois de folio", "checkbox label"));
+	show_report_tags_cb_ -> setToolTip(tr("Chaque renvoi reçoit un repère à sa création. Il se déplace, mais ne se modifie pas.",
+										  "tooltip"));
+	report_tag_prefix_label_ = new QLabel(tr("Préfixe du repère :", "label when configuring"));
+	report_tag_prefix_le_ = new QLineEdit();
+	report_tag_prefix_le_ -> setMaximumWidth(80);
+	report_tag_prefix_le_ -> setToolTip(tr("Pour les renvois créés ensuite : les repères déjà donnés ne changent pas.",
+										   "tooltip"));
+
 		//How many wires a terminal may take (discussion #1158)
 	wiring_rules_gb_ = new QGroupBox(tr("Conducteurs par borne", "group box title"));
 	use_application_rules_cb_ = new QCheckBox(tr("Utiliser les réglages de l'application", "checkbox label"));
@@ -334,6 +379,21 @@ void ProjectMainConfigPage::initLayout()
 	main_layout0 -> addWidget(upright_symbol_texts_cb_);
 	main_layout0 -> addSpacing(10);
 
+	QVBoxLayout *references_layout = new QVBoxLayout(folio_references_gb_);
+	QHBoxLayout *reference_style_layout = new QHBoxLayout();
+	reference_style_layout -> addWidget(reference_style_label_);
+	reference_style_layout -> addWidget(reference_style_cb_);
+	reference_style_layout -> addStretch();
+	references_layout -> addLayout(reference_style_layout);
+	references_layout -> addWidget(show_report_tags_cb_);
+	QHBoxLayout *report_tag_prefix_layout = new QHBoxLayout();
+	report_tag_prefix_layout -> addWidget(report_tag_prefix_label_);
+	report_tag_prefix_layout -> addWidget(report_tag_prefix_le_);
+	report_tag_prefix_layout -> addStretch();
+	references_layout -> addLayout(report_tag_prefix_layout);
+	main_layout0 -> addWidget(folio_references_gb_);
+	main_layout0 -> addSpacing(10);
+
 	QVBoxLayout *wiring_rules_layout = new QVBoxLayout(wiring_rules_gb_);
 	wiring_rules_layout -> addWidget(use_application_rules_cb_);
 	QHBoxLayout *max_wires_layout = new QHBoxLayout();
@@ -368,6 +428,11 @@ void ProjectMainConfigPage::readValuesFromProject()
 	const int wire_hops_index = wire_hops_cb_ -> findData(WireHops::toString(m_project -> wireHops()));
 	wire_hops_cb_ -> setCurrentIndex(qMax(0, wire_hops_index));
 	upright_symbol_texts_cb_ -> setChecked(m_project -> uprightSymbolTexts());
+
+	reference_style_cb_ -> setCurrentIndex(qMax(0, reference_style_cb_ -> findData(
+													int(m_project -> referenceStyle()))));
+	show_report_tags_cb_ -> setChecked(m_project -> showReportTags());
+	report_tag_prefix_le_ -> setText(m_project -> reportTagPrefix());
 
 		//The rules that apply: the project's own or the application's
 	const WiringRules::Settings wiring_rules = m_project -> wiringRules();
@@ -424,6 +489,7 @@ void ProjectMainConfigPage::adjustReadOnly()
 	usage_reset_pb_ -> setDisabled(is_read_only);
 	wire_hops_cb_ -> setDisabled(is_read_only);
 	upright_symbol_texts_cb_ -> setDisabled(is_read_only);
+	folio_references_gb_ -> setDisabled(is_read_only);
 	wiring_rules_gb_ -> setDisabled(is_read_only);
 }
 

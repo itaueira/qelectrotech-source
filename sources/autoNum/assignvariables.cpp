@@ -241,6 +241,11 @@ namespace autonum
 			context.has_element = true;
 			context.element_position = diagram->convertPosition(elmt->scenePos());
 			context.element_prefix = elmt->getPrefix();
+				//Only when asked for: the tag of an element can be its own
+				//label, which is worked out with this very function
+			if (formula.contains(QLatin1String("%T"))) {
+				context.element_tag = referenceTag(elmt);
+			}
 		}
 		if (cndr)
 		{
@@ -276,6 +281,104 @@ namespace autonum
 		return av.m_assigned_label;
 	}
 	
+	/**
+		@brief AssignVariables::referenceToLabel
+		The text of a reference to @p referenced, the other end of a folio
+		report or the master or slave of a cross reference, from the
+		@p formula of the project. When the project names its references
+		by tag, the position in the formula - from the first %l or %c to
+		the last - gives way to the tag of @p referenced (T59). Without a
+		tag to show, the formula is kept as it is, so the reference shows
+		the position instead of nothing.
+		@param formula : the formula of the reference, "%f-%l%c" and the like
+		@param seqStruct : as formulaToLabel()
+		@param referenced : the element the reference points to
+		@return the text of the reference
+	*/
+	QString AssignVariables::referenceToLabel(const QString &formula,
+						  sequentialNumbers &seqStruct,
+						  const Element *referenced)
+	{
+		if (!referenced || !referenced->diagram()) {
+			return formula;
+		}
+		Diagram *diagram = referenced->diagram();
+		QString reference = formula;
+		if (diagram->project()
+			&& diagram->project()->referenceStyle() == QETProject::ReferenceStyle::Tag
+			&& !referenceTag(referenced).isEmpty()) {
+			reference = positionToTag(reference);
+		}
+		return formulaToLabel(reference, seqStruct, diagram, referenced);
+	}
+
+	/**
+		@brief AssignVariables::referenceTag
+		@return the tag a reference to @p element shows (%T): the tag of a
+		folio report, the label of anything else. A linked slave is named by
+		the label of its master, which is the one its texts show: the
+		contact of K1 is K1. Its own label is not asked: it can be a copy
+		of the master's label kept from before the master was renamed.
+	*/
+	QString AssignVariables::referenceTag(const Element *element)
+	{
+		if (!element) {
+			return QString();
+		}
+		if (element->linkType() & Element::AllReport) {
+			return element->elementInformations()
+					.value(QETInformation::ELMT_REPORT_TAG).toString();
+		}
+		auto label = [](const Element *e) {
+				//A label made from a formula that asks for %T would come
+				//back here: the stored label is what it last gave
+			if (e->elementInformations().value(QETInformation::ELMT_FORMULA)
+					.toString().contains(QLatin1String("%T"))) {
+				return e->elementInformations()
+						.value(QETInformation::ELMT_LABEL).toString();
+			}
+			return const_cast<Element *>(e)->actualLabel();
+		};
+		if (element->linkType() == Element::Slave) {
+			const QList<Element *> masters = const_cast<Element *>(element)->linkedElements();
+			if (!masters.isEmpty() && masters.first()) {
+				return label(masters.first());
+			}
+		}
+		return label(element);
+	}
+
+	/**
+		@brief AssignVariables::positionToTag
+		@return @p formula with the position, from its first %l or %c to
+		its last, replaced by %T: "%f-%l%c" gives "%f-%T", "(%f-%l%c)"
+		gives "(%f-%T)". What lies outside of it is kept, so a formula of
+		one's own keeps the rest of it. A formula without a position is
+		returned as it is.
+	*/
+	QString AssignVariables::positionToTag(const QString &formula)
+	{
+		int first = -1;
+		int last = -1;
+		for (int i = 0 ; i + 1 < formula.size() ; ++i)
+		{
+			if (formula.at(i) == QLatin1Char('%')
+				&& (formula.at(i + 1) == QLatin1Char('l')
+					|| formula.at(i + 1) == QLatin1Char('c')))
+			{
+				if (first < 0) {
+					first = i;
+				}
+				last = i + 2;
+				++i;
+			}
+		}
+		if (first < 0) {
+			return formula;
+		}
+		return formula.left(first) + QStringLiteral("%T") + formula.mid(last);
+	}
+
 	/**
 		@brief AssignVariables::replaceVariable
 		Replace the variables in formula in form %{my-var}
@@ -457,6 +560,7 @@ namespace autonum
 			}
 			m_assigned_label.replace("%l", m_context.element_position.letter());
 			m_assigned_label.replace("%prefix", m_context.element_prefix);
+			m_assigned_label.replace("%T", m_context.element_tag);
 		}
 
 		if (m_context.has_conductor)

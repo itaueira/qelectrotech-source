@@ -140,6 +140,12 @@ class ProjectMainConfigPage : public ProjectConfigPage {
 	QLabel *wire_hops_label_;
 	QComboBox *wire_hops_cb_;
 	QCheckBox *upright_symbol_texts_cb_;
+	QGroupBox *folio_references_gb_;
+	QLabel *reference_style_label_;
+	QComboBox *reference_style_cb_;
+	QCheckBox *show_report_tags_cb_;
+	QLabel *report_tag_prefix_label_;
+	QLineEdit *report_tag_prefix_le_;
 	QGroupBox *wiring_rules_gb_;
 	QCheckBox *use_application_rules_cb_;
 	QLabel *max_wires_label_;

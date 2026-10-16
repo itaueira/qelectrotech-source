@@ -29,6 +29,7 @@
 #include "crossrefitem.h"
 #include "element.h"
 #include "elementtextitemgroup.h"
+#include "reporttags.h"
 #include <QTimer>
 #include <QDomDocument>
 #include <QDomElement>
@@ -604,9 +605,17 @@ void DynamicElementTextItem::setInfoName(const QString &info_name)
 				setConnectionForReportFormula(m_report_formula);
 				updateReportText();
 			}
+			else if (info_name == QETInformation::ELMT_REPORT_TAG
+					 && m_text_from == ElementInfo)
+				setPlainText(paintedInfoValue(m_parent_element.data()->elementInformations(),
+											  info_name));
 			else
 				conductorPropertiesChanged();
 		}
+			//A text that stops showing the tag stops following its option
+		if (old_info_name == QETInformation::ELMT_REPORT_TAG && info_name != old_info_name)
+			ShownKinds::setVisible(this, true);
+		updateReportTagVisibility();
 	}
 	else if (m_info_name == "label" && elementUseForInfo())
 	{	
@@ -937,6 +946,14 @@ QVariant DynamicElementTextItem::itemChange(QGraphicsItem::GraphicsItemChange ch
 			{
 				m_report_formula = m_parent_element.data()->diagram()->project()->defaultReportProperties();
 				m_report_formula_con = connect(m_parent_element.data()->diagram()->project(), &QETProject::reportPropertiesChanged, this, &DynamicElementTextItem::reportFormulaChanged);
+					//The tag of the arrow is seen or not as the project says,
+					//and the reference, label or composite text, follows the
+					//style of the references
+				connect(m_parent_element.data()->diagram()->project(), &QETProject::folioReferencesChanged,
+						this, &DynamicElementTextItem::updateReportTagVisibility);
+				connect(m_parent_element.data()->diagram()->project(), &QETProject::folioReferencesChanged,
+						this, &DynamicElementTextItem::updateReportText);
+				updateReportTagVisibility();
 			}
 
 			//Add connection to keep up to date the status of the element linked to the parent folio report of this text.
@@ -1424,6 +1441,9 @@ void DynamicElementTextItem::setConnectionForReportFormula(const QString &formul
 		connect(other_elmt, &Element::yChanged, this, &DynamicElementTextItem::updateReportText);
 	if (string.contains("%c"))
 		connect(other_elmt, &Element::xChanged, this, &DynamicElementTextItem::updateReportText);
+		//The tag of the other end, which it may be given after the link
+		//(the arrows of a project saved before the tags)
+	connect(other_elmt, &Element::elementInfoChange, this, &DynamicElementTextItem::updateReportText);
 }
 
 void DynamicElementTextItem::removeConnectionForReportFormula(const QString &formula)
@@ -1449,7 +1469,7 @@ void DynamicElementTextItem::removeConnectionForReportFormula(const QString &for
 		disconnect(other_element, &Element::yChanged, this, &DynamicElementTextItem::updateReportText);
 	if (string.contains("%c"))
 		disconnect(other_element, &Element::xChanged, this, &DynamicElementTextItem::updateReportText);
-	
+	disconnect(other_element, &Element::elementInfoChange, this, &DynamicElementTextItem::updateReportText);
 }
 
 /**
@@ -1513,6 +1533,22 @@ void DynamicElementTextItem::updateReportFormulaConnection()
 }
 
 /**
+	@brief DynamicElementTextItem::updateReportTagVisibility
+	A text showing the tag of its folio report is seen when the project
+	shows the tags, and only then (T59). Other texts are left alone.
+*/
+void DynamicElementTextItem::updateReportTagVisibility()
+{
+	if (!ReportTags::isTagText(this) || !m_parent_element) {
+		return;
+	}
+	Diagram *diagram = m_parent_element.data()->diagram();
+	if (diagram && diagram->project()) {
+		ShownKinds::setVisible(this, diagram->project()->showReportTags());
+	}
+}
+
+/**
 	@brief DynamicElementTextItem::updateReportText
 	This function is only use when this text is owned by a report, and this text have for info the Label.
 */
@@ -1528,7 +1564,7 @@ void DynamicElementTextItem::updateReportText()
 		{
 			Element *elmt = m_other_report.data();
 			QString label = m_report_formula;
-			label = autonum::AssignVariables::formulaToLabel(label, elmt->rSequenceStruct(), elmt->diagram(), elmt);
+			label = autonum::AssignVariables::referenceToLabel(label, elmt->rSequenceStruct(), elmt);
 			setPlainText(label);
 		}
 		else
@@ -1715,7 +1751,7 @@ QString DynamicElementTextItem::reportReplacedCompositeText() const
 		{
 			Element *elmt = m_other_report.data();
 			QString label = m_report_formula;
-			label = autonum::AssignVariables::formulaToLabel(label, elmt->rSequenceStruct(), elmt->diagram(), elmt);
+			label = autonum::AssignVariables::referenceToLabel(label, elmt->rSequenceStruct(), elmt);
 			string.replace("%{label}", label);
 		}
 			// if element is not linked, replace an empty string
@@ -1866,7 +1902,7 @@ void DynamicElementTextItem::updateXref()
 					if(m_text_from == DynamicElementTextItem::ElementInfo && m_info_name == "xref")
 					{
 						QString xref_label = xrp.slaveLabel();
-						xref_label = autonum::AssignVariables::formulaToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt->diagram(), master_elmt);
+						xref_label = autonum::AssignVariables::referenceToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt);
 
 						DiagramContext dc = m_parent_element->elementInformations();
 						if(dc.value("xref").toString() != xref_label)
@@ -1896,7 +1932,7 @@ void DynamicElementTextItem::updateXref()
 			   )
 				{
 					QString xref_label = xrp.slaveLabel();
-					xref_label = autonum::AssignVariables::formulaToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt->diagram(), master_elmt);
+					xref_label = autonum::AssignVariables::referenceToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt);
 					
 					if(!m_slave_Xref_item)
 					{
@@ -1955,7 +1991,7 @@ void DynamicElementTextItem::updateXref()
 				if(xrp.getXrefPos() == Qt::AlignHCenter)
 				{
 					QString xref_label = xrp.slaveLabel();
-					xref_label = autonum::AssignVariables::formulaToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt->diagram(), master_elmt);
+					xref_label = autonum::AssignVariables::referenceToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt);
 
 					DiagramContext dc = m_parent_element->elementInformations();
 					if(dc.value("xref").toString() != xref_label)

@@ -247,6 +247,16 @@ class QETProject : public QObject
 		void setWireHops(WireHops::Mode mode);
 		bool uprightSymbolTexts() const;
 		void setUprightSymbolTexts(bool upright);
+			/// How a reference on a folio names its other end: by the folio,
+			/// row and column, or by the folio and the tag (T59)
+		enum class ReferenceStyle { Position, Tag };
+		ReferenceStyle referenceStyle() const;
+		void setReferenceStyle(ReferenceStyle style);
+		bool showReportTags() const;
+		void setShowReportTags(bool show);
+		QString reportTagPrefix() const;
+		void setReportTagPrefix(const QString &prefix);
+		int nextReportTagNumber(int highest_found);
 		WiringRules::Settings wiringRules() const;
 		WiringRules::Settings projectWiringRules() const;
 		void setWiringRules(const WiringRules::Settings &rules);
@@ -489,6 +499,9 @@ class QETProject : public QObject
 		void readOnlyChanged(QETProject *, bool);
 		void reportPropertiesChanged(const QString &old_str, const QString &new_str);
 		void XRefPropertiesChanged ();
+			/// The style of the references or the showing of the tags of
+			/// the folio reports changed (T59)
+		void folioReferencesChanged();
 		void addAutoNumDiagram();
 		void elementAutoNumAdded(QString name);
 		void elementAutoNumRemoved(QString name);
@@ -555,6 +568,7 @@ class QETProject : public QObject
 		void readUsageXml(QDomDocument &xml_project);
 		void readWireHopsXml(QDomDocument &xml_project);
 		void readSymbolTextsXml(QDomDocument &xml_project);
+		void readFolioReferencesXml(QDomDocument &xml_project);
 		void readWiringRulesXml(QDomDocument &xml_project);
 
 		void writeProjectPropertiesXml(QDomElement &);
@@ -562,6 +576,7 @@ class QETProject : public QObject
 		void writeUsageXml(QDomElement &);
 		void writeWireHopsXml(QDomElement &);
 		void writeSymbolTextsXml(QDomElement &);
+		void writeFolioReferencesXml(QDomElement &);
 		void writeWiringRulesXml(QDomElement &);
 		void addDiagram(Diagram *diagram, int pos = -1);
 		void detachDiagram(Diagram *diagram);
@@ -633,6 +648,13 @@ class QETProject : public QObject
 			/// Texts drawn in a turned symbol stay horizontal (on for a new
 			/// project, off for one saved without it), see uprightSymbolTexts()
 		bool m_upright_symbol_texts = false;
+			/// See referenceStyle(), showReportTags(), reportTagPrefix()
+		ReferenceStyle m_reference_style = ReferenceStyle::Position;
+		bool m_show_report_tags = false;
+		QString m_report_tag_prefix = QStringLiteral("S");
+			/// The highest number given to a folio report tag in this
+			/// session, see nextReportTagNumber()
+		int m_last_report_tag_number = 0;
 		WiringRules::Settings m_wiring_rules;
 	bool m_auto_break_conductor = false;
 		XmlElementCollection *m_elements_collection = nullptr;

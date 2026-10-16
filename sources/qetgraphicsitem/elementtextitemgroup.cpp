@@ -905,7 +905,7 @@ void ElementTextItemGroup::updateXref()
 					if(deti->textFrom() == DynamicElementTextItem::ElementInfo && deti->infoName() == "xref")
 					{
 						QString xref_label = xrp.slaveLabel();
-						xref_label = autonum::AssignVariables::formulaToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt->diagram(), master_elmt);
+						xref_label = autonum::AssignVariables::referenceToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt);
 
 						DiagramContext dc = m_parent_element->elementInformations();
 						if(dc.value("xref").toString() != xref_label)
@@ -936,7 +936,7 @@ void ElementTextItemGroup::updateXref()
 				   (deti->textFrom() == DynamicElementTextItem::CompositeText && deti->compositeText().contains("%{label")))
 				{
 					QString xref_label = xrp.slaveLabel();
-					xref_label = autonum::AssignVariables::formulaToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt->diagram(), master_elmt);
+					xref_label = autonum::AssignVariables::referenceToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt);
 					
 					if(!m_slave_Xref_item)
 					{
@@ -988,7 +988,7 @@ void ElementTextItemGroup::updateXref()
 				if(xrp.getXrefPos() == Qt::AlignHCenter)
 				{
 					QString xref_label = xrp.slaveLabel();
-					xref_label = autonum::AssignVariables::formulaToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt->diagram(), master_elmt);
+					xref_label = autonum::AssignVariables::referenceToLabel(xref_label, master_elmt->rSequenceStruct(), master_elmt);
 
 					DiagramContext dc = m_parent_element->elementInformations();
 					if(dc.value("xref").toString() != xref_label)

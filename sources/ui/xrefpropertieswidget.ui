@@ -305,7 +305,8 @@
 %l : le numéro de ligne
 %c : le numéro de colonne
 %M: Installation 
-%LM: Localisation </string>
+%LM: Localisation
+%T : le label de l'élément</string>
              </property>
             </widget>
            </item>

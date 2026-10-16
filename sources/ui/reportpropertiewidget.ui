@@ -39,7 +39,8 @@ Créer votre propre texte en vous aidant des variables suivantes :
 %M :  l'installation
 %LM : la localisation
 %l : le numéro de ligne
-%c : le numéro de colonne</string>
+%c : le numéro de colonne
+%T : le repère du renvoi de folio</string>
           </property>
           <property name="scaledContents">
            <bool>false</bool>

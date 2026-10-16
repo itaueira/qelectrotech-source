@@ -99,6 +99,9 @@ void CrossRefItem::init()
 	
 	QETProject *project = m_element->diagram()->project();
 	connect(project, &QETProject::XRefPropertiesChanged, this, &CrossRefItem::updateProperties);
+		//The style of the references changes the text and not the
+		//properties, which updateProperties() compares (T59)
+	connect(project, &QETProject::folioReferencesChanged, this, &CrossRefItem::updateLabel);
 	
 	m_properties = m_element->diagram()->project()->defaultXRefProperties(m_element->kindInformations()["type"].toString());
 	setAcceptHoverEvents(true);
@@ -190,6 +193,10 @@ void CrossRefItem::setUpConnection()
 		m_update_connection << connect(m_element,
 					       &Element::linkedElementChanged,
 					       this, &CrossRefItem::linkedChanged);
+			//By tag, a contact is named by the label of its master
+		m_update_connection << connect(m_element,
+					       &Element::elementInfoChange,
+					       this, &CrossRefItem::updateLabel);
 
 		auto diagram_ = dynamic_cast<Diagram *>(this->scene());
 		auto formula_ = m_properties.masterLabel();
@@ -253,9 +260,9 @@ QString CrossRefItem::elementPositionText(
 		const Element *elmt, const bool &add_prefix) const
 {
 	autonum::sequentialNumbers seq;
-	QString txt = autonum::AssignVariables::formulaToLabel(
+	QString txt = autonum::AssignVariables::referenceToLabel(
 				m_properties.masterLabel(),
-				seq, elmt->diagram(),
+				seq,
 				elmt);
 
 	if (add_prefix)

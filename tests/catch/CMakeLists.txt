@@ -1016,7 +1016,9 @@ if(TARGET qet_core)
         # num eixo so, qualquer que seja o tamanho do nome.
         src/ui/configdialog_test.cpp
         # The auto conductor and the grid start the way they were left.
-        src/ui/rememberedtoggles_test.cpp)
+        src/ui/rememberedtoggles_test.cpp
+        # The tag of the folio reports, and the references by tag.
+        src/ui/reporttags_test.cpp)
 
     target_link_libraries(
         C_uitests

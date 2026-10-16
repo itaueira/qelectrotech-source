@@ -1906,8 +1906,8 @@ void Element::setElementData(ElementData data)
 							XRefProperties xrp = diagram()->project()
 								->defaultXRefProperties("plc");
 							autonum::sequentialNumbers seq;
-							return autonum::AssignVariables::formulaToLabel(
-								xrp.slaveLabel(), seq, diagram(), this);
+							return autonum::AssignVariables::referenceToLabel(
+								xrp.slaveLabel(), seq, this);
 						}());
 					ctx.addValue(QETInformation::ELMT_LABEL, actualLabel());
 					ctx.addValue(QETInformation::ELMT_PLC_TC,
@@ -2885,10 +2885,9 @@ void Element::drawPlcTable(QPainter *painter)
 											->defaultXRefProperties("plc");
 										autonum::sequentialNumbers seq;
 										cell_text = autonum::AssignVariables
-											::formulaToLabel(
+											::referenceToLabel(
 												xrp.masterLabel(),
 												seq,
-												slave->diagram(),
 												slave);
 									}
 									break;

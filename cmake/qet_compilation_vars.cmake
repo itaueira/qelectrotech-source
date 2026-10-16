@@ -887,6 +887,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/qetgraphicsitem/qgraphicsitemutility.h
   ${QET_DIR}/sources/qetgraphicsitem/reportelement.cpp
   ${QET_DIR}/sources/qetgraphicsitem/reportelement.h
+  ${QET_DIR}/sources/qetgraphicsitem/reporttags.cpp
+  ${QET_DIR}/sources/qetgraphicsitem/reporttags.h
   ${QET_DIR}/sources/qetgraphicsitem/simpleelement.cpp
   ${QET_DIR}/sources/qetgraphicsitem/simpleelement.h
   ${QET_DIR}/sources/qetgraphicsitem/slaveelement.cpp
