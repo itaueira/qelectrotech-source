@@ -2257,10 +2257,11 @@ void projectDataBase::updateConductor(Conductor *conductor)
 		//This announced nothing at all until T17, and the reason written here
 		//rested on a wire_count column of element_nomenclature_view. There is
 		//no such column: the view is spelled out in
-		//createElementNomenclatureView() and carries no subquery of any kind.
-		//It exists on a branch that was never merged. (Not to be confused
-		//with the wire_count attribute a cable writes into the project file,
-		//which has nothing to do with this table.)
+		//createElementNomenclatureView() and counts no wire; its one
+		//subquery reads the link table (nomenclatureCondition()). The
+		//wire count exists on a branch that was never merged. (Not to be
+		//confused with the wire_count attribute a cable writes into the
+		//project file, which has nothing to do with this table.)
 		//
 		//What the wrong reason hid is a real cost, and it argues for grouping
 		//rather than for silence: renaming a wire renames the whole potential,
@@ -2959,11 +2960,12 @@ bool projectDataBase::createDataBase()
 		//No query uses these indexes yet, and the comment that stood here said
 		//one did: it credited element_nomenclature_view with a correlated
 		//subquery counting the wires of each element. The view is spelled out
-		//in createElementNomenclatureView() and has no subquery at all -- that
-		//one lives on a branch that was never merged. They are kept because
-		//the wiring list joins the conductor table on exactly these three
-		//columns, and are named here for what they are: paid for in advance,
-		//not in use.
+		//in createElementNomenclatureView() and counts no wire -- its only
+		//subquery reads the link table, see nomenclatureCondition(); the
+		//wire count lives on a branch that was never merged. They are kept
+		//because the wiring list joins the conductor table on exactly these
+		//three columns, and are named here for what they are: paid for in
+		//advance, not in use.
 	for (const QString &index_ : {
 			QStringLiteral("CREATE INDEX idx_conductor_terminal1_element ON conductor (terminal1_element_uuid)"),
 			QStringLiteral("CREATE INDEX idx_conductor_terminal2_element ON conductor (terminal2_element_uuid)"),
@@ -3097,20 +3099,52 @@ QString projectDataBase::elementViewSource()
 /**
 	@brief projectDataBase::nomenclatureCondition
 	@return what the bill of materials drops from the element rows: what the
-	user kept out of it, and what names nothing. Written once, for the view
-	and for bomElements(), which asks the same question of the same rows.
+	user kept out of it, what names nothing, and a terminal of the schematic
+	linked to a strip terminal. Written once, for the view and for
+	bomElements(), which asks the same question of the same rows.
+
+	@par The linked terminal
+	A terminal of the schematic linked to the terminal drawn on the strip
+	sheet is the same piece drawn twice, and the piece belongs to the strip
+	terminal, its master - the rule of the contact, whose piece belongs to
+	the coil. The contact never reaches the list because its kind is not
+	published (publishedElementTypes()); the terminal stays a terminal when
+	it links, and terminals are published, so without this clause the piece
+	would come out twice. Only the link says so, and it is read from the
+	link table, on the row the terminal writes for itself.
+
+	Asked of the strip terminal and not of any partner: a terminal links to
+	nothing else, and a link it was saved with to something else (another
+	program) leaves it in the list. A terminal that is not linked is counted
+	as before, and so is the strip terminal, linked or not.
 */
 QString projectDataBase::nomenclatureCondition()
 {
 	return QStringLiteral(" AND (ei.exclude_from_bom IS NOT 'true')")
 		+ QStringLiteral(" AND ")
 		+ QETBom::informationPresentCondition(QStringLiteral("ei."),
-						      QETInformation::elementInfoKeys());
+						      QETInformation::elementInfoKeys())
+			//The kinds spelled by ElementData, as elementTypeClause()
+			//does, so that a renamed kind cannot silently match nothing
+		+ QStringLiteral(" AND NOT (e.type = '%1' AND EXISTS ("
+				 "SELECT 1 FROM link l, element m"
+				 " WHERE l.element_uuid = e.uuid"
+				 " AND m.uuid = l.linked_uuid"
+				 " AND m.type = '%2'"
+				 " AND m.sub_type = '%3'))")
+			.arg(ElementData::typeToString(ElementData::Terminal),
+			     ElementData::typeToString(ElementData::Master),
+			     ElementData::masterTypeToString(ElementData::StripTerminal));
 }
 
 QList<projectDataBase::BomElement> projectDataBase::bomElements()
 {
 	QList<BomElement> elements;
+		//The link rows are written lazily (linksChanged()), and the list
+		//drops a linked terminal by them: a link just made has to be in the
+		//table before the question is asked, as newQuery() makes sure for
+		//every other reader.
+	flushLinks();
 	QSqlQuery query(m_data_base);
 	if (!query.exec(QStringLiteral("SELECT e.uuid, ei.label, ei.part_code")
 			+ elementViewSource() + nomenclatureCondition()
@@ -3133,8 +3167,10 @@ QList<projectDataBase::BomElement> projectDataBase::bomElements()
 /**
 	@brief projectDataBase::createElementNomenclatureView
 	The bill of materials view: the shared body, minus the rows the user
-	asked to keep out of the parts list, and minus the rows that name
-	nothing.
+	asked to keep out of the parts list, minus the rows that name
+	nothing, and minus the terminals of the schematic linked to a strip
+	terminal, whose piece is the strip terminal's (see
+	nomenclatureCondition()).
 
 	@par The second clause, and the two opposite mistakes it sits between
 	Measured on a project of fourteen folios : a hundred of its three
@@ -4380,10 +4416,25 @@ void projectDataBase::populateLinkTable()
 	@brief projectDataBase::linksChanged
 	A link of the sender() was made or undone: its rows are written again
 	by the next flushLinks().
+
+	A terminal of the schematic linked to a strip terminal also leaves the
+	bill of materials, and comes back when unlinked (nomenclatureCondition()),
+	so its link is announced: a table drawn on a folio reads the list again
+	only when told. Announced after the queueing, and from the terminal,
+	because the row the list reads is the terminal's own: linked from the
+	terminal's side, the strip terminal reports its half before the
+	terminal is done, and the terminal's number changing in between is
+	announced while its row is not written yet.
+	No other link changes what a list holds, and announcing them all would
+	have every table of every folio query again for nothing.
 */
 void projectDataBase::linksChanged()
 {
-	queueLinks(qobject_cast<Element *>(sender()));
+	Element *element = qobject_cast<Element *>(sender());
+	queueLinks(element);
+	if (element && element->elementData().isStripTerminalSlave()) {
+		notifyUpdated();
+	}
 }
 
 /**

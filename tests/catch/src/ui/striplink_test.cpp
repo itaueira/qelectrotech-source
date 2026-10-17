@@ -50,6 +50,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QSqlQuery>
 #include <QTreeWidget>
 #include <QUndoStack>
 
@@ -666,12 +667,17 @@ namespace
 	}
 
 	/// The label the data base of @a project holds for the element of
-	/// uuid @a uuid - what the parts list and the lists read
+	/// uuid @a uuid - the element_info row the lists read. Not through
+	/// bomElements(): a terminal linked to a strip terminal is not in the
+	/// bill of materials (CU-43.16), and its row is there all the same.
 	QString labelInDataBase(QETProject *project, const QString &uuid)
 	{
-		for (const auto &row : project->dataBase()->bomElements())
-			if (QUuid(row.uuid) == QUuid(uuid))
-				return row.label;
+		QSqlQuery query = project->dataBase()->newQuery(
+			QStringLiteral("SELECT label FROM element_info"
+				       " WHERE element_uuid = '%1'")
+				.arg(QUuid(uuid).toString()));
+		if (query.next())
+			return query.value(0).toString();
 		return QStringLiteral("<absent>");
 	}
 
@@ -889,4 +895,184 @@ TEST_CASE("T43 — two link commands merged on one strip terminal give every ter
 	project->undoStack()->undo();
 	CHECK(labelOf(t2) == QStringLiteral("2"));
 	CHECK(labelOf(t3) == QStringLiteral("3"));
+}
+
+namespace
+{
+	/// Give @a element the part @a part the way its properties do: one
+	/// command on the project's stack, which tells the data base.
+	void assignPart(QETProject *project, Element *element, const QString &part)
+	{
+		DiagramContext with_part = element->elementInformations();
+		with_part.addValue(QETInformation::ELMT_PART_CODE, part);
+		project->undoStack()->push(new ChangeElementInformationCommand(
+			element, element->elementInformations(), with_part));
+	}
+
+	/// The number the data base of @a project answers to @a statement, or
+	/// -1 when it answers nothing - a refused query is not a zero
+	int countOf(QETProject *project, const QString &statement)
+	{
+		QSqlQuery query = project->dataBase()->newQuery(statement);
+		return query.next() ? query.value(0).toInt() : -1;
+	}
+
+	/// How many lines of the bill of materials carry the part @a part:
+	/// the quantity the list gives it, grouped by part
+	int linesOfPart(QETProject *project, const QString &part)
+	{
+		return countOf(project,
+			       QStringLiteral("SELECT COUNT(*) FROM element_nomenclature_view"
+					      " WHERE part_code = '%1'").arg(part));
+	}
+
+	int linesInBom(QETProject *project)
+	{
+		return countOf(project,
+			       QStringLiteral("SELECT COUNT(*) FROM element_nomenclature_view"));
+	}
+
+	/// Whether the element of uuid @a uuid is among bomElements(), the
+	/// other reader of the same rule (the mounting layout)
+	bool inBomElements(QETProject *project, const QString &uuid)
+	{
+		for (const auto &row : project->dataBase()->bomElements())
+			if (QUuid(row.uuid) == QUuid(uuid))
+				return true;
+		return false;
+	}
+}
+
+TEST_CASE("CU-43.16 — the part of a terminal linked to a strip terminal comes out once in the bill of materials",
+	  "[t43][striplink][bom]")
+{
+		//The piece belongs to the strip terminal, as the piece of a contact
+		//belongs to its coil. The terminal of the schematic carries the same
+		//part here, as a catalog filling both sides would leave it: that is
+		//the piece that would come out twice.
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	QETProject *project = bench.project.project();
+	Element *x1 = bench(x1_uuid);
+	Element *t1 = bench(t1_uuid);
+	Element *t2 = bench(t2_uuid);
+	REQUIRE(x1 != nullptr);
+	REQUIRE(t1 != nullptr);
+	REQUIRE(t2 != nullptr);
+
+	const QString strip_part = QStringLiteral("PART-STRIP");
+	const QString free_part  = QStringLiteral("PART-FREE");
+	assignPart(project, x1, strip_part);
+	assignPart(project, t1, strip_part);
+	assignPart(project, t2, free_part);
+		//Two questions, because one alone misses a mistake: the number of
+		//parts finds a part gone or added, the sum finds a line too many
+		//inside a part that is still there
+	const QString parts = QStringLiteral(
+		"SELECT COUNT(DISTINCT part_code) FROM element_nomenclature_view"
+		" WHERE part_code IN ('%1', '%2')").arg(strip_part, free_part);
+	const QString quantity = QStringLiteral(
+		"SELECT COUNT(*) FROM element_nomenclature_view"
+		" WHERE part_code IN ('%1', '%2')").arg(strip_part, free_part);
+
+		//Not linked, the control the rest is read against: the two sides
+		//count as they always did, a line each
+	const int lines_before = linesInBom(project);
+	REQUIRE(lines_before > 0);
+	CHECK(linesOfPart(project, strip_part) == 2);
+	CHECK(linesOfPart(project, free_part) == 1);
+	CHECK(countOf(project, parts) == 2);
+	CHECK(countOf(project, quantity) == 3);
+	CHECK(inBomElements(project, x1_uuid));
+	CHECK(inBomElements(project, t1_uuid));
+	CHECK(inBomElements(project, t2_uuid));
+
+	link(project, t1, x1);
+	REQUIRE(t1->linkedElements() == QList<Element *>({x1}));
+
+		//bomElements() asked first, before any newQuery(): the link rows
+		//are written lazily, and it has to write them before it reads
+	CHECK(inBomElements(project, x1_uuid));
+	CHECK_FALSE(inBomElements(project, t1_uuid));
+	CHECK(inBomElements(project, t2_uuid));
+
+		//Linked: the piece of the strip terminal once, the terminal that
+		//is not linked once, and no other line gone
+	CHECK(linesOfPart(project, strip_part) == 1);
+	CHECK(linesOfPart(project, free_part) == 1);
+	CHECK(countOf(project, parts) == 2);
+	CHECK(countOf(project, quantity) == 2);
+	CHECK(linesInBom(project) == lines_before - 1);
+
+		//And it is still a terminal for every other list: the label roll
+		//marks it, with the number of its strip terminal, beside the strip
+		//terminal itself
+	CHECK(countOf(project, QStringLiteral("SELECT COUNT(*) FROM element_label_view"
+					       " WHERE label = 'S1'")) == 2);
+
+	SECTION("undoing the link brings the terminal back")
+	{
+		project->undoStack()->undo();
+		REQUIRE(t1->isFree());
+		CHECK(inBomElements(project, t1_uuid));
+		CHECK(linesOfPart(project, strip_part) == 2);
+		CHECK(countOf(project, quantity) == 3);
+		CHECK(linesInBom(project) == lines_before);
+	}
+
+	SECTION("saved and opened again, it comes out once still")
+	{
+		REQUIRE(bench.project.saveAndReopen());
+		project = bench.project.project();
+		bench.sheet = bench.project.diagram(0);
+		Element *reopened = bench(t1_uuid);
+		REQUIRE(reopened != nullptr);
+		REQUIRE(reopened->linkedElements().size() == 1);
+		CHECK_FALSE(inBomElements(project, t1_uuid));
+		CHECK(linesOfPart(project, strip_part) == 1);
+		CHECK(linesOfPart(project, free_part) == 1);
+		CHECK(linesInBom(project) == lines_before - 1);
+	}
+}
+
+TEST_CASE("T43 — a list drawn on a folio is told when a terminal is linked to a strip terminal, and unlinked",
+	  "[t43][striplink][bom]")
+{
+		//A table drawn on a folio reads the list again when the data base
+		//says it changed, and only then. Read here the way it reads it: on
+		//the signal, and through newQuery().
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	QETProject *project = bench.project.project();
+	Element *x1 = bench(x1_uuid);
+	Element *t1 = bench(t1_uuid);
+	REQUIRE(x1 != nullptr);
+	REQUIRE(t1 != nullptr);
+	const QString part = QStringLiteral("PART-STRIP");
+	assignPart(project, x1, part);
+	assignPart(project, t1, part);
+	REQUIRE(linesOfPart(project, part) == 2);
+
+	int told = 0;
+	int read = -1;
+	QObject table;
+	QObject::connect(project->dataBase(), &projectDataBase::dataBaseUpdated, &table,
+			 [&]() { ++told; read = linesOfPart(project, part); });
+
+	link(project, t1, x1);
+	REQUIRE(t1->linkedElements() == QList<Element *>({x1}));
+	CHECK(told > 0);
+	CHECK(read == 1);
+
+		//Unlinked without undo, the terminal keeps the number it received:
+		//none of its information changes, and only the link can tell
+	told = 0;
+	auto unlink_all = new LinkElementCommand(t1);
+	unlink_all->unlinkAll();
+	project->undoStack()->push(unlink_all);
+	REQUIRE(t1->isFree());
+	CHECK(told > 0);
+	CHECK(read == 2);
 }
