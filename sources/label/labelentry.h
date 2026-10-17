@@ -112,6 +112,41 @@ struct LabelEntry
 		running a second query.
 	*/
 	bool excluded_from_bom = false;
+	/**
+		The name of the terminal strip the terminal is mounted on, as the
+		strip editor names it. Empty for anything that is not a terminal.
+
+		What tells two runs of terminals apart on one roll: a terminal label
+		is very often a bare number, and a 7 of X1 and a 7 of X2 read alike
+		on the tape and nowhere else.
+	*/
+	QString strip;
+	/**
+		Where the terminal sits on its rail: PhysicalTerminal::pos(), the
+		very number the strip editor shows in its Position column - counted
+		from 0, as the editor shows it. -1 for anything that is not a
+		terminal.
+
+		Carried so that the order of a run can be checked against the rail
+		before the tape is spent. The collector never reorders, so a strip
+		the user sorted prints in the sorted order; this is what makes that
+		visible on the bench rather than on the rail.
+
+		Counted from 0, unlike folio_position, on purpose: the comparison it
+		exists for is with the editor's column, and an offset of one between
+		the two would read as a terminal out of place.
+	*/
+	int strip_position = -1;
+	/**
+		The level of the terminal inside its physical terminal, 0 being the
+		back one, against the mounting plate: RealTerminal::level(), as the
+		Stage column of the strip editor shows it. -1 for anything that is
+		not a terminal.
+
+		A terminal of several levels gives several entries with the same
+		strip_position, one per level, back to front.
+	*/
+	int level = -1;
 };
 
 using LabelEntryList = QVector<LabelEntry>;

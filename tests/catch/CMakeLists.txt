@@ -776,6 +776,7 @@ if(TARGET qelectrotech_objects)
         # foliovariables_test.cpp do C_unittests, e não se repete aqui.
         src/ui/wiringlist_test.cpp
         src/ui/componentlabel_test.cpp
+        src/ui/terminallabel_test.cpp
         src/ui/mountinglayoutsave_test.cpp
         # A cena em milímetro da placa de montagem: o que ela conta, o que
         # ela se recusa a fazer item, e o que um arraste deixa na pilha. Está
