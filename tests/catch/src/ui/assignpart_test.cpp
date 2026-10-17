@@ -36,6 +36,8 @@
 #include <QSqlQuery>
 #include <QUndoCommand>
 #include <QUndoStack>
+#include <QUuid>
+#include <QLineF>
 
 /*
 	Assigning a catalog part on the folio, and taking it back with one Ctrl+Z.
@@ -874,4 +876,71 @@ TEST_CASE("T13 — o acessório da peça chega ao componente desenhado, e sai co
 		REQUIRE(informationOf(k2, accessory_code_key).isEmpty());
 		REQUIRE(informationOf(q1, accessory_code_key).isEmpty());
 	}
+}
+
+/*
+	The name a terminal carries in a project (Terminal::instanceName(), the
+	pin of the part assigned to it) is written in the symbol's list of its
+	terminals, and a .qetz leaves that list out as computed when every
+	folio, symbol and wire has a uuid of its own. Measured on 17/10/2026: a
+	name put on a terminal of industrial.qet came back from a .qetz as no
+	name at all. And the "_" older versions wrote for a terminal without a
+	name was taken for one, and written back on every save.
+*/
+TEST_CASE("T13 — o nome do borne no projeto sobrevive a salvar em .qetz, e o \"_\" antigo não é nome",
+		  "[T13][catalog]")
+{
+	UiBench::ScratchProject scratch(UiBench::fileContent(UiBench::examplePath(QStringLiteral("industrial.qet"))),
+									QStringLiteral("industrial.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+		//The example writes "_" on its terminals: none of them has a name
+	Element *named = nullptr;
+	int legacy = 0;
+	for (Diagram *diagram : scratch.diagrams()) {
+		for (Element *element : diagram->elements()) {
+			for (Terminal *terminal : element->terminals()) {
+				CHECK(terminal->instanceName() != QStringLiteral("_"));
+				++legacy;
+			}
+			if (!named && element->terminals().size() >= 2) {
+				named = element;
+			}
+		}
+	}
+	REQUIRE(legacy > 100);
+	REQUIRE(named);
+
+	const QUuid uuid = named->uuid();
+	const QPointF first_at = named->terminals().at(0)->dockConductor();
+	named->terminals().at(0)->setInstanceName(QStringLiteral("PINO-13"));
+
+		//Saved: opened from a .qet, it is saved as a .qetz beside it, and
+		//opened again from there
+	REQUIRE(scratch.saveAndReopen());
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.filePath().endsWith(QStringLiteral(".qetz")));
+
+	Element *again = nullptr;
+	for (Diagram *diagram : scratch.diagrams()) {
+		for (Element *element : diagram->elements()) {
+			if (element->uuid() == uuid) {
+				again = element;
+			}
+		}
+	}
+	REQUIRE(again);
+	QString name_at_first;
+	int names = 0;
+	for (Terminal *terminal : again->terminals()) {
+		if (QLineF(terminal->dockConductor(), first_at).length() < 0.01) {
+			name_at_first = terminal->instanceName();
+		}
+		if (!terminal->instanceName().isEmpty()) {
+			++names;
+		}
+	}
+	CHECK(name_at_first == QStringLiteral("PINO-13"));
+	CHECK(names == 1);
 }

@@ -35,7 +35,8 @@ The code is `qetcontainer.cpp` (the zip and its files), `qetcontainerdb.cpp`
   `terminalname1`, and the same for end 2), the text of a symbol's text
   item when it shows the symbol's information or a composition of it, and,
   when every folio, symbol and wire has a uuid of its own, a symbol's list
-  of its terminals.
+  of its terminals -- unless one of them carries a name, the one the
+  project gives that terminal, which nothing computes.
 - **Nothing is lost.** Anything the database does not model stays in the
   XML as it was. A block is moved only if it can be rebuilt exactly.
 - **The database holds the project's data only.** QElectroTech's own

@@ -253,9 +253,20 @@ bool QetContainer::ownUuids(const QDomElement &project)
 	list of its terminals. Checked on 342 projects: opened and saved, each
 	comes back as it was, but the terminal lists of a file whose symbols
 	share a uuid (F100), where wires find their ends by them.
+
+	A list where a terminal carries a name stays: that is the name the
+	project gives the terminal over its symbol's (Terminal::instanceName(),
+	the pin of the part assigned to it), which nothing computes, and a save
+	as .qetz lost it.
 */
 void QetContainer::dropComputed(QDomElement diagram, bool terminal_lists)
 {
+	auto names_a_terminal = [](const QDomElement &terminals) {
+		for (const QDomElement &terminal : childElements(terminals, QStringLiteral("terminal")))
+			if (!terminal.attribute(QStringLiteral("name")).isEmpty())
+				return true;
+		return false;
+	};
 	for (QDomElement list : childElements(diagram, QStringLiteral("conductors")))
 		for (QDomElement wire : childElements(list, QStringLiteral("conductor")))
 			for (const char *end : {"1", "2"})
@@ -268,7 +279,8 @@ void QetContainer::dropComputed(QDomElement diagram, bool terminal_lists)
 		{
 			if (terminal_lists)
 				for (QDomElement terminals : childElements(element, QStringLiteral("terminals")))
-					removeElement(terminals);
+					if (!names_a_terminal(terminals))
+						removeElement(terminals);
 			for (QDomElement texts : childElements(element, QStringLiteral("dynamic_texts")))
 			{
 				for (QDomElement text : childElements(texts, QStringLiteral("dynamic_elmt_text")))

@@ -943,8 +943,12 @@ bool Terminal::fromXml(QDomElement &terminal)
 		(terminal.attribute("orientation").toInt() == d->m_orientation);
 
 	// Reading is tolerant: a project saved before the name existed simply
-	// keeps the name of its symbol definition.
-	if (matches && terminal.hasAttribute("name")) {
+	// keeps the name of its symbol definition. "_" is how older versions
+	// wrote a terminal with no name, and QElectroTech reads it so
+	// (derivedUuid()): it is no name of the project's either, and kept as
+	// one it was written back on every save, where a .qetz leaves it out.
+	if (matches && terminal.hasAttribute("name")
+			&& terminal.attribute("name") != QLatin1String("_")) {
 		d->m_instance_name = terminal.attribute("name");
 	}
 	return matches;
