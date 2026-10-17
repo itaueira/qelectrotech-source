@@ -100,6 +100,7 @@ class TitleBlockTemplateView : public QGraphicsView {
 	virtual void loadTemplate(TitleBlockTemplate *);
 	virtual void init();
 	void wheelEvent(QWheelEvent *) override;
+	void mouseDoubleClickEvent(QMouseEvent *) override;
 	virtual qreal zoomFactor() const;
 	virtual void fillWithEmptyCells();
 	bool event(QEvent *) override;
@@ -108,6 +109,9 @@ class TitleBlockTemplateView : public QGraphicsView {
 	
 	signals:
 	void selectedCellsChanged(QList<TitleBlockCell *>);
+	/// A cell was double-clicked: it is now the only selected cell, and
+	/// whoever edits cells should show its properties.
+	void cellPropertiesRequested(TitleBlockCell *);
 	void gridModificationRequested(TitleBlockTemplateCommand *);
 	void previewWidthChanged(int, int);
 	

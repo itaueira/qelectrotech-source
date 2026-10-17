@@ -574,6 +574,12 @@ void QETTitleBlockTemplateEditor::initWidgets()
 		&QETTitleBlockTemplateEditor::selectedCellsChanged
 	);
 	connect(
+		template_edition_area_view_,
+		&TitleBlockTemplateView::cellPropertiesRequested,
+		this,
+		&QETTitleBlockTemplateEditor::showCellProperties
+	);
+	connect(
 		template_cell_editor_widget_, 
 		&TitleBlockTemplateCellWidget::logoEditionRequested,
 		this, 
@@ -706,6 +712,26 @@ void QETTitleBlockTemplateEditor::selectedCellsChanged(
 		template_cell_editor_widget_ -> setVisible(false);
 	}
 	updateActions();
+}
+
+/**
+	Bring up the properties of @a cell, which was just double-clicked: the
+	panel is shown even if it was closed, and the keyboard focus goes to the
+	input holding what the cell shows.
+
+	The view selected the cell alone before asking, so selectedCellsChanged()
+	has normally filled the panel already; filling it again here keeps this
+	slot right on its own, whatever the selection did.
+	@param cell the cell whose properties are wanted
+*/
+void QETTitleBlockTemplateEditor::showCellProperties(TitleBlockCell *cell)
+{
+	if (!cell) return;
+	template_cell_editor_widget_ -> edit(cell);
+	template_cell_editor_widget_ -> setVisible(true);
+	template_cell_editor_dock_widget_ -> show();
+	template_cell_editor_dock_widget_ -> raise();
+	template_cell_editor_widget_ -> focusValueInput();
 }
 
 /**

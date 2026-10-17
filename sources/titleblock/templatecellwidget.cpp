@@ -355,6 +355,26 @@ void TitleBlockTemplateCellWidget::setReadOnly(bool read_only) {
 }
 
 /**
+	Give the keyboard focus to the input holding what the edited cell shows:
+	its value for a text cell, its logo for a logo cell. An empty cell shows
+	nothing, and its type is the only thing there is to change.
+
+	The choice follows the form as it is displayed, and not a fixed widget:
+	the inputs of the other cell types are hidden, and a hidden widget cannot
+	take the focus.
+*/
+void TitleBlockTemplateCellWidget::focusValueInput()
+{
+	QWidget *input = cell_type_input_;
+	switch (cell_type_input_ -> currentData().toInt()) {
+		case TitleBlockCell::TextCell: input = value_input_; break;
+		case TitleBlockCell::LogoCell: input = logo_input_;  break;
+		default: break;
+	}
+	input -> setFocus(Qt::OtherFocusReason);
+}
+
+/**
 	Emit a horizontal alignment modification command.
 	@see ModifyTitleBlockCellCommand
 */

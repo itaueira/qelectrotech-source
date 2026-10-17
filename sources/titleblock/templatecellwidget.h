@@ -114,6 +114,7 @@ class TitleBlockTemplateCellWidget : public QWidget {
 		void editLogo();
 		void updateLogosComboBox(const TitleBlockTemplate *);
 		void setReadOnly(bool);
+		void focusValueInput();
 	
 	private slots:
 	

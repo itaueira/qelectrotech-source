@@ -25,6 +25,8 @@
 #include "templatecellsset.h"
 #include "templatecommands.h"
 #include "templatevisualcell.h"
+
+#include <QMouseEvent>
 #define ROW_OFFSET 2
 #define COL_OFFSET 1
 #define DEFAULT_PREVIEW_WIDTH 600
@@ -559,6 +561,45 @@ void TitleBlockTemplateView::wheelEvent(QWheelEvent *e) {
 	} else {
 		QAbstractScrollArea::wheelEvent(e);
 	}
+}
+
+/**
+	A double click on a cell of the template selects that cell alone and asks
+	for its properties, so that changing what a cell says no longer starts
+	with a trip to the properties panel - which may be closed, or hidden
+	because several cells were selected.
+
+	Only a cell of the template is handled here. The helper cells around it,
+	which give the width of a column or the height of a row, keep their own
+	double click, so anything else goes to QGraphicsView as before.
+
+	The event is not passed on to the scene for a cell, and that is
+	deliberate: the scene would hand it to the cell as a press, and with Ctrl
+	held a press toggles the selection - the cell double-clicked would end up
+	deselected and the panel hidden again.
+	@param event the double click
+*/
+void TitleBlockTemplateView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+	if (event -> button() == Qt::LeftButton) {
+		TitleBlockTemplateVisualCell *cell_item =
+			dynamic_cast<TitleBlockTemplateVisualCell *>(
+				itemAt(event -> position().toPoint()));
+		TitleBlockCell *cell = cell_item ? cell_item -> cell() : nullptr;
+		// same test as makeCellsSetFromGraphicsItems(): a cell with no row
+		// is not part of the grid and could not be selected anyway
+		if (cell && cell -> num_row != -1) {
+			const QList<QGraphicsItem *> selected = scene() -> selectedItems();
+			if (selected.count() != 1 || selected.first() != cell_item) {
+				scene() -> clearSelection();
+				cell_item -> setSelected(true);
+			}
+			emit(cellPropertiesRequested(cell));
+			event -> accept();
+			return;
+		}
+	}
+	QGraphicsView::mouseDoubleClickEvent(event);
 }
 
 /**

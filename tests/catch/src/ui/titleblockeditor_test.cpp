@@ -18,6 +18,9 @@
 #include "../qt_catch_tostring.h"
 
 #include "../../../../sources/diagramcontext.h"
+#include "../../../../sources/titleblock/qettemplateeditor.h"
+#include "../../../../sources/titleblock/templatecellwidget.h"
+#include "../../../../sources/titleblock/templateview.h"
 #include "../../../../sources/titleblock/templatevisualcell.h"
 #include "../../../../sources/titleblockcell.h"
 #include "../../../../sources/titleblocktemplate.h"
@@ -25,9 +28,14 @@
 #include <catch2/catch.hpp>
 
 #include <QColor>
+#include <QComboBox>
+#include <QCoreApplication>
+#include <QDockWidget>
 #include <QFile>
+#include <QGraphicsScene>
 #include <QIODevice>
 #include <QImage>
+#include <QLineEdit>
 #include <QPainter>
 #include <QRect>
 #include <QRectF>
@@ -35,6 +43,9 @@
 #include <QStringList>
 #include <QStyleOptionGraphicsItem>
 #include <QTemporaryDir>
+#include <QTest>
+
+#include <memory>
 
 /*
 	The title block editor, and the cell that showed nothing.
@@ -343,5 +354,256 @@ TEST_CASE("T26 — a célula diz o nome do atributo no editor, e a folha não mu
 		INFO("ink: blank cell " << blank_cell
 		     << ", named cell " << named_cell);
 		CHECK(named_cell > blank_cell);
+	}
+}
+
+/*
+	The double click on a cell.
+
+	Everything above asks the preview what it would draw. What follows asks
+	the editor window what a double click does, and that takes the window
+	itself: the view, the dock holding the properties panel, and the focus.
+	The window is shown - under the offscreen platform, so on nobody's
+	screen - because a dock and a focus are only what they are in a window
+	that exists; and the double click is sent to the viewport of the view as
+	mouse events, the way Qt hands a person's to it, and not to a slot.
+
+	Nothing here opens a modal dialog. The double click on a cell opens none
+	- the panel is a dock. The helper cells around the grid, giving the width
+	of a column or the height of a row, do open one, through exec(), which
+	would wait for ever under the offscreen platform; they are not clicked.
+*/
+namespace
+{
+	/**
+		Four cells: three text cells whose values differ from their names
+		and labels, so the value field can be told from every other field
+		of the panel by what it shows; and one position the file leaves
+		out, which the template fills with an empty cell.
+	*/
+	QString doubleClickTemplate()
+	{
+		return QStringLiteral(
+			"<titleblocktemplate name=\"duploclique\">\n"
+			"  <information></information>\n"
+			"  <logos/>\n"
+			"  <grid cols=\"t50%;t50%;\" rows=\"25;25;\">\n"
+			"    <field row=\"0\" col=\"0\" name=\"autoria\""
+			" displaylabel=\"true\" align=\"left\" valign=\"center\">\n"
+			"      <value><translation lang=\"en\">%{author}"
+			"</translation></value>\n"
+			"      <label><translation lang=\"en\">Autor"
+			"</translation></label>\n"
+			"    </field>\n"
+			"    <field row=\"0\" col=\"1\" name=\"data\""
+			" displaylabel=\"true\" align=\"left\" valign=\"center\">\n"
+			"      <value><translation lang=\"en\">%{date}"
+			"</translation></value>\n"
+			"      <label><translation lang=\"en\">Data"
+			"</translation></label>\n"
+			"    </field>\n"
+			"    <field row=\"1\" col=\"0\" name=\"titulo\""
+			" displaylabel=\"false\" align=\"left\" valign=\"center\">\n"
+			"      <value><translation lang=\"en\">%{title}"
+			"</translation></value>\n"
+			"    </field>\n"
+			"  </grid>\n"
+			"</titleblocktemplate>\n");
+	}
+
+	/** @return the item the view draws for @a cell, found in its scene */
+	TitleBlockTemplateVisualCell *visualCellOf(QGraphicsScene *scene,
+						   const TitleBlockCell *cell)
+	{
+		const QList<QGraphicsItem *> items = scene -> items();
+		for (QGraphicsItem *item : items) {
+			auto *visual = dynamic_cast<TitleBlockTemplateVisualCell *>(item);
+			if (visual && visual -> cell() == cell) {
+				return visual;
+			}
+		}
+		return nullptr;
+	}
+
+	/**
+		@return the point of the viewport at the middle of @a cell, after
+		making sure a click there lands on the cell: inside the viewport,
+		and with nothing drawn over it.
+	*/
+	QPoint middleOf(TitleBlockTemplateView *view, const TitleBlockCell *cell)
+	{
+		TitleBlockTemplateVisualCell *visual =
+			visualCellOf(view -> scene(), cell);
+		REQUIRE(visual != nullptr);
+		const QRectF rect = visual -> sceneBoundingRect();
+		REQUIRE_FALSE(rect.isEmpty());
+		const QPoint point = view -> mapFromScene(rect.center());
+		REQUIRE(view -> viewport() -> rect().contains(point));
+		REQUIRE(view -> itemAt(point) == static_cast<QGraphicsItem *>(visual));
+		return point;
+	}
+
+	/**
+		A double click as Qt hands a person's to a widget: press, release,
+		double click, release. All four, because the press before the
+		double click already selects on its own, and what is asserted has
+		to hold after the whole gesture and not after its third event.
+	*/
+	void doubleClick(QWidget *viewport,
+			 const QPoint &point,
+			 Qt::KeyboardModifiers modifiers = Qt::NoModifier)
+	{
+		QTest::mousePress(viewport, Qt::LeftButton, modifiers, point);
+		QTest::mouseRelease(viewport, Qt::LeftButton, modifiers, point);
+		QTest::mouseDClick(viewport, Qt::LeftButton, modifiers, point);
+		QTest::mouseRelease(viewport, Qt::LeftButton, modifiers, point);
+	}
+
+	/**
+		@return the line of the properties panel that has the focus, if
+		the focus of @a editor is a visible line of @a panel at all.
+	*/
+	QLineEdit *focusedLineOf(QETTitleBlockTemplateEditor &editor,
+				 TitleBlockTemplateCellWidget *panel)
+	{
+		auto *line = qobject_cast<QLineEdit *>(editor.focusWidget());
+		if (!line || !panel -> isAncestorOf(line) || !line -> isVisible()) {
+			return nullptr;
+		}
+		return line;
+	}
+}
+
+TEST_CASE("T26 — o duplo clique numa célula abre as propriedades dela",
+	  "[titleblock][ui]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = dir.filePath(QStringLiteral("duploclique.titleblock"));
+	{
+		QFile file(path);
+		REQUIRE(file.open(QIODevice::WriteOnly | QIODevice::Text));
+		REQUIRE(file.write(doubleClickTemplate().toUtf8()) > 0);
+	}
+
+		// The editor works on the template it is given and never deletes
+		// it, so the case owns it - declared before the editor, so that it
+		// outlives the window whose cells point into it.
+	std::unique_ptr<TitleBlockTemplate> tbt(new TitleBlockTemplate());
+	REQUIRE(tbt -> loadFromXmlFile(path));
+	REQUIRE(tbt -> columnsCount() == 2);
+	REQUIRE(tbt -> rowsCount() == 2);
+
+	TitleBlockCell *author = tbt -> cell(0, 0);
+	TitleBlockCell *date   = tbt -> cell(0, 1);
+	TitleBlockCell *title  = tbt -> cell(1, 0);
+	TitleBlockCell *empty  = tbt -> cell(1, 1);
+	REQUIRE(author != nullptr);
+	REQUIRE(date   != nullptr);
+	REQUIRE(title  != nullptr);
+	REQUIRE(empty  != nullptr);
+	REQUIRE(date  -> type() == TitleBlockCell::TextCell);
+	REQUIRE(empty -> type() == TitleBlockCell::EmptyCell);
+
+	QETTitleBlockTemplateEditor editor;
+	REQUIRE(editor.edit(tbt.get()));
+	editor.show();
+	REQUIRE(QTest::qWaitForWindowExposed(&editor));
+
+	auto *view = qobject_cast<TitleBlockTemplateView *>(editor.centralWidget());
+	REQUIRE(view != nullptr);
+	auto *dock = editor.findChild<QDockWidget *>(
+				 QStringLiteral("tbt_celleditor_dock"));
+	REQUIRE(dock != nullptr);
+	auto *panel = editor.findChild<TitleBlockTemplateCellWidget *>();
+	REQUIRE(panel != nullptr);
+
+		// The person had closed the properties panel. Selecting a cell
+		// fills the panel but does not reopen it, so this is where a
+		// double click that only selected would be caught.
+	dock -> close();
+	REQUIRE_FALSE(dock -> isVisible());
+	REQUIRE(view -> selectedCells().isEmpty());
+
+		// Lay the grid and the window out, then fit the grid to the view
+		// as it now is: the middle of every cell is then in the viewport.
+	QCoreApplication::processEvents();
+	view -> zoomFit();
+
+	SECTION("o painel fechado volta, mostrando a célula, com o foco no valor")
+	{
+		doubleClick(view -> viewport(), middleOf(view, date));
+
+		const QList<TitleBlockCell *> selected = view -> selectedCells();
+		REQUIRE(selected.count() == 1);
+		CHECK(selected.first() == date);
+
+		CHECK(dock -> isVisible());
+		CHECK(panel -> isVisible());
+
+			// The focus is in the panel, on the value: the one line that
+			// shows "%{date}". The name of the cell is "data" and its
+			// label "Data", so no other line of the panel shows this.
+		QLineEdit *line = focusedLineOf(editor, panel);
+		REQUIRE(line != nullptr);
+		CHECK(line -> text() == QStringLiteral("%{date}"));
+	}
+
+	SECTION("com Ctrl e outras células selecionadas, a do duplo clique fica sozinha")
+	{
+			// Two cells selected: the editor hides the panel for any
+			// selection that is not exactly one cell.
+		TitleBlockTemplateVisualCell *author_item =
+			visualCellOf(view -> scene(), author);
+		TitleBlockTemplateVisualCell *title_item =
+			visualCellOf(view -> scene(), title);
+		REQUIRE(author_item != nullptr);
+		REQUIRE(title_item  != nullptr);
+		author_item -> setSelected(true);
+		title_item  -> setSelected(true);
+		REQUIRE(view -> selectedCells().count() == 2);
+		REQUIRE_FALSE(panel -> isVisibleTo(dock));
+
+			// With Ctrl held, the click before the double click adds the
+			// cell to the selection, and the scene, handed the double
+			// click, would treat it as one more press and the release
+			// after it as one more toggle - taking the cell out again.
+			// Asked for its properties, the cell has to end up alone.
+		doubleClick(view -> viewport(),
+			    middleOf(view, date),
+			    Qt::ControlModifier);
+
+		const QList<TitleBlockCell *> selected = view -> selectedCells();
+		INFO("cells selected after the double click: " << selected.count());
+		REQUIRE(selected.count() == 1);
+		CHECK(selected.first() == date);
+
+		CHECK(dock -> isVisible());
+		CHECK(panel -> isVisible());
+
+		QLineEdit *line = focusedLineOf(editor, panel);
+		REQUIRE(line != nullptr);
+		CHECK(line -> text() == QStringLiteral("%{date}"));
+	}
+
+	SECTION("numa célula vazia, o foco vai para o tipo, que é tudo o que ela tem")
+	{
+		doubleClick(view -> viewport(), middleOf(view, empty));
+
+		const QList<TitleBlockCell *> selected = view -> selectedCells();
+		REQUIRE(selected.count() == 1);
+		CHECK(selected.first() == empty);
+
+		CHECK(dock -> isVisible());
+		CHECK(panel -> isVisible());
+
+			// The value line of a text cell is hidden for an empty cell,
+			// and a hidden widget takes no focus: what gets it is the
+			// type, the only input shown.
+		auto *type = qobject_cast<QComboBox *>(editor.focusWidget());
+		REQUIRE(type != nullptr);
+		CHECK(panel -> isAncestorOf(type));
+		CHECK(type -> isVisible());
+		CHECK(type -> currentData().toInt() == TitleBlockCell::EmptyCell);
 	}
 }

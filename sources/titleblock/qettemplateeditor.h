@@ -131,6 +131,7 @@ class QETTitleBlockTemplateEditor : public QETMainWindow {
 
 	private slots:
 	TitleBlockTemplateLocation getTitleBlockTemplateLocationFromUser(const QString & = QString(), bool existing_only = true);
+	void showCellProperties(TitleBlockCell *);
 	void pushCellUndoCommand(ModifyTitleBlockCellCommand *);
 	void pushGridUndoCommand(TitleBlockTemplateCommand *);
 	void pushUndoCommand(QUndoCommand *);
