@@ -79,6 +79,59 @@ static void refreshCableLabelsForReport(Element *element)
 }
 
 /**
+	@brief reportPotential
+	@param element_a @param element_b two folio reports, linked or about to
+	be; order does not matter
+	@return every conductor of the potential the link makes of their two:
+	the first conductor of each report, and the potential it belongs to.
+	Empty when either report has no conductor yet - there is then nothing
+	to join.
+*/
+static QList<Conductor *> reportPotential(Element *element_a, Element *element_b)
+{
+	if (!element_a || !element_b
+	    || element_a->conductors().isEmpty()
+	    || element_b->conductors().isEmpty()) {
+		return QList<Conductor *>();
+	}
+
+	QSet<Conductor *> potential;
+	for (Element *element : {element_a, element_b})
+	{
+		Conductor *first = element->conductors().first();
+		potential << first;
+		potential += first->relatedPotentialConductors();
+	}
+	return potential.values();
+}
+
+/**
+	@brief reportPotentialDisagrees
+	@param potential as reportPotential() returns it
+	@return true when its conductors disagree on a property the link of two
+	reports has to settle. See
+	LinkElementCommand::reportLinkNeedsPotentialChoice() for which ones,
+	and why each is compared on its own (bugtracker #974).
+*/
+static bool reportPotentialDisagrees(const QList<Conductor *> &potential)
+{
+	if (potential.size() < 2) return false;
+
+	QStringList str_txt, str_funct, str_tens, str_color, str_style;
+	for (const Conductor *c : potential)
+	{
+		str_txt   << c->properties().text;
+		str_funct << c->properties().m_function;
+		str_tens  << c->properties().m_tension_protocol;
+		str_color << c->properties().color.name();
+		str_style << QString::number(int(c->properties().style));
+	}
+	return !QET::eachStrIsEqual(str_txt) || !QET::eachStrIsEqual(str_funct)
+		|| !QET::eachStrIsEqual(str_tens) || !QET::eachStrIsEqual(str_color)
+		|| !QET::eachStrIsEqual(str_style);
+}
+
+/**
 	@brief LinkElementCommand::LinkElementCommand
 	Constructor
 	@param element_ : element where we work the link / unlink
@@ -373,7 +426,15 @@ void LinkElementCommand::redo()
 		&& m_element->conductors().size() \
 		&& m_linked_after.size() && m_linked_after.first()->conductors().size())
 	{
-		if (reportLinkNeedsPotentialChoice(m_element, m_linked_after.first()))
+		const QList<Conductor *> potential =
+				reportPotential(m_element, m_linked_after.first());
+			//Whichever potential the dialog keeps, it writes its number over
+			//the other one. A project marked as built is answered without
+			//asking, by the rule the wire numbering follows, so that the
+			//answer cannot be a number printed on a wire of the panel (T29).
+		if (reportPotentialDisagrees(potential)
+		    && !ConductorAutoNumerotation::settleFrozenPotential(
+			       potential, m_element->diagram(), this))
 		{
 			PotentialSelectorDialog psd(m_element, this);
 			psd.exec();
@@ -410,36 +471,25 @@ void LinkElementCommand::redo()
 	Comparing each relevant field (text/num, function, tension protocol,
 	colour, line style) on its own fixes both.
 
+	In a project marked as built (T29), redo() does not ask when a
+	conductor of the joined potential is frozen: it settles the question by
+	ConductorAutoNumerotation::settleFrozenPotential(), the rule the wire
+	numbering follows. So this answers false there too, and a caller with
+	nobody there to answer is not refused a link that would not ask.
+
 	@param element_a @param element_b the two elements about to be (or
 	already) linked; order does not matter
 	@return true if the dialog would (or does) open
 */
 bool LinkElementCommand::reportLinkNeedsPotentialChoice(Element *element_a, Element *element_b)
 {
-	if (!element_a || !element_b) return false;
-	if (element_a->conductors().isEmpty() || element_b->conductors().isEmpty()) return false;
+	const QList<Conductor *> potential = reportPotential(element_a, element_b);
+	if (!reportPotentialDisagrees(potential)) return false;
 
-	QSet<Conductor *> c_list;
-	for (Element *e : {element_a, element_b})
-	{
-		if (e->conductors().isEmpty()) continue;
-		c_list << e->conductors().first();
-		c_list += e->conductors().first()->relatedPotentialConductors();
-	}
-	if (c_list.size() < 2) return false;
-
-	QStringList str_txt, str_funct, str_tens, str_color, str_style;
-	for (const Conductor *c : std::as_const(c_list))
-	{
-		str_txt   << c->properties().text;
-		str_funct << c->properties().m_function;
-		str_tens  << c->properties().m_tension_protocol;
-		str_color << c->properties().color.name();
-		str_style << QString::number(int(c->properties().style));
-	}
-	return !QET::eachStrIsEqual(str_txt) || !QET::eachStrIsEqual(str_funct)
-		|| !QET::eachStrIsEqual(str_tens) || !QET::eachStrIsEqual(str_color)
-		|| !QET::eachStrIsEqual(str_style);
+	return std::none_of(potential.cbegin(), potential.cend(),
+			    [](const Conductor *conductor) {
+				    return ConductorAutoNumerotation::isFrozen(conductor);
+			    });
 }
 
 /**

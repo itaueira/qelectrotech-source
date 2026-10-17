@@ -317,34 +317,65 @@ void ConductorAutoNumerotation::numerateNewConductor()
 /**
 	@brief ConductorAutoNumerotation::keepFrozenPotential
 	Settle, without asking, a new conductor that joins potentials whose
-	numbers disagree, when some of their conductors are frozen (T29).
-
-	Every conductor the photograph holds keeps its text: that is the whole
-	rule. What is left to decide is what the others get.
-	- The frozen conductors all carry one number: the potential is the one
-	  the panel already has, so the new conductor and every conductor drawn
-	  after the marking take that number, exactly as they would have had
-	  that potential been chosen in the dialog.
-	- The frozen conductors carry two numbers or more: a new wire joins two
-	  potentials that are both on the panel. Either answer would print a
-	  new sleeve on a wire already in the duct, so nothing is written at
-	  all, and the new conductor keeps the text it was drawn with - visible
-	  on the sheet as a wire nobody numbered, which is what it is.
+	numbers disagree, when some of their conductors are frozen (T29). The
+	rule itself is settleFrozenPotential(), shared with the link of two
+	folio reports.
 
 	@return true when the potential holds a frozen conductor and was settled
 	here, false when nothing is frozen and the dialog has to ask as it did.
 */
 bool ConductorAutoNumerotation::keepFrozenPotential()
 {
-	const AssemblyState state = assemblyStateOf(m_diagram);
+		//The conductor being numbered is not in conductor_list: it is not
+		//one of its own related potential conductors. numerate() never
+		//gets here with it frozen, so it lands with the ones to change.
+	QList<Conductor *> potential = conductor_list;
+	potential.prepend(m_conductor.data());
+	return settleFrozenPotential(potential, m_diagram, m_parent_undo);
+}
+
+/**
+	@brief ConductorAutoNumerotation::settleFrozenPotential
+	Settle, without asking, two potentials being joined into one whose
+	numbers disagree, when some of their conductors are frozen (T29).
+
+	Every conductor the photograph holds keeps its text: that is the whole
+	rule. What is left to decide is what the others get.
+	- The frozen conductors all carry one number: the potential is the one
+	  the panel already has, so every conductor drawn after the marking
+	  takes that number, exactly as it would have had that potential been
+	  chosen in the dialog.
+	- The frozen conductors carry two numbers or more: what joins them
+	  joins two potentials that are both on the panel. Either answer would
+	  print a new sleeve on a wire already in the duct, so nothing is
+	  written at all, and every other conductor keeps the text it had -
+	  visible on the sheet as a wire nobody numbered, which is what it is.
+
+	@param potential : every conductor of the joined potential
+	@param diagram : a sheet of the project
+	@param parent_undo : the command the change goes under, or null
+	@return true when the potential holds a frozen conductor and was settled
+	here, false when nothing is frozen and the caller has to ask as it did.
+*/
+bool ConductorAutoNumerotation::settleFrozenPotential(
+		const QList<Conductor *> &potential,
+		Diagram *diagram,
+		QUndoCommand *parent_undo)
+{
+	const AssemblyState state = assemblyStateOf(diagram);
 	if (!state.isFrozen()) {
 		return false;
 	}
 
 	QList<Conductor *> frozen;
 	QList<Conductor *> to_change;
-	for (Conductor *conductor : std::as_const(conductor_list))
+	for (Conductor *conductor : potential)
 	{
+		if (!conductor
+		    || frozen.contains(conductor)
+		    || to_change.contains(conductor)) {
+			continue;
+		}
 		if (isFrozen(conductor, state)) {
 			frozen.append(conductor);
 		} else {
@@ -366,12 +397,8 @@ bool ConductorAutoNumerotation::keepFrozenPotential()
 		return true;
 	}
 
-		//The conductor being numbered is not in conductor_list: it is not
-		//one of its own related potential conductors.
-	to_change.prepend(m_conductor.data());
-
-	QUndoCommand *undo = m_parent_undo
-			? m_parent_undo
+	QUndoCommand *undo = parent_undo
+			? parent_undo
 			: new QUndoCommand(QObject::tr(
 						   "Edit the properties of several conductors",
 						   "undo caption"));
@@ -406,10 +433,11 @@ bool ConductorAutoNumerotation::keepFrozenPotential()
 		}
 	}
 
-	if (!m_parent_undo)
+	if (!parent_undo)
 	{
-		if (undo->childCount()) {
-			m_diagram->undoStack().push(undo);
+			//A frozen state was read through diagram, so it is not null.
+		if (undo->childCount() && diagram) {
+			diagram->undoStack().push(undo);
 		} else {
 			delete undo;
 		}

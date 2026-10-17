@@ -33,6 +33,7 @@
 #include "../../../../sources/ui/terminalnumberingdialog.h"
 #include "../../../../sources/undocommand/addgraphicsobjectcommand.h"
 #include "../../../../sources/undocommand/assemblystatecommand.h"
+#include "../../../../sources/undocommand/linkelementcommand.h"
 
 #include <catch2/catch.hpp>
 
@@ -783,5 +784,384 @@ TEST_CASE("T29 — a trava de mão se lê de um jeito só: a renumeração de co
 		CHECK(kept == expected_locked);
 		CHECK(renumbered == spelling_count - expected_locked);
 		CHECK(kept + renumbered == spelling_count);
+	}
+}
+
+namespace {
+
+	/// The three wires of the panel in the report cases.
+	const char *report_wire_101_uuid = "{00c0ffee-0000-4000-8000-000000002101}";
+	const char *report_wire_102_uuid = "{00c0ffee-0000-4000-8000-000000002102}";
+	const char *report_wire_103_uuid = "{00c0ffee-0000-4000-8000-000000002103}";
+
+	/// Two pairs of arrows: A on both sides wired, B wired on folio 1 only.
+	const char *going_a_uuid = "{decaf000-0000-4000-8000-0000000002a1}";
+	const char *coming_a_uuid = "{decaf000-0000-4000-8000-0000000002a2}";
+	const char *going_b_uuid = "{decaf000-0000-4000-8000-0000000002b1}";
+	const char *coming_b_uuid = "{decaf000-0000-4000-8000-0000000002b2}";
+
+	const char *report_box_1_uuid = "{decaf000-0000-4000-8000-0000000002c1}";
+	const char *report_box_2_uuid = "{decaf000-0000-4000-8000-0000000002c2}";
+	const char *report_box_3_uuid = "{decaf000-0000-4000-8000-0000000002c3}";
+	/// The box a case wires the free arrow of pair B to, after the marking.
+	const char *loose_box_uuid = "{decaf000-0000-4000-8000-0000000002c4}";
+
+	/// A folio report arrow with one terminal, on top.
+	QString arrowDefinitionXml(const QString &file_name, const QString &link_type)
+	{
+		return QStringLiteral(
+			       "<element name=\"%1\">"
+			       "<definition type=\"element\" version=\"0.80\""
+			       " width=\"20\" height=\"40\""
+			       " hotspot_x=\"10\" hotspot_y=\"20\""
+			       " orientation=\"dnnn\" link_type=\"%2\">"
+			       "<names><name lang=\"en\">%1</name></names>"
+			       "<description>"
+			       "<line x1=\"0\" y1=\"-10\" x2=\"0\" y2=\"10\""
+			       " end1=\"none\" end2=\"none\" length1=\"1.5\""
+			       " length2=\"1.5\" antialias=\"false\""
+			       " style=\"line-style:normal;line-weight:normal;"
+			       "filling:none;color:black\"/>"
+			       "<terminal x=\"0\" y=\"-10\" orientation=\"n\"/>"
+			       "</description>"
+			       "</definition>"
+			       "</element>")
+		       .arg(file_name, link_type);
+	}
+
+	QString reportCaseInstance(const QString &definition,
+				   const char *uuid,
+				   qreal x,
+				   qreal y,
+				   const QString &terminals)
+	{
+		return QStringLiteral(
+			       "<element x=\"%1\" y=\"%2\" z=\"10\" prefix=\"\""
+			       " freezeLabel=\"false\" orientation=\"0\""
+			       " type=\"embed://bench/%3\" uuid=\"%4\">"
+			       "<terminals>%5</terminals>"
+			       "<inputs/>"
+			       "<elementInformations/>"
+			       "<dynamic_texts/><texts_groups/>"
+			       "</element>")
+		       .arg(QString::number(x), QString::number(y), definition,
+			    QString::fromLatin1(uuid), terminals);
+	}
+
+	/**
+		A box of the wire cases, its terminals written at the docking point:
+		east as @a east_id, west as @a east_id + 1.
+	*/
+	QString boxInstance(const char *uuid, qreal x, qreal y, int east_id)
+	{
+		const qreal east_dock = 10. - Terminal::terminalSize;
+		const qreal west_dock = -10. + Terminal::terminalSize;
+		return reportCaseInstance(
+			QStringLiteral("box.elmt"), uuid, x, y,
+			QStringLiteral(
+				"<terminal x=\"%1\" y=\"0\" orientation=\"1\" id=\"%2\"/>"
+				"<terminal x=\"%3\" y=\"0\" orientation=\"3\" id=\"%4\"/>")
+			.arg(QString::number(east_dock), QString::number(east_id),
+			     QString::number(west_dock), QString::number(east_id + 1)));
+	}
+
+	/// An arrow of @a definition, its one terminal as @a id.
+	QString arrowInstance(const QString &definition,
+			      const char *uuid,
+			      qreal x,
+			      qreal y,
+			      int id)
+	{
+		const qreal north_dock = -10. + Terminal::terminalSize;
+		return reportCaseInstance(
+			definition, uuid, x, y,
+			QStringLiteral("<terminal x=\"0\" y=\"%1\" orientation=\"0\" id=\"%2\"/>")
+			.arg(QString::number(north_dock), QString::number(id)));
+	}
+
+	QString panelWire(int from, int to, const char *num, const char *uuid)
+	{
+		return QStringLiteral(
+			       "<conductor terminal1=\"%1\" terminal2=\"%2\" num=\"%3\""
+			       " uuid=\"%4\" displaytext=\"1\" type=\"multi\" condsize=\"1\"/>")
+		       .arg(QString::number(from), QString::number(to),
+			    QString::fromLatin1(num), QString::fromLatin1(uuid));
+	}
+
+	/**
+		Two folios and two pairs of arrows, none of them linked in the file:
+		the cases link them.
+
+		Folio 1: the 101 leaves box 1 by arrow A, the 103 leaves box 3 by
+		arrow B. Folio 2: arrow A arrives at box 2 as the 102; arrow B
+		arrives on nothing yet, and the loose box waits next to it for the
+		wire a case draws.
+	*/
+	QString reportsFixtureXml()
+	{
+		const QString going = QStringLiteral("going.elmt");
+		const QString coming = QStringLiteral("coming.elmt");
+
+		const QString elements_1 =
+				boxInstance(report_box_1_uuid, 100, 100, 0)
+				+ arrowInstance(going, going_a_uuid, 100, 300, 2)
+				+ boxInstance(report_box_3_uuid, 300, 100, 3)
+				+ arrowInstance(going, going_b_uuid, 300, 300, 5);
+		const QString wires_1 =
+				panelWire(0, 2, "101", report_wire_101_uuid)
+				+ panelWire(3, 5, "103", report_wire_103_uuid);
+
+		const QString elements_2 =
+				arrowInstance(coming, coming_a_uuid, 100, 100, 6)
+				+ boxInstance(report_box_2_uuid, 100, 300, 7)
+				+ arrowInstance(coming, coming_b_uuid, 300, 100, 9)
+				+ boxInstance(loose_box_uuid, 300, 300, 10);
+			//arrow A (6) to the west terminal of box 2 (8)
+		const QString wires_2 = panelWire(6, 8, "102", report_wire_102_uuid);
+
+		const QString folio = QStringLiteral(
+			"<diagram title=\"Folio %1\" order=\"%1\" height=\"600\""
+			" cols=\"17\" colsize=\"50\" rows=\"8\" rowsize=\"80\""
+			" displaycols=\"true\" displayrows=\"true\">"
+			"<elements>%2</elements>"
+			"<inputs/>"
+			"<conductors>%3</conductors>"
+			"</diagram>");
+
+		return QStringLiteral(
+			       "<project title=\"bench\" version=\"0.80\">"
+			       "<collection><category name=\"bench\">%1</category></collection>"
+			       "%2%3"
+			       "</project>")
+		       .arg(boxDefinitionXml()
+			    + arrowDefinitionXml(going, QStringLiteral("next_report"))
+			    + arrowDefinitionXml(coming, QStringLiteral("previous_report")),
+			    folio.arg(QStringLiteral("1"), elements_1, wires_1),
+			    folio.arg(QStringLiteral("2"), elements_2, wires_2));
+	}
+
+	Element *elementWithUuid(Diagram *sheet, const char *uuid)
+	{
+		const QList<Element *> elements = sheet->elements();
+		for (Element *element : elements)
+		{
+			if (element->uuid() == QUuid(QLatin1String(uuid))) {
+				return element;
+			}
+		}
+		return nullptr;
+	}
+
+	/// Link @a from to @a to the way the linking widget does it: one
+	/// LinkElementCommand, pushed on the stack of the project.
+	void linkArrows(QETProject *project, Element *from, Element *to)
+	{
+		auto *link = new LinkElementCommand(from);
+		link->setLink(to);
+		project->undoStack()->push(link);
+	}
+}
+
+TEST_CASE("T29 — ligar duas setas de folha em quadro montado: o fio do quadro vence "
+	  "sem perguntar, e dois fios do quadro não se reescrevem",
+	  "[uibench][assembly][wire][report]")
+{
+	/*
+		The other way two potentials become one. Linking a folio report to
+		its pair joins the potential at one arrow to the potential at the
+		other, and when their numbers differ the program asks which one to
+		keep - the same question, with the same consequence, as a new wire
+		between two potentials: whichever answer is given, the number of the
+		other side is written over every one of its conductors. The link
+		went straight to the dialog, and the rule of a built panel did not
+		reach it.
+
+		Pair A joins two wires of the panel, the 101 on folio 1 and the 102
+		on folio 2. Pair B joins the 103 of the panel to an arrow that
+		nothing is wired to in the file: the cases wire it after the
+		marking, so that one side of the link is a potential the panel does
+		not have.
+
+		Labelled T29 and not CU-29.2: the use case is a new wire and the
+		processing of wires, which the CU-29.2 case at the top of this file
+		proves; this is the other path into the same rule.
+	*/
+	UiBench::ScratchProject scratch(reportsFixtureXml(), QStringLiteral("reports.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+	REQUIRE(scratch.diagramCount() == 2);
+
+	Diagram *first = scratch.diagram(0);
+	Diagram *second = scratch.diagram(1);
+	REQUIRE(first != nullptr);
+	REQUIRE(second != nullptr);
+	// The probe: a terminal that does not match its symbol drops its wires
+	// without a word, and everything below would be measured on nothing.
+	REQUIRE(first->conductors().count() == 2);
+	REQUIRE(second->conductors().count() == 1);
+	useWireNumbering(scratch.project(), second);
+
+	Conductor *wire_101 = wireWithUuid(first, report_wire_101_uuid);
+	Conductor *wire_103 = wireWithUuid(first, report_wire_103_uuid);
+	Conductor *wire_102 = wireWithUuid(second, report_wire_102_uuid);
+	REQUIRE(wire_101 != nullptr);
+	REQUIRE(wire_102 != nullptr);
+	REQUIRE(wire_103 != nullptr);
+
+	auto panel = [&]() {
+		return QStringList{textOf(wire_101), textOf(wire_102), textOf(wire_103)};
+	};
+	const QStringList before = {QStringLiteral("101"),
+				    QStringLiteral("102"),
+				    QStringLiteral("103")};
+	REQUIRE(panel() == before);
+
+	Element *going_a = elementWithUuid(first, going_a_uuid);
+	Element *coming_a = elementWithUuid(second, coming_a_uuid);
+	Element *going_b = elementWithUuid(first, going_b_uuid);
+	Element *coming_b = elementWithUuid(second, coming_b_uuid);
+	Element *loose = elementWithUuid(second, loose_box_uuid);
+	REQUIRE(going_a != nullptr);
+	REQUIRE(coming_a != nullptr);
+	REQUIRE(going_b != nullptr);
+	REQUIRE(coming_b != nullptr);
+	REQUIRE(loose != nullptr);
+
+	// The fixture is what it says: four free arrows, each where its wire is.
+	REQUIRE(going_a->linkType() == Element::NextReport);
+	REQUIRE(going_b->linkType() == Element::NextReport);
+	REQUIRE(coming_a->linkType() == Element::PreviousReport);
+	REQUIRE(coming_b->linkType() == Element::PreviousReport);
+	REQUIRE(going_a->isFree());
+	REQUIRE(coming_a->isFree());
+	REQUIRE(going_b->isFree());
+	REQUIRE(coming_b->isFree());
+	REQUIRE(going_a->conductors().size() == 1);
+	REQUIRE(going_a->conductors().first() == wire_101);
+	REQUIRE(coming_a->conductors().size() == 1);
+	REQUIRE(coming_a->conductors().first() == wire_102);
+	REQUIRE(going_b->conductors().size() == 1);
+	REQUIRE(going_b->conductors().first() == wire_103);
+	REQUIRE(coming_b->conductors().isEmpty());
+	REQUIRE(coming_b->terminals().size() == 1);
+	REQUIRE(side(loose, Qet::West) != nullptr);
+
+	// A wire on folio 2, from the free arrow of pair B to the loose box: a
+	// potential of its own while the arrows are not linked.
+	auto drawFresh = [&]() {
+		return drawWire(second, coming_b->terminals().first(), side(loose, Qet::West));
+	};
+
+	SECTION("controle negativo — sem a marcação, ligar as setas pergunta, e a resposta reescreve um número que já existia")
+	{
+		/*
+			Without this, the sections below would pass on a program that
+			had stopped asking when two arrows are linked, and "nothing of
+			the panel moved" would say nothing about the marking. The
+			question is answered Ok, on what it offers.
+		*/
+		PotentialQuestion question(QDialogButtonBox::Ok);
+		Conductor *fresh = drawFresh();
+		REQUIRE(question.asked() == 0);
+		REQUIRE(textOf(fresh) == QString::number(first_new_number));
+
+		// Both links would ask, unmarked: the two sides carry two numbers.
+		CHECK(LinkElementCommand::reportLinkNeedsPotentialChoice(going_a, coming_a));
+		CHECK(LinkElementCommand::reportLinkNeedsPotentialChoice(going_b, coming_b));
+
+		linkArrows(scratch.project(), going_a, coming_a);
+
+		REQUIRE(question.asked() == 1);
+		CHECK(going_a->linkedElements().contains(coming_a));
+		INFO(panel().join(QStringLiteral(", ")).toStdString());
+		CHECK_FALSE(panel() == before);
+		// One potential now, so one number on both sides: one of the two the
+		// panel wore has been written over.
+		CHECK(textOf(wire_101) == textOf(wire_102));
+	}
+
+	SECTION("marcado, a seta que liga um fio do quadro a um fio novo: o novo leva o número do quadro, sem perguntar")
+	{
+		markAsAssembled(scratch);
+		REQUIRE(scratch->assemblyState().conductors.size() == 3);
+		PotentialQuestion question(QDialogButtonBox::Cancel);
+
+		Conductor *fresh = drawFresh();
+		REQUIRE(textOf(fresh) == QString::number(first_new_number));
+		REQUIRE_FALSE(ConductorAutoNumerotation::isFrozen(fresh));
+		REQUIRE(ConductorAutoNumerotation::isFrozen(wire_103));
+
+		// A caller with nobody there to answer is not refused the link
+		// either: it would not ask.
+		CHECK_FALSE(LinkElementCommand::reportLinkNeedsPotentialChoice(going_b, coming_b));
+		const int steps_before = scratch->undoStack()->index();
+
+		linkArrows(scratch.project(), going_b, coming_b);
+
+		CHECK(question.asked() == 0);
+		CHECK(going_b->linkedElements().contains(coming_b));
+		INFO(panel().join(QStringLiteral(", ")).toStdString());
+		CHECK(panel() == before);
+		CHECK(textOf(fresh) == QStringLiteral("103"));
+		CHECK_FALSE(ConductorAutoNumerotation::isFrozen(fresh));
+
+		// One step, and one Ctrl+Z takes back the link and the number
+		// together.
+		REQUIRE(scratch->undoStack()->index() == steps_before + 1);
+		scratch->undoStack()->undo();
+		CHECK(going_b->isFree());
+		CHECK(textOf(fresh) == QString::number(first_new_number));
+		CHECK(panel() == before);
+
+		// Made from the other arrow, the link answers the same: which side
+		// it starts from is not what decides.
+		linkArrows(scratch.project(), coming_b, going_b);
+		CHECK(question.asked() == 0);
+		CHECK(coming_b->linkedElements().contains(going_b));
+		CHECK(textOf(fresh) == QStringLiteral("103"));
+		CHECK(panel() == before);
+	}
+
+	SECTION("marcado, a seta que liga dois fios do quadro não reescreve nenhum dos dois")
+	{
+		/*
+			Both numbers are on sleeves, so either answer of the question
+			would reprint one: nothing is written. The link itself is made -
+			what is refused is the number, not the arrow - and the potential
+			left with two numbers is what the verification of T24 reports.
+		*/
+		markAsAssembled(scratch);
+		PotentialQuestion question(QDialogButtonBox::Cancel);
+		CHECK_FALSE(LinkElementCommand::reportLinkNeedsPotentialChoice(going_a, coming_a));
+		const int steps_before = scratch->undoStack()->index();
+
+		linkArrows(scratch.project(), going_a, coming_a);
+
+		CHECK(question.asked() == 0);
+		CHECK(going_a->linkedElements().contains(coming_a));
+		CHECK(scratch->undoStack()->index() == steps_before + 1);
+		INFO(panel().join(QStringLiteral(", ")).toStdString());
+		CHECK(panel() == before);
+	}
+
+	SECTION("desfeita a marcação, a pergunta volta")
+	{
+		/*
+			Nothing was written on the wires by the marking: take it back and
+			the arrows ask again. Answered Cancel, so that what is measured
+			is only that the question came back.
+		*/
+		markAsAssembled(scratch);
+		REQUIRE(ConductorAutoNumerotation::isFrozen(wire_101));
+		scratch->undoStack()->undo();
+		REQUIRE_FALSE(scratch->assemblyState().isFrozen());
+		CHECK(LinkElementCommand::reportLinkNeedsPotentialChoice(going_a, coming_a));
+
+		PotentialQuestion question(QDialogButtonBox::Cancel);
+		linkArrows(scratch.project(), going_a, coming_a);
+
+		CHECK(question.asked() == 1);
+		CHECK(going_a->linkedElements().contains(coming_a));
+		CHECK(panel() == before);
 	}
 }

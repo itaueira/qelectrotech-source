@@ -47,14 +47,16 @@ class QLabel;
 	read from is what the command applies, so the figure on screen and the
 	figure that is frozen cannot disagree.
 
-	@par What it says today, and what it does not promise
+	@par What it says, and why it may
 
-	Marking freezes the tags of the components: ProjectRenumberer reads the
-	photograph, and that is delivered. The conductors are photographed too -
-	their text at the moment of marking - but nothing reads that yet: wire
-	numbering has no notion of a lock at all. So the window says the
-	conductors are recorded, not that they are frozen. A window that promised
-	frozen potentials today would be a lie the drawing tells back tomorrow.
+	Marking freezes the tags of the components and the numbers of the
+	conductors, and the window says both because both halves of the
+	photograph are read: ProjectRenumberer::isFrozen() before a tag is
+	touched, and ConductorAutoNumerotation::isFrozen() before a wire number
+	is written - when a wire is drawn, and when two folio reports are
+	linked. Until the wire half was delivered, the window said only that the
+	conductors were recorded: a window that promises more than the drawing
+	does is a lie the drawing tells back the next day.
 
 	@par The undo, and where it goes
 

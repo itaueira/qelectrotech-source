@@ -155,9 +155,10 @@ class AssemblyState
 			nothing, which is the half a reader drops first - holdsComponent()
 			reads like the whole answer on its own, and it is not one.
 
-			The conductor twin of this is not here yet: wire numbering has no
-			notion of a lock at all today, so giving it one is a step of its
-			own rather than a line added here with no caller.
+			The conductor twin of this is ConductorAutoNumerotation::isFrozen(),
+			next to the wire numbering that reads it rather than here: the
+			same two halves, the stage and holdsConductor(), reached through
+			the sheet the conductor is on.
 		*/
 		bool freezesComponent(const QString &uuid) const;
 

@@ -41,6 +41,10 @@ class ConductorProperties;
 	photograph already holds is never written over. Nothing is stored on
 	the conductor - the freezing is read from the photograph, the same way
 	it is for the components.
+
+	A new conductor is not the only thing that joins two potentials: linking
+	two folio reports does too. LinkElementCommand answers that question by
+	the same rule, through settleFrozenPotential().
 */
 class ConductorAutoNumerotation
 {
@@ -80,6 +84,27 @@ class ConductorAutoNumerotation
 		*/
 		static bool isFrozen(const Conductor *conductor,
 				     const AssemblyState &state);
+		/**
+			@param potential : every conductor of the potential two
+			potentials are being joined into, whatever joins them - a new
+			conductor, or two folio reports being linked
+			@param diagram : a sheet of the project, read for its assembly
+			state, and the sheet whose undo stack takes the change when
+			@a parent_undo is null
+			@param parent_undo : the command the change is added to, as a
+			child; when null, the change is pushed on its own
+			@return true when the potential holds a frozen conductor and is
+			settled here, without asking; false when nothing in it is
+			frozen, and the caller asks which potential to keep, as it did.
+
+			The rule a built panel answers that question by: every frozen
+			conductor keeps its text; when the frozen conductors all carry
+			one number, the others take it; when they carry two numbers or
+			more, nothing is written at all.
+		*/
+		static bool settleFrozenPotential(const QList<Conductor *> &potential,
+						  Diagram *diagram,
+						  QUndoCommand *parent_undo = nullptr);
 
 	private:
 		//methods

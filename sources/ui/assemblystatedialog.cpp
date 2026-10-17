@@ -174,23 +174,20 @@ void AssemblyStateDialog::refreshPreview()
 
 	if (m_preview.isFrozen())
 	{
-			//Two sentences and not one, because the two halves are not
-			//equally true today: the renumbering of the components really
-			//does read this photograph, and nothing reads the conductor
-			//half of it yet.
-		const QString components = tr("%n composant(s)", "",
+			//One sentence for both halves, because both are read: the
+			//renumbering of the components through
+			//ProjectRenumberer::isFrozen(), and the wire numbering through
+			//ConductorAutoNumerotation::isFrozen() - when a wire is drawn and
+			//when two folio reports are linked.
+		const QString components = tr("%n component(s)", "",
 					      photographedComponents());
-		const QString conductors = tr("%n conducteur(s)", "",
+		const QString conductors = tr("%n conductor(s)", "",
 					      photographedConductors());
 
 		m_effect->setText(
-			tr("Confirmer fige le repère de %1 : la renumérotation "
-			   "automatique les saute et n'offre plus leur repère à un "
-			   "composant dessiné après.\n\n"
-			   "Le texte de %2 est également photographié, pour la "
-			   "numérotation des potentiels — qui ne sait pas encore lire "
-			   "cette photographie et continue donc de numéroter comme "
-			   "aujourd'hui.")
+			tr("Confirming freezes the tags of %1 and the numbers of %2: "
+			   "the automatic numbering leaves them as they are, and "
+			   "numbers only what is drawn afterwards.")
 			.arg(components, conductors));
 	}
 	else
