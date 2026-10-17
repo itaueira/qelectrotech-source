@@ -1048,7 +1048,12 @@ if(TARGET qelectrotech_objects)
         src/ui/reportsymbolsync_test.cpp
         # A project saved twice leaves nothing in its folder: the version kept
         # goes in the folder of versions (T25).
-        src/ui/projectversions_test.cpp)
+        src/ui/projectversions_test.cpp
+        # CU-16.13: undoing the deletion of a component brings it back to the
+        # list on the folio, in one step.
+        src/ui/listundo_test.cpp
+        # T31: the number of a potential goes through a folio report.
+        src/ui/reportpotential_test.cpp)
 
     target_link_libraries(
         C_uitests
