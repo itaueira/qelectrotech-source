@@ -455,6 +455,31 @@
         <source>Add the following terminal plan :</source>
         <translation>Adicione o seguinte plano de bornes:</translation>
     </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="30"/>
+        <source>Drawing style :</source>
+        <translation>Estilo de desenho:</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="37"/>
+        <source>How the terminals are drawn. The realistic styles draw the strip at scale, seen from above, with the real width of each terminal.</source>
+        <translation>Como os bornes são desenhados. Os estilos realistas desenham a régua em escala, vista de cima, com a largura real de cada borne.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="41"/>
+        <source>Schematic</source>
+        <translation>Esquemático</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="46"/>
+        <source>Realistic (push-in)</source>
+        <translation>Realista (push-in)</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="51"/>
+        <source>Realistic (screw)</source>
+        <translation>Realista (parafuso)</translation>
+    </message>
 </context>
 <context>
     <name>AiAssistantDialog</name>
@@ -690,32 +715,28 @@
         <translation>Estado atual: %1, nada está congelado.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="181"/>
-        <source>%n composant(s)</source>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="182"/>
+        <source>%n component(s)</source>
         <translation>
             <numerusform>%n componente</numerusform>
             <numerusform>%n componentes</numerusform>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="183"/>
-        <source>%n conducteur(s)</source>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="184"/>
+        <source>%n conductor(s)</source>
         <translation>
             <numerusform>%n condutor</numerusform>
             <numerusform>%n condutores</numerusform>
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="187"/>
-        <source>Confirmer fige le repère de %1 : la renumérotation automatique les saute et n&apos;offre plus leur repère à un composant dessiné après.
-
-Le texte de %2 est également photographié, pour la numérotation des potentiels — qui ne sait pas encore lire cette photographie et continue donc de numéroter comme aujourd&apos;hui.</source>
-        <translation>Confirmar congela a tag de %1: a renumeração automática os pula e não oferece mais a tag deles a um componente desenhado depois.
-
-O texto de %2 também é fotografado, para a numeração de potenciais — que ainda não sabe ler essa fotografia e por isso continua numerando como hoje.</translation>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="188"/>
+        <source>Confirming freezes the tags of %1 and the numbers of %2: the automatic numbering leaves them as they are, and numbers only what is drawn afterwards.</source>
+        <translation>Confirmar congela as tags de %1 e os números de %2: a numeração automática não os altera e numera apenas o que for desenhado depois.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="199"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="196"/>
         <source>Le projet revient en étude : la photographie est effacée et l&apos;automatisation retrouve l&apos;ensemble du dessin.
 
 Les verrous posés à la main sur un composant ne sont pas touchés — ils n&apos;ont jamais fait partie de la photographie, et survivent donc au retour en étude.</source>
@@ -724,7 +745,7 @@ Les verrous posés à la main sur un composant ne sont pas touchés — ils n&ap
 Os travamentos feitos manualmente num componente não são afetados — eles nunca fizeram parte da fotografia, e por isso sobrevivem à volta para o estudo.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="208"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="205"/>
         <source>Ce projet a des modifications non enregistrées : comme tout le reste, la marque ne sera dans le fichier qu&apos;après l&apos;enregistrement.</source>
         <translation>Este projeto tem alterações não salvas: como todo o resto, a marca só estará no arquivo depois de salvar.</translation>
     </message>
@@ -6285,7 +6306,7 @@ Continuar?</translation>
 <context>
     <name>Diagram</name>
     <message>
-        <location filename="../sources/diagram.cpp" line="3032"/>
+        <location filename="../sources/diagram.cpp" line="3115"/>
         <source>Change the depth</source>
         <translation>Modificar a profundidade</translation>
     </message>
@@ -7207,34 +7228,42 @@ Hold Shift and drag to move this text on its own</source>
     </message>
 </context>
 <context>
+    <name>DrcPotentialRules</name>
+    <message>
+        <location filename="../sources/drc/drcpotentialrules.cpp" line="195"/>
+        <source>Potential with two wire numbers</source>
+        <translation>Potencial com dois números de fio</translation>
+    </message>
+</context>
+<context>
     <name>DrcProjectActions</name>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="136"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="137"/>
         <source>Aucune règle activée : rien n&apos;a été vérifié. Un projet sans constat n&apos;est pas pour autant un projet sans défaut.</source>
         <translation>Nenhuma regra ativada: nada foi verificado. Um projeto sem ocorrência não é, por isso, um projeto sem defeito.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="143"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="144"/>
         <source>%1 règle(s) exécutée(s) : parcours %2 ms, requêtes %3 ms.</source>
         <translation>%1 regra(s) executada(s): percurso %2 ms, consultas %3 ms.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="152"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="153"/>
         <source>%1 règle(s) n&apos;ont pas pu être exécutées : leur résultat est inconnu, et non vide.</source>
         <translation>%1 regra(s) não puderam ser executadas: o resultado delas é desconhecido, e não vazio.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="160"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="161"/>
         <source>Aucun constat.</source>
         <translation>Nenhuma ocorrência.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="169"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="170"/>
         <source>%1 constat(s), dont %2 erreur(s). Double-cliquez une ligne, ou appuyez sur Entrée, pour aller au constat.</source>
         <translation>%1 ocorrência(s), sendo %2 erro(s). Dê duplo clique numa linha, ou pressione Enter, para ir até a ocorrência.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="360"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="362"/>
         <source>Contrôle du projet</source>
         <translation>Verificação do projeto</translation>
     </message>
@@ -7278,6 +7307,22 @@ Hold Shift and drag to move this text on its own</source>
         <location filename="../sources/dataBase/drcsqlengine.cpp" line="51"/>
         <source>La requête n&apos;a pas pu être exécutée : %1</source>
         <translation>A consulta não pôde ser executada: %1</translation>
+    </message>
+</context>
+<context>
+    <name>DrcWireNumbers</name>
+    <message>
+        <location filename="../sources/drc/drcwirenumbers.cpp" line="155"/>
+        <source>%1 (folio %2)</source>
+        <translation>%1 (folha %2)</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/drc/drcwirenumbers.cpp" line="167"/>
+        <source>Potential with %n wire numbers: %1</source>
+        <translation>
+            <numerusform>Potencial com %n número de fio: %1</numerusform>
+            <numerusform>Potencial com %n números de fio: %1</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -10688,131 +10733,141 @@ Ao importar este arquivo, você confirma que:
 <context>
     <name>ExportPropertiesWidget</name>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="181"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="183"/>
         <source>PNG (*.png)</source>
         <translation>PNG (*.png)</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="182"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="184"/>
         <source>JPEG (*.jpg)</source>
         <translation>JPEG (*.jpg)</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="183"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="185"/>
         <source>Bitmap (*.bmp)</source>
         <translation>Bitmap (*.bmp)</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="184"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="186"/>
         <source>SVG (*.svg)</source>
         <translation>SVG (*.svg)</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="185"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="187"/>
         <source>DXF (*.dxf)</source>
         <translation>DXF (*.dxf)</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="142"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="144"/>
         <source>Export in the directory</source>
         <comment>dialog title</comment>
         <translation>Exportar para a pasta</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="163"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="165"/>
         <source>Target directory:</source>
         <translation>Pasta de destino:</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="168"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="170"/>
         <source>Browse</source>
         <translation>Procurar</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="178"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="180"/>
         <source>Format:</source>
         <translation>Formato:</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="191"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="193"/>
         <source>Rendering options</source>
         <comment>groupbox title</comment>
         <translation>Opções de renderização</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="196"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="198"/>
         <source>Export the whole sheet</source>
         <translation>Exportar a folha completa</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="199"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="201"/>
         <source>Export elements only</source>
         <translation>Exportar somente os elementos</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="204"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="206"/>
         <source>Draw the grid</source>
         <translation>Desenhar a grade</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="208"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="210"/>
         <source>Draw the border</source>
         <translation>Desenhar a borda</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="212"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="214"/>
         <source>Draw the title block</source>
         <translation>Desenhar a legenda</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="216"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="218"/>
         <source>Draw terminals</source>
         <translation>Desenhar os terminais</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="220"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="222"/>
         <source>Draw the names of the terminals</source>
         <translation>Desenhar os nomes dos terminais</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="224"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="226"/>
         <source>Keep conductors colors</source>
         <translation>Manter as cores dos condutores</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="228"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="230"/>
         <source>SVG-background transparent</source>
         <translation>SVG: Fundo transparente</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="232"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="234"/>
         <source>DXF: symbols as blocks</source>
         <translation>DXF: símbolos em blocos</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="233"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="235"/>
         <source>Each symbol becomes a DXF block, selectable with one click in CAD software</source>
         <translation>Cada símbolo vira um bloco DXF, selecionável com um clique em um programa de CAD</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="237"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="239"/>
         <source>DXF: symbol texts as attributes</source>
         <translation>DXF: textos dos símbolos em atributos</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="238"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="240"/>
         <source>A symbol&apos;s texts (label, function...) become attributes of its block. LibreCAD does not show attributes.</source>
         <translation>Os textos de um símbolo (tag, função...) viram atributos do bloco dele. O LibreCAD não exibe atributos.</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="243"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="245"/>
         <source>SVG: smaller pictures</source>
         <translation>SVG: imagens menores</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="244"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="246"/>
         <source>Pictures are stored at four times the size they have on the folio instead of their full resolution: a much smaller file, still sharp when printed</source>
         <translation>As imagens são gravadas com quatro vezes o tamanho que têm na folha, em vez da resolução completa: um arquivo bem menor, ainda nítido quando impresso</translation>
+    </message>
+    <message>
+        <location filename="../sources/exportpropertieswidget.cpp" line="250"/>
+        <source>Black and white</source>
+        <translation>Preto e branco</translation>
+    </message>
+    <message>
+        <location filename="../sources/exportpropertieswidget.cpp" line="251"/>
+        <source>Lines and texts in black, pictures in shades of gray (not for DXF)</source>
+        <translation>Linhas e textos em preto, imagens em tons de cinza (exceto DXF)</translation>
     </message>
 </context>
 <context>
@@ -11225,7 +11280,7 @@ que você criar. Entradas de texto e números
         <translation>Esta versão do Qt não pode escolher o esquema de cores; vale o do sistema.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="655"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="658"/>
         <source>Catalan</source>
         <translation>Catalão</translation>
     </message>
@@ -11271,12 +11326,12 @@ que você criar. Entradas de texto e números
         <translation>Permitir zoom além da folha</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="815"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="818"/>
         <source>User Collection Path</source>
         <translation>Endereço de usuário coletados</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="787"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="790"/>
         <source>Path of the Common Collection</source>
         <translation>Endereço de coletados comuns</translation>
     </message>
@@ -11664,163 +11719,163 @@ hint shown when no cable type file is configured yet</extracomment>
         <translation>Não configurado (padrão: %1)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="631"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="634"/>
         <source>General</source>
         <comment>configuration page title</comment>
         <translation>Geral</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="649"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="652"/>
         <source>System</source>
         <translation>Sistema</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="653"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="656"/>
         <source>Arabic</source>
         <translation>Árabe</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="654"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="657"/>
         <source>Brazilian</source>
         <translation>Português BR</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="656"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="659"/>
         <source>Czech</source>
         <translation>Checo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="657"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="660"/>
         <source>German</source>
         <translation>Alemão</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="658"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="661"/>
         <source>Danish</source>
         <translation>Dinamarquês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="659"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="662"/>
         <source>Greek</source>
         <translation>Grego</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="660"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="663"/>
         <source>English</source>
         <translation>Inglês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="661"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="664"/>
         <source>Spanish</source>
         <translation>Espanhol</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="662"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="665"/>
         <source>French</source>
         <translation>Francês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="663"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="666"/>
         <source>Croatian</source>
         <translation>Croata</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="664"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="667"/>
         <source>Italian</source>
         <translation>Italiano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="665"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="668"/>
         <source>Japanese</source>
         <translation>Japonês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="666"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="669"/>
         <source>Korean</source>
         <translation>Coreano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="667"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="670"/>
         <source>Polish</source>
         <translation>Polonês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="668"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="671"/>
         <source>Portuguese</source>
         <translation>Português</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="669"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="672"/>
         <source>Romanian</source>
         <translation>Romeno</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="670"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="673"/>
         <source>Russian</source>
         <translation>Russo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="671"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="674"/>
         <source>Slovenian</source>
         <translation>Esloveno</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="672"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="675"/>
         <source>Dutch</source>
         <translation>Holandês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="674"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="677"/>
         <source>Belgium-Flemish</source>
         <translation>Belgo-Flamengo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="675"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="678"/>
         <source>Turkish</source>
         <translation>Turco</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="676"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="679"/>
         <source>Hungarian</source>
         <translation>Húngaro</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="677"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="680"/>
         <source>Mongolian</source>
         <translation>Mongol</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="678"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="681"/>
         <source>Ukrainian</source>
         <translation>Ucraniano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="679"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="682"/>
         <source>Chinese</source>
         <translation>Chinês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="680"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="683"/>
         <source>Swedish</source>
         <translation>Sueco</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="843"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="846"/>
         <source>User Title blocks Path</source>
         <translation>Caminho dos blocos de legenda do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="857"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="860"/>
         <source>User macro path</source>
         <translation>Caminho das macros do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="899"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="902"/>
         <source>Folder not found</source>
         <translation>Pasta não encontrada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="900"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="903"/>
         <source>The user collection folder:
 %1
 does not exist and could not be created.</source>
@@ -11829,12 +11884,12 @@ does not exist and could not be created.</source>
 não existe e não pôde ser criada.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="908"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="911"/>
         <source>No subfolder</source>
         <translation>Nenhuma subpasta</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="909"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="912"/>
         <source>The user collection:
 %1
 has no subfolder, so there is no prefix to configure.</source>
@@ -11843,34 +11898,34 @@ has no subfolder, so there is no prefix to configure.</source>
 não contém nenhuma subpasta: portanto não há nenhum prefixo a configurar.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="917"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="920"/>
         <source>Prefix file cannot be read</source>
         <translation>Arquivo de prefixos ilegível</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="926"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="929"/>
         <source>Prefix file damaged</source>
         <translation>Arquivo de prefixos danificado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="927"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="930"/>
         <source>The file %1 is not a valid XML file:
 %2</source>
         <translation>O arquivo %1 não é um arquivo XML válido:
 %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="931"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="934"/>
         <source>Fix the file</source>
         <translation>Corrigir o arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="932"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="935"/>
         <source>Rebuild</source>
         <translation>Reconstruir</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="933"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="936"/>
         <source>Nothing has been changed yet.
 
 “Fix the file”: this window closes without changing anything. Open the file in a text editor at the place shown, fix it, then run this command again.
@@ -11883,41 +11938,41 @@ não contém nenhuma subpasta: portanto não há nenhum prefixo a configurar.</t
 « Reconstruir »: a árvore de pastas é recriada, mas todos os prefixos atuais são perdidos. O arquivo atual é mantido com o nome qet_labels.xml.bak antes de ser substituído.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="942"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="945"/>
         <source>File: %1</source>
         <translation>Arquivo: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="966"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="969"/>
         <source>Select the materials list file</source>
         <translation>Selecionar o arquivo da lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="968"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="991"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1032"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1055"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="971"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="994"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1035"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1058"/>
         <source>CSV files (*.csv)</source>
         <translation>Arquivos csv (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="989"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="992"/>
         <source>Create the materials list file</source>
         <translation>Criar o arquivo da lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1007"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1010"/>
         <source>Cannot create</source>
         <translation>Não foi possível criar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1071"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1074"/>
         <source>Cannot be created</source>
         <translation>Não foi possível criar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1008"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1072"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1011"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1075"/>
         <source>Cannot create the file:
 %1
 %2</source>
@@ -11926,12 +11981,12 @@ não contém nenhuma subpasta: portanto não há nenhum prefixo a configurar.</t
 %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1136"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1139"/>
         <source>Experimental feature</source>
         <translation>Funcionalidade experimental</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1137"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1140"/>
         <source>WARNING:
 Any setting other than “No rounding” may cause rendering errors in the project, depending on:
 
@@ -12136,42 +12191,42 @@ Qualquer valor diferente de ‘Sem arredondamento’ pode causar erros na render
         <translation>Normal</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="673"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="676"/>
         <source>Norwegian</source>
         <translation>Noruega</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="754"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="757"/>
         <source>Cable text font</source>
         <translation>Fonte do texto dos cabos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="772"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="775"/>
         <source>Core colors font</source>
         <translation>Fonte das cores das veias</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="801"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="804"/>
         <source>Company collection path</source>
         <translation>Caminho da coleção da empresa</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="829"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="832"/>
         <source>Company title-blocks</source>
         <translation>Caminho dos blocos da empresa</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1030"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1033"/>
         <source>Select the cable types file</source>
         <translation>Selecione o arquivo de tipos de cabo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1053"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1056"/>
         <source>Create the cable types file</source>
         <translation>Criar o arquivo de tipos de cabo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1101"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1104"/>
         <source>Values that are too high might cause the application to crash</source>
         <translation>Valores altos podem causar travamentos do aplicativo.</translation>
     </message>
@@ -18643,27 +18698,27 @@ Dê a elas outra numeração primeiro.</numerusform>
         <translation>Alterar %1 do componente: %2</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="783"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="805"/>
         <source>Position</source>
         <translation>Posição</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="830"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="852"/>
         <source>Aucune colonne n&apos;a été choisie : il n&apos;y a rien à afficher.</source>
         <translation>Nenhuma coluna foi escolhida: não há nada para exibir.</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="853"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="875"/>
         <source>La liste n&apos;a pas pu être établie.</source>
         <translation>A lista não pôde ser estabelecida.</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="854"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="876"/>
         <source>La liste n&apos;a pas pu être établie : %1</source>
         <translation>A lista não pôde ser estabelecida: %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="785"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/projectdbmodel.cpp" line="807"/>
         <source>Sheet position</source>
         <translation>Posição da folha</translation>
     </message>
@@ -18999,12 +19054,12 @@ Dê a elas outra numeração primeiro.</numerusform>
         <translation>Janela principal</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="278"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="288"/>
         <source>toolBar</source>
         <translation>Barra de ferramenta</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="350"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="360"/>
         <source>Portrait</source>
         <translation>Retrato</translation>
     </message>
@@ -19060,106 +19115,116 @@ Dê a elas outra numeração primeiro.</numerusform>
     </message>
     <message>
         <location filename="../sources/print/projectprintwindow.ui" line="181"/>
+        <source>Lines and texts in black, pictures in shades of gray</source>
+        <translation>Linhas e textos em preto, imagens em tons de cinza</translation>
+    </message>
+    <message>
+        <location filename="../sources/print/projectprintwindow.ui" line="184"/>
+        <source>Black and white</source>
+        <translation>Preto e branco</translation>
+    </message>
+    <message>
+        <location filename="../sources/print/projectprintwindow.ui" line="191"/>
         <source>Draw terminals</source>
         <translation>Desenhar os terminais</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="188"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="198"/>
         <source>Draw the names of the terminals</source>
         <translation>Desenhar os nomes dos terminais</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="198"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="208"/>
         <source>Enter the component details</source>
         <translation>Incluir as informações dos componentes</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="211"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="221"/>
         <source>Printing option</source>
         <translation>Opções de impressão</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="217"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="227"/>
         <source>Fit sheet to page</source>
         <translation>Ajustar a folha à página</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="227"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="237"/>
         <source>Use the whole page</source>
         <translation>Utilizar página inteira</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="234"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="244"/>
         <source>If this option is checked, the sheet will be enlarged or shrunk to fill the entire printable surface of one and only one page. &quot;</source>
         <translation>Se esta opção estiver marcada, a folha será ampliada ou reduzida para preencher toda a superfície de impressão em apenas uma página. &quot;</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="244"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="254"/>
         <source>If this option is checked, the margins of the sheet will be ignored and its entire surface will be used for printing. This may not be supported by your printer.</source>
         <translation>Se esta opção estiver marcada, as margens da folha serão ignoradas e toda a sua superfície será usada para impressão. Isso pode não ser compatível com a sua impressora.</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="310"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="320"/>
         <source>Fit to width</source>
         <translation>Ajustar à largura</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="318"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="328"/>
         <source>Fit to page</source>
         <translation>Ajustar à página</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="326"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="336"/>
         <source>Zoom Out</source>
         <translation>Diminuir Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="334"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="344"/>
         <source>Zoom In</source>
         <translation>Aumentar Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="342"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="352"/>
         <source>Landscape</source>
         <translation>Paisagem</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="358"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="368"/>
         <source>First page</source>
         <translation>Primeira página</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="366"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="376"/>
         <source>Previous page</source>
         <translation>Página anterior</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="374"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="384"/>
         <source>Next page</source>
         <translation>Página seguinte</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="382"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="392"/>
         <source>Last page</source>
         <translation>Última página</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="390"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="400"/>
         <source>Show single page</source>
         <translation>Mostrar página única</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="398"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="408"/>
         <source>Display facing pages</source>
         <translation>Exibir duas páginas</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="406"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="416"/>
         <source>Display all pages</source>
         <translation>Exibir uma visualização geral de todas as páginas</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.ui" line="414"/>
+        <location filename="../sources/print/projectprintwindow.ui" line="424"/>
         <source>Page layout</source>
         <translation>layout</translation>
     </message>
@@ -19186,22 +19251,22 @@ Dê a elas outra numeração primeiro.</numerusform>
         <translation>Exportar em pdf</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.cpp" line="169"/>
+        <location filename="../sources/print/projectprintwindow.cpp" line="170"/>
         <source>Layout (not available on Windows for PDF export)</source>
         <translation>Layout (não disponível no Windows para exportação em PDF)</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.cpp" line="623"/>
+        <location filename="../sources/print/projectprintwindow.cpp" line="625"/>
         <source>Untitled sheet</source>
         <translation>Folha sem título</translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.cpp" line="806"/>
+        <location filename="../sources/print/projectprintwindow.cpp" line="808"/>
         <source>Export as : </source>
         <translation>Exportar como: </translation>
     </message>
     <message>
-        <location filename="../sources/print/projectprintwindow.cpp" line="806"/>
+        <location filename="../sources/print/projectprintwindow.cpp" line="808"/>
         <source>File (*.pdf)</source>
         <translation>Arquivo (*.pdf)</translation>
     </message>
@@ -23974,62 +24039,62 @@ as condições não são válidas</translation>
 <context>
     <name>QETProject</name>
     <message>
-        <location filename="../sources/qetproject.cpp" line="1612"/>
+        <location filename="../sources/qetproject.cpp" line="1625"/>
         <source>Renumber elements</source>
         <translation>Renumerar elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="1613"/>
+        <location filename="../sources/qetproject.cpp" line="1626"/>
         <source>Renumber elements (%1)</source>
         <translation>Renumerar elementos (%1)</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="1230"/>
+        <location filename="../sources/qetproject.cpp" line="1243"/>
         <source>Project « %1 : %2»</source>
         <comment>displayed title for a ProjectView - %1 is the project title, -%2 is the project path</comment>
         <translation>Projeto « %1 : %2»</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="1237"/>
+        <location filename="../sources/qetproject.cpp" line="1250"/>
         <source>Project %1</source>
         <comment>displayed title for a title-less project - %1 is the file name</comment>
         <translation>Projeto %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="1244"/>
+        <location filename="../sources/qetproject.cpp" line="1257"/>
         <source>Untitled project</source>
         <comment>displayed title for a project-less, file-less project</comment>
         <translation>Projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="1253"/>
+        <location filename="../sources/qetproject.cpp" line="1266"/>
         <source>%1 [read-only]</source>
         <comment>displayed title for a read-only project - %1 is a displayable title</comment>
         <translation>%1 [somente leitura]</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="1263"/>
+        <location filename="../sources/qetproject.cpp" line="1276"/>
         <source>%1 [modified]</source>
         <comment>displayed title for a modified project - %1 is a displayable title</comment>
         <translation>%1 [Modificado]</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3075"/>
+        <location filename="../sources/qetproject.cpp" line="3088"/>
         <source>%1 was opened read-only because someone else has it open. Use Save As to keep your changes in another file.</source>
         <translation>%1 foi aberto somente para leitura porque outra pessoa está com ele aberto. Use Salvar como para manter suas alterações em outro arquivo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3110"/>
+        <location filename="../sources/qetproject.cpp" line="3123"/>
         <source>someone else changed the file on disk at %1 since it was opened, and saving would overwrite that. Save to another name, or set QET_OVERWRITE_CHANGED=1 to overwrite it.</source>
         <translation>outra pessoa alterou o arquivo no disco às %1 desde que ele foi aberto, e salvar o sobrescreveria. Salve com outro nome, ou defina QET_OVERWRITE_CHANGED=1 para sobrescrevê-lo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3327"/>
+        <location filename="../sources/qetproject.cpp" line="3340"/>
         <source>Modified contact system</source>
         <translation>Sistema de contatos modificado</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3328"/>
+        <location filename="../sources/qetproject.cpp" line="3341"/>
         <source>The new element defines slave contact groups.
 Existing slave elements will not be automatically assigned. You will need to link the slaves manually and assign the contact groups.
 
@@ -24040,19 +24105,19 @@ Os elementos escravos existentes não serão atribuídos automaticamente. Você 
 Deseja continuar?</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3417"/>
+        <location filename="../sources/qetproject.cpp" line="3430"/>
         <source>An error occurred during the template integration.</source>
         <comment>error message</comment>
         <translation>Ocorreu um erro durante a integração do modelo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3678"/>
+        <location filename="../sources/qetproject.cpp" line="3708"/>
         <source>Warning</source>
         <comment>message box title</comment>
         <translation>Aviso</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3680"/>
+        <location filename="../sources/qetproject.cpp" line="3710"/>
         <source>This document appears to have been saved with version %1
  which is later than your version ! 
 You are currently using QElectroTech in version %2</source>
@@ -24061,7 +24126,7 @@ You are currently using QElectroTech in version %2</source>
 Você está usando o QElectroTech na versão %2</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3684"/>
+        <location filename="../sources/qetproject.cpp" line="3714"/>
         <source>.
  It is then possible that the opening of all or part of this document fails.
 What do you wish to do ?</source>
@@ -24070,42 +24135,42 @@ What do you wish to do ?</source>
 O que você deseja fazer?</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3705"/>
+        <location filename="../sources/qetproject.cpp" line="3735"/>
         <source>Warning </source>
         <comment>message box title</comment>
         <translation>Aviso </translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3706"/>
+        <location filename="../sources/qetproject.cpp" line="3736"/>
         <source>The project you are trying to open is partially compatible with your version %1 of QElectroTech.
 </source>
         <translation>O projeto que você está tentando abrir é parcialmente compatível com sua versão %1 do QElectroTech.
 </translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3709"/>
+        <location filename="../sources/qetproject.cpp" line="3739"/>
         <source>In order to make it fully compatible please open this same project with version 0.8, or 0.80 of QElectroTech and save the project and open it again with this version.
 What do you wish to do ?</source>
         <translation>Para torná-lo totalmente compatível, abra este mesmo projeto com a versão 0.8 ou 0.80 do QElectroTech e salve o projeto e abra-o novamente com esta versão.
 O que você deseja fazer?</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3942"/>
+        <location filename="../sources/qetproject.cpp" line="3972"/>
         <source>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Opening the project ...&lt;/b&gt;&lt;br/&gt;Creation of sheets&lt;/p&gt;</source>
         <translation>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Abrindo o projeto atual...&lt;/b&gt;&lt;br/&gt;Criação das folhas&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="4033"/>
+        <location filename="../sources/qetproject.cpp" line="4063"/>
         <source>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Opening the project ...&lt;/b&gt;&lt;br/&gt;Setting up cross references&lt;/p&gt;</source>
         <translation>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Abertura do projeto...&lt;/b&gt;&lt;br/&gt;Configurando referências cruzadas&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="2947"/>
+        <location filename="../sources/qetproject.cpp" line="2960"/>
         <source>QElectroTech project (*.qet *.qetz)</source>
         <translation>Projeto QElectroTech (*.qet *.qetz)</translation>
     </message>
     <message>
-        <location filename="../sources/qetproject.cpp" line="3085"/>
+        <location filename="../sources/qetproject.cpp" line="3098"/>
         <source>Cannot save %1: %2</source>
         <translation>Não foi possível salvar %1: %2</translation>
     </message>
@@ -24131,13 +24196,13 @@ O que você deseja fazer?</translation>
 <context>
     <name>QETTitleBlockTemplateEditor</name>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="642"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="648"/>
         <source>%1 %2</source>
         <comment>part of the window title - %1 is the filepath or template name, %2 is the [Changed] or [Read only] tag</comment>
         <translation>%1 %2</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="762"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="788"/>
         <source>%1 - %2</source>
         <comment>window title: %1 is the base window title, %2 is a template name</comment>
         <translation>%1 - %2</translation>
@@ -24203,7 +24268,7 @@ O que você deseja fazer?</translation>
         <translation>Salvar como</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="956"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="982"/>
         <source>Save as</source>
         <comment>dialog title</comment>
         <translation>Salvar como</translation>
@@ -24251,7 +24316,7 @@ O que você deseja fazer?</translation>
         <translation>Editar informações complementares</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="1066"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="1092"/>
         <source>Edit extra information</source>
         <comment>window title</comment>
         <translation>Editar informações complementares</translation>
@@ -24382,74 +24447,74 @@ O que você deseja fazer?</translation>
         <translation>Propriedades da célula</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="636"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="642"/>
         <source>[Changed]</source>
         <comment>window title tag</comment>
         <translation>[Modificado]</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="639"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="645"/>
         <source>[Read only]</source>
         <comment>window title tag</comment>
         <translation>[Somente leitura]</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="747"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="773"/>
         <source>QElectroTech - Title block template editor</source>
         <comment>titleblock template editor: base window title</comment>
         <translation>QElectrotech - Editor de modelos de bloco de legenda</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="815"/>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="932"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="841"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="958"/>
         <source>Error</source>
         <comment>message box title</comment>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="816"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="842"/>
         <source>Unable to save the template  ‘%1’.</source>
         <comment>message box content - %1 is a title block template name</comment>
         <translation>Não foi possível salvar o modelo « %1 ».</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="854"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="880"/>
         <source>Open a title block template</source>
         <comment>File &gt; open dialog window title</comment>
         <translation>Abrir um modelo</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="876"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="902"/>
         <source>Open a file</source>
         <comment>dialog title</comment>
         <translation>Abrir um arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="878"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="904"/>
         <source>QElectroTech title block templates (*%1);;XML files (*.xml);; All files (*)</source>
         <comment>filetypes allowed when opening a title block template file - %1 is the .titleblock extension</comment>
         <translation>Modelos de bloco de legenda QElectrotech (*%1);;Arquivos XML (*.xml);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="919"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="945"/>
         <source>Save template as</source>
         <comment>dialog window title</comment>
         <translation>Salvar o modelo como</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="933"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="959"/>
         <source>The name ‘%1’ is invalid: it must not contain the following characters: \ / : * ? &quot; &lt; &gt; |</source>
         <comment>message box content - %1 is the rejected template name</comment>
         <translation>O nome « %1 » não é válido: não deve conter os seguintes caracteres: \ / : * ? &quot; &lt; &gt; |</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="958"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="984"/>
         <source>QElectroTech title block templates (*%1)</source>
         <comment>filetypes allowed when saving a title block template file - %1 is the .titleblock extension</comment>
         <translation>Modelos de bloco de legenda QElectroTech (*%1)</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="1070"/>
+        <location filename="../sources/titleblock/qettemplateeditor.cpp" line="1096"/>
         <source>You can use this field to specify the authors of this template, its license, or any other information you may find useful.</source>
         <translation>Você pode utilizar este campo para indicar os autores do bloco de legenda, a licença do mesmo, ou qualquer outra informação que considere útil.</translation>
     </message>
@@ -24543,7 +24608,7 @@ O que você deseja fazer?</translation>
         <translation>O arquivo « %1 » não pôde ser escrito.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="435"/>
+        <location filename="../sources/qet.cpp" line="436"/>
         <source>%n zone(s) de localisation</source>
         <comment>part of a sentence listing the content of a diagram</comment>
         <translation>
@@ -24552,7 +24617,7 @@ O que você deseja fazer?</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="445"/>
+        <location filename="../sources/qet.cpp" line="446"/>
         <source>%n calepinage(s)</source>
         <comment>part of a sentence listing the content of a diagram</comment>
         <translation>
@@ -24607,7 +24672,7 @@ O que você deseja fazer?</translation>
         <translation>Caminho de localização</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="111"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="197"/>
         <location filename="../sources/qetinformation.cpp" line="475"/>
         <source>Connecteur</source>
         <translation>Conector</translation>
@@ -24748,7 +24813,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Veja maiores detalhes aqui:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/terminalnumberingdialog.cpp" line="233"/>
+        <location filename="../sources/ui/terminalnumberingdialog.cpp" line="235"/>
         <source>Automatic terminal numbering</source>
         <translation>Numeração automática dos bornes</translation>
     </message>
@@ -24783,19 +24848,21 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="332"/>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="744"/>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="127"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="207"/>
         <source>Repère</source>
         <translation>Tag</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="112"/>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="128"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="198"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="208"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="221"/>
         <source>Folio</source>
         <translation>Folha</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="334"/>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="129"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="209"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="222"/>
         <source>Symbole</source>
         <translation>Símbolo</translation>
     </message>
@@ -24803,7 +24870,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="355"/>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="772"/>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="991"/>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="52"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="60"/>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="81"/>
         <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="91"/>
         <source>(sans repère)</source>
@@ -24811,7 +24878,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
     </message>
     <message>
         <location filename="../sources/catalog/ui/catalogprojectactions.cpp" line="394"/>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="272"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="238"/>
         <source>Attribuer une pièce…</source>
         <translation>Atribuir uma peça…</translation>
     </message>
@@ -25038,47 +25105,68 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="94"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="172"/>
         <source>Contrôle des connecteurs</source>
         <translation>Conferência dos conectores</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="106"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="194"/>
         <source>Connecteurs dont les voies ne peuvent pas être comptées</source>
         <translation>Conectores cujas vias não dá para contar</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="113"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="199"/>
         <source>Broches dessinées</source>
         <translation>Pinos desenhados</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="114"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="200"/>
         <source>Pièce</source>
         <translation>Peça</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="115"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="201"/>
         <source>Problème</source>
         <translation>Problema</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="122"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="204"/>
         <source>Broches n&apos;appartenant à aucun connecteur</source>
         <translation>Pinos que não pertencem a conector nenhum</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="158"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="215"/>
+        <source>Ways of connector</source>
+        <translation>Vias do conector</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="220"/>
+        <source>Way</source>
+        <translation>Via</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="254"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="660"/>
+        <source>Swap ways</source>
+        <translation>Trocar vias</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="256"/>
+        <source>Exchanges the way numbers of the two selected pins, or asks for the second one; Ctrl+Z undoes it.</source>
+        <translation>Troca os números de via dos dois pinos selecionados, ou pede o segundo; Ctrl+Z desfaz.</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="361"/>
         <source>Le catalogue n&apos;a pas répondu : impossible de dire quels connecteurs ont une pièce, ni quelles broches en sont.</source>
         <translation>O catálogo não respondeu: não há como dizer quais conectores têm peça, nem quais pinos são de conector.</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="165"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="368"/>
         <source>Ce projet ne dessine aucun connecteur : il n&apos;y a rien à contrôler ici.</source>
         <translation>Este projeto não desenha conector nenhum: não há o que conferir aqui.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="171"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="374"/>
         <source>Les %n connecteur(s) du projet ont une pièce avec son brochage, et aucune broche n&apos;est hors connecteur.</source>
         <translation>
             <numerusform>O conector do projeto tem peça com pinagem, e nenhum pino está fora de conector.</numerusform>
@@ -25086,7 +25174,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="178"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="381"/>
         <source>%n voie(s) de réserve au total.</source>
         <translation>
             <numerusform>%n via de reserva no total.</numerusform>
@@ -25094,12 +25182,12 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="184"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="387"/>
         <source>%1 connecteur(s) sur %2 n&apos;ont pas de pièce exploitable, et %3 broche(s) n&apos;appartiennent à aucun connecteur. Double-cliquez une ligne pour aller au composant.</source>
         <translation>%1 de %2 conectores não têm peça utilizável, e %3 pino(s) não pertencem a conector nenhum. Dê duplo clique numa linha para ir ao componente.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="199"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="402"/>
         <source>%n connecteur(s) dessinent une voie que leur pièce ne déclare pas.</source>
         <translation>
             <numerusform>%n conector desenha uma via que a peça dele não declara.</numerusform>
@@ -25107,22 +25195,37 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="273"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="650"/>
+        <source>%1 (folio %2)</source>
+        <translation>%1 (folha %2)</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="661"/>
+        <source>Swap way %1 with which way?</source>
+        <translation>Trocar a via %1 com qual via?</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="695"/>
+        <source>Not swapped: %1.</source>
+        <translation>Não trocado: %1.</translation>
+    </message>
+    <message>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="239"/>
         <source>Attribue une pièce du catalogue à toutes les broches des connecteurs sélectionnés : c&apos;est elle qui dit combien de voies le connecteur a.</source>
         <translation>Atribui uma peça do catálogo a todos os pinos dos conectores selecionados: é ela que diz quantas vias o conector tem.</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="281"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="247"/>
         <source>Affecter à un connecteur…</source>
         <translation>Atribuir a um conector…</translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="282"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="248"/>
         <source>Écrit le nom du connecteur sur les broches sélectionnées, en une seule action annulable.</source>
         <translation>Escreve o nome do conector nos pinos selecionados, numa ação só, que dá para desfazer.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="367"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="602"/>
         <source>À quel connecteur ces %n broche(s) appartiennent-elles ?</source>
         <translation>
             <numerusform>A que conector este pino pertence?</numerusform>
@@ -25130,7 +25233,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="370"/>
+        <location filename="../sources/connector/ui/connectorreportdialog.cpp" line="605"/>
         <source>Affecter à un connecteur</source>
         <translation>Atribuir a um conector</translation>
     </message>
@@ -25333,20 +25436,21 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Formatar as tags das referências de folha</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="103"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="131"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="112"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="140"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="402"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="168"/>
-        <location filename="../sources/conductorautonumerotation.cpp" line="270"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="196"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="306"/>
         <source>Automatically number a conductor</source>
         <comment>undo caption</comment>
         <translation>Numerar automaticamente um condutor</translation>
@@ -25373,38 +25477,38 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>excluir %1</translation>
     </message>
     <message>
-        <location filename="../sources/diagramcommands.cpp" line="64"/>
+        <location filename="../sources/diagramcommands.cpp" line="341"/>
         <source>paste %1</source>
         <comment>undo caption - %1 is a sentence listing the content to paste</comment>
         <translation>colar %1</translation>
     </message>
     <message>
-        <location filename="../sources/diagramcommands.cpp" line="391"/>
+        <location filename="../sources/diagramcommands.cpp" line="733"/>
         <source>cut %1</source>
         <comment>undo caption - %1 is a sentence listing the content to cut</comment>
         <translation>cortar %1</translation>
     </message>
     <message>
-        <location filename="../sources/diagramcommands.cpp" line="504"/>
+        <location filename="../sources/diagramcommands.cpp" line="865"/>
         <location filename="../sources/undocommand/movegraphicsitemcommand.cpp" line="56"/>
         <source>move %1</source>
         <comment>undo caption - %1 is a sentence listing the moved content</comment>
         <translation>mover %1</translation>
     </message>
     <message>
-        <location filename="../sources/diagramcommands.cpp" line="526"/>
+        <location filename="../sources/diagramcommands.cpp" line="887"/>
         <source>modify text</source>
         <comment>undo caption</comment>
         <translation>editar o texto</translation>
     </message>
     <message>
-        <location filename="../sources/diagramcommands.cpp" line="578"/>
+        <location filename="../sources/diagramcommands.cpp" line="939"/>
         <source>modify a conductor</source>
         <comment>undo caption</comment>
         <translation>editar um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/diagramcommands.cpp" line="648"/>
+        <location filename="../sources/diagramcommands.cpp" line="1009"/>
         <source>Reset %1</source>
         <comment>undo caption - %1 is a sentence listing the reset content</comment>
         <translation>Reinicializar %1</translation>
@@ -25416,7 +25520,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>editar o bloco de legenda</translation>
     </message>
     <message>
-        <location filename="../sources/diagramcommands.cpp" line="699"/>
+        <location filename="../sources/diagramcommands.cpp" line="1060"/>
         <source>change the sheet size</source>
         <comment>undo caption</comment>
         <translation>editar as dimensões da folha</translation>
@@ -25662,7 +25766,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Número da folha</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="425"/>
+        <location filename="../sources/qet.cpp" line="426"/>
         <source>%n layouts of terminal blocks</source>
         <comment>Sentence fragment used in an automatically generated list of different objects, e.g. objects moved at the same time, which will be combined into a sentence.</comment>
         <translation>
@@ -25671,74 +25775,74 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="517"/>
+        <location filename="../sources/qet.cpp" line="518"/>
         <source>The text file containing the GNU/GPL license could not be found - however, you know it by heart, don&apos;t you?</source>
         <translation>O arquivo de texto que contém a licença GNU/GPL não foi encontrado - bem, de qualquer modo você a conhece de cor, não é?</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="521"/>
+        <location filename="../sources/qet.cpp" line="522"/>
         <source>The text file containing the GNU/GPL license exists but could not be opened - however, you know it by heart, don&apos;t you?</source>
         <translation>O arquivo de texto que contém a licença GNU/GPL existe mas não pôde ser aberto - bem, de qualquer modo você a conhece de cor, não é?</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="814"/>
-        <location filename="../sources/qet.cpp" line="952"/>
+        <location filename="../sources/qet.cpp" line="815"/>
+        <location filename="../sources/qet.cpp" line="953"/>
         <location filename="../sources/qetxml.cpp" line="273"/>
         <source>Unable to open file %1 with write access, encountered error %2.</source>
         <comment>error message when attempting to write an XML file</comment>
         <translation>Não é possível abrir o arquivo %1 para escrita, encontrado erro %2.</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="828"/>
+        <location filename="../sources/qet.cpp" line="829"/>
         <source>An error occurred while writing file %1, error %2 encountered.</source>
         <comment>error message when attempting to write an XML file</comment>
         <translation>Ocorreu um erro ao gravar o arquivo %1, erro %2encontrado.</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="907"/>
+        <location filename="../sources/qet.cpp" line="908"/>
         <source>Bring to front</source>
         <translation>Trazer para a frente</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="908"/>
+        <location filename="../sources/qet.cpp" line="909"/>
         <source>Raise</source>
         <translation>Avançar</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="909"/>
+        <location filename="../sources/qet.cpp" line="910"/>
         <source>Lower</source>
         <translation>Recuar</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="910"/>
+        <location filename="../sources/qet.cpp" line="911"/>
         <source>Send backward</source>
         <translation>Enviar para trás</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="912"/>
+        <location filename="../sources/qet.cpp" line="913"/>
         <source>Bring the selection (s) to front</source>
         <translation>Traz as seleções para o primeiro plano</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="913"/>
+        <location filename="../sources/qet.cpp" line="914"/>
         <source>Approach the selection (s)</source>
         <translation>Aproximar as seleções</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="914"/>
+        <location filename="../sources/qet.cpp" line="915"/>
         <source>Move away the selection (s)</source>
         <translation>Remover seleções</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="915"/>
+        <location filename="../sources/qet.cpp" line="916"/>
         <source>Send in the backward the selection (s)</source>
         <translation>Envie a seleção para segundo plano</translation>
     </message>
     <message>
-        <location filename="../sources/qet.cpp" line="917"/>
         <location filename="../sources/qet.cpp" line="918"/>
         <location filename="../sources/qet.cpp" line="919"/>
         <location filename="../sources/qet.cpp" line="920"/>
+        <location filename="../sources/qet.cpp" line="921"/>
         <source>Depth</source>
         <translation>Profundidade</translation>
     </message>
@@ -25862,7 +25966,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Editar informações para vários elementos</translation>
     </message>
     <message>
-        <location filename="../sources/undocommand/linkelementcommand.cpp" line="93"/>
+        <location filename="../sources/undocommand/linkelementcommand.cpp" line="146"/>
         <source>Edit the cross reference</source>
         <comment>edite the cross reference</comment>
         <translation>Editar as referências cruzadas</translation>
@@ -26955,7 +27059,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Espelhar verticalmente</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="355"/>
+        <location filename="../sources/qet.cpp" line="356"/>
         <source>%n elements</source>
         <comment>Sentence fragment used in an automatically generated list of different objects, e.g. objects moved at the same time, which will be combined into a sentence.</comment>
         <translation>
@@ -26964,7 +27068,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="365"/>
+        <location filename="../sources/qet.cpp" line="366"/>
         <source>%n conductors</source>
         <comment>Sentence fragment used in an automatically generated list of different objects, e.g. objects moved at the same time, which will be combined into a sentence.</comment>
         <translation>
@@ -26973,7 +27077,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="375"/>
+        <location filename="../sources/qet.cpp" line="376"/>
         <source>%n textfields</source>
         <comment>Sentence fragment used in an automatically generated list of different objects, e.g. objects moved at the same time, which will be combined into a sentence.</comment>
         <translation>
@@ -26982,7 +27086,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="385"/>
+        <location filename="../sources/qet.cpp" line="386"/>
         <source>%n images</source>
         <comment>Sentence fragment used in an automatically generated list of different objects, e.g. objects moved at the same time, which will be combined into a sentence.</comment>
         <translation>
@@ -26991,7 +27095,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="395"/>
+        <location filename="../sources/qet.cpp" line="396"/>
         <source>%n shapes</source>
         <comment>Sentence fragment used in an automatically generated list of different objects, e.g. objects moved at the same time, which will be combined into a sentence.</comment>
         <translation>
@@ -27000,7 +27104,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="405"/>
+        <location filename="../sources/qet.cpp" line="406"/>
         <source>%n texts of element</source>
         <comment>Sentence fragment used in an automatically generated list of different objects, e.g. objects moved at the same time, which will be combined into a sentence.</comment>
         <translation>
@@ -27009,7 +27113,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qet.cpp" line="415"/>
+        <location filename="../sources/qet.cpp" line="416"/>
         <source>%n tables</source>
         <comment>Sentence fragment used in an automatically generated list of different objects, e.g. objects moved at the same time, which will be combined into a sentence.</comment>
         <translation>
@@ -32653,6 +32757,13 @@ Os outros campos não são utilizados.</translation>
         <source>plan of terminals</source>
         <translation>plano de bornes</translation>
     </message>
+    <message>
+        <location filename="../sources/TerminalStrip/GraphicsItem/terminalstripitem.cpp" line="185"/>
+        <source>%1 : %2
+Double-click to go to the element</source>
+        <translation>%1: %2
+Clique duplo para ir ao componente</translation>
+    </message>
 </context>
 <context>
     <name>TerminalStripLayoutEditor</name>
@@ -32691,12 +32802,12 @@ Os outros campos não são utilizados.</translation>
         <translation>Borne nível 0 :</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="563"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="645"/>
         <source>Headser :</source>
         <translation>No topo :</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="612"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="694"/>
         <source>Bridge point</source>
         <translation>Ponto de ponte</translation>
     </message>
@@ -32751,12 +32862,62 @@ Os outros campos não são utilizados.</translation>
         <translation>Referência cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="605"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="546"/>
+        <source>Preview style</source>
+        <translation>Estilo da visualização</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="553"/>
+        <source>Style of the preview only. The style of a terminal strip plan is chosen when it is added to a folio.</source>
+        <translation>Estilo apenas da visualização. O estilo de um plano de régua de bornes é escolhido ao adicioná-lo a uma folha.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="557"/>
+        <source>Schematic</source>
+        <translation>Esquemático</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="562"/>
+        <source>Realistic (push-in)</source>
+        <translation>Realista (push-in)</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="567"/>
+        <source>Realistic (screw)</source>
+        <translation>Realista (parafuso)</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="575"/>
+        <source>Scale (px/mm) / length (mm)</source>
+        <translation>Escala (px/mm) / comprimento (mm)</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="582"/>
+        <source>Number of pixels for one millimeter of terminal.</source>
+        <translation>Número de pixels para cada milímetro de borne.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="601"/>
+        <source>Length of a terminal along the wires, in millimeter.</source>
+        <translation>Comprimento de um borne ao longo dos fios, em milímetros.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="614"/>
+        <source>End stops</source>
+        <translation>Batentes</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="621"/>
+        <source>Group marker</source>
+        <translation>Marcador de grupo</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="687"/>
         <source>Height</source>
         <translation>Altura</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="626"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="708"/>
         <source>Preview:</source>
         <translation>Visualização :</translation>
     </message>
@@ -32845,72 +33006,77 @@ Os outros campos não são utilizados.</translation>
 <context>
     <name>TerminalStripModel</name>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="402"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="415"/>
         <source>Position</source>
         <translation>Posição</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="408"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="421"/>
         <source>Label</source>
         <translation>Tag</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="413"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="426"/>
         <source>Type</source>
         <translation>Tipo</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="415"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="428"/>
         <source>led</source>
         <translation>led</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="403"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="416"/>
         <source>Stage</source>
         <translation>Estágio</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="410"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="423"/>
         <source>Cross-reference</source>
         <translation>Referência cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="411"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="424"/>
         <source>Cable</source>
         <translation>Cabo</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="412"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="425"/>
         <source>Color / wire number of the cable</source>
         <translation>Cor / número do fio do cabo</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="414"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="427"/>
         <source>Function</source>
         <translation>Função</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="417"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="430"/>
         <source>Color</source>
         <translation>Cor</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="418"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="431"/>
         <source>Section (mm²)</source>
         <translation>Seção (mm²)</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="419"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="432"/>
         <source>Width (mm)</source>
         <translation>Largura (mm)</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="409"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="433"/>
+        <source>Separator plate after</source>
+        <translation>Placa separadora depois</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="422"/>
         <source>Number wire</source>
         <translation>Número do condutor</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="416"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="429"/>
         <source>Shield</source>
         <translation>Blindagem</translation>
     </message>
@@ -32918,20 +33084,20 @@ Os outros campos não são utilizados.</translation>
 <context>
     <name>TerminalStripModelDelegate</name>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="917"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="931"/>
         <source>%1 mm</source>
         <translation>%1 mm</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="956"/>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="967"/>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="994"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="970"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="981"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="1008"/>
         <source>None (default)</source>
         <translation>Nenhum (padrão)</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="959"/>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="1051"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="973"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="1065"/>
         <source>%1 mm²</source>
         <translation>%1 mm²</translation>
     </message>
@@ -33446,19 +33612,19 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
         <translation>Valor desta célula</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templatecellwidget.cpp" line="433"/>
+        <location filename="../sources/titleblock/templatecellwidget.cpp" line="453"/>
         <source>Cell edition: %1</source>
         <comment>label of and undo command when editing a cell</comment>
         <translation>Editar a célula: %1</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templatecellwidget.cpp" line="445"/>
+        <location filename="../sources/titleblock/templatecellwidget.cpp" line="465"/>
         <source>By default, the following variables are available: &lt;ul&gt;&lt;li&gt;%{author}: author of the sheet&lt;/li&gt;&lt;li&gt;%{date}: sheet date&lt;/li&gt;&lt;li&gt;%{title}: sheet title&lt;/li&gt;&lt;li&gt;%{filename}: filename of file&lt;/li&gt; &lt;li&gt;%{plant}: name of the installation (=) in which the sheet is located&lt;/li&gt;&lt;li&gt;%{locmach}: name of the location (+) where the sheet is located&lt;/li&gt;&lt;li&gt;%{indexrev}: sheet revision index&lt;/li&gt;&lt;li&gt;%{version}: version number&lt;/li&gt;&lt;li&gt;%{folio}: sheet number&lt;/li&gt;&lt;li&gt;%{folio-id}: position of sheet in the project&lt;/li&gt;&lt;li&gt;%{folio-total }: total number of sheets in the project&lt;/li&gt;&lt;li&gt;%{previous-folio-num}: number of the previous sheet&lt;/li&gt;&lt;li&gt;%{next-folio-num}: number of the next sheet&lt; / li&gt;&lt;li&gt;%{projecttitle}: title of the project&lt;/li&gt;&lt;li&gt;%{projectpath}: path of the project&lt;/li&gt;&lt;li&gt;%{projectfilename}: filename of the projectfile&lt;/li&gt;&lt;li &gt;%{saveddate}: date of saving the file in local format&lt;/li&gt;&lt;li&gt;%{saveddate-eu}: date of saving the file in format DD-MM-YYYY&lt;/li&gt; &lt;li&gt;%{ saveddate-us}: date of saving the file in format YYYY-MM-DD&lt;/li&gt;&lt;li&gt;%{savedtime}: time of saving the file&lt;/li&gt;&lt;li&gt;%{savedfilename}: name of the file saved&lt;/li&gt;&lt;li&gt;%{savedfilepath}: path of the saved file&lt;/li&gt;&lt;/ul&gt;</source>
         <translatorcomment>Manter original todos dentro dos colchetes</translatorcomment>
         <translation>Por padrão, as seguintes variáveis ​​estão disponíveis :&lt;ul&gt;&lt;li&gt;%{author} : autor da folha&lt;/li&gt;&lt;li&gt;%{date} : data da folha&lt;/li&gt;&lt;li&gt;%{title}: título da folha&lt;/li&gt;&lt;li&gt;%{filename} : nome do arquivo do projeto &lt;/li&gt;&lt;li&gt;% {plant} : nome da instalação (=) em que a folha está localizada&lt;/li&gt;&lt;li&gt;%{locmach}: nome do local (+) onde a folha está localizada&lt;/li&gt;&lt;li&gt;%{indexrev} : índice de revisão da folha&lt;/li&gt;&lt;li&gt;%{version} : versão do software &lt;/li&gt; &lt;li&gt;%{folio} : número da folha&lt;/li&gt;&lt;li&gt;%{folio-id} : posição da folha no projeto&lt;/li&gt;&lt;li&gt;%{folio-total} : número total de folhas no projeto&lt;/li&gt;&lt;li&gt;%{previous-folio-num} : número da folha anterior&lt;/li&gt;&lt;li&gt;%{next-folio-num} : número da próxima folha&lt;/li&gt;&lt;li&gt;%{projecttitle} : título do projeto&lt;/li&gt;&lt;li&gt;%{projectpath} : caminho do projeto&lt;/li&gt;&lt;li&gt;%{projectfilename}: nome do arquivo&lt;/li&gt;&lt;li&gt;%{saveddate}: data de salvamento do arquivo&lt;/li&gt;&lt;li&gt;%{saveddate-eu} : data de gravação do arquivo de formato dd-MM-aaaa&lt;/li&gt;&lt;li&gt;%{ savedate-us}: data de gravação em formato de arquivo aaaa-MM-dd&lt;/li&gt;&lt;li&gt;%{savedtime} : hora de gravação do arquivo&lt;/li&gt;&lt;li&gt;%{savedfilename} : nome do arquivo salvo&lt;/li&gt;&lt;li&gt;%{savedfilepath} : caminho do arquivo salvo&lt;/li&gt;&lt;/ul&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templatecellwidget.cpp" line="472"/>
+        <location filename="../sources/titleblock/templatecellwidget.cpp" line="492"/>
         <source>Each cell of a title block displays a value, optionally preceded by a label. Both can be translated to several languages.&lt;br/&gt;Since what you are currently editing is a title block &lt;em&gt;template&lt;/em&gt;, avoid entering raw data directly: prefer inserting variables like %{variable-name}, which will be replaced afterwards with adequate values in the sheet.</source>
         <translation>Cada célula de um bloco de legenda exibe um valor, opcionalmente precedido por um rótulo. Ambos podem ser traduzidos em diversos idiomas.&lt;br/&gt;Como o que você está editando é um &lt;em&gt;modelo&lt;/em&gt; de bloco de legenda, não insira dados brutos diretamente, mas insira variáveis no formato %{nome_da_variável}, que posteriormente serão substituídas por seus valores efetivos adequados a cada folha.</translation>
     </message>
@@ -33639,118 +33805,118 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 <context>
     <name>TitleBlockTemplateView</name>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="650"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="691"/>
         <source>[%1px]</source>
         <comment>content of the extra cell added when the total width of cells is less than the preview width</comment>
         <translation>[%1px]</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="660"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="701"/>
         <source>[%1px]</source>
         <comment>content of the extra helper cell added when the total width of cells is greater than the preview width</comment>
         <translation>[%1px]</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="714"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="755"/>
         <source>%1px</source>
         <comment>format displayed in rows helper cells</comment>
         <translation>%1px</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="778"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="819"/>
         <source>%1px</source>
         <translation>%1px</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="353"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="355"/>
         <source>Change the column width</source>
         <comment>window title when changing a column with</comment>
         <translation>Alterar a largura da coluna</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="354"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="356"/>
         <source>Width:</source>
         <comment>text before the spinbox to change a column width</comment>
         <translation>Largura:</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="379"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="381"/>
         <source>Change the row height</source>
         <comment>window title when changing a row height</comment>
         <translation>Alterar a altura da linha</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="380"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="382"/>
         <source>Height:</source>
         <comment>text before the spinbox to change a row height</comment>
         <translation>Altura:</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="577"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="618"/>
         <source>Add a column (before)</source>
         <comment>context menu</comment>
         <translation>Adicionar uma coluna (antes)</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="578"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="619"/>
         <source>Add a row (before)</source>
         <comment>context menu</comment>
         <translation>Adicionar uma linha (antes)</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="579"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="620"/>
         <source>Add a column (after)</source>
         <comment>context menu</comment>
         <translation>Adicionar uma coluna (depois)</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="580"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="621"/>
         <source>Add a row (after)</source>
         <comment>context menu</comment>
         <translation>Adicionar uma linha (depois)</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="581"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="622"/>
         <source>Change this column dimension</source>
         <comment>context menu</comment>
         <translation>Alterar as dimensões desta coluna</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="582"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="623"/>
         <source>Change this row dimension</source>
         <comment>context menu</comment>
         <translation>Alterar as dimensões desta linha</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="583"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="624"/>
         <source>Delete this column</source>
         <comment>context menu</comment>
         <translation>Excluir esta coluna</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="584"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="625"/>
         <source>Delete this row</source>
         <comment>context menu</comment>
         <translation>Excluir esta linha</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="585"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="626"/>
         <source>Change this preview width</source>
         <comment>context menu</comment>
         <translation>Alterar a largura da visualização</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="831"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="872"/>
         <source>Change the width</source>
         <translation>Alterar a largura da visualização</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="832"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="873"/>
         <source>Width:</source>
         <translation>Largura da visualização:</translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="1002"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="1043"/>
         <source>Please note: the sum of the relative widths exceeds 100 per cent of the total width; this cartouche template cannot be accommodated by any width.
 </source>
         <comment>tooltip warning shown when a template&apos;s relative-to-total-length columns alone already exceed 100%% of the total width</comment>
@@ -33758,7 +33924,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 </translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="1008"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="1049"/>
         <source>Please note: fixed-width columns cannot fit within the remaining width; this cartouche template cannot be accommodated by any width.
 </source>
         <comment>tooltip warning shown when a template&apos;s relative-to-total-length columns already consume all available width, leaving no room for its fixed-width columns</comment>
@@ -33766,7 +33932,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 </translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="1016"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="1057"/>
         <source>Minimum length : %1px
 </source>
         <comment>tooltip showing the minimum width of the edited template</comment>
@@ -33774,7 +33940,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 </translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="1024"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="1065"/>
         <source>Maximum length: %1px
 </source>
         <comment>tooltip showing the maximum width of the edited template</comment>
@@ -33782,7 +33948,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 </translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="1031"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="1072"/>
         <source>Unrestricted length.
 </source>
         <comment>tooltip shown when the edited template has neither a minimum nor a maximum width constraint</comment>
@@ -33790,7 +33956,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 </translation>
     </message>
     <message>
-        <location filename="../sources/titleblock/templateview.cpp" line="1088"/>
+        <location filename="../sources/titleblock/templateview.cpp" line="1129"/>
         <source>Total width: %1px</source>
         <comment>displayed at the top of the preview when editing a title block template</comment>
         <translation>Largura total para esta visualização: %1px</translation>
@@ -34075,104 +34241,128 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 <context>
     <name>WiringListExport</name>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="418"/>
+        <location filename="../sources/wiringlistexport.cpp" line="459"/>
         <source>L&apos;écriture du fichier « %1 » a échoué.</source>
         <translation>A escrita do arquivo « %1 » falhou.</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="649"/>
+        <location filename="../sources/wiringlistexport.cpp" line="735"/>
         <source>Page</source>
         <comment>Wiring list CSV header</comment>
         <translation>Página</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="393"/>
-        <location filename="../sources/wiringlistexport.cpp" line="408"/>
-        <location filename="../sources/wiringlistexport.cpp" line="417"/>
+        <location filename="../sources/wiringlistexport.cpp" line="434"/>
+        <location filename="../sources/wiringlistexport.cpp" line="449"/>
+        <location filename="../sources/wiringlistexport.cpp" line="458"/>
         <source>Error</source>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="393"/>
+        <location filename="../sources/wiringlistexport.cpp" line="434"/>
         <source>Unable to read the project&apos;s in-memory structure.</source>
         <translation>Não foi possível ler a estrutura do projeto na memória.</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="399"/>
+        <location filename="../sources/wiringlistexport.cpp" line="440"/>
         <source>Export the wiring diagram</source>
         <translation>Exportar o plano de fiação</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="401"/>
+        <location filename="../sources/wiringlistexport.cpp" line="442"/>
         <source>CSV files (*.csv)</source>
         <translation>Arquivos CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="408"/>
+        <location filename="../sources/wiringlistexport.cpp" line="449"/>
         <source>Unable to open the file for writing.</source>
         <translation>Não foi possível abrir o arquivo para gravação.</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="650"/>
+        <location filename="../sources/wiringlistexport.cpp" line="736"/>
         <source>Component 1</source>
         <comment>Wiring list CSV header</comment>
         <translation>Componente 1</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="651"/>
+        <location filename="../sources/wiringlistexport.cpp" line="737"/>
         <source>Terminal 1</source>
         <comment>Wiring list CSV header</comment>
         <translation>Borne 1</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="652"/>
+        <location filename="../sources/wiringlistexport.cpp" line="738"/>
         <source>Component 2</source>
         <comment>Wiring list CSV header</comment>
         <translation>Componente 2</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="653"/>
+        <location filename="../sources/wiringlistexport.cpp" line="739"/>
         <source>Terminal 2</source>
         <comment>Wiring list CSV header</comment>
         <translation>Borne 2</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="654"/>
+        <location filename="../sources/wiringlistexport.cpp" line="740"/>
         <source>Voltage / Protocol</source>
         <comment>Wiring list CSV header</comment>
         <translation>Tensão / Protocolo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="655"/>
+        <location filename="../sources/wiringlistexport.cpp" line="741"/>
         <source>Wire color</source>
         <comment>Wiring list CSV header</comment>
         <translation>Cor do cabo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="656"/>
+        <location filename="../sources/wiringlistexport.cpp" line="742"/>
         <source>Wire section</source>
         <comment>Wiring list CSV header</comment>
         <translation>Seção do cabo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="657"/>
+        <location filename="../sources/wiringlistexport.cpp" line="743"/>
         <source>Function</source>
         <comment>Wiring list CSV header</comment>
         <translation>Função</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="658"/>
+        <location filename="../sources/wiringlistexport.cpp" line="744"/>
         <source>Cable</source>
         <comment>Wiring list CSV header</comment>
         <translation>Cabo</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="423"/>
+        <location filename="../sources/wiringlistexport.cpp" line="745"/>
+        <source>Note</source>
+        <comment>Wiring list CSV header</comment>
+        <translation>Observação</translation>
+    </message>
+    <message>
+        <location filename="../sources/wiringlistexport.cpp" line="755"/>
+        <source>Bridge</source>
+        <comment>Wiring list CSV note: the row is a bridge between two terminals</comment>
+        <translation>Ponte</translation>
+    </message>
+    <message>
+        <location filename="../sources/wiringlistexport.cpp" line="760"/>
+        <source>Section differs from the other half of this wire</source>
+        <comment>Wiring list CSV note</comment>
+        <translation>Seção diferente da outra metade deste fio</translation>
+    </message>
+    <message>
+        <location filename="../sources/wiringlistexport.cpp" line="762"/>
+        <source>Section differs from the other half of this wire, on %1</source>
+        <comment>Wiring list CSV note: %1 is the page of the other half</comment>
+        <translation>Seção diferente da outra metade deste fio, em %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/wiringlistexport.cpp" line="464"/>
         <source>Export successful</source>
         <translation>Exportação concluída</translation>
     </message>
     <message>
-        <location filename="../sources/wiringlistexport.cpp" line="423"/>
+        <location filename="../sources/wiringlistexport.cpp" line="464"/>
         <source>The wiring diagram has been successfully exported !</source>
         <translation>O plano de fiação foi exportado com sucesso!</translation>
     </message>
@@ -34466,12 +34656,12 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 <context>
     <name>projectDataBase</name>
     <message>
-        <location filename="../sources/dataBase/projectdatabase.cpp" line="4881"/>
+        <location filename="../sources/dataBase/projectdatabase.cpp" line="4932"/>
         <source>Export the internal project database</source>
         <translation>Exportar o banco de dados interno do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/dataBase/projectdatabase.cpp" line="4888"/>
+        <location filename="../sources/dataBase/projectdatabase.cpp" line="4939"/>
         <source>untitled</source>
         <translation>Sem Nome</translation>
     </message>
