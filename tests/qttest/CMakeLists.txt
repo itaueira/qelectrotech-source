@@ -267,6 +267,10 @@ endfunction()
 # alone and with a group.
 qet_add_app_test(tst_rotateselectionimage tst_rotateselectionimage.cpp)
 
+# Accepting the settings dialog writes qet-assistant.json with the
+# collection paths just chosen, not the ones they replace.
+qet_add_app_test(tst_assistantinfopaths tst_assistantinfopaths.cpp)
+
 # Escape during a picture's resize, rotate or pivot drag puts it back, keeps
 # it selected and records no undo step (#1414); the key goes to the view.
 qet_add_app_test(tst_imagehandleescape tst_imagehandleescape.cpp)
@@ -670,6 +674,20 @@ set_tests_properties(tst_freetextwidth PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=o
 add_dependencies(tst_freetextwidth qelectrotech)
 target_link_libraries(tst_freetextwidth PRIVATE Qt::Test Qt::Gui Qt::Xml)
 target_compile_definitions(tst_freetextwidth PRIVATE
+  "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
+
+# A terminal in a symbol's definition with no orientation attribute faces
+# north instead of crashing the program on opening (Qet::orientationFromString()
+# read the first character of an empty string): the real binary's --resave
+# on fixtures/terminal_no_orientation.qet.
+add_executable(
+  tst_terminalnoorientation
+  tst_terminalnoorientation.cpp)
+add_test(NAME tst_terminalnoorientation COMMAND tst_terminalnoorientation)
+set_tests_properties(tst_terminalnoorientation PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+add_dependencies(tst_terminalnoorientation qelectrotech)
+target_link_libraries(tst_terminalnoorientation PRIVATE Qt::Test Qt::Xml)
+target_compile_definitions(tst_terminalnoorientation PRIVATE
   "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
 
 # A free text whose x, y or rotation is "nan" or "inf" is loaded at 0 for
