@@ -164,6 +164,10 @@ namespace EmbeddedElementRefresh
 	};
 	Scope savedScope(const ElementsLocation &saved,
 			 const QStringList &collection_dirs);
+
+	QList<Element *> keptOnFolio(QETProject *project, const QString &embedded_path);
+	QUndoCommand *bringKeptCommand(QETProject *project, const QList<Element *> &elements);
+	bool turnsTextsByCorner(const QList<Element *> &elements);
 	QString noticeFor(const QString &embedded_path,
 			  const QDomElement &definition,
 			  const QList<QETProject *> &projects,

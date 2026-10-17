@@ -26,6 +26,7 @@
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/elementtextitemgroup.h"
 #include "../../../../sources/qetgraphicsitem/reporttags.h"
+#include "../../../../sources/qetgraphicsitem/symboltextsync.h"
 #include "../../../../sources/qetinformation.h"
 #include "../../../../sources/qetproject.h"
 
@@ -644,4 +645,93 @@ TEST_CASE("CU-62.6 — What the reference text of the arrow shows, changed in th
 			CHECK(tag->toPlainText() == ReportTags::tagOf(report));
 		}
 	}
+}
+
+TEST_CASE("CU-62.7 — The notice offers to bring the arrows arranged on the folio",
+		  "[T62][reportsync]")
+{
+	UiBench::Project bench(example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	QETProject *project = bench.project();
+	const auto busiest = busiestReport(project);
+	REQUIRE(busiest.second.size() >= 2);
+	const QString path = busiest.first;
+
+	QDomDocument definition = modernCopy(project, path);
+	QDomElement symbol_reference = referenceTextOf(definition);
+	REQUIRE_FALSE(symbol_reference.isNull());
+
+		//Two arrows where the symbol has the reference; one of them is then
+		//arranged on its folio
+	const QList<Element *> in_line = inLine(busiest.second);
+	REQUIRE(in_line.size() >= 2);
+	Element *follower = in_line.first();
+	Element *arranged = in_line.last();
+	CHECK_FALSE(EmbeddedElementRefresh::keptOnFolio(project, path).contains(follower));
+	DynamicElementTextItem *arranged_text = referenceText(arranged);
+	arranged_text->setPos(arranged_text->pos() + QPointF(40, 40));
+	const QPointF arranged_at = arranged_text->pos();
+	const QString shown = arranged_text->toPlainText();
+	CHECK(EmbeddedElementRefresh::keptOnFolio(project, path).contains(arranged));
+
+		//The symbol's reference text moved in the symbol editor, and saved:
+		//the update moves the follower and keeps the arranged one
+	symbol_reference.setAttribute(QStringLiteral("x"), symbol_reference.attribute(QStringLiteral("x")).toDouble() + 6);
+	symbol_reference.setAttribute(QStringLiteral("y"), symbol_reference.attribute(QStringLiteral("y")).toDouble() - 4);
+	newRevision(definition);
+	saveAndReload(project, path, definition);
+	CHECK(samePlace(referenceText(arranged)->pos(), arranged_at));
+	const QPointF symbol_anchor = SymbolTextSync::anchorOf(referenceText(follower));
+
+	const QList<Element *> kept = EmbeddedElementRefresh::keptOnFolio(project, path);
+	CHECK(kept.contains(arranged));
+	CHECK_FALSE(kept.contains(follower));
+
+		//"Bring these too": the arranged arrow takes the symbol's place, one
+		//Ctrl+Z gives it back the one it was arranged at
+	QUndoCommand *bring = EmbeddedElementRefresh::bringKeptCommand(project, kept);
+	REQUIRE(bring);
+	const int undo_before = project->undoStack()->count();
+	project->undoStack()->push(bring);
+	CHECK(project->undoStack()->count() == undo_before + 1);
+	CHECK(samePlace(SymbolTextSync::anchorOf(referenceText(arranged)), symbol_anchor));
+		//And it still shows the reference to the other end
+	CHECK(referenceText(arranged)->toPlainText() == shown);
+	CHECK_FALSE(EmbeddedElementRefresh::keptOnFolio(project, path).contains(arranged));
+
+	project->undoStack()->undo();
+	CHECK(samePlace(referenceText(arranged)->pos(), arranged_at));
+}
+
+TEST_CASE("T62 — A turned arrow whose text turns about its corner is pointed out",
+		  "[T62][reportsync]")
+{
+	UiBench::Project bench(example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	QETProject *project = bench.project();
+	const auto busiest = busiestReport(project);
+	REQUIRE_FALSE(busiest.second.isEmpty());
+	const QString path = busiest.first;
+	Element *arrow = busiest.second.first();
+
+	QDomDocument definition = modernCopy(project, path);
+	QDomElement symbol_reference = referenceTextOf(definition);
+	REQUIRE_FALSE(symbol_reference.isNull());
+	symbol_reference.setAttribute(QStringLiteral("keep_visual_rotation"), QStringLiteral("true"));
+	symbol_reference.setAttribute(QStringLiteral("rotation_point_center"), QStringLiteral("false"));
+	newRevision(definition);
+	REQUIRE(ElementsLocation(path, project).setXml(definition));
+
+	arrow->setRotation(0);
+	CHECK_FALSE(EmbeddedElementRefresh::turnsTextsByCorner({arrow}));
+	arrow->setRotation(180);
+	CHECK(EmbeddedElementRefresh::turnsTextsByCorner({arrow}));
+
+		//"Rotate about its own centre" ticked in the symbol: nothing to say
+	symbol_reference.setAttribute(QStringLiteral("rotation_point_center"), QStringLiteral("true"));
+	newRevision(definition);
+	REQUIRE(ElementsLocation(path, project).setXml(definition));
+	CHECK_FALSE(EmbeddedElementRefresh::turnsTextsByCorner({arrow}));
 }

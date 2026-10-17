@@ -22,6 +22,7 @@
 #include "../qet.h"
 #include "../qetapp.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qetgraphicsitem/symboltextsync.h"
 #include "../qetproject.h"
 #include "../undocommand/refreshembeddedelementscommand.h"
 #include "../undocommand/syncsymboltextscommand.h"
@@ -1134,6 +1135,90 @@ EmbeddedElementRefresh::Scope EmbeddedElementRefresh::savedScope(
 		scope.collection_dirs = collection_dirs;
 	}
 	return scope;
+}
+
+/**
+	@brief EmbeddedElementRefresh::keptOnFolio
+	The elements placed from the copy at @p embedded_path whose texts still
+	differ from the copy once the update has run: what was arranged on the
+	folio - a text moved, restyled, removed - and which the update keeps on
+	purpose (SymbolTextSync, in Merge). What "Repor os textos do símbolo"
+	would still change on them, and what the notice offers to bring too.
+	@return the elements, in the order the project has them
+*/
+QList<Element *> EmbeddedElementRefresh::keptOnFolio(QETProject *project,
+													 const QString &embedded_path)
+{
+	QList<Element *> kept;
+	if (!project || project->isReadOnly() || embedded_path.isEmpty()) {
+		return kept;
+	}
+	for (Element *element : placedElements(project, embedded_path))
+	{
+		const QDomElement definition = element->location().xml();
+		if (!definition.isNull()
+				&& !SymbolTextSync::plan(element, definition,
+										 SymbolTextSync::Mode::Reset).isEmpty()) {
+			kept << element;
+		}
+	}
+	return kept;
+}
+
+/**
+	@brief EmbeddedElementRefresh::bringKeptCommand
+	The command that gives @p elements the texts of their symbol entirely,
+	what was arranged on the folio included: "Repor os textos do símbolo" on
+	all of them at once, one Ctrl+Z.
+	@return the command, to push; nullptr when there is nothing to do
+*/
+QUndoCommand *EmbeddedElementRefresh::bringKeptCommand(QETProject *project,
+														const QList<Element *> &elements)
+{
+	if (!project || elements.isEmpty()) {
+		return nullptr;
+	}
+	auto *texts = new SyncSymbolTextsCommand(
+				textPlans(project, SymbolTextSync::Mode::Reset, elements));
+	if (texts->isEmpty()) {
+		delete texts;
+		return nullptr;
+	}
+	texts->setText(QCoreApplication::translate("EmbeddedElementRefresh",
+											   "Bring the texts of the symbol"));
+	return texts;
+}
+
+/**
+	@brief EmbeddedElementRefresh::turnsTextsByCorner
+	Whether one of @p elements is turned and has a text of its symbol that
+	keeps its visual rotation but turns about its corner. Such a text,
+	brought to where the symbol puts it, lands away from the element - on a
+	report arrow turned half a turn, past the other end; measured on a real
+	project on 17/10/2026. Turning about its own centre puts it, on a turned
+	element, where the symbol has it on an upright one.
+*/
+bool EmbeddedElementRefresh::turnsTextsByCorner(const QList<Element *> &elements)
+{
+	for (const Element *element : elements)
+	{
+		if (qFuzzyIsNull(QET::correctAngle(element->rotation(), true))) {
+			continue;
+		}
+		const QDomElement description = element->location().xml()
+				.firstChildElement(QStringLiteral("description"));
+		for (QDomElement text = description.firstChildElement(QStringLiteral("dynamic_text"));
+			 !text.isNull();
+			 text = text.nextSiblingElement(QStringLiteral("dynamic_text")))
+		{
+			if (text.attribute(QStringLiteral("keep_visual_rotation"), QStringLiteral("true"))
+						== QLatin1String("true")
+					&& text.attribute(QStringLiteral("rotation_point_center")) != QLatin1String("true")) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 /**

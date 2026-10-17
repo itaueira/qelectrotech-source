@@ -10210,22 +10210,22 @@ Ao importar este arquivo, você confirma que:
 <context>
     <name>EmbeddedElementRefresh</name>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="844"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="845"/>
         <source>Le projet enregistré dans un fichier temporaire n&apos;a pas pu être rouvert.</source>
         <translation>O projeto gravado num arquivo temporário não pôde ser reaberto.</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="872"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="873"/>
         <source>Folio %1 : %2</source>
         <translation>Folha %1: %2</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="615"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="616"/>
         <source>Mettre à jour les éléments depuis leurs symboles</source>
         <translation>Atualizar os elementos a partir dos símbolos</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="886"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="887"/>
         <source>Les bornes ou le type de %n élément(s) ont changé. Recharger le projet pour les appliquer ?</source>
         <translation>
             <numerusform>Os terminais ou o tipo de %n elemento mudaram. Recarregar o projeto para aplicá-los?</numerusform>
@@ -10233,12 +10233,12 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="892"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="893"/>
         <source>L&apos;annulation sera vidée. Rien n&apos;est enregistré sur le disque.</source>
         <translation>O desfazer será apagado. Nada é salvo no disco.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="905"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="906"/>
         <source>Projet rechargé : %n élément(s) mis à jour.</source>
         <translation>
             <numerusform>Projeto recarregado: %n elemento atualizado.</numerusform>
@@ -10246,7 +10246,7 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="913"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="914"/>
         <source>%n conducteur(s) retiré(s) : leur borne n&apos;existe plus.</source>
         <translation>
             <numerusform>%n condutor removido: o terminal dele não existe mais.</numerusform>
@@ -10254,7 +10254,7 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="931"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="932"/>
         <source>%n élément(s) mis à jour depuis la collection.</source>
         <translation>
             <numerusform>%n elemento atualizado a partir da coleção.</numerusform>
@@ -10262,7 +10262,7 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="940"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="941"/>
         <source>%n élément(s) non mis à jour : leurs bornes ont changé. Relancez la commande et acceptez de recharger le projet.</source>
         <translation>
             <numerusform>%n elemento não atualizado: os terminais mudaram. Use o comando de novo e aceite recarregar o projeto.</numerusform>
@@ -10270,7 +10270,7 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="947"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="948"/>
         <source>%n élément(s) non mis à jour : présents dans les collections entreprise et utilisateur.</source>
         <translation>
             <numerusform>%n elemento não atualizado: está nas coleções da empresa e do usuário.</numerusform>
@@ -10278,7 +10278,7 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="954"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="955"/>
         <source>%n élément(s) non mis à jour : modifiés aussi dans le projet, dont la version est conservée.</source>
         <translation>
             <numerusform>%n elemento não atualizado: também foi alterado no projeto, cuja versão foi mantida.</numerusform>
@@ -10286,7 +10286,7 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="961"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="962"/>
         <source>%n élément(s) retrouvé(s) dans un autre dossier de la collection.</source>
         <translation>
             <numerusform>%n elemento encontrado em outra pasta da coleção.</numerusform>
@@ -10294,7 +10294,7 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="976"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="977"/>
         <source>Textes de %n élément(s) mis à jour depuis leur symbole : %1 ajouté(s), %2 modifié(s), %3 retiré(s).</source>
         <translation>
             <numerusform>Textos de %n elemento atualizados a partir do símbolo: %1 acrescentado(s), %2 alterado(s), %3 retirado(s).</numerusform>
@@ -10302,32 +10302,37 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="995"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="996"/>
         <source>Bornes modifiées dans la collection :</source>
         <translation>Terminais alterados na coleção:</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1002"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1003"/>
         <source>Présents dans les deux collections :</source>
         <translation>Presentes nas duas coleções:</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1009"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1010"/>
         <source>Modifiés dans le projet et dans la collection :</source>
         <translation>Alterados no projeto e na coleção:</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1016"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1017"/>
         <source>Retrouvés dans un autre dossier :</source>
         <translation>Encontrados em outra pasta:</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1036"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1037"/>
         <source>%1 (folio %2)</source>
         <translation>%1 (folha %2)</translation>
     </message>
+    <message>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1187"/>
+        <source>Bring the texts of the symbol</source>
+        <translation>Trazer os textos do símbolo</translation>
+    </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1180"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1265"/>
         <source>%n fois</source>
         <translation>
             <numerusform>%n vez</numerusform>
@@ -10335,7 +10340,7 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1198"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1283"/>
         <source>Cet élément est posé %n fois dans les projets ouverts.</source>
         <translation>
             <numerusform>Este elemento está posicionado %n vez nos projetos abertos.</numerusform>
@@ -10343,22 +10348,22 @@ Ao importar este arquivo, você confirma que:
         </translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1206"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1291"/>
         <source>Pour mettre à jour le dessin : « Recharger les dessins des éléments » (barre Schéma).</source>
         <translation>Para atualizar o desenho: “Renderizar novamente os elementos” (barra Esquema).</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1213"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1298"/>
         <source>Ses bornes ont changé : la commande proposera de recharger le projet.</source>
         <translation>Os terminais dele mudaram: o comando vai propor recarregar o projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1220"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1305"/>
         <source>Il a aussi été modifié dans un projet, dont la version est conservée.</source>
         <translation>Ele também foi alterado em um projeto, cuja versão será mantida.</translation>
     </message>
     <message>
-        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1227"/>
+        <location filename="../sources/ElementsCollection/embeddedelementrefresh.cpp" line="1312"/>
         <source>Le même chemin existe dans les collections entreprise et utilisateur : il ne sera pas mis à jour.</source>
         <translation>O mesmo caminho existe nas coleções da empresa e do usuário: ele não será atualizado.</translation>
     </message>
@@ -19962,7 +19967,7 @@ Todas as suas outras configurações serão mantidas.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1111"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7121"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7157"/>
         <source>Rétablir les textes du symbole</source>
         <translation>Repor os textos do símbolo</translation>
     </message>
@@ -20028,7 +20033,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         <translation>Avançar no histórico de folhas</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7076"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7112"/>
         <source>%n élément(s) non redessiné(s) : leurs bornes ont changé.</source>
         <translation>
             <numerusform>%n elemento não redesenhado: os terminais mudaram.</numerusform>
@@ -20036,17 +20041,17 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7079"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7115"/>
         <source>Relancez la commande et acceptez de recharger le projet.</source>
         <translation>Use o comando de novo e aceite recarregar o projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7118"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7154"/>
         <source>Les textes sont déjà ceux du symbole.</source>
         <translation>Os textos já são os do símbolo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7197"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7233"/>
         <source>Le projet n&apos;a pas pu être rechargé ; il reste ouvert.
 
 %1</source>
@@ -20673,8 +20678,8 @@ Todas as suas outras configurações serão mantidas.</translation>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="6953"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="6979"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7196"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7223"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7232"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7259"/>
         <source>Recharger les dessins des éléments</source>
         <translation>Renderizar novamente os elementos</translation>
     </message>
@@ -20801,7 +20806,7 @@ Todas as suas outras configurações serão mantidas.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="3827"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7339"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7375"/>
         <source>Scripts</source>
         <translation>Scripts</translation>
     </message>
@@ -20840,8 +20845,8 @@ Todas as suas outras configurações serão mantidas.</translation>
         <translation>Agora não</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7468"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7512"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7504"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7548"/>
         <source>Assistant</source>
         <translation>Assistente</translation>
     </message>
@@ -21325,7 +21330,7 @@ Todas as suas outras configurações serão mantidas.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1591"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7426"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7462"/>
         <source>&amp;Close</source>
         <translation>&amp;Fechar</translation>
     </message>
@@ -21738,13 +21743,36 @@ Todas as suas outras configurações serão mantidas.</translation>
         <source>Add a polygon</source>
         <translation>Adicionar uma linha poligonal</translation>
     </message>
+    <message numerus="yes">
+        <location filename="../sources/qetdiagrameditor.cpp" line="7076"/>
+        <source>%n element(s) keep texts arranged on the folio, which stayed where they are.</source>
+        <translation>
+            <numerusform>%n elemento tem textos ajeitados na folha, que ficaram onde estavam.</numerusform>
+            <numerusform>%n elementos têm textos ajeitados na folha, que ficaram onde estavam.</numerusform>
+        </translation>
+    </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7617"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7080"/>
+        <source>Some are rotated: tick “Rotate about its own centre” on the text in the symbol editor, so that the text stays next to them.</source>
+        <translation>Alguns estão girados: marque “Girar em torno do próprio centro” no texto, no editor de símbolos, para o texto ficar junto deles.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7089"/>
+        <source>Bring these too</source>
+        <translation>Trazer também esses</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7090"/>
+        <source>Keep them</source>
+        <translation>Deixar como estão</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7653"/>
         <source>Text format of &quot;%1&quot; copied</source>
         <translation>Formato do texto de &quot;%1&quot; copiado</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7645"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7681"/>
         <source>Text format applied to %n element(s)</source>
         <translation>
             <numerusform>Formato do texto aplicado a %n elemento</numerusform>
@@ -22232,8 +22260,9 @@ Mantenha Ctrl pressionado durante o movimento para posicionar livremente.</trans
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="1436"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7069"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7085"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7087"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7105"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7121"/>
         <source>Reload element drawings</source>
         <translation>Renderizar novamente os elementos</translation>
     </message>
@@ -22537,13 +22566,13 @@ Se você salvar o projeto, esses condutores desaparecerão do arquivo. Feche-o s
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7247"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7251"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7283"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7287"/>
         <source>Run a script</source>
         <translation>Executar um script</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7276"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7312"/>
         <source>Scripts are disabled.
 
 A script runs with your permissions: it can read and modify the open project and write files. Only run scripts whose origin you know.
@@ -22556,28 +22585,28 @@ Um script é executado com as suas permissões: ele pode ler e modificar o proje
 Ativar os scripts? Esta configuração pode ser alterada em Configurar o QElectroTech &gt; Geral &gt; Projetos.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7253"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7289"/>
         <source>JavaScript scripts (*.js);;All files (*)</source>
         <translation>Scripts JavaScript (*.js);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7353"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7389"/>
         <source>Ignored: %1</source>
         <translation>Ignorado: %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7388"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7449"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7424"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7485"/>
         <source>Stop</source>
         <translation>Parar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7389"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7425"/>
         <source>Stop recording the macro</source>
         <translation>Parar a gravação da macro</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7399"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7435"/>
         <source>● Recording: %n steps</source>
         <translation>
             <numerusform>● Gravando: %n passo</numerusform>
@@ -22585,12 +22614,12 @@ Ativar os scripts? Esta configuração pode ser alterada em Configurar o QElectr
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7414"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7450"/>
         <source>Macro recorded</source>
         <translation>Macro gravada</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7415"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7451"/>
         <source>“%1”: %n steps.
 
 To make a script of it, ask your AI assistant: the button below copies the request, just paste it into its window.</source>
@@ -22604,53 +22633,53 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7424"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7460"/>
         <source>&amp;Copy the request for the assistant</source>
         <translation>&amp;Copiar o pedido para o assistente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7425"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7461"/>
         <source>&amp;Open the folder</source>
         <translation>&amp;Abrir a pasta</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7431"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7467"/>
         <source>Request copied: paste it into the assistant&apos;s window</source>
         <translation>Pedido copiado: cole-o na janela do assistente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7450"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7486"/>
         <source>Close the assistant&apos;s connection for the rest of the session</source>
         <translation>Cortar a conexão do assistente até o fim da sessão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7459"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7495"/>
         <source>Live mode: assistant connected</source>
         <translation>Modo direto: assistente conectado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7460"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7496"/>
         <source>Live mode: waiting for an assistant</source>
         <translation>Modo direto: aguardando um assistente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7472"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7508"/>
         <source>Ask before running a script the assistant wrote</source>
         <translation>Perguntar antes de executar um script escrito pelo assistente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7474"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7510"/>
         <source>Remembered after a restart</source>
         <translation>Mantido após reiniciar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7529"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7565"/>
         <source>Live mode: %1 %2 at %3</source>
         <translation>Modo direto: %1 %2 às %3</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7587"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7592"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7623"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7628"/>
         <source>Texts %1</source>
         <translation>Textos %1</translation>
     </message>
@@ -22812,7 +22841,7 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <translation>Editar o cabo</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7571"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7607"/>
         <source>%n kinds of items hidden</source>
         <translation>
             <numerusform>%n tipo de objeto oculto</numerusform>

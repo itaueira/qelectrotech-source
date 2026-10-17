@@ -7063,6 +7063,42 @@ void QETDiagramEditor::reloadElementDrawings(QETProject *project,
 	}
 
 	const QStringList brought_details = EmbeddedElementRefresh::reportDetails(brought);
+
+		//From the notice of the editor of symbols: the elements of the symbol
+		//saved whose texts were arranged on the folio stayed as they were,
+		//on purpose, and the user is offered to bring them too (T62)
+	const QList<Element *> kept = only_path.isEmpty()
+			? QList<Element *>()
+			: EmbeddedElementRefresh::keptOnFolio(project, only_path);
+	if (!kept.isEmpty())
+	{
+		message += QStringLiteral("\n\n")
+				% tr("%n element(s) keep texts arranged on the folio, which stayed where they are.",
+					 "", kept.size());
+		if (EmbeddedElementRefresh::turnsTextsByCorner(kept)) {
+			message += QStringLiteral("\n\n")
+					% tr("Some are rotated: tick “Rotate about its own centre” on the text"
+						 " in the symbol editor, so that the text stays next to them.");
+		}
+		QStringList lines;
+		for (const Element *element : kept) {
+			lines << EmbeddedElementRefresh::describe(element);
+		}
+		QMessageBox box(QMessageBox::Question, tr("Reload element drawings"), message,
+						QMessageBox::NoButton, this);
+		QPushButton *bring = box.addButton(tr("Bring these too"), QMessageBox::AcceptRole);
+		box.addButton(tr("Keep them"), QMessageBox::RejectRole);
+		box.setDefaultButton(bring);
+		box.setDetailedText((brought_details + geometry_changed + lines).join(QLatin1Char('\n')));
+		box.exec();
+		if (box.clickedButton() == bring) {
+			if (QUndoCommand *command = EmbeddedElementRefresh::bringKeptCommand(project, kept)) {
+				project->undoStack()->push(command);
+			}
+		}
+		return;
+	}
+
 	if (geometry_changed.isEmpty() && brought_details.isEmpty())
 	{
 		QET::QetMessageBox::information(
