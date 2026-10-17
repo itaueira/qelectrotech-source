@@ -123,6 +123,7 @@ add_executable(
     src/componentlabel_test.cpp
     src/drcrule_test.cpp
     src/drcfinding_test.cpp
+    src/drcwirenumbers_test.cpp
     src/connectorways_test.cpp
     src/connectorswap_test.cpp
     src/csvwriter_test.cpp
@@ -434,6 +435,13 @@ add_executable(
     # real objects needs a QETProject and stays out, in C_uitests.
     ${QET_DIR}/sources/drc/drcfinding.cpp
     ${QET_DIR}/sources/drc/drcfinding.h
+    # What counts as a wire number on the conductors of one potential, and
+    # the sentence a potential with two of them is reported with. Handed
+    # texts and folio numbers and never a Conductor: which conductors make
+    # a potential is the walk's half, and it needs a QETProject and stays
+    # in C_uitests.
+    ${QET_DIR}/sources/drc/drcwirenumbers.cpp
+    ${QET_DIR}/sources/drc/drcwirenumbers.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
@@ -915,6 +923,13 @@ if(TARGET qelectrotech_objects)
         # de componentes sem peca no mesmo projeto. Precisa de projeto
         # aberto porque a pergunta e feita ao banco populado pelo projeto.
         src/ui/drcfieldrules_test.cpp
+        # The rule of a potential carrying two wire numbers. It needs a
+        # project open because a potential is in no table of the project
+        # data base: which conductors make one node only the scene knows,
+        # following the folio reports. What counts as a number, and the
+        # sentence, are one floor down, in drcwirenumbers_test.cpp of
+        # C_unittests, and are not repeated here.
+        src/ui/drcpotentialrules_test.cpp
         # Quantas etiquetas a lista de numeros de fio manda imprimir, e
         # para qual numero. Precisa de projeto aberto porque a regra le
         # duas coisas que so o desenho decide -- o texto do condutor e o

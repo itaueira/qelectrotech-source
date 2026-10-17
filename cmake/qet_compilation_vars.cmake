@@ -459,12 +459,16 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/drc/drcfinding.h
   ${QET_DIR}/sources/drc/drclinkrules.cpp
   ${QET_DIR}/sources/drc/drclinkrules.h
+  ${QET_DIR}/sources/drc/drcpotentialrules.cpp
+  ${QET_DIR}/sources/drc/drcpotentialrules.h
   ${QET_DIR}/sources/drc/drcrule.cpp
   ${QET_DIR}/sources/drc/drcrule.h
   ${QET_DIR}/sources/drc/drcruleset.cpp
   ${QET_DIR}/sources/drc/drcruleset.h
   ${QET_DIR}/sources/drc/drcscanengine.cpp
   ${QET_DIR}/sources/drc/drcscanengine.h
+  ${QET_DIR}/sources/drc/drcwirenumbers.cpp
+  ${QET_DIR}/sources/drc/drcwirenumbers.h
   ${QET_DIR}/sources/drc/ui/drcpanel.cpp
   ${QET_DIR}/sources/drc/ui/drcpanel.h
   ${QET_DIR}/sources/drc/ui/drcprojectactions.cpp

@@ -25,6 +25,7 @@
 #include "../../qetproject.h"
 #include "../drcfieldrules.h"
 #include "../drclinkrules.h"
+#include "../drcpotentialrules.h"
 #include "../drcruleset.h"
 #include "../drcscanengine.h"
 
@@ -195,6 +196,7 @@ int DrcProjectActions::buildFactoryCheck(DrcRuleSet &rules,
 		//The walk first and the queries after, which is the order the
 		//findings are listed in.
 	int taken = DrcLinkRules::registerRules(rules, scan);
+	taken += DrcPotentialRules::registerRules(rules, scan);
 	taken += DrcFieldRules::registerRules(rules, sql);
 	return taken;
 }
