@@ -963,6 +963,14 @@ if(TARGET qelectrotech_objects)
         # contra o banco de onde ela foi escrita: antes do conserto ela
         # nao roda, e ninguem era avisado.
         src/ui/locationbomquery_test.cpp
+        # A lista de compra pela linha de comando (--export-purchase): as
+        # duas metades juntas, o bloco das pendencias e o codigo de saida.
+        # Precisa de projeto aberto porque o que se prova e o caminho
+        # inteiro -- a linha que o banco do projeto entrega, a arvore de
+        # localizacoes que o arquivo declara e o arquivo que sai; a juncao
+        # em si, sobre linhas montadas a mao, fica em bomcollector_test.cpp
+        # do C_unittests.
+        src/ui/purchaselist_test.cpp
         # A referencia cruzada do mestre tirada da folha sem ser desligada:
         # a tabela some, e o vinculo, o texto de cada escravo e a navegacao
         # ficam. Precisa de projeto aberto porque a tabela so existe presa a

@@ -49,6 +49,7 @@ namespace CLIExport {
 		  qelectrotech --export-cables  <project.qet> <output.csv>
 		  qelectrotech --export-wires   <project.qet> <output.csv>
 		  qelectrotech --export-bom     <project.qet> <output.csv> [--no-slaves] [--no-junctions]
+		  qelectrotech --export-purchase <project.qet> <output.csv>
 		  qelectrotech --export-wiring  <project.qet> <output.csv>
 		  qelectrotech --export-nets    <project.qet> <output.json>
 		  qelectrotech --export-links   <project.qet> <output.csv>
@@ -88,6 +89,15 @@ namespace CLIExport {
 		--no-junctions: leave the junctions out of the bill of materials:
 		      terminal-type elements with no label, designation,
 		      manufacturer or manufacturer reference.
+		purchase: the list a panel is ordered from, as CSV. One line per
+		      catalogue part and revision, quantities summed, the
+		      enclosures of the location tree (cabinet, door, mounting
+		      plate) beside the drawn components. Three blocks, an empty
+		      row between them: the counts first (pending, excluded,
+		      nameless, lines), then the lines, then every item that could
+		      not be put on a line, named with its reason - a component
+		      with no part assigned is one. Exit code 0: complete; 3:
+		      written, with pending items; 1: nothing written.
 		wiring: from-to wiring list (one row per conductor) as CSV, read from
 		        the project database. Same logical list as `cables`, which
 		        reads the document XML instead; the two are meant to agree,

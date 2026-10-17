@@ -29,6 +29,8 @@
 #include "editor/terminalnamecheck.h"
 #include "dxfexport.h"
 #include "exportproperties.h"
+#include "location/bomcollector.h"
+#include "location/bommeasure.h"
 #include "pdf_links.h"
 #include "container/qetcontainer.h"
 #include "qetgraphicsitem/conductor.h"
@@ -84,6 +86,7 @@ const QHash<QString, QString> &exportFlags()
 		{"--export-cables", "cables"},
 		{"--export-wires", "wires"},
 		{"--export-bom", "bom"},
+		{"--export-purchase", "purchase"},
 		{"--export-wiring", "wiring"},
 		{"--export-nets", "nets"},
 		{"--export-links", "links"},
@@ -814,6 +817,302 @@ int exportBom(QETProject &project, const QString &output,
 	return 0;
 }
 
+/**
+	@brief The first row of the lines block of --export-purchase.
+
+	part_code and part_revision are the key of a line - the part and its
+	revision, never the words describing it (BomCollector) - and they come
+	first because they are what two exports of the same project are matched
+	by. The names are keys and are not translated: the file is read back,
+	and a header spelled in the interface language cannot be.
+*/
+const QStringList &purchaseLineHeader()
+{
+	static const QStringList header {
+		QStringLiteral("part_code"),
+		QStringLiteral("part_revision"),
+		QStringLiteral("designation"),
+		QStringLiteral("quantity"),
+		QStringLiteral("unit"),
+		QStringLiteral("tags")
+	};
+	return header;
+}
+
+/// The first row of the pending block of --export-purchase. A key, like
+/// purchaseLineHeader(), for the same reason.
+const QStringList &purchasePendingHeader()
+{
+	static const QStringList header {
+		QStringLiteral("reason"),
+		QStringLiteral("tag"),
+		QStringLiteral("designation"),
+		QStringLiteral("where")
+	};
+	return header;
+}
+
+/**
+	@return the word the purchase list writes for @p reason
+
+	A key and not a sentence, so that a spreadsheet can filter on it and a
+	comparison of two exports can read it back whatever the language of the
+	machine that wrote it.
+*/
+QString purchasePendencyKey(BomCollector::Pendency reason)
+{
+	switch (reason)
+	{
+		case BomCollector::Pendency::NoPart:
+			return QStringLiteral("no_part");
+		case BomCollector::Pendency::UnreadableQuantity:
+			return QStringLiteral("unreadable_quantity");
+		case BomCollector::Pendency::UnitConflict:
+			return QStringLiteral("unit_conflict");
+	}
+	return QStringLiteral("unknown");
+}
+
+/**
+	@return the revision cell of a line: the number, or nothing
+
+	0 is what LocationTree::BomLine means by "whatever is current will do",
+	and the catalogue numbers its revisions from 1. Writing "0" would read
+	as a revision that exists; an empty cell says that none was named, and
+	BomCollector::revisionOf() reads it back as the same 0.
+*/
+QString purchaseRevision(int revision)
+{
+	return revision > 0 ? QString::number(revision) : QString();
+}
+
+/**
+	@return the SELECT the drawn half of the purchase list is read with
+
+	BomCollector::selectStatement() with one clause added in front of its
+	ORDER BY: the rows that name nothing are left out - see
+	exportPurchase() for why - unless they were ticked out of the parts
+	list, which keeps them in the excluded count and out of the nameless
+	one. The two halves of that clause are exact complements of
+	namelessComponentCount(), so a drawn row is either handed to the
+	collector or counted there, never both and never neither.
+
+	Spliced rather than written out again, so that the columns and the
+	order of the rows keep the one spelling the collector gives them. A
+	collector statement that grew a WHERE of its own would come out of
+	here with two, fail to run, and stop the export with exit 1 - which is
+	the loud way for this to break.
+*/
+QString purchaseRowsStatement()
+{
+	const QString named =
+		QStringLiteral(" WHERE (exclude_from_bom = 'true' OR ")
+		% QETBom::informationPresentCondition(
+			QString(), QETInformation::elementInfoKeys())
+		% QStringLiteral(")");
+
+	QString statement = BomCollector::selectStatement();
+	const int order = int(statement.indexOf(QStringLiteral(" ORDER BY ")));
+	if (order < 0)
+	{
+		return statement + named;
+	}
+	statement.insert(order, named);
+	return statement;
+}
+
+/**
+	@brief The purchase list: what a panel is ordered from, in one file.
+	@param project the project, open
+	@param output the CSV file to write
+	@return 0 when every item is on a line; 3 when the file was written
+	with items it could not put on one; 1 when nothing was written
+
+	--export-bom answers what is drawn. This answers what has to be
+	bought, and the difference is the half nobody draws: a cabinet, its
+	door and its mounting plate are said once, in the location tree, and
+	no walk over the folios finds them. BomCollector joins the two halves
+	on the part and its revision and sums the quantities; this writes what
+	it answered.
+
+	@par The layout of the file
+	Three blocks with one empty row between them, each opened by a fixed
+	first row, so that a person in a spreadsheet and the comparison of two
+	exports both find them without counting rows:
+
+	1. the counts, one per row, the key then the number - pending,
+	   excluded, nameless, lines. In front, because a short list that does
+	   not say so is read as complete, and the first row of a file is the
+	   one row everybody reads;
+	2. the lines, under purchaseLineHeader(): one per part and revision,
+	   the quantity summed from the quantity field and never counted from
+	   rows, the enclosures beside the components;
+	3. the pending items, under purchasePendingHeader(): everything that
+	   could not be put on a line, named, with the reason. In the same
+	   file and in a block of its own, and never as a line with an empty
+	   code - an order line with no code cannot be filled, and a file that
+	   refused to be written would leave the shop nothing to order the
+	   rest from.
+
+	The cells are quoted by QETCsv, ';' between them, CRLF between rows,
+	UTF-8 without a byte order mark: the format of --export-bom, which is
+	what the spreadsheet it is imported into was checked against.
+	Quantities are written by BomMeasure::formatQuantity(), the one every
+	list of the program prints with: a count is a whole number, and a
+	length carries the decimal separator of the machine, as the lists on
+	the screen do.
+
+	@par The exit code says whether the list is whole
+	0: written, and every item is on a line. 3: written, and the pending
+	block is not empty - the file is good to read and not good to order
+	from as it is. 1: nothing was written. This departs on purpose from
+	--export-bom, where an unfilled component is a note and not a code:
+	the question this verb answers is whether the shop can order from the
+	file, and a scheduled export is exactly the reader that only sees the
+	code. 3 and not 1, because 1 says there is no file and here there is
+	one.
+
+	The excluded and the nameless counts do not change the code. An
+	excluded component is a box somebody ticked, and a nameless one is a
+	drawn marker with nothing on it to order: both are announced, in the
+	file and on stdout, and neither is an item the list failed to answer
+	for.
+
+	@par The rows that name nothing are counted, not listed
+	The collector reads element_label_view, which keeps every drawn thing,
+	the rows that name nothing included - end caps and rail stops, drawn
+	markers. Handed over as they are, each would come back as a pending
+	item with no tag and no designation, and on a project of fourteen
+	folios that is a hundred anonymous rows burying the five that need a
+	part. They are kept out of the query by the rule the parts list
+	already applies, and counted by namelessComponentCount() - the count
+	--export-bom reports, so the two exports say the same number.
+
+	@par Failure writes nothing
+	The query is run and the whole text is built before the file is
+	opened, and the file is written through QSaveFile: a query that fails
+	leaves no file, and a write that fails part-way leaves the previous
+	export where it was rather than half of a new one.
+*/
+int exportPurchase(QETProject &project, const QString &output)
+{
+	project.dataBase()->updateDB();
+
+	QString reason;
+	QSqlQuery query =
+		project.dataBase()->newQuery(purchaseRowsStatement(), &reason);
+	if (!reason.isEmpty() || !query.isActive())
+	{
+		err << "Purchase list query failed: "
+		    << (reason.isEmpty() ? query.lastError().text() : reason)
+		    << "\n";
+		return 1;
+	}
+
+	const QStringList columns = BomCollector::columns();
+	QList<BomCollector::ElementRow> rows;
+	while (query.next())
+	{
+		QHash<QString, QString> values;
+		for (int i = 0 ; i < columns.size() ; ++i)
+		{
+			values.insert(columns.at(i), query.value(i).toString());
+		}
+		rows << BomCollector::rowFrom(values);
+	}
+		//next() answers false at the end and on an error alike, and a
+		//list cut short by an error would be written as if it were whole.
+	if (query.lastError().isValid())
+	{
+		err << "Purchase list query failed: "
+		    << query.lastError().text() << "\n";
+		return 1;
+	}
+
+	const BomCollector::Result result =
+		BomCollector::collect(rows, project.locationTree().bomLines());
+	const int nameless = project.dataBase()->namelessComponentCount();
+
+	QStringList text;
+	text << QETCsv::row({QStringLiteral("pending"),
+			     QString::number(result.pendings.size())})
+	     << QETCsv::row({QStringLiteral("excluded"),
+			     QString::number(result.excluded)})
+	     << QETCsv::row({QStringLiteral("nameless"),
+			     QString::number(nameless)})
+	     << QETCsv::row({QStringLiteral("lines"),
+			     QString::number(result.lines.size())});
+
+	text << QString() << QETCsv::row(purchaseLineHeader());
+	for (const LocationTree::BomLine &line : result.lines)
+	{
+		text << QETCsv::row({line.part_code,
+				     purchaseRevision(line.part_revision),
+				     line.name,
+				     BomMeasure::formatQuantity(line.quantity,
+								line.unit),
+				     line.unit,
+				     line.paths.join(QStringLiteral(", "))});
+	}
+
+	text << QString() << QETCsv::row(purchasePendingHeader());
+	for (const BomCollector::Pending &pending : result.pendings)
+	{
+		text << QETCsv::row({purchasePendencyKey(pending.reason),
+				     pending.name,
+				     pending.designation,
+				     pending.where});
+	}
+
+		//CRLF written out rather than left to a text-mode device, so the
+		//file is the same bytes on every system it is exported from.
+	const QString csv = text.join(QStringLiteral("\r\n"))
+			    + QStringLiteral("\r\n");
+	const QByteArray bytes = csv.toUtf8();
+
+	QSaveFile file(output);
+	if (!file.open(QIODevice::WriteOnly))
+	{
+		err << "Cannot open '" << output << "' for writing: "
+		    << file.errorString() << "\n";
+		return 1;
+	}
+	file.write(bytes);
+	if (!file.commit())
+	{
+		err << "Cannot write '" << output << "': "
+		    << file.errorString() << "\n";
+		return 1;
+	}
+
+	out << "Exported " << result.lines.size() << " line(s) -> "
+	    << output << "\n";
+	if (!result.pendings.isEmpty())
+	{
+		out << result.pendings.size() << " item(s) could not be put on a"
+		       " line and are listed apart at the end of the file (no part: "
+		    << BomCollector::countOf(result, BomCollector::Pendency::NoPart)
+		    << ", unreadable quantity: "
+		    << BomCollector::countOf(result,
+					     BomCollector::Pendency::UnreadableQuantity)
+		    << ", unit conflict: "
+		    << BomCollector::countOf(result,
+					     BomCollector::Pendency::UnitConflict)
+		    << ").\n";
+	}
+	if (result.excluded > 0)
+	{
+		out << result.excluded << " component(s) are marked to stay out"
+		       " of the parts list and are not listed.\n";
+	}
+	if (nameless > 0)
+	{
+		out << nameless << " component(s) carry no information at all"
+		       " and are not listed.\n";
+	}
+	return result.pendings.isEmpty() ? 0 : 3;
+}
+
 
 /// Count terminals on @p element that no conductor connects to.
 int freeTerminals(Element *element)
@@ -1536,6 +1835,8 @@ int run(const QStringList &args)
 		return exportCsv(project, format, output);
 	if (format == "bom")
 		return exportBom(project, output, includeSlaves, includeJunctions);
+	if (format == "purchase")
+		return exportPurchase(project, output);
 	if (format == "wiring")
 		return exportWiring(project, output);
 	if (format == "nets")
