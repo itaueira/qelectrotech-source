@@ -55,6 +55,7 @@ class ProjectPrintWindow : public QMainWindow
 		void on_m_draw_border_cb_clicked();
 		void on_m_draw_titleblock_cb_clicked();
 		void on_m_keep_conductor_color_cb_clicked();
+		void on_m_monochrome_cb_clicked();
 		void on_m_draw_terminal_cb_clicked();
 		void on_m_draw_terminal_names_cb_clicked();
 		void on_m_component_info_cb_clicked();

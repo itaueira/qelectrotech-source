@@ -176,6 +176,16 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="m_monochrome_cb">
+         <property name="toolTip">
+          <string>Lines and texts in black, pictures in shades of gray</string>
+         </property>
+         <property name="text">
+          <string>Black and white</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="m_draw_terminal_cb">
          <property name="text">
           <string>Draw terminals</string>

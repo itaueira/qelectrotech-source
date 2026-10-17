@@ -176,6 +176,7 @@ class Diagram : public QGraphicsScene
 		bool draw_terminal_names_;
 		bool draw_colored_conductors_;
 		bool m_small_pictures = false;
+		bool m_monochrome = false;
 
 		QString m_conductors_autonum_name;
 		DiagramEventInterface *m_event_interface;
@@ -352,6 +353,14 @@ class Diagram : public QGraphicsScene
 			/// ExportProperties::svg_small_pictures)
 		bool smallPictures() const {return m_small_pictures;}
 		void setSmallPictures(bool small) {m_small_pictures = small;}
+			/// While true, render() draws in black and white
+			/// (ExportProperties::monochrome, see Monochrome)
+		bool monochrome() const {return m_monochrome;}
+		void setMonochrome(bool monochrome) {m_monochrome = monochrome;}
+		void render(QPainter *painter,
+			    const QRectF &target = QRectF(),
+			    const QRectF &source = QRectF(),
+			    Qt::AspectRatioMode aspect_ratio_mode = Qt::KeepAspectRatio);
 	
 		QString title() const;
 		bool toPaintDevice(QPaintDevice &, int = -1, int = -1,

@@ -40,6 +40,7 @@ ExportProperties::ExportProperties() :
 	dxf_blocks(false),
 	dxf_attributes(false),
 	svg_small_pictures(false),
+	monochrome(false),
 	exported_area(QET::BorderArea)
 {
 }
@@ -86,6 +87,8 @@ void ExportProperties::toSettings(QSettings &settings,
 			  dxf_attributes);
 	settings.setValue(prefix % "svgsmallpictures",
 			  svg_small_pictures);
+	settings.setValue(prefix % "monochrome",
+			  monochrome);
 	settings.setValue(prefix % "area",
 			  QET::diagramAreaToString(exported_area));
 }
@@ -130,6 +133,8 @@ void ExportProperties::fromSettings(QSettings &settings,
 					false).toBool();
 	svg_small_pictures = settings.value(prefix % "svgsmallpictures",
 					    false).toBool();
+	monochrome = settings.value(prefix % "monochrome",
+				    false).toBool();
 
 	exported_area  = QET::diagramAreaFromString(
 				settings.value(

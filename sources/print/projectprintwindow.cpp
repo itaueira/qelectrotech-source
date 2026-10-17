@@ -148,6 +148,7 @@ ProjectPrintWindow::ProjectPrintWindow(QETProject *project, QPrinter *printer, Q
 	ui->m_draw_terminal_cb->setChecked(exp.draw_terminals);
 	ui->m_draw_terminal_names_cb->setChecked(exp.draw_terminal_names);
 	ui->m_keep_conductor_color_cb->setChecked(exp.draw_colored_conductors);
+	ui->m_monochrome_cb->setChecked(exp.monochrome);
 
 	QSettings settings;
 	ui->m_component_info_cb->setChecked(settings.value("print/default/componentinfo", false).toBool());
@@ -600,6 +601,7 @@ ExportProperties ProjectPrintWindow::exportProperties() const
 	exp.draw_terminals          = ui->m_draw_terminal_cb->isChecked();
 	exp.draw_terminal_names     = ui->m_draw_terminal_names_cb->isChecked();
 	exp.draw_colored_conductors = ui->m_keep_conductor_color_cb->isChecked();
+	exp.monochrome              = ui->m_monochrome_cb->isChecked();
 	exp.draw_grid = false;
 	exp.draw_guides = false;
 
@@ -815,6 +817,7 @@ void ProjectPrintWindow::exportToPDF()
 void ProjectPrintWindow::on_m_draw_border_cb_clicked()          { m_preview->updatePreview(); }
 void ProjectPrintWindow::on_m_draw_titleblock_cb_clicked()      { m_preview->updatePreview(); }
 void ProjectPrintWindow::on_m_keep_conductor_color_cb_clicked() { m_preview->updatePreview(); }
+void ProjectPrintWindow::on_m_monochrome_cb_clicked()           { m_preview->updatePreview(); }
 void ProjectPrintWindow::on_m_draw_terminal_cb_clicked()        { m_preview->updatePreview(); }
 void ProjectPrintWindow::on_m_draw_terminal_names_cb_clicked()  { m_preview->updatePreview(); }
 void ProjectPrintWindow::on_m_component_info_cb_clicked()       { m_preview->updatePreview(); }

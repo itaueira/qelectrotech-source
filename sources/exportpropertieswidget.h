@@ -68,6 +68,7 @@ class ExportPropertiesWidget : public QWidget {
 	QCheckBox *dxf_blocks;
 	QCheckBox *dxf_attributes;
 	QCheckBox *svg_small_pictures;
+	QCheckBox *monochrome;
 	QRadioButton *export_border;
 	QRadioButton *export_elements;
 	QButtonGroup *exported_content_choices;

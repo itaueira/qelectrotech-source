@@ -217,6 +217,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/dxfexport.h
   ${QET_DIR}/sources/dxfpaintdevice.cpp
   ${QET_DIR}/sources/dxfpaintdevice.h
+  ${QET_DIR}/sources/monochromepaintdevice.cpp
+  ${QET_DIR}/sources/monochromepaintdevice.h
   ${QET_DIR}/sources/diagramcommands.cpp
   ${QET_DIR}/sources/diagramcommands.h
   ${QET_DIR}/sources/diagramcontent.cpp

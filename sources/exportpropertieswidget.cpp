@@ -69,6 +69,7 @@ ExportProperties ExportPropertiesWidget::exportProperties() const
 	export_properties.dxf_blocks              = dxf_blocks -> isChecked();
 	export_properties.dxf_attributes          = dxf_attributes -> isChecked();
 	export_properties.svg_small_pictures      = svg_small_pictures -> isChecked();
+	export_properties.monochrome              = monochrome -> isChecked();
 	export_properties.exported_area           = export_border -> isChecked() ? QET::BorderArea : QET::ElementsArea;
 	
 	return(export_properties);
@@ -96,6 +97,7 @@ void ExportPropertiesWidget::setExportProperties(const ExportProperties &export_
 	dxf_attributes          -> setChecked(export_properties.dxf_attributes);
 	dxf_attributes          -> setEnabled(export_properties.dxf_blocks);
 	svg_small_pictures      -> setChecked(export_properties.svg_small_pictures);
+	monochrome              -> setChecked(export_properties.monochrome);
 	
 	if (export_properties.exported_area == QET::BorderArea) {
 		export_border -> setChecked(true);
@@ -243,6 +245,11 @@ void ExportPropertiesWidget::build()
 	svg_small_pictures = new QCheckBox(tr("SVG: smaller pictures"), groupbox_options);
 	svg_small_pictures -> setToolTip(tr("Pictures are stored at four times the size they have on the folio instead of their full resolution: a much smaller file, still sharp when printed"));
 	optionshlayout -> addWidget(svg_small_pictures, 5, 0);
+
+	// black and white: for printing, PDF and images, not for DXF
+	monochrome = new QCheckBox(tr("Black and white"), groupbox_options);
+	monochrome -> setToolTip(tr("Lines and texts in black, pictures in shades of gray (not for DXF)"));
+	optionshlayout -> addWidget(monochrome, 6, 0);
 	
 	vboxLayout -> addWidget(groupbox_options);
 	
@@ -261,6 +268,7 @@ void ExportPropertiesWidget::build()
 	setTabOrder(draw_bg_transparent, dxf_blocks);
 	setTabOrder(dxf_blocks, dxf_attributes);
 	setTabOrder(draw_bg_transparent, svg_small_pictures);
+	setTabOrder(svg_small_pictures, monochrome);
 	
 	// connexion du bouton permettant le choix du repertoire
 	connect(button_browse, &QPushButton::released, this, &ExportPropertiesWidget::slot_chooseADirectory);	
@@ -279,6 +287,7 @@ void ExportPropertiesWidget::build()
 	connect(dxf_blocks, &QCheckBox::stateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(dxf_attributes, &QCheckBox::stateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(svg_small_pictures, &QCheckBox::stateChanged, this, &ExportPropertiesWidget::optionChanged);
+	connect(monochrome, &QCheckBox::stateChanged, this, &ExportPropertiesWidget::optionChanged);
 #else
 	connect(draw_grid, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(draw_border, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
@@ -290,5 +299,6 @@ void ExportPropertiesWidget::build()
 	connect(dxf_blocks, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(dxf_attributes, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
 	connect(svg_small_pictures, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
+	connect(monochrome, &QCheckBox::checkStateChanged, this, &ExportPropertiesWidget::optionChanged);
 #endif
 }

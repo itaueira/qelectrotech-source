@@ -707,6 +707,8 @@ if(TARGET qelectrotech_objects)
         # rules because the tree is written over a file the engine has
         # already closed, so there is nothing to look at until one exists.
         src/ui/pdfoutline_test.cpp
+        # Printing and PDF in black and white (T37).
+        src/ui/monochrome_test.cpp
         src/ui/projectopen_test.cpp
         src/ui/appearance_test.cpp
         src/ui/dragassign_test.cpp

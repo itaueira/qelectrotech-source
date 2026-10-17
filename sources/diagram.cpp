@@ -51,6 +51,7 @@
 #include "qetproject.h"
 #include "diagramsortkeys.h"
 #include "itemgroups.h"
+#include "monochromepaintdevice.h"
 #include "textgrid.h"
 #include "container/qetcontainer.h"
 #include "foliogrid.h"
@@ -1243,6 +1244,88 @@ bool Diagram::toPaintDevice(QPaintDevice &pix,
 	foreach (QGraphicsItem *qgi, selected_elmts) qgi -> setSelected(true);
 
 	return(true);
+}
+
+/**
+	@brief Diagram::render
+	QGraphicsScene::render(), in black and white while monochrome() is set.
+
+	It hides the function of QGraphicsScene on purpose, and does not
+	override it - that one is not virtual. Every way a folio is drawn out of
+	the program calls render() on a Diagram: the print window and its PDF,
+	the command line, toPaintDevice() for images and SVG. Hiding it is what
+	lets one flag of the folio reach all of them, the same way
+	drawColoredConductors() does, without any of them changing.
+
+	In black and white the scene is drawn through a MonochromePaintEngine
+	that relays to painter: the drawing is the same, call for call, and only
+	its colours change on the way. With the flag down this is
+	QGraphicsScene::render() and nothing else.
+	@param painter : an active painter
+	@param target : where to draw on the device of painter; empty means
+	the whole device, as for QGraphicsScene::render()
+	@param source : the part of the scene to draw; empty means sceneRect()
+	@param aspect_ratio_mode
+*/
+void Diagram::render(QPainter *painter,
+					 const QRectF &target,
+					 const QRectF &source,
+					 Qt::AspectRatioMode aspect_ratio_mode)
+{
+	if (!m_monochrome || !painter || !painter->isActive())
+	{
+		QGraphicsScene::render(painter, target, source, aspect_ratio_mode);
+		return;
+	}
+
+	// An empty target stands for the device of the painter, and
+	// QGraphicsScene::render() asks the device of the painter it is given.
+	// That painter is the relay below; it measures like the real device,
+	// but a QPicture is told apart by its type, which the relay does not
+	// have. So the empty target is resolved here, against the real device,
+	// with the rule of QGraphicsScene::render() itself.
+	QRectF target_rect = target;
+	if (target_rect.isNull())
+	{
+		QPaintDevice *device = painter->device();
+		if (device && device->devType() == QInternal::Picture)
+		{
+			target_rect = source.isNull() ? sceneRect() : source;
+		}
+		else if (device)
+		{
+			target_rect = QRectF(0, 0, device->width(), device->height());
+		}
+	}
+
+	MonochromePaintDevice relay(painter);
+	QPainter monochrome_painter;
+	if (!monochrome_painter.begin(&relay))
+	{
+		QGraphicsScene::render(painter, target, source, aspect_ratio_mode);
+		return;
+	}
+
+	// The relay starts from a fresh painter; what the caller had set on its
+	// own is carried over, so that drawing through the relay starts where
+	// drawing directly would have.
+	monochrome_painter.setWorldTransform(painter->worldTransform());
+	monochrome_painter.setRenderHints(painter->renderHints(), true);
+	monochrome_painter.setRenderHint(
+				QPainter::TextAntialiasing,
+				painter->testRenderHint(QPainter::TextAntialiasing));
+	monochrome_painter.setFont(painter->font());
+	monochrome_painter.setPen(painter->pen());
+	monochrome_painter.setBrush(painter->brush());
+	monochrome_painter.setBrushOrigin(painter->brushOrigin());
+	monochrome_painter.setOpacity(painter->opacity());
+	monochrome_painter.setCompositionMode(painter->compositionMode());
+	monochrome_painter.setBackground(painter->background());
+	monochrome_painter.setBackgroundMode(painter->backgroundMode());
+	monochrome_painter.setLayoutDirection(painter->layoutDirection());
+
+	QGraphicsScene::render(&monochrome_painter, target_rect, source, aspect_ratio_mode);
+	monochrome_painter.end();
 }
 
 /**
@@ -3535,6 +3618,7 @@ ExportProperties Diagram::applyProperties(
 	old_properties.draw_terminals          = drawTerminals();
 	old_properties.draw_terminal_names     = drawTerminalNames();
 	old_properties.draw_colored_conductors = drawColoredConductors();
+	old_properties.monochrome              = monochrome();
 	old_properties.exported_area = useBorder() ? QET::BorderArea
 						   : QET::ElementsArea;
 
@@ -3544,6 +3628,7 @@ ExportProperties Diagram::applyProperties(
 	setDrawTerminals         (new_properties.draw_terminals);
 	setDrawTerminalNames     (new_properties.draw_terminal_names);
 	setDrawColoredConductors (new_properties.draw_colored_conductors);
+	setMonochrome            (new_properties.monochrome);
 	setDisplayGrid           (new_properties.draw_grid);
 	setDisplayGuides         (new_properties.draw_guides);
 	border_and_titleblock.displayBorder(new_properties.draw_border);
