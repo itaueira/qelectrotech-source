@@ -29,6 +29,9 @@
 #include "editor/terminalnamecheck.h"
 #include "dxfexport.h"
 #include "exportproperties.h"
+#include "label/componentlabelcollector.h"
+#include "label/labelcsvwriter.h"
+#include "label/terminallabelcollector.h"
 #include "location/bomcollector.h"
 #include "location/bommeasure.h"
 #include "pdf_links.h"
@@ -87,6 +90,7 @@ const QHash<QString, QString> &exportFlags()
 		{"--export-wires", "wires"},
 		{"--export-bom", "bom"},
 		{"--export-purchase", "purchase"},
+		{"--export-labels", "labels"},
 		{"--export-wiring", "wiring"},
 		{"--export-nets", "nets"},
 		{"--export-links", "links"},
@@ -1113,6 +1117,177 @@ int exportPurchase(QETProject &project, const QString &output)
 	return result.pendings.isEmpty() ? 0 : 3;
 }
 
+/// Option that chooses the labels --export-labels writes: "kinds=terminal".
+const QLatin1String kinds_option("kinds=");
+
+/**
+	Read, out of @p options, which kinds of label --export-labels writes,
+	in the order they go into the file. Without a "kinds=" option, every
+	kind that has a collector: the components, then the terminals.
+
+	The words are the ones the kind column of the file writes -
+	LabelCsvWriter::kindKey() -, so the option and the column cannot spell
+	a kind two ways. A kind with no collector yet (wire, cable, door) is
+	refused rather than answered with nothing: an empty run of wire labels
+	would read as a project with no wire.
+
+	Nothing is guessed, as with folios=: an unknown option, an empty list,
+	an unknown kind and a kind asked for twice all fail before a label is
+	collected or a byte written. The order is the order of the file, which
+	is why a repeated kind is refused instead of being taken once - the
+	file could honour only one of the two places it was asked for.
+
+	@return false, having already said why, when @p options is malformed;
+	@p kinds is only meaningful when it returns true.
+*/
+bool selectLabelKinds(const QStringList &options, QList<LabelSource> &kinds)
+{
+	const QList<LabelSource> collected {LabelSource::Component,
+					    LabelSource::Terminal};
+	kinds = collected;
+
+	QString asked;
+	bool given = false;
+	for (const QString &option : options) {
+		if (!option.startsWith(kinds_option)) {
+			err << "Bad option '" << option
+				<< "' (expected kinds=component,terminal).\n";
+			return false;
+		}
+		if (given) {
+			err << "Option 'kinds' given more than once.\n";
+			return false;
+		}
+		asked = option.mid(kinds_option.size());
+		given = true;
+	}
+	if (!given)
+		return true;
+	if (asked.isEmpty()) {
+		err << "No kind given (expected kinds=component,terminal).\n";
+		return false;
+	}
+
+	QList<LabelSource> chosen;
+	const QStringList words = asked.split(QLatin1Char(','));
+	for (const QString &word : words) {
+		const QString key = word.trimmed();
+		bool known = false;
+		for (LabelSource source : collected) {
+			if (LabelCsvWriter::kindKey(source) != key)
+				continue;
+			if (chosen.contains(source)) {
+				err << "Kind '" << key << "' asked for twice.\n";
+				return false;
+			}
+			chosen << source;
+			known = true;
+			break;
+		}
+		if (!known) {
+			err << "Bad kind '" << word
+				<< "' (expected component or terminal).\n";
+			return false;
+		}
+	}
+	kinds = chosen;
+	return true;
+}
+
+/**
+	@brief The labels of a project, as one CSV file.
+	@param project the project, open
+	@param output the CSV file to write
+	@param options what follows the output on the command line: at most
+	one kinds= - see selectLabelKinds()
+	@return 0 when the file was written; 2 when the options are malformed;
+	1 when nothing was written
+
+	The two collectors of the program, one after the other, and one writer:
+	ComponentLabelCollector reads the project data base,
+	TerminalLabelCollector walks the strips, and LabelCsvWriter turns what
+	they collected into the file - the layout is documented there. Nothing
+	here formats a cell, so this file and any other caller of the writer
+	write the same bytes for the same list.
+
+	@par The strips come from the project file, and nothing here rebuilds them
+	A terminal label cannot be a query: the data base holds no strip. It
+	is read from the live strips, and a run with no window open has them
+	all the same, because opening the project reads them -
+	QETProject::readTerminalStripXml(), called while the file is read, which
+	also builds the folios their terminals are drawn on. The order of each
+	rail is therefore the order the file saved, which is the order the strip
+	editor showed when it was saved.
+
+	@par A terminal symbol is two labels when both kinds are asked for
+	The data base publishes the terminals of the schematic among the
+	components, so a terminal symbol mounted on a strip is collected once
+	as a component - in sheet order - and once as a terminal - in the order
+	of the rail. The kind column says which is which, and kinds=terminal
+	writes the rail alone. Which of the two a terminal on a strip should be,
+	when both are asked for, is the choice of the step that selects what to
+	print, and it is not made here in silence.
+
+	@par A collector that reports a problem stops the export
+	The component collector keeps its list when the question about the
+	sheets fails, and says so: the labels would come out without their
+	revision, or without what the sheet hands down to the tag. A window
+	could show that beside the list. A script sees a file and an exit
+	code, and a file of labels missing their revision would be printed as
+	if it were whole, so here the problem is reported and nothing is
+	written.
+*/
+int exportLabels(QETProject &project, const QString &output,
+		 const QStringList &options)
+{
+	QList<LabelSource> kinds;
+	if (!selectLabelKinds(options, kinds)) {
+		return 2;
+	}
+
+	LabelEntryList entries;
+	int components = 0;
+	int terminals = 0;
+	for (LabelSource kind : kinds)
+	{
+		if (kind == LabelSource::Component)
+		{
+			ComponentLabelCollector collector(&project);
+			const LabelEntryList collected = collector.collect();
+			if (!collector.error().isEmpty()) {
+				err << "Component labels could not be read: "
+				    << collector.error() << "\n";
+				return 1;
+			}
+			components = int(collected.size());
+			entries += collected;
+		}
+		else if (kind == LabelSource::Terminal)
+		{
+			TerminalLabelCollector collector(&project);
+			const LabelEntryList collected = collector.collect();
+			if (!collector.error().isEmpty()) {
+				err << "Terminal labels could not be read: "
+				    << collector.error() << "\n";
+				return 1;
+			}
+			terminals = int(collected.size());
+			entries += collected;
+		}
+	}
+
+	const QString failure = LabelCsvWriter::write(entries, output);
+	if (!failure.isEmpty()) {
+		err << "Cannot write '" << output << "': " << failure << "\n";
+		return 1;
+	}
+
+	out << "Exported " << int(entries.size()) << " label(s) ("
+	    << components << " component(s), " << terminals
+	    << " terminal(s)) -> " << output << "\n";
+	return 0;
+}
+
 
 /// Count terminals on @p element that no conductor connects to.
 int freeTerminals(Element *element)
@@ -1837,6 +2012,8 @@ int run(const QStringList &args)
 		return exportBom(project, output, includeSlaves, includeJunctions);
 	if (format == "purchase")
 		return exportPurchase(project, output);
+	if (format == "labels")
+		return exportLabels(project, output, rest.mid(2));
 	if (format == "wiring")
 		return exportWiring(project, output);
 	if (format == "nets")

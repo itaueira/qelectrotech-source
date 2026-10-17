@@ -50,6 +50,7 @@ namespace CLIExport {
 		  qelectrotech --export-wires   <project.qet> <output.csv>
 		  qelectrotech --export-bom     <project.qet> <output.csv> [--no-slaves] [--no-junctions]
 		  qelectrotech --export-purchase <project.qet> <output.csv>
+		  qelectrotech --export-labels  <project.qet> <output.csv> [kinds=component,terminal]
 		  qelectrotech --export-wiring  <project.qet> <output.csv>
 		  qelectrotech --export-nets    <project.qet> <output.json>
 		  qelectrotech --export-links   <project.qet> <output.csv>
@@ -98,6 +99,22 @@ namespace CLIExport {
 		      not be put on a line, named with its reason - a component
 		      with no part assigned is one. Exit code 0: complete; 3:
 		      written, with pending items; 1: nothing written.
+		labels: the labels of the project, one row per label, as CSV:
+		      kind, text, lines, strip, position, level, location, folio,
+		      revision, excluded_from_bom. The terminals come strip after
+		      strip, each in the order of its rail and never sorted, with
+		      the position the strip editor shows (counted from 0); the
+		      components come by sheet. The lines under a tag are one
+		      cell, a line feed between them. Cells quoted where needed,
+		      ';' between them, CRLF between rows, UTF-8 with a byte order
+		      mark. The strips are read from the project file: no window
+		      has to have opened them. Exit code 0: written; 2: bad
+		      option; 1: nothing written.
+		kinds=component,terminal: which labels, in that order in the
+		      file; both by default, the components first. A terminal
+		      symbol on a strip is both, and comes out twice when both
+		      are asked for. Wire, cable and door labels have no
+		      collector yet and are refused.
 		wiring: from-to wiring list (one row per conductor) as CSV, read from
 		        the project database. Same logical list as `cables`, which
 		        reads the document XML instead; the two are meant to agree,

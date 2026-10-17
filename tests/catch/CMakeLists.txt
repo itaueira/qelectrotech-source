@@ -121,6 +121,7 @@ add_executable(
     src/terminalmatch_test.cpp
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
+    src/labelcsvwriter_test.cpp
     src/drcrule_test.cpp
     src/drcfinding_test.cpp
     src/drcwirenumbers_test.cpp
@@ -591,6 +592,8 @@ add_executable(
     # plantadas e conferidas, e só os casos de src/ui/ as pegaram.
     ${QET_DIR}/sources/label/componentlabelquery.cpp
     ${QET_DIR}/sources/label/componentlabelquery.h
+    ${QET_DIR}/sources/label/labelcsvwriter.cpp
+    ${QET_DIR}/sources/label/labelcsvwriter.h
     ${QET_DIR}/sources/label/labelentry.h
     # Which revision a project is in, and whether it is still open (T25).
     # Five fields and a date that is stamped by closing and by nothing
@@ -783,6 +786,7 @@ if(TARGET qelectrotech_objects)
         src/ui/wiringlist_test.cpp
         src/ui/componentlabel_test.cpp
         src/ui/terminallabel_test.cpp
+        src/ui/labelexport_test.cpp
         src/ui/mountinglayoutsave_test.cpp
         # A cena em milímetro da placa de montagem: o que ela conta, o que
         # ela se recusa a fazer item, e o que um arraste deixa na pilha. Está

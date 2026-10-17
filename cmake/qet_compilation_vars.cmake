@@ -485,6 +485,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/label/componentlabelcollector.h
   ${QET_DIR}/sources/label/componentlabelquery.cpp
   ${QET_DIR}/sources/label/componentlabelquery.h
+  ${QET_DIR}/sources/label/labelcsvwriter.cpp
+  ${QET_DIR}/sources/label/labelcsvwriter.h
   ${QET_DIR}/sources/label/labelentry.h
   ${QET_DIR}/sources/label/terminallabelcollector.cpp
   ${QET_DIR}/sources/label/terminallabelcollector.h
