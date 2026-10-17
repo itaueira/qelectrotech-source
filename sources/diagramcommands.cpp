@@ -17,6 +17,8 @@
 */
 #include "diagramcommands.h"
 
+#include "ElementProvider.h"
+#include "cable/cablemanager.h"
 #include "dataBase/projectdatabase.h"
 #include "autoNum/elementautonumschemecommand.h"
 #include "diagram.h"
@@ -33,6 +35,13 @@
 #include "qetgraphicsitem/reporttags.h"
 #include "qetinformation.h"
 #include "qgimanager.h"
+#include "undocommand/linkelementcommand.h"
+
+#include <QHash>
+#include <QPointer>
+#include <QSet>
+
+#include <utility>
 
 namespace {
 /// Is @p element among those the numberings in @p schemes are given to?
@@ -45,6 +54,274 @@ bool pasted_schemes_has(const QMap<QString, QVector<Element *>> &schemes, const 
 	}
 	return false;
 }
+
+/**
+	What a cut keeps of each element it takes off a folio, under the uuid
+	of the element, for the paste that may bring it back (see
+	moved_elements()): the project it was taken from, and the group index
+	each partner it was linked to had given it, by the uuid of the partner
+	(Element::groupIndexForElement()). That index is the partner's, and the
+	cut loses it: a PLC master forgets it as it unlinks, and any other one
+	keeps it for the element taken away, which is not the element a paste
+	puts back.
+*/
+struct CutElement
+{
+	QPointer<QETProject> project;
+	QHash<QUuid, int> partner_groups;
+};
+
+/**
+	Every element cut in this session, by uuid. Never emptied, and it need
+	not be: an entry only counts while no folio of its project holds its
+	uuid, and the project is watched, so a project closed and opened again
+	is another one.
+*/
+QHash<QUuid, CutElement> &cut_elements()
+{
+	static QHash<QUuid, CutElement> elements;
+	return elements;
+}
+
+/**
+	The elements of @p pasted that are not copies: those a cut took off a
+	folio of @p project (CutDiagramCommand) and that no folio of it holds
+	any more. They are the elements themselves, carried from one place to
+	another - in this program, cut and paste is the way to take an element
+	to another folio - and they keep their identity, their information and
+	their links.
+
+	Everything else pasted is a copy, as it has always been: of an element
+	still on a folio (a copy, a second paste of the same cut, a cut that was
+	undone), of an element of another project, of a group of symbols read
+	from a file. The uuid alone could not tell those apart: an element
+	copied from another project is not in this one either, and taking it
+	for a moved one would keep its label and skip its numbering.
+
+	Where several pasted elements carry the same uuid, only the first one
+	can be the element itself.
+*/
+QList<Element *> moved_elements(QETProject *project, const QList<Element *> &pasted)
+{
+	QList<Element *> moved;
+	if (!project) {
+		return moved;
+	}
+
+	QSet<QUuid> cut;
+	for (const Element *element : pasted)
+	{
+		const auto known = cut_elements().constFind(element->uuid());
+		if (known != cut_elements().constEnd() && known->project.data() == project) {
+			cut.insert(element->uuid());
+		}
+	}
+	if (cut.isEmpty()) {
+		return moved;
+	}
+
+		//Still on a folio: what is pasted is a copy of it. The folios are
+		//not built for this (lazy folios): the elements a cut took were on
+		//a folio being shown, and a folio not built holds none of them.
+	const QSet<const Element *> batch(pasted.cbegin(), pasted.cend());
+	const QList<Diagram *> folios = project->folios();
+	for (Diagram *folio : folios)
+	{
+		const QList<Element *> elements = folio->elements();
+		for (const Element *element : elements) {
+			if (!batch.contains(element)) {
+				cut.remove(element->uuid());
+			}
+		}
+	}
+
+	for (Element *element : pasted) {
+		if (cut.remove(element->uuid())) {
+			moved << element;
+		}
+	}
+	return moved;
+}
+
+/**
+	Link @p element, a moved element (moved_elements()), to the partners it
+	was saved with, the way a project being opened links its elements
+	(Element::initLink(QETProject *)) - with one difference: only a partner
+	free to take the link gets it back. One that found another partner
+	since the cut keeps that one; linking it anyway would take it from the
+	other without a word, and undoing the paste would not give it back.
+	The partners not found, or not free, are forgotten, as a copy forgets
+	those of its partners that were not pasted with it.
+
+	The group index each partner had given the element before the cut is
+	given back to it (CutElement::partner_groups).
+*/
+void link_moved(Element *element, QETProject *project)
+{
+	QList<QUuid> saved;
+	const QList<std::pair<QUuid, int>> waiting = element->waitingLinks();
+	for (const auto &link : waiting) {
+		saved << link.first;
+	}
+
+	QList<Element *> partners;
+	if (!saved.isEmpty() && project)
+	{
+		const QList<Element *> found = ElementProvider(project->folios()).fromUuids(saved);
+		for (Element *partner : found)
+		{
+			if (partner != element && LinkElementCommand::isLinkable(element, partner)) {
+				partners << partner;
+			}
+		}
+	}
+		//Empty, it still forgets what the element was saved linked to
+	element->initLink(partners);
+
+	const auto known = cut_elements().constFind(element->uuid());
+	if (known == cut_elements().constEnd()) {
+		return;
+	}
+	const QList<Element *> linked = element->linkedElements();
+	for (Element *partner : linked)
+	{
+		const int group = known->partner_groups.value(partner->uuid(), -1);
+		if (group >= 0 && partner->groupIndexForElement(element) < 0) {
+			partner->setGroupIndexForElement(element, group);
+		}
+	}
+}
+
+/**
+	The links of the elements a paste put on a folio, made again on each
+	redo of the paste after the first. Taking the elements off the folio
+	(PasteDiagramCommand::undo(), through Diagram::removeItem()) unlinks
+	them, and the redo only puts them back: without this, a master and its
+	slave pasted together, or an element a cut brought back, came back on
+	the folio unlinked. DeleteQGraphicsItemCommand keeps the links of what
+	it takes away the same way, for its undo.
+
+	A child of the paste, so that it runs once the paste has put its
+	elements on the folio, and made last, after the numbering of the
+	pasted elements: on the first redo it only takes note of what the paste
+	made - each link, with the group index each side gave the other, and
+	what each element of a link says. Unlinking from a PLC master erases
+	from its slave what the master gave it, and the redo gives it back.
+
+	Its undo does nothing: the paste takes the elements off the folio right
+	after, and that unlinks them.
+*/
+class PastedLinksCommand : public QUndoCommand
+{
+	public:
+		PastedLinksCommand(const QList<Element *> &pasted, QUndoCommand *parent) :
+			QUndoCommand(parent),
+			m_pasted(pasted)
+		{}
+
+		void redo() override
+		{
+			if (m_first_redo) {
+				m_first_redo = false;
+				keep();
+			} else {
+				restore();
+			}
+			QUndoCommand::redo();
+		}
+
+	private:
+		struct Link
+		{
+			QPointer<Element> element;
+			QPointer<Element> partner;
+				/// element->groupIndexForElement(partner)
+			int here = -1;
+				/// partner->groupIndexForElement(element)
+			int there = -1;
+		};
+
+		void keep()
+		{
+			QSet<Element *> informed;
+			auto inform = [&](Element *element) {
+				if (!informed.contains(element)) {
+					informed.insert(element);
+					m_informations.append(std::make_pair(QPointer<Element>(element),
+														 element->elementInformations()));
+				}
+			};
+
+			for (Element *element : std::as_const(m_pasted))
+			{
+				const QList<Element *> partners = element->linkedElements();
+				for (Element *partner : partners)
+				{
+					Link link;
+					link.element = element;
+					link.partner = partner;
+					link.here = element->groupIndexForElement(partner);
+					link.there = partner->groupIndexForElement(element);
+					m_links.append(link);
+					inform(element);
+					inform(partner);
+				}
+			}
+		}
+
+		void restore()
+		{
+			QETProject *project = nullptr;
+			bool report = false;
+			for (const Link &link : std::as_const(m_links))
+			{
+				Element *element = link.element.data();
+				Element *partner = link.partner.data();
+				if (!element || !partner) {
+					continue;
+				}
+				element->linkToElement(partner);
+				if (!element->linkedElements().contains(partner)) {
+					continue;
+				}
+				if (link.here >= 0) {
+					element->setGroupIndexForElement(partner, link.here);
+				}
+				if (link.there >= 0) {
+					partner->setGroupIndexForElement(element, link.there);
+				}
+				if (element->linkType() & Element::AllReport) {
+					report = true;
+				}
+				if (!project && element->diagram()) {
+					project = element->diagram()->project();
+				}
+			}
+
+			QList<Element *> changed;
+			for (const auto &kept : std::as_const(m_informations))
+			{
+				Element *element = kept.first.data();
+				if (element && element->elementInformations() != kept.second) {
+					element->setElementInformations(kept.second);
+					changed << element;
+				}
+			}
+			if (project && !changed.isEmpty()) {
+				project->dataBase()->elementInfoChanged(changed);
+			}
+				//Linked again, a folio report carries its cable core over
+				//to the next folio once more
+			if (project && report) {
+				CableManager::refreshLabels(project);
+			}
+		}
+
+		QList<Element *> m_pasted;
+		QList<Link> m_links;
+		QList<std::pair<QPointer<Element>, DiagramContext>> m_informations;
+		bool m_first_redo = true;
+};
 } // namespace
 
 /**
@@ -93,8 +370,23 @@ void PasteDiagramCommand::undo()
 		//back to the numberings they came from
 	QUndoCommand::undo();
 
+		//A folio report linked to another carries a cable core over to the
+		//next folio: taking it away changes which wires belong to which
+		//cable, as deleting it does (DeleteQGraphicsItemCommand::redo())
+	bool linked_report = false;
+	for (Element *e : std::as_const(content.m_elements)) {
+		if ((e->linkType() & Element::AllReport) && !e->isFree()) {
+			linked_report = true;
+			break;
+		}
+	}
+
 	foreach(QGraphicsItem *item, content.items(filter))
 		diagram->removeItem(item);
+
+	if (linked_report && diagram->project()) {
+		CableManager::refreshLabels(diagram->project());
+	}
 }
 
 /**
@@ -117,33 +409,48 @@ void PasteDiagramCommand::redo()
 	{
 		first_redo = false;
 
+		QETProject *project = diagram->project();
+		const QList <Element *> elmts_list = content.m_elements;
+
+			//The elements a cut took off this project and that this paste
+			//brings back are the elements themselves, moved, and not
+			//copies of them (see moved_elements()): they keep their uuid,
+			//their information and their links. What follows that makes a
+			//copy of an element - an identity of its own, a label erased or
+			//numbered anew - is done to the copies only.
+		const QList<Element *> moved = moved_elements(project, elmts_list);
+		QList<Element *> copies = elmts_list;
+		for (Element *e : moved) {
+			copies.removeOne(e);
+		}
+
 		//Resolve a linked master/slave pair pasted together (bugtracker
 		//#607) before anything below renews their uuids: at this exact
 		//moment a pasted element's tmp_uuids_link still holds its
 		//source's original partner uuid, which still equals the
 		//not-yet-renewed uuid of that partner's own pasted copy if it
-		//was carried along in the same batch. Scoped to this batch only
-		//(not a project-wide search), so a pair pasted together links to
-		//each other and not to an original element left elsewhere that
-		//happens to still carry that same soon-to-be-replaced uuid. If
-		//only one half of a linked group was pasted, its link entry
-		//simply finds no match here and is dropped -- same "leave it
-		//unlinked" outcome as always.
-		const QList <Element *> elmts_list = content.m_elements;
-		for (Element *e : elmts_list) {
-			e->initLink(elmts_list);
+		//was carried along in the same batch. Scoped to the copies of
+		//this batch only (not a project-wide search), so a pair pasted
+		//together links to each other and not to an original element
+		//left elsewhere that happens to still carry that same
+		//soon-to-be-replaced uuid. If only one half of a linked group was
+		//pasted, its link entry simply finds no match here and is dropped
+		//-- same "leave it unlinked" outcome as always. The moved
+		//elements are linked further down, to the partners they had.
+		for (Element *e : copies) {
+			e->initLink(copies);
 		}
 
-		//The numberings the pasted elements follow, known now: the label
-		//erasing below empties their formula. Pasted elements get the next
-		//number of their numbering, as placed ones do, instead of the
-		//label of the element they were copied from.
+		//The numberings the copies follow, known now: the label erasing
+		//below empties their formula. Copies get the next number of their
+		//numbering, as placed elements do, instead of the label of the
+		//element they were copied from. A moved element keeps its own: it
+		//is not a new element.
 		const bool autonumber = m_autonumber && settings.value(
 					"diagramcommands/autonumber-pasted-elements", true).toBool();
-		QETProject *project = diagram->project();
 		QMap<QString, QVector<Element *>> pasted_schemes;
 		if (project && autonumber) {
-			pasted_schemes = ElementAutoNumSchemeCommand::pastedSchemes(project, elmts_list);
+			pasted_schemes = ElementAutoNumSchemeCommand::pastedSchemes(project, copies);
 		}
 
 		//make new uuid for every pasted conductor, because old uuid are
@@ -162,8 +469,8 @@ void PasteDiagramCommand::redo()
 			s -> newUuid();
 		}
 
-		//this is the first paste, we do some actions for the new element
-		for (Element *e : elmts_list)
+		//this is the first paste, we do some actions for the copies
+		for (Element *e : std::as_const(copies))
 		{
 			//make new uuid, because old uuid are the uuid of the copied element
 			e -> newUuid();
@@ -301,8 +608,10 @@ void PasteDiagramCommand::redo()
 					//A formula which names no numbering of this project is
 					//not kept: it would stand for a numbering which does
 					//not exist here, with a label which is not its result.
-					//The label is what the erase preference made of it.
-				for (Element *e : elmts_list)
+					//The label is what the erase preference made of it. A
+					//moved element keeps its formula, as it would have on
+					//its folio.
+				for (Element *e : std::as_const(copies))
 				{
 					const DiagramContext &info = e->elementInformations();
 					if (e->linkType() == Element::Slave || (e->linkType() & Element::AllReport)
@@ -327,6 +636,32 @@ void PasteDiagramCommand::redo()
 			if (!pasted_schemes.isEmpty()) {
 				ElementAutoNumSchemeCommand::numberPasted(project, pasted_schemes, this);
 			}
+		}
+
+			//The moved elements linked again to the partners they had, only
+			//now that every copy has an identity of its own: one which still
+			//carried the uuid of a partner would be taken for it
+		for (Element *e : moved) {
+			link_moved(e, project);
+		}
+
+			//What this paste linked, linked again on every redo: taking the
+			//elements off the folio on undo unlinks them. Made after the
+			//numbering above, so that it runs after it (see
+			//PastedLinksCommand).
+		bool linked = false;
+		bool linked_report = false;
+		for (Element *e : elmts_list)
+		{
+			if (!e->isFree()) {
+				linked = true;
+				if (e->linkType() & Element::AllReport) {
+					linked_report = true;
+				}
+			}
+		}
+		if (linked) {
+			new PastedLinksCommand(elmts_list, this);
 		}
 
 			//Pasted groups become new groups: the members of one source
@@ -354,6 +689,13 @@ void PasteDiagramCommand::redo()
 			//copied from: it gets the next one. A cut arrow pasted back is
 			//alone with its tag, and keeps it (T59).
 		ReportTags::renewRepeated(elmts_list, project);
+
+			//A folio report linked to another carries a cable core over to
+			//the next folio: a pasted one that is linked changes which
+			//wires belong to which cable
+		if (linked_report && project) {
+			CableManager::refreshLabels(project);
+		}
 	}
 	else
 	{
@@ -394,6 +736,25 @@ CutDiagramCommand::CutDiagramCommand(
 			).arg(content.sentence(DiagramContent::All))
 		)
 	);
+
+		//What the paste that brings these elements back needs to know them
+		//by (moved_elements()), taken now: still linked, each partner still
+		//holds the group index it gave the element
+	QETProject *project = dia ? dia->project() : nullptr;
+	for (Element *element : content.m_elements)
+	{
+		CutElement cut;
+		cut.project = project;
+		const QList<Element *> partners = element->linkedElements();
+		for (Element *partner : partners)
+		{
+			const int group = partner->groupIndexForElement(element);
+			if (group >= 0) {
+				cut.partner_groups.insert(partner->uuid(), group);
+			}
+		}
+		cut_elements().insert(element->uuid(), cut);
+	}
 }
 
 /**

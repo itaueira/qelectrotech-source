@@ -1052,6 +1052,9 @@ if(TARGET qelectrotech_objects)
         # CU-16.13: undoing the deletion of a component brings it back to the
         # list on the folio, in one step.
         src/ui/listundo_test.cpp
+        # CU-31.6: the cross references follow a contact moved to another folio,
+        # and folios renumbered.
+        src/ui/xreffollow_test.cpp
         # T31: the number of a potential goes through a folio report.
         src/ui/reportpotential_test.cpp)
 
