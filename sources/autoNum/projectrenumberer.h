@@ -26,6 +26,7 @@
 
 class AssemblyState;
 class Catalog;
+class DiagramContext;
 class Element;
 class QETProject;
 
@@ -122,6 +123,24 @@ namespace ProjectRenumberer
 		does not fetch it once per component.
 	*/
 	bool isFrozen(const Element *element, const AssemblyState &state);
+
+	/**
+		@param information : what a component or a terminal carries
+		@return true when somebody ticked "lock the numbering" on it.
+
+		The one reading of that tick, for every numbering that honours it:
+		the renumbering of components above and the numbering of terminals
+		(TerminalNumberingDialog). There used to be two, and they disagreed:
+		this side read the value with QVariant::toBool(), which takes any
+		text that is not empty, "0" or "false" as a yes - so "no", "off",
+		" false" with a space, or any word a hand-edited file left there,
+		kept a component locked while the terminal numbering, and the tick
+		box of the information panel itself, read the very same value as
+		unlocked. The reading kept is QET::infoFlagIsTrue(), because it is
+		the one the tick box is drawn from: what the panel shows is what the
+		numbering does.
+	*/
+	bool isLockedByHand(const DiagramContext &information);
 
 	/**
 		@brief The component that already carries @a label, if any.

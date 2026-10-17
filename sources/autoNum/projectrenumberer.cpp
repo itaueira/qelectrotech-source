@@ -22,6 +22,7 @@
 #include "../diagram.h"
 #include "../diagramposition.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qet.h"
 #include "../qetinformation.h"
 #include "../qetproject.h"
 #include "../undocommand/renumbercommand.h"
@@ -188,8 +189,7 @@ bool ProjectRenumberer::isFrozen(const Element *element, const AssemblyState &st
 		//1. The tick of the information panel: this one was numbered by hand,
 		//and it survives the project being marked and unmarked because nothing
 		//here ever writes it.
-	if (element->elementInformations()
-			.value(QStringLiteral("auto_num_locked")).toBool()) {
+	if (isLockedByHand(element->elementInformations())) {
 		return true;
 	}
 
@@ -197,6 +197,17 @@ bool ProjectRenumberer::isFrozen(const Element *element, const AssemblyState &st
 		//component was already drawn, so its tag is a sticker on a part
 		//screwed to a rail. Read, never written back.
 	return state.freezesComponent(element->uuid().toString());
+}
+
+/**
+	@brief ProjectRenumberer::isLockedByHand
+	@param information
+	@return whether the "lock the numbering" tick is set in @a information
+*/
+bool ProjectRenumberer::isLockedByHand(const DiagramContext &information)
+{
+	return QET::infoFlagIsTrue(
+		information.value(QStringLiteral("auto_num_locked")).toString());
 }
 
 /**

@@ -720,6 +720,10 @@ if(TARGET qelectrotech_objects)
         src/ui/contextmenuassign_test.cpp
         src/ui/renumberproject_test.cpp
         src/ui/assemblymark_test.cpp
+        # What the wire numbering may still write on a project marked as
+        # built, and the one reading of the hand lock that the renumbering
+        # of components and the numbering of terminals share (T29).
+        src/ui/numberinglock_test.cpp
         src/ui/createsymbol_test.cpp
         src/ui/dashedwire_test.cpp
         src/ui/ioimport_test.cpp

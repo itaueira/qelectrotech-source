@@ -6,6 +6,7 @@
 #include "../qetgraphicsitem/element.h"
 #include "../positionorder.h"
 #include "../undocommand/changeelementinformationcommand.h"
+#include "../autoNum/projectrenumberer.h"
 #include "../qet.h"
 #include <QUndoCommand>
 #include <QCheckBox>
@@ -45,9 +46,10 @@ TerminalNumberingDialog::TerminalNumberingDialog(QWidget *parent, QETProject *pr
             foreach (QGraphicsItem *qgi, diagram->items()) {
                 if (Element *elmt = qgraphicsitem_cast<Element *>(qgi)) {
                     if (elmt->elementData().m_type == ElementData::Terminal) {
-                        // Ignore locked terminals
+                        // Ignore locked terminals, read the way the renumbering
+                        // of components reads the same tick
                         DiagramContext info = elmt->elementInformations();
-                        if (QET::infoFlagIsTrue(info.value(QStringLiteral("auto_num_locked")).toString())) {
+                        if (ProjectRenumberer::isLockedByHand(info)) {
                             continue;
                         }
 
@@ -173,7 +175,7 @@ QUndoCommand* TerminalNumberingDialog::getUndoCommand(QETProject *project) const
                     DiagramContext info = elmt->elementInformations();
 
                     // Ignore locked terminals (if the user checked a 'lock' property)
-                    if (QET::infoFlagIsTrue(info.value(QStringLiteral("auto_num_locked")).toString())) {
+                    if (ProjectRenumberer::isLockedByHand(info)) {
                         continue;
                     }
 

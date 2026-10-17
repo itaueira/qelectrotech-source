@@ -18,6 +18,7 @@
 #include "conductorautonumerotation.h"
 #include "qetproject.h"
 #include "QPropertyUndoCommand/qpropertyundocommand.h"
+#include "autoNum/assemblystate.h"
 #include "autoNum/assignvariables.h"
 #include "autoNum/numerotationcontextcommands.h"
 #include "diagram.h"
@@ -25,6 +26,23 @@
 #include "qetdiagrameditor.h"
 #include "ui/potentialselectordialog.h"
 #include "undocommand/setautonumcontextcommand.h"
+
+namespace
+{
+	/**
+		@param diagram
+		@return the assembly state of the project @a diagram belongs to;
+		in project - which freezes nothing - when there is no project.
+	*/
+	AssemblyState assemblyStateOf(const Diagram *diagram)
+	{
+		QETProject *project = diagram ? diagram->project() : nullptr;
+		if (!project) {
+			return AssemblyState();
+		}
+		return project->assemblyState();
+	}
+}
 
 /**
 	@brief ConductorAutoNumerotation::ConductorAutoNumerotation
@@ -57,6 +75,11 @@ ConductorAutoNumerotation::ConductorAutoNumerotation(
 void ConductorAutoNumerotation::numerate()
 {
 	if (!m_conductor) return;
+		//A wire of a panel already built keeps its number, whoever asks
+		//(T29). Every caller today hands in a conductor it has just
+		//created, which is never in the photograph; this is what keeps it
+		//that way for the next one.
+	if (isFrozen(m_conductor.data(), assemblyStateOf(m_diagram))) return;
 	if (conductor_list.size() >= 1 ) numeratePotential();
 	else if (m_conductor -> properties().type == ConductorProperties::Multi)
 		numerateNewConductor();
@@ -71,6 +94,11 @@ void ConductorAutoNumerotation::numerate()
 void ConductorAutoNumerotation::applyText(const QString& t)
 {
 	if (!m_conductor) return;
+		//The text goes on every conductor of the potential, so a potential
+		//holding one wire of a panel already built is not written at all:
+		//writing the others would leave that wire with a number its own
+		//potential no longer carries (T29).
+	if (potentialIsFrozen()) return;
 
 	QVariant old_value, new_value;
 	ConductorProperties cp = m_conductor -> properties();
@@ -216,6 +244,14 @@ void ConductorAutoNumerotation::numeratePotential()
 		//the texts isn't identicals
 	else
 	{
+			//Whichever potential the dialog keeps, it writes its number
+			//over the other one. A project marked as built is answered
+			//without asking, so that the answer cannot be a number
+			//printed on a wire of the panel (T29).
+		if (keepFrozenPotential()) {
+			return;
+		}
+
 		PotentialSelectorDialog psd(
 					m_conductor,
 					m_parent_undo,
@@ -276,4 +312,159 @@ void ConductorAutoNumerotation::numerateNewConductor()
 		m_conductor->properties().m_formula,
 		m_conductor->rSequenceNum(),
 		m_diagram));
+}
+
+/**
+	@brief ConductorAutoNumerotation::keepFrozenPotential
+	Settle, without asking, a new conductor that joins potentials whose
+	numbers disagree, when some of their conductors are frozen (T29).
+
+	Every conductor the photograph holds keeps its text: that is the whole
+	rule. What is left to decide is what the others get.
+	- The frozen conductors all carry one number: the potential is the one
+	  the panel already has, so the new conductor and every conductor drawn
+	  after the marking take that number, exactly as they would have had
+	  that potential been chosen in the dialog.
+	- The frozen conductors carry two numbers or more: a new wire joins two
+	  potentials that are both on the panel. Either answer would print a
+	  new sleeve on a wire already in the duct, so nothing is written at
+	  all, and the new conductor keeps the text it was drawn with - visible
+	  on the sheet as a wire nobody numbered, which is what it is.
+
+	@return true when the potential holds a frozen conductor and was settled
+	here, false when nothing is frozen and the dialog has to ask as it did.
+*/
+bool ConductorAutoNumerotation::keepFrozenPotential()
+{
+	const AssemblyState state = assemblyStateOf(m_diagram);
+	if (!state.isFrozen()) {
+		return false;
+	}
+
+	QList<Conductor *> frozen;
+	QList<Conductor *> to_change;
+	for (Conductor *conductor : std::as_const(conductor_list))
+	{
+		if (isFrozen(conductor, state)) {
+			frozen.append(conductor);
+		} else {
+			to_change.append(conductor);
+		}
+	}
+	if (frozen.isEmpty()) {
+		return false;
+	}
+
+	QStringList frozen_texts;
+	QList<ConductorProperties> frozen_properties;
+	for (const Conductor *conductor : std::as_const(frozen))
+	{
+		frozen_properties.append(conductor->properties());
+		frozen_texts.append(frozen_properties.last().text);
+	}
+	if (!QET::eachStrIsEqual(frozen_texts)) {
+		return true;
+	}
+
+		//The conductor being numbered is not in conductor_list: it is not
+		//one of its own related potential conductors.
+	to_change.prepend(m_conductor.data());
+
+	QUndoCommand *undo = m_parent_undo
+			? m_parent_undo
+			: new QUndoCommand(QObject::tr(
+						   "Edit the properties of several conductors",
+						   "undo caption"));
+
+	const autonum::sequentialNumbers sequence = frozen.first()->sequenceNum();
+	for (Conductor *conductor : std::as_const(to_change))
+	{
+		ConductorProperties new_properties = conductor->properties();
+		new_properties.applyForEqualAttributes(frozen_properties);
+
+		if (conductor->sequenceNum() != sequence)
+		{
+			QVariant old_sequence, new_sequence;
+			old_sequence.setValue(conductor->sequenceNum());
+			new_sequence.setValue(sequence);
+			new QPropertyUndoCommand(conductor,
+						 "sequenceNum",
+						 old_sequence,
+						 new_sequence,
+						 undo);
+		}
+		if (conductor->properties() != new_properties)
+		{
+			QVariant old_value, new_value;
+			old_value.setValue(conductor->properties());
+			new_value.setValue(new_properties);
+			new QPropertyUndoCommand(conductor,
+						 "properties",
+						 old_value,
+						 new_value,
+						 undo);
+		}
+	}
+
+	if (!m_parent_undo)
+	{
+		if (undo->childCount()) {
+			m_diagram->undoStack().push(undo);
+		} else {
+			delete undo;
+		}
+	}
+	return true;
+}
+
+/**
+	@brief ConductorAutoNumerotation::potentialIsFrozen
+	@return true when the conductor being numbered, or any conductor of its
+	potential, is a wire of a panel already built.
+*/
+bool ConductorAutoNumerotation::potentialIsFrozen() const
+{
+	const AssemblyState state = assemblyStateOf(m_diagram);
+	if (!state.isFrozen()) {
+		return false;
+	}
+	if (isFrozen(m_conductor.data(), state)) {
+		return true;
+	}
+	for (const Conductor *conductor : conductor_list)
+	{
+		if (isFrozen(conductor, state)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+	@brief ConductorAutoNumerotation::isFrozen
+	@param conductor
+	@return whether the numbering has to leave the text of @a conductor alone
+*/
+bool ConductorAutoNumerotation::isFrozen(const Conductor *conductor)
+{
+	if (!conductor) {
+		return false;
+	}
+	return isFrozen(conductor, assemblyStateOf(conductor->diagram()));
+}
+
+/**
+	@brief ConductorAutoNumerotation::isFrozen
+	@param conductor
+	@param state
+	@return whether the numbering has to leave the text of @a conductor alone
+*/
+bool ConductorAutoNumerotation::isFrozen(const Conductor *conductor,
+					 const AssemblyState &state)
+{
+	if (!conductor) {
+		return false;
+	}
+	return state.isFrozen()
+	       && state.holdsConductor(conductor->uuid().toString());
 }
