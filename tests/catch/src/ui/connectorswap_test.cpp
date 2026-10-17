@@ -22,6 +22,7 @@
 #include "../../../../sources/catalog/catalog.h"
 #include "../../../../sources/connector/connectorcheck.h"
 #include "../../../../sources/connector/connectorswap.h"
+#include "../../../../sources/connector/ui/connectorreportdialog.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontext.h"
 #include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
@@ -31,10 +32,16 @@
 
 #include <catch2/catch.hpp>
 
+#include <QAction>
+#include <QComboBox>
+#include <QKeySequence>
+#include <QLabel>
 #include <QList>
 #include <QPointF>
+#include <QPushButton>
 #include <QString>
 #include <QStringList>
+#include <QTableWidget>
 #include <QUndoStack>
 
 /*
@@ -58,10 +65,19 @@
 	  anterior quando os dois seguram os mesmos componentes, e é a macro que
 	  segura isso.
 
+	Os três últimos casos fazem a mesma troca pela tela: a janela de
+	controle dos conectores é montada sem exec() — sob a plataforma
+	offscreen, exec() espera para sempre um clique que ninguém dá —, e é
+	dirigida por código: escolher o conector, selecionar duas vias, apertar
+	o botão, ler a tabela de novo. O que dela abre ou cede a algo modal —
+	a pergunta feita quando uma via só está selecionada, o duplo clique que
+	leva à folha — continua sendo roteiro para uma pessoa.
+
 	Rotulado T34 e não CU-34.4: o caso de uso é a troca feita a partir da
-	tabela do conector, e a tabela é o passo 6. Nenhuma janela é aberta aqui
-	— não há diálogo nenhum nesta suíte —, então o que a tela faz continua
-	sendo roteiro para uma pessoa.
+	tabela do conector, e a tabela é o passo 6. A tabela de vias da janela
+	de controle não é ela — não tem a coluna do que se liga, nem a do fio,
+	nem a reserva —, e um rótulo de caso posto sobre ela diria provado o
+	que só foi provado numa vizinha.
 */
 
 namespace
@@ -621,4 +637,330 @@ TEST_CASE("T34 — a troca sobrevive a salvar e reabrir",
 						     QStringLiteral("5")}));
 	CHECK(drawnText(reopened.at(1)) == QStringLiteral("3"));
 	CHECK(drawnText(reopened.at(2)) == QStringLiteral("2"));
+}
+
+namespace
+{
+	/// @a text split at its blanks: a column of way numbers written as one line
+	QStringList numbers(const char *text)
+	{
+		return QString::fromLatin1(text).split(QLatin1Char(' '),
+							Qt::SkipEmptyParts);
+	}
+
+	/**
+		The part of the connector check window that swaps ways, found by
+		the names the window gives it.
+
+		By name, and not by order nor by header text: the window holds
+		three tables and its headers are translated, and a case reading
+		the wrong table would count the right number for the wrong reason.
+	*/
+	class WaysWindow
+	{
+		public:
+			explicit WaysWindow(QDialog &dialog) :
+				choice(dialog.findChild<QComboBox *>(
+					       QStringLiteral("connector_way_choice"))),
+				ways(dialog.findChild<QTableWidget *>(
+					     QStringLiteral("connector_ways"))),
+				swap(dialog.findChild<QPushButton *>(
+					     QStringLiteral("connector_swap"))),
+				status(dialog.findChild<QLabel *>(
+					       QStringLiteral("connector_swap_status"))),
+				undo(dialog.findChild<QAction *>(
+					     QStringLiteral("connector_report_undo"))),
+				redo(dialog.findChild<QAction *>(
+					     QStringLiteral("connector_report_redo")))
+			{}
+
+			bool isComplete() const
+			{
+				return choice && ways && swap && status && undo && redo;
+			}
+
+			/// Show the ways of the connector whose key is @a key
+			bool showConnector(const QString &key)
+			{
+				const int index = choice->findData(key);
+				if (index < 0) {
+					return false;
+				}
+				choice->setCurrentIndex(index);
+				return choice->currentData().toString() == key;
+			}
+
+			/// The way numbers the table shows, from top to bottom
+			QStringList shownWays() const
+			{
+				QStringList found;
+				for (int row = 0 ; row < ways->rowCount() ; ++row)
+				{
+					QTableWidgetItem *item = ways->item(row, 0);
+					found << (item ? item->text() : QString());
+				}
+				return found;
+			}
+
+			/**
+				Select exactly @a rows, whole, as Ctrl+click does.
+
+				Through the selection of the table and not through
+				selectRow(), which in this selection mode clears what
+				was selected before and would leave one row out of
+				two.
+			*/
+			void select(const QList<int> &rows)
+			{
+				ways->clearSelection();
+				for (int row : rows)
+				{
+					ways->setRangeSelected(QTableWidgetSelectionRange(
+								       row, 0, row,
+								       ways->columnCount() - 1),
+							       true);
+				}
+			}
+
+			/**
+				The rows selected whole, from top to bottom.
+
+				Asked of the selection model, row by row, and not
+				of selectedRanges() as the window asks it: a second
+				road to the same answer is what makes it a
+				measurement of the window rather than a copy of it.
+			*/
+			QList<int> selectedRows() const
+			{
+				QList<int> rows;
+				for (int row = 0 ; row < ways->rowCount() ; ++row)
+				{
+					if (ways->selectionModel()->isRowSelected(row, QModelIndex())) {
+						rows << row;
+					}
+				}
+				return rows;
+			}
+
+			QComboBox *choice;
+			QTableWidget *ways;
+			QPushButton *swap;
+			QLabel *status;
+			QAction *undo;
+			QAction *redo;
+	};
+}
+
+TEST_CASE("T34 — pela janela de controle, trocar as vias 2 e 3 troca o conteúdo das linhas, e não as linhas",
+	  "[uibench][t34][connector][swap][dialog]")
+{
+	UiBench::ScratchProject scratch(fixtureXml(),
+					QStringLiteral("swapdialog.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+		//A closed catalogue, for the reason pinsOf() gives: which pins
+		//say they are of which connector is written on the folio, and a
+		//swap asks the catalogue nothing. It also keeps the case away
+		//from QETApp::catalog(), which would open the catalogue of
+		//whoever runs the suite.
+	Catalog closed;
+	ConnectorCheck::ReportDialog dialog(scratch.project(), &closed);
+	WaysWindow window(dialog);
+	REQUIRE(window.isComplete());
+
+		//Both connectors are offered, though neither can be counted:
+		//the swap needs no part.
+	REQUIRE(window.choice->count() == 2);
+	REQUIRE(window.showConnector(QStringLiteral("cn1")));
+	REQUIRE(window.shownWays() == numbers("1 2 3 4 5"));
+
+	const QList<Element *> pins = pinsOf(scratch.project(),
+					     QStringLiteral("cn1"));
+	REQUIRE(pins.size() == 5);
+	REQUIRE(drawnText(pins.at(1)) == QStringLiteral("2"));
+	REQUIRE(drawnText(pins.at(2)) == QStringLiteral("3"));
+	const QStringList uuids_before = uuids(pins);
+	const QList<QPointF> where_before = positions(pins);
+	const int steps_before = scratch.project()->undoStack()->index();
+
+		//Dark until something is selected: a button that answered a
+		//click with nothing would be read as broken.
+	CHECK_FALSE(window.swap->isEnabled());
+
+	window.select({1, 2});
+	REQUIRE(window.selectedRows() == QList<int>({1, 2}));
+	REQUIRE(window.swap->isEnabled());
+	window.swap->click();
+
+	SECTION("a tabela se atualiza sozinha: as linhas ficam, os números cruzam")
+	{
+			//The use case read off the window itself: the place in
+			//the list does not change, the content of two rows does.
+		CHECK(window.shownWays() == numbers("1 3 2 4 5"));
+
+			//And the two rows stay selected, so the person sees what
+			//moved, on the connector that was being shown.
+		CHECK(window.selectedRows() == QList<int>({1, 2}));
+		CHECK(window.choice->currentData().toString() == QStringLiteral("cn1"));
+		CHECK(window.status->text().isEmpty());
+	}
+
+	SECTION("o projeto acompanha: os mesmos componentes nos mesmos lugares, e a folha redesenhada")
+	{
+		const QList<Element *> after = pinsOf(scratch.project(),
+						      QStringLiteral("cn1"));
+
+			//Rows and pins are one thing: the table showing 1 3 2
+			//is the project holding it, component by component.
+		CHECK(uuids(after) == uuids_before);
+		CHECK(positions(after) == where_before);
+		CHECK(storedLabels(after) == numbers("1 3 2 4 5"));
+		CHECK(drawnText(pins.at(1)) == QStringLiteral("3"));
+		CHECK(drawnText(pins.at(2)) == QStringLiteral("2"));
+
+			//One step on the stack, and the other connector untouched.
+		CHECK(scratch.project()->undoStack()->index() == steps_before + 1);
+		CHECK(storedLabels(pinsOf(scratch.project(), QStringLiteral("xs2")))
+		      == numbers("7 8"));
+	}
+
+	SECTION("o Ctrl+Z da janela desfaz a troca e a tabela volta junto, e o refazer a repõe")
+	{
+			//The window is modal, so the Undo of the editor cannot be
+			//reached while it is open; this one is the window's own,
+			//on the same project stack.
+		CHECK(window.undo->shortcuts().contains(QKeySequence(Qt::CTRL | Qt::Key_Z)));
+
+		window.undo->trigger();
+
+		CHECK(scratch.project()->undoStack()->index() == steps_before);
+		CHECK(window.shownWays() == numbers("1 2 3 4 5"));
+		CHECK(storedLabels(pins) == numbers("1 2 3 4 5"));
+		CHECK(drawnText(pins.at(1)) == QStringLiteral("2"));
+		CHECK(drawnText(pins.at(2)) == QStringLiteral("3"));
+		CHECK(window.selectedRows() == QList<int>({1, 2}));
+
+		window.redo->trigger();
+
+		CHECK(scratch.project()->undoStack()->index() == steps_before + 1);
+		CHECK(window.shownWays() == numbers("1 3 2 4 5"));
+		CHECK(storedLabels(pins) == numbers("1 3 2 4 5"));
+	}
+
+	SECTION("apertar de novo, com as duas linhas ainda selecionadas, destroca num passo próprio")
+	{
+		REQUIRE(window.swap->isEnabled());
+		window.swap->click();
+
+		CHECK(window.shownWays() == numbers("1 2 3 4 5"));
+		CHECK(storedLabels(pins) == numbers("1 2 3 4 5"));
+		CHECK(scratch.project()->undoStack()->index() == steps_before + 2);
+	}
+}
+
+TEST_CASE("T34 — pela janela de controle, a troca recusada não escreve e diz por quê",
+	  "[uibench][t34][connector][swap][dialog]")
+{
+		//The fifth way of CN1 renumbered 4, so that two ways of one
+		//connector carry the same number: the one refusal two rows of one
+		//connector can still meet, since the table never mixes connectors.
+	QString xml = fixtureXml();
+	const QString fifth = QStringLiteral("name=\"label\">5<");
+	REQUIRE(xml.count(fifth) == 1);
+	xml.replace(fifth, QStringLiteral("name=\"label\">4<"));
+
+	UiBench::ScratchProject scratch(xml, QStringLiteral("swaprefused.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+	Catalog closed;
+	ConnectorCheck::ReportDialog dialog(scratch.project(), &closed);
+	WaysWindow window(dialog);
+	REQUIRE(window.isComplete());
+	REQUIRE(window.showConnector(QStringLiteral("cn1")));
+	REQUIRE(window.shownWays() == numbers("1 2 3 4 4"));
+
+	const int steps_before = scratch.project()->undoStack()->index();
+	REQUIRE(window.status->text().isEmpty());
+
+	window.select({3, 4});
+	REQUIRE(window.swap->isEnabled());
+	window.swap->click();
+
+		//Nothing written, nothing spent on the stack, and the table as
+		//it was.
+	CHECK(scratch.project()->undoStack()->index() == steps_before);
+	CHECK(window.shownWays() == numbers("1 2 3 4 4"));
+
+		//The reason is the rule's own sentence, in the window, under the
+		//two rows it is about - still selected.
+	const QString reason = ConnectorSwap::Plan::describe(Refusal::SameLabel);
+	REQUIRE_FALSE(reason.isEmpty());
+	INFO(window.status->text().toStdString());
+	CHECK(window.status->text().contains(reason));
+	CHECK(window.selectedRows() == QList<int>({3, 4}));
+
+		//And it goes away with what it was about.
+	REQUIRE(window.showConnector(QStringLiteral("xs2")));
+	CHECK(window.status->text().isEmpty());
+}
+
+TEST_CASE("T34 — pela janela de controle, o botão de trocar só acende com uma ou duas vias, e a troca fica no conector mostrado",
+	  "[uibench][t34][connector][swap][dialog]")
+{
+	UiBench::ScratchProject scratch(fixtureXml(),
+					QStringLiteral("swapbutton.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+	Catalog closed;
+	ConnectorCheck::ReportDialog dialog(scratch.project(), &closed);
+	WaysWindow window(dialog);
+	REQUIRE(window.isComplete());
+	REQUIRE(window.showConnector(QStringLiteral("cn1")));
+
+	SECTION("nenhuma, uma, duas, três")
+	{
+		window.select({});
+		CHECK_FALSE(window.swap->isEnabled());
+
+			//One way: the button asks for the other in a question,
+			//which is modal and is not pressed here.
+		window.select({1});
+		CHECK(window.swap->isEnabled());
+
+		window.select({1, 2});
+		CHECK(window.swap->isEnabled());
+
+			//Three would leave the button to guess which two.
+		window.select({1, 2, 3});
+		CHECK_FALSE(window.swap->isEnabled());
+	}
+
+	SECTION("mudar de conector esquece a seleção, e a troca fica dentro do conector mostrado")
+	{
+		window.select({0, 1});
+		REQUIRE(window.swap->isEnabled());
+
+			//The two rows meant two pins of CN1; on XS2 the same two
+			//places are two other pins, and keeping them selected
+			//would swap what nobody chose.
+		REQUIRE(window.showConnector(QStringLiteral("xs2")));
+		CHECK(window.shownWays() == numbers("7 8"));
+		CHECK(window.selectedRows().isEmpty());
+		CHECK_FALSE(window.swap->isEnabled());
+
+		const int steps_before = scratch.project()->undoStack()->index();
+		window.select({0, 1});
+		REQUIRE(window.swap->isEnabled());
+		window.swap->click();
+
+		CHECK(window.shownWays() == numbers("8 7"));
+		CHECK(storedLabels(pinsOf(scratch.project(), QStringLiteral("xs2")))
+		      == numbers("8 7"));
+		CHECK(storedLabels(pinsOf(scratch.project(), QStringLiteral("cn1")))
+		      == numbers("1 2 3 4 5"));
+		CHECK(scratch.project()->undoStack()->index() == steps_before + 1);
+	}
 }
