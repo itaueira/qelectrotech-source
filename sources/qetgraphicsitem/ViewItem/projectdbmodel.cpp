@@ -737,27 +737,49 @@ void ProjectDBModel::folioBuilt()
 /**
 	@brief ProjectDBModel::dataBaseUpdated
 	slot called when the project database is updated
+
+	@par The columns changing is a reset, even with as many rows as before
+	columnCount() reads the columns the query asked for (m_column_names),
+	and not the first row, so the columns can come and go while the number
+	of rows stays the same. It happens to a table on a folio built late
+	(lazy folios): fillValue() leaves it with no column until its folio is
+	built, and folioBuilt() then brings the columns of its query - with no
+	row yet when the data base is still being filled from the folios. Told
+	only "the data changed", the table asked for the width of columns its
+	header had never measured, and read before the start of an empty list:
+	opening such a project crashed. The header measures its columns on a
+	reset, so a reset is what a change of columns is announced as.
 */
 void ProjectDBModel::dataBaseUpdated()
 {
 	auto original_record = m_record;
+	const QStringList original_columns = m_column_names;
 	fillValue();
 	auto new_record = m_record;
+	const QStringList new_columns = m_column_names;
 	m_record = original_record;
-	
-	if (new_record.size() != m_record.size())
+	m_column_names = original_columns;
+
+	if (new_record.size() != m_record.size()
+	    || new_columns != original_columns)
 	{
 		emit beginResetModel();
 		m_record = new_record;
+		m_column_names = new_columns;
 		emit endResetModel();
 	}
 	else
 	{
 		m_record = new_record;
+		m_column_names = new_columns;
 		auto row = m_record.size();
-		auto col = row ? m_record.first().count() : 1;
-		
-		emit dataChanged(this->index(0,0), this->index(row-1, col-1), {Qt::DisplayRole});
+			//No row and the same columns: nothing that is drawn changed,
+			//and index(row-1, ...) would be an index before the first row.
+		if (row) {
+			emit dataChanged(this->index(0,0),
+					 this->index(row-1, columnCount()-1),
+					 {Qt::DisplayRole});
+		}
 	}
 
 		//fillValue() above dropped the cache of row -> component, and

@@ -1142,3 +1142,56 @@ TEST_CASE("T16 — editar uma célula da lista passa pelo desfazer do componente
 		CHECK_FALSE(first.data(Qt::DisplayRole).toString().isEmpty());
 	}
 }
+
+/*
+	The columns of a list arriving without a row: the header has to measure
+	them.
+
+	columnCount() reads the columns the query asked for, so they can change
+	while the number of rows does not. A table on a folio built late (lazy
+	folios) has no column until its folio is built, and gets the columns of
+	its query from folioBuilt() - with no row when the data base is still
+	being filled from the folios. Announced as "the data changed", the header
+	kept the widths of no column, and the table then read the width of a
+	column before the start of that empty list: opening such a project
+	crashed (the upstream test tst_terminaluuids, on industrial.qet with the
+	terminals of its symbols given new uuids, is how it was found).
+
+	Measured on the header and not on the table: the table is what crashed,
+	and a crash is not a failed assertion.
+*/
+TEST_CASE("T16 — a lista que ganha colunas sem ganhar linha faz o cabeçalho medir as colunas",
+	  "[uibench][listengine]")
+{
+	UiBench::Project project(reference_example);
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+	projectDataBase *data_base = project.project()->dataBase();
+
+		//Made while a folio is being built, as a table read from that
+		//folio is, so that it waits for folioBuilt() with no column.
+	data_base->setBuildingFolio(true);
+	ProjectDBModel model(project.project());
+	model.setQuery(empty_result_query);
+	data_base->setBuildingFolio(false);
+	REQUIRE(model.rowCount() == 0);
+	REQUIRE(model.columnCount() == 0);
+
+	QetGraphicsHeaderItem header;
+	header.setModel(&model);
+	REQUIRE(header.minimumSectionWidth().isEmpty());
+
+	int resets = 0;
+	QObject::connect(&model, &QAbstractItemModel::modelReset,
+			 [&resets]() { ++resets; });
+
+	model.folioBuilt();
+
+		//The two columns of the query, and still no row: what the
+		//lazy folio brings when the list finds nothing yet.
+	REQUIRE(model.lastError().isEmpty());
+	REQUIRE(model.rowCount() == 0);
+	REQUIRE(model.columnCount() == 2);
+	CHECK(resets == 1);
+	CHECK(header.minimumSectionWidth().size() == model.columnCount());
+}
