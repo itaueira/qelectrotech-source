@@ -73,14 +73,16 @@ private slots:
 		const QString fixture = QFINDTESTDATA("fixtures/wiring_list_arrows.qet");
 		QVERIFY2(!fixture.isEmpty(), "fixture project not found");
 
+		//Ten columns and the note, empty on a plain wire (the fork adds
+		//it last, so the ten keep their place)
 		const QStringList expected {
-			QStringLiteral("1/6, 2/6;PA;A1;PB;A1;;;;;W1"),
-			QStringLiteral("3/6;EA;A1;;1;;;;;W2"),
-			QStringLiteral("3/6;EA2;A1;;1;;;;;"),
-			QStringLiteral("4/6;EB;A1;;1;;;;;"),
-			QStringLiteral("5/6;LA;A1;;1;;;;;"),
-			QStringLiteral("6/6;LB;A1;;1;;;;;"),
-			QStringLiteral("6/6;LD;A1;;1;;;;;"),
+			QStringLiteral("1/6, 2/6;PA;A1;PB;A1;;;;;W1;"),
+			QStringLiteral("3/6;EA;A1;;1;;;;;W2;"),
+			QStringLiteral("3/6;EA2;A1;;1;;;;;;"),
+			QStringLiteral("4/6;EB;A1;;1;;;;;;"),
+			QStringLiteral("5/6;LA;A1;;1;;;;;;"),
+			QStringLiteral("6/6;LB;A1;;1;;;;;;"),
+			QStringLiteral("6/6;LD;A1;;1;;;;;;"),
 		};
 		bool ok;
 		QCOMPARE(exportCables(fixture, &ok), expected);

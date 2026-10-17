@@ -36,6 +36,11 @@ struct ConductorData {
     QString cable;
     QString folio;
     int folio_index = 0; // position of the folio in the project, from 1
+    bool bridge = false; // its number names a bridge (WiringListExport::isBridgeNumber())
+        // One half of a wire drawn across a folio report, left unjoined
+        // because the other half declares another section
+    bool section_mismatch = false;
+    QString section_mismatch_folio; // the page of that other half
 };
 
 /**
@@ -53,7 +58,7 @@ public:
 	Used by toCsv() and by the headless command-line export.
 
 	@par An empty return is a failure, not an empty project
-	The header row of nine column names is written unconditionally, so a
+	The header row of eleven column names is written unconditionally, so a
 	readable project with no cable in it returns that row and not an
 	empty string. Both callers read an empty return as "the project
 	could not be read": do not add an early return that gives back an
@@ -63,6 +68,13 @@ public:
 	that one.
     */
     QString toCsvString() const;
+    /**
+	Whether a conductor numbered @p number is a bridge between two
+	terminals. Such a conductor is listed, with "Bridge" in the Note
+	column, and never left out. The rule, and the names it knows, are
+	on the definition in wiringlistexport.cpp.
+    */
+    static bool isBridgeNumber(const QString &number);
 
 private:
     QETProject *m_project;

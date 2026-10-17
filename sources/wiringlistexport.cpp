@@ -287,6 +287,47 @@ QMap<QString, ElementInfo> WiringListExport::collectElementsInfo(const QDomEleme
     return infoMap;
 }
 
+/**
+	@brief WiringListExport::isBridgeNumber
+	@param number : the number (the text) of a conductor
+	@return whether that number names a bridge between two terminals
+
+	@par Listed and marked, never dropped
+	The list used to skip every conductor numbered with one German word,
+	compared exactly, and nothing else. The two failures were silent: a
+	bridge numbered in any other language came out as an ordinary wire,
+	and an ordinary wire that happened to carry that word vanished from
+	the list without a trace. A bridge is still a piece of copper somebody
+	fits between two terminals, so it now stays in the list, on a row
+	whose last column says what it is, and the name only decides that
+	note: a wrong guess costs a note, never a row.
+
+	@par The names
+	Compared whole, trimmed and without regard to case: "PONTE" and
+	"ponte" are one name, "PONTE 2" is not a bridge. The German word is
+	the one the list always recognised, so a project that relied on it
+	keeps its bridges recognised; the Portuguese word is the one a
+	designer drawing in that language writes; the English one is the
+	interface's own. The price of a fixed list is that a fourth language
+	is an ordinary wire until it is added here - which is still the
+	visible failure, since the row is printed either way.
+*/
+bool WiringListExport::isBridgeNumber(const QString &number)
+{
+    const QString name = number.trimmed();
+    if (name.isEmpty()) return false;
+
+    static const QStringList names {
+        QStringLiteral("Brücke"),
+        QStringLiteral("Ponte"),
+        QStringLiteral("Bridge")
+    };
+    for (const QString &bridge : names) {
+        if (name.compare(bridge, Qt::CaseInsensitive) == 0) return true;
+    }
+    return false;
+}
+
 QList<ConductorData> WiringListExport::collectConductors(const QDomElement &root) const
 {
     QList<ConductorData> conductors;
@@ -296,10 +337,10 @@ QList<ConductorData> WiringListExport::collectConductors(const QDomElement &root
     for (int i = 0; i < conductorNodes.size(); ++i) {
         QDomElement cond = conductorNodes.at(i).toElement();
 
-        if (cond.attribute("num") == "Brücke") continue;
-
         ConductorData data;
         data.index = i;
+            //Kept and marked, never skipped: see isBridgeNumber()
+        data.bridge = isBridgeNumber(cond.attribute("num"));
         data.el1_uuid = normalizeUuid(cond.attribute("element1", cond.attribute("element1id", "")));
         data.el2_uuid = normalizeUuid(cond.attribute("element2", cond.attribute("element2id", "")));
 
@@ -342,7 +383,7 @@ QList<ConductorData> WiringListExport::collectConductors(const QDomElement &root
 	because @c toCsvString() emits its header row unconditionally, and
 	the sentence the branch shows says exactly that. A project with no
 	cable at all reaches the save dialog and writes a csv holding the
-	ten column names, which is the honest answer and is what a
+	eleven column names, which is the honest answer and is what a
 	spreadsheet expects to open. For comparison, and because the
 	difference is not visible from any one of the three files :
 	@c ConductorNumExport::wiresNum() has no header, so empty there is
@@ -425,10 +466,24 @@ void WiringListExport::toCsv()
 
 /**
 	@brief WiringListExport::toCsvString
-	@return the wiring list formatted as csv : one header row of ten
+	@return the wiring list formatted as csv : one header row of eleven
 	column names, then one row per cable, folio-numbered elements sorted
 	by folio and then by component. Never an empty string unless the
 	project could not be read at all - see the invariant below.
+
+	@par The Note column, and the two rows it marks
+	The eleventh column is empty on an ordinary wire. It reads "Bridge"
+	on a conductor whose number names a bridge (isBridgeNumber()), which
+	the list used to drop when it had one particular name and print as a
+	plain wire under any other. And it says that the section differs on
+	each of the two halves of a wire drawn across a folio report whose
+	halves declare two sections: those halves are no longer joined into
+	one row with both sections in one cell, but printed one per row, each
+	with its own section, and each naming the page of the other. The
+	price is that such a wire takes two rows, like a wire whose halves
+	cannot be joined, until somebody makes the drawing agree with itself;
+	and that every row has one more cell than a file written before, so a
+	comparison with an older file is by column, not by line.
 
 	@par An empty return means a failure, and can mean nothing else
 	This is the invariant the command-line exporter leans on, so breaking
@@ -439,7 +494,7 @@ void WiringListExport::toCsv()
 	string are those guards: a null @c m_project, and a project whose
 	@c toXml() gave back a null document. A project that is perfectly
 	readable and simply holds no cable returns the header row on its own
-	- ten names and a line break, not an empty string. Whoever adds a
+	- eleven names and a line break, not an empty string. Whoever adds a
 	third early return between here and the header write must either
 	make it non-empty or fix cli_export.cpp:exportCsv(), where an empty
 	string from this function is reported as a failed read of the
@@ -536,6 +591,15 @@ QString WiringListExport::toCsvString() const
         return at + ", " + bt;
     };
 
+        //Two sections, both declared, that are not the same text. A half
+        //that declares none is not a contradiction: it is joined, and
+        //takes the other's, as mergeField() does.
+    auto sectionsDisagree = [](const QString &a, const QString &b) {
+        const QString at = a.trimmed();
+        const QString bt = b.trimmed();
+        return !at.isEmpty() && !bt.isEmpty() && at != bt;
+    };
+
     for (int i = 0; i < conductors.size(); ++i) {
         ConductorData c = conductors[i];
 
@@ -592,6 +656,27 @@ QString WiringListExport::toCsvString() const
         const ConductorData &otherHalf = it.value().first();
         const ConductorData &normC = others.first();
 
+            //Two halves declaring two sections are not one wire of a
+            //strange section: they are a drawing that contradicts itself.
+            //Joined, they gave one cell such as "1,5, 2,5", which reads as
+            //a section in a spreadsheet and not as a fault. So they are not
+            //joined: each half keeps its own section on a row of its own,
+            //ending at its report like a half that cannot be joined, and
+            //says in the Note column on which page the other half is.
+            //Nothing is chosen for the bench - the list cannot know which
+            //of the two sections is the one to cut.
+        if (sectionsDisagree(otherHalf.conductor_section, normC.conductor_section)) {
+            ConductorData first = otherHalf;
+            ConductorData second = normC;
+            first.section_mismatch = true;
+            first.section_mismatch_folio = normC.folio;
+            second.section_mismatch = true;
+            second.section_mismatch_folio = otherHalf.folio;
+            uniqueConductors.append(first);
+            uniqueConductors.append(second);
+            continue;
+        }
+
         ConductorData merged;
         merged.folio = mergeField(otherHalf.folio, normC.folio);
         merged.folio_index = std::min(otherHalf.folio_index, normC.folio_index);
@@ -609,6 +694,7 @@ QString WiringListExport::toCsvString() const
         merged.conductor_section = mergeField(otherHalf.conductor_section, normC.conductor_section);
         merged.function = mergeField(otherHalf.function, normC.function);
         merged.cable = mergeField(otherHalf.cable, normC.cable);
+        merged.bridge = otherHalf.bridge || normC.bridge;
 
         uniqueConductors.append(merged);
     }
@@ -655,8 +741,30 @@ QString WiringListExport::toCsvString() const
     << tr("Wire color", "Wiring list CSV header")
     << tr("Wire section", "Wiring list CSV header")
     << tr("Function", "Wiring list CSV header")
-    << tr("Cable", "Wiring list CSV header");
+    << tr("Cable", "Wiring list CSV header")
+    << tr("Note", "Wiring list CSV header");
     out << QETCsv::row(header) << "\n";
+
+        //The last column says what a row is when it is not an ordinary
+        //wire, and is empty on every ordinary one, so a filter on it
+        //finds every row the bench has to look at twice. Appended after
+        //the others so that the ten columns before it keep their place.
+    auto noteOf = [](const ConductorData &c) {
+        QStringList notes;
+        if (c.bridge) {
+            notes << WiringListExport::tr("Bridge",
+                                          "Wiring list CSV note: the row is a bridge between two terminals");
+        }
+        if (c.section_mismatch) {
+            notes << (c.section_mismatch_folio.isEmpty()
+                      ? WiringListExport::tr("Section differs from the other half of this wire",
+                                             "Wiring list CSV note")
+                      : WiringListExport::tr("Section differs from the other half of this wire, on %1",
+                                             "Wiring list CSV note: %1 is the page of the other half")
+                            .arg(c.section_mismatch_folio));
+        }
+        return notes.join(QStringLiteral(" / "));
+    };
 
     for (const ConductorData &c : uniqueConductors) {
         QStringList values;
@@ -669,7 +777,8 @@ QString WiringListExport::toCsvString() const
         << c.conductor_color
         << c.conductor_section
         << c.function
-        << c.cable;
+        << c.cable
+        << noteOf(c);
         out << QETCsv::row(values) << "\n";
     }
 
