@@ -22,12 +22,16 @@
 
 #include <QHash>
 #include <QList>
+#include <QSet>
 #include <QString>
 #include <QStringList>
+#include <QUuid>
+
+class MountingLayout;
 
 /**
-	@brief The two halves of what a panel is made of, added up into the one
-	list somebody orders from.
+	@brief What a panel is made of - drawn, enclosing it, or only screwed to
+	its plate - added up into the one list somebody orders from.
 
 	@par Why there are two halves
 
@@ -45,6 +49,24 @@
 
 	LocationTree::bomLines() answers the enclosure half already. This joins
 	it to the drawn half on the key both halves are bought by.
+
+	@par And the part on a plate that no folio draws
+
+	A panel is often laid out before its schematic is drawn, and some parts
+	are never drawn at all - an end bracket, a distribution block, an earth
+	bar picked from the catalogue and screwed straight to the plate. They
+	are bought all the same, and neither half above finds them: they have
+	no element row, and they are not a location. The layout is a third
+	source of lines, read by mountedRowsOf() and joined on the same key.
+
+	The hard part of it is "once". A part whose symbol is on a folio is
+	already counted by the drawn half, from the row of that symbol, and the
+	plate must not count it again; a part whose symbol is drawn later must
+	move from the plate's count to the symbol's, and never be in both. What
+	decides is the link a mounted part keeps to the element of the folio it
+	is, and the rule reading that link is UndrawnPart's - the one the plate
+	window lists what is off the folios with - so that this list and that
+	window cannot disagree about which parts no folio draws.
 
 	@par The key is the part, never the words describing it
 
@@ -105,6 +127,31 @@ namespace BomCollector
 		QString folio;
 			/// the box that keeps it out of the parts list
 		QString exclude_from_bom;
+	};
+
+	/**
+		@brief One part screwed to a face of the layout that no folio
+		draws, as this list reads it.
+
+		Text, like ElementRow and for the same reason: the rule that joins
+		it to the other halves has to be provable on rows built by hand.
+		There is no quantity and no revision, because the layout keeps
+		neither - a part on the plate is one piece of whatever revision is
+		current - and no designation of the product, because the layout
+		keeps the code it was laid as and not what the catalogue calls it.
+	*/
+	struct MountedRow
+	{
+			/// the catalogue part it was laid as, empty when none was
+		QString part_code;
+			/// the tag it carries on the plate, empty for a part laid
+			/// straight from the catalogue
+		QString label;
+			/// how to call it out loud, never empty - for naming it
+			/// in a pendency (MountedItem::designation)
+		QString name;
+			/// the location of the face it is screwed to, as a path
+		QString where;
 	};
 
 		/// Why an item could not be put on a line of the list.
@@ -172,6 +219,14 @@ namespace BomCollector
 		int drawn = 0;
 			/// how many lines of the enclosure half reached the list
 		int enclosures = 0;
+		/**
+			How many parts of the layout reached a line, one piece
+			each.
+
+			With the pendencies named at a face it accounts for every
+			MountedRow that came in, for the reason @ref drawn gives.
+		*/
+		int mounted = 0;
 	};
 
 	/**
@@ -261,25 +316,75 @@ namespace BomCollector
 	ElementRow rowFrom(const QHash<QString, QString> &values);
 
 	/**
-		@brief Join the two halves into the list.
+		@brief The parts of the layout this list has to count, because no
+		folio does.
+		@param layout the layout of the project
+		@param drawn_elements the uuid of the elements the folios hold -
+		at least every one UndrawnPart::namedElements() returns
+		@return one row per part, face by face in the order of the layout
+
+		Exactly the parts UndrawnPart::of() answers, less the pieces cut to
+		length, and for both of its reasons:
+
+		- a part laid with no symbol behind it is the layout drawn before
+		  the schematic, and the plate is the only place that knows it has
+		  to be bought;
+		- a part whose symbol was deleted after it was mounted has no row
+		  on any folio either, so the drawn half no longer counts it. The
+		  plate is still what the shop builds, and leaving the part out
+		  would have the shop build a plate it was never sent the part for.
+		  Which of the two a part is stays the plate window's to say.
+
+		A part whose symbol is on a folio is left out, and that is the
+		whole of "once": the symbol decides - counted by the drawn half,
+		kept out by the box ticked on it, or left out of the rows by
+		whoever reads them - and the plate never brings back a part the
+		drawing kept out.
+
+		A piece of rail or duct is left out because it is not bought as a
+		piece: it is cut from a bar, and the bar is bought by the length
+		MountingLayout::profileTotals() adds up. Counted here, a plate
+		with four rails would order four rails by the piece.
+
+		The set is the one input this cannot check. An element a folio
+		does hold, missing from it, reads as a symbol gone, and the part
+		is counted twice - once from its symbol and once from here. Build
+		it the way the plate window does, from the elements the layout
+		names.
+	*/
+	QList<MountedRow> mountedRowsOf(const MountingLayout &layout,
+					const QSet<QUuid> &drawn_elements);
+
+	/**
+		@brief Join the halves into the list.
 		@param rows the drawn components, from selectStatement()
-		@param enclosures the other half, from LocationTree::bomLines()
+		@param enclosures the half nobody draws, from
+		LocationTree::bomLines()
+		@param mounted the parts on a plate that no folio draws, from
+		mountedRowsOf(); none when the caller has no layout to read
 		@return the lines, and everything that did not become one
 
 		The drawn half is read first so that a line shared by both takes
 		the designation of the product rather than the name of the place:
 		a cabinet is called "Armoire 2000x800" on an order form and
 		"Coffret principal" on a plan, and only one of the two can be
-		looked up by whoever buys it.
+		looked up by whoever buys it. The plate names no product, so the
+		order of the last two halves changes no name.
 
-		A part code that appears in both halves gives one line with the
-		two quantities added. That case is the whole reason this function
+		A part code that appears in two halves gives one line with the
+		quantities added. That case is the whole reason this function
 		exists, and it is the one a careless join gets wrong in both
 		directions at once - one line too many, or one contribution lost
 		inside the line that survived.
+
+		A part of the plate is one piece of revision 0, so it shares the
+		line of a symbol of the same code only when nobody typed a
+		revision on that symbol either - the key of a line is the part
+		and its revision, whichever half it comes from.
 	*/
 	Result collect(const QList<ElementRow> &rows,
-		       const QList<LocationTree::BomLine> &enclosures);
+		       const QList<LocationTree::BomLine> &enclosures,
+		       const QList<MountedRow> &mounted = QList<MountedRow>());
 
 		/// @return how many pendencies of that kind the result holds
 	int countOf(const Result &result, Pendency reason);

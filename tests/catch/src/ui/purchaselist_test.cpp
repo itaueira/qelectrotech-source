@@ -20,13 +20,17 @@
 #include "../qt_catch_tostring.h"
 
 #include "../../../../sources/cli_export.h"
+#include "../../../../sources/location/mountinglayout.h"
 
 #include <catch2/catch.hpp>
 
 #include <QChar>
+#include <QDomDocument>
 #include <QFile>
 #include <QList>
+#include <QPointF>
 #include <QSet>
+#include <QSizeF>
 #include <QString>
 #include <QStringList>
 #include <QTemporaryDir>
@@ -306,8 +310,39 @@ namespace
 				+ QStringLiteral("</elementInformation>");
 	}
 
-	/// @return a project of two folios drawing @p instances, with the tree
-	QString fixtureXml(const QList<Instance> &instances)
+	/**
+		@return the uuid the bench gives the @p n th component it draws,
+		counted from 1 in the order of the list
+
+		One spelling, for the folios and for whatever points at a
+		component on them: a part on the plate names its symbol by this,
+		and a second spelling of it would be a link to nothing that reads
+		exactly like a link to something.
+	*/
+	QString elementUuid(int n)
+	{
+		return QStringLiteral("{b18e0000-0000-4000-8000-%1}")
+				.arg(n, 12, 10, QLatin1Char('0'));
+	}
+
+	/// @return the uuid of the component tagged @p tag, empty when none is
+	QString uuidOfTag(const QList<Instance> &instances, const QString &tag)
+	{
+		for (int i = 0 ; i < instances.size() ; ++i)
+		{
+			if (instances.at(i).label == tag) {
+				return elementUuid(i + 1);
+			}
+		}
+		return QString();
+	}
+
+	/**
+		@return a project of two folios drawing @p instances, with the tree
+		@param layout the <mounting_layout> of the project, none when empty
+	*/
+	QString fixtureXml(const QList<Instance> &instances,
+			   const QString &layout = QString())
 	{
 		QString folios[2];
 		int placed[2] = {0, 0};
@@ -342,14 +377,14 @@ namespace
 					"<element x=\"%1\" y=\"%2\" z=\"10\" prefix=\"\""
 					" freezeLabel=\"false\" orientation=\"0\""
 					" type=\"embed://bench/part.elmt\""
-					" uuid=\"{b18e0000-0000-4000-8000-%3}\">"
+					" uuid=\"%3\">"
 					"<terminals/><inputs/>"
 					"<elementInformations>%4</elementInformations>"
 					"<dynamic_texts/><texts_groups/>"
 					"</element>")
 				 .arg(x)
 				 .arg(y)
-				 .arg(uuid, 12, 10, QLatin1Char('0'))
+				 .arg(elementUuid(uuid))
 				 .arg(info);
 		}
 
@@ -373,6 +408,7 @@ namespace
 
 		return QStringLiteral("<project title=\"bench\" version=\"0.80\">")
 				+ treeXml()
+				+ layout
 				+ QStringLiteral("<collection><category name=\"bench\">")
 				+ definitionXml()
 				+ QStringLiteral("</category></collection>")
@@ -574,17 +610,22 @@ namespace
 		The shape every purchase list has, whatever the project: three
 		blocks, the counts first in a fixed order, every row as wide as
 		its header, CRLF between rows and no byte order mark.
+
+		mounted is fifth and has to stay fifth: it came after the other
+		four, and a script that reads the first four by their place goes
+		on finding them there only as long as nothing is put among them.
 	*/
 	void checkShape(const PurchaseFile &file)
 	{
 		REQUIRE(file.blocks.size() == 3);
 
 		const QVector<QStringList> &summary = file.blocks.at(0);
-		REQUIRE(summary.size() == 4);
+		REQUIRE(summary.size() == 5);
 		CHECK(summary.at(0).value(0) == QStringLiteral("pending"));
 		CHECK(summary.at(1).value(0) == QStringLiteral("excluded"));
 		CHECK(summary.at(2).value(0) == QStringLiteral("nameless"));
 		CHECK(summary.at(3).value(0) == QStringLiteral("lines"));
+		CHECK(summary.at(4).value(0) == QStringLiteral("mounted"));
 		for (const QStringList &row : summary) {
 			CHECK(row.size() == 2);
 		}
@@ -705,6 +746,83 @@ namespace
 			total += lineCell(row, QStringLiteral("quantity")).toDouble();
 		}
 		return total;
+	}
+
+	/// The face the plate cases lay their parts on: the mounting plate
+	/// of the tree above, so that the place a line names is a real one
+	QString platePath()
+	{
+		return QStringLiteral("QCM1/PLACA");
+	}
+
+	/**
+		@return a part bought as a piece, as the plate holds it
+		@param code the catalogue part it was laid as
+		@param tag what it is called on the plate, empty for a part laid
+		straight from the catalogue
+		@param element the symbol it is, empty for a part with none
+		@param x where it sits along the plate, millimetre
+	*/
+	MountedItem piece(const QString &code,
+			  const QString &tag,
+			  const QString &element,
+			  qreal x)
+	{
+		MountedItem item(tag, QPointF(x, 100.0), QSizeF(22.5, 85.0));
+		item.part_code = code;
+		item.element = element;
+		return item;
+	}
+
+	/**
+		@return a piece of rail cut to 600 from a bar of @p code
+
+		With a code on purpose: a piece with none would come back, if it
+		were counted by the piece, as a pendency, and a pendency is not
+		the failure this guards against. The failure is a line ordering
+		rail by the piece, and only a code can make one.
+	*/
+	MountedItem railPiece(const QString &code)
+	{
+		const MountingProfile profile = MountingProfile::rail(35.0, 7.5);
+		MountedItem item(QString(), QPointF(0.0, 300.0),
+				 profile.sizeFor(600.0, MountingRun::Across));
+		item.part_code = code;
+		item.profile = profile;
+		item.run = MountingRun::Across;
+		return item;
+	}
+
+	/**
+		@return the <mounting_layout> of a project with @p items on one
+		plate, empty when the layout refused any of them
+
+		Built through MountingLayout and written by its own toXml(), and
+		not spelled out here like the tree: the file a person's plate is
+		saved as is what --export-purchase reads, and a hand-written
+		element that drifted from it would prove the export against a
+		file nobody can make.
+	*/
+	QString plateXml(const QList<MountedItem> &items)
+	{
+		MountingLayout layout;
+		const QString face = layout.appendSurface(
+					MountingSurface(platePath(),
+							QStringLiteral("plate"),
+							MountingArea(600.0, 800.0)));
+		if (face.isEmpty()) {
+			return QString();
+		}
+		for (const MountedItem &item : items)
+		{
+			if (layout.mountItem(face, item).isEmpty()) {
+				return QString();
+			}
+		}
+
+		QDomDocument document;
+		document.appendChild(layout.toXml(document));
+		return document.toString(-1);
 	}
 }
 
@@ -1081,5 +1199,162 @@ TEST_CASE("T18 — o código de saída distingue lista inteira, lista com "
 				      << csv_path);
 		CHECK(code == 2);
 		CHECK_FALSE(QFile::exists(csv_path));
+	}
+}
+
+/*
+	The plate, the third half of the list (T19, step 10).
+
+	Labelled T19 and not CU-19.11, and the difference is the rule about what
+	a label promises: that case lays the plate out through the window, from
+	the catalogue, and prints the list from the program, and none of the
+	three happens here - the plate is built by MountingLayout and the list
+	is the command line's. What these two cases prove is the half CU-19.11
+	stands on and that nothing above it reached: the file the shop orders
+	from counts the plate, and counts each part of it once.
+*/
+
+TEST_CASE("T19 — a peça da placa sem símbolo entra uma vez na lista de compra, "
+	  "e a que tem símbolo não soma de novo", "[purchase][bom][t19]")
+{
+		//Two contactors of one part, and no revision on either: a part
+		//of the plate is revision 0, so a plate that counted K1 again
+		//would add it into this very line - the same number of lines,
+		//and a quantity of three. That is the defect only a total sees,
+		//and the bench is built so that it would be the one to happen.
+	QList<Instance> instances;
+	instances << drawn(1, "K1", "Contator 9 A", "XA-300", "")
+		  << drawn(1, "K2", "Contator 9 A", "XA-300", "");
+	const QString k1 = uuidOfTag(instances, QStringLiteral("K1"));
+	REQUIRE_FALSE(k1.isEmpty());
+
+		//(a) a block laid from the catalogue, with no symbol behind it;
+		//(b) the plate part of K1, whose symbol is on the first folio;
+		//(c) a piece of rail cut from a bar that has a code;
+		//(d) a part whose symbol was deleted after it was mounted - it
+		//    names an element of the bench that no folio holds. Without
+		//    it a set built from the names alone, never asking the
+		//    folios, would pass every assertion below.
+	const QString plate = plateXml(
+		QList<MountedItem>()
+		<< piece(QStringLiteral("XA-500"), QString(), QString(), 10.0)
+		<< piece(QStringLiteral("XA-300"), QStringLiteral("K1"), k1, 40.0)
+		<< railPiece(QStringLiteral("XA-700"))
+		<< piece(QStringLiteral("XA-600"), QStringLiteral("-F9"),
+			 elementUuid(99), 70.0));
+	REQUIRE_FALSE(plate.isEmpty());
+	REQUIRE(plate.count(QStringLiteral("<mounted_item")) == 4);
+
+	const PurchaseFile file = exportOf(fixtureXml(instances, plate));
+	INFO(file.text.toStdString());
+	REQUIRE(file.written);
+	checkShape(file);
+
+		//Every part of the plate has a code, so the list is whole.
+	CHECK(file.code == 0);
+	CHECK(countIn(file, QStringLiteral("pending")) == 0);
+	CHECK(dataOf(file, 2).isEmpty());
+
+		//(a): on the list, one piece, named by where it is screwed -
+		//it has no tag to be named by.
+	const QStringList block = lineOf(file, QStringLiteral("XA-500"), QString());
+	REQUIRE_FALSE(block.isEmpty());
+	CHECK(lineCell(block, QStringLiteral("quantity")) == QStringLiteral("1"));
+	CHECK(lineCell(block, QStringLiteral("tags")) == platePath());
+
+		//(b): one line, the two symbols and nothing from the plate - not
+		//three, and K1 once among the tags and not twice.
+	REQUIRE(linesOf(file, QStringLiteral("XA-300")).size() == 1);
+	const QStringList contactor = lineOf(file, QStringLiteral("XA-300"),
+					     QString());
+	REQUIRE_FALSE(contactor.isEmpty());
+	CHECK(lineCell(contactor, QStringLiteral("quantity")) == QStringLiteral("2"));
+	CHECK(tagsOf(contactor)
+	      == (QStringList {QStringLiteral("K1"), QStringLiteral("K2")}));
+	CHECK(lineCell(contactor, QStringLiteral("designation"))
+	      == QStringLiteral("Contator 9 A"));
+
+		//(c): no line ordering rail by the piece.
+	CHECK(linesOf(file, QStringLiteral("XA-700")).isEmpty());
+
+		//(d): the symbol is gone, the part is still on the plate the shop
+		//builds, so it is bought - one piece, under its tag.
+	const QStringList orphan = lineOf(file, QStringLiteral("XA-600"), QString());
+	REQUIRE_FALSE(orphan.isEmpty());
+	CHECK(lineCell(orphan, QStringLiteral("quantity")) == QStringLiteral("1"));
+	CHECK(lineCell(orphan, QStringLiteral("tags")) == QStringLiteral("-F9"));
+
+		//The count of lines: the drawn half, the enclosures, and the two
+		//parts of the plate no folio draws - (a) and (d).
+	const int lines = expectedDrawnLines(instances) + enclosure_lines + 2;
+	REQUIRE(lines == 6);
+	CHECK(dataOf(file, 1).size() == lines);
+	CHECK(countIn(file, QStringLiteral("lines")) == lines);
+
+		//And the total, which is what catches (b): counted twice, it
+		//changes no count of lines and makes this nine.
+	const double pieces = expectedDrawnPieces(instances) + enclosure_pieces
+			      + 2.0;
+	REQUIRE(pieces == 8.0);
+	CHECK(piecesOf(dataOf(file, 1)) == pieces);
+
+		//And the count in front says how many came from the plate.
+	CHECK(countIn(file, QStringLiteral("mounted")) == 2);
+}
+
+TEST_CASE("T19 — sem nenhum símbolo desenhado, a lista de compra sai da placa",
+	  "[purchase][bom][t19]")
+{
+		//The layout before the schematic: two folios, nothing on them.
+	const QList<Instance> instances;
+	REQUIRE(expectedDrawnLines(instances) == 0);
+
+		//Two blocks of one part laid from the catalogue, a piece of
+		//rail, and a part nobody gave a code to.
+	const QString plate = plateXml(
+		QList<MountedItem>()
+		<< piece(QStringLiteral("XA-500"), QString(), QString(), 10.0)
+		<< piece(QStringLiteral("XA-500"), QString(), QString(), 40.0)
+		<< railPiece(QStringLiteral("XA-700"))
+		<< piece(QString(), QStringLiteral("-X9"), QString(), 70.0));
+	REQUIRE_FALSE(plate.isEmpty());
+	REQUIRE(plate.count(QStringLiteral("<mounted_item")) == 4);
+
+	const PurchaseFile file = exportOf(fixtureXml(instances, plate));
+	INFO(file.text.toStdString());
+	REQUIRE(file.written);
+	checkShape(file);
+
+		//The two blocks are one line of two, and the place is said once:
+		//one plate, not one copy of its path per block.
+	const QStringList blocks = lineOf(file, QStringLiteral("XA-500"), QString());
+	REQUIRE_FALSE(blocks.isEmpty());
+	CHECK(lineCell(blocks, QStringLiteral("quantity")) == QStringLiteral("2"));
+	CHECK(lineCell(blocks, QStringLiteral("tags")) == platePath());
+	CHECK(linesOf(file, QStringLiteral("XA-700")).isEmpty());
+
+	const int lines = expectedDrawnLines(instances) + enclosure_lines + 1;
+	REQUIRE(lines == 4);
+	CHECK(dataOf(file, 1).size() == lines);
+	CHECK(countIn(file, QStringLiteral("lines")) == lines);
+
+	const double pieces = expectedDrawnPieces(instances) + enclosure_pieces
+			      + 2.0;
+	REQUIRE(pieces == 6.0);
+	CHECK(piecesOf(dataOf(file, 1)) == pieces);
+	CHECK(countIn(file, QStringLiteral("mounted")) == 2);
+
+		//The part with no code is not dropped and not a line with an
+		//empty code: it is pending, named as the plate names it and
+		//where it is screwed - and the list says it is not whole.
+	CHECK(file.code == 3);
+	CHECK(countIn(file, QStringLiteral("pending")) == 1);
+	const QVector<QStringList> pendings = dataOf(file, 2);
+	REQUIRE(pendings.size() == 1);
+	CHECK(pendings.first()
+	      == (QStringList {QStringLiteral("no_part"), QStringLiteral("-X9"),
+			       QString(), platePath()}));
+	for (const QStringList &row : dataOf(file, 1)) {
+		CHECK_FALSE(lineCell(row, QStringLiteral("part_code")).isEmpty());
 	}
 }

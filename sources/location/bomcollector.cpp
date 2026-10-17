@@ -18,6 +18,8 @@
 #include "bomcollector.h"
 
 #include "bommeasure.h"
+#include "mountinglayout.h"
+#include "undrawnparts.h"
 
 #include "../qetinformation.h"
 
@@ -201,8 +203,53 @@ ElementRow rowFrom(const QHash<QString, QString> &values)
 }
 
 /**
+	@brief BomCollector::mountedRowsOf
+	See the header for which parts of the layout come out, and for the one
+	input this cannot check.
+*/
+QList<MountedRow> mountedRowsOf(const MountingLayout &layout,
+				const QSet<QUuid> &drawn_elements)
+{
+		//Where each face is, worked out once and not once per part. The
+		//location path, which is how the half nobody draws names a place
+		//too; the face's own words only for a face that belongs to no
+		//location, which a file may hold and the read keeps.
+	QHash<QString, QString> where_of;
+	for (int index = 0 ; index < layout.count() ; ++index)
+	{
+		const MountingSurface &surface = layout.at(index);
+		where_of.insert(surface.uuid,
+				surface.location_path.isEmpty()
+				? surface.designation()
+				: surface.location_path);
+	}
+
+	QList<MountedRow> rows;
+		//UndrawnPart decides which parts no folio draws, and nothing here
+		//decides it again: a second reading of the link would be free to
+		//disagree with the window that lists the same parts.
+	for (const UndrawnPart &part : UndrawnPart::of(layout, drawn_elements))
+	{
+		const MountedItem &item = part.item;
+			//A piece cut from a bar: bought by the length of the bar,
+			//never by the piece - see the header.
+		if (item.isCutToLength()) {
+			continue;
+		}
+
+		MountedRow row;
+		row.part_code = item.part_code;
+		row.label = item.label;
+		row.name = item.designation();
+		row.where = where_of.value(part.surface_uuid);
+		rows << row;
+	}
+	return rows;
+}
+
+/**
 	@brief BomCollector::collect
-	See the header for the two halves and for the key they are joined on.
+	See the header for the halves and for the key they are joined on.
 
 	Every drawn row leaves this function through exactly one of three
 	doors - a line, a pendency, or the exclusion count - so
@@ -211,7 +258,8 @@ ElementRow rowFrom(const QHash<QString, QString> &values)
 	impossible to write, and it is what the bench asserts.
 */
 Result collect(const QList<ElementRow> &rows,
-	       const QList<LocationTree::BomLine> &enclosures)
+	       const QList<LocationTree::BomLine> &enclosures,
+	       const QList<MountedRow> &mounted)
 {
 	Result result;
 
@@ -346,6 +394,63 @@ Result collect(const QList<ElementRow> &rows,
 		result.lines[found].quantity += enclosure.quantity;
 		result.lines[found].paths << enclosure.paths;
 		++ result.enclosures;
+	}
+
+		//And the parts on a plate that no folio draws. Whether a part
+		//belongs here was settled by mountedRowsOf(), and settled by the
+		//link to its symbol: what arrives is counted, each one piece,
+		//and nothing that arrives is a part some symbol already counts.
+	for (const MountedRow &row : mounted)
+	{
+		const QString code = row.part_code.trimmed();
+		if (code.isEmpty())
+		{
+				//Named as the plate names it, and where it is
+				//screwed: a part with no code and no tag is still
+				//a part somebody put on the plate, and has to be
+				//found there.
+			addPending(result, Pendency::NoPart, row.name, QString(),
+				   row.where);
+			continue;
+		}
+
+			//Revision 0: the layout keeps none, and 0 is "whatever is
+			//current" - see LocationTree::BomLine.
+		const QString unit = BomMeasure::countUnit();
+		int found = LocationTree::indexOfBomLine(result.lines, code, 0);
+		if (found < 0)
+		{
+				//No name: the plate keeps the code a part was laid
+				//as and not what the catalogue calls it. Another
+				//half that names the same part fills it in.
+			LocationTree::BomLine line;
+			line.part_code = code;
+			line.unit = unit;
+			result.lines.append(line);
+			found = int(result.lines.count()) - 1;
+		}
+		else if (!readsAsSameUnit(result.lines.at(found).unit, unit))
+		{
+			addPending(result, Pendency::UnitConflict, row.name,
+				   QString(), row.where);
+			continue;
+		}
+
+		result.lines[found].quantity += 1.0;
+			//The tag when the part has one, as a symbol is named by
+			//its tag. A part laid from the catalogue has none, and is
+			//named by the place it is screwed in - once per place: a
+			//plate of twelve terminal blocks is one place, and twelve
+			//copies of its path would bury the tags beside them.
+		const QString label = row.label.trimmed();
+		if (!label.isEmpty()) {
+			result.lines[found].paths << label;
+		}
+		else if (!row.where.isEmpty()
+			 && !result.lines.at(found).paths.contains(row.where)) {
+			result.lines[found].paths << row.where;
+		}
+		++ result.mounted;
 	}
 
 		//Ordered by the key, so that two exports of the same project can

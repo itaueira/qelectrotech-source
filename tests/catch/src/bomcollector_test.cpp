@@ -18,12 +18,18 @@
 #include "../../../sources/location/bomcollector.h"
 #include "../../../sources/location/bommeasure.h"
 #include "../../../sources/location/locationtree.h"
+#include "../../../sources/location/mountinglayout.h"
+#include "../../../sources/location/mountingprofile.h"
 #include "qt_catch_tostring.h"
 
 #include <QHash>
 #include <QList>
+#include <QPointF>
+#include <QSet>
+#include <QSizeF>
 #include <QString>
 #include <QStringList>
+#include <QUuid>
 
 /*
 	The list somebody orders a panel from, and the half of it nobody drew.
@@ -573,4 +579,283 @@ TEST_CASE("T18 — a pergunta é feita à vista que não filtra", "[bom]")
 		CHECK(row.folio == QString("4"));
 		CHECK_FALSE(BomCollector::isExcluded(row.exclude_from_bom));
 	}
+}
+
+/*
+	The third half: what is screwed to a plate and drawn on no folio.
+
+	A panel laid out before its schematic, and the parts nobody ever draws -
+	an end bracket, a distribution block - are on the plate and nowhere
+	else, and a list that walks the folios and the locations comes back
+	without them. The hard part is "once": a part whose symbol is on a
+	folio is counted by that symbol, and the plate must not count it again.
+	A plate that did would change no line count at all - the part's line
+	is there either way - and would read one piece more inside a total that
+	stays plausible. So each case asserts the number of lines and the
+	total, and the first one measures the careless join beside the right
+	one.
+*/
+
+namespace
+{
+		/// The element of the folio the contactor K1 is drawn as.
+	QString contactorElement()
+	{
+		return QStringLiteral("{3f1d2c4b-5a69-4788-9a0b-1c2d3e4f5a01}");
+	}
+
+		/// One part screwed to a plate: its identity, its tag, its code,
+		/// and the element of the folio it is, when it is one.
+	MountedItem plated(const char *uuid,
+			   const char *label,
+			   const char *code,
+			   const QString &element = QString())
+	{
+		MountedItem item(QString::fromUtf8(label), QPointF(10.0, 10.0),
+				 QSizeF(20.0, 40.0));
+		item.uuid = QString::fromUtf8(uuid);
+		item.part_code = QString::fromUtf8(code);
+		item.element = element;
+		return item;
+	}
+
+		/// Half a metre of rail cut on the bench: no code, no symbol.
+	MountedItem railPiece(const char *uuid)
+	{
+		MountedItem rail;
+		rail.uuid = QString::fromUtf8(uuid);
+		rail.profile = MountingProfile::rail(35.0, 7.5);
+		rail.position = QPointF(10.0, 200.0);
+		rail.size = rail.profile.sizeFor(500.0, MountingRun::Across);
+		return rail;
+	}
+
+	/**
+		Two enclosures. On the plate of QCM1: the contactor K1, tied to
+		its symbol; two terminal blocks and a second contactor of the same
+		part, laid from the catalogue with no symbol; a piece of rail. On
+		the plate of QCM2: one more terminal block with no symbol.
+	*/
+	MountingLayout benchLayout()
+	{
+		MountingLayout layout;
+		const QString first = layout.appendSurface(
+					MountingSurface(QStringLiteral("QCM1"),
+							QStringLiteral("plate"),
+							MountingArea(600.0, 800.0)));
+		const QString second = layout.appendSurface(
+					MountingSurface(QStringLiteral("QCM2"),
+							QStringLiteral("plate"),
+							MountingArea(400.0, 600.0)));
+		REQUIRE_FALSE(first.isEmpty());
+		REQUIRE_FALSE(second.isEmpty());
+
+		const QList<MountedItem> on_first {
+			plated("k1", "K1", "XB-200", contactorElement()),
+			plated("t1", "", "XT-100"),
+			plated("t2", "", "XT-100"),
+			plated("k2", "", "XB-200"),
+			railPiece("rail")
+		};
+		for (const MountedItem &item : on_first) {
+			REQUIRE_FALSE(layout.mountItem(first, item).isEmpty());
+		}
+		REQUIRE_FALSE(layout.mountItem(second, plated("t3", "", "XT-100"))
+			      .isEmpty());
+		return layout;
+	}
+}
+
+TEST_CASE("T19 — a peça posta na placa sem símbolo entra uma vez na lista, e a que tem símbolo não conta de novo",
+	  "[bom][t19]")
+{
+		//The schematic draws two components, and one of them, K1, is on
+		//the plate too, tied to its symbol. No revision is typed on the
+		//symbols, so they share the line of the plate's parts, which keep
+		//none.
+	QList<BomCollector::ElementRow> rows;
+	rows << drawn("XB-200", "", "Contacteur 9 A", "K1")
+	     << drawn("XC-300", "", "Disjoncteur 3P 25 A", "Q1");
+
+	const MountingLayout layout = benchLayout();
+	const QSet<QUuid> drawn_elements {QUuid(contactorElement())};
+
+	const QList<BomCollector::MountedRow> mounted =
+			BomCollector::mountedRowsOf(layout, drawn_elements);
+		//Four: not K1, which its symbol counts, and not the rail, which
+		//is bought by the length of its bar.
+	REQUIRE(mounted.size() == 4);
+
+	const BomCollector::Result drawn_only =
+			BomCollector::collect(rows, QList<LocationTree::BomLine>());
+	const BomCollector::Result result =
+			BomCollector::collect(rows, QList<LocationTree::BomLine>(),
+					      mounted);
+
+		//What the list says without the plate: the four parts screwed
+		//to it are not bought, and nothing in the file says so.
+	CHECK(drawn_only.lines.size() == 2);
+	CHECK(pieces(drawn_only) == 2.0);
+
+		//Three lines says the terminal block arrived; six pieces says K1
+		//did not arrive twice.
+	REQUIRE(result.lines.size() == 3);
+	CHECK(pieces(result) == 6.0);
+
+	const LocationTree::BomLine contactor = lineOf(result, "XB-200");
+		//K1 from its symbol, the second contactor from the plate
+	CHECK(contactor.quantity == 2.0);
+		//Named by the symbol: the plate keeps no name of the product
+	CHECK(contactor.name == QString("Contacteur 9 A"));
+		//K1 once, and the part with no tag by the place it is in
+	CHECK(contactor.paths == QStringList({QStringLiteral("K1"),
+					      QStringLiteral("QCM1")}));
+
+	const LocationTree::BomLine block = lineOf(result, "XT-100");
+	CHECK(block.quantity == 3.0);
+	CHECK(block.unit == BomMeasure::countUnit());
+		//Two plates added into one line, and each place said once and
+		//not once per terminal block
+	CHECK(block.paths == QStringList({QStringLiteral("QCM1"),
+					  QStringLiteral("QCM2")}));
+	CHECK(block.name.isEmpty());
+
+	CHECK(lineOf(result, "XC-300").quantity == 1.0);
+		//The rail is neither a line with no code nor a pendency
+	CHECK(LocationTree::indexOfBomLine(result.lines, QString(), 0) < 0);
+	CHECK(result.pendings.isEmpty());
+	CHECK(result.drawn == 2);
+	CHECK(result.mounted == 4);
+
+	SECTION("o que segura o total é o vínculo, e a contagem de linhas não o vê")
+	{
+			//The careless join, built by hand: every part of the plate
+			//that is not a cut piece, its link ignored. The same three
+			//lines, one piece more - which is why the case asserts the
+			//total and not only the lines.
+		QList<BomCollector::MountedRow> careless;
+		for (const QString &uuid : layout.mountedItemUuids())
+		{
+			const MountedItem item = layout.item(uuid);
+			if (item.isCutToLength()) {
+				continue;
+			}
+			BomCollector::MountedRow row;
+			row.part_code = item.part_code;
+			row.label = item.label;
+			row.name = item.designation();
+			careless << row;
+		}
+
+		const BomCollector::Result twice =
+				BomCollector::collect(rows,
+						      QList<LocationTree::BomLine>(),
+						      careless);
+		CHECK(twice.lines.size() == result.lines.size());
+		CHECK(pieces(twice) == 7.0);
+	}
+
+	SECTION("o símbolo apagado passa a conta para a placa, e o total não muda")
+	{
+			//K1 deleted from its folio: it has no row any more, and no
+			//folio holds its element. The part is still on the plate,
+			//and is still bought once - by the plate now.
+		QList<BomCollector::ElementRow> without_k1;
+		without_k1 << rows.at(1);
+		const QList<BomCollector::MountedRow> now =
+				BomCollector::mountedRowsOf(layout, QSet<QUuid>());
+		REQUIRE(now.size() == 5);
+
+		const BomCollector::Result moved =
+				BomCollector::collect(without_k1,
+						      QList<LocationTree::BomLine>(),
+						      now);
+		REQUIRE(moved.lines.size() == 3);
+		CHECK(pieces(moved) == 6.0);
+		CHECK(lineOf(moved, "XB-200").quantity == 2.0);
+		CHECK(lineOf(moved, "XB-200").paths
+		      == QStringList({QStringLiteral("K1"), QStringLiteral("QCM1")}));
+		CHECK(moved.drawn == 1);
+		CHECK(moved.mounted == 5);
+	}
+
+	SECTION("a caixa marcada no símbolo vale também para a peça dele na placa")
+	{
+			//Kept out of the parts list on the folio. The plate does not
+			//bring it back: the symbol decides, whatever it decides.
+		QList<BomCollector::ElementRow> kept_out = rows;
+		kept_out[0].exclude_from_bom = QStringLiteral("true");
+
+		const BomCollector::Result result_kept =
+				BomCollector::collect(kept_out,
+						      QList<LocationTree::BomLine>(),
+						      mounted);
+		REQUIRE(result_kept.lines.size() == 3);
+		CHECK(pieces(result_kept) == 5.0);
+		CHECK(lineOf(result_kept, "XB-200").quantity == 1.0);
+		CHECK(result_kept.excluded == 1);
+	}
+}
+
+TEST_CASE("T19 — sem folha nenhuma a lista sai da placa, e a peça sem código sai nomeada onde está",
+	  "[bom][t19]")
+{
+		//The layout before the schematic: not one folio, one enclosure
+		//with a plate and a door, and every part laid from the catalogue.
+		//One of them was laid with no code at all.
+	MountingLayout layout;
+	const QString plate = layout.appendSurface(
+				MountingSurface(QStringLiteral("QCM1"),
+						QStringLiteral("plate"),
+						MountingArea(600.0, 800.0)));
+	const QString door = layout.appendSurface(
+				MountingSurface(QStringLiteral("QCM1"),
+						QStringLiteral("door"),
+						MountingArea(600.0, 800.0)));
+	REQUIRE_FALSE(plate.isEmpty());
+	REQUIRE_FALSE(door.isEmpty());
+
+	for (const MountedItem &item : {plated("t1", "", "XT-100"),
+					plated("t2", "", "XT-100"),
+					railPiece("rail"),
+					plated("loose", "", "")})
+	{
+		REQUIRE_FALSE(layout.mountItem(plate, item).isEmpty());
+	}
+	REQUIRE_FALSE(layout.mountItem(door, plated("h1", "H1", "XL-022"))
+		      .isEmpty());
+
+	const QList<BomCollector::MountedRow> mounted =
+			BomCollector::mountedRowsOf(layout, QSet<QUuid>());
+		//Face by face, in the order the parts were laid, the rail left
+		//out: t1, t2, loose, then the door
+	REQUIRE(mounted.size() == 4);
+	CHECK(mounted.at(3).label == QString("H1"));
+	CHECK(mounted.at(3).where == QString("QCM1"));
+
+	const BomCollector::Result result =
+			BomCollector::collect(QList<BomCollector::ElementRow>(),
+					      QList<LocationTree::BomLine>(),
+					      mounted);
+
+		//The list comes out with no schematic behind it at all
+	REQUIRE(result.lines.size() == 2);
+	CHECK(pieces(result) == 3.0);
+	CHECK(lineOf(result, "XT-100").quantity == 2.0);
+	CHECK(lineOf(result, "XL-022").quantity == 1.0);
+		//A part with a tag is named by its tag, as a symbol is
+	CHECK(lineOf(result, "XL-022").paths == QStringList({QStringLiteral("H1")}));
+
+		//The part with no code is not a line with an empty code, which
+		//nobody can order from: it is a pendency, named by the plate's
+		//own name for it and by the enclosure it is in
+	CHECK(LocationTree::indexOfBomLine(result.lines, QString(), 0) < 0);
+	REQUIRE(BomCollector::countOf(result, BomCollector::Pendency::NoPart)
+		== 1);
+	CHECK(result.pendings.size() == 1);
+	CHECK(result.pendings.at(0).name == QString("loose"));
+	CHECK(result.pendings.at(0).where == QString("QCM1"));
+
+		//Every part that came in left through one door
+	CHECK(result.mounted + result.pendings.size() == mounted.size());
 }

@@ -28,12 +28,15 @@
 #include "diagramcontext.h"
 #include "editor/terminalnamecheck.h"
 #include "dxfexport.h"
+#include "elementprovider.h"
 #include "exportproperties.h"
 #include "label/componentlabelcollector.h"
 #include "label/labelcsvwriter.h"
 #include "label/terminallabelcollector.h"
 #include "location/bomcollector.h"
 #include "location/bommeasure.h"
+#include "location/mountinglayout.h"
+#include "location/undrawnparts.h"
 #include "pdf_links.h"
 #include "container/qetcontainer.h"
 #include "qetgraphicsitem/conductor.h"
@@ -72,6 +75,7 @@
 #include <QTextStream>
 #include <QTimeZone>
 #include <QTransform>
+#include <QUuid>
 
 namespace {
 
@@ -926,6 +930,38 @@ QString purchaseRowsStatement()
 }
 
 /**
+	@brief Which of the elements the layout names a folio still holds.
+	@param project the project, open
+	@param layout its mounting layout
+	@return the uuid of each of them - the set
+	BomCollector::mountedRowsOf() reads
+
+	Asked exactly the way the plate window asks it
+	(MountingLayoutEditor::refreshUndrawn): ElementProvider over the folios,
+	about the elements the plate names and nothing more. Not a second
+	reading of the link, and that is the point of copying the first one:
+	this set is the one input the collector cannot check, and a set that
+	missed an element a folio does hold would count its part twice - once
+	from the symbol and once from the plate - while the window went on
+	listing it as drawn. Two spellings of the question would be free to
+	disagree; this one cannot, short of the window changing its own.
+
+	Asked of the folios and not of the data base the drawn half is read
+	from, for the same reason: it is the folios the window asks.
+*/
+QSet<QUuid> drawnElementsNamedBy(QETProject &project,
+				 const MountingLayout &layout)
+{
+	QSet<QUuid> drawn;
+	const QList<Element *> found = ElementProvider(&project).fromUuids(
+		UndrawnPart::namedElements(layout));
+	for (const Element *element : found) {
+		drawn.insert(element->uuid());
+	}
+	return drawn;
+}
+
+/**
 	@brief The purchase list: what a panel is ordered from, in one file.
 	@param project the project, open
 	@param output the CSV file to write
@@ -939,18 +975,31 @@ QString purchaseRowsStatement()
 	on the part and its revision and sums the quantities; this writes what
 	it answered.
 
+	@par And the plate, for what no folio draws
+	The parts screwed to a face of the mounting layout that no folio
+	draws are the third half: the end bracket, the distribution block,
+	the plate laid out before its schematic. Each is one piece on the line
+	of its code. A part whose symbol is on a folio is not, because the
+	symbol already counts it - which is the whole of "once", and is decided
+	by BomCollector::mountedRowsOf() and the set drawnElementsNamedBy()
+	builds, never here. A piece of rail or duct is not either: it is cut
+	from a bar, and a bar is not bought by the piece.
+
 	@par The layout of the file
 	Three blocks with one empty row between them, each opened by a fixed
 	first row, so that a person in a spreadsheet and the comparison of two
 	exports both find them without counting rows:
 
 	1. the counts, one per row, the key then the number - pending,
-	   excluded, nameless, lines. In front, because a short list that does
-	   not say so is read as complete, and the first row of a file is the
-	   one row everybody reads;
+	   excluded, nameless, lines, mounted. In front, because a short list
+	   that does not say so is read as complete, and the first row of a
+	   file is the one row everybody reads. mounted is how many pieces
+	   came from the plate rather than from a symbol, and it is last
+	   because it came last: a script written against the first four rows
+	   reads the same four rows in the same places;
 	2. the lines, under purchaseLineHeader(): one per part and revision,
 	   the quantity summed from the quantity field and never counted from
-	   rows, the enclosures beside the components;
+	   rows, the enclosures and the plate beside the components;
 	3. the pending items, under purchasePendingHeader(): everything that
 	   could not be put on a line, named, with the reason. In the same
 	   file and in a block of its own, and never as a line with an empty
@@ -980,7 +1029,10 @@ QString purchaseRowsStatement()
 	excluded component is a box somebody ticked, and a nameless one is a
 	drawn marker with nothing on it to order: both are announced, in the
 	file and on stdout, and neither is an item the list failed to answer
-	for.
+	for. Nor does the mounted count: a piece from the plate is on a line
+	like any other. A part on the plate with no code is on no line, and
+	that one does change it - it is pending exactly as a symbol with no
+	part is.
 
 	@par The rows that name nothing are counted, not listed
 	The collector reads element_label_view, which keeps every drawn thing,
@@ -1033,8 +1085,14 @@ int exportPurchase(QETProject &project, const QString &output)
 		return 1;
 	}
 
-	const BomCollector::Result result =
-		BomCollector::collect(rows, project.locationTree().bomLines());
+		//The third half: the parts of the plate no folio draws. Which
+		//ones those are is the collector's and the window's to say - see
+		//drawnElementsNamedBy() - and nothing here decides it again.
+	const MountingLayout layout = project.mountingLayout();
+	const BomCollector::Result result = BomCollector::collect(
+		rows, project.locationTree().bomLines(),
+		BomCollector::mountedRowsOf(layout,
+					    drawnElementsNamedBy(project, layout)));
 	const int nameless = project.dataBase()->namelessComponentCount();
 
 	QStringList text;
@@ -1045,7 +1103,11 @@ int exportPurchase(QETProject &project, const QString &output)
 	     << QETCsv::row({QStringLiteral("nameless"),
 			     QString::number(nameless)})
 	     << QETCsv::row({QStringLiteral("lines"),
-			     QString::number(result.lines.size())});
+			     QString::number(result.lines.size())})
+		//After the four the file was first written with, and never among
+		//them - see the layout of the file above.
+	     << QETCsv::row({QStringLiteral("mounted"),
+			     QString::number(result.mounted)});
 
 	text << QString() << QETCsv::row(purchaseLineHeader());
 	for (const LocationTree::BomLine &line : result.lines)
@@ -1113,6 +1175,11 @@ int exportPurchase(QETProject &project, const QString &output)
 	{
 		out << nameless << " component(s) carry no information at all"
 		       " and are not listed.\n";
+	}
+	if (result.mounted > 0)
+	{
+		out << result.mounted << " part(s) mounted on the layout with no"
+		       " symbol on any folio are counted from the layout.\n";
 	}
 	return result.pendings.isEmpty() ? 0 : 3;
 }

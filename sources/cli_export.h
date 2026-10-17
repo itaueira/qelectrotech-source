@@ -93,12 +93,18 @@ namespace CLIExport {
 		purchase: the list a panel is ordered from, as CSV. One line per
 		      catalogue part and revision, quantities summed, the
 		      enclosures of the location tree (cabinet, door, mounting
-		      plate) beside the drawn components. Three blocks, an empty
-		      row between them: the counts first (pending, excluded,
-		      nameless, lines), then the lines, then every item that could
-		      not be put on a line, named with its reason - a component
-		      with no part assigned is one. Exit code 0: complete; 3:
-		      written, with pending items; 1: nothing written.
+		      plate) beside the drawn components, and the parts of the
+		      mounting layout that no folio draws, one piece each. A part
+		      of the layout whose symbol is on a folio is counted once,
+		      from the symbol; rail and duct cut to length are not counted
+		      by the piece. Three blocks, an empty row between them: the
+		      counts first (pending, excluded, nameless, lines, mounted -
+		      mounted being the pieces counted from the layout), then the
+		      lines, then every item that could not be put on a line,
+		      named with its reason - a component with no part assigned is
+		      one, and so is a part of the layout with no code. Exit code
+		      0: complete; 3: written, with pending items; 1: nothing
+		      written.
 		labels: the labels of the project, one row per label, as CSV:
 		      kind, text, lines, strip, position, level, location, folio,
 		      revision, excluded_from_bom. The terminals come strip after

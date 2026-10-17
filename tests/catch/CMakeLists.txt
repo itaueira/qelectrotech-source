@@ -246,6 +246,8 @@ add_executable(
     # arquivo precisa de projeto aberto e fica fora.
     ${QET_DIR}/sources/location/bomcollector.cpp
     ${QET_DIR}/sources/location/bomcollector.h
+    ${QET_DIR}/sources/location/undrawnparts.cpp
+    ${QET_DIR}/sources/location/undrawnparts.h
     # A arvore de localizacoes nao conhece nada alem de QString e QDomDocument,
     # de proposito: ela e aritmetica de caminho, e a aritmetica e o que
     # precisa de bancada. O que a liga a folha fica em sources/undocommand
