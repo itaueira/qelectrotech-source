@@ -29,7 +29,9 @@
 #include "../UndoCommand/changeterminallevel.h"
 #include "../UndoCommand/bridgeterminalscommand.h"
 #include "../UndoCommand/changeterminalstripcolor.h"
+#include "../UndoCommand/reorderterminalstripcommand.h"
 #include "../physicalterminal.h"
+#include "../realterminal.h"
 #include "../terminalmove.h"
 #include "../terminalstripbridge.h"
 #include "../terminalstripreader.h"
@@ -37,7 +39,11 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QHash>
+#include <QItemSelection>
+#include <QItemSelectionModel>
 #include <QKeyEvent>
+#include <QMap>
 #include <QUndoCommand>
 
 #include <algorithm>
@@ -97,6 +103,27 @@ class ExtendTerminalBridgeCommand : public QUndoCommand
 		QSharedPointer<TerminalStripBridge> m_bridge;
 		QVector<QVector<QSharedPointer<RealTerminal>>> m_blocks;
 };
+
+/**
+	@return the labels of the terminals @a bridge holds, in the order of
+	the rail of @a strip, joined by "+": the way a bridge is named to the
+	person, "2+3", since a bridge has no name of its own.
+*/
+QString bridgeLabels(const TerminalStrip *strip,
+		     const QSharedPointer<TerminalStripBridge> &bridge)
+{
+	QMap<int, QString> by_position;
+	const auto real_terminals = bridge->realTerminals();
+	for (const auto &real_t : real_terminals)
+	{
+		if (!real_t.isNull()) {
+			by_position.insert(strip->pos(real_t->physicalTerminal()),
+					   real_t->label());
+		}
+	}
+
+	return QStringList(by_position.values()).join(QLatin1Char('+'));
+}
 }
 
 /**
@@ -235,6 +262,9 @@ void TerminalStripEditor::reload()
 		m_model->reload();
 		spanMultiLevelTerminals();
 	}
+		//Grouping and ungrouping change the number of physical terminals,
+		//and with it the last position there is to move to.
+	updatePositionRange();
 }
 
 /**
@@ -361,7 +391,13 @@ void TerminalStripEditor::spanMultiLevelTerminals()
  */
 void TerminalStripEditor::selectionChanged()
 {
+	updatePositionRange();
+
 	if (!m_model) {
+		ui->m_move_up_pb           ->setDisabled(true);
+		ui->m_move_down_pb         ->setDisabled(true);
+		ui->m_move_to_position_pb  ->setDisabled(true);
+		ui->m_position_sb          ->setDisabled(true);
 		ui->m_auto_ordering_pb  ->setDisabled(true);
 		ui->m_group_terminals_pb->setDisabled(true);
 		ui->m_ungroup_pb        ->setDisabled(true);
@@ -383,6 +419,14 @@ void TerminalStripEditor::selectionChanged()
 		//The whole strip, like the ordering: the selection says nothing
 		//about which runs share a wire number.
 	ui->m_bridge_same_wire_pb->setEnabled(true);
+		//Enabled like the two above, and not by the selection: a move is
+		//refused for reasons a disabled button could not tell - a pending
+		//edit, a bridge it would open - so the button stays pressable and
+		//the refusal says why.
+	ui->m_move_up_pb         ->setEnabled(true);
+	ui->m_move_down_pb       ->setEnabled(true);
+	ui->m_move_to_position_pb->setEnabled(true);
+	ui->m_position_sb        ->setEnabled(true);
 
 	const auto index_list = ui->m_table_widget->selectionModel()->selectedIndexes();
 
@@ -1206,5 +1250,250 @@ void TerminalStripEditor::on_m_move_to_pb_clicked()
 
 	emit message(TerminalMove::Decision::describeMove(phy_vector.count(),
 							  ui->m_move_to_cb->currentText()));
+}
+
+/**
+	@brief TerminalStripEditor::updatePositionRange
+	Bound the position box to the positions of the current strip.
+
+	The number typed is the number the Position column of the table shows,
+	which is PhysicalTerminal::pos(), counted from 0 - and the number the
+	label export writes beside each terminal. A box counting from 1 beside
+	a column counting from 0 would put every terminal one place away from
+	where the person read it.
+*/
+void TerminalStripEditor::updatePositionRange()
+{
+	const int count = m_current_strip ? m_current_strip->physicalTerminalCount() : 0;
+	ui->m_position_sb->setRange(0, std::max(0, count - 1));
+}
+
+/**
+	@brief TerminalStripEditor::selectedPhysicalTerminals
+	@return the physical terminals of the selected cells, each once: a cell
+	of any level selects the whole physical terminal, since a level is not
+	a place on the rail of its own.
+*/
+QVector<QSharedPointer<PhysicalTerminal>> TerminalStripEditor::selectedPhysicalTerminals() const
+{
+	QVector<QSharedPointer<PhysicalTerminal>> selected;
+	if (!m_model || !m_current_strip || !ui->m_table_widget->selectionModel()) {
+		return selected;
+	}
+
+	const auto data_vector = m_model->modelPhysicalTerminalDataForIndex(ui->m_table_widget->selectionModel()->selectedIndexes());
+	for (const auto &data : data_vector)
+	{
+		const auto physical = m_current_strip->physicalTerminal(data.uuid_);
+		if (physical && !selected.contains(physical)) {
+			selected.append(physical);
+		}
+	}
+
+	return selected;
+}
+
+/**
+	@brief TerminalStripEditor::terminalsToReorder
+	@return the physical terminals a move button is to move, or an empty
+	vector after telling the person why nothing will move.
+*/
+QVector<QSharedPointer<PhysicalTerminal>> TerminalStripEditor::terminalsToReorder()
+{
+	if (!m_model || !m_current_strip || !m_project) {
+		return QVector<QSharedPointer<PhysicalTerminal>>();
+	}
+
+		//The reload that follows every change of order resets the table,
+		//and an edit typed in it and not applied goes with it, without a
+		//word. Refused first, before anything else is looked at, so that
+		//nothing of the edit is touched.
+	if (!m_model->modifiedmodelRealTerminalData().isEmpty())
+	{
+		emit message(tr("Apply the pending changes first: moving terminals reloads the table, which would discard them."));
+		return QVector<QSharedPointer<PhysicalTerminal>>();
+	}
+
+	const auto selected = selectedPhysicalTerminals();
+	if (selected.isEmpty()) {
+		emit message(tr("Select the terminals to move first."));
+	}
+	return selected;
+}
+
+/**
+	@brief TerminalStripEditor::reorder
+	Put the physical terminals of the current strip in @a new_order, as one
+	undo command named @a command_text, and keep the selected cells on the
+	terminals they were on.
+
+	Refused, and said, when @a new_order is the order already there - told
+	with @a unchanged_text, and nothing pushed: a Ctrl+Z that does nothing
+	is a step the person has to take back for nothing - and when it would
+	leave a bridge that runs along adjacent terminals today with a terminal
+	in its middle, which the strip would never let a bridge be made with.
+	The labels are not touched either way.
+	@param selected : the terminals the person asked to move, which the
+	message counts and the selection follows
+*/
+void TerminalStripEditor::reorder(const QVector<QSharedPointer<PhysicalTerminal>> &new_order,
+				  const QVector<QSharedPointer<PhysicalTerminal>> &selected,
+				  const QString &command_text,
+				  const QString &unchanged_text)
+{
+	const auto old_order = m_current_strip->physicalTerminal();
+	if (new_order == old_order)
+	{
+		emit message(unchanged_text);
+		return;
+	}
+
+	const auto opened = ReorderTerminalStripCommand::openedBridges(m_current_strip, new_order);
+	if (!opened.isEmpty())
+	{
+		emit message(tr("Not moved: bridge %1 would have a terminal in its middle.")
+			     .arg(bridgeLabels(m_current_strip, opened.first())));
+		return;
+	}
+
+	int moved_count = 0;
+	for (const auto &physical : selected)
+	{
+		if (new_order.indexOf(physical) != old_order.indexOf(physical)) {
+			++moved_count;
+		}
+	}
+
+		//The selected cells, held by terminal and not by row: the push
+		//below reloads the table, which forgets the selection, and the
+		//terminals are no longer on the rows they were. Kept, so that a
+		//second click moves the same terminals one place further.
+	QVector<QPair<QSharedPointer<RealTerminal>, int>> cells;
+	const auto indexes = ui->m_table_widget->selectionModel()->selectedIndexes();
+	for (const auto &index : indexes)
+	{
+		const auto real_t = m_model->modelRealTerminalDataForIndex(index).real_terminal.toStrongRef();
+		if (real_t) {
+			cells.append(qMakePair(real_t, index.column()));
+		}
+	}
+
+	m_project->undoStack()->push(new ReorderTerminalStripCommand(m_current_strip,
+								     new_order,
+								     command_text));
+	selectCells(cells);
+
+	emit message(tr("%n terminal(s) moved; their labels are unchanged.", nullptr, moved_count));
+}
+
+/**
+	@brief TerminalStripEditor::selectCells
+	Select, in the table as it now stands, the cell of each real terminal
+	of @a cells in the column given beside it.
+*/
+void TerminalStripEditor::selectCells(const QVector<QPair<QSharedPointer<RealTerminal>, int>> &cells)
+{
+	const auto selection_model = ui->m_table_widget->selectionModel();
+	if (!m_model || !m_current_strip || !selection_model) {
+		return;
+	}
+
+		//The row of each real terminal: one row per level, physical
+		//terminal after physical terminal in the order of the rail, and a
+		//null level skipped - the rows TerminalStripModel builds.
+	QHash<RealTerminal *, int> row_of;
+	int row = 0;
+	const auto physical_terminals = m_current_strip->physicalTerminal();
+	for (const auto &physical : physical_terminals)
+	{
+		const auto levels = physical->realTerminals();
+		for (const auto &real_t : levels)
+		{
+			if (!real_t.isNull()) {
+				row_of.insert(real_t.data(), row++);
+			}
+		}
+	}
+
+	QItemSelection selection;
+	for (const auto &cell : cells)
+	{
+		const auto it = row_of.constFind(cell.first.data());
+		if (it == row_of.constEnd()) {
+			continue;
+		}
+		const auto index = m_model->index(it.value(), cell.second);
+		selection.select(index, index);
+	}
+
+	selection_model->select(selection, QItemSelectionModel::ClearAndSelect);
+}
+
+/**
+	@brief TerminalStripEditor::on_m_move_up_pb_clicked
+	Move the selected physical terminals one place up, as one undo command.
+	@sa ReorderTerminalStripCommand::movedUp
+*/
+void TerminalStripEditor::on_m_move_up_pb_clicked()
+{
+	const auto selected = terminalsToReorder();
+	if (selected.isEmpty()) {
+		return;
+	}
+
+	reorder(ReorderTerminalStripCommand::movedUp(m_current_strip->physicalTerminal(), selected),
+		selected,
+		tr("Move terminals up"),
+		tr("The selected terminals are already at the top."));
+}
+
+/**
+	@brief TerminalStripEditor::on_m_move_down_pb_clicked
+	Move the selected physical terminals one place down, as one undo command.
+	@sa ReorderTerminalStripCommand::movedDown
+*/
+void TerminalStripEditor::on_m_move_down_pb_clicked()
+{
+	const auto selected = terminalsToReorder();
+	if (selected.isEmpty()) {
+		return;
+	}
+
+	reorder(ReorderTerminalStripCommand::movedDown(m_current_strip->physicalTerminal(), selected),
+		selected,
+		tr("Move terminals down"),
+		tr("The selected terminals are already at the bottom."));
+}
+
+/**
+	@brief TerminalStripEditor::on_m_move_to_position_pb_clicked
+	Move the selected physical terminals, as one block in the order they
+	have on the rail, to the position of the position box, as one undo
+	command.
+	@sa ReorderTerminalStripCommand::movedTo
+*/
+void TerminalStripEditor::on_m_move_to_position_pb_clicked()
+{
+	const auto selected = terminalsToReorder();
+	if (selected.isEmpty()) {
+		return;
+	}
+
+	const auto new_order = ReorderTerminalStripCommand::movedTo(m_current_strip->physicalTerminal(),
+								    selected,
+								    ui->m_position_sb->value());
+
+		//Where the block lands, which is the position asked for unless the
+		//block does not fit between it and the end of the rail: the
+		//command and the message say where it went, not what was typed.
+	int position = std::numeric_limits<int>::max();
+	for (const auto &physical : selected) {
+		position = std::min(position, static_cast<int>(new_order.indexOf(physical)));
+	}
+
+	reorder(new_order,
+		selected,
+		tr("Move terminals to position %1").arg(position),
+		tr("The selected terminals are already at position %1.").arg(position));
 }
 

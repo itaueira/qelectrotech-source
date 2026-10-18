@@ -1064,6 +1064,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/TerminalStrip/UndoCommand/changeterminalstripdata.h
   ${QET_DIR}/sources/TerminalStrip/UndoCommand/groupterminalscommand.cpp
   ${QET_DIR}/sources/TerminalStrip/UndoCommand/groupterminalscommand.h
+  ${QET_DIR}/sources/TerminalStrip/UndoCommand/reorderterminalstripcommand.cpp
+  ${QET_DIR}/sources/TerminalStrip/UndoCommand/reorderterminalstripcommand.h
   ${QET_DIR}/sources/TerminalStrip/UndoCommand/sortterminalstripcommand.cpp
   ${QET_DIR}/sources/TerminalStrip/UndoCommand/sortterminalstripcommand.h
   ${QET_DIR}/sources/TerminalStrip/GraphicsItem/demoterminalstrip.cpp

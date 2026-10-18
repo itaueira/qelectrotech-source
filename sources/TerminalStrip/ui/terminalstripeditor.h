@@ -18,6 +18,9 @@
 #ifndef TERMINALSTRIPEDITOR_H
 #define TERMINALSTRIPEDITOR_H
 
+#include <QPair>
+#include <QSharedPointer>
+#include <QVector>
 #include <QWidget>
 
 #include "terminalstripmodel.h"
@@ -28,6 +31,8 @@ namespace Ui {
 
 class QETProject;
 class TerminalStrip;
+class PhysicalTerminal;
+class RealTerminal;
 
 /**
  * @brief The TerminalStripEditor class
@@ -72,6 +77,14 @@ class TerminalStripEditor : public QWidget
 		QSize setUpBridgeCellWidth();
 		TerminalStripModel::Column isSingleColumnSelected() const;
 		QPair<TerminalStripModel::Column, QVector<modelRealTerminalData>> singleColumnData() const;
+		void updatePositionRange();
+		QVector<QSharedPointer<PhysicalTerminal>> selectedPhysicalTerminals() const;
+		QVector<QSharedPointer<PhysicalTerminal>> terminalsToReorder();
+		void reorder(const QVector<QSharedPointer<PhysicalTerminal>> &new_order,
+			     const QVector<QSharedPointer<PhysicalTerminal>> &selected,
+			     const QString &command_text,
+			     const QString &unchanged_text);
+		void selectCells(const QVector<QPair<QSharedPointer<RealTerminal>, int>> &cells);
 
 	private slots:
 		void on_m_auto_ordering_pb_clicked();
@@ -87,6 +100,9 @@ class TerminalStripEditor : public QWidget
 		void on_m_bridge_same_wire_pb_clicked();
 		void on_m_bridge_color_cb_activated(const QColor &col);
 		void on_m_move_to_pb_clicked();
+		void on_m_move_up_pb_clicked();
+		void on_m_move_down_pb_clicked();
+		void on_m_move_to_position_pb_clicked();
 
 	private:
 		Ui::TerminalStripEditor *ui;

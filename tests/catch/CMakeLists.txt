@@ -941,6 +941,9 @@ if(TARGET qelectrotech_objects)
         # selection extends a bridge that is already there: the bridge comes
         # back as it was. Needs terminal elements on a folio.
         src/ui/manualbridgeundo_test.cpp
+        # Moving terminals of a strip by hand: move up, move down, move to a
+        # position, one undo step per click. Needs terminal elements on a folio.
+        src/ui/stripreorder_test.cpp
         # The information panel of an element and the keys a catalogue part
         # writes on it: no anonymous row for them, and kept on apply. Needs
         # a placed element, of both kinds.
