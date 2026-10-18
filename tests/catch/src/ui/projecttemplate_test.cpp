@@ -55,9 +55,9 @@ namespace
 {
 	/**
 		The template: two folios of different sizes, title blocks filled in,
-		project-wide defaults of its own, and - deliberately - the two title
-		block variables that name the file it was saved as. Those last two are
-		what a template dragged along until now.
+		project-wide defaults of its own, and - deliberately - the title block
+		variables that name the file it was saved as, and when. Those last
+		three are what a template dragged along until now.
 	*/
 	QString templateXml()
 	{
@@ -66,6 +66,7 @@ namespace
 			       "<properties>"
 			       "<property name=\"savedfilename\" show=\"1\">modelo-padrao</property>"
 			       "<property name=\"savedfilepath\" show=\"1\">/partilha/modelos/modelo-padrao.qet</property>"
+			       "<property name=\"saveddate-eu\" show=\"1\">02-01-2024</property>"
 			       "</properties>"
 			       "<newdiagrams>"
 			       "<border cols=\"13\" colsize=\"60\" rows=\"9\" rowsize=\"80\""
@@ -302,6 +303,10 @@ TEST_CASE("T26 — o nome do arquivo do modelo não vaza para as variáveis do c
 	CHECK(project->projectProperties().value(QStringLiteral("savedfilename"))
 	      .toString().isEmpty());
 	CHECK(project->projectProperties().value(QStringLiteral("savedfilepath"))
+	      .toString().isEmpty());
+		//Nor the date the template was saved: only a save sets these, and
+		//the new project has not been saved yet
+	CHECK(project->projectProperties().value(QStringLiteral("saveddate-eu"))
 	      .toString().isEmpty());
 
 		//The title of the template does come across, and on purpose: it is

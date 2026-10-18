@@ -64,10 +64,27 @@ void ProjectTemplate::detachFromFile(QETProject *project)
 	}
 
 		//Order matters. Dropping the path first is what makes the next save
-		//ask where to go; it also rewrites the "savedfilename" and
-		//"savedfilepath" properties, so a title block that prints the file
-		//name stops printing the template's.
+		//ask where to go.
 	project->setFilePath(QString());
+
+		//The variables of the save describe the template's file, and
+		//setFilePath() no longer rewrites them: only a save does. Dropped
+		//here, so a title block that prints the file name, path or saved
+		//date stops printing the template's; the first save of the new
+		//project sets them again, since it is modified (below).
+	DiagramContext properties = project->projectProperties();
+	bool dropped = false;
+	for (const QString &key : {QStringLiteral("saveddate"), QStringLiteral("saveddate-eu"),
+							   QStringLiteral("saveddate-us"), QStringLiteral("savedtime"),
+							   QStringLiteral("savedfilename"), QStringLiteral("savedfilepath")}) {
+		if (properties.contains(key)) {
+			properties.remove(key);
+			dropped = true;
+		}
+	}
+	if (dropped) {
+		project->setProjectProperties(properties);
+	}
 
 		//A template may well sit on a read-only share. The project read out
 		//of it must not inherit that: it is going to be saved somewhere
