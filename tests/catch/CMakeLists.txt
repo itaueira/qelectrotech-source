@@ -816,6 +816,9 @@ if(TARGET qelectrotech_objects)
         src/ui/componentlabel_test.cpp
         src/ui/terminallabel_test.cpp
         src/ui/labelexport_test.cpp
+        # T21, passo 7a: a lista de bornes gravada pela janela das réguas é
+        # o mesmo arquivo de --export-labels kinds=terminal.
+        src/ui/terminallistexport_test.cpp
         src/ui/mountinglayoutsave_test.cpp
         # A cena em milímetro da placa de montagem: o que ela conta, o que
         # ela se recusa a fazer item, e o que um arraste deixa na pilha. Está

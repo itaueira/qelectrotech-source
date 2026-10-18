@@ -19,6 +19,8 @@
 
 #include "../UndoCommand/addterminalstripcommand.h"
 #include "freeterminaleditor.h"
+#include "../../label/labelcsvwriter.h"
+#include "../../label/terminallabelcollector.h"
 #include "../../qetapp.h"
 #include "../../qetdiagrameditor.h"
 #include "../../qetproject.h"
@@ -29,6 +31,9 @@
 #include "terminalstripeditorwindow.h"
 #include "terminalstriptreedockwidget.h"
 
+#include <QDir>
+#include <QFileDialog>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QStatusBar>
 
@@ -37,6 +42,27 @@ QPointer<TerminalStripEditorWindow> TerminalStripEditorWindow::window_;
 static const int EMPTY_PAGE = 0;
 static const int FREE_TERMINAL_PAGE = 1;
 static const int TERMINAL_STRIP_PAGE = 2;
+
+namespace
+{
+	/**
+		@a text with every character that a file name cannot hold on one
+		system or another replaced by '_', so that the name of a strip or
+		of a project can go into the file name the save dialog suggests.
+	*/
+	QString fileNamePart(QString text)
+	{
+		static const QString forbidden = QStringLiteral("\\/:*?\"<>|");
+		for (QChar &character : text)
+		{
+			if (forbidden.contains(character)) {
+				character = QLatin1Char('_');
+			}
+		}
+		return text;
+	}
+}
+
 /**
  * @brief TerminalStripEditorWindow::TerminalStripEditorWindow
  * @param project
@@ -221,6 +247,109 @@ void TerminalStripEditorWindow::on_m_reload_triggered() {
 	m_tree_dock->reload();
 	m_terminal_strip_editor->reload();
 	m_free_terminal_editor->reload();
+}
+
+/**
+ * @brief TerminalStripEditorWindow::exportTerminalList
+ * See the declaration. Nothing here formats a cell: the collector reads
+ * the strips, the writer writes the file, and this only chooses between
+ * one strip and every strip - which is why the file of every strip is the
+ * file of the command line.
+ */
+QString TerminalStripEditorWindow::exportTerminalList(QETProject *project,
+						      TerminalStrip *strip,
+						      const QString &path,
+						      int *written)
+{
+	if (written) {
+		*written = 0;
+	}
+
+	LabelEntryList entries;
+	if (strip) {
+		entries = TerminalLabelCollector::collectStrip(strip);
+	}
+	else
+	{
+			//Every strip, in the order the project holds them - not in the
+			//order the tree of this window lists them, which is sorted by
+			//name: the command line follows the project, and the two files
+			//have to be the same file.
+		TerminalLabelCollector collector(project);
+		entries = collector.collect();
+		if (!collector.error().isEmpty()) {
+			return collector.error();
+		}
+	}
+
+	const QString failure = LabelCsvWriter::write(entries, path);
+	if (!failure.isEmpty()) {
+		return failure;
+	}
+
+	if (written) {
+		*written = int(entries.size());
+	}
+	return QString();
+}
+
+/**
+ * @brief TerminalStripEditorWindow::on_m_export_terminal_list_triggered
+ * Write the terminal list of the strip selected in the tree, or of every
+ * strip, to a CSV file the user chooses.
+ *
+ * How many rows were written, and where, is said in the status bar, where
+ * the two pages already talk. A file that could not be written is said in
+ * a box instead: the user asked for that file and will go looking for it,
+ * and a line that fades out of the status bar is too easily missed.
+ */
+void TerminalStripEditorWindow::on_m_export_terminal_list_triggered()
+{
+	if (!m_project) {
+		return;
+	}
+
+		//The strip of the selected node: the strip itself, or the strip of a
+		//selected terminal - the strip the editor beside the tree is about.
+		//Any other node - the project, an installation, a location, the
+		//independent terminals - is not one strip, and gives every strip.
+	TerminalStrip *strip = m_tree_dock->currentStrip();
+
+	QString dir = m_project->currentDir();
+	if (dir.isEmpty()) {
+		dir = QETApp::documentDir();
+	}
+	const QString suggested = dir + QLatin1Char('/')
+			+ tr("terminal_list_")
+			+ fileNamePart(strip ? strip->name() : m_project->title())
+			+ QStringLiteral(".csv");
+
+	const QString path = QFileDialog::getSaveFileName(
+				 this, tr("Export the terminal list"), suggested,
+				 tr("CSV files (*.csv)"));
+	if (path.isEmpty()) {
+		return;
+	}
+
+	int written = 0;
+	const QString failure = exportTerminalList(m_project, strip, path,
+						   &written);
+	const QString shown_path = QDir::toNativeSeparators(path);
+	if (!failure.isEmpty())
+	{
+		QMessageBox::warning(this, tr("Export the terminal list"),
+				     tr("The terminal list could not be written to %1.\n%2")
+				     .arg(shown_path, failure));
+		return;
+	}
+
+	if (strip) {
+		showMessage(tr("%n terminal(s) of %1 exported to %2", nullptr, written)
+			    .arg(strip->name(), shown_path));
+	} else {
+		showMessage(tr("%n terminal(s) of every strip exported to %1", nullptr, written)
+			    .arg(shown_path));
+	}
 }
 
 /**
