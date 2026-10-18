@@ -22,9 +22,11 @@
 
 #include "../autoNum/assemblystate.h"
 
+class AssemblyChangesDialog;
 class QComboBox;
 class QETProject;
 class QLabel;
+class QPushButton;
 
 /**
 	@brief Says that this project is wired, and takes it back.
@@ -76,6 +78,18 @@ class QLabel;
 	the same save and cannot come apart. What is left is the ordinary truth
 	about any change - it is in the file once the project is saved - and that
 	is a note, not a refusal.
+
+	@par The way to the order of service
+	The photograph keeps the label of each item so that the program can say
+	what changed since, and this window is where the photograph is made, so
+	the list of those changes opens from here. The button is enabled only
+	while the project is marked: an unmarked project has no "since", and a
+	button that opened an empty list would read as "nothing to do".
+
+	The list opens non modal, in front of whatever this window was opened
+	from, and this window closes - without applying the stage on offer, as
+	Cancel would. The list leads from each line to the item on its folio,
+	and a modal window left above the folio would block exactly that.
 */
 class AssemblyStateDialog : public QDialog
 {
@@ -95,6 +109,22 @@ class AssemblyStateDialog : public QDialog
 		/// How many conductors it holds.
 		int photographedConductors() const;
 
+		/// Whether the list of changes since the marking can be opened:
+		/// the project is marked as it stands, not as the list offers.
+		bool changesReportAvailable() const;
+
+		/**
+			Open the list of changes since the marking, non modal, and
+			close this window without applying anything.
+			@return the list, deleted when it is closed; nullptr when the
+			project is not marked.
+
+			A plain member and not a slot: the button reaches it through a
+			pointer-to-member connection, which needs no slot, and keeping
+			it out of the meta-object keeps the return type out of it too.
+		*/
+		AssemblyChangesDialog *showChangesReport();
+
 	private slots:
 		void refreshPreview();
 		void apply();
@@ -110,6 +140,7 @@ class AssemblyStateDialog : public QDialog
 		QLabel *m_current = nullptr;
 		QLabel *m_effect = nullptr;
 		QLabel *m_save_note = nullptr;
+		QPushButton *m_changes = nullptr;
 };
 
 #endif // ASSEMBLYSTATEDIALOG_H

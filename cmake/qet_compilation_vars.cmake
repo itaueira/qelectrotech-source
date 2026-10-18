@@ -351,6 +351,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/titleblocktemplaterenderer.cpp
   ${QET_DIR}/sources/titleblocktemplaterenderer.h
 
+  ${QET_DIR}/sources/autoNum/assemblychanges.cpp
+  ${QET_DIR}/sources/autoNum/assemblychanges.h
   ${QET_DIR}/sources/autoNum/assemblystate.cpp
   ${QET_DIR}/sources/autoNum/assemblystate.h
   ${QET_DIR}/sources/autoNum/assignvariables.cpp
@@ -1147,6 +1149,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ui/jumptoelementdialog.h
   ${QET_DIR}/sources/ui/navigatechoicedialog.cpp
   ${QET_DIR}/sources/ui/navigatechoicedialog.h
+  ${QET_DIR}/sources/ui/assemblychangesdialog.cpp
+  ${QET_DIR}/sources/ui/assemblychangesdialog.h
   ${QET_DIR}/sources/ui/assemblystatedialog.cpp
   ${QET_DIR}/sources/ui/assemblystatedialog.h
   ${QET_DIR}/sources/ui/wiringruleswarning.cpp

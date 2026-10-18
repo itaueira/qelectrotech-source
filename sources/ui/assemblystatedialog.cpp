@@ -17,6 +17,7 @@
 */
 #include "assemblystatedialog.h"
 
+#include "assemblychangesdialog.h"
 #include "../qetproject.h"
 #include "../undocommand/assemblystatecommand.h"
 
@@ -24,6 +25,7 @@
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QUndoStack>
 #include <QVBoxLayout>
 
@@ -84,6 +86,38 @@ int AssemblyStateDialog::photographedConductors() const
 }
 
 /**
+	@brief AssemblyStateDialog::changesReportAvailable
+	@return whether the project, as it stands, has a marking to compare with
+*/
+bool AssemblyStateDialog::changesReportAvailable() const
+{
+	return m_project && m_project->assemblyState().isFrozen();
+}
+
+/**
+	@brief AssemblyStateDialog::showChangesReport
+	@return the list of changes now on screen, or nullptr
+*/
+AssemblyChangesDialog *AssemblyStateDialog::showChangesReport()
+{
+	if (!changesReportAvailable()) {
+		return nullptr;
+	}
+
+		//Parented to whatever this window was opened from, and not to this
+		//window, which is about to close: the list has to outlive it.
+	AssemblyChangesDialog *report = new AssemblyChangesDialog(m_project,
+								  parentWidget());
+	report->setAttribute(Qt::WA_DeleteOnClose);
+	report->show();
+
+		//Out of the way, as Cancel: whatever stage the list was offering is
+		//not applied. Looking at what changed is not a change of stage.
+	reject();
+	return report;
+}
+
+/**
 	@brief AssemblyStateDialog::setUpWidget
 */
 void AssemblyStateDialog::setUpWidget()
@@ -132,8 +166,20 @@ void AssemblyStateDialog::setUpWidget()
 
 	QDialogButtonBox *box = new QDialogButtonBox(
 				QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+		//In the same box, as an action: one box in the window, so that Ok
+		//and Cancel are where they always are and are found the way they
+		//always were. Never the default button - Enter confirms the stage,
+		//it does not open a list.
+	m_changes = box->addButton(tr("Changes since assembly…"),
+				   QDialogButtonBox::ActionRole);
+	m_changes->setAutoDefault(false);
+	m_changes->setObjectName(QStringLiteral("changes_since_assembly"));
+	m_changes->setToolTip(tr("What to mount, remove and relabel on the "
+				 "panel since the project was marked."));
 	layout->addWidget(box);
 
+	connect(m_changes, &QPushButton::clicked,
+		this, &AssemblyStateDialog::showChangesReport);
 	connect(m_stage, QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this, &AssemblyStateDialog::refreshPreview);
 	connect(box, &QDialogButtonBox::accepted,
@@ -152,6 +198,12 @@ void AssemblyStateDialog::refreshPreview()
 		//could count two different things if something moved in between, and
 		//the reader would have no way of telling which one was true.
 	m_preview = AssemblyStateCommand::photograph(m_project, chosenStage());
+
+		//The project as it stands, not the stage on offer: the list
+		//compares the drawing with the photograph already taken.
+	if (m_changes) {
+		m_changes->setEnabled(changesReportAvailable());
+	}
 
 	if (!m_project)
 	{

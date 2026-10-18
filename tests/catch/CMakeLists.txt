@@ -86,6 +86,7 @@ add_executable(
     src/pinout_test.cpp
     src/symbolpreview_test.cpp
     src/assemblystate_test.cpp
+    src/assemblychanges_test.cpp
     src/iecstructure_test.cpp
     src/renumber_test.cpp
     src/connectornumbering_test.cpp
@@ -183,6 +184,8 @@ add_executable(
     # catalog core: no Element, no Diagram, so the ordering and the inheritance
     # can be tested without a project open. ProjectRenumberer is the part that
     # does need one, and it is deliberately not here.
+    ${QET_DIR}/sources/autoNum/assemblychanges.cpp
+    ${QET_DIR}/sources/autoNum/assemblychanges.h
     ${QET_DIR}/sources/autoNum/assemblystate.cpp
     ${QET_DIR}/sources/autoNum/assemblystate.h
     ${QET_DIR}/sources/autoNum/iecstructure.cpp
@@ -730,6 +733,7 @@ if(TARGET qelectrotech_objects)
         src/ui/contextmenuassign_test.cpp
         src/ui/renumberproject_test.cpp
         src/ui/assemblymark_test.cpp
+        src/ui/assemblychangesdialog_test.cpp
         # What the wire numbering may still write on a project marked as
         # built, and the one reading of the hand lock that the renumbering
         # of components and the numbering of terminals share (T29).
