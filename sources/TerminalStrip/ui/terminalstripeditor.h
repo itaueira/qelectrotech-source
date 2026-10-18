@@ -84,6 +84,7 @@ class TerminalStripEditor : public QWidget
 		void on_m_cable_apply_pb_clicked();
 		void on_m_bridge_terminals_pb_clicked();
 		void on_m_unbridge_terminals_pb_clicked();
+		void on_m_bridge_same_wire_pb_clicked();
 		void on_m_bridge_color_cb_activated(const QColor &col);
 		void on_m_move_to_pb_clicked();
 

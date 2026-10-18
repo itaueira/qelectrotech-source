@@ -1016,6 +1016,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/TerminalStrip/terminalstrip.h
   ${QET_DIR}/sources/TerminalStrip/terminalstripdata.cpp
   ${QET_DIR}/sources/TerminalStrip/terminalstripdata.h
+  ${QET_DIR}/sources/TerminalStrip/terminalstripreader.cpp
+  ${QET_DIR}/sources/TerminalStrip/terminalstripreader.h
   ${QET_DIR}/sources/TerminalStrip/terminalstripstructure.cpp
   ${QET_DIR}/sources/TerminalStrip/terminalstripstructure.h
   ${QET_DIR}/sources/TerminalStrip/ui/addterminalstripitemdialog.cpp

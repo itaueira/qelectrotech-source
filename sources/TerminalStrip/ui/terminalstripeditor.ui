@@ -67,7 +67,7 @@
             </property>
            </widget>
           </item>
-          <item row="14" column="1" colspan="2">
+          <item row="15" column="1" colspan="2">
            <widget class="KColorCombo" name="m_bridge_color_cb"/>
           </item>
           <item row="5" column="0">
@@ -90,7 +90,7 @@
             </property>
            </widget>
           </item>
-          <item row="14" column="0">
+          <item row="15" column="0">
            <widget class="QLabel" name="label_10">
             <property name="text">
              <string>Bridge color :</string>
@@ -198,7 +198,7 @@
             </property>
            </widget>
           </item>
-          <item row="15" column="0">
+          <item row="16" column="0">
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -296,6 +296,16 @@
            <widget class="QPushButton" name="m_unbridge_terminals_pb">
             <property name="text">
              <string>Unbridge the terminals</string>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="1" colspan="2">
+           <widget class="QPushButton" name="m_bridge_same_wire_pb">
+            <property name="toolTip">
+             <string>Bridge each run of adjacent terminals with the same wire number; only generic and ground terminals are bridged.</string>
+            </property>
+            <property name="text">
+             <string>Bridge same wire numbers</string>
             </property>
            </widget>
           </item>

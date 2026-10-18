@@ -32,14 +32,72 @@
 #include "../physicalterminal.h"
 #include "../terminalmove.h"
 #include "../terminalstripbridge.h"
+#include "../terminalstripreader.h"
 #include "../terminalcolor.h"
 
 #include <QApplication>
 #include <QClipboard>
 #include <QKeyEvent>
+#include <QUndoCommand>
 
 #include <algorithm>
 #include <limits>
+
+namespace {
+/**
+	@brief Add terminals to a bridge that already exists, and take back on
+	undo exactly the ones added.
+
+	BridgeTerminalsCommand cannot do this, and the reason is in its undo:
+	it unbridges every terminal it was handed. Handed a run that a bridge
+	made by hand already holds in part, one Ctrl+Z would take the hand made
+	bridge apart together with the extension, and leave the strip with less
+	than it had before the button was pressed.
+
+	So this one is handed only the terminals it adds, in the blocks they
+	form along the strip, and undo removes them block by block.
+	TerminalStrip::unBridge only lets go of terminals at one end of a
+	bridge, and the added ones are exactly that - one block before the
+	bridge, one after it, or both - which the caller checks before building
+	this command, not after.
+*/
+class ExtendTerminalBridgeCommand : public QUndoCommand
+{
+	public:
+		ExtendTerminalBridgeCommand(TerminalStrip *strip,
+					    const QSharedPointer<TerminalStripBridge> &bridge,
+					    const QVector<QVector<QSharedPointer<RealTerminal>>> &blocks,
+					    QUndoCommand *parent) :
+			QUndoCommand(parent),
+			m_strip(strip),
+			m_bridge(bridge),
+			m_blocks(blocks)
+		{}
+
+		void redo() override
+		{
+			if (m_strip) {
+				for (const auto &block : std::as_const(m_blocks)) {
+					m_strip->setBridge(m_bridge, block);
+				}
+			}
+		}
+
+		void undo() override
+		{
+			if (m_strip) {
+				for (auto it = m_blocks.crbegin() ; it != m_blocks.crend() ; ++it) {
+					m_strip->unBridge(*it);
+				}
+			}
+		}
+
+	private:
+		QPointer<TerminalStrip> m_strip;
+		QSharedPointer<TerminalStripBridge> m_bridge;
+		QVector<QVector<QSharedPointer<RealTerminal>>> m_blocks;
+};
+}
 
 /**
  * @brief TerminalStripEditor::TerminalStripEditor
@@ -316,11 +374,15 @@ void TerminalStripEditor::selectionChanged()
 
 		ui->m_bridge_terminals_pb  ->setDisabled(true);
 		ui->m_unbridge_terminals_pb->setDisabled(true);
+		ui->m_bridge_same_wire_pb  ->setDisabled(true);
 		ui->m_bridge_color_cb      ->setDisabled(true);
 		return;
 	}
 
 	ui->m_auto_ordering_pb->setEnabled(true);
+		//The whole strip, like the ordering: the selection says nothing
+		//about which runs share a wire number.
+	ui->m_bridge_same_wire_pb->setEnabled(true);
 
 	const auto index_list = ui->m_table_widget->selectionModel()->selectedIndexes();
 
@@ -944,6 +1006,119 @@ void TerminalStripEditor::on_m_unbridge_terminals_pb_clicked()
 			m_project->undoStack()->push(new UnBridgeTerminalsCommand(m_current_strip, match_vector));
 		}
 	}
+}
+
+/**
+	@brief TerminalStripEditor::on_m_bridge_same_wire_pb_clicked
+	Bridge every run of adjacent terminals carrying the same wire number,
+	as one command: one Ctrl+Z takes back every bridge the click made.
+
+	What may be bridged is decided by proposeBridgesByWire, which never
+	reads this strip: TerminalStripReader turns the strip into the plain
+	structure it reads, and turns each proposal back into terminals. The
+	rule is where a fuse, a sectional or a diode terminal is refused, and
+	where such a terminal cuts a run in two instead of being stepped over;
+	nothing of that is decided again here.
+
+	Each proposal still goes through TerminalStrip::isBridgeable before it
+	becomes a command. By construction it passes, so the check costs
+	nothing when the reading is right, and the day it is not, a comb the
+	strip would refuse is left out instead of being pushed as a command
+	that silently does nothing.
+*/
+void TerminalStripEditor::on_m_bridge_same_wire_pb_clicked()
+{
+	if (!m_model || !m_current_strip || !m_project) {
+		return;
+	}
+
+		//The rule reads the terminal types as the strip holds them, and a
+		//type changed in the table is not there until Apply. Bridging now
+		//would comb a terminal somebody has just marked as a fuse, and the
+		//reload that follows every bridge would then throw that mark away
+		//without a word.
+	if (!m_model->modifiedmodelRealTerminalData().isEmpty())
+	{
+		emit message(tr("Apply the pending changes first: bridging by wire number reads the saved terminal types."));
+		return;
+	}
+
+	const TerminalStripReader reader{m_current_strip};
+	const auto proposals = proposeBridgesByWire(reader.structure());
+
+	auto command = new QUndoCommand(tr("Bridge terminals with the same wire number"));
+	int bridge_count = 0;
+
+	for (const auto &proposal : proposals)
+	{
+		const auto terminals = reader.realTerminals(proposal);
+		if (terminals.isEmpty()) {
+			continue;
+		}
+
+			//The bridge already holding part of the run, if any - the rule
+			//lets at most one through - and the free terminals around it,
+			//in the blocks they form.
+		QSharedPointer<TerminalStripBridge> existing;
+		QVector<QVector<QSharedPointer<RealTerminal>>> blocks;
+		QVector<QSharedPointer<RealTerminal>> block;
+		for (const auto &terminal : terminals)
+		{
+			if (const auto held_by = m_current_strip->isBridged(terminal))
+			{
+				existing = held_by;
+				if (!block.isEmpty()) {
+					blocks.append(block);
+					block.clear();
+				}
+			}
+			else {
+				block.append(terminal);
+			}
+		}
+		if (!block.isEmpty()) {
+			blocks.append(block);
+		}
+
+		if (existing.isNull())
+		{
+			if (m_current_strip->isBridgeable(terminals))
+			{
+				new BridgeTerminalsCommand(m_current_strip, terminals, command);
+				++bridge_count;
+			}
+			continue;
+		}
+
+		QVector<QSharedPointer<RealTerminal>> added;
+		for (const auto &added_block : std::as_const(blocks)) {
+			added.append(added_block);
+		}
+
+			//canUnBridge over the whole bridge is the question undo will
+			//ask of each block, asked before the change: it holds when the
+			//bridge spans adjacent terminals, and then the blocks added
+			//sit at its two ends. A bridge left with a gap - a strip
+			//reordered after it was made - is left alone, because its
+			//extension could be made and not taken back.
+		if (!added.isEmpty()
+			&& m_current_strip->canUnBridge(existing->realTerminals())
+			&& m_current_strip->isBridgeable(existing, added))
+		{
+			new ExtendTerminalBridgeCommand(m_current_strip, existing, blocks, command);
+			++bridge_count;
+		}
+	}
+
+	if (!bridge_count)
+	{
+		delete command;
+		emit message(tr("No adjacent terminals left to bridge by wire number."));
+		return;
+	}
+
+	m_project->undoStack()->push(command);
+	emit message(tr("%n bridge(s) made or extended by wire number.", nullptr, bridge_count));
 }
 
 
