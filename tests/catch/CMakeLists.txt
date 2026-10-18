@@ -127,6 +127,7 @@ add_executable(
     src/drcfinding_test.cpp
     src/drcwirenumbers_test.cpp
     src/drcduplicatetags_test.cpp
+    src/drctitleblock_test.cpp
     src/connectorways_test.cpp
     src/connectorswap_test.cpp
     src/csvwriter_test.cpp
@@ -451,6 +452,8 @@ add_executable(
     ${QET_DIR}/sources/drc/drcwirenumbers.h
     ${QET_DIR}/sources/drc/drcduplicatetags.cpp
     ${QET_DIR}/sources/drc/drcduplicatetags.h
+    ${QET_DIR}/sources/drc/drctitleblock.cpp
+    ${QET_DIR}/sources/drc/drctitleblock.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
@@ -962,6 +965,7 @@ if(TARGET qelectrotech_objects)
         # C_unittests, and are not repeated here.
         src/ui/drcpotentialrules_test.cpp
         src/ui/drctagrules_test.cpp
+        src/ui/drctitleblockrules_test.cpp
         # Quantas etiquetas a lista de numeros de fio manda imprimir, e
         # para qual numero. Precisa de projeto aberto porque a regra le
         # duas coisas que so o desenho decide -- o texto do condutor e o

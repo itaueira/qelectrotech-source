@@ -81,7 +81,8 @@ namespace
 		Every component carries a catalogue part. The factory profile
 		also asks for one, and a drawing called correct below has to be
 		correct for every rule that profile runs, not only for the three
-		read here.
+		read here. The folio carries a title and an author for the same
+		reason: the profile asks every folio for both.
 	*/
 	QString fixtureXml()
 	{
@@ -192,6 +193,7 @@ namespace
 			       "<category name=\"bench\">%1</category>"
 			       "</collection>"
 			       "<diagram title=\"Bench\" order=\"1\" folio=\"1\""
+			       " author=\"Bench\""
 			       " height=\"600\""
 			       " cols=\"17\" colsize=\"60\" rows=\"8\" rowsize=\"80\""
 			       " displaycols=\"true\" displayrows=\"true\">"
@@ -290,7 +292,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 		const DrcProjectActions::CheckOutcome outcome =
 				DrcProjectActions::runCheck(bench.project());
 
-		CHECK(outcome.scan_rules_run == 5);
+		CHECK(outcome.scan_rules_run == 6);
 		CHECK_FALSE(outcome.isClean());
 
 		CHECK(taggedBy(outcome.findings, master_rule)
@@ -334,7 +336,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 		const DrcProjectActions::CheckOutcome outcome =
 				DrcProjectActions::runCheck(bench.project());
 
-		CHECK(outcome.scan_rules_run == 5);
+		CHECK(outcome.scan_rules_run == 6);
 		CHECK(taggedBy(outcome.findings, master_rule)
 		      == QStringList({QStringLiteral("KM2")}));
 		CHECK(taggedBy(outcome.findings, slave_rule)
@@ -364,7 +366,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 
 			//E "limpo" exige que alguma regra tenha rodado: lista vazia
 			//sozinha é o que uma rodada sem regra nenhuma também devolve.
-		CHECK(outcome.scan_rules_run == 5);
+		CHECK(outcome.scan_rules_run == 6);
 		CHECK(outcome.isClean());
 	}
 }
