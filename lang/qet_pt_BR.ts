@@ -447,8 +447,8 @@
     <name>AddTerminalStripItemDialog</name>
     <message>
         <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="14"/>
-        <source>Dialog</source>
-        <translation>Diálogo</translation>
+        <source>Add a terminal plan</source>
+        <translation>Adicionar um plano de bornes</translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/addterminalstripitemdialog.ui" line="20"/>
@@ -7470,7 +7470,7 @@ Hold Shift and drag to move this text on its own</source>
     <message>
         <location filename="../sources/drc/ui/drcpanel.cpp" line="43"/>
         <source>Repère</source>
-        <translation>Tag</translation>
+        <translation>Posição</translation>
     </message>
     <message>
         <location filename="../sources/drc/ui/drcpanel.cpp" line="44"/>
@@ -33243,30 +33243,30 @@ Os outros campos não são utilizados.</translation>
         <translation>Salvar o tipo, a função e o sinalizador dos bornes exibidos. Para mudar um borne de régua de bornes, use o botão « Mover ».</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="323"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="322"/>
         <source>terminal_list_</source>
         <translation>lista_de_bornes_</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="328"/>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="340"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="327"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="339"/>
         <source>Export the terminal list</source>
         <translation>Exportar a lista de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="329"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="328"/>
         <source>CSV files (*.csv)</source>
         <translation>Arquivos CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="341"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="340"/>
         <source>The terminal list could not be written to %1.
 %2</source>
         <translation>Não foi possível gravar a lista de bornes em %1.
 %2</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="347"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="346"/>
         <source>%n terminal(s) of %1 exported to %2</source>
         <translation>
             <numerusform>%n borne de %1 exportado para %2</numerusform>
@@ -33274,7 +33274,7 @@ Os outros campos não são utilizados.</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="350"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditorwindow.cpp" line="349"/>
         <source>%n terminal(s) of every strip exported to %1</source>
         <translation>
             <numerusform>%n borne de todas as réguas exportado para %1</numerusform>
@@ -33695,12 +33695,12 @@ Clique duplo para ir ao componente</translation>
         <translation>Explorador de réguas de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="306"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="331"/>
         <source>Untitled project</source>
         <translation>Projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="312"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriptreedockwidget.cpp" line="337"/>
         <source>Independent terminals</source>
         <translation>Bornes independentes</translation>
     </message>

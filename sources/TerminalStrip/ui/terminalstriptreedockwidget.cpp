@@ -148,6 +148,8 @@ void TerminalStripTreeDockWidget::setProject(QETProject *project)
 void TerminalStripTreeDockWidget::reload()
 {
 	auto current_ = m_current_strip;
+		//Read before the clear below, which resets it
+	const bool current_is_free_ = m_current_is_free_terminal;
 
 	ui->m_tree_view->clear();
 	m_item_strip_H.clear();
@@ -168,6 +170,15 @@ void TerminalStripTreeDockWidget::reload()
    auto item = m_item_strip_H.key(current_);
    if (item) {
 	   ui->m_tree_view->setCurrentItem(item);
+   }
+		//Or the independent terminals, when they were what was shown: moving
+		//some of them into a strip reloads this tree, and the next ones are
+		//usually moved right after, into the next strip. Left with no
+		//current item, the window showed an empty page instead.
+   else if (current_is_free_) {
+	   if (auto free_item = ui->m_tree_view->topLevelItem(1)) {
+		   ui->m_tree_view->setCurrentItem(free_item);
+	   }
    }
 }
 
@@ -231,6 +242,15 @@ QString TerminalStripTreeDockWidget::currentLocation() const
 }
 
 /**
+ * @brief TerminalStripTreeDockWidget::currentIsFreeTerminals
+ * @return true if the current item is the "Independent terminals" item,
+ * or one of the terminals listed under it
+ */
+bool TerminalStripTreeDockWidget::currentIsFreeTerminals() const {
+	return m_current_is_free_terminal;
+}
+
+/**
  * @brief TerminalStripTreeDockWidget::setSelectedStrip
  * @param strip
  */
@@ -281,6 +301,11 @@ void TerminalStripTreeDockWidget::on_m_tree_view_currentItemChanged(QTreeWidgetI
 		} else if (parent_type == FreeTerminal) {
 			current_is_free = true;
 		}
+	}
+		//The "Independent terminals" item itself: the natural place to click
+		//to see them, and it used to show nothing at all
+	else if (current_type == FreeTerminal) {
+		current_is_free = true;
 	}
 
 		//The flag must follow every selection change, or a reload of the tree

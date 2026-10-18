@@ -57,6 +57,7 @@ class TerminalStripTreeDockWidget : public QDockWidget
         void setProject(QETProject *project = nullptr);
 		void reload();
 		bool currentIsStrip() const;
+		bool currentIsFreeTerminals() const;
 		TerminalStrip* currentStrip() const;
 		QString currentInstallation() const;
 		QString currentLocation() const;

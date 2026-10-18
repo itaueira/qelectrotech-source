@@ -190,13 +190,12 @@ void TerminalStripEditorWindow::updateUi()
 
 	ui->m_stacked_widget->setCurrentIndex(EMPTY_PAGE);
 
-	if (auto real_terminal = m_tree_dock->currentRealTerminal())
+		//The page of the independent terminals, for the item that lists them
+		//as well as for any terminal under it
+	if (m_tree_dock->currentIsFreeTerminals())
 	{
-		if (!real_terminal->parentStrip())
-		{
-			ui->m_stacked_widget->setCurrentIndex(FREE_TERMINAL_PAGE);
-			m_free_terminal_editor->reload();
-		}
+		ui->m_stacked_widget->setCurrentIndex(FREE_TERMINAL_PAGE);
+		m_free_terminal_editor->reload();
 	} else if (auto strip_ = m_tree_dock->currentStrip()) {
 		ui->m_stacked_widget->setCurrentIndex(TERMINAL_STRIP_PAGE);
 		m_terminal_strip_editor->setCurrentStrip(strip_);

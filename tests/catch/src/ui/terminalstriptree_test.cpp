@@ -26,6 +26,7 @@
 #include "../../../../sources/TerminalStrip/realterminal.h"
 #include "../../../../sources/TerminalStrip/terminalstrip.h"
 #include "../../../../sources/TerminalStrip/ui/terminalstriptreedockwidget.h"
+#include "../../../../sources/TerminalStrip/UndoCommand/addterminaltostripcommand.h"
 
 #include <catch2/catch.hpp>
 
@@ -33,6 +34,7 @@
 #include <QStringList>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QUndoStack>
 #include <QVector>
 
 /*
@@ -415,4 +417,81 @@ TEST_CASE("T33 — fechar o projeto depois do painel não derruba o processo",
 	}
 
 	SUCCEED("o projeto fechou depois do painel, e o processo seguiu vivo");
+}
+
+/*
+	Escolher o item "Bornes independentes" na árvore deixava a janela do
+	gerenciador vazia: a página dos bornes livres só abria para um borne
+	debaixo dele. É o primeiro lugar em que se clica para pôr borne numa
+	régua, e foi onde o guia de uso travou na tela, em 18/10/2026. A janela
+	pergunta à árvore currentIsFreeTerminals(); estes dois casos provam a
+	resposta dela, porque a janela não se monta sem o programa inteiro.
+*/
+TEST_CASE("T33 — o nó Bornes independentes abre a página dos bornes livres",
+	  "[terminalstrip]")
+{
+	UiBench::ScratchProject bench(fixtureXml());
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+
+	TerminalStripTreeDockWidget dock(bench.project());
+	auto tree = treeOf(dock);
+	REQUIRE(tree);
+	auto free_item = tree->topLevelItem(1);
+	REQUIRE(free_item);
+	REQUIRE(free_item->childCount() == 4);
+
+		//O próprio item
+	tree->setCurrentItem(free_item);
+	CHECK(dock.currentIsFreeTerminals());
+	CHECK(dock.currentStrip() == nullptr);
+
+		//Um borne debaixo dele, como antes
+	tree->setCurrentItem(free_item->child(0));
+	CHECK(dock.currentIsFreeTerminals());
+
+		//E o projeto não é nenhum dos dois
+	tree->setCurrentItem(tree->topLevelItem(0));
+	CHECK_FALSE(dock.currentIsFreeTerminals());
+}
+
+/*
+	Mover bornes livres para uma régua recarrega a árvore, e a recarga só
+	sabia voltar a uma régua: com os bornes livres escolhidos, a janela
+	caía na página vazia logo depois do Mover, e quem ia pôr os bornes da
+	régua seguinte tinha de achar o caminho de novo.
+*/
+TEST_CASE("T33 — depois de mover, a árvore continua nos bornes independentes",
+	  "[terminalstrip]")
+{
+	UiBench::ScratchProject bench(fixtureXml());
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+
+	const auto terminals = terminalsOf(bench.diagram(0));
+	REQUIRE(terminals.size() == 4);
+	auto strip = bench->newTerminalStrip(QStringLiteral("="),
+					     QStringLiteral("+"),
+					     QStringLiteral("X1"));
+	REQUIRE(strip);
+
+	TerminalStripTreeDockWidget dock(bench.project());
+	auto tree = treeOf(dock);
+	REQUIRE(tree);
+	tree->setCurrentItem(tree->topLevelItem(1));
+	REQUIRE(dock.currentIsFreeTerminals());
+
+		//O que o botão Mover empilha
+	bench.project()->undoStack()->push(
+		new AddTerminalToStripCommand(terminals.at(0)->realTerminal(), strip));
+	REQUIRE(strip->physicalTerminalCount() == 1);
+
+		//A árvore foi refeita: um borne a menos entre os livres...
+	auto free_item = tree->topLevelItem(1);
+	REQUIRE(free_item);
+	CHECK(free_item->childCount() == 3);
+
+		//...e eles continuam sendo o que está escolhido
+	CHECK(tree->currentItem() == free_item);
+	CHECK(dock.currentIsFreeTerminals());
 }
