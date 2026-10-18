@@ -1131,7 +1131,10 @@ if(TARGET qelectrotech_objects)
         # and folios renumbered.
         src/ui/xreffollow_test.cpp
         # T31: the number of a potential goes through a folio report.
-        src/ui/reportpotential_test.cpp)
+        src/ui/reportpotential_test.cpp
+        # T61: a symbol dropped on a folio of a project numbered 10 or more
+        # becomes an element; one that cannot become one says why.
+        src/ui/insertsymbolprojectid_test.cpp)
 
     target_link_libraries(
         C_uitests

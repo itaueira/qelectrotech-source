@@ -251,7 +251,10 @@ void ElementsLocation::setPath(const QString &path)
 	}
 	else if (tmp_path.startsWith("project"))
 	{
-		QRegularExpression re ("^project(?<project_id>[0-9])\\+(?<collection_path>embed://*.*)$");
+			//The id of a project grows with every project opened in the
+			//session: it has as many digits as it needs, like in
+			//QETApp::projectIdFromString()
+		QRegularExpression re ("^project(?<project_id>[0-9]+)\\+(?<collection_path>embed://*.*)$");
 		if (!re.isValid()) return;
 		QRegularExpressionMatch match = re.match(tmp_path);
 		if (!match.hasMatch()) return;

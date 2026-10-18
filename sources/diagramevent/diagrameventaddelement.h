@@ -21,6 +21,8 @@
 #include "../ElementsCollection/elementslocation.h"
 #include "diagrameventinterface.h"
 
+#include <QStringList>
+
 class Element;
 class QStatusBar;
 
@@ -28,12 +30,20 @@ class QStatusBar;
 	@brief The DiagramEventAddElement class
 	This diagram event add a new element, for each left click button at the position of click.
 	Space key rotate current element by 90°, right click button finish this event.
+	When the symbol cannot become an element, nothing is placed, the
+	project is left as it was, and the reason is written to the log and
+	to the status bar of the editor.
 */
 class DiagramEventAddElement : public DiagramEventInterface
 {
 		Q_OBJECT
 
 	public:
+			/// The state failureReason() is given when the symbol could not
+			/// be copied into the project: not one of the states of
+			/// Element::buildFromXml()
+		static constexpr int ImportFailed = -1;
+
 		DiagramEventAddElement(ElementsLocation &location, Diagram *diagram, QPointF pos = QPointF(0,0));
 		~DiagramEventAddElement() override;
 
@@ -44,9 +54,15 @@ class DiagramEventAddElement : public DiagramEventInterface
 		void keyPressEvent (QKeyEvent *event) override;
 		void init() override;
 
+		static QString failureReason(int state);
+
 	private:
 		bool buildElement();
 		void addElement();
+		bool endIfNothingToPlace();
+		void undoImport(const QStringList &added_elements,
+				const QStringList &new_directories);
+		void reportFailure(int state) const;
 
 	private:
 		ElementsLocation m_location;

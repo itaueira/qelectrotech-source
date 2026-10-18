@@ -21,6 +21,7 @@
 #include "../diagram.h"
 #include "../undocommand/addgraphicsobjectcommand.h"
 #include "../undocommand/deleteqgraphicsitemcommand.h"
+#include "../ElementsCollection/xmlelementcollection.h"
 #include "../factory/elementfactory.h"
 #include "../qetapp.h"
 #include "../qetdiagrameditor.h"
@@ -30,7 +31,48 @@
 #include "../qet.h"
 #include "../autobreakconductor.h"
 #include <QPainterPath>
+#include <QStatusBar>
 #include <limits>
+
+namespace
+{
+		/// How long the status bar says why an element was not created:
+		/// longer than a hint, since nothing else on the folio shows that
+		/// the drop did nothing
+	const int failure_message_timeout = 15000;
+
+	/**
+		The categories of @p collection that importing @p location would
+		create, because they do not exist yet: the folders of its path under
+		the import category, outermost first. XmlElementCollection::addElement()
+		creates them as it walks the path, without a signal, and leaves them
+		behind when it fails half way.
+	*/
+	QStringList missingImportDirectories(const XmlElementCollection *collection,
+					     const ElementsLocation &location)
+	{
+		QStringList missing;
+		const QDomElement import_category = collection->importCategory();
+		if (import_category.isNull()) {
+			return missing;
+		}
+
+		QStringList folders = location.collectionPath(false).split(
+					QLatin1Char('/'), Qt::SkipEmptyParts);
+		if (!folders.isEmpty()) {
+			folders.removeLast(); //The symbol itself
+		}
+		QString path = import_category.attribute(QStringLiteral("name"));
+		for (const QString &folder : folders)
+		{
+			path += QLatin1Char('/') + folder;
+			if (!collection->exist(path)) {
+				missing << path;
+			}
+		}
+		return missing;
+	}
+}
 
 /**
 	@brief DiagramEventAddElement::DiagramEventAddElement
@@ -68,6 +110,10 @@ DiagramEventAddElement::DiagramEventAddElement(ElementsLocation &location, Diagr
 			}
 		}
 	}
+	else {
+			//What ElementFactory::createElement() says of such a location
+		reportFailure(1);
+	}
 }
 
 /**
@@ -94,11 +140,16 @@ DiagramEventAddElement::~DiagramEventAddElement()
 /**
 	@brief DiagramEventAddElement::mouseMoveEvent
 	Move the element to new pos of mouse
-	the event is always accepted
+	the event is always accepted, unless nothing could be built
+	(see endIfNothingToPlace())
 	@param event
 */
 void DiagramEventAddElement::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
+	if (endIfNothingToPlace()) {
+		return;
+	}
+
 	if (m_element)
 	{
 		const auto pos_{Diagram::snapToGrid(event->scenePos())};
@@ -114,10 +165,14 @@ void DiagramEventAddElement::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 /**
 	@brief DiagramEventAddElement::mousePressEvent
 	Do nothing, but return true for not transit the event to other thing in diagram.
-	the event is always accepted
+	the event is always accepted, unless nothing could be built
+	(see endIfNothingToPlace())
 	@param event
 */
 void DiagramEventAddElement::mousePressEvent(QGraphicsSceneMouseEvent *event) {
+	if (endIfNothingToPlace()) {
+		return;
+	}
 	event->setAccepted(true);
 }
 
@@ -125,11 +180,16 @@ void DiagramEventAddElement::mousePressEvent(QGraphicsSceneMouseEvent *event) {
 	@brief DiagramEventAddElement::mouseReleaseEvent
 	Right button finish this event (isRunning = false) and emit finish.
 	Left button add an element to diagram
-	the event is always accepted
+	the event is always accepted, unless nothing could be built
+	(see endIfNothingToPlace())
 	@param event
 */
 void DiagramEventAddElement::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
+	if (endIfNothingToPlace()) {
+		return;
+	}
+
 	if (m_element)
 	{
 		if (event->button() == Qt::RightButton)
@@ -152,11 +212,16 @@ void DiagramEventAddElement::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 /**
 	@brief DiagramEventAddElement::mouseDoubleClickEvent
 	If mouse left double clic, finish this event (isRunning = false) and emit finish
-	the event is always accepted
+	the event is always accepted, unless nothing could be built
+	(see endIfNothingToPlace())
 	@param event
 */
 void DiagramEventAddElement::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
+	if (endIfNothingToPlace()) {
+		return;
+	}
+
 	if (m_element && (event -> button() == Qt::LeftButton))
 	{
 		m_diagram->removeItem(m_element);
@@ -199,29 +264,145 @@ void DiagramEventAddElement::init()
 
 /**
 	@brief DiagramEventAddElement::buildElement
-	Build the element, if the element is build successfully, we return true, otherwise false
+	Build the element, if the element is build successfully, we return true, otherwise false.
+	On failure, what the import of this attempt added to the project is
+	taken out again, and the reason is reported (see reportFailure()).
 */
 bool DiagramEventAddElement::buildElement()
 {
+	XmlElementCollection *collection = m_diagram->project()->embeddedElementCollection();
+
+		//What this attempt adds to the project, to be taken out again if
+		//the symbol cannot become an element: a definition the project
+		//already had is not touched
+	const QStringList new_directories = missingImportDirectories(collection, m_location);
+	QStringList added_elements;
+	const QMetaObject::Connection watch = connect(
+				collection, &XmlElementCollection::elementAdded, this,
+				[&added_elements](const QString &path) {added_elements << path;});
 	ElementsLocation import_loc = m_diagram->project()->importElement(m_location);
-	if (import_loc.exist()) {
-		m_integrate_path = import_loc.projectCollectionPath();
-	}
-	else {
-		qDebug() << "DiagramView::addDroppedElement : Impossible d'ajouter l'element.";
-		return false;
+	disconnect(watch);
+
+	int state = ImportFailed;
+	if (import_loc.exist())
+	{
+		const QString integrate_path = import_loc.projectCollectionPath();
+		ElementsLocation loc(integrate_path);
+		m_element = ElementFactory::Instance() -> createElement(loc, nullptr, &state);
+		if (!state) {
+				//Everything is good
+			m_integrate_path = integrate_path;
+			return true;
+		}
+			//The creation of element failed, we delete it. The pointer is
+			//cleared too: the destructor and every mouse event test it
+		delete m_element;
+		m_element = nullptr;
 	}
 
-	int state;
-	ElementsLocation loc(m_integrate_path);
-	m_element = ElementFactory::Instance() -> createElement(loc, nullptr, &state);
-		//The creation of element failed, we delete it
-	if (state) {
-		delete m_element;
-		return(false);
+	undoImport(added_elements, new_directories);
+	reportFailure(state);
+	return false;
+}
+
+/**
+	@brief DiagramEventAddElement::endIfNothingToPlace
+	An element that could not be built leaves nothing to place: the first
+	mouse event ends this interface and is left to the folio, instead of
+	being swallowed by an interface that does nothing until Esc is pressed.
+	@return true if this interface has ended. It may be deleted by then
+	(Diagram deletes it on finish()), so the caller returns at once.
+*/
+bool DiagramEventAddElement::endIfNothingToPlace()
+{
+	if (m_element) {
+		return false;
 	}
-		//Everything is good
+	m_running = false;
+	emit finish();
 	return true;
+}
+
+/**
+	@brief DiagramEventAddElement::undoImport
+	Take out of the embedded collection of the project what an import that
+	did not end in an element added to it: the definitions it added, then
+	the folders it created, if nothing else is in them.
+	@param added_elements : the collection paths of the added definitions
+	@param new_directories : the folders that did not exist before the
+	import, outermost first
+*/
+void DiagramEventAddElement::undoImport(const QStringList &added_elements,
+					const QStringList &new_directories)
+{
+	XmlElementCollection *collection = m_diagram->project()->embeddedElementCollection();
+	for (const QString &path : added_elements) {
+		collection->removeElement(path);
+	}
+	for (auto it = new_directories.crbegin() ; it != new_directories.crend() ; ++it)
+	{
+		const QDomElement directory = collection->directory(*it);
+		if (!directory.isNull()
+			&& collection->elements(directory).isEmpty()
+			&& collection->directories(directory).isEmpty()) {
+			collection->removeDir(*it);
+		}
+	}
+}
+
+/**
+	@brief DiagramEventAddElement::reportFailure
+	Say that no element was created from m_location, and why: in the log,
+	with the path of the symbol, and in the status bar of the editor.
+	@param state : the state of the build, see failureReason()
+*/
+void DiagramEventAddElement::reportFailure(int state) const
+{
+	const QString reason = failureReason(state);
+	QString symbol = m_location.toString();
+	if (!m_location.fileSystemPath().isEmpty()) {
+		symbol += QStringLiteral(" (") + m_location.fileSystemPath() + QStringLiteral(")");
+	}
+	qWarning().noquote() << QStringLiteral("Element not created from %1: %2 (state %3)")
+				.arg(symbol, reason, QString::number(state));
+
+	if (!m_diagram || m_diagram->views().isEmpty()) {
+		return;
+	}
+	if (const auto qde = QETApp::diagramEditorAncestorOf(m_diagram->views().constFirst())) {
+		qde->statusBar()->showMessage(
+					tr("Element \"%1\" not created: %2.").arg(m_location.name(), reason),
+					failure_message_timeout);
+	}
+}
+
+/**
+	@brief DiagramEventAddElement::failureReason
+	@param state : the state ElementFactory::createElement() gave
+	(see Element::buildFromXml()), or ImportFailed
+	@return why the symbol did not become an element, in a few words
+*/
+QString DiagramEventAddElement::failureReason(int state)
+{
+	switch (state)
+	{
+		case ImportFailed:
+			return tr("the symbol could not be copied into the project");
+		case 1:
+			return tr("the symbol was not found");
+		case 4:
+			return tr("the file is not a symbol definition");
+		case 5:
+			return tr("the symbol has no valid width, height or insertion point");
+		case 6:
+			return tr("the symbol definition is empty");
+		case 7:
+			return tr("a part of the symbol could not be read");
+		case 8:
+			return tr("the symbol has nothing to draw");
+		default:
+			return tr("unknown error %1").arg(state);
+	}
 }
 
 /**
@@ -242,6 +423,7 @@ void DiagramEventAddElement::addElement()
 	if (state)
 	{
 		delete element;
+		reportFailure(state);
 		return;
 	}
 
