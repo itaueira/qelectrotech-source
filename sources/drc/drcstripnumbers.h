@@ -68,9 +68,10 @@ namespace DrcStripNumbers
 	{
 		/**
 			The physical terminal the level belongs to: its place on the
-			rail, PhysicalTerminal::pos() - the number the Position column
-			of the strip editor shows, counted from 0. Two marks with the
-			same value are two levels of one terminal.
+			rail, PhysicalTerminal::pos(), counted from 0. The sentence
+			says it plus one, the number the Position column of the strip
+			editor shows. Two marks with the same value are two levels of
+			one terminal.
 		*/
 		int physical = -1;
 		/// The number, as the plan of the strip draws it.

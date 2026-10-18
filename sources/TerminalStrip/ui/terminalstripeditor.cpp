@@ -1257,15 +1257,16 @@ void TerminalStripEditor::on_m_move_to_pb_clicked()
 	Bound the position box to the positions of the current strip.
 
 	The number typed is the number the Position column of the table shows,
-	which is PhysicalTerminal::pos(), counted from 0 - and the number the
-	label export writes beside each terminal. A box counting from 1 beside
-	a column counting from 0 would put every terminal one place away from
-	where the person read it.
+	counted from 1 - and the number the label export writes beside each
+	terminal. A box counting otherwise than the column beside it would put
+	every terminal one place away from where the person read it. The
+	command is handed PhysicalTerminal::pos(), counted from 0: the box
+	value minus one.
 */
 void TerminalStripEditor::updatePositionRange()
 {
 	const int count = m_current_strip ? m_current_strip->physicalTerminalCount() : 0;
-	ui->m_position_sb->setRange(0, std::max(0, count - 1));
+	ui->m_position_sb->setRange(1, std::max(1, count));
 }
 
 /**
@@ -1479,17 +1480,21 @@ void TerminalStripEditor::on_m_move_to_position_pb_clicked()
 		return;
 	}
 
+		//The box counts from 1, as the Position column does; the command
+		//takes the index in the rail, from 0.
 	const auto new_order = ReorderTerminalStripCommand::movedTo(m_current_strip->physicalTerminal(),
 								    selected,
-								    ui->m_position_sb->value());
+								    ui->m_position_sb->value() - 1);
 
 		//Where the block lands, which is the position asked for unless the
 		//block does not fit between it and the end of the rail: the
-		//command and the message say where it went, not what was typed.
-	int position = std::numeric_limits<int>::max();
+		//command and the message say where it went, not what was typed -
+		//counted from 1 again, as the box and the column count.
+	int index = std::numeric_limits<int>::max();
 	for (const auto &physical : selected) {
-		position = std::min(position, static_cast<int>(new_order.indexOf(physical)));
+		index = std::min(index, static_cast<int>(new_order.indexOf(physical)));
 	}
+	const int position = index + 1;
 
 	reorder(new_order,
 		selected,

@@ -121,19 +121,19 @@ struct LabelEntry
 	*/
 	QString strip;
 	/**
-		Where the terminal sits on its rail: PhysicalTerminal::pos(), the
-		very number the strip editor shows in its Position column - counted
-		from 0, as the editor shows it. -1 for anything that is not a
-		terminal.
+		Where the terminal sits on its rail, counted from 1: the very number
+		the strip editor shows in its Position column, which is
+		PhysicalTerminal::pos() plus one - that one counts from 0. -1 for
+		anything that is not a terminal.
 
 		Carried so that the order of a run can be checked against the rail
 		before the tape is spent. The collector never reorders, so a strip
 		the user sorted prints in the sorted order; this is what makes that
 		visible on the bench rather than on the rail.
 
-		Counted from 0, unlike folio_position, on purpose: the comparison it
-		exists for is with the editor's column, and an offset of one between
-		the two would read as a terminal out of place.
+		Counted from 1, like folio_position, and above all like the editor's
+		column: the comparison it exists for is with that column, and an
+		offset of one between the two would read as a terminal out of place.
 	*/
 	int strip_position = -1;
 	/**

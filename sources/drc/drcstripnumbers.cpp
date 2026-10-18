@@ -188,7 +188,11 @@ QList<QList<int>> DrcStripNumbers::sameNameGroups(const QStringList &keys)
 
 namespace
 {
-	/// Where one terminal is, in words: "position 3 (folio 2, B4)".
+	/**
+		Where one terminal is, in words: "position 3 (folio 2, B4)". The
+		position counted from 1, as the Position column of the strip
+		editor counts it: the mark holds PhysicalTerminal::pos(), from 0.
+	*/
 	QString placeOf(const DrcStripNumbers::Mark &mark)
 	{
 		QString sheet;
@@ -217,15 +221,16 @@ namespace
 			       : sheet;
 		}
 
+		const QString position = QString::number(mark.physical + 1);
 		if (sheet.isEmpty())
 		{
 			return QCoreApplication::translate("DrcStripNumbers",
 							   "position %1")
-			       .arg(QString::number(mark.physical));
+			       .arg(position);
 		}
 		return QCoreApplication::translate("DrcStripNumbers",
 						   "position %1 (%2)")
-		       .arg(QString::number(mark.physical), sheet);
+		       .arg(position, sheet);
 	}
 }
 

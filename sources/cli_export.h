@@ -147,7 +147,7 @@ namespace CLIExport {
 		      kind, text, lines, strip, position, level, location, folio,
 		      revision, excluded_from_bom. The terminals come strip after
 		      strip, each in the order of its rail and never sorted, with
-		      the position the strip editor shows (counted from 0); the
+		      the position the strip editor shows (counted from 1); the
 		      components come by sheet. The lines under a tag are one
 		      cell, a line feed between them. Cells quoted where needed,
 		      ';' between them, CRLF between rows, UTF-8 with a byte order

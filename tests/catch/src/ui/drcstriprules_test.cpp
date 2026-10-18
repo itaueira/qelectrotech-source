@@ -262,8 +262,9 @@ namespace
 
 	/**
 		What @a symbol is in a sentence of the rule: the place @a physical
-		on the rail, and the folio and the cell read off its sheet - by the
-		project and the folio, and not by the code under test.
+		on the rail - PhysicalTerminal::pos(), counted from 0, which the
+		sentence says plus one -, and the folio and the cell read off its
+		sheet - by the project and the folio, and not by the code under test.
 	*/
 	DrcStripNumbers::Mark placeOf(QETProject *project,
 				      Element *symbol,
@@ -440,14 +441,18 @@ TEST_CASE("CU-24.12 — número de borne repetido na régua: um erro para o 3 da
 		CHECK(finding.position()
 		      == placeOf(project, symbol[2], QString(), 2).cell);
 
-			//The strip, the number, and both places: position 2 on folio
-			//1 and position 3 on folio 2, where the panel's one folio
-			//column would never send anybody.
+			//The strip, the number, and both places: the third terminal
+			//of X1, on folio 1, and the fourth, on folio 2, where the
+			//panel's one folio column would never send anybody.
 		CHECK(finding.text()
 		      == DrcStripNumbers::duplicateText(
 			      stripName("X1"),
 			      {placeOf(project, symbol[2], QStringLiteral("3"), 2),
 			       placeOf(project, symbol[10], QStringLiteral("3"), 3)}));
+			//Counted from 1, as the Position column of the strip editor
+			//shows them: position 3 and position 4, not 2 and 3.
+		CHECK(finding.text().contains(QStringLiteral("position 3 (folio 1")));
+		CHECK(finding.text().contains(QStringLiteral("position 4 (folio 2")));
 
 		SECTION("o duplo clique leva ao primeiro 3, e não ao segundo")
 		{
@@ -505,6 +510,8 @@ TEST_CASE("CU-24.12 — número de borne repetido na régua: um erro para o 3 da
 			      stripName("X1"),
 			      {placeOf(project, symbol[6], QStringLiteral("3"), 2),
 			       placeOf(project, symbol[7], QStringLiteral("3"), 3)}));
+		CHECK(finding.text().contains(QStringLiteral("position 3 (folio 1")));
+		CHECK(finding.text().contains(QStringLiteral("position 4 (folio 1")));
 	}
 }
 

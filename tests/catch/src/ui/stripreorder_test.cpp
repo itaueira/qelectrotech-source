@@ -74,16 +74,15 @@
 	- an edit typed in the table and not applied is never thrown away by a
 	  move: the move is refused, and the edit is still there.
 
-	Labelled T33 and not CU-33.12, for one reason, and it is a reason to
-	decide and not a gap in the button. The case of use says "move to
-	position 4" and "positions 1 to 6", counting from 1. The Position
-	column of the editor counts from 0, and so does the label export beside
-	it (LabelEntry::strip_position says why, and terminallabel_test.cpp
-	holds the two to each other). The position box counts as the column
-	does, so the block the case moves "to position 4" is moved here to the
-	position the column shows for the terminal 4, which is 3 - read from
-	the table, not written. Until the case of use and the column agree on
-	where counting starts, the case as written is not the case proved.
+	The four parts of the case of use carry CU-33.12, one case each: (a)
+	Move up twice, (b) undo and Move to position 4, (c) Move down on the 3
+	alone and then on 2 and 3, (d) a pending edit. The case says "move to
+	position 4" and "positions 1 to 6", counting from 1, and so do the
+	Position column of the editor, the position box beside it and the label
+	export (LabelEntry::strip_position says why, and terminallabel_test.cpp
+	holds the two to each other). So the 4 the case writes is typed here as
+	it is written, after checking it is the number the column shows for the
+	terminal 4. The other cases go past the case of use and stay T33.
 */
 
 namespace
@@ -276,7 +275,7 @@ namespace
 		return labels;
 	}
 
-	/// The Position column of the table of the editor, row by row.
+	/// The Position column of the table of the editor, row by row, from 1.
 	QVector<int> positionsShown(QAbstractItemModel *model)
 	{
 		QVector<int> positions;
@@ -457,7 +456,7 @@ namespace
 	};
 }
 
-TEST_CASE("T33 — mudar a ordem à mão: Subir leva DJ0 e DJ1 para antes do 4, num passo de desfazer, e o segundo Subir é recusado pela ponte 2+3",
+TEST_CASE("CU-33.12 (a) — Subir duas vezes: só a primeira move, a ponte 2+3 recusa",
 	  "[terminalstrip][reorder]")
 {
 	UiBench::ScratchProject project(fixtureXml(), QStringLiteral("stripreorder.qet"));
@@ -498,7 +497,7 @@ TEST_CASE("T33 — mudar a ordem à mão: Subir leva DJ0 e DJ1 para antes do 4, 
 	SECTION("a tabela mostra a ordem nova, com as posições em sequência")
 	{
 		CHECK(labelsShown(ui.model) == reordered());
-		CHECK(positionsShown(ui.model) == QVector<int>({0, 1, 2, 3, 4, 5}));
+		CHECK(positionsShown(ui.model) == QVector<int>({1, 2, 3, 4, 5, 6}));
 	}
 
 	SECTION("nenhuma tag mudou")
@@ -509,7 +508,7 @@ TEST_CASE("T33 — mudar a ordem à mão: Subir leva DJ0 e DJ1 para antes do 4, 
 	SECTION("a lista de bornes exportada sai na ordem nova")
 	{
 		CHECK(exportedLabels(strip) == reordered());
-		CHECK(exportedPositions(strip) == QVector<int>({0, 1, 2, 3, 4, 5}));
+		CHECK(exportedPositions(strip) == QVector<int>({1, 2, 3, 4, 5, 6}));
 	}
 
 	SECTION("a seleção segue DJ0 e DJ1, e o segundo Subir é recusado pela ponte 2+3")
@@ -547,7 +546,7 @@ TEST_CASE("T33 — mudar a ordem à mão: Subir leva DJ0 e DJ1 para antes do 4, 
 	}
 }
 
-TEST_CASE("T33 — mudar a ordem à mão: desfazer e Mover para a posição do 4 dá a mesma ordem, num passo de desfazer",
+TEST_CASE("CU-33.12 (b) — desfazer e Mover para a posição 4 dá a mesma ordem",
 	  "[terminalstrip][reorder]")
 {
 	UiBench::ScratchProject project(fixtureXml(), QStringLiteral("stripreorder.qet"));
@@ -574,28 +573,30 @@ TEST_CASE("T33 — mudar a ordem à mão: desfazer e Mover para a posição do 4
 	REQUIRE(rail(strip) == original());
 	REQUIRE(stack->index() == before);
 
-		//The number typed is the one the Position column shows for the
-		//terminal 4, read from the table and not written here - the header
-		//of this file says why it is not the 4 of the case of use.
+		//The 4 the case of use writes is the number the Position column
+		//shows for the terminal 4, read from the table: the box, the column
+		//and the case count alike, from 1, up to the six terminals there are.
 	const int position_of_4 = ui.model->index(rowOf(ui.model, QStringLiteral("4")),
 						  TerminalStripModel::Pos).data().toInt();
-	REQUIRE(position_of_4 == 3);
-	REQUIRE(ui.position->maximum() == 5);
+	REQUIRE(position_of_4 == 4);
+	REQUIRE(ui.position->minimum() == 1);
+	REQUIRE(ui.position->maximum() == 6);
 
 	QSignalSpy messages(&ui.editor, &TerminalStripEditor::message);
 	selectLabels(ui.table, {QStringLiteral("DJ0"), QStringLiteral("DJ1")});
-	ui.position->setValue(position_of_4);
+	ui.position->setValue(4);
 	ui.to_position->click();
 
 	REQUIRE(stack->count() == before + 1);
 	CHECK(stack->index() == before + 1);
 	CHECK(UiBench::undoTopText(project.project())
-	      == TerminalStripEditor::tr("Move terminals to position %1").arg(3));
+	      == TerminalStripEditor::tr("Move terminals to position %1").arg(4));
 	CHECK(rail(strip) == reordered());
 	CHECK(labelsShown(ui.model) == reordered());
-	CHECK(positionsShown(ui.model) == QVector<int>({0, 1, 2, 3, 4, 5}));
+	CHECK(positionsShown(ui.model) == QVector<int>({1, 2, 3, 4, 5, 6}));
 	CHECK(renamedTerminals(bench).isEmpty());
 	CHECK(exportedLabels(strip) == reordered());
+	CHECK(exportedPositions(strip) == QVector<int>({1, 2, 3, 4, 5, 6}));
 	CHECK(bridgedRuns(strip) == QStringList{QStringLiteral("2+3")});
 	REQUIRE(messages.count() == 1);
 	CHECK(messages.at(0).at(0).toString() == movedMessage(2));
@@ -613,23 +614,23 @@ TEST_CASE("T33 — mudar a ordem à mão: desfazer e Mover para a posição do 4
 		stack->undo();
 		REQUIRE(rail(strip) == original());
 
-			//1 and 4 are not neighbours, and 5 is past the last place a
-			//block of two fits in: the block lands at 4, and the command
-			//and the message say 4, not the 5 typed.
+			//1 and 4 are not neighbours, and 6 is past the last place a
+			//block of two fits in: the block lands at 5, and the command
+			//and the message say 5, not the 6 typed.
 		selectLabels(ui.table, {QStringLiteral("4"), QStringLiteral("1")});
-		ui.position->setValue(5);
+		ui.position->setValue(6);
 		ui.to_position->click();
 
 		CHECK(rail(strip) == QStringList({QStringLiteral("2"), QStringLiteral("3"),
 						  QStringLiteral("DJ0"), QStringLiteral("DJ1"),
 						  QStringLiteral("1"), QStringLiteral("4")}));
 		CHECK(UiBench::undoTopText(project.project())
-		      == TerminalStripEditor::tr("Move terminals to position %1").arg(4));
+		      == TerminalStripEditor::tr("Move terminals to position %1").arg(5));
 		CHECK(bridgedRuns(strip) == QStringList{QStringLiteral("2+3")});
 	}
 }
 
-TEST_CASE("T33 — mudar a ordem à mão: Descer só o 3 é recusado pela ponte 2+3, e 2 e 3 juntos descem",
+TEST_CASE("CU-33.12 (c) — Descer só o 3 é recusado; 2 e 3 juntos descem",
 	  "[terminalstrip][reorder]")
 {
 	UiBench::ScratchProject project(fixtureXml(), QStringLiteral("stripreorder.qet"));
@@ -683,7 +684,7 @@ TEST_CASE("T33 — mudar a ordem à mão: Descer só o 3 é recusado pela ponte 
 	CHECK(messages.at(1).at(0).toString() == movedMessage(2));
 }
 
-TEST_CASE("T33 — mudar a ordem à mão: com uma célula editada e não aplicada, mover é recusado e a edição fica",
+TEST_CASE("CU-33.12 (d) — com edição pendente, mover é recusado e a edição fica",
 	  "[terminalstrip][reorder]")
 {
 	UiBench::ScratchProject project(fixtureXml(), QStringLiteral("stripreorder.qet"));
@@ -711,7 +712,7 @@ TEST_CASE("T33 — mudar a ordem à mão: com uma célula editada e não aplicad
 	QSignalSpy messages(&ui.editor, &TerminalStripEditor::message);
 
 	selectLabels(ui.table, {QStringLiteral("DJ0")});
-	ui.position->setValue(0);
+	ui.position->setValue(1);
 
 	for (QPushButton *button : {ui.up, ui.down, ui.to_position})
 	{
@@ -781,12 +782,13 @@ TEST_CASE("T33 — mudar a ordem à mão: sem seleção, no topo, no fim e na me
 
 	SECTION("Mover para a posição em que já está")
 	{
+			//3 and 4 are at the positions 3 and 4 the column shows.
 		selectLabels(ui.table, {QStringLiteral("3"), QStringLiteral("4")});
-		ui.position->setValue(2);
+		ui.position->setValue(3);
 		ui.to_position->click();
 		REQUIRE(messages.count() == 1);
 		CHECK(messages.at(0).at(0).toString()
-		      == TerminalStripEditor::tr("The selected terminals are already at position %1.").arg(2));
+		      == TerminalStripEditor::tr("The selected terminals are already at position %1.").arg(3));
 	}
 
 	CHECK(stack->count() == before);
@@ -867,7 +869,7 @@ TEST_CASE("T33 — mudar a ordem à mão: num borne de dois níveis, o borne fí
 	Editor ui(project, strip);
 	REQUIRE(ui.isComplete());
 	REQUIRE(ui.model->rowCount() == 6);
-	CHECK(ui.position->maximum() == 4);
+	CHECK(ui.position->maximum() == 5);
 
 	QUndoStack *stack = project->undoStack();
 	REQUIRE(stack != nullptr);
@@ -891,7 +893,7 @@ TEST_CASE("T33 — mudar a ordem à mão: num borne de dois níveis, o borne fí
 	CHECK(rail(strip) == QStringList({QStringLiteral("3/4"), QStringLiteral("1"),
 					  QStringLiteral("2"), QStringLiteral("DJ0"),
 					  QStringLiteral("DJ1")}));
-	CHECK(positionsShown(ui.model) == QVector<int>({0, 0, 1, 2, 3, 4}));
+	CHECK(positionsShown(ui.model) == QVector<int>({1, 1, 2, 3, 4, 5}));
 	CHECK(renamedTerminals(bench).isEmpty());
 }
 
@@ -939,6 +941,8 @@ TEST_CASE("T33 — mudar a ordem à mão: Subir, Descer e Mover para a posição
 	SECTION("Mover para a posição: o bloco na ordem do trilho, qualquer que seja a ordem da seleção")
 	{
 		const auto selected = physicalsOf(bench, {QStringLiteral("DJ1"), QStringLiteral("2")});
+			//The command counts from 0, like PhysicalTerminal::pos(): 0 is
+			//the first place, the 1 of the column and of the box.
 		CHECK(labels_of(ReorderTerminalStripCommand::movedTo(order, selected, 0))
 		      == QStringList({QStringLiteral("2"), QStringLiteral("DJ1"),
 				      QStringLiteral("1"), QStringLiteral("3"),

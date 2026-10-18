@@ -78,7 +78,7 @@ struct modelRealTerminalData
 struct modelPhysicalTerminalData
 {
 		QVector<modelRealTerminalData> real_data;
-		int pos_ = -1;
+		int pos_ = -1;	//PhysicalTerminal::pos(), from 0; the Position column shows it plus one
 		QUuid uuid_;
 };
 

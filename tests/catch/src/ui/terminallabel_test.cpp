@@ -23,6 +23,7 @@
 #include "../../../../sources/TerminalStrip/physicalterminal.h"
 #include "../../../../sources/TerminalStrip/realterminal.h"
 #include "../../../../sources/TerminalStrip/terminalstrip.h"
+#include "../../../../sources/TerminalStrip/ui/terminalstripmodel.h"
 #include "../../../../sources/autoNum/iecstructure.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/label/componentlabelcollector.h"
@@ -369,18 +370,24 @@ TEST_CASE("T21 — the terminals come out in the order of the rail, and nothing 
 		CHECK(primaryTexts(entries)
 		      == QStringList({QStringLiteral("2"), QStringLiteral("10"),
 				      QStringLiteral("1")}));
-		CHECK(stripPositions(entries) == QVector<int>({0, 1, 2}));
+		CHECK(stripPositions(entries) == QVector<int>({1, 2, 3}));
 
 			//And the position is the very number of the editor's Position
-			//column, which is PhysicalTerminal::pos(): the two are meant
-			//to be held side by side, so they are compared here one by
-			//one rather than trusted to agree.
+			//column, which is PhysicalTerminal::pos() plus one: the two are
+			//meant to be held side by side, so they are compared here one
+			//by one, with the column the table of the editor is built
+			//from, rather than trusted to agree. One level per terminal
+			//here, so a row of the table is an entry.
+		const TerminalStripModel table(strip);
 		REQUIRE(entries.count() == strip->physicalTerminalCount());
+		REQUIRE(table.rowCount() == entries.count());
 		for (int i = 0 ; i < entries.count() ; ++i)
 		{
 			INFO("entry " << i);
 			CHECK(entries.at(i).strip_position
-			      == strip->physicalTerminal(i)->pos());
+			      == strip->physicalTerminal(i)->pos() + 1);
+			CHECK(entries.at(i).strip_position
+			      == table.index(i, TerminalStripModel::Pos).data().toInt());
 		}
 
 		for (const LabelEntry &entry : entries)
@@ -412,11 +419,11 @@ TEST_CASE("T21 — the terminals come out in the order of the rail, and nothing 
 		CHECK(primaryTexts(entries)
 		      == QStringList({QStringLiteral("1"), QStringLiteral("2"),
 				      QStringLiteral("10")}));
-		CHECK(stripPositions(entries) == QVector<int>({0, 1, 2}));
+		CHECK(stripPositions(entries) == QVector<int>({1, 2, 3}));
 
-			//10 was at 1 on the rail and is at 2 now: the position travels
+			//10 was at 2 on the rail and is at 3 now: the position travels
 			//with the label, so the bench sees the move before the rail does.
-		CHECK(entryTagged(entries, QStringLiteral("10")).strip_position == 2);
+		CHECK(entryTagged(entries, QStringLiteral("10")).strip_position == 3);
 	}
 
 	SECTION("undone, the run is the rail as it was mounted")
@@ -434,7 +441,7 @@ TEST_CASE("T21 — the terminals come out in the order of the rail, and nothing 
 		CHECK(primaryTexts(entries)
 		      == QStringList({QStringLiteral("2"), QStringLiteral("10"),
 				      QStringLiteral("1")}));
-		CHECK(entryTagged(entries, QStringLiteral("10")).strip_position == 1);
+		CHECK(entryTagged(entries, QStringLiteral("10")).strip_position == 2);
 	}
 }
 
@@ -475,7 +482,7 @@ TEST_CASE("T21 — a terminal of several levels gives one label per level, at on
 	CHECK(primaryTexts(entries)
 	      == QStringList({QStringLiteral("2"), QStringLiteral("10"),
 			      QStringLiteral("1")}));
-	CHECK(stripPositions(entries) == QVector<int>({0, 1, 1}));
+	CHECK(stripPositions(entries) == QVector<int>({1, 2, 2}));
 	CHECK(levels(entries) == QVector<int>({0, 0, 1}));
 }
 
@@ -511,12 +518,12 @@ TEST_CASE("T21 — every strip of the project, and only the terminals on a rail"
 	REQUIRE(collector.error().isEmpty());
 
 		//Strip after strip, each in the order of its own rail, and each
-		//counted from 0 again: a position is a place on one rail.
+		//counted from 1 again: a position is a place on one rail.
 	CHECK(primaryTexts(entries)
 	      == QStringList({QStringLiteral("2"), QStringLiteral("10"),
 			      QStringLiteral("1"), QStringLiteral("4"),
 			      QStringLiteral("3")}));
-	CHECK(stripPositions(entries) == QVector<int>({0, 1, 2, 0, 1}));
+	CHECK(stripPositions(entries) == QVector<int>({1, 2, 3, 1, 2}));
 
 	QStringList strips;
 	for (const LabelEntry &entry : entries) {
@@ -538,7 +545,7 @@ TEST_CASE("T21 — every strip of the project, and only the terminals on a rail"
 		const LabelEntryList x2_only = TerminalLabelCollector::collectStrip(x2);
 		CHECK(primaryTexts(x2_only)
 		      == QStringList({QStringLiteral("4"), QStringLiteral("3")}));
-		CHECK(stripPositions(x2_only) == QVector<int>({0, 1}));
+		CHECK(stripPositions(x2_only) == QVector<int>({1, 2}));
 	}
 }
 
@@ -938,7 +945,7 @@ TEST_CASE("T21 — the order of the rail survives saving and opening again",
 	CHECK(primaryTexts(entries)
 	      == QStringList({QStringLiteral("2"), QStringLiteral("10"),
 			      QStringLiteral("1")}));
-	CHECK(stripPositions(entries) == QVector<int>({0, 1, 2}));
+	CHECK(stripPositions(entries) == QVector<int>({1, 2, 3}));
 }
 
 TEST_CASE("T21 — the terminal collector says so when there is no project",

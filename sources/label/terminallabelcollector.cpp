@@ -34,7 +34,8 @@ namespace {
 
 /**
 	@param strip_name : the name of the strip the terminal is on
-	@param strip_position : the position of its physical terminal on the rail
+	@param strip_position : the position of its physical terminal on the
+	rail, counted from 1
 	@param real_terminal : the terminal, one level of that physical terminal
 	@return the label of that one level
 */
@@ -194,11 +195,11 @@ LabelEntryList TerminalLabelCollector::collectStrip(TerminalStrip *strip)
 			continue;
 		}
 
-			//PhysicalTerminal::pos() and not a counter of this loop, though
-			//the two agree: it is the number the strip editor writes in its
-			//Position column, and the point of carrying it is that the two
-			//can be held side by side.
-		const int strip_position = physical->pos();
+			//PhysicalTerminal::pos() plus one, and not a counter of this
+			//loop, though the two agree: it is the number the strip editor
+			//writes in its Position column, counted from 1, and the point
+			//of carrying it is that the two can be held side by side.
+		const int strip_position = physical->pos() + 1;
 
 			//Back to front, the order of the levels: realTerminals() is
 			//indexed by level.

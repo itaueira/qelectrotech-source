@@ -200,7 +200,11 @@ QVariant TerminalStripModel::data(const QModelIndex &index, int role) const
 	if (role == Qt::DisplayRole)
 	{
 		switch (index.column()) {
-			case POS_CELL :        return physicalDataAtIndex(index.row()).pos_;
+				//Counted from 1, as the places of a rail are counted in the
+				//workshop and as the folios are: PhysicalTerminal::pos()
+				//counts from 0. The position box of the editor, the label
+				//export and the sentences of the checker count as this column.
+			case POS_CELL :        return physicalDataAtIndex(index.row()).pos_ + 1;
 			case LEVEL_CELL :      return mrtd.level_;
 			case LABEL_CELL :      return mrtd.label_;
 			case CONDUCTOR_CELL :  return mrtd.conductor_;

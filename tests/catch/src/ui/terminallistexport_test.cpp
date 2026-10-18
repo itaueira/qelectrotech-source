@@ -425,10 +425,11 @@ TEST_CASE("T21 — the terminal list of one strip is that strip alone, in the or
 	REQUIRE(labelRows(file).size() == 5);
 	CHECK(written == 5);
 	CHECK(cells(file, QStringLiteral("text")) == x1Rail());
+		//Counted from 1, as the Position column of the strip editor.
 	CHECK(cells(file, QStringLiteral("position"))
-	      == QStringList({QStringLiteral("0"), QStringLiteral("1"),
-			      QStringLiteral("2"), QStringLiteral("3"),
-			      QStringLiteral("4")}));
+	      == QStringList({QStringLiteral("1"), QStringLiteral("2"),
+			      QStringLiteral("3"), QStringLiteral("4"),
+			      QStringLiteral("5")}));
 	CHECK(cells(file, QStringLiteral("strip"))
 	      == repeated(QStringLiteral("X1"), 5));
 	CHECK(cells(file, QStringLiteral("kind"))

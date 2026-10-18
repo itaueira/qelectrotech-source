@@ -623,15 +623,16 @@ TEST_CASE("CU-21.12 — the exported labels follow the rail, and after a sort th
 	      == QStringList({QStringLiteral("2"), QStringLiteral("10"),
 			      QStringLiteral("1")}));
 	CHECK(cells(first_rows, QStringLiteral("position"))
-	      == QStringList({QStringLiteral("0"), QStringLiteral("1"),
-			      QStringLiteral("2")}));
+	      == QStringList({QStringLiteral("1"), QStringLiteral("2"),
+			      QStringLiteral("3")}));
 	CHECK(cells(first_rows, QStringLiteral("strip"))
 	      == QStringList({QStringLiteral("X1"), QStringLiteral("X1"),
 			      QStringLiteral("X1")}));
 
 		//Held against the rail itself, row by row: the tag the strip holds
 		//at each place, and the number the Position column of the strip
-		//editor shows there - PhysicalTerminal::pos().
+		//editor shows there - PhysicalTerminal::pos() plus one, the rail
+		//counted from 1.
 	REQUIRE(first_rows.size() == strip->physicalTerminalCount());
 	const auto real_terminals = strip->realTerminals();
 	REQUIRE(real_terminals.size() == first_rows.size());
@@ -641,7 +642,7 @@ TEST_CASE("CU-21.12 — the exported labels follow the rail, and after a sort th
 		CHECK(first_rows.at(i).value(column(QStringLiteral("text")))
 		      == real_terminals.at(i)->label());
 		CHECK(first_rows.at(i).value(column(QStringLiteral("position")))
-		      == QString::number(strip->physicalTerminal(i)->pos()));
+		      == QString::number(strip->physicalTerminal(i)->pos() + 1));
 	}
 
 		//Sorted as the Sort button of the strip editor sorts.
@@ -669,15 +670,15 @@ TEST_CASE("CU-21.12 — the exported labels follow the rail, and after a sort th
 	      == QStringList({QStringLiteral("1"), QStringLiteral("2"),
 			      QStringLiteral("10")}));
 	CHECK(cells(second_rows, QStringLiteral("position"))
-	      == QStringList({QStringLiteral("0"), QStringLiteral("1"),
-			      QStringLiteral("2")}));
+	      == QStringList({QStringLiteral("1"), QStringLiteral("2"),
+			      QStringLiteral("3")}));
 
-		//And the position travels with the label: 10 was at 1 on the rail
-		//and is at 2 now, which is what the bench sees before the rail does.
+		//And the position travels with the label: 10 was at 2 on the rail
+		//and is at 3 now, which is what the bench sees before the rail does.
 	CHECK(rowTagged(first_rows, QStringLiteral("10"))
-	      .value(column(QStringLiteral("position"))) == QStringLiteral("1"));
-	CHECK(rowTagged(second_rows, QStringLiteral("10"))
 	      .value(column(QStringLiteral("position"))) == QStringLiteral("2"));
+	CHECK(rowTagged(second_rows, QStringLiteral("10"))
+	      .value(column(QStringLiteral("position"))) == QStringLiteral("3"));
 }
 
 TEST_CASE("CU-21.11 — a semicolon in a tag or in a field of a terminal stays in its own cell",
@@ -738,7 +739,7 @@ TEST_CASE("CU-21.11 — a semicolon in a tag or in a field of a terminal stays i
 	CHECK(file.text.contains(QStringLiteral(";\"W1;W2\nBK\";")));
 
 		//The plain cells kept their plain form.
-	CHECK(file.text.contains(QStringLiteral("terminal;10;W7;X1;1;0;")));
+	CHECK(file.text.contains(QStringLiteral("terminal;10;W7;X1;2;0;")));
 }
 
 TEST_CASE("T21 — the command line writes the very file the collectors and the writer give in the program",

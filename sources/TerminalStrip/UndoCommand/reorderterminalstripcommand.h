@@ -79,7 +79,8 @@ class ReorderTerminalStripCommand : public QUndoCommand
 		/**
 			@return @a order with the terminals of @a selected taken out and
 			put back as one block whose first terminal sits at @a index,
-			counted from 0 like TerminalStrip::pos(). The block keeps the
+			counted from 0 like TerminalStrip::pos() - one less than the
+			position the strip editor shows and takes. The block keeps the
 			relative order the selected terminals had on the rail, wherever
 			they were. An @a index past the last place the block fits in is
 			that last place.

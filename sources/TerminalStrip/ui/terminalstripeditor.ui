@@ -304,7 +304,10 @@
           <item row="4" column="2">
            <widget class="QSpinBox" name="m_position_sb">
             <property name="toolTip">
-             <string>Position counted as in the Position column, from 0.</string>
+             <string>Position counted as in the Position column, from 1.</string>
+            </property>
+            <property name="minimum">
+             <number>1</number>
             </property>
            </widget>
           </item>

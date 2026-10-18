@@ -216,13 +216,16 @@ TEST_CASE("T24 — a frase diz o número, a régua, e a posição, a folha e a c
 {
 	const QString x1 = QStringLiteral("= + X1");
 
+		//The marks hold PhysicalTerminal::pos(), counted from 0, and the
+		//sentence says each place counted from 1, as the Position column
+		//of the strip editor does: the mark at 2 is "position 3".
 	SECTION("dois bornes, em duas folhas")
 	{
 		CHECK(DrcStripNumbers::duplicateText(
 			      x1, {mark("3", 2, 1, "B3"), mark("3", 3, 2, "C2")})
 		      == QStringLiteral(
 			      "Number 3 is on 2 terminals of strip = + X1: "
-			      "position 2 (folio 1, B3); position 3 (folio 2, C2)."));
+			      "position 3 (folio 1, B3); position 4 (folio 2, C2)."));
 	}
 
 	SECTION("três iguais: uma frase só, com os três lugares")
@@ -232,8 +235,8 @@ TEST_CASE("T24 — a frase diz o número, a régua, e a posição, a folha e a c
 				   mark("7", 9, 3, "D2")})
 		      == QStringLiteral(
 			      "Number 7 is on 3 terminals of strip = + X1: "
-			      "position 0 (folio 1, A1); position 4 (folio 1, A5); "
-			      "position 9 (folio 3, D2)."));
+			      "position 1 (folio 1, A1); position 5 (folio 1, A5); "
+			      "position 10 (folio 3, D2)."));
 	}
 
 	SECTION("grafias diferentes: cada lugar diz qual está lá")
@@ -242,8 +245,8 @@ TEST_CASE("T24 — a frase diz o número, a régua, e a posição, a folha e a c
 			      x1, {mark("PE", 0, 1, "A1"), mark("pe", 4, 1, "A5")})
 		      == QStringLiteral(
 			      "Number PE is on 2 terminals of strip = + X1: "
-			      "PE at position 0 (folio 1, A1); "
-			      "pe at position 4 (folio 1, A5)."));
+			      "PE at position 1 (folio 1, A1); "
+			      "pe at position 5 (folio 1, A5)."));
 	}
 
 	SECTION("o que falta do lugar não vira texto vazio")
@@ -252,17 +255,17 @@ TEST_CASE("T24 — a frase diz o número, a régua, e a posição, a folha e a c
 			      x1, {mark("3", 2, 1), mark("3", 3, 0, "C2")})
 		      == QStringLiteral(
 			      "Number 3 is on 2 terminals of strip = + X1: "
-			      "position 2 (folio 1); position 3 (C2)."));
+			      "position 3 (folio 1); position 4 (C2)."));
 		CHECK(DrcStripNumbers::duplicateText(
 			      x1, {mark("3", 2), mark("3", -1, 2, "C2")})
 		      == QStringLiteral(
 			      "Number 3 is on 2 terminals of strip = + X1: "
-			      "position 2; folio 2, C2."));
+			      "position 3; folio 2, C2."));
 		CHECK(DrcStripNumbers::duplicateText(
 			      x1, {mark("3", 2), mark("3", -1)})
 		      == QStringLiteral(
 			      "Number 3 is on 2 terminals of strip = + X1: "
-			      "position 2; place unknown."));
+			      "position 3; place unknown."));
 	}
 
 	SECTION("um texto digitado com %2 dentro não é reescrito")
@@ -272,7 +275,7 @@ TEST_CASE("T24 — a frase diz o número, a régua, e a posição, a folha e a c
 			      {mark("%2", 0, 1, "A1"), mark("%2", 1, 1, "A2")})
 		      == QStringLiteral(
 			      "Number %2 is on 2 terminals of strip X%3: "
-			      "position 0 (folio 1, A1); position 1 (folio 1, A2)."));
+			      "position 1 (folio 1, A1); position 2 (folio 1, A2)."));
 	}
 
 	SECTION("e cala quando não há o que dizer")
