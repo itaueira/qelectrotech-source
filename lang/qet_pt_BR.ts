@@ -7568,37 +7568,37 @@ Hold Shift and drag to move this text on its own</source>
         <translation>(sem nome)</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="197"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="201"/>
         <source>folio %1, %2</source>
         <translation>folha %1, %2</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="203"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="207"/>
         <source>folio %1</source>
         <translation>folha %1</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="215"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="219"/>
         <source>place unknown</source>
         <translation>local desconhecido</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="222"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="227"/>
         <source>position %1</source>
         <translation>posição %1</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="226"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="231"/>
         <source>position %1 (%2)</source>
         <translation>posição %1 (%2)</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="286"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="291"/>
         <source>%1 at %2</source>
         <translation>%1 em %2</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="294"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="299"/>
         <source>Number %1 is on %n terminals of strip %2: %3.</source>
         <translation>
             <numerusform>O número %1 está em %n borne da régua %2: %3.</numerusform>
@@ -7606,12 +7606,12 @@ Hold Shift and drag to move this text on its own</source>
         </translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="313"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="318"/>
         <source>Terminal strip %1 has no terminal on any folio.</source>
         <translation>A régua de bornes %1 não tem nenhum borne em nenhuma folha.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/drc/drcstripnumbers.cpp" line="330"/>
+        <location filename="../sources/drc/drcstripnumbers.cpp" line="335"/>
         <source>%n terminal strips are named %1.</source>
         <translation>
             <numerusform>%n régua de bornes se chama %1.</numerusform>
@@ -10023,29 +10023,29 @@ Continuar?</translation>
 <context>
     <name>ElementScene</name>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="425"/>
+        <location filename="../sources/editor/elementscene.cpp" line="437"/>
         <source>Move a primitive</source>
         <translation>Move um primitivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="1035"/>
+        <location filename="../sources/editor/elementscene.cpp" line="1074"/>
         <source>Edit author information</source>
         <comment>window title</comment>
         <translation>Editar as informações sobre o autor</translation>
     </message>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="1040"/>
+        <location filename="../sources/editor/elementscene.cpp" line="1079"/>
         <source>You can use this field to specify the authors of this element, its license, or any other information you may find useful.</source>
         <translation>Você pode utilizar este campo para indicar os autores do elemento, a licença do mesmo, ou qualquer outra informação que considere útil.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="1136"/>
+        <location filename="../sources/editor/elementscene.cpp" line="1175"/>
         <source>Edit names</source>
         <comment>window title</comment>
         <translation>Editar nomes</translation>
     </message>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="1138"/>
+        <location filename="../sources/editor/elementscene.cpp" line="1177"/>
         <source>You may enter the element name in several languages.</source>
         <translation>Você pode especificar o nome do elemento em diversos idiomas.</translation>
     </message>
@@ -25089,7 +25089,7 @@ O que você deseja fazer?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="209"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1604"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2044"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3129"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3203"/>
         <source>Type</source>
         <translation>Tipo</translation>
     </message>
@@ -25153,19 +25153,19 @@ O que você deseja fazer?</translation>
         <translation>Compilação:   </translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="913"/>
+        <location filename="../sources/properties/elementdata.cpp" line="992"/>
         <source>Sectionable</source>
         <comment>sectional terminal element type</comment>
         <translation>Secionável</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="915"/>
+        <location filename="../sources/properties/elementdata.cpp" line="994"/>
         <source>Diode</source>
         <comment>diode terminal element type</comment>
         <translation>Diodo</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="965"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1044"/>
         <source>Phase</source>
         <comment>phase terminal element function</comment>
         <translation>Fase</translation>
@@ -26630,7 +26630,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="210"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1605"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2045"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3130"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3204"/>
         <source>Address</source>
         <translation>Endereço</translation>
     </message>
@@ -26638,7 +26638,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="212"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1607"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2047"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3132"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3206"/>
         <location filename="../sources/qetinformation.cpp" line="458"/>
         <source>Annotation</source>
         <translation>Comentário</translation>
@@ -26647,7 +26647,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="213"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1608"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2048"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3133"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3207"/>
         <location filename="../sources/qetinformation.cpp" line="525"/>
         <source>Cross-reference</source>
         <translation>Ref. cruzada</translation>
@@ -26656,7 +26656,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="211"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1606"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2046"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3131"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3205"/>
         <location filename="../sources/qetinformation.cpp" line="459"/>
         <location filename="../sources/qetinformation.cpp" line="476"/>
         <source>Function</source>
@@ -26989,65 +26989,65 @@ Deseja substituí-lo?</translation>
         <translation>Ordenar régua de bornes %1</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="909"/>
-        <location filename="../sources/properties/elementdata.cpp" line="929"/>
+        <location filename="../sources/properties/elementdata.cpp" line="988"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1008"/>
         <source>Generic</source>
         <comment>generic terminal element type</comment>
         <translation>Genérico</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="964"/>
-        <location filename="../sources/properties/elementdata.cpp" line="968"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1043"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1047"/>
         <source>Generic</source>
         <comment>generic terminal element function</comment>
         <translation>Genérico</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="911"/>
+        <location filename="../sources/properties/elementdata.cpp" line="990"/>
         <source>Fuse</source>
         <comment>fuse terminal element type</comment>
         <translation>Fusível</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="917"/>
+        <location filename="../sources/properties/elementdata.cpp" line="996"/>
         <source>Ground</source>
         <comment>ground terminal element type</comment>
         <translation>Terra</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="966"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1045"/>
         <source>Neutral</source>
         <comment>neutral terminal element function</comment>
         <translation>Neutro</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="1241"/>
-        <location filename="../sources/properties/elementdata.cpp" line="1253"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1348"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1360"/>
         <source>Digital input</source>
         <translation>Entrada digital</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="1243"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1350"/>
         <source>Digital output</source>
         <translation>Saída digital</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="1245"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1352"/>
         <source>Analogue input</source>
         <translation>Entrada analógica</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="1247"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1354"/>
         <source>Analogue output</source>
         <translation>Saída analógica</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="1249"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1356"/>
         <source>Universal input</source>
         <translation>Entrada universal</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="1251"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1358"/>
         <source>Universal output</source>
         <translation>Saída universal</translation>
     </message>
@@ -27584,31 +27584,31 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Lista de cabos</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="919"/>
+        <location filename="../sources/properties/elementdata.cpp" line="998"/>
         <source>Anti-parallel diodes</source>
         <comment>anti-parallel diodes terminal element type</comment>
         <translation>Diodos antiparalelos</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="921"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1000"/>
         <source>Resistor</source>
         <comment>resistor terminal element type</comment>
         <translation>Resistor</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="923"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1002"/>
         <source>Varistor</source>
         <comment>varistor terminal element type</comment>
         <translation>Varistor</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="925"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1004"/>
         <source>Test socket</source>
         <comment>test socket terminal element type</comment>
         <translation>Tomada de teste</translation>
     </message>
     <message>
-        <location filename="../sources/properties/elementdata.cpp" line="927"/>
+        <location filename="../sources/properties/elementdata.cpp" line="1006"/>
         <source>Diode (reversed)</source>
         <comment>reversed diode terminal element type</comment>
         <translation>Diodo (invertido)</translation>
@@ -32918,7 +32918,12 @@ Os outros campos não são utilizados.</translation>
         <translation>Mover</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="399"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="307"/>
+        <source>Position counted as in the Position column, from 1.</source>
+        <translation>Posição contada como na coluna Posição, a partir de 1.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="402"/>
         <source>Description</source>
         <translation>Descrição</translation>
     </message>
@@ -32973,52 +32978,47 @@ Os outros campos não são utilizados.</translation>
         <translation>Mover para a posição</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="307"/>
-        <source>Position counted as in the Position column, from 0.</source>
-        <translation>Posição contada como na coluna Posição, a partir de 0.</translation>
-    </message>
-    <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="328"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="331"/>
         <source>Bridging the terminals</source>
         <translation>Pontear os bornes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="335"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="338"/>
         <source>Unbridge the terminals</source>
         <translation>Remover ponte dos bornes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="342"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="345"/>
         <source>Bridge each run of adjacent terminals with the same wire number; only generic and ground terminals are bridged.</source>
         <translation>Ponteia cada sequência de bornes vizinhos com o mesmo número de fio; só bornes genéricos e de terra são ponteados.</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="345"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="348"/>
         <source>Bridge same wire numbers</source>
         <translation>Pontear números de fio iguais</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="356"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="359"/>
         <source>Properties</source>
         <translation>Propriedades</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="362"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="365"/>
         <source>Name:</source>
         <translation>Nome:</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="369"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="372"/>
         <source>Comment :</source>
         <translation>Comentário:</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="376"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="379"/>
         <source>Plant:</source>
         <translation>Instalação:</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="392"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="395"/>
         <source>Location :</source>
         <translation>Localização:</translation>
     </message>
@@ -33028,7 +33028,7 @@ Os outros campos não são utilizados.</translation>
         <translation>Tipo:</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="321"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="324"/>
         <source>Ungroup the terminals</source>
         <translation>Desagrupar bornes</translation>
     </message>
@@ -33079,7 +33079,7 @@ Os outros campos não são utilizados.</translation>
         <translation>Estágio:</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="314"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="317"/>
         <source>Group the terminals</source>
         <translation>Agrupar os bornes</translation>
     </message>
@@ -33132,22 +33132,22 @@ Os outros campos não são utilizados.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1313"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1314"/>
         <source>Apply the pending changes first: moving terminals reloads the table, which would discard them.</source>
         <translation>Aplique antes as alterações pendentes: mover bornes recarrega a tabela e as descartaria.</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1319"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1320"/>
         <source>Select the terminals to move first.</source>
         <translation>Selecione antes os bornes a mover.</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1354"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1355"/>
         <source>Not moved: bridge %1 would have a terminal in its middle.</source>
         <translation>Não movido: a ponte %1 ficaria com um borne no meio.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1386"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1387"/>
         <source>%n terminal(s) moved; their labels are unchanged.</source>
         <translation>
             <numerusform>%n borne movido; as tags dele não mudaram.</numerusform>
@@ -33155,32 +33155,32 @@ Os outros campos não são utilizados.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1446"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1447"/>
         <source>Move terminals up</source>
         <translation>Subir bornes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1447"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1448"/>
         <source>The selected terminals are already at the top.</source>
         <translation>Os bornes selecionados já estão no topo.</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1464"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1465"/>
         <source>Move terminals down</source>
         <translation>Descer bornes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1465"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1466"/>
         <source>The selected terminals are already at the bottom.</source>
         <translation>Os bornes selecionados já estão no fim.</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1496"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1501"/>
         <source>Move terminals to position %1</source>
         <translation>Mover bornes para a posição %1</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1497"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1502"/>
         <source>The selected terminals are already at position %1.</source>
         <translation>Os bornes selecionados já estão na posição %1.</translation>
     </message>
@@ -33583,77 +33583,77 @@ Clique duplo para ir ao componente</translation>
 <context>
     <name>TerminalStripModel</name>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="419"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="423"/>
         <source>Position</source>
         <translation>Posição</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="425"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="429"/>
         <source>Label</source>
         <translation>Tag</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="430"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="434"/>
         <source>Type</source>
         <translation>Tipo</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="432"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="436"/>
         <source>led</source>
         <translation>led</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="420"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="424"/>
         <source>Stage</source>
         <translation>Estágio</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="427"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="431"/>
         <source>Cross-reference</source>
         <translation>Referência cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="428"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="432"/>
         <source>Cable</source>
         <translation>Cabo</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="429"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="433"/>
         <source>Color / wire number of the cable</source>
         <translation>Cor / número do fio do cabo</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="431"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="435"/>
         <source>Function</source>
         <translation>Função</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="434"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="438"/>
         <source>Color</source>
         <translation>Cor</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="435"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="439"/>
         <source>Section (mm²)</source>
         <translation>Seção (mm²)</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="436"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="440"/>
         <source>Width (mm)</source>
         <translation>Largura (mm)</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="437"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="441"/>
         <source>Separator plate after</source>
         <translation>Placa separadora depois</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="426"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="430"/>
         <source>Number wire</source>
         <translation>Número do condutor</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="433"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="437"/>
         <source>Shield</source>
         <translation>Blindagem</translation>
     </message>
@@ -33661,20 +33661,20 @@ Clique duplo para ir ao componente</translation>
 <context>
     <name>TerminalStripModelDelegate</name>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="935"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="939"/>
         <source>%1 mm</source>
         <translation>%1 mm</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="974"/>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="985"/>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="1012"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="978"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="989"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="1016"/>
         <source>None (default)</source>
         <translation>Nenhum (padrão)</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="977"/>
-        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="1069"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="981"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="1073"/>
         <source>%1 mm²</source>
         <translation>%1 mm²</translation>
     </message>
