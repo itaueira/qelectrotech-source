@@ -717,6 +717,9 @@ if(TARGET qelectrotech_objects)
         src/ui/projectopen_test.cpp
         src/ui/appearance_test.cpp
         src/ui/dragassign_test.cpp
+        # CU-32.1: eighty components assigned from the window of the
+        # unlocated ones, in one step of undo; the list goes 120, 40, 120.
+        src/ui/locationbatch_test.cpp
         src/ui/iecoff_test.cpp
         src/ui/assignpart_test.cpp
         # Which products of an open project the catalogue cannot draw
