@@ -723,6 +723,9 @@ if(TARGET qelectrotech_objects)
         src/ui/pdfoutline_test.cpp
         # Printing and PDF in black and white (T37).
         src/ui/monochrome_test.cpp
+        # T63, step 1: a dark sheet color of the user's own makes the ink
+        # light on screen; the PDF of the print window does not change.
+        src/ui/darksheet_test.cpp
         src/ui/projectopen_test.cpp
         src/ui/appearance_test.cpp
         src/ui/dragassign_test.cpp

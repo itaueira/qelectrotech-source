@@ -1831,11 +1831,36 @@ bool DiagramView::event(QEvent *e) {
 /**
 	@brief DiagramView::paintingInverted
 	Reimplemented from PaletteGraphicsView: tell the diagram it is being
-	drawn for an inverted display, so it softens its grid.
+	drawn for an inverted display, so it softens its grid, and have it
+	drawn on a white sheet meanwhile, whatever color the user chose for
+	the sheets. The view turns white into that color itself; the border,
+	the title block and the grid, which pick their ink from
+	Diagram::background_color, are then drawn black as on paper and come
+	out light. Drawn on the dark color instead, the sheet would be
+	inverted into a light one and the white border into a dark one.
+	Printing and exporting do not paint through the view, and the color
+	is back before the view blits.
 */
 void DiagramView::paintingInverted(bool inverted)
 {
 	m_diagram->setInvertedLightness(inverted);
+	if (inverted && !m_sheet_color_kept.isValid()) {
+		m_sheet_color_kept = Diagram::background_color;
+		Diagram::background_color = Qt::white;
+	} else if (!inverted && m_sheet_color_kept.isValid()) {
+		Diagram::background_color = m_sheet_color_kept;
+		m_sheet_color_kept = QColor();
+	}
+}
+
+/**
+	@brief DiagramView::customSheetColor
+	Reimplemented from PaletteGraphicsView: the sheet color the user chose,
+	which the view inverts the folio onto when it is dark.
+*/
+QColor DiagramView::customSheetColor() const
+{
+	return Diagram::background_color;
 }
 
 /**

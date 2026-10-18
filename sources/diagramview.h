@@ -90,6 +90,9 @@ class DiagramView : public PaletteGraphicsView
 		/// Last viewport transform the rulers were painted for
 		QTransform m_rulers_transform;
 		bool m_cell_lines_shown = false;
+		/// Diagram::background_color, kept aside while the view has the
+		/// scene drawn on white (see paintingInverted()); invalid otherwise.
+		QColor m_sheet_color_kept;
 
 		
 	public:
@@ -130,6 +133,7 @@ class DiagramView : public PaletteGraphicsView
 		bool viewportEvent(QEvent *event) override;
 		void drawBackground(QPainter *painter, const QRectF &rect) override;
 		void paintingInverted(bool inverted) override;
+		QColor customSheetColor() const override;
 		void mousePressEvent(QMouseEvent *) override;
 		void mouseMoveEvent(QMouseEvent *) override;
 		void mouseReleaseEvent(QMouseEvent *) override;

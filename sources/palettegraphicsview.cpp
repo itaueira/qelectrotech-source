@@ -72,9 +72,42 @@ bool PaletteGraphicsView::invertsLightness() const
 	return QET::Palette::isDark(QApplication::palette());
 }
 
+/**
+	@brief PaletteGraphicsView::invertsScene
+	@return true when the scene is shown with its lightness inverted: on a
+	dark palette (invertsLightness()), over the palette's own sheet, or
+	over a sheet color the user chose when the palette's light ink reads
+	better on that color than black does.
+
+	Decided by contrast, and not by the lightness of the color alone: pure
+	yellow, red or green have a lightness of 127, and light ink gives 1.3:1
+	on yellow where black gives 19.6:1. On grays the two rules agree around
+	the middle: on mid gray (128) black gives 5.3:1 and light ink 2.9:1, so
+	it is shown as drawn; a gray darker than about 106 turns the ink light.
+*/
+bool PaletteGraphicsView::invertsScene() const
+{
+	if (!invertsLightness())
+		return false;
+	if (!customBackgroundColor())
+		return true;
+	const QColor sheet = customSheetColor();
+	if (!sheet.isValid())
+		return false;
+	const QColor opaque_sheet(sheet.rgb());
+	const QColor ink = QApplication::palette().color(QPalette::Text);
+	return QET::Palette::contrastRatio(ink, opaque_sheet)
+			> QET::Palette::contrastRatio(QColor(Qt::black), opaque_sheet);
+}
+
 void PaletteGraphicsView::paintingInverted(bool inverted)
 {
 	Q_UNUSED(inverted)
+}
+
+QColor PaletteGraphicsView::customSheetColor() const
+{
+	return QColor();
 }
 
 /**
@@ -115,11 +148,14 @@ void PaletteGraphicsView::paintEvent(QPaintEvent *event)
 	Run QGraphicsView::paintEvent() with the drawing hooks redirected to
 	an off-screen image of the viewport, then invert the lightness of the
 	exposed part of that image between the palette's Base and Text colors
+	(or the dark sheet color the user chose and Text, see invertsScene())
 	and blit it to the viewport. Inverting the finished rendering turns
 	the white sheet dark and the black ink light in one pass, and keeps
 	the hue of colored strokes. The image is in viewport coordinates, so
 	the hooks paint with the view's own transform and the scene records
 	the items' places in the viewport, as it does on a light palette.
+	With a lighter sheet color of the user's, the scene goes through the
+	same hooks and is blitted as drawn.
 	@param event the paint event, for the exposed area
 */
 void PaletteGraphicsView::paintInverted(QPaintEvent *event)
@@ -127,6 +163,19 @@ void PaletteGraphicsView::paintInverted(QPaintEvent *event)
 	const QRect exposed = event->rect().intersected(viewport()->rect());
 	if (exposed.isEmpty())
 		return;
+
+	// Whether the scene is inverted, and onto what: fixed for the whole
+	// paint, before the scene is told to draw on white, since a subclass
+	// may do that by changing what customSheetColor() reads. On a chosen
+	// sheet shown as drawn, a picture that adapts to the dark theme is
+	// still inverted between Base and Text, as it always was.
+	// The application palette, for the reason given in invertsLightness().
+	const QPalette application_palette = QApplication::palette();
+	m_invert_scene = invertsScene();
+	m_sheet = m_invert_scene && customBackgroundColor()
+			? customSheetColor()
+			: application_palette.color(QPalette::Base);
+	m_ink = application_palette.color(QPalette::Text);
 
 	const qreal ratio = viewport()->devicePixelRatioF();
 	const QSize size(qCeil(viewport()->width() * ratio), qCeil(viewport()->height() * ratio));
@@ -138,18 +187,18 @@ void PaletteGraphicsView::paintInverted(QPaintEvent *event)
 
 	m_buffer_painter.begin(&m_buffer);
 	// The hooks paint only what the scene draws; what they leave blank is
-	// the white sheet, which the inversion turns into the Base color.
+	// the white sheet, which the inversion turns into the sheet color.
 	m_buffer_painter.fillRect(exposed, Qt::white);
 	m_buffer_painter.setClipRect(exposed);
 	m_buffer_painter.setRenderHints(renderHints());
 	m_buffer_painter.setWorldTransform(viewportTransform());
 	m_exposed = exposed;
 	m_layered = false;
-	DarkImageRendering::Context context{&m_buffer_painter, !customBackgroundColor(), [this](bool invert, const QRect &bounds) { flushLayer(invert, bounds); }};
+	DarkImageRendering::Context context{&m_buffer_painter, m_invert_scene, [this](bool invert, const QRect &bounds) { flushLayer(invert, bounds); }};
 	DarkImageRendering::Scope rasterScope(&context);
 
 	m_inverting = true;
-	paintingInverted(!customBackgroundColor());
+	paintingInverted(m_invert_scene);
 	const OptimizationFlags flags = optimizationFlags();
 	setOptimizationFlag(QGraphicsView::IndirectPainting, true);
 	QGraphicsView::paintEvent(event);
@@ -157,7 +206,7 @@ void PaletteGraphicsView::paintInverted(QPaintEvent *event)
 	paintingInverted(false);
 	m_inverting = false;
 
-	if (m_layered) flushLayer(!customBackgroundColor());
+	if (m_layered) flushLayer(m_invert_scene);
 	m_buffer_painter.end();
 	blitInverted(exposed);
 }
@@ -170,10 +219,8 @@ void PaletteGraphicsView::flushLayer(bool invert, const QRect &bounds)
 	const QRect pixels = QRectF(area.topLeft() * ratio, area.size() * ratio).toAlignedRect();
 	QImage layer = m_buffer.copy(pixels);
 	layer.setDevicePixelRatio(ratio);
-	if (invert) {
-		const QPalette palette = QApplication::palette();
-		QET::Palette::invertLightnessLayer(layer, palette.color(QPalette::Base), palette.color(QPalette::Text));
-	}
+	if (invert)
+		QET::Palette::invertLightnessLayer(layer, m_sheet, m_ink);
 	if (!m_layered) {
 		if (m_composite.size() != m_buffer.size() || m_composite.devicePixelRatio() != ratio) {
 			m_composite = QImage(m_buffer.size(), QImage::Format_ARGB32_Premultiplied);
@@ -242,10 +289,9 @@ void PaletteGraphicsView::blitInverted(const QRect &area)
 	const QRect pixels = QRectF(area.topLeft() * ratio, area.size() * ratio).toAlignedRect();
 	QImage part = (m_layered ? m_composite : m_buffer).copy(pixels);
 	part.setDevicePixelRatio(ratio);
-	// The application palette, for the reason given in invertsLightness().
-	const QPalette application_palette = QApplication::palette();
-	if (!m_layered && !customBackgroundColor()) QET::Palette::invertLightness(part, application_palette.color(QPalette::Base),
-	                              application_palette.color(QPalette::Text));
+	// The colors were fixed by paintInverted(), from the application palette.
+	if (!m_layered && m_invert_scene)
+		QET::Palette::invertLightness(part, m_sheet, m_ink);
 
 	QPainter painter(viewport());
 	painter.drawImage(QPointF(pixels.topLeft()) / ratio, part);

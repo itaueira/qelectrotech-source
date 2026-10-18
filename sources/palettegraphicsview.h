@@ -51,6 +51,13 @@
 	element then left its terminals' help lines, which span the whole
 	sheet, behind at every step (#954).
 
+	With a sheet color the user chose (customBackgroundColor()), the scene
+	is shown as drawn, unless the palette's light ink reads better on that
+	color than black does: the scene is then inverted onto it, white becoming the chosen
+	color and black the palette's Text color, so that the ink reads on a
+	dark sheet of the user's own too. See invertsScene() and
+	customSheetColor().
+
 	The CacheBackground cache mode is not supported on the inverted path.
 */
 class PaletteGraphicsView : public QGraphicsView
@@ -62,6 +69,7 @@ class PaletteGraphicsView : public QGraphicsView
 		explicit PaletteGraphicsView(QGraphicsScene *scene, QWidget *parent = nullptr);
 
 		bool invertsLightness() const;
+		bool invertsScene() const;
 
 		static void setCustomBackgroundColor(bool custom) { s_custom_bg = custom; }
 		static bool customBackgroundColor() { return s_custom_bg; }
@@ -78,8 +86,24 @@ class PaletteGraphicsView : public QGraphicsView
 			inverted display and with false right after, so a scene can
 			adapt what it draws (a softer grid, for instance). Does
 			nothing by default.
+
+			When the view inverts onto customSheetColor(), the scene has
+			to be drawn as on a white sheet in between: the inversion is
+			what turns white into that color. A scene that drew its own
+			dark sheet would see it inverted into a light one.
 		*/
 		virtual void paintingInverted(bool inverted);
+		/**
+			The color the user chose for the sheet, read while
+			customBackgroundColor() is set: when the light ink reads
+			better on it than black (invertsScene()), the view inverts the
+			scene onto it. The base
+			class knows of no such color and returns an invalid one, so a
+			custom background is then shown as drawn, as it always was.
+			Read once at the start of each paint, before
+			paintingInverted(true).
+		*/
+		virtual QColor customSheetColor() const;
 		/// @return the painter the scene really paints with: the
 		/// off-screen image's while painting inverted, else \a painter.
 		/// For subclasses that draw more in drawBackground().
@@ -102,6 +126,13 @@ class PaletteGraphicsView : public QGraphicsView
 		QPainter m_buffer_painter;
 		/// True while paintEvent() paints for an inverted display.
 		bool m_inverting = false;
+		/// Fixed at the start of each paint on a dark palette: whether
+		/// the scene is inverted (invertsScene()), and the colors white
+		/// and black are mapped to when it is, or when a picture that
+		/// adapts to the dark theme is.
+		bool m_invert_scene = false;
+		QColor m_sheet;
+		QColor m_ink;
 		static inline bool s_custom_bg = false;
 };
 
