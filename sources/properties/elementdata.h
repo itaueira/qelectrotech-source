@@ -24,6 +24,7 @@
 
 #include <QStringList>
 #include <QVector>
+#include <QPair>
 #include <QFont>
 
 /**
@@ -324,8 +325,35 @@ class ElementData : public PropertiesInterface
 		bool m_terminal_led_is_override = false;
 		bool m_override_terminal_led = false;
 
+			/// A kind information as a definition writes it
+		struct KindInformation {
+			QString name;
+			QString text;
+				/// Its attributes other than "name", as they were read
+			QVector<QPair<QString, QString>> attributes;
+				/// For one written from a member of this class: false when
+				/// it is not written at all, as the limit of slaves of a
+				/// master that has none
+			bool written = true;
+		};
+
+			/// The kind informations of the definition this data was read
+			/// from, as they are written there and in their order, and the
+			/// link type they were read with. kindInfoToXml() writes them
+			/// back for as long as the link type is the same, so that the
+			/// symbol editor does not lose what it was not asked to change.
+		bool m_kind_was_read = false;
+		ElementData::Type m_kind_read_type = ElementData::Simple;
+		QVector<KindInformation> m_read_kind_informations;
+			/// What the members of this class made of the kind informations
+			/// it manages, when they were read: what tells one the user
+			/// changed from one left as it was
+		QVector<KindInformation> m_read_managed_kind_informations;
+
 	private:
 		void kindInfoFromXml(const QDomElement &xml_element);
+		QVector<KindInformation> managedKindInformations() const;
+		QVector<KindInformation> kindInformationsToWrite() const;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(ElementData::Types)

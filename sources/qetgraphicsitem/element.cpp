@@ -2836,27 +2836,101 @@ QStringList terminalSignature(const QDomElement &definition)
 	return lines;
 }
 
+	//The link type of @p definition as the program reads it: one it does
+	//not know, and a missing or empty one, is read as "simple" - by
+	//ElementData::typeFromString(), and ElementFactory builds a simple
+	//element for it. Not by typeFromString() itself, which says so in the
+	//log each time.
+QString linkTypeRead(const QDomElement &definition)
+{
+	static const QStringList known = {
+		ElementData::typeToString(ElementData::Simple),
+		ElementData::typeToString(ElementData::NextReport),
+		ElementData::typeToString(ElementData::PreviousReport),
+		ElementData::typeToString(ElementData::Master),
+		ElementData::typeToString(ElementData::Slave),
+		ElementData::typeToString(ElementData::Terminal),
+		ElementData::typeToString(ElementData::Thumbnail),
+		ElementData::typeToString(ElementData::ConductorDefinition)};
+	const QString written = definition.attribute(QStringLiteral("link_type"));
+	return known.contains(written) ? written : ElementData::typeToString(ElementData::Simple);
+}
+
+	//Whether the kind information @p key, of value @p value, is read as if
+	//the definition did not have it, by every reader of a definition of
+	//link type @p link_type: ElementData, and what reads kindInformations()
+	//(the cross references, the limit of slaves of a master) - all but the
+	//"Sub-type" line of the properties of an element, which shows the type
+	//as it is written. An older symbol editor wrote some of these where the
+	//symbol had none.
+	//Not every value that ElementData reads as its default is one: an empty
+	//number of contacts is read as 0 by ElementData and 1 when missing, a
+	//contact with no state or no number draws no contact in a cross
+	//reference, and a master with no type has the cross reference of no
+	//kind of master - none of these is left out.
+bool readAsMissing(const QString &link_type, const QString &key, const QString &value)
+{
+	const bool empty = value.trimmed().isEmpty();
+	if (link_type == ElementData::typeToString(ElementData::Terminal))
+	{
+		if (key == QLatin1String("type")) {
+			return empty || value == ElementData::terminalTypeToString(ElementData::TTGeneric);
+		}
+		if (key == QLatin1String("function")) {
+			return empty || value == ElementData::terminalFunctionToString(ElementData::TFGeneric);
+		}
+			//Read by ElementData alone, and only as "slave" or not
+		if (key == QLatin1String("link_role")) {
+			return value != QLatin1String("slave");
+		}
+	}
+	else if (link_type == ElementData::typeToString(ElementData::Slave))
+	{
+			//A contact of type "simple" is read as one of no type: the
+			//cross references tell "power" and the delays apart, and
+			//ElementData reads both as a simple contact
+		if (key == QLatin1String("type")) {
+			return empty || value == ElementData::slaveTypeToString(ElementData::SSimple);
+		}
+	}
+	else if (link_type == ElementData::typeToString(ElementData::Master))
+	{
+			//-1 is no limit, as when the definition has none
+		if (key == QLatin1String("max_slaves")) {
+			bool ok = false;
+			return value.toInt(&ok) == -1 && ok;
+		}
+	}
+	return false;
+}
+
 	//What makes the kind of element @p definition describes: its link type,
 	//the one class of element it is built as, and its kind informations.
 	//As in terminalSignature(), what is compared is what the program reads,
-	//not the text: the kind informations go through the reader buildFromXml()
-	//fills kindInformations() with, which leaves out a name DiagramContext
-	//does not accept and trims the value. The symbol editor writes back only
-	//the kind informations it knows: a contact keeps its type, state and
-	//number, and loses a "tempoType" no element ever read. Compared as text,
-	//every such symbol saved once in the editor was taken for another kind
-	//of element, and the project was reloaded for it.
+	//not the text: the link type as linkTypeRead() gives it, and the kind
+	//informations through the reader buildFromXml() fills kindInformations()
+	//with, which leaves out a name DiagramContext does not accept and trims
+	//the value - a "tempoType" no element ever read is not compared -, less
+	//those readAsMissing() is true for. The symbol editor wrote back only the
+	//kind informations it knows, and wrote some of those where the symbol
+	//had none. Compared as text, every such symbol saved once in the editor
+	//was taken for another kind of element, and the project was reloaded
+	//for it.
 QString kindSignature(const QDomElement &definition)
 {
+	const QString link_type = linkTypeRead(definition);
 	DiagramContext read;
 	read.fromXml(definition.firstChildElement(QStringLiteral("kindInformations")),
 				 QStringLiteral("kindInformation"));
 	QStringList kind;
-	for (const QString &key : read.keys(DiagramContext::Alphabetical)) {
-		kind << key + QLatin1Char('=') + read.value(key).toString();
+	for (const QString &key : read.keys(DiagramContext::Alphabetical))
+	{
+		const QString value = read.value(key).toString();
+		if (!readAsMissing(link_type, key, value)) {
+			kind << key + QLatin1Char('=') + value;
+		}
 	}
-	return definition.attribute(QStringLiteral("link_type"), QStringLiteral("simple"))
-			+ QLatin1Char('|') + kind.join(QLatin1Char(';'));
+	return link_type + QLatin1Char('|') + kind.join(QLatin1Char(';'));
 }
 
 }

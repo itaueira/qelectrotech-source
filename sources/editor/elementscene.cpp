@@ -113,6 +113,18 @@ namespace
 			|| item->type() == QGraphicsRectItem::Type
 			|| item->type() == QetGraphicsHandlerItem::Type;
 	}
+
+	/**
+		@return @a rect, widened if need be to take in the point (0, 0) of
+		the scene, which is where the element is inserted on a folio
+	*/
+	QRectF withInsertionPoint(const QRectF &rect)
+	{
+		const QRectF drawing = rect.normalized();
+		const qreal origin = 0;
+		return QRectF(QPointF(qMin(drawing.left(), origin), qMin(drawing.top(), origin)),
+			      QPointF(qMax(drawing.right(), origin), qMax(drawing.bottom(), origin)));
+	}
 }
 
 /**
@@ -565,6 +577,12 @@ void ElementScene::setGrid(int x_g, int y_g)
 	@param all_parts : (true by default)
 	if true, export the entire element in xml,
 	if false, only export the selected parts.
+	A whole element whose drawing does not hold the origin of the scene, its
+	insertion point on a folio, is moved to the origin when it was changed
+	since it was read or last saved, or drawn from nothing. Unchanged, it is
+	written where it is, with a box widened to the insertion point: moving it
+	would move its terminals away from the insertion point, and every element
+	placed from it would jump on its folio for an edit nobody made.
 	@return an xml document that describe the element.
 */
 const QDomDocument ElementScene::toXml(bool all_parts)
@@ -572,12 +590,31 @@ const QDomDocument ElementScene::toXml(bool all_parts)
 	QRectF size= elementSceneGeometricRect();
 
 	// if the element doesn't contain the origin point of the scene
-	// we move the element to the origin to solve this default before saving
+	// the box written below would not hold its insertion point
 	if (!size.contains(0,0) && all_parts)
 	{
-		centerElementToOrigin();
-		//recalculate the size after movement
-		size = elementSceneGeometricRect();
+			//The undo stack is clean right after the element is read - it is
+			//cleared before (constructor, reset()) and reading pushes nothing -
+			//and after each save (QETElementEditor::setClean()); every edit is
+			//pushed on it, a new element's first part included. Clean, the
+			//element is the one of its file.
+		if (!undoStack().isClean())
+		{
+			// we move the element to the origin to solve this default before saving
+			centerElementToOrigin();
+			//recalculate the size after movement
+			size = elementSceneGeometricRect();
+		}
+		else
+		{
+				//Nothing moved: the terminals stay where the file has them,
+				//relative to the insertion point. The box takes the insertion
+				//point in, as the box of a moved element does. Computed from the
+				//drawing alone it would not: the hotspot would come out negative,
+				//or past the width or the height - and Element::setHotspot()
+				//cuts that one down, which shifts the box off the drawing.
+			size = withInsertionPoint(size);
+		}
 	}
 
 	// define the size of the element by the upper multiple of 10
@@ -618,11 +655,13 @@ const QDomDocument ElementScene::toXml(bool all_parts)
 	root.appendChild(m_element_data.m_names_list.toXml(xml_document));
 
 	auto type_ = m_element_data.m_type;
-	if (type_ == ElementData::Slave  ||
-		type_ == ElementData::Master ||
-		type_ == ElementData::Terminal)
-	{
-		root.appendChild(m_element_data.kindInfoToXml(xml_document));
+		//Whatever the link type: a thumbnail or a simple element keeps the
+		//kind informations it was read with, which the editor does not
+		//manage, and a symbol of a managed type opened without any and
+		//saved unchanged keeps having none (ElementData::kindInfoToXml())
+	const QDomElement kind_informations = m_element_data.kindInfoToXml(xml_document);
+	if (kind_informations.hasChildNodes()) {
+		root.appendChild(kind_informations);
 	}
 
 		//Slave is in this list because the element editor offers the

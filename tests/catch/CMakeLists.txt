@@ -746,6 +746,9 @@ if(TARGET qelectrotech_objects)
         # The order the symbol editor saves the parts of a symbol in: the
         # order of its file, whatever order the scene lists them in.
         src/ui/elementsaveorder_test.cpp
+        # A symbol off the origin, saved untouched in the symbol editor, keeps
+        # its terminals where its file has them; changed, it is still moved.
+        src/ui/elementsaveorigin_test.cpp
         # T63, steps 2 and 3: icons, colour swatches and disabled fields on
         # the dark palette.
         src/ui/darkicons_test.cpp
@@ -1075,6 +1078,9 @@ if(TARGET qelectrotech_objects)
         # copia do simbolo mora na colecao embutida dele, e o desenho que
         # muda e o dos elementos ja postos nas folhas.
         src/ui/embeddedrefresh_test.cpp
+        # T62 (P147): every symbol opened and saved untouched in the symbol
+        # editor keeps its kind informations, and asks for no reload.
+        src/ui/elementresavekind_test.cpp
         # Arrastar uma selecao move cada texto na direcao do arrasto, mesmo o
         # de elemento girado selecionado sem o elemento: precisa de folha com
         # elementos girados, e do comando de desfazer que o arrasto empilha.

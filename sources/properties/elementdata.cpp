@@ -64,30 +64,35 @@ bool ElementData::fromXml(const QDomElement &xml_element)
 	return true;
 }
 
+/**
+	@brief ElementData::kindInfoToXml
+	The kind informations of this data, as the symbol editor writes them
+	into a definition: see kindInformationsToWrite(). A master also has its
+	slave contact groups and its PLC data written there.
+	@param document : the document the element is created in
+	@return a "kindInformations" element, with no child when there is
+	nothing to write
+*/
 QDomElement ElementData::kindInfoToXml(QDomDocument &document)
 {
 		//kindInformations
 	auto returned_elmt = document.createElement(QStringLiteral("kindInformations"));
 
+	for (const auto &info : kindInformationsToWrite())
+	{
+		auto xml_info = document.createElement(QStringLiteral("kindInformation"));
+		xml_info.setAttribute(QStringLiteral("name"), info.name);
+		for (const auto &attribute : info.attributes) {
+			xml_info.setAttribute(attribute.first, attribute.second);
+		}
+		if (!info.text.isEmpty()) {
+			xml_info.appendChild(document.createTextNode(info.text));
+		}
+		returned_elmt.appendChild(xml_info);
+	}
+
 	if (m_type == ElementData::Master)
 	{
-		auto xml_type  = document.createElement(QStringLiteral("kindInformation"));
-		xml_type.setAttribute(QStringLiteral("name"), QStringLiteral("type"));
-		auto type_txt = document.createTextNode(masterTypeToString(m_master_type));
-		xml_type.appendChild(type_txt);
-
-		returned_elmt.appendChild(xml_type);
-
-		// Save max_slaves only if a specific limit is set (not default -1)
-		if (m_max_slaves != -1) {
-			auto xml_max_slaves = document.createElement(QStringLiteral("kindInformation"));
-			xml_max_slaves.setAttribute(QStringLiteral("name"), QStringLiteral("max_slaves"));
-			auto max_slaves_txt = document.createTextNode(QString::number(m_max_slaves));
-			xml_max_slaves.appendChild(max_slaves_txt);
-
-			returned_elmt.appendChild(xml_max_slaves);
-		}
-
 		// Save slave contact groups if enabled
 		if (m_slave_contact_groups_enabled) {
 			auto xml_groups = document.createElement(QStringLiteral("slaveContactGroups"));
@@ -222,59 +227,133 @@ QDomElement ElementData::kindInfoToXml(QDomDocument &document)
 			returned_elmt.appendChild(xml_plc);
 		}
 	}
+
+	return returned_elmt;
+}
+
+/**
+	@brief ElementData::managedKindInformations
+	The kind informations the members of this class are written as, for
+	its link type, in the order the symbol editor has always written them:
+	the kind of a master and its limit of slaves; the kind, the state and
+	the number of contacts of a slave; the kind, the function and the link
+	role of a terminal. Any other link type has none.
+	@return the kind informations, those not written at all included
+*/
+QVector<ElementData::KindInformation> ElementData::managedKindInformations() const
+{
+	QVector<KindInformation> managed;
+	auto add = [&managed](const QString &name, const QString &text, bool written = true) {
+		KindInformation info;
+		info.name = name;
+		info.text = text;
+		info.written = written;
+		managed << info;
+	};
+
+	if (m_type == ElementData::Master)
+	{
+		add(QStringLiteral("type"), masterTypeToString(m_master_type));
+			//Only a specific limit is written, not the default -1
+		add(QStringLiteral("max_slaves"), QString::number(m_max_slaves), m_max_slaves != -1);
+	}
 	else if (m_type == ElementData::Slave)
 	{
-			//type
-		auto xml_type  = document.createElement(QStringLiteral("kindInformation"));
-		xml_type.setAttribute(QStringLiteral("name"), QStringLiteral("type"));
-		auto type_txt = document.createTextNode(slaveTypeToString(m_slave_type));
-		xml_type.appendChild(type_txt);
-		returned_elmt.appendChild(xml_type);
-
-			//state
-		auto xml_state = document.createElement(QStringLiteral("kindInformation"));
-		xml_state.setAttribute(QStringLiteral("name"), QStringLiteral("state"));
-		auto state_txt = document.createTextNode(slaveStateToString(m_slave_state));
-		xml_state.appendChild(state_txt);
-
-		returned_elmt.appendChild(xml_state);
-
-			//contact count
-		auto xml_count = document.createElement(QStringLiteral("kindInformation"));
-		xml_count.setAttribute(QStringLiteral("name"), QStringLiteral("number"));
-		auto count_txt = document.createTextNode(QString::number(m_contact_count));
-		xml_count.appendChild(count_txt);
-
-		returned_elmt.appendChild(xml_count);
+		add(QStringLiteral("type"), slaveTypeToString(m_slave_type));
+		add(QStringLiteral("state"), slaveStateToString(m_slave_state));
+		add(QStringLiteral("number"), QString::number(m_contact_count));
 	}
 	else if (m_type == ElementData::Terminal)
 	{
-			//type
-		auto xml_type  = document.createElement(QStringLiteral("kindInformation"));
-		xml_type.setAttribute(QStringLiteral("name"), QStringLiteral("type"));
-		auto type_txt = document.createTextNode(terminalTypeToString(m_terminal_type));
-		xml_type.appendChild(type_txt);
-		returned_elmt.appendChild(xml_type);
-
-			//function
-		auto xml_func = document.createElement(QStringLiteral("kindInformation"));
-		xml_func.setAttribute(QStringLiteral("name"), QStringLiteral("function"));
-		auto func_txt = document.createTextNode(terminalFunctionToString(m_terminal_function));
-		xml_func.appendChild(func_txt);
-		returned_elmt.appendChild(xml_func);
-
+		add(QStringLiteral("type"), terminalTypeToString(m_terminal_type));
+		add(QStringLiteral("function"), terminalFunctionToString(m_terminal_function));
 			//link role, written only when set: a program that does not know
 			//it ignores it and opens the terminal as a plain terminal
-		if (m_terminal_strip_slave)
-		{
-			auto xml_role = document.createElement(QStringLiteral("kindInformation"));
-			xml_role.setAttribute(QStringLiteral("name"), QStringLiteral("link_role"));
-			xml_role.appendChild(document.createTextNode(QStringLiteral("slave")));
-			returned_elmt.appendChild(xml_role);
+		add(QStringLiteral("link_role"), QStringLiteral("slave"), m_terminal_strip_slave);
+	}
+	return managed;
+}
+
+/**
+	@brief ElementData::kindInformationsToWrite
+	The kind informations kindInfoToXml() writes.
+
+	Data that was not read from a definition, or was given another link
+	type since, has those of managedKindInformations(), and nothing else:
+	the kind informations of another link type do not describe this one.
+
+	Data read from a definition, and still of the link type it was read
+	with, has every kind information it was read with, in their order and
+	as they were written - those this class does not manage (the sub-type
+	of a thumbnail, the state of a master, a name the program never reads),
+	and those it manages and that were not changed, even with a text the
+	program reads otherwise. One that was changed takes its new text where
+	it was, or goes when it is not written any more. One it manages that
+	the definition did not have is added only when it was changed: left as
+	it was, it is read as it was read without it.
+
+	Opening a symbol in the editor and saving it with no change so gives
+	back the kind informations it had: saved as the editor wrote them
+	before, a thumbnail lost its sub-type, a master the state and the
+	number its symbol gave it, and the project asked for the symbol to be
+	reloaded, as if it were of another kind.
+	@return the kind informations, in the order they are written
+*/
+QVector<ElementData::KindInformation> ElementData::kindInformationsToWrite() const
+{
+	const QVector<KindInformation> managed = managedKindInformations();
+	QVector<KindInformation> to_write;
+
+	if (!m_kind_was_read || m_kind_read_type != m_type)
+	{
+		for (const auto &info : managed) {
+			if (info.written) {
+				to_write << info;
+			}
+		}
+		return to_write;
+	}
+
+	auto find = [](const QVector<KindInformation> &list, const QString &name)
+			-> const KindInformation * {
+		for (const auto &info : list) {
+			if (info.name == name) {
+				return &info;
+			}
+		}
+		return nullptr;
+	};
+	auto unchanged = [&](const QString &name) {
+		const KindInformation *now = find(managed, name);
+		const KindInformation *then = find(m_read_managed_kind_informations, name);
+		return now && then
+				&& now->written == then->written
+				&& (!now->written || now->text == then->text);
+	};
+
+	QStringList met;
+	for (const auto &as_read : m_read_kind_informations)
+	{
+		const KindInformation *now = find(managed, as_read.name);
+		if (!now || unchanged(as_read.name)) {
+			to_write << as_read;
+		}
+		else if (now->written) {
+			KindInformation changed = as_read;
+			changed.text = now->text;
+			to_write << changed;
+		}
+		if (now) {
+			met << as_read.name;
 		}
 	}
 
-	return returned_elmt;
+	for (const auto &info : managed) {
+		if (info.written && !met.contains(info.name) && !unchanged(info.name)) {
+			to_write << info;
+		}
+	}
+	return to_write;
 }
 
 /**
@@ -974,6 +1053,30 @@ void ElementData::kindInfoFromXml(const QDomElement &xml_element)
 		//definition read before, it would make a plain terminal a slave
 	m_terminal_strip_slave = false;
 
+		//Every kind information, whatever the link type, as it is written:
+		//what kindInfoToXml() writes back (see kindInformationsToWrite())
+	m_read_kind_informations.clear();
+	for (const auto &dom_elmt : QETXML::findInDomElement(
+			 xml_element.firstChildElement(QStringLiteral("kindInformations")),
+			 QStringLiteral("kindInformation")))
+	{
+		if (!dom_elmt.hasAttribute(QStringLiteral("name"))) {
+			continue;
+		}
+		KindInformation info;
+		info.name = dom_elmt.attribute(QStringLiteral("name"));
+		info.text = dom_elmt.text();
+		const QDomNamedNodeMap attributes = dom_elmt.attributes();
+		for (int i = 0 ; i < attributes.count() ; ++i)
+		{
+			const QDomAttr attribute = attributes.item(i).toAttr();
+			if (attribute.name() != QLatin1String("name")) {
+				info.attributes << qMakePair(attribute.name(), attribute.value());
+			}
+		}
+		m_read_kind_informations << info;
+	}
+
 	if (m_type == ElementData::Master ||
 		m_type == ElementData::Slave  ||
 		m_type == ElementData::Terminal)
@@ -1013,6 +1116,10 @@ void ElementData::kindInfoFromXml(const QDomElement &xml_element)
 			}
 		}
 	}
+
+	m_kind_was_read = true;
+	m_kind_read_type = m_type;
+	m_read_managed_kind_informations = managedKindInformations();
 
 	// Parse slave contact groups for Master elements
 	if (m_type == ElementData::Master) {

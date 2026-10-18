@@ -980,6 +980,21 @@ namespace
 		names.sort();
 		return names;
 	}
+
+	/// The kind informations of @p definition, as written: "name=text"
+	/// each, in the order of the file
+	QStringList kindInformationsOf(const QDomDocument &definition)
+	{
+		QStringList infos;
+		for (QDomElement info = definition.documentElement()
+									.firstChildElement(QStringLiteral("kindInformations"))
+									.firstChildElement(QStringLiteral("kindInformation"));
+			 !info.isNull();
+			 info = info.nextSiblingElement(QStringLiteral("kindInformation"))) {
+			infos << info.attribute(QStringLiteral("name")) + QLatin1Char('=') + info.text();
+		}
+		return infos;
+	}
 }
 
 /*
@@ -995,6 +1010,13 @@ namespace
 	case missed it whenever the bench picked another element of the
 	example; it now goes through every wired copy, and a case of its own
 	looks for that one.
+
+	Since then the editor keeps every kind information it does not manage,
+	and those it manages that were not changed, as they were written
+	(ElementData::kindInfoToXml()). A thumbnail used to keep none of its
+	kind informations, and 420 of the collection the program ships with
+	have some: a case looks at one of them, and elementresavekind_test.cpp
+	goes through the whole collection.
 */
 
 TEST_CASE("T62 — Saved again by the symbol editor, terminals untouched: no reload",
@@ -1049,8 +1071,11 @@ TEST_CASE("T62 — Saved again by the symbol editor, terminals untouched: no rel
 
 	//Kept under 79 characters: Catch2 v2 wraps a longer name to print a
 	//failure, and with a multi-byte character in it the wrap can throw
-	//std::out_of_range and end the run without a summary
-TEST_CASE("T62 — A kind information never read, dropped by the editor: no reload",
+	//std::out_of_range and end the run without a summary.
+	//The editor dropped that kind information until it kept every one it
+	//does not manage (P147): the case now proves both, the copy it saves
+	//and the copy an older editor saved.
+TEST_CASE("T62 — A kind information never read, kept by the editor: no reload",
 		  "[embeddedrefresh][T62]")
 {
 	Bench bench(QStringLiteral("schema_unifilaire_voltaique2.qet"));
@@ -1088,19 +1113,40 @@ TEST_CASE("T62 — A kind information never read, dropped by the editor: no relo
 	const QList<Element *> placed = EmbeddedElementRefresh::placedElements(project, path);
 	REQUIRE_FALSE(placed.isEmpty());
 
+	const QStringList before = kindInformationsOf(copyAt(project, path));
+
 		//Opened and saved in the symbol editor, nothing changed
 	REQUIRE(savedInEditor(project, path));
 
-		//What the editor wrote: the kind information without that name,
-		//which is the difference this case is about - without it the case
-		//proves nothing
+		//What the editor wrote: every kind information of the copy, that
+		//name included, in their order
 	const QDomDocument saved = copyAt(project, path);
-	REQUIRE_FALSE(kindNames(saved).contains(refused));
+	CHECK(kindNames(saved).contains(refused));
+	CHECK(kindInformationsOf(saved) == before);
 
 	for (const Element *element : placed) {
 		CHECK(element->definitionKindMatches(saved.documentElement()));
 	}
 	CHECK(EmbeddedElementRefresh::needingReload(project, {}, {}, path).isEmpty());
+
+		//What an older editor wrote: the same copy without that name, which
+		//is the difference the comparison has to see through - without it
+		//this half proves nothing
+	QDomDocument dropped = saved.cloneNode(true).toDocument();
+	QDomElement kind = dropped.documentElement().firstChildElement(QStringLiteral("kindInformations"));
+	for (QDomElement info = kind.firstChildElement(QStringLiteral("kindInformation"));
+		 !info.isNull();)
+	{
+		const QDomElement next = info.nextSiblingElement(QStringLiteral("kindInformation"));
+		if (info.attribute(QStringLiteral("name")) == refused) {
+			kind.removeChild(info);
+		}
+		info = next;
+	}
+	REQUIRE_FALSE(kindNames(dropped).contains(refused));
+	for (const Element *element : placed) {
+		CHECK(element->definitionKindMatches(dropped.documentElement()));
+	}
 
 		//And the kind the program reads is still compared: another value
 		//for a name it accepts - the text "T62" added to it - is another
@@ -1121,6 +1167,87 @@ TEST_CASE("T62 — A kind information never read, dropped by the editor: no relo
 	for (const Element *element : placed) {
 		CHECK_FALSE(element->definitionKindMatches(other.documentElement()));
 	}
+}
+
+	//Measured on 18/10/2026 on the collection the program ships with: 400
+	//thumbnails of terminals carry the sub-type "sectional", which the
+	//symbol editor did not write back - it manages no kind information of
+	//a thumbnail. Saved untouched, such a symbol lost it, and the project
+	//asked for the reload.
+TEST_CASE("T62 — A thumbnail's sub-type, saved untouched in the editor: no reload",
+		  "[embeddedrefresh][T62]")
+{
+	Bench bench(GENERATE(from_range(examples)));
+	REQUIRE(bench.project.isOpen());
+
+		//A wired copy whose elements are all simple ones, the first by path:
+		//made a thumbnail, it is built as a simple element again, and no
+		//link between elements is lost on the way
+	QString path;
+	for (const QString &candidate : wiredImportedPaths(bench.get()))
+	{
+		bool simple = true;
+		for (const Element *element : EmbeddedElementRefresh::placedElements(bench.get(), candidate)) {
+			simple = simple && element->linkType() == Element::Simple;
+		}
+		if (simple) {
+			path = candidate;
+			break;
+		}
+	}
+	CAPTURE(path);
+	REQUIRE_FALSE(path.isEmpty());
+
+		//The copy made the thumbnail of a sectional terminal, as those 400
+		//symbols are, and the elements built from it
+	const QStringList sectional = {QStringLiteral("type=sectional"),
+								   QStringLiteral("function=generic")};
+	QDomDocument thumbnail = copyAt(bench.get(), path);
+	QDomElement root = thumbnail.documentElement();
+	root.setAttribute(QStringLiteral("link_type"), QStringLiteral("thumbnail"));
+	const QDomElement old_kind = root.firstChildElement(QStringLiteral("kindInformations"));
+	if (!old_kind.isNull()) {
+		root.removeChild(old_kind);
+	}
+	QDomElement kind = thumbnail.createElement(QStringLiteral("kindInformations"));
+	for (const QString &info : sectional)
+	{
+		QDomElement xml_info = thumbnail.createElement(QStringLiteral("kindInformation"));
+		xml_info.setAttribute(QStringLiteral("name"), info.section(QLatin1Char('='), 0, 0));
+		xml_info.appendChild(thumbnail.createTextNode(info.section(QLatin1Char('='), 1)));
+		kind.appendChild(xml_info);
+	}
+	root.appendChild(kind);
+	REQUIRE(saveOverCopy(bench.get(), path, thumbnail));
+	REQUIRE(bench.project.saveAndReopen());
+	QETProject *project = bench.get();
+
+	const QList<Element *> placed = EmbeddedElementRefresh::placedElements(project, path);
+	REQUIRE_FALSE(placed.isEmpty());
+	for (const Element *element : placed) {
+		REQUIRE(element->elementData().m_type == ElementData::Thumbnail);
+		REQUIRE(element->kindInformations()["type"].toString() == QStringLiteral("sectional"));
+	}
+
+		//Opened and saved in the symbol editor, nothing changed
+	REQUIRE(savedInEditor(project, path));
+
+		//The sub-type written back, which is the difference this case is
+		//about: the editor wrote no kind information for a thumbnail
+	const QDomDocument saved = copyAt(project, path);
+	CHECK(saved.documentElement().attribute(QStringLiteral("link_type"))
+		  == QStringLiteral("thumbnail"));
+	CHECK(kindInformationsOf(saved) == sectional);
+
+	for (const Element *element : placed) {
+		CHECK(element->definitionKindMatches(saved.documentElement()));
+		CHECK(element->definitionTerminalsMatch(saved.documentElement()));
+	}
+	CHECK(EmbeddedElementRefresh::needingReload(project, {}, {}, path).isEmpty());
+
+		//And in the project's file, saved and opened again
+	REQUIRE(bench.project.saveAndReopen());
+	CHECK(kindInformationsOf(copyAt(bench.get(), path)) == sectional);
 }
 
 TEST_CASE("T62 — The reload of the notice looks at the saved symbol and nothing else",
