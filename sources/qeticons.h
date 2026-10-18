@@ -178,6 +178,7 @@ namespace QET {
 		extern QIcon QETLogo;
 		extern QIcon QtLogo;
 		extern QIcon Raise;
+		extern QIcon RecordMacro;
 		extern QIcon RectToBezier;
 		extern QIcon RectToPolyline;
 		extern QIcon Remove;

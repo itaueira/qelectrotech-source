@@ -730,6 +730,9 @@ if(TARGET qelectrotech_objects)
         src/ui/appearance_test.cpp
         # T63: the dark palette - readable colours and readable disabled text.
         src/ui/darkpalette_test.cpp
+        # T63, steps 2 and 3: icons, colour swatches and disabled fields on
+        # the dark palette.
+        src/ui/darkicons_test.cpp
         src/ui/dragassign_test.cpp
         # CU-32.1: eighty components assigned from the window of the
         # unlocated ones, in one step of undo; the list goes 120, 40, 120.

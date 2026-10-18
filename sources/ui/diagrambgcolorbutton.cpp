@@ -23,6 +23,7 @@
 #include "../qetdiagrameditor.h"
 #include "../projectview.h"
 #include "../qetproject.h"
+#include "../qetstyle.h"
 #include "../utils/qetsettings.h"
 
 #include <QApplication>
@@ -267,18 +268,12 @@ void DiagramBgColorToolButton::updateEnabledState()
 /**
 	@brief DiagramBgColorToolButton::swatchIcon
 	@param color
-	@return a plain square of that colour, outlined so that white and very
-	light colours are still visible against the toolbar.
+	@return a plain square of that colour, outlined so that it is still
+	visible against a light toolbar and a dark one, whatever the colour:
+	white on a light menu, black or dark gray on a dark one.
+	See QETStyle::swatchIcon().
 */
 QIcon DiagramBgColorToolButton::swatchIcon(const QColor &color)
 {
-	QPixmap pix(16, 16);
-	pix.fill(Qt::transparent);
-	QPainter p(&pix);
-	p.setRenderHint(QPainter::Antialiasing, false);
-	p.setBrush(color);
-	p.setPen(QPen(QColor(0x40, 0x40, 0x40), 1));
-	p.drawRect(0, 0, 15, 15);
-	p.end();
-	return QIcon(pix);
+	return QETStyle::swatchIcon(color);
 }

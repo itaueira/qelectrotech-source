@@ -170,6 +170,7 @@ namespace QET {
 		QIcon QETLogo;
 		QIcon QtLogo;
 		QIcon Raise;
+		QIcon RecordMacro;
 		QIcon RectToBezier;
 		QIcon RectToPolyline;
 		QIcon Remove;
@@ -493,9 +494,13 @@ void QET::Icons::initIcons()
 	} else {
 		EditUndo            = QIcon::fromTheme("edit-undo");
 	}
-	Element.addFile(":/ico/breeze-icons/16x16/mimetypes/application-x-qet-element.png");
-	Element.addFile(":/ico/breeze-icons/22x22/mimetypes/application-x-qet-element.png");
-	Element.addFile(":/ico/breeze-icons/32x32/mimetypes/application-x-qet-element.png");
+	// The theme's "element" is the same drawing as the element file-type
+	// icon (ico/qet/traced/ is traced from it), with a light-ink copy in
+	// the dark theme. The file-type PNGs of ico/breeze-icons/ have none,
+	// and their license (CC-BY-ND) does not allow making one: on a dark
+	// palette they read at 1.9:1, in the menu of recent elements and in
+	// the "select the elements of this sheet" action of the search panel.
+	Element             = QIcon::fromTheme("element");
 	ElementDelete       = QIcon::fromTheme("element-delete");
 	ElementEdit         = QIcon::fromTheme("element-edit");
 	ElementNew          = QIcon::fromTheme("element-new");
@@ -534,7 +539,10 @@ void QET::Icons::initIcons()
 	ImageFlipVertical   = QIcon::fromTheme("image-flip-vertical");
 	InsertImage         = QIcon::fromTheme("insert-image");
 	Lower               = QIcon::fromTheme("lower");
-	LocationArea        .addFile(":/ico/22x22/location-area.png");
+	// Through the theme, so the dark theme's light-ink copy is used on a
+	// dark palette (misc/make_icon_themes.py builds it from
+	// ico/22x22/location-area.png).
+	LocationArea        = QIcon::fromTheme("location-area");
 	IC_MoveFile         = QIcon::fromTheme("item-move");
 	Mirror              = QIcon::fromTheme("mirror");
 	Names               = QIcon::fromTheme("names");
@@ -586,6 +594,9 @@ void QET::Icons::initIcons()
 	QETVideo            = QIcon::fromTheme("kdenlive-show-video");
 	QtLogo              = QIcon::fromTheme("qt");
 	Raise               = QIcon::fromTheme("raise");
+	// Colored art, one file for both themes: its red reads at 3:1 on the
+	// light and on the dark palettes (ico/qet/scalable/media-record.svg).
+	RecordMacro         = QIcon::fromTheme("media-record");
 	RectToBezier        = QIcon::fromTheme("rect-to-bezier");
 	RectToPolyline      = QIcon::fromTheme("rect-to-polyline");
 	Remove              = QIcon::fromTheme("list-remove");

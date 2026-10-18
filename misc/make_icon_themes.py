@@ -187,6 +187,8 @@ SVGS = [
     "qet/scalable/label.svg",
     "qet/scalable/pdf-import.svg",
     "qet/scalable/snap-to-grid.svg",
+    # Colored: one file for both themes, its red chosen to read on both.
+    "qet/scalable/media-record.svg",
 ]
 
 # Icons served by Breeze SVGs in ico/breeze/, QET name to Breeze name.

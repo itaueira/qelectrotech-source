@@ -4,6 +4,7 @@
     <qresource prefix="/ico">
         <file>themes/qet/index.theme</file>
         <file>themes/qet-dark/index.theme</file>
+        <file alias="themes/qet/22x22/location-area.png">22x22/location-area.png</file>
         <file alias="themes/qet/16x16/qelectrotech.png">breeze-icons/16x16/apps/qelectrotech.png</file>
         <file alias="themes/qet/22x22/qelectrotech.png">breeze-icons/22x22/apps/qelectrotech.png</file>
         <file alias="themes/qet/32x32/qelectrotech.png">breeze-icons/32x32/apps/qelectrotech.png</file>
@@ -25,6 +26,7 @@
         <file alias="themes/qet/scalable/label.svg">qet/scalable/label.svg</file>
         <file alias="themes/qet/scalable/pdf-import.svg">qet/scalable/pdf-import.svg</file>
         <file alias="themes/qet/scalable/snap-to-grid.svg">qet/scalable/snap-to-grid.svg</file>
+        <file alias="themes/qet/scalable/media-record.svg">qet/scalable/media-record.svg</file>
         <file alias="themes/qet/scalable/printer.svg">breeze/64/printer.svg</file>
         <file alias="themes/qet/scalable/settings.svg">breeze/48/systemsettings.svg</file>
         <file alias="themes/qet/scalable/configure-shortcuts.svg">qet/pages/configure-shortcuts.svg</file>
@@ -2640,6 +2642,7 @@
         <file alias="themes/qet/48x48@2/zoom-out.svg">themes/generated/breeze-24/zoom-out.svg</file>
         <file alias="themes/qet/64x64@2/zoom-out.svg">breeze/32/zoom-out.svg</file>
         <file alias="themes/qet/128x128@2/zoom-out.svg">breeze/32/zoom-out.svg</file>
+        <file>themes/qet-dark/22x22/location-area.png</file>
         <file>themes/qet-dark/scalable/align-horizontal-center.svg</file>
         <file>themes/qet-dark/scalable/align-horizontal-left.svg</file>
         <file>themes/qet-dark/scalable/align-horizontal-right.svg</file>

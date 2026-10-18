@@ -23,6 +23,7 @@
 #include "../diagramview.h"
 #include "../lastusedstyle.h"
 #include "../qetdiagrameditor.h"
+#include "../qetstyle.h"
 #include "../projectview.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../conductorproperties.h"
@@ -263,18 +264,12 @@ void ConductorColorToolButton::setSwatch(const QColor &color)
 /**
 	@brief ConductorColorToolButton::swatchIcon
 	@param color
-	@return a plain square of that colour, outlined so that white and very
-	light colours are still visible against the toolbar.
+	@return a plain square of that colour, outlined so that it is still
+	visible against a light toolbar and a dark one, whatever the colour:
+	white on a light menu, black or purple on a dark one.
+	See QETStyle::swatchIcon().
 */
 QIcon ConductorColorToolButton::swatchIcon(const QColor &color)
 {
-	QPixmap pix(16, 16);
-	pix.fill(Qt::transparent);
-	QPainter p(&pix);
-	p.setRenderHint(QPainter::Antialiasing, false);
-	p.setBrush(color);
-	p.setPen(QPen(QColor(0x40, 0x40, 0x40), 1));
-	p.drawRect(0, 0, 15, 15);
-	p.end();
-	return QIcon(pix);
+	return QETStyle::swatchIcon(color);
 }

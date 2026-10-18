@@ -2,7 +2,6 @@
     <qresource prefix="/">
         <file>ico/256x256/qet.png</file>
         <file>ico/splash.png</file>
-        <file>ico/22x22/location-area.png</file>
         <file>titleblocks/default.titleblock</file>
         <file>ico/flags/ar.png</file>
         <file>ico/flags/cs.png</file>

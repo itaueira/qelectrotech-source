@@ -1450,17 +1450,7 @@ void QETDiagramEditor::setUpActions()
 	connect(m_run_script, &QAction::triggered, this, &QETDiagramEditor::slot_runScript);
 
 		//Record what the user does, for an assistant to turn into a script
-	{
-		QPixmap dot(32, 32);
-		dot.fill(Qt::transparent);
-		QPainter painter(&dot);
-		painter.setRenderHint(QPainter::Antialiasing);
-		painter.setPen(Qt::NoPen);
-		painter.setBrush(QColor(0xd0, 0x30, 0x30));
-		painter.drawEllipse(QRectF(6, 6, 20, 20));
-		painter.end();
-		m_record_macro = new QAction(QIcon(dot), tr("Record a macro"), this);
-	}
+	m_record_macro = new QAction(QET::Icons::RecordMacro, tr("Record a macro"), this);
 	m_record_macro->setCheckable(true);
 	m_record_macro->setStatusTip(tr("Records what you do on the project, for an AI assistant "
 					"to make a script of; click again to stop"));
