@@ -920,6 +920,10 @@ if(TARGET qelectrotech_objects)
         # adjacent terminals on one wire number, in one command. Needs a folio:
         # the wire number is read off the conductors drawn on it.
         src/ui/bridgebywire_test.cpp
+        # Undo of the bridge button of the terminal strip editor when the
+        # selection extends a bridge that is already there: the bridge comes
+        # back as it was. Needs terminal elements on a folio.
+        src/ui/manualbridgeundo_test.cpp
         # The information panel of an element and the keys a catalogue part
         # writes on it: no anonymous row for them, and kept on apply. Needs
         # a placed element, of both kinds.

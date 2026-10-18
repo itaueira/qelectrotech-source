@@ -28,7 +28,12 @@
 /**
  * @brief The BridgeTerminalsCommand class
  * UndoCommand use to create bridge between terminals
- * of a terminals strip
+ * of a terminals strip.
+ *
+ * When some of the terminals are already bridged, the command extends
+ * that bridge instead of making a new one, and undo takes back only the
+ * terminals the command added: the bridge that was there before is left
+ * as it was, same object, same terminals, same color.
  */
 class BridgeTerminalsCommand : public QUndoCommand
 {
@@ -40,8 +45,13 @@ class BridgeTerminalsCommand : public QUndoCommand
 		void redo() override;
 
 	private:
+		QVector<QVector<QSharedPointer<RealTerminal>>> addedBlocks() const;
+
 		QPointer<TerminalStrip> m_strip;
 		QVector<QSharedPointer<RealTerminal>> m_real_terminal_vector;
+			//The terminals of m_real_terminal_vector this command bridged,
+			//known once the first redo has bridged them.
+		QVector<QSharedPointer<RealTerminal>> m_added_terminals;
 		QSharedPointer<TerminalStripBridge> m_bridge;
 };
 
