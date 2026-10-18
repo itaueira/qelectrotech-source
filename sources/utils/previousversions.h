@@ -41,7 +41,8 @@ namespace PreviousVersions
 	int count();
 	void setCount(int count);
 		/// The folder holding the versions of every project: by default
-		/// "QElectroTech/Previous versions" in the user's documents
+		/// "QElectroTech/Previous versions" in the user's documents, and in
+		/// the data of the application in the test mode of QStandardPaths
 	QString root();
 		/// Put the versions under @p root instead, for this run only; an
 		/// empty one goes back to the default. For the tests, which must not
@@ -53,9 +54,13 @@ namespace PreviousVersions
 	QStringList kept(const QString &file_path);
 		/// Copy @p file_path, about to be saved over, among its versions and
 		/// keep only the @p count newest. Nothing is copied when the file does
-		/// not exist, when @p count is 0, or when the newest version kept
-		/// holds the same bytes. @return false, with @p error, when the copy
-		/// could not be made: the save goes on all the same.
+		/// not exist, when @p count is 0, when the newest version kept holds
+		/// the same bytes, or when the file is in the temporary folder of the
+		/// system and setRoot() did not choose where the versions go - a copy
+		/// something else owns, a test or an opened attachment, whose
+		/// versions would pile up in the user's documents. @return false,
+		/// with @p error, when the copy could not be made: the save goes on
+		/// all the same.
 	bool keep(const QString &file_path, int count, QString *error = nullptr);
 }
 

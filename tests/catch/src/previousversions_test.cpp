@@ -149,3 +149,58 @@ TEST_CASE("T25 — by default the versions are in the user's documents",
 		//And the run itself writes into none of it
 	CHECK_FALSE(run.startsWith(documents));
 }
+
+/*
+	The tests of the upstream run the program on a project of a temporary
+	directory and save it, and the program kept a version of it in the
+	documents of whoever ran them: a folder "p (code)" per run, measured in
+	the documents of this machine. Those tests know nothing of this feature
+	and cannot call setRoot(): the program has to leave such a project alone
+	by itself.
+*/
+TEST_CASE("T25 — a project in the temporary folder keeps no version in the user's documents",
+		  "[T25][previousversions]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString project = dir.filePath(QStringLiteral("p.qetz"));
+	const QDateTime start(QDate(2026, 10, 17), QTime(18, 0, 0));
+	write(project, "first", start);
+
+		//The default folder, as a run of the program has it - the one this
+		//case must not write into
+	const QString run = PreviousVersions::root();
+	PreviousVersions::setRoot(QString());
+	const QString folder = PreviousVersions::folder(project);
+	REQUIRE(folder.startsWith(PreviousVersions::root() + QLatin1Char('/')));
+	REQUIRE_FALSE(QFileInfo::exists(folder));
+
+	const bool kept = PreviousVersions::keep(project, 5);
+	const bool written = QFileInfo::exists(folder);
+		//Should the rule ever break, what it wrote goes away with the case:
+		//one folder, named by this temporary directory, and nothing else
+	if (written) {
+		QDir(folder).removeRecursively();
+	}
+	PreviousVersions::setRoot(run);
+
+	CHECK(kept);
+	CHECK_FALSE(written);
+}
+
+TEST_CASE("T25 — in the test mode of QStandardPaths the versions are not in the user's documents",
+		  "[T25][previousversions]")
+{
+	const QString run = PreviousVersions::root();
+	PreviousVersions::setRoot(QString());
+	const QString documents = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+
+	QStandardPaths::setTestModeEnabled(true);
+	const QString root = PreviousVersions::root();
+	QStandardPaths::setTestModeEnabled(false);
+	PreviousVersions::setRoot(run);
+
+	REQUIRE_FALSE(documents.isEmpty());
+	CHECK_FALSE(root.isEmpty());
+	CHECK_FALSE(root.startsWith(documents));
+}

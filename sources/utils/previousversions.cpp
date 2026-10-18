@@ -47,6 +47,32 @@ QByteArray digest(const QString &path)
 	hash.addData(&file);
 	return hash.result();
 }
+
+	//Whether @p folder is @p parent or inside it; on Windows the case of
+	//the letters does not tell two folders apart
+bool inside(const QString &folder, const QString &parent)
+{
+	const QString a = QDir::cleanPath(folder);
+	const QString b = QDir::cleanPath(parent);
+	if (a.isEmpty() || b.isEmpty()) return false;
+#ifdef Q_OS_WIN
+	const Qt::CaseSensitivity cs = Qt::CaseInsensitive;
+#else
+	const Qt::CaseSensitivity cs = Qt::CaseSensitive;
+#endif
+	return a.compare(b, cs) == 0
+			|| a.startsWith(b.endsWith(QLatin1Char('/')) ? b : b + QLatin1Char('/'), cs);
+}
+
+	//Whether @p file_path is in the temporary folder of the system, written
+	//as it was given or with its links resolved
+bool isTemporary(const QString &file_path)
+{
+	const QString folder = QFileInfo(file_path).absolutePath();
+	const QString temp = QDir::tempPath();
+	if (inside(folder, temp)) return true;
+	return inside(QFileInfo(folder).canonicalFilePath(), QFileInfo(temp).canonicalFilePath());
+}
 }
 
 int PreviousVersions::count()
@@ -62,6 +88,13 @@ void PreviousVersions::setCount(int count)
 QString PreviousVersions::root()
 {
 	if (!root_override.isEmpty()) return root_override;
+		//A test that runs the application in the test mode of QStandardPaths
+		//is promised that it reads and writes nothing of the user's; the
+		//documents are not among the locations that mode moves, the data of
+		//the application is.
+	if (QStandardPaths::isTestModeEnabled())
+		return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+				.filePath(QStringLiteral("Previous versions"));
 	return QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
 			.filePath(QStringLiteral("QElectroTech/Previous versions"));
 }
@@ -105,6 +138,13 @@ bool PreviousVersions::keep(const QString &file_path, int count, QString *error)
 {
 	const QFileInfo info(file_path);
 	if (count <= 0 || !info.isFile()) return true;
+		//A project in the temporary folder of the system is a copy that
+		//something else owns - a test, an attachment opened from a mail -
+		//and its versions would pile up in the user's documents under names
+		//nobody knows: each run of the tests that save a project left a
+		//folder there. Kept all the same when setRoot() chose where the
+		//versions go, which is what a test of this very feature does.
+	if (root_override.isEmpty() && isTemporary(file_path)) return true;
 
 	const QStringList versions = kept(file_path);
 	if (!versions.isEmpty() && QFileInfo(versions.first()).size() == info.size()
