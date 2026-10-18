@@ -2837,18 +2837,24 @@ QStringList terminalSignature(const QDomElement &definition)
 }
 
 	//What makes the kind of element @p definition describes: its link type,
-	//the one class of element it is built as, and its kind informations
+	//the one class of element it is built as, and its kind informations.
+	//As in terminalSignature(), what is compared is what the program reads,
+	//not the text: the kind informations go through the reader buildFromXml()
+	//fills kindInformations() with, which leaves out a name DiagramContext
+	//does not accept and trims the value. The symbol editor writes back only
+	//the kind informations it knows: a contact keeps its type, state and
+	//number, and loses a "tempoType" no element ever read. Compared as text,
+	//every such symbol saved once in the editor was taken for another kind
+	//of element, and the project was reloaded for it.
 QString kindSignature(const QDomElement &definition)
 {
+	DiagramContext read;
+	read.fromXml(definition.firstChildElement(QStringLiteral("kindInformations")),
+				 QStringLiteral("kindInformation"));
 	QStringList kind;
-	for (QDomElement info = definition.firstChildElement(QStringLiteral("kindInformations"))
-							 .firstChildElement(QStringLiteral("kindInformation")) ;
-		 !info.isNull() ;
-		 info = info.nextSiblingElement(QStringLiteral("kindInformation")))
-	{
-		kind << info.attribute(QStringLiteral("name")) + QLatin1Char('=') + info.text();
+	for (const QString &key : read.keys(DiagramContext::Alphabetical)) {
+		kind << key + QLatin1Char('=') + read.value(key).toString();
 	}
-	kind.sort();
 	return definition.attribute(QStringLiteral("link_type"), QStringLiteral("simple"))
 			+ QLatin1Char('|') + kind.join(QLatin1Char(';'));
 }
@@ -2953,7 +2959,8 @@ bool Element::adoptDefinitionBox(const QDomElement &definition)
 	Whether @p definition describes the same kind of element this one was
 	built from: the same link type, which is the class of element it is
 	built as (simple, master, slave, terminal...), and the same kind
-	informations (kind of contact, of coil...). None of it can change on an
+	informations (kind of contact, of coil...), as the program reads them
+	and not as they are written. None of it can change on an
 	element already built: it is built again, by reloading the project.
 	@param definition : the <definition> root of the element
 	@return true when it is the same kind, or when this element does not

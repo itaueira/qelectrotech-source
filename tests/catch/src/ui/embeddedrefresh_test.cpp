@@ -24,6 +24,7 @@
 #include "../../../../sources/ElementsCollection/xmlelementcollection.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontent.h"
+#include "../../../../sources/diagramcontext.h"
 #include "../../../../sources/editor/ui/qetelementeditor.h"
 #include "../../../../sources/factory/elementpicturefactory.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
@@ -924,6 +925,61 @@ namespace
 		}
 		return nullptr;
 	}
+
+	/// The project's copy at @p path, in a document of its own
+	QDomDocument copyAt(QETProject *project, const QString &path)
+	{
+		QDomDocument definition;
+		definition.appendChild(definition.importNode(ElementsLocation(path, project).xml(), true));
+		return definition;
+	}
+
+	/// The paths of the copies under import/ with a conductor on one of
+	/// their placed elements, in the order of the paths: every copy
+	/// wiredImportedElement() may pick, since it picks by the order of a
+	/// folio, which is not the same from one run to the next
+	QStringList wiredImportedPaths(QETProject *project)
+	{
+		QStringList paths;
+		for (Diagram *diagram : project->diagrams())
+		{
+			const DiagramContent content(diagram, false);
+			for (Element *element : content.m_elements)
+			{
+				const QString path = element->location().collectionPath(false);
+				if (path.startsWith(import_prefix) && !element->conductors().isEmpty()
+						&& !paths.contains(path)) {
+					paths << path;
+				}
+			}
+		}
+		paths.sort();
+		return paths;
+	}
+
+	/// The copy at @p path opened and saved in the symbol editor, nothing changed
+	bool savedInEditor(QETProject *project, const QString &path)
+	{
+		const ElementsLocation location(path, project);
+		QETElementEditor editor;
+		editor.fromLocation(location);
+		return editor.toLocation(location);
+	}
+
+	/// The names of the kind informations of @p definition, as written, sorted
+	QStringList kindNames(const QDomDocument &definition)
+	{
+		QStringList names;
+		for (QDomElement info = definition.documentElement()
+									.firstChildElement(QStringLiteral("kindInformations"))
+									.firstChildElement(QStringLiteral("kindInformation"));
+			 !info.isNull();
+			 info = info.nextSiblingElement(QStringLiteral("kindInformation"))) {
+			names << info.attribute(QStringLiteral("name"));
+		}
+		names.sort();
+		return names;
+	}
 }
 
 /*
@@ -931,49 +987,140 @@ namespace
 	report arrow was changed in the symbol editor, and "Recharger maintenant"
 	of its notice reloaded the project for twelve elements, leaving out
 	eight wires. Two causes, one case each.
+
+	The first cause - what the editor writes compared as text, and not as
+	the program reads it - was in the kind of element too, measured on
+	18/10/2026: a contact whose symbol carries a "tempoType" the program
+	never read lost it in the editor, and asked for the reload. The first
+	case missed it whenever the bench picked another element of the
+	example; it now goes through every wired copy, and a case of its own
+	looks for that one.
 */
 
 TEST_CASE("T62 — Saved again by the symbol editor, terminals untouched: no reload",
 		  "[embeddedrefresh][T62]")
 {
 	Bench bench(GENERATE(from_range(examples)));
-	REQUIRE(bench.element);
-	const QString path = bench.path;
+	REQUIRE(bench.project.isOpen());
 
-		//The copy as an old symbol has it, its terminals with no type, and
-		//the elements built from it
-	QDomDocument typeless = copyOf(bench.element);
-	for (QDomElement terminal : terminalElements(typeless)) {
-		terminal.removeAttribute(QStringLiteral("type"));
+		//Every wired copy, and not the one the bench picks: only one copy
+		//of the two examples carried what the editor drops, and the bench
+		//picked it in some runs and not in others
+	const QStringList paths = wiredImportedPaths(bench.get());
+	REQUIRE_FALSE(paths.isEmpty());
+
+		//The copies as an old symbol has them, their terminals with no type,
+		//and the elements built from them
+	for (const QString &path : paths)
+	{
+		QDomDocument typeless = copyAt(bench.get(), path);
+		for (QDomElement terminal : terminalElements(typeless)) {
+			terminal.removeAttribute(QStringLiteral("type"));
+		}
+		REQUIRE(saveOverCopy(bench.get(), path, typeless));
 	}
-	REQUIRE(saveOverCopy(bench.get(), path, typeless));
 	REQUIRE(bench.project.saveAndReopen());
 	QETProject *project = bench.get();
+
+	for (const QString &path : paths)
+	{
+		CAPTURE(path);
+		const QList<Element *> placed = EmbeddedElementRefresh::placedElements(project, path);
+		REQUIRE_FALSE(placed.isEmpty());
+
+			//Opened and saved in the symbol editor, nothing changed
+		REQUIRE(savedInEditor(project, path));
+
+			//What the editor wrote: a type on every terminal, which is the
+			//difference this case is about - without it the case proves nothing
+		const QDomDocument saved = copyAt(project, path);
+		const QList<QDomElement> terminals = terminalElements(saved);
+		REQUIRE_FALSE(terminals.isEmpty());
+		for (const QDomElement &terminal : terminals) {
+			REQUIRE(terminal.attribute(QStringLiteral("type")) == QStringLiteral("Generic"));
+		}
+
+		for (const Element *element : placed) {
+			CHECK(element->definitionTerminalsMatch(saved.documentElement()));
+		}
+		CHECK(EmbeddedElementRefresh::needingReload(project, {}, {}, path).isEmpty());
+	}
+}
+
+	//Kept under 79 characters: Catch2 v2 wraps a longer name to print a
+	//failure, and with a multi-byte character in it the wrap can throw
+	//std::out_of_range and end the run without a summary
+TEST_CASE("T62 — A kind information never read, dropped by the editor: no reload",
+		  "[embeddedrefresh][T62]")
+{
+	Bench bench(QStringLiteral("schema_unifilaire_voltaique2.qet"));
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.get();
+
+		//Looked for, and not taken from the bench: the copy whose kind
+		//informations have a name DiagramContext does not accept - the
+		//"tempoType" of a contact, in this example -, the first by path if
+		//several have one
+	QString path;
+	QString refused;
+	for (Diagram *diagram : project->diagrams())
+	{
+		const DiagramContent content(diagram, false);
+		for (Element *element : content.m_elements)
+		{
+			const QString candidate = element->location().collectionPath(false);
+			if (!candidate.startsWith(import_prefix)
+					|| (!path.isEmpty() && candidate >= path)) {
+				continue;
+			}
+			for (const QString &name : kindNames(copyAt(project, candidate))) {
+				if (!name.isEmpty() && !DiagramContext::isKeyAcceptable(name)) {
+					path = candidate;
+					refused = name;
+					break;
+				}
+			}
+		}
+	}
+	CAPTURE(path, refused);
+	REQUIRE_FALSE(path.isEmpty());
+	REQUIRE(kindNames(copyAt(project, path)).contains(refused));
 	const QList<Element *> placed = EmbeddedElementRefresh::placedElements(project, path);
 	REQUIRE_FALSE(placed.isEmpty());
 
 		//Opened and saved in the symbol editor, nothing changed
-	const ElementsLocation location(path, project);
-	{
-		QETElementEditor editor;
-		editor.fromLocation(location);
-		REQUIRE(editor.toLocation(location));
-	}
+	REQUIRE(savedInEditor(project, path));
 
-		//What the editor wrote: a type on every terminal, which is the
-		//difference this case is about - without it the case proves nothing
-	QDomDocument saved;
-	saved.appendChild(saved.importNode(ElementsLocation(path, project).xml(), true));
-	const QList<QDomElement> terminals = terminalElements(saved);
-	REQUIRE_FALSE(terminals.isEmpty());
-	for (const QDomElement &terminal : terminals) {
-		REQUIRE(terminal.attribute(QStringLiteral("type")) == QStringLiteral("Generic"));
-	}
+		//What the editor wrote: the kind information without that name,
+		//which is the difference this case is about - without it the case
+		//proves nothing
+	const QDomDocument saved = copyAt(project, path);
+	REQUIRE_FALSE(kindNames(saved).contains(refused));
 
 	for (const Element *element : placed) {
-		CHECK(element->definitionTerminalsMatch(saved.documentElement()));
+		CHECK(element->definitionKindMatches(saved.documentElement()));
 	}
 	CHECK(EmbeddedElementRefresh::needingReload(project, {}, {}, path).isEmpty());
+
+		//And the kind the program reads is still compared: another value
+		//for a name it accepts - the text "T62" added to it - is another
+		//kind of element
+	QDomDocument other = saved.cloneNode(true).toDocument();
+	QDomElement accepted;
+	for (QDomElement info = other.documentElement()
+								.firstChildElement(QStringLiteral("kindInformations"))
+								.firstChildElement(QStringLiteral("kindInformation"));
+		 !info.isNull() && accepted.isNull();
+		 info = info.nextSiblingElement(QStringLiteral("kindInformation"))) {
+		if (DiagramContext::isKeyAcceptable(info.attribute(QStringLiteral("name")))) {
+			accepted = info;
+		}
+	}
+	REQUIRE_FALSE(accepted.isNull());
+	accepted.appendChild(other.createTextNode(QStringLiteral("T62")));
+	for (const Element *element : placed) {
+		CHECK_FALSE(element->definitionKindMatches(other.documentElement()));
+	}
 }
 
 TEST_CASE("T62 — The reload of the notice looks at the saved symbol and nothing else",
