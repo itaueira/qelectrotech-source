@@ -730,6 +730,9 @@ if(TARGET qelectrotech_objects)
         src/ui/appearance_test.cpp
         # T63: the dark palette - readable colours and readable disabled text.
         src/ui/darkpalette_test.cpp
+        # T63, steps 6 and 7: the symbol, title block and plate editors in
+        # the dark palette, and what they save unchanged.
+        src/ui/darkeditors_test.cpp
         # T63, steps 2 and 3: icons, colour swatches and disabled fields on
         # the dark palette.
         src/ui/darkicons_test.cpp

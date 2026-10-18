@@ -18,6 +18,7 @@
 #include "templatevisualcell.h"
 
 #include "../diagramcontext.h"
+#include "../papergraphicsview.h"
 #include "../qetinformation.h"
 #include "../titleblocktemplate.h"
 
@@ -85,14 +86,10 @@ void TitleBlockTemplateVisualCell::paint(
 		QWidget *widget)
 {
 	Q_UNUSED(option);
-	Q_UNUSED(widget);
-	
+
 	QRectF drawing_rectangle(QPointF(0, 0), geometry().size() /*- QSizeF(1, 1)*/);
-	
-	if (template_ && cell_) {
-		template_ -> renderCell(*painter, *cell_, authoringContext(), drawing_rectangle.toRect());
-	}
-	if (isSelected()) {
+
+	const auto paint_selection = [&]() {
 		QBrush selection_brush = QApplication::palette().highlight();
 		QColor selection_color = selection_brush.color();
 		selection_color.setAlpha(127);
@@ -100,6 +97,27 @@ void TitleBlockTemplateVisualCell::paint(
 		painter -> setPen(Qt::NoPen);
 		painter -> setBrush(selection_brush);
 		painter -> drawRect(drawing_rectangle/*.adjusted(1, 1, -1, -1)*/);
+	};
+
+		// Shown inverted (a dark palette, see PaperGraphicsView), the
+		// selection goes under the content of the cell rather than over
+		// it. Over it, the half-transparent selection tints the black text
+		// towards its own color, and once inverted the text of a selected
+		// cell came out at under 3:1 on the selection; under it, the text
+		// keeps its full ink, at about 4.8:1. The colors are the same
+		// either way, and a light palette keeps the order it had.
+	const bool selection_under = isSelected()
+			&& PaperGraphicsView::isPaintingInvertedOn(widget);
+	if (selection_under) {
+		painter -> save();
+		paint_selection();
+		painter -> restore();
+	}
+	if (template_ && cell_) {
+		template_ -> renderCell(*painter, *cell_, authoringContext(), drawing_rectangle.toRect());
+	}
+	if (isSelected() && !selection_under) {
+		paint_selection();
 	}
 }
 

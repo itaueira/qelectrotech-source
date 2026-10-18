@@ -20,6 +20,7 @@
 #include "elementviewgrid.h"
 
 #include "../qetapp.h"
+#include "../qetpalette.h"
 #include "UndoCommand/pastepartscommand.h"
 #include "ui/qetelementeditor.h"
 /**
@@ -28,7 +29,7 @@
 	@param parent QWidget parent de cette ElementView
 */
 ElementView::ElementView(ElementScene *scene, QWidget *parent) :
-	QGraphicsView(scene, parent),
+	PaperGraphicsView(scene, parent),
 	m_scene(scene),
 	offset_paste_count_(0)
 {
@@ -514,10 +515,20 @@ bool ElementView::gestureEvent(QGestureEvent *event){
 /**
 	Dessine l'arriere-plan de l'editeur, cad la grille.
 	Draws the editor background, i.e. the grid.
+
+	On a dark palette this is drawn, like the symbol, on the white paper
+	PaperGraphicsView inverts: the white comes out as the palette's Base.
+	Two colors are then chosen for how they come out once inverted, and
+	only for the display: the grid dots are the folio's soft gray rather
+	than black, which would come out as bright as the strokes; and the
+	frame is dark blue rather than blue, which would come out at under
+	2:1 on the dark area - pure blue keeps its lightness when inverted.
 	@param p Le QPainter a utiliser pour dessiner
 	@param r Le rectangle de la zone a dessiner
 */
 void ElementView::drawBackground(QPainter *p, const QRectF &r) {
+	const bool inverted = paintsInverted();
+	p = scenePainter(p);
 	p -> save();
 
 	// desactive tout antialiasing, sauf pour le texte
@@ -546,7 +557,7 @@ void ElementView::drawBackground(QPainter *p, const QRectF &r) {
 
 	if (draw_grid) {
 		// draw the dots of the grid
-		QPen pen(Qt::black);
+		QPen pen(QET::Palette::gridDotColor(Qt::white, inverted));
 		pen.setCosmetic(true);
 		QSettings settings;
 		int minWidthPen = settings.value(QStringLiteral("elementeditor/grid_pointsize_min"), 1).toInt();
@@ -596,7 +607,7 @@ void ElementView::drawBackground(QPainter *p, const QRectF &r) {
 		const QSizeF frame_size = m_scene->backgroundFrameSize();
 		const QRectF frame_rect(-frame_size.width() / 2.0, -frame_size.height() / 2.0,
 					 frame_size.width(), frame_size.height());
-		QPen frame_pen(Qt::blue);
+		QPen frame_pen(inverted ? QColor(Qt::darkBlue) : QColor(Qt::blue));
 		frame_pen.setCosmetic(true);
 		frame_pen.setStyle(Qt::DashLine);
 		p -> setPen(frame_pen);

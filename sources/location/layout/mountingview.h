@@ -18,7 +18,7 @@
 #ifndef MOUNTINGVIEW_H
 #define MOUNTINGVIEW_H
 
-#include <QGraphicsView>
+#include "../../papergraphicsview.h"
 
 class MountingScene;
 
@@ -52,8 +52,13 @@ class MountingScene;
 	clamped at the top end only, and the reason is written over clampFit: a
 	floor that stops a fit from going small enough is a floor that stops the
 	plate from fitting, which is the whole of what the command promises.
+
+	On a dark palette the plate is shown with its lightness inverted, as the
+	folio is (PaperGraphicsView): the surroundings and the plate dark, the
+	outlines and the names of the parts light. The scene draws for white
+	paper either way, so nothing of the plate saved depends on the palette.
 */
-class MountingView : public QGraphicsView
+class MountingView : public PaperGraphicsView
 {
 	Q_OBJECT
 

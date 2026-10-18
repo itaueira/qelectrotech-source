@@ -35,7 +35,7 @@
 	@param parent parent widget
 */
 MountingView::MountingView(MountingScene *scene, QWidget *parent) :
-	QGraphicsView(scene, parent),
+	PaperGraphicsView(scene, parent),
 	m_scene(scene)
 {
 	setInteractive(true);

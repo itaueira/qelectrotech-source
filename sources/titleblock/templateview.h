@@ -17,6 +17,7 @@
 */
 #ifndef TITLEBLOCK_SLASH_TEMPLATE_VIEW_H
 #define TITLEBLOCK_SLASH_TEMPLATE_VIEW_H
+#include "../papergraphicsview.h"
 #include "../titleblocktemplate.h"
 
 #include <QGraphicsView>
@@ -31,8 +32,13 @@ class TitleBlockTemplateCellsSet;
 	This QGraphicsView subclass is used in the title block template editor to
 	offer a graphical preview of the template being edited, but also to handle
 	cell selection and various actions.
+
+	On a dark palette the preview is shown with its lightness inverted
+	(PaperGraphicsView): the cells draw in the colors the folio prints them
+	in, and only the display turns them light on dark. See drawBackground()
+	for the one color chosen for the dark display.
 */
-class TitleBlockTemplateView : public QGraphicsView {
+class TitleBlockTemplateView : public PaperGraphicsView {
 	Q_OBJECT
 	
 	// constructors, destructor
@@ -95,6 +101,7 @@ class TitleBlockTemplateView : public QGraphicsView {
 	virtual void updateColumnsHelperCells();
 	
 	protected:
+	void paintEvent(QPaintEvent *) override;
 	void drawBackground(QPainter *, const QRectF &) override;
 	virtual void addCells();
 	virtual void loadTemplate(TitleBlockTemplate *);

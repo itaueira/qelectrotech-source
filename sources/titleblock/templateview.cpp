@@ -17,6 +17,7 @@
 */
 #include "templateview.h"
 
+#include "../diagram.h"
 #include "../qeticons.h"
 #include "dimensionwidget.h"
 #include "gridlayoutanimation.h"
@@ -41,7 +42,7 @@
 	@param parent Parent QWidget.
 */
 TitleBlockTemplateView::TitleBlockTemplateView(QWidget *parent) :
-	QGraphicsView(parent),
+	PaperGraphicsView(parent),
 	tbtemplate_(nullptr),
 	tbgrid_(nullptr),
 	form_(nullptr),
@@ -61,7 +62,7 @@ TitleBlockTemplateView::TitleBlockTemplateView(QWidget *parent) :
 */
 TitleBlockTemplateView::TitleBlockTemplateView(
 		QGraphicsScene *scene,QWidget *parent) :
-	QGraphicsView(scene, parent),
+	PaperGraphicsView(scene, parent),
 	tbtemplate_(nullptr),
 	tbgrid_(nullptr),
 	preview_width_(DEFAULT_PREVIEW_WIDTH),
@@ -437,11 +438,49 @@ void TitleBlockTemplateView::splitSelectedCell()
 }
 
 /**
+	@brief TitleBlockTemplateView::paintEvent
+	Paint with the folio background taken as white. A cell chooses its ink
+	from the background of the folio it is printed on
+	(TitleBlockTemplate::renderCell(): white ink on a dark sheet), but this
+	preview is never drawn on the folio: it is drawn on the editor's own
+	light paper, where white ink cannot be read - nor, once the view inverts
+	it on a dark palette, where it comes out as dark as the ground. Black
+	is the ink this paper takes, whatever background the folio was given,
+	the way ProjectPrintWindow pins the same color for printing.
+*/
+void TitleBlockTemplateView::paintEvent(QPaintEvent *event)
+{
+	const QColor folio_background = Diagram::background_color;
+	Diagram::background_color = Qt::white;
+	PaperGraphicsView::paintEvent(event);
+	Diagram::background_color = folio_background;
+}
+
+/**
 	Reimplement the way the background is drawn to render the title block
 	template.
+
+	On a dark palette the background is painted on the paper the view then
+	inverts, and its yellow is taken two thirds of the way to white first.
+	The yellow itself would come out of the inversion as a saturated olive
+	that the cell text reads on at 4.6:1, barely; the paler one comes out as
+	a dark, still warm grey, with the text at about 9:1. Display only: the
+	brush, like the template, is left as it is.
 */
 void TitleBlockTemplateView::drawBackground(QPainter *painter, const QRectF &rect) {
-	QGraphicsView::drawBackground(painter, rect);
+	if (paintsInverted()) {
+		const QColor yellow = backgroundBrush().color();
+		const QColor paper(yellow.red()   + (255 - yellow.red())   * 2 / 3,
+				   yellow.green() + (255 - yellow.green()) * 2 / 3,
+				   yellow.blue()  + (255 - yellow.blue())  * 2 / 3);
+		QPainter *p = scenePainter(painter);
+		p -> save();
+		p -> setRenderHint(QPainter::Antialiasing, false);
+		p -> fillRect(rect, paper);
+		p -> restore();
+	} else {
+		PaperGraphicsView::drawBackground(painter, rect);
+	}
 #if TODO_LIST
 #pragma message("@TODO shouldn't we draw a large uniform rect?")
 #endif

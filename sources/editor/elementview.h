@@ -17,14 +17,19 @@
 */
 #ifndef ELEMENT_VIEW_H
 #define ELEMENT_VIEW_H
-#include <QGraphicsView>
+#include "../papergraphicsview.h"
 #include "elementscene.h"
 
 /**
 	This class provides a widget to render an ElementScene instance, i.e. the
 	edition class for electrical elements.
+
+	On a dark palette the symbol is shown with its lightness inverted, as
+	the folio shows it (PaperGraphicsView): the area dark, the black
+	strokes light, the colored ones in their hue. The primitives keep their
+	colors, so the file saved is the one saved on a light palette.
 */
-class ElementView : public QGraphicsView {
+class ElementView : public PaperGraphicsView {
 	Q_OBJECT
 	friend class PastePartsCommand;
 	
