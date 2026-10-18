@@ -46,6 +46,74 @@
 #include <QKeyEvent>
 #include <algorithm>
 #include <cmath>
+#include <utility>
+
+namespace
+{
+	/**
+		The key, in QGraphicsItem::data(), under which an element scene
+		keeps the rank of a part (see rankPart()). Nothing else in the
+		element editor stores data in the items of its scenes.
+	*/
+	const int part_rank_key = 1000;
+
+	/**
+		The last rank given, to a part of any scene: a rank only has to be
+		greater than the ranks given before it in the same scene, and the
+		element editor lives in the GUI thread.
+	*/
+	quint64 last_part_rank = 0;
+
+	/**
+		Gives @a item the next rank, unless it already has one.
+
+		The rank orders what the z value does not: the terminals, which
+		ElementScene::zItems() puts after the drawing, and the parts of the
+		same z value. The order of QGraphicsScene::items() cannot do it. A
+		scene without an index (QGraphicsScene::NoIndex, which ElementScene
+		uses) lists its items in the order they were added only until one
+		item is removed - a selection handle is enough - and from then on
+		sorted by address (QGraphicsSceneLinearIndex::removeItem()), which
+		is the order the heap gave them. Saving the same element twice could
+		then write its terminals in two different orders.
+
+		A part read from a file is ranked in the order of the file
+		(ElementScene::loadContent()); any other part when it enters the
+		scene. It keeps its rank for as long as it lives: removed and added
+		back - a deletion undone - it goes back to its place. The rank is
+		cleared with the item, by the destructor of QGraphicsItem, so a new
+		part allocated at the same address does not inherit it.
+	*/
+	void rankPart(QGraphicsItem *item)
+	{
+		if (!item->data(part_rank_key).isValid()) {
+			item->setData(part_rank_key, QVariant(qulonglong(++last_part_rank)));
+		}
+	}
+
+	/** @return the rank of @a item, 0 if it has none */
+	quint64 partRank(const QGraphicsItem *item)
+	{
+		return item->data(part_rank_key).toULongLong();
+	}
+
+	/** @return true if @a item1 was ranked before @a item2 */
+	bool rankLessThan(const QGraphicsItem *item1, const QGraphicsItem *item2)
+	{
+		return partRank(item1) < partRank(item2);
+	}
+
+	/**
+		@return true if @a item is a tool of the editor (selection
+		decorator, paste area, handle) and not a part of the element
+	*/
+	bool isHelperItem(const QGraphicsItem *item)
+	{
+		return item->type() == ElementPrimitiveDecorator::Type
+			|| item->type() == QGraphicsRectItem::Type
+			|| item->type() == QetGraphicsHandlerItem::Type;
+	}
+}
 
 /**
 	@brief ElementScene::ElementScene
@@ -827,6 +895,7 @@ QETElementEditor* ElementScene::editor() const
 void ElementScene::addItems(QVector<QGraphicsItem *> items)
 {
 	for (const auto &item : items) {
+		rankPart(item);
 		addItem(item);
 	}
 
@@ -1105,6 +1174,11 @@ QList<CustomElementPart *> ElementScene::primitives() const
 	@param options
 	@return the parts of the element ordered by increasing zValue
 	\~French les parties de l'element ordonnes par zValue croissante
+	\~ The parts of the same zValue, and the terminals put after the
+	drawing, come in the order of their rank (see rankPart()): the order
+	of the file they were read from, never the order of
+	QGraphicsScene::items(), which depends on the heap. Without
+	SortByZValue, the parts come in the order of their rank.
 */
 QList<QGraphicsItem *> ElementScene::zItems(ItemOptions options) const
 {
@@ -1118,6 +1192,17 @@ QList<QGraphicsItem *> ElementScene::zItems(ItemOptions options) const
 
 	// retrieve all items
 	QList<QGraphicsItem *> all_items_list(items());
+
+		//A part added with QGraphicsScene::addItem() rather than addItems()
+		//- by the tool that draws it, for one - is ranked now, the first
+		//time the parts are listed, and before the selection is filtered:
+		//the parts that came in together are ranked together.
+	for (QGraphicsItem *qgi : std::as_const(all_items_list)) {
+		if (!isHelperItem(qgi)) {
+			rankPart(qgi);
+		}
+	}
+
 	QMutableListIterator<QGraphicsItem *> i(all_items_list);
 
 	// remove unrequired items
@@ -1137,11 +1222,7 @@ QList<QGraphicsItem *> ElementScene::zItems(ItemOptions options) const
 	{
 		i.next();
 		QGraphicsItem *qgi = i.value();
-		if (
-			qgi -> type() == ElementPrimitiveDecorator::Type ||
-			qgi -> type() == QGraphicsRectItem::Type ||
-			qgi->type() == QetGraphicsHandlerItem::Type
-		) {
+		if (isHelperItem(qgi)) {
 			i.remove();
 			helpers << qgi;
 		}
@@ -1161,6 +1242,12 @@ QList<QGraphicsItem *> ElementScene::zItems(ItemOptions options) const
 					all_items_list.end(),
 					ElementScene::zValueLessThan);
 	}
+	else
+	{
+		std::sort(all_items_list.begin(), all_items_list.end(), rankLessThan);
+	}
+		//The terminals all have the same z value: their order is their rank
+	std::sort(terminals.begin(), terminals.end(), rankLessThan);
 
 	// possibly add the limits
 	// rajoute eventuellement les bornes
@@ -1336,6 +1423,9 @@ ElementContent ElementScene::loadContent(const QDomDocument &xml_document)
 				{
 					if (!qgi->zValue())
 						qgi->setZValue(z++);
+						//In the order of the file: the order the parts are
+						//saved in when the z value does not decide
+					rankPart(qgi);
 
 					loaded_parts<<qgi;
 
@@ -1417,6 +1507,7 @@ ElementContent ElementScene::addContentAtPos(
 void ElementScene::addPrimitive(QGraphicsItem *primitive)
 {
 	if (!primitive) return;
+	rankPart(primitive);
 	addItem(primitive);
 }
 
@@ -1464,11 +1555,20 @@ QPointF ElementScene::snapToGrid(QPointF point)
 	@brief ElementScene::zValueLessThan
 	@param item1 : QGraphicsItem
 	@param item2 : QGraphicsItem
-	@return true if \a item1's zValue() is less than \a item2's.
+	@return true if \a item1's zValue() is less than \a item2's, or, for
+	the same zValue(), if \a item1 was ranked first (see rankPart()). The
+	parts of the same z value are then saved in one order, the order of
+	their file, and not in the order the scene happens to list them.
 */
 bool ElementScene::zValueLessThan(QGraphicsItem *item1, QGraphicsItem *item2)
 {
-	return(item1-> zValue() < item2 -> zValue());
+	if (item1->zValue() < item2->zValue()) {
+		return true;
+	}
+	if (item2->zValue() < item1->zValue()) {
+		return false;
+	}
+	return rankLessThan(item1, item2);
 }
 
 /**
