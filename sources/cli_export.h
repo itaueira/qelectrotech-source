@@ -50,6 +50,7 @@ namespace CLIExport {
 		  qelectrotech --export-wires   <project.qet> <output.csv>
 		  qelectrotech --export-bom     <project.qet> <output.csv> [--no-slaves] [--no-junctions]
 		  qelectrotech --export-purchase <project.qet> <output.csv>
+		  qelectrotech --compare-purchase <before.csv> <after.csv> [report.csv]
 		  qelectrotech --export-labels  <project.qet> <output.csv> [kinds=component,terminal]
 		  qelectrotech --export-wiring  <project.qet> <output.csv>
 		  qelectrotech --export-nets    <project.qet> <output.json>
@@ -117,6 +118,31 @@ namespace CLIExport {
 		      one, and so is a part of the layout with no code. Exit code
 		      0: complete; 3: written, with pending items; 1: nothing
 		      written.
+		compare-purchase: what changed between two files written by
+		      --export-purchase - the one kept from before a revision
+		      and the one exported after it. Opens no project. The lines
+		      are matched by part code and revision, never by their
+		      designation, and each one that differs is listed: removed
+		      (only in before.csv), added (only in after.csv) or changed
+		      (in both, with another quantity or unit), with the
+		      quantity and unit before and after. A part in a new
+		      revision is one line removed and one added. A designation
+		      or tags that changed alone is no difference. A length
+		      reads with either decimal separator, so two lists exported
+		      on machines set to different languages compare. The
+		      report is CSV, as the export is (';', CRLF, UTF-8 without
+		      a byte order mark): change, part_code, part_revision,
+		      designation, quantity_before, unit_before,
+		      quantity_after, unit_after; header only when nothing
+		      differs. Without report.csv the rows go to stdout; a line
+		      counting them follows on stdout either way. A file that
+		      is not a purchase list written whole - no lines block, no
+		      pending block, or fewer or more lines than its count says
+		      - is refused, never compared. Exit code, as diff: 0: no
+		      difference; 1: differences; 2: bad command line, a file
+		      that cannot be read or is not a purchase list, or a
+		      report that cannot be written or would overwrite one of
+		      the two lists.
 		labels: the labels of the project, one row per label, as CSV:
 		      kind, text, lines, strip, position, level, location, folio,
 		      revision, excluded_from_bom. The terminals come strip after

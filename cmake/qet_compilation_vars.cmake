@@ -550,6 +550,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/location/mountingprofile.h
   ${QET_DIR}/sources/location/projectlocation.cpp
   ${QET_DIR}/sources/location/projectlocation.h
+  ${QET_DIR}/sources/location/purchasecomparison.cpp
+  ${QET_DIR}/sources/location/purchasecomparison.h
   ${QET_DIR}/sources/location/ui/drillingtabledialog.cpp
   ${QET_DIR}/sources/location/ui/drillingtabledialog.h
   ${QET_DIR}/sources/location/ui/locationbomdialog.cpp

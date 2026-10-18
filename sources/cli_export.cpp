@@ -39,6 +39,7 @@
 #include "location/bomcollector.h"
 #include "location/bommeasure.h"
 #include "location/mountinglayout.h"
+#include "location/purchasecomparison.h"
 #include "location/undrawnparts.h"
 #include "pdf_links.h"
 #include "container/qetcontainer.h"
@@ -97,6 +98,7 @@ const QHash<QString, QString> &exportFlags()
 		{"--export-wires", "wires"},
 		{"--export-bom", "bom"},
 		{"--export-purchase", "purchase"},
+		{"--compare-purchase", "comparepurchase"},
 		{"--export-labels", "labels"},
 		{"--export-wiring", "wiring"},
 		{"--export-nets", "nets"},
@@ -830,41 +832,6 @@ int exportBom(QETProject &project, const QString &output,
 }
 
 /**
-	@brief The first row of the lines block of --export-purchase.
-
-	part_code and part_revision are the key of a line - the part and its
-	revision, never the words describing it (BomCollector) - and they come
-	first because they are what two exports of the same project are matched
-	by. The names are keys and are not translated: the file is read back,
-	and a header spelled in the interface language cannot be.
-*/
-const QStringList &purchaseLineHeader()
-{
-	static const QStringList header {
-		QStringLiteral("part_code"),
-		QStringLiteral("part_revision"),
-		QStringLiteral("designation"),
-		QStringLiteral("quantity"),
-		QStringLiteral("unit"),
-		QStringLiteral("tags")
-	};
-	return header;
-}
-
-/// The first row of the pending block of --export-purchase. A key, like
-/// purchaseLineHeader(), for the same reason.
-const QStringList &purchasePendingHeader()
-{
-	static const QStringList header {
-		QStringLiteral("reason"),
-		QStringLiteral("tag"),
-		QStringLiteral("designation"),
-		QStringLiteral("where")
-	};
-	return header;
-}
-
-/**
 	@return the word the purchase list writes for @p reason
 
 	A key and not a sentence, so that a spreadsheet can filter on it and a
@@ -1003,15 +970,21 @@ QSet<QUuid> drawnElementsNamedBy(QETProject &project,
 	   came from the plate rather than from a symbol, and it is last
 	   because it came last: a script written against the first four rows
 	   reads the same four rows in the same places;
-	2. the lines, under purchaseLineHeader(): one per part and revision,
-	   the quantity summed from the quantity field and never counted from
-	   rows, the enclosures and the plate beside the components;
-	3. the pending items, under purchasePendingHeader(): everything that
-	   could not be put on a line, named, with the reason. In the same
-	   file and in a block of its own, and never as a line with an empty
-	   code - an order line with no code cannot be filled, and a file that
-	   refused to be written would leave the shop nothing to order the
-	   rest from.
+	2. the lines, under PurchaseComparison::lineHeader(): one per part and
+	   revision, the quantity summed from the quantity field and never
+	   counted from rows, the enclosures and the plate beside the
+	   components;
+	3. the pending items, under PurchaseComparison::pendingHeader():
+	   everything that could not be put on a line, named, with the
+	   reason. In the same file and in a block of its own, and never as a
+	   line with an empty code - an order line with no code cannot be
+	   filled, and a file that refused to be written would leave the shop
+	   nothing to order the rest from.
+
+	The first rows of the blocks and the key of the count of lines are
+	spelled in PurchaseComparison, the reader of this file, and written
+	from there: --compare-purchase finds the lines by them, and checks
+	their number against that count.
 
 	The cells are quoted by QETCsv, ';' between them, CRLF between rows,
 	UTF-8 without a byte order mark: the format of --export-bom, which is
@@ -1108,14 +1081,16 @@ int exportPurchase(QETProject &project, const QString &output)
 			     QString::number(result.excluded)})
 	     << QETCsv::row({QStringLiteral("nameless"),
 			     QString::number(nameless)})
-	     << QETCsv::row({QStringLiteral("lines"),
+		//The count --compare-purchase checks the lines block against,
+		//under the key it reads it by.
+	     << QETCsv::row({PurchaseComparison::linesCountKey(),
 			     QString::number(result.lines.size())})
 		//After the four the file was first written with, and never among
 		//them - see the layout of the file above.
 	     << QETCsv::row({QStringLiteral("mounted"),
 			     QString::number(result.mounted)});
 
-	text << QString() << QETCsv::row(purchaseLineHeader());
+	text << QString() << QETCsv::row(PurchaseComparison::lineHeader());
 	for (const LocationTree::BomLine &line : result.lines)
 	{
 		text << QETCsv::row({line.part_code,
@@ -1127,7 +1102,7 @@ int exportPurchase(QETProject &project, const QString &output)
 				     line.paths.join(QStringLiteral(", "))});
 	}
 
-	text << QString() << QETCsv::row(purchasePendingHeader());
+	text << QString() << QETCsv::row(PurchaseComparison::pendingHeader());
 	for (const BomCollector::Pending &pending : result.pendings)
 	{
 		text << QETCsv::row({purchasePendencyKey(pending.reason),
@@ -1963,6 +1938,149 @@ int recoverProject(const QString &input, const QString &output)
 	return 0;
 }
 
+/**
+	@brief The lines of one purchase list, read from @p path.
+	@return false, having said why on stderr, when the file cannot be read
+	or is not a list --export-purchase wrote whole
+*/
+bool readPurchaseList(const QString &path, QList<LocationTree::BomLine> *lines)
+{
+	QFile file(path);
+	if (!file.open(QIODevice::ReadOnly)) {
+		err << "Cannot read '" << path << "': " << file.errorString() << "\n";
+		return false;
+	}
+		//Binary and not text mode: the reader takes the CRLF of the
+		//export as it is, and a text-mode read would be one more thing
+		//between the file and it.
+	QString reason;
+	if (!PurchaseComparison::readLines(QString::fromUtf8(file.readAll()),
+					   lines, &reason)) {
+		err << "'" << path << "' is not a purchase list written by"
+			   " --export-purchase: " << reason << "\n";
+		return false;
+	}
+	return true;
+}
+
+/// @return true when @p a and @p b are one file that exists
+bool sameFile(const QString &a, const QString &b)
+{
+	const QFileInfo first(a);
+	const QFileInfo second(b);
+	return first.exists() && second.exists()
+		&& first.canonicalFilePath() == second.canonicalFilePath();
+}
+
+/**
+	@brief What changed between two purchase lists: the one exported
+	before a revision and the one exported after it.
+	@param arguments <before.csv> <after.csv> [report.csv]
+	@return 0 when the two order the same thing; 1 when they do not; 2
+	when there is no answer - a wrong command line, a file that cannot be
+	read or is not a purchase list, or a report that cannot be written
+
+	The codes of diff, on purpose: a script that schedules the comparison
+	already knows them, and the one question it asks - "did the order
+	change?" - is the difference between 0 and 1. 2 is every way of not
+	knowing, and never a guess: a file that is not a purchase list whole
+	is refused rather than compared, because a comparison of half a list
+	answers "these parts were removed" about parts nobody removed.
+
+	No project is opened. A revision of a project is stamped on every
+	folio alike and cannot say what changed (T18, decision E); the file
+	exported before is the one memory of what was ordered, and two such
+	files are all this reads. The rule is PurchaseComparison's.
+
+	The differences go to the report as CSV, in the format of the export
+	- ';' between cells, CRLF between rows, UTF-8 without a byte order
+	mark, quantities with the decimal separator of this machine -, and
+	the report is written whole or not at all (QSaveFile), with its
+	header even when nothing differs. Without a report they go to stdout,
+	one row per line. A line counting them follows on stdout either way.
+
+	The report is refused when it would overwrite either of the two files
+	compared: the list exported before is the only copy there is of it.
+*/
+int comparePurchase(const QStringList &arguments)
+{
+	if (arguments.size() < 2) {
+		err << "Usage: qelectrotech --compare-purchase <before.csv> "
+			   "<after.csv> [report.csv]\n";
+		return 2;
+	}
+	if (arguments.size() > 3) {
+		err << "Too many arguments (expected --compare-purchase "
+			   "<before.csv> <after.csv> [report.csv]).\n";
+		return 2;
+	}
+	for (const QString &argument : arguments) {
+		if (argument.startsWith(QLatin1String("--"))) {
+			err << "Bad option '" << argument
+				<< "' (expected the name of a file).\n";
+			return 2;
+		}
+	}
+	const QString before_path = arguments.at(0);
+	const QString after_path = arguments.at(1);
+	const QString report = arguments.value(2);
+	if (!report.isEmpty()
+	    && (sameFile(report, before_path) || sameFile(report, after_path))) {
+		err << "The report '" << report << "' is one of the two lists"
+			   " compared, and writing it would destroy that list.\n";
+		return 2;
+	}
+
+	QList<LocationTree::BomLine> before;
+	QList<LocationTree::BomLine> after;
+	if (!readPurchaseList(before_path, &before)
+	    || !readPurchaseList(after_path, &after)) {
+		return 2;
+	}
+
+	const QList<PurchaseComparison::Difference> differences =
+		PurchaseComparison::compare(before, after);
+
+	if (report.isEmpty()) {
+		out << PurchaseComparison::reportText(differences, QLocale(),
+						     QStringLiteral("\n"));
+	} else {
+		const QByteArray bytes = PurchaseComparison::reportText(
+			differences, QLocale(), QStringLiteral("\r\n")).toUtf8();
+		QSaveFile file(report);
+		if (!file.open(QIODevice::WriteOnly)) {
+			err << "Cannot open '" << report << "' for writing: "
+				<< file.errorString() << "\n";
+			return 2;
+		}
+		file.write(bytes);
+		if (!file.commit()) {
+			err << "Cannot write '" << report << "': "
+				<< file.errorString() << "\n";
+			return 2;
+		}
+	}
+
+	int removed = 0;
+	int added = 0;
+	int changed = 0;
+	for (const PurchaseComparison::Difference &difference : differences) {
+		switch (difference.change) {
+			case PurchaseComparison::Change::Removed: ++removed; break;
+			case PurchaseComparison::Change::Added: ++added; break;
+			case PurchaseComparison::Change::Changed: ++changed; break;
+		}
+	}
+	out << "Compared " << int(before.size()) << " line(s) with "
+		<< int(after.size()) << ": " << removed << " removed, " << added
+		<< " added, " << changed << " changed";
+	if (!report.isEmpty())
+		out << " -> " << report;
+	out << "\n";
+
+	return differences.isEmpty() ? 0 : 1;
+}
+
 int resaveProject(QETProject &project, const QString &output)
 {
 	if (QETProject::isContainerPath(output)) {
@@ -2192,6 +2310,11 @@ int run(const QStringList &args)
 		}
 		return recoverProject(rest.at(0), rest.at(1));
 	}
+
+	// --compare-purchase reads two files --export-purchase wrote, and
+	// opens no project.
+	if (format == "comparepurchase")
+		return comparePurchase(rest);
 
 	const QString input = rest.value(0);
 	if (input.isEmpty()) {

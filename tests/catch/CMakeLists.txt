@@ -101,6 +101,7 @@ add_executable(
     src/location_test.cpp
     src/bommeasure_test.cpp
     src/bomcollector_test.cpp
+    src/purchasecomparison_test.cpp
     src/locationcontainment_test.cpp
     src/enclosuretransfer_test.cpp
     src/mountinglayout_test.cpp
@@ -262,6 +263,8 @@ add_executable(
     ${QET_DIR}/sources/location/locationtree.h
     ${QET_DIR}/sources/location/projectlocation.cpp
     ${QET_DIR}/sources/location/projectlocation.h
+    ${QET_DIR}/sources/location/purchasecomparison.cpp
+    ${QET_DIR}/sources/location/purchasecomparison.h
     # A árvore de opções está aqui pela mesma razão que a de localizações:
     # ela é aritmética de QString e de QDomDocument, e nada mais. Nem folha,
     # nem elemento, nem projeto — o que é justamente o que permite provar
@@ -1038,6 +1041,9 @@ if(TARGET qelectrotech_objects)
         # em si, sobre linhas montadas a mao, fica em bomcollector_test.cpp
         # do C_unittests.
         src/ui/purchaselist_test.cpp
+        # Two purchase lists compared from the command line, without opening
+        # a project: what left, what came in, what changed quantity.
+        src/ui/purchasecompare_cli_test.cpp
         # A referencia cruzada do mestre tirada da folha sem ser desligada:
         # a tabela some, e o vinculo, o texto de cada escravo e a navegacao
         # ficam. Precisa de projeto aberto porque a tabela so existe presa a
