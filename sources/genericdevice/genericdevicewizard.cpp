@@ -20,6 +20,7 @@
 
 #include "../editor/terminalnamecheck.h"
 #include "../factory/elementpicturefactory.h"
+#include "../qetpalette.h"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -344,7 +345,8 @@ class GenericDeviceTerminalsPage : public QWizardPage
 				layout->addLayout(line);
 				m_error[side] = new QLabel();
 				m_error[side]->setWordWrap(true);
-				m_error[side]->setStyleSheet(QStringLiteral("color: #c0392b"));
+				m_error[side]->setStyleSheet(QStringLiteral("color: %1")
+					.arg(QET::Palette::readable(QColor(0xc0, 0x39, 0x2b), palette()).name()));
 				m_error[side]->hide();
 				layout->addWidget(m_error[side]);
 

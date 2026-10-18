@@ -17,6 +17,7 @@
 */
 #include "ioimportdialog.h"
 
+#include "../../qetpalette.h"
 #include "../../qetproject.h"
 #include "../../catalog/catalogtable.h"
 #include "../../catalog/catalogtablereader.h"
@@ -536,7 +537,7 @@ void IoImportDialog::say(const QString &message, bool problem)
 
 	QPalette status_palette = m_status->palette();
 	status_palette.setColor(QPalette::WindowText,
-				problem ? QColor(Qt::red)
+				problem ? QET::Palette::readable(QColor(Qt::red), palette())
 					: palette().color(QPalette::WindowText));
 	m_status->setPalette(status_palette);
 }

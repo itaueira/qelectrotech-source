@@ -25,6 +25,7 @@
 
 #include "../../qetapp.h"
 #include "../../qeticons.h"
+#include "../../qetpalette.h"
 #include "../../qetproject.h"
 #include "../../catalog/catalogpart.h"
 #include "../../catalog/ui/catalogbrowserdialog.h"
@@ -569,7 +570,7 @@ void CircuitTableDialog::say(const QString &message, bool problem)
 
 	QPalette status_palette = m_status->palette();
 	status_palette.setColor(QPalette::WindowText,
-				problem ? QColor(Qt::red)
+				problem ? QET::Palette::readable(QColor(Qt::red), palette())
 					: palette().color(QPalette::WindowText));
 	m_status->setPalette(status_palette);
 }

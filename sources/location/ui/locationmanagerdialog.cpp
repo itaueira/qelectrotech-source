@@ -27,6 +27,7 @@
 #include "../../qetapp.h"
 #include "../../qetgraphicsitem/element.h"
 #include "../../qetinformation.h"
+#include "../../qetpalette.h"
 #include "../../qetproject.h"
 #include "../../undocommand/assignlocationcommand.h"
 #include "../../undocommand/editlocationtreecommand.h"
@@ -947,7 +948,7 @@ void LocationManagerDialog::say(const QString &message, bool problem)
 
 	QPalette status_palette = m_status->palette();
 	status_palette.setColor(QPalette::WindowText,
-				problem ? QColor(Qt::red)
+				problem ? QET::Palette::readable(QColor(Qt::red), palette())
 					: palette().color(QPalette::WindowText));
 	m_status->setPalette(status_palette);
 }

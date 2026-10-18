@@ -117,6 +117,62 @@ namespace QET {
 		QPalette forFusion(const QPalette &platform);
 
 		/**
+			\a palette with the text of disabled widgets made readable,
+			for a dark platform palette drawn by the platform's own style
+			(Windows: see QETApp::initStyle()).
+
+			Each of the Disabled WindowText, Text, ButtonText and
+			PlaceholderText is measured against the Disabled Window, Base
+			and Button, the three backgrounds disabled text is drawn on; a
+			translucent color is measured as it shows, over each of them.
+			A role that reads below \a minimum against any of the three is
+			given the same hue and saturation at the smallest HSL lightness
+			that reaches it, opaque. The smallest is what keeps it dimmer
+			than the enabled text, so a disabled control still reads as
+			disabled; should the enabled text itself read below that, the
+			disabled one is left readable rather than dimmer.
+
+			Only the roles that failed are set, so the resolve mask of the
+			palette gains a bit for those and no other: a style that draws
+			from the palette only where the application set a role (Qt's
+			windows11 style does that for ButtonText) keeps its own colors
+			everywhere else. A light palette, and a dark one whose disabled
+			text already reads, come back unchanged.
+
+			The backgrounds are expected to be dark, which is what isDark()
+			says of Window. Should a lighter one make \a minimum
+			unreachable, the role gets the lightness that reads best.
+		*/
+		QPalette withReadableDisabled(QPalette palette, double minimum = 3.0);
+
+		/**
+			The color \a wanted, made readable as text on \a palette.
+
+			Meant for the colors written into the code for messages and
+			list rows - an error red, a warning amber - that were picked
+			on a light background. On a light palette \a wanted comes back
+			as it is, so the light look does not change. On a dark one its
+			hue and saturation are kept and its HSL lightness is raised by
+			the smallest step that makes it read at \a minimum (4.5 is
+			WCAG's ratio for normal text) against every background colored
+			text sits on in this program: Window (a label in a dialog or a
+			status line), Base (a line edit, a list or a table) and
+			AlternateBase (the other rows of a list with alternating row
+			colors, measured over Base when it is translucent), all from the
+			Active group. A color that already reads comes back as it is.
+			\a wanted is measured as if it were opaque, and its alpha is
+			put back on the result.
+
+			The result is computed when it is asked for: a style sheet or a
+			list row colored with it keeps that color until it is colored
+			again. The light or dark preference applies at the next start
+			(main.cpp), so that is only visible after a live change of the
+			custom application color.
+		*/
+		QColor readable(const QColor &wanted, const QPalette &palette,
+		                double minimum = 4.5);
+
+		/**
 			True when fewer than a fifth of the visible pixels are
 			saturated: black or gray line art, which is what element
 			previews and most of QET's own icons are.

@@ -3131,6 +3131,15 @@ void QETApp::initStyle()
 	if (QET::Palette::styleIsFusion(qApp->style()))
 		initial_palette_ = QET::Palette::forFusion(initial_palette_);
 #endif
+#ifdef Q_OS_WIN
+	// Windows keeps its native style and the palette the platform hands
+	// over: imposing Fusion as on macOS would redraw every control,
+	// including the ones that read well. Only the text of disabled
+	// widgets is corrected, and only where it reads below 3:1 on a dark
+	// palette; a light palette, and a dark one that already reads, are
+	// left exactly as they came. Nothing is written to the settings.
+	initial_palette_ = QET::Palette::withReadableDisabled(initial_palette_);
+#endif
 	applyIconTheme(initial_palette_);
 
 	//Apply or not the system style

@@ -18,6 +18,7 @@
 #include "mountingcheckdialog.h"
 
 #include "../../catalog/catalog.h"
+#include "../../qetpalette.h"
 #include "../../qetproject.h"
 #include "../bommeasure.h"
 #include "../mountingpartview.h"
@@ -460,7 +461,8 @@ void MountingCheckDialog::fill()
 					   "dimensions, so it was judged on "
 					   "its corner alone."));
 			row->setForeground(PartsColumn,
-					   QBrush(QColor(Qt::darkYellow)));
+					   QBrush(QET::Palette::readable(QColor(Qt::darkYellow),
+									 palette())));
 		}
 	}
 
@@ -547,7 +549,7 @@ void MountingCheckDialog::say(const QString &message, bool problem)
 
 	QPalette status_palette = m_status->palette();
 	status_palette.setColor(QPalette::WindowText,
-				problem ? QColor(Qt::red)
+				problem ? QET::Palette::readable(QColor(Qt::red), palette())
 					: palette().color(QPalette::WindowText));
 	m_status->setPalette(status_palette);
 }

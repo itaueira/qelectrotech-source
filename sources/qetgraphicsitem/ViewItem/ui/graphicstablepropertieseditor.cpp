@@ -21,6 +21,7 @@
 #include "../../../diagram.h"
 #include "../../../elementprovider.h"
 #include "../../../factory/propertieseditorfactory.h"
+#include "../../../qetpalette.h"
 #include "../../../undocommand/itemmodelcommand.h"
 #include "../../../utils/qetutils.h"
 #include "../qetgraphicsheaderitem.h"
@@ -56,7 +57,8 @@ GraphicsTablePropertiesEditor::GraphicsTablePropertiesEditor(
 		setTable(table);
 	}
 
-	ui->m_info_label->setStyleSheet("QLabel {color : red; }");
+	ui->m_info_label->setStyleSheet(QStringLiteral("QLabel {color : %1; }")
+		.arg(QET::Palette::readable(QColor(Qt::red), palette()).name()));
 }
 
 /**

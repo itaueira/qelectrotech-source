@@ -44,6 +44,7 @@
 #include "../../catalog/catalogclass.h"
 #include "../../catalog/catalogproperty.h"
 #include "../../qetapp.h"
+#include "../../qetpalette.h"
 
 namespace
 {
@@ -154,7 +155,8 @@ void CreateSymbolDialog::setUpWidget()
 
 	m_snap_note = new QLabel(this);
 	m_snap_note->setWordWrap(true);
-	m_snap_note->setStyleSheet(QStringLiteral("QLabel { color : #8a6d00; }"));
+	m_snap_note->setStyleSheet(QStringLiteral("QLabel { color : %1; }")
+		.arg(QET::Palette::readable(QColor(0x8a, 0x6d, 0x00), palette()).name()));
 	layout->addWidget(m_snap_note);
 
 	QGroupBox *terminals_box = new QGroupBox(
@@ -220,7 +222,8 @@ void CreateSymbolDialog::setUpWidget()
 
 	m_problems = new QLabel(this);
 	m_problems->setWordWrap(true);
-	m_problems->setStyleSheet(QStringLiteral("QLabel { color : #a00000; }"));
+	m_problems->setStyleSheet(QStringLiteral("QLabel { color : %1; }")
+		.arg(QET::Palette::readable(QColor(0xa0, 0x00, 0x00), palette()).name()));
 	layout->addWidget(m_problems);
 
 	m_summary = new QLabel(this);

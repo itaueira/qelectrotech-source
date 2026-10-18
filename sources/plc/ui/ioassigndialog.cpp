@@ -20,6 +20,7 @@
 #include "../../diagram.h"
 #include "../../elementprovider.h"
 #include "../../qetgraphicsitem/element.h"
+#include "../../qetpalette.h"
 #include "../../qetproject.h"
 #include "../../undocommand/assigniopointscommand.h"
 #include "../ioassignment.h"
@@ -382,7 +383,7 @@ void IoAssignDialog::reloadChannels()
 
 		if (is_wired)
 		{
-			const QBrush grey(Qt::gray);
+			const QBrush grey(QET::Palette::readable(QColor(Qt::gray), palette()));
 			for (int column = 0 ; column < 4 ; ++column)
 			{
 				if (QTableWidgetItem *item = m_channels->item(row, column)) {
@@ -500,7 +501,7 @@ void IoAssignDialog::say(const QString &message, bool problem)
 
 	QPalette status_palette = m_status->palette();
 	status_palette.setColor(QPalette::WindowText,
-				problem ? QColor(Qt::red)
+				problem ? QET::Palette::readable(QColor(Qt::red), palette())
 					: palette().color(QPalette::WindowText));
 	m_status->setPalette(status_palette);
 }

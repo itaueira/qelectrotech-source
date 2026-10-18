@@ -22,6 +22,7 @@
 #include "../../dataBase/projectdatabase.h"
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
+#include "../../qetpalette.h"
 #include "../../qetproject.h"
 #include "../../utils/csvwriter.h"
 #include "../bommeasure.h"
@@ -853,7 +854,7 @@ void LocationBomDialog::say(const QString &message, bool problem)
 
 	QPalette palette = m_status->palette();
 	palette.setColor(QPalette::WindowText,
-			 problem ? QColor(Qt::red)
+			 problem ? QET::Palette::readable(QColor(Qt::red), qApp->palette())
 				 : qApp->palette().color(QPalette::WindowText));
 	m_status->setPalette(palette);
 	m_status->setText(message);

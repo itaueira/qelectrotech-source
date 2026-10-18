@@ -21,6 +21,7 @@
 #include "../../elementprovider.h"
 #include "../../qetgraphicsitem/element.h"
 #include "../../qetinformation.h"
+#include "../../qetpalette.h"
 #include "../../qetproject.h"
 #include "../../undocommand/editiopointcommand.h"
 #include "../ioassignment.h"
@@ -529,7 +530,8 @@ void IoListDialog::addCard(QTreeWidgetItem *parent, const IoTree::CardGroup &car
 
 	if (card.missing)
 	{
-		item->setForeground(NameColumn, QBrush(QColor(Qt::red)));
+		item->setForeground(NameColumn,
+				    QBrush(QET::Palette::readable(QColor(Qt::red), palette())));
 		item->setToolTip(NameColumn,
 				 tr("Aucune carte de ce projet ne répond à cet "
 				    "identifiant."));
@@ -946,7 +948,7 @@ void IoListDialog::say(const QString &message, bool problem)
 
 	QPalette status_palette = m_status->palette();
 	status_palette.setColor(QPalette::WindowText,
-				problem ? QColor(Qt::red)
+				problem ? QET::Palette::readable(QColor(Qt::red), palette())
 					: palette().color(QPalette::WindowText));
 	m_status->setPalette(status_palette);
 }

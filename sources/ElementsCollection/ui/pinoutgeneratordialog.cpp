@@ -48,6 +48,7 @@
 #include "../../properties/elementdata.h"
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
+#include "../../qetpalette.h"
 #include "../pinoutgenerator.h"
 #include "../pinoutusagescanner.h"
 
@@ -238,7 +239,8 @@ void PinoutGeneratorDialog::setUpWidget()
 		//reads as a bug the first time somebody notices it.
 	m_template_note = new QLabel(template_group);
 	m_template_note->setWordWrap(true);
-	m_template_note->setStyleSheet(QStringLiteral("QLabel { color : #8a6d00; }"));
+	m_template_note->setStyleSheet(QStringLiteral("QLabel { color : %1; }")
+		.arg(QET::Palette::readable(QColor(0x8a, 0x6d, 0x00), palette()).name()));
 	m_template_note->setText(tr("Modifier le modèle change les blocs générés "
 				    "à partir de maintenant. Les cartes déjà "
 				    "insérées dans un projet gardent leur dessin : "
@@ -274,7 +276,8 @@ void PinoutGeneratorDialog::setUpWidget()
 
 	m_refusal = new QLabel(this);
 	m_refusal->setWordWrap(true);
-	m_refusal->setStyleSheet(QStringLiteral("QLabel { color : #a00000; }"));
+	m_refusal->setStyleSheet(QStringLiteral("QLabel { color : %1; }")
+		.arg(QET::Palette::readable(QColor(0xa0, 0x00, 0x00), palette()).name()));
 	layout->addWidget(m_refusal);
 
 	m_summary = new QLabel(this);

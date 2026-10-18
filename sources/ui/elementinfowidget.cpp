@@ -37,6 +37,7 @@
 #include "../qetmessagebox.h"
 #include "../dataBase/projectdatabase.h"
 #include "../qetinformation.h"
+#include "../qetpalette.h"
 #include "../qetproject.h"
 #include "../catalog/physicalview.h"
 #include "../ui/projectpropertiesdialog.h"
@@ -594,7 +595,8 @@ void ElementInfoWidget::warnAboutLabelCollision()
 
 	if (other)
 	{
-		field->setStyleSheet(QStringLiteral("QLineEdit { color : #C13A2E; }"));
+		field->setStyleSheet(QStringLiteral("QLineEdit { color : %1; }")
+			.arg(QET::Palette::readable(QColor(0xc1, 0x3a, 0x2e), palette()).name()));
 		field->setToolTip(tr("« %1 » est déjà le repère d'un autre composant, "
 				     "au même endroit.").arg(field->text()));
 	}

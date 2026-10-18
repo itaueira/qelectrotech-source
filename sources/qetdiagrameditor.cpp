@@ -104,6 +104,7 @@
 #include "ui/projectpropertiesdialog.h"
 #include "projectview.h"
 #include "qetproject.h"
+#include "qetpalette.h"
 #include "qetgraphicsitem/ViewItem/mountinglayoutviewitem.h"
 #include "qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
 #include "qetgraphicsitem/conductortextitem.h"
@@ -7419,7 +7420,8 @@ void QETDiagramEditor::setUpMacroRecorder()
 	auto *layout = new QHBoxLayout(box);
 	layout->setContentsMargins(0, 0, 0, 0);
 	auto *label = new QLabel(box);
-	label->setStyleSheet(QStringLiteral("color: #d03030; font-weight: bold"));
+	label->setStyleSheet(QStringLiteral("color: %1; font-weight: bold")
+		.arg(QET::Palette::readable(QColor(0xd0, 0x30, 0x30), palette()).name()));
 	auto *stop = new QToolButton(box);
 	stop->setText(tr("Stop"));
 	stop->setToolTip(tr("Stop recording the macro"));

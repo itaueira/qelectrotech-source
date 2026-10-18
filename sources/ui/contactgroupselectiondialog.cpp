@@ -18,6 +18,7 @@
 #include "contactgroupselectiondialog.h"
 
 #include "../qet.h"
+#include "../qetpalette.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -149,16 +150,17 @@ ContactGroupSelectionDialog::ContactGroupSelectionDialog(
 				auto *question_label = new QLabel(this);
 				question_label->setText("?");
 				question_label->setAlignment(Qt::AlignCenter);
-				question_label->setStyleSheet(
+				question_label->setStyleSheet(QStringLiteral(
 					"QLabel {"
-					"  color: #1a73e8;"
+					"  color: %1;"
 					"  font-weight: bold;"
 					"  font-size: 8px;"
-					"  border: 1.5px solid #1a73e8;"
+					"  border: 1.5px solid %1;"
 					"  border-radius: 7px;"
 					"  min-width: 12px; max-width: 12px;"
 					"  min-height: 12px; max-height: 12px;"
-					"}");
+					"}").arg(QET::Palette::readable(QColor(0x1a, 0x73, 0xe8),
+									palette()).name()));
 				question_label->setToolTip(reason);
 				m_table->setCellWidget(row, 0, question_label);
 			}

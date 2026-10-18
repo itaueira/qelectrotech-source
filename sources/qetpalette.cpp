@@ -20,10 +20,12 @@
 #include <QApplication>
 #include <QColor>
 #include <QImage>
+#include <QList>
 #include <QMdiArea>
 #include <QStyle>
 #include <QTabBar>
 #include <QWidget>
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -67,6 +69,107 @@ namespace {
 		only reaches 3.7:1.
 	*/
 	const QColor kHighlight(30, 96, 176);
+
+	/// \a color as it shows over the opaque \a background.
+	QColor over(const QColor &color, const QColor &background)
+	{
+		const int alpha = color.alpha();
+		if (alpha == 255)
+			return QColor(color.rgb());
+		const auto mix = [alpha](int front, int back) {
+			return (front * alpha + back * (255 - alpha) + 127) / 255;
+		};
+		return QColor(mix(color.red(),   background.red()),
+		              mix(color.green(), background.green()),
+		              mix(color.blue(),  background.blue()));
+	}
+
+	/// The lowest contrast of \a color, as it shows, against \a backgrounds.
+	double worstContrast(const QColor &color, const QList<QColor> &backgrounds)
+	{
+		double worst = 21.0;
+		for (const QColor &background : backgrounds)
+			worst = std::min(worst, QET::Palette::contrastRatio(over(color, background),
+			                                                     background));
+		return worst;
+	}
+
+	/// \a color, opaque, with its HSL lightness set to \a lightness.
+	QColor withLightness(const QColor &color, float lightness)
+	{
+		// An achromatic color has hue -1; any hue does with no saturation.
+		return QColor::fromHslF(std::max(color.hslHueF(), 0.0f),
+		                        color.hslSaturationF(),
+		                        std::clamp(lightness, 0.0f, 1.0f));
+	}
+
+	/**
+		\a color, opaque and with its hue and saturation kept, at the
+		smallest HSL lightness that reads at \a minimum against every one
+		of \a backgrounds; \a color itself when it already does. The first
+		background is the one a translucent \a color is judged over.
+
+		Raising the HSL lightness never lowers a channel, so on dark
+		backgrounds the contrast only grows with it, and a bisection
+		between the lightness that fails and white finds the threshold.
+		Twenty halvings get well under one step of an 8-bit channel; the
+		value kept is always one that was measured passing, after the
+		rounding QColor does.
+	*/
+	QColor lightenUntil(const QColor &color, const QList<QColor> &backgrounds,
+	                    double minimum)
+	{
+		if (backgrounds.isEmpty() || worstContrast(color, backgrounds) >= minimum)
+			return color;
+
+		const QColor opaque(color.rgb());
+		// The search starts from what the color looks like, not from its
+		// opaque version: white at a third of its alpha shows as a grey,
+		// and it is that grey which failed.
+		const float shown = over(color, backgrounds.first()).lightnessF();
+		const QColor start = withLightness(opaque, shown);
+		if (worstContrast(start, backgrounds) >= minimum)
+			return start;
+
+		const QColor brightest = withLightness(opaque, 1.0f);
+		if (worstContrast(brightest, backgrounds) < minimum)
+		{
+			// Out of reach: a background is too light for any lightness
+			// of this hue. Take the one that reads best.
+			QColor best = opaque;
+			double best_contrast = worstContrast(opaque, backgrounds);
+			for (int step = 0; step <= 64; ++step)
+			{
+				const QColor candidate = withLightness(opaque, step / 64.0f);
+				const double contrast = worstContrast(candidate, backgrounds);
+				if (contrast > best_contrast)
+				{
+					best = candidate;
+					best_contrast = contrast;
+				}
+			}
+			return best;
+		}
+
+		float failing = shown;
+		float passing = 1.0f;
+		QColor result = brightest;
+		for (int i = 0; i < 20; ++i)
+		{
+			const float middle = (failing + passing) / 2.0f;
+			const QColor candidate = withLightness(opaque, middle);
+			if (worstContrast(candidate, backgrounds) >= minimum)
+			{
+				passing = middle;
+				result = candidate;
+			}
+			else
+			{
+				failing = middle;
+			}
+		}
+		return result;
+	}
 }
 
 bool QET::Palette::styleIsFusion(const QStyle *style)
@@ -240,6 +343,52 @@ QPalette QET::Palette::forFusion(const QPalette &platform)
 {
 	return withPlatformAccent(isDark(platform) ? fusionDark() : fusionLight(),
 	                          platform);
+}
+
+QPalette QET::Palette::withReadableDisabled(QPalette palette, double minimum)
+{
+	if (!isDark(palette))
+		return palette;
+
+	// Window first: a translucent text color is judged over it.
+	const QList<QColor> backgrounds = {
+		palette.color(QPalette::Disabled, QPalette::Window),
+		palette.color(QPalette::Disabled, QPalette::Base),
+		palette.color(QPalette::Disabled, QPalette::Button)};
+
+	for (QPalette::ColorRole role : {QPalette::WindowText, QPalette::Text,
+	                                 QPalette::ButtonText, QPalette::PlaceholderText})
+	{
+		const QColor disabled = palette.color(QPalette::Disabled, role);
+		const QColor lighter = lightenUntil(disabled, backgrounds, minimum);
+		// Set only what changed: setting a role, even to its own color,
+		// marks it as chosen by the application, and a style that honours
+		// such a choice would stop drawing that role its own way.
+		if (lighter != disabled)
+			palette.setColor(QPalette::Disabled, role, lighter);
+	}
+	return palette;
+}
+
+QColor QET::Palette::readable(const QColor &wanted, const QPalette &palette,
+                              double minimum)
+{
+	if (!wanted.isValid() || !isDark(palette))
+		return wanted;
+
+	const QColor base = palette.color(QPalette::Active, QPalette::Base);
+	const QList<QColor> backgrounds = {
+		palette.color(QPalette::Active, QPalette::Window),
+		base,
+		over(palette.color(QPalette::Active, QPalette::AlternateBase), base)};
+
+	// Measured as an opaque color; the alpha goes back on afterwards.
+	const QColor opaque(wanted.rgb());
+	QColor result = lightenUntil(opaque, backgrounds, minimum);
+	if (result == opaque)
+		return wanted;
+	result.setAlpha(wanted.alpha());
+	return result;
 }
 
 bool QET::Palette::isLineArt(const QImage &image)
