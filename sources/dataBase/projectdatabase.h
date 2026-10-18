@@ -248,6 +248,7 @@ class projectDataBase : public QObject
 		void conductorPropertiesStored(Conductor *conductor, const ConductorProperties &properties);
 		void conductorUuidChanged(Conductor *conductor, const QUuid &old_uuid);
 		QStringList conductorPropertiesMismatches() const;
+		QStringList linkRowMismatches();
 
 			//Fill the three stores from a project's document before its
 			//folios are built, then, once
@@ -395,6 +396,8 @@ class projectDataBase : public QObject
 		static void bindElementInfoValues(QSqlQuery &query, Element *element);
 		void populateLinkTable();
 		void flushLinks();
+		void insertLinkRows(QSqlQuery &insert, Element *element, const QSet<QUuid> &waiting);
+		QSet<QUuid> waitingSymbols() const;
 		void populateDrawingItemTables();
 		bool populateFromDocument(const QDomDocument &document, QString *why = nullptr);
 		bool writeDrawingItem(QObject *object);
