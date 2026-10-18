@@ -20,6 +20,7 @@
 #include "../../../../sources/diagramcontext.h"
 #include "../../../../sources/titleblock/qettemplateeditor.h"
 #include "../../../../sources/titleblock/templatecellwidget.h"
+#include "../../../../sources/titleblock/templatecommands.h"
 #include "../../../../sources/titleblock/templateview.h"
 #include "../../../../sources/titleblock/templatevisualcell.h"
 #include "../../../../sources/titleblockcell.h"
@@ -27,6 +28,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <QAction>
 #include <QColor>
 #include <QComboBox>
 #include <QCoreApplication>
@@ -36,6 +38,7 @@
 #include <QIODevice>
 #include <QImage>
 #include <QLineEdit>
+#include <QList>
 #include <QPainter>
 #include <QRect>
 #include <QRectF>
@@ -44,6 +47,7 @@
 #include <QStyleOptionGraphicsItem>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QUndoStack>
 
 #include <memory>
 
@@ -605,5 +609,323 @@ TEST_CASE("T26 — o duplo clique numa célula abre as propriedades dela",
 		CHECK(panel -> isAncestorOf(type));
 		CHECK(type -> isVisible());
 		CHECK(type -> currentData().toInt() == TitleBlockCell::EmptyCell);
+	}
+}
+
+/*
+	Copying the format of a cell to the selected cells.
+
+	The format is how a cell lays its text out - alignment, font size, and
+	whether the font shrinks to fit - and nothing of what the text says.
+	What follows goes through the two actions of the editor, as the menu,
+	the toolbar and their shortcuts trigger them, with cells selected in the
+	scene the way a click or a rubber band selects them. No window is shown
+	and no dialog opens: the panel and the undo stack are read directly.
+*/
+namespace
+{
+	/**
+		One cell to copy the format from, laid out as no other cell here is:
+		right, bottom, 14 points, shrinking to fit. Three text cells that
+		differ from it - and from one another - in everything else too, so
+		that what is copied and what is not can both be told cell by cell.
+		One of them gives no font size, and follows the size of the
+		application. The last row is left out of the file, and the template
+		fills it with empty cells.
+	*/
+	QString cellFormatTemplate()
+	{
+		return QStringLiteral(
+			"<titleblocktemplate name=\"formatacao\">\n"
+			"  <information></information>\n"
+			"  <logos/>\n"
+			"  <grid cols=\"t50%;t50%;\" rows=\"25;25;25;\">\n"
+			"    <field row=\"0\" col=\"0\" name=\"origem\""
+			" displaylabel=\"true\" align=\"right\" valign=\"bottom\""
+			" fontsize=\"14\" hadjust=\"true\">\n"
+			"      <value><translation lang=\"en\">%{author}"
+			"</translation></value>\n"
+			"      <label><translation lang=\"en\">Autor"
+			"</translation></label>\n"
+			"    </field>\n"
+			"    <field row=\"0\" col=\"1\" name=\"data\""
+			" displaylabel=\"false\" align=\"left\" valign=\"top\""
+			" fontsize=\"7\" hadjust=\"false\">\n"
+			"      <value><translation lang=\"en\">%{date}"
+			"</translation></value>\n"
+			"      <label><translation lang=\"en\">Data"
+			"</translation></label>\n"
+			"    </field>\n"
+			"    <field row=\"1\" col=\"0\" name=\"titulo\""
+			" displaylabel=\"true\" align=\"center\" valign=\"top\""
+			" fontsize=\"8\" hadjust=\"false\">\n"
+			"      <value><translation lang=\"en\">%{title}"
+			"</translation></value>\n"
+			"      <label><translation lang=\"en\">Titulo"
+			"</translation></label>\n"
+			"    </field>\n"
+			"    <field row=\"1\" col=\"1\" name=\"folha\""
+			" displaylabel=\"false\" align=\"left\" valign=\"center\""
+			" hadjust=\"false\">\n"
+			"      <value><translation lang=\"en\">%{folio}"
+			"</translation></value>\n"
+			"    </field>\n"
+			"  </grid>\n"
+			"</titleblocktemplate>\n");
+	}
+
+	/** What a cell says, as opposed to how it lays it out */
+	struct CellContent
+	{
+		int type = TitleBlockCell::EmptyCell;
+		QString name;
+		QString value;
+		QString label;
+		bool display_label = false;
+	};
+
+	CellContent contentOf(const TitleBlockCell *cell)
+	{
+		CellContent content;
+		content.type          = cell -> type();
+		content.name          = cell -> value_name;
+		content.value         = cell -> value.name();
+		content.label         = cell -> label.name();
+		content.display_label = cell -> display_label;
+		return content;
+	}
+
+	/** Check that @a cell still says what it said, as @a before took it */
+	void checkContentKept(const TitleBlockCell *cell, const CellContent &before)
+	{
+		INFO("content of the cell named " << before.name.toStdString());
+		CHECK(cell -> type() == before.type);
+		CHECK(cell -> value_name == before.name);
+		CHECK(cell -> value.name() == before.value);
+		CHECK(cell -> label.name() == before.label);
+		CHECK(cell -> display_label == before.display_label);
+	}
+
+	/** Check that @a cell lays its text out as @a expected says */
+	void checkFormat(const TitleBlockCell *cell,
+			 const TitleBlockCellFormat &expected)
+	{
+		INFO("format of the cell named " << cell -> value_name.toStdString());
+		CHECK(cell -> alignment == expected.alignment);
+		CHECK(cell -> font_size == expected.font_size);
+		CHECK(cell -> hadjust   == expected.hadjust);
+	}
+}
+
+TEST_CASE("T26 — copiar a formatação de uma célula para as selecionadas",
+	  "[titleblock][ui]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = dir.filePath(QStringLiteral("formatacao.titleblock"));
+	{
+		QFile file(path);
+		REQUIRE(file.open(QIODevice::WriteOnly | QIODevice::Text));
+		REQUIRE(file.write(cellFormatTemplate().toUtf8()) > 0);
+	}
+
+		// Owned by the case and declared before the editor, as above.
+	std::unique_ptr<TitleBlockTemplate> tbt(new TitleBlockTemplate());
+	REQUIRE(tbt -> loadFromXmlFile(path));
+	REQUIRE(tbt -> columnsCount() == 2);
+	REQUIRE(tbt -> rowsCount() == 3);
+
+	TitleBlockCell *source = tbt -> cell(0, 0);
+	TitleBlockCell *date   = tbt -> cell(0, 1);
+	TitleBlockCell *title  = tbt -> cell(1, 0);
+	TitleBlockCell *folio  = tbt -> cell(1, 1);
+	TitleBlockCell *empty  = tbt -> cell(2, 0);
+	REQUIRE(source != nullptr);
+	REQUIRE(date   != nullptr);
+	REQUIRE(title  != nullptr);
+	REQUIRE(folio  != nullptr);
+	REQUIRE(empty  != nullptr);
+	REQUIRE(source -> type() == TitleBlockCell::TextCell);
+	REQUIRE(date   -> type() == TitleBlockCell::TextCell);
+	REQUIRE(title  -> type() == TitleBlockCell::TextCell);
+	REQUIRE(folio  -> type() == TitleBlockCell::TextCell);
+	REQUIRE(empty  -> type() == TitleBlockCell::EmptyCell);
+
+		// The file says what it is meant to say: had the loader read any
+		// of it otherwise, the assertions below would measure the loader.
+	const int right_bottom = Qt::AlignRight | Qt::AlignBottom;
+	REQUIRE(source -> alignment == right_bottom);
+	REQUIRE(source -> font_size == 14);
+	REQUIRE(source -> hadjust);
+	REQUIRE(folio -> font_size == -1);
+
+		// Taken before anything is done, and not after: an expectation
+		// read once the step has run would agree with whatever it did.
+	const QList<TitleBlockCell *> targets {date, title, folio};
+	const TitleBlockCellFormat source_format(*source);
+	const CellContent source_content = contentOf(source);
+	const TitleBlockCellFormat empty_format(*empty);
+	QList<TitleBlockCellFormat> formats_before;
+	QList<CellContent> contents_before;
+	for (TitleBlockCell *cell : targets) {
+		REQUIRE(TitleBlockCellFormat(*cell) != source_format);
+		formats_before << TitleBlockCellFormat(*cell);
+		contents_before << contentOf(cell);
+	}
+	REQUIRE(empty_format != source_format);
+
+	QETTitleBlockTemplateEditor editor;
+	REQUIRE(editor.edit(tbt.get()));
+
+	auto *view = qobject_cast<TitleBlockTemplateView *>(editor.centralWidget());
+	REQUIRE(view != nullptr);
+	auto *panel = editor.findChild<TitleBlockTemplateCellWidget *>();
+	REQUIRE(panel != nullptr);
+	auto *stack = editor.findChild<QUndoStack *>();
+	REQUIRE(stack != nullptr);
+	auto *copy_format = editor.findChild<QAction *>(
+				QStringLiteral("tbt_copy_cell_format"));
+	auto *apply_format = editor.findChild<QAction *>(
+				QStringLiteral("tbt_apply_cell_format"));
+	REQUIRE(copy_format  != nullptr);
+	REQUIRE(apply_format != nullptr);
+	REQUIRE(stack -> count() == 0);
+
+		// Selects exactly @a cells in the scene, which is what the view
+		// listens to and tells the editor about.
+	const auto selectOnly = [&](const QList<TitleBlockCell *> &cells) {
+		view -> scene() -> clearSelection();
+		for (TitleBlockCell *cell : cells) {
+			TitleBlockTemplateVisualCell *item =
+				visualCellOf(view -> scene(), cell);
+			REQUIRE(item != nullptr);
+			item -> setSelected(true);
+		}
+		REQUIRE(view -> selectedCells().count() == cells.count());
+	};
+
+	SECTION("sem fonte ou sem destino, a ação fica desabilitada")
+	{
+			// Nothing copied, nothing selected.
+		CHECK_FALSE(copy_format  -> isEnabled());
+		CHECK_FALSE(apply_format -> isEnabled());
+
+			// Three cells to give a format to, and no format copied: no
+			// source. Nor are three cells a source - which one would it be?
+		selectOnly(targets);
+		CHECK_FALSE(copy_format  -> isEnabled());
+		CHECK_FALSE(apply_format -> isEnabled());
+		apply_format -> trigger();
+		CHECK(stack -> count() == 0);
+
+			// An empty cell lays no text out: it has no format to give.
+		selectOnly({empty});
+		CHECK_FALSE(copy_format -> isEnabled());
+
+		selectOnly({source});
+		REQUIRE(copy_format -> isEnabled());
+		copy_format -> trigger();
+
+			// A format, and no cell to give it to.
+		selectOnly({});
+		CHECK_FALSE(apply_format -> isEnabled());
+
+			// Nor is an empty cell one: given to it, the format would
+			// change nothing anybody sees.
+		selectOnly({empty});
+		CHECK_FALSE(apply_format -> isEnabled());
+
+			// A format and a text cell.
+		selectOnly({date});
+		CHECK(apply_format -> isEnabled());
+
+			// A template open for reading only takes no format and gives
+			// none, even with a text cell selected alone.
+		editor.setReadOnly(true);
+		CHECK_FALSE(copy_format  -> isEnabled());
+		CHECK_FALSE(apply_format -> isEnabled());
+
+		CHECK(stack -> count() == 0);
+	}
+
+	SECTION("a formatação vai de uma célula para três, e o conteúdo fica")
+	{
+		selectOnly({source});
+		copy_format -> trigger();
+
+			// The source is selected too, and so is an empty cell: the one
+			// has the format already, the other draws no text, and the
+			// step counts neither.
+		selectOnly({source, date, title, folio, empty});
+		REQUIRE(apply_format -> isEnabled());
+		apply_format -> trigger();
+
+			// One step, whose caption says how many cells changed. The
+			// suite runs with no translation: the caption is the source.
+		REQUIRE(stack -> count() == 1);
+		CHECK(stack -> text(0)
+		      == QStringLiteral("Apply cell format to 3 cells"));
+
+		for (int i = 0 ; i < targets.count() ; ++ i) {
+				// copied: how the text is laid out
+			checkFormat(targets.at(i), source_format);
+				// not copied: what the text says, and whether the label
+				// shows - the content of the cell
+			checkContentKept(targets.at(i), contents_before.at(i));
+		}
+
+		checkFormat(source, source_format);
+		checkContentKept(source, source_content);
+		checkFormat(empty, empty_format);
+	}
+
+	SECTION("um desfazer devolve as três, e a fonte que seguia o padrão volta a segui-lo")
+	{
+		selectOnly({source});
+		copy_format -> trigger();
+		selectOnly(targets);
+		apply_format -> trigger();
+		REQUIRE(stack -> count() == 1);
+		REQUIRE(folio -> font_size == 14);
+
+			// What the Undo of the editor - Ctrl+Z - asks the stack for:
+			// one step back.
+		stack -> undo();
+		CHECK(stack -> index() == 0);
+		for (int i = 0 ; i < targets.count() ; ++ i) {
+			checkFormat(targets.at(i), formats_before.at(i));
+		}
+
+			// -1, and not the size the font is drawn with: the folio cell
+			// follows the size of the application again, rather than
+			// keeping one fixed by the undo.
+		CHECK(folio -> font_size == -1);
+
+		stack -> redo();
+		for (TitleBlockCell *cell : targets) {
+			checkFormat(cell, source_format);
+		}
+	}
+
+	SECTION("com uma célula só, o painel mostra o que ela ficou e o que ela volta a ser")
+	{
+			// A cell selected alone is in the properties panel. Left
+			// showing the former alignment, the panel would write it back
+			// with the next change made in it: it sends the alignment
+			// whole, horizontal and vertical, from what it shows.
+		selectOnly({source});
+		copy_format -> trigger();
+		selectOnly({date});
+		REQUIRE(panel -> horizontalAlignment() == int(Qt::AlignLeft));
+		REQUIRE(panel -> verticalAlignment()   == int(Qt::AlignTop));
+
+		apply_format -> trigger();
+		REQUIRE(stack -> count() == 1);
+		CHECK(panel -> horizontalAlignment() == int(Qt::AlignRight));
+		CHECK(panel -> verticalAlignment()   == int(Qt::AlignBottom));
+
+		stack -> undo();
+		CHECK(panel -> horizontalAlignment() == int(Qt::AlignLeft));
+		CHECK(panel -> verticalAlignment()   == int(Qt::AlignTop));
 	}
 }

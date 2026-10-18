@@ -29,6 +29,8 @@
 #include "templateview.h"
 #include "../toolbarsettings.h"
 
+#include <QScopedValueRollback>
+
 /**
 	@param parent parent QWidget of this window
 */
@@ -38,7 +40,9 @@ QETTitleBlockTemplateEditor::QETTitleBlockTemplateEditor(QWidget *parent) :
 	read_only_(false),
 	duplicate_(false),
 	tb_template_(nullptr),
-	logo_manager_(nullptr)
+	logo_manager_(nullptr),
+	has_copied_cell_format_(false),
+	pushing_cell_edition_(false)
 {
 	setWindowIcon(QET::Icons::QETLogo);
 	setAttribute(Qt::WA_DeleteOnClose);
@@ -400,9 +404,21 @@ void QETTitleBlockTemplateEditor::initActions()
 	add_col_        = new QAction(QET::Icons::EditTableInsertColumnRight, tr("Add a &column",    "menu entry"), this);
 	merge_cells_    = new QAction(QET::Icons::EditTableCellMerge,   tr("&Merge cells",      "menu entry"), this);
 	split_cell_     = new QAction(QET::Icons::EditTableCellSplit,   tr("&Split cells",     "menu entry"), this);
+	copy_cell_format_  = new QAction(QET::Icons::CopyElementTextFormat,  tr("Copy cell format",  "menu entry"), this);
+	apply_cell_format_ = new QAction(QET::Icons::ApplyElementTextFormat, tr("Apply cell format", "menu entry"), this);
 
 	undo_ -> setIcon(QET::Icons::EditUndo);
 	redo_ -> setIcon(QET::Icons::EditRedo);
+
+		// Named, so that the user interface tests find them without a
+		// reference to them. Disabled until updateActions() looks at the
+		// selection: a template handed straight to edit() does not run it.
+	copy_cell_format_  -> setObjectName("tbt_copy_cell_format");
+	apply_cell_format_ -> setObjectName("tbt_apply_cell_format");
+	copy_cell_format_  -> setStatusTip(tr("Copy the alignment and font size of the selected cell", "status bar tip"));
+	apply_cell_format_ -> setStatusTip(tr("Give the copied alignment and font size to the selected cells", "status bar tip"));
+	copy_cell_format_  -> setEnabled(false);
+	apply_cell_format_ -> setEnabled(false);
 
 	ShortcutManager::instance().registerAction(new_, "titleblockeditor.new", tr("Title block template editors"), QKeySequence::New);
 	ShortcutManager::instance().registerAction(open_, "titleblockeditor.open", tr("Title block template editors"), QKeySequence::Open);
@@ -419,6 +435,9 @@ void QETTitleBlockTemplateEditor::initActions()
 	ShortcutManager::instance().registerAction(edit_info_, "titleblockeditor.edit_info", tr("Title block template editors"), Qt::CTRL | Qt::Key_Y);
 	ShortcutManager::instance().registerAction(merge_cells_, "titleblockeditor.merge_cells", tr("Title block template editors"), Qt::CTRL | Qt::Key_J);
 	ShortcutManager::instance().registerAction(split_cell_, "titleblockeditor.split_cell", tr("Title block template editors"), Qt::CTRL | Qt::Key_K);
+		// the same keys as the format painter of the diagram editor
+	ShortcutManager::instance().registerAction(copy_cell_format_, "titleblockeditor.copy_cell_format", tr("Title block template editors"), Qt::CTRL | Qt::ALT | Qt::Key_C);
+	ShortcutManager::instance().registerAction(apply_cell_format_, "titleblockeditor.apply_cell_format", tr("Title block template editors"), Qt::CTRL | Qt::ALT | Qt::Key_V);
 	ShortcutManager::instance().registerAction(zoom_in_, "titleblockeditor.zoom_in", tr("Title block template editors"), QKeySequence::ZoomIn);
 	ShortcutManager::instance().registerAction(zoom_out_, "titleblockeditor.zoom_out", tr("Title block template editors"), QKeySequence::ZoomOut);
 	ShortcutManager::instance().registerAction(zoom_fit_, "titleblockeditor.zoom_fit", tr("Title block template editors"), Qt::CTRL | Qt::Key_9);
@@ -444,6 +463,8 @@ void QETTitleBlockTemplateEditor::initActions()
 	connect(add_col_, &QAction::triggered, template_edition_area_view_, &TitleBlockTemplateView::addColumnAtEnd);
 	connect(merge_cells_, &QAction::triggered, template_edition_area_view_, &TitleBlockTemplateView::mergeSelectedCells);
 	connect(split_cell_, &QAction::triggered, template_edition_area_view_, &TitleBlockTemplateView::splitSelectedCell);
+	connect(copy_cell_format_, &QAction::triggered, this, &QETTitleBlockTemplateEditor::copyCellFormat);
+	connect(apply_cell_format_, &QAction::triggered, this, &QETTitleBlockTemplateEditor::applyCellFormat);
 }
 
 /**
@@ -470,6 +491,9 @@ void QETTitleBlockTemplateEditor::initMenus()
 	edit_menu_   -> addAction(cut_);
 	edit_menu_   -> addAction(copy_);
 	edit_menu_   -> addAction(paste_);
+	edit_menu_   -> addSeparator();
+	edit_menu_   -> addAction(copy_cell_format_);
+	edit_menu_   -> addAction(apply_cell_format_);
 	edit_menu_   -> addSeparator();
 	edit_menu_   -> addAction(add_row_);
 	edit_menu_   -> addAction(add_col_);
@@ -508,6 +532,9 @@ void QETTitleBlockTemplateEditor::initToolbars()
 	edit_toolbar -> addSeparator();
 	edit_toolbar -> addAction(merge_cells_);
 	edit_toolbar -> addAction(split_cell_);
+	edit_toolbar -> addSeparator();
+	edit_toolbar -> addAction(copy_cell_format_);
+	edit_toolbar -> addAction(apply_cell_format_);
 	addToolBar(Qt::TopToolBarArea, edit_toolbar);
 
 	QToolBar *display_toolbar = new QToolBar(tr("Display", "toolbar title"), this);
@@ -604,6 +631,7 @@ void QETTitleBlockTemplateEditor::initWidgets()
 		&QETTitleBlockTemplateEditor::savePreviewWidthToApplicationSettings
 	);
 	connect(undo_stack_, &QUndoStack::cleanChanged, this, &QETTitleBlockTemplateEditor::updateEditorTitle);
+	connect(undo_stack_, &QUndoStack::indexChanged, this, &QETTitleBlockTemplateEditor::refreshCellProperties);
 	connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &QETTitleBlockTemplateEditor::updateActions);
 }
 
@@ -735,6 +763,97 @@ void QETTitleBlockTemplateEditor::showCellProperties(TitleBlockCell *cell)
 }
 
 /**
+	Fill the cell properties panel again with the cell it shows, after the
+	undo stack changed a cell behind its back: an undo, a redo, or a format
+	applied to several cells. A panel left showing the former values would
+	write them back with the next edition made in it - the alignment, for
+	one, is sent whole, horizontal and vertical, from what the panel shows.
+
+	The commands the panel itself sends are left out: it shows already what
+	they do.
+*/
+void QETTitleBlockTemplateEditor::refreshCellProperties()
+{
+	if (pushing_cell_edition_) return;
+	const QList<TitleBlockCell *> selected_cells =
+			template_edition_area_view_ -> selectedCells();
+	if (selected_cells.count() == 1) {
+		template_cell_editor_widget_ -> edit(selected_cells.first());
+	}
+}
+
+/**
+	@return the cell "Copy cell format" takes the format of: the selected
+	cell, when exactly one is selected and it is a text cell - the only kind
+	whose format shows. nullptr otherwise.
+*/
+TitleBlockCell *QETTitleBlockTemplateEditor::cellFormatSource() const
+{
+	const QList<TitleBlockCell *> selected_cells =
+			template_edition_area_view_ -> selectedCells();
+	if (selected_cells.count() != 1) return(nullptr);
+	TitleBlockCell *cell = selected_cells.first();
+	if (!cell || cell -> type() != TitleBlockCell::TextCell) return(nullptr);
+	return(cell);
+}
+
+/**
+	@return the cells "Apply cell format" gives the copied format to: the
+	selected text cells. An empty or logo cell draws no text, and a format
+	given to it would change nothing anybody sees.
+*/
+QList<TitleBlockCell *> QETTitleBlockTemplateEditor::cellFormatTargets() const
+{
+	QList<TitleBlockCell *> targets;
+	const QList<TitleBlockCell *> selected_cells =
+			template_edition_area_view_ -> selectedCells();
+	for (TitleBlockCell *cell : selected_cells) {
+		if (cell && cell -> type() == TitleBlockCell::TextCell) {
+			targets << cell;
+		}
+	}
+	return(targets);
+}
+
+/**
+	Copy the format of the selected cell - alignment, font size and font
+	adjustment - for "Apply cell format" to give it to other cells. The
+	format is kept, and not the cell: whatever happens to the cell
+	afterwards, what was copied stays what it was.
+*/
+void QETTitleBlockTemplateEditor::copyCellFormat()
+{
+	if (read_only_) return;
+	TitleBlockCell *source = cellFormatSource();
+	if (!source) return;
+	copied_cell_format_ = TitleBlockCellFormat(*source);
+	has_copied_cell_format_ = true;
+	updateActions();
+}
+
+/**
+	Give the copied format to the selected text cells, in a single step of
+	the undo stack. The cells that have it already are not counted, and when
+	none would change nothing is pushed.
+*/
+void QETTitleBlockTemplateEditor::applyCellFormat()
+{
+	if (read_only_ || !has_copied_cell_format_) return;
+	const QList<TitleBlockCell *> targets = cellFormatTargets();
+	if (targets.isEmpty()) return;
+
+	auto *command = new ApplyTitleBlockCellFormatCommand(
+				targets,
+				copied_cell_format_);
+	if (!command -> changedCellsCount()) {
+		delete command;
+		return;
+	}
+	command -> setView(template_edition_area_view_);
+	pushUndoCommand(command);
+}
+
+/**
 	Configure an undo Command before adding it to the undo stack.
 	@param command to be added to the undo stack
 */
@@ -742,6 +861,8 @@ void QETTitleBlockTemplateEditor::pushCellUndoCommand(
 		ModifyTitleBlockCellCommand *command)
 {
 	command -> setView(template_edition_area_view_);
+		// the panel sent this command: see refreshCellProperties()
+	QScopedValueRollback<bool> from_panel(pushing_cell_edition_, true);
 	pushUndoCommand(command);
 }
 
@@ -815,6 +936,11 @@ void QETTitleBlockTemplateEditor::updateActions()
 	add_col_ -> setEnabled(!read_only_);
 	merge_cells_ -> setEnabled(!read_only_ && can_merge);
 	split_cell_ -> setEnabled(!read_only_ && can_split);
+	copy_cell_format_ -> setEnabled(!read_only_ && cellFormatSource());
+	apply_cell_format_ -> setEnabled(
+				!read_only_
+				&& has_copied_cell_format_
+				&& !cellFormatTargets().isEmpty());
 }
 
 /**

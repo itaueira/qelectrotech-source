@@ -19,6 +19,7 @@
 #define TITLEBLOCK_SLASH_QET_TEMPLATE_EDITOR_H
 #include "../qet.h"
 #include "../qetmainwindow.h"
+#include "templatecommands.h"
 #include "templatelocation.h"
 #include "templateview.h"
 
@@ -55,6 +56,7 @@ class QETTitleBlockTemplateEditor : public QETMainWindow {
 	/// actions
 	QAction *new_, *open_, *open_from_file_, *save_, *save_as_, *save_as_file_, *quit_;
 	QAction *undo_, *redo_, *cut_, *copy_, *paste_, *edit_logos_, *edit_info_, *add_row_, *add_col_, *merge_cells_, *split_cell_;
+	QAction *copy_cell_format_, *apply_cell_format_;
 	QAction *zoom_in_, *zoom_out_, *zoom_fit_, *zoom_reset_;
 	/// Location of the currently edited template
 	TitleBlockTemplateLocation location_;
@@ -85,6 +87,12 @@ class QETTitleBlockTemplateEditor : public QETMainWindow {
 	QUndoStack *undo_stack_;
 	QUndoView *undo_view_;
 	QDockWidget *undo_dock_widget_;
+	/// Format taken by "Copy cell format", given by "Apply cell format"
+	TitleBlockCellFormat copied_cell_format_;
+	/// Whether a cell format was copied at all
+	bool has_copied_cell_format_;
+	/// Whether the command being pushed comes from the cell properties panel
+	bool pushing_cell_edition_;
 
 	// methods
 	public:
@@ -105,6 +113,8 @@ class QETTitleBlockTemplateEditor : public QETMainWindow {
 	void initWidgets();
 	void initLogoManager();
 	QString currentlyEditedTitle() const;
+	TitleBlockCell *cellFormatSource() const;
+	QList<TitleBlockCell *> cellFormatTargets() const;
 
 	public slots:
 	void readSettings();
@@ -128,10 +138,13 @@ class QETTitleBlockTemplateEditor : public QETMainWindow {
 	void quit();
 	void savePreviewWidthToApplicationSettings(int, int);
 	void editTemplateInformation();
+	void copyCellFormat();
+	void applyCellFormat();
 
 	private slots:
 	TitleBlockTemplateLocation getTitleBlockTemplateLocationFromUser(const QString & = QString(), bool existing_only = true);
 	void showCellProperties(TitleBlockCell *);
+	void refreshCellProperties();
 	void pushCellUndoCommand(ModifyTitleBlockCellCommand *);
 	void pushGridUndoCommand(TitleBlockTemplateCommand *);
 	void pushUndoCommand(QUndoCommand *);

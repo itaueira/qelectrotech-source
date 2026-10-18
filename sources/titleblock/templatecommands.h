@@ -315,4 +315,65 @@ class PasteTemplateCellsCommand : public TitleBlockTemplateCommand {
 	/// Existing cells impacted by the paste operation
 	QHash<TitleBlockCell *, TitleBlockCell> erased_cells_;
 };
+
+/**
+	The format of a title block template cell: how its text is laid out, and
+	nothing of what it says. It is what "Copy cell format" takes from a text
+	cell and "Apply cell format" gives to others. The type, name, value,
+	label, label display and logo of a cell are its content, and are not
+	part of it.
+*/
+class TitleBlockCellFormat {
+	// constructors
+	public:
+	TitleBlockCellFormat();
+	explicit TitleBlockCellFormat(const TitleBlockCell &);
+
+	// methods
+	public:
+	void applyTo(TitleBlockCell *) const;
+	bool operator==(const TitleBlockCellFormat &) const;
+	bool operator!=(const TitleBlockCellFormat &) const;
+
+	// attributes
+	public:
+	int alignment;  ///< horizontal and vertical alignment, as TitleBlockCell::alignment
+	int font_size;  ///< as TitleBlockCell::font_size: -1 follows the default size of the application
+	bool hadjust;   ///< whether the font size is reduced when the text does not fit
+};
+
+/**
+	This class represents the action of applying one format to several title
+	block template cells at once: a single step in the undo stack, whatever
+	the number of cells.
+
+	It keeps the former format of each cell itself, instead of stacking one
+	ModifyTitleBlockCellCommand per cell: that command reads the former font
+	size through TitleBlockCell::attribute(), which answers the size the font
+	is drawn with, so a cell following the default size (-1) would come back
+	from an undo with that size fixed instead.
+*/
+class ApplyTitleBlockCellFormatCommand : public QUndoCommand {
+	// constructor, destructor
+	public:
+	ApplyTitleBlockCellFormatCommand(const QList<TitleBlockCell *> &, const TitleBlockCellFormat &, QUndoCommand * = nullptr);
+	~ApplyTitleBlockCellFormatCommand() override;
+	private:
+	ApplyTitleBlockCellFormatCommand(const ApplyTitleBlockCellFormatCommand &);
+
+	// methods
+	public:
+	int changedCellsCount() const;
+	TitleBlockTemplateView *view() const;
+	void setView(TitleBlockTemplateView *);
+	void undo() override;
+	void redo() override;
+
+	// attributes
+	private:
+	TitleBlockTemplateView *view_; ///< This class may trigger a view update
+	TitleBlockCellFormat format_;  ///< format given to the cells
+	/// Format of each changed cell before the command
+	QHash<TitleBlockCell *, TitleBlockCellFormat> formats_before_;
+};
 #endif

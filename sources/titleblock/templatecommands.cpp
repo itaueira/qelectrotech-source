@@ -1108,3 +1108,142 @@ void PasteTemplateCellsCommand::addCell(TitleBlockCell *cell, const TitleBlockCe
 	addPastedCell(cell, after);
 	addErasedCell(cell, before);
 }
+
+/**
+	Constructor: the format of a newly created cell.
+*/
+TitleBlockCellFormat::TitleBlockCellFormat() :
+	TitleBlockCellFormat(TitleBlockCell())
+{
+}
+
+/**
+	Constructor
+	@param cell Cell whose format is taken
+*/
+TitleBlockCellFormat::TitleBlockCellFormat(const TitleBlockCell &cell) :
+	alignment(cell.alignment),
+	font_size(cell.font_size),
+	hadjust(cell.hadjust)
+{
+}
+
+/**
+	Give this format to \a cell, leaving its content as it is.
+	@param cell Cell to be formatted
+*/
+void TitleBlockCellFormat::applyTo(TitleBlockCell *cell) const
+{
+	if (!cell) return;
+	cell -> alignment = alignment;
+	cell -> font_size = font_size;
+	cell -> hadjust   = hadjust;
+}
+
+/**
+	@param other Another format
+	@return true if both formats lay a text out the same way. A font size of
+	-1 and the default size it stands for are different: the first follows
+	the application settings, the second does not.
+*/
+bool TitleBlockCellFormat::operator==(const TitleBlockCellFormat &other) const
+{
+	return(
+		alignment == other.alignment &&
+		font_size == other.font_size &&
+		hadjust   == other.hadjust
+	);
+}
+
+/**
+	@param other Another format
+	@return true if both formats differ
+*/
+bool TitleBlockCellFormat::operator!=(const TitleBlockCellFormat &other) const
+{
+	return(!(*this == other));
+}
+
+/**
+	Constructor
+	@param cells Cells to be given \a format. Those which have it already are
+	left out, so that the caption of this command counts the cells that
+	actually change.
+	@param format Format given to the cells
+	@param parent Parent QUndoCommand
+*/
+ApplyTitleBlockCellFormatCommand::ApplyTitleBlockCellFormatCommand(
+		const QList<TitleBlockCell *> &cells,
+		const TitleBlockCellFormat &format,
+		QUndoCommand *parent) :
+	QUndoCommand(parent),
+	view_(nullptr),
+	format_(format)
+{
+	for (TitleBlockCell *cell : cells) {
+		if (!cell || formats_before_.contains(cell)) continue;
+		const TitleBlockCellFormat before(*cell);
+		if (before == format_) continue;
+		formats_before_.insert(cell, before);
+	}
+	setText(
+		QObject::tr(
+			"Apply cell format to %n cells",
+			"undo caption",
+			formats_before_.count()
+		)
+	);
+}
+
+/**
+	Destructor
+*/
+ApplyTitleBlockCellFormatCommand::~ApplyTitleBlockCellFormatCommand()
+{
+}
+
+/**
+	@return the number of cells this command changes
+*/
+int ApplyTitleBlockCellFormatCommand::changedCellsCount() const
+{
+	return(formats_before_.count());
+}
+
+/**
+	@return the view to be updated after the cells modification
+*/
+TitleBlockTemplateView *ApplyTitleBlockCellFormatCommand::view() const
+{
+	return(view_);
+}
+
+/**
+	Set the view to be updated after the cells modification
+	@param view the view to be updated after the cells modification
+*/
+void ApplyTitleBlockCellFormatCommand::setView(TitleBlockTemplateView *view) {
+	view_ = view;
+}
+
+/**
+	Give each cell back the format it had.
+*/
+void ApplyTitleBlockCellFormatCommand::undo()
+{
+	for (auto it = formats_before_.cbegin() ; it != formats_before_.cend() ; ++ it) {
+		it.value().applyTo(it.key());
+	}
+	if (view_) view_ -> refresh();
+}
+
+/**
+	Give the format to each cell.
+*/
+void ApplyTitleBlockCellFormatCommand::redo()
+{
+	for (auto it = formats_before_.cbegin() ; it != formats_before_.cend() ; ++ it) {
+		format_.applyTo(it.key());
+	}
+	if (view_) view_ -> refresh();
+}
