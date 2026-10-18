@@ -966,6 +966,12 @@ if(TARGET qelectrotech_objects)
         src/ui/drcpotentialrules_test.cpp
         src/ui/drctagrules_test.cpp
         src/ui/drctitleblockrules_test.cpp
+        # The check of a project from the command line (--check-project): the
+        # exit code and the lines of the report. Needs a project because what
+        # is proven is the whole way - the file the verb opens, the factory
+        # profile running on it, and the report that comes out; each rule has
+        # its own case in the files above.
+        src/ui/drccli_test.cpp
         # Quantas etiquetas a lista de numeros de fio manda imprimir, e
         # para qual numero. Precisa de projeto aberto porque a regra le
         # duas coisas que so o desenho decide -- o texto do condutor e o

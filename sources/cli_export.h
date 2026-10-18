@@ -56,6 +56,7 @@ namespace CLIExport {
 		  qelectrotech --export-links   <project.qet> <output.csv>
 		  qelectrotech --info           <project.qet> [output.json]
 		  qelectrotech --check-elements <element.elmt | directory>
+		  qelectrotech --check-project  <project.qet> [report.txt]
 		  qelectrotech --resave         <project.qet> <output.qet>
 		  qelectrotech --recover        <damaged.qetz> <output.qet>
 		  qelectrotech --set-titleblock <project.qet> <output.qet> key=value...
@@ -82,8 +83,17 @@ namespace CLIExport {
 		--svg-small-pictures: in an SVG, each picture at most four times the
 		      size it is drawn at instead of its full resolution: a much
 		      smaller file, still sharp when printed.
-		cables: wiring list (one row per conductor) as CSV.
-		wires: list of distinct wire numbers as CSV.
+		cables: the from-to wiring list, as CSV: one row per conductor,
+		      with its folio, the component and the terminal at each of
+		      its two ends, voltage or protocol, colour, section,
+		      function, cable and a note. Despite its name, it lists
+		      wires, not cables.
+		wires: the wire markers to print, as CSV: the number of each
+		      numbered conductor that lands on a terminal, one row per
+		      conductor, so a number carried by three wires is three
+		      rows, and a wire drawn across two folios is two conductors
+		      and two markers. Not a list of distinct numbers: the rows of
+		      a number count the markers to print for it.
 		bom: bill of materials (one row per element) as CSV.
 		--no-slaves: leave the contact blocks (slave elements) out of the
 		      bill of materials.
@@ -134,6 +144,23 @@ namespace CLIExport {
 		info: structural project summary as JSON (stdout, or a file) —
 		      per-page element / conductor counts and unconnected terminals.
 		check-elements: validate .elmt file(s) against the element schema.
+		      Symbol files only: it never opens a project, and a project
+		      handed to it fails as a file that is not a symbol.
+		check-project: run the design rule check on the project - the
+		      same rules, with the same severities, as the check command
+		      of the editor - and list what it found, one finding per
+		      line, five fields separated by tabs: severity (error,
+		      warning or information, never translated), folio (1-based;
+		      empty for a finding about the project as a whole), place on
+		      the folio, rule identifier, and the sentence. On stdout,
+		      followed by a line counting them; with report.txt, the
+		      findings alone go to that file (UTF-8, LF) and the count to
+		      stdout. Exit code 0: checked, and nothing of severity error
+		      (warnings do not fail); 1: at least one finding of severity
+		      error; 2: bad option, or no such project; 3: no verdict -
+		      the project could not be opened, no rule is switched on,
+		      the report could not be written, or a rule could not run
+		      and nothing of severity error was found.
 		resave: load and rewrite the project XML (round-trip integrity).
 		--ignore-lock: resave and set-titleblock leave a file alone when a lock
 		      file beside it (.~<name>.lock, made by a QElectroTech that has

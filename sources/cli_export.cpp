@@ -26,6 +26,9 @@
 #include "dataBase/projectdatabase.h"
 #include "diagram.h"
 #include "diagramcontext.h"
+#include "drc/drcfinding.h"
+#include "drc/drcrule.h"
+#include "drc/ui/drcprojectactions.h"
 #include "editor/terminalnamecheck.h"
 #include "dxfexport.h"
 #include "elementprovider.h"
@@ -100,6 +103,7 @@ const QHash<QString, QString> &exportFlags()
 		{"--export-links", "links"},
 		{"--info", "info"},
 		{"--check-elements", "check"},
+		{"--check-project", "checkproject"},
 		{"--resave", "resave"},
 		{"--recover", "recover"},
 		{"--set-titleblock", "settb"},
@@ -1564,6 +1568,151 @@ int checkElements(const QString &path)
 	return failures > 0 ? 1 : 0;
 }
 
+/**
+	One finding of --check-project, as one line of its report: five fields
+	separated by tabs - severity, folio, position, rule, sentence.
+
+	The severity and the rule are the machine names, the very ones the
+	project file stores (DrcRule::severityToString(),
+	DrcFinding::ruleIdentifier()), so that a script matches them whatever
+	language the sentence comes out in. The folio is the number printed on
+	the sheet, and it is empty for a finding about the project as a whole:
+	a 0 there would read as a sheet, and such a finding has none.
+
+	A tab or a line break inside a field becomes a space. A tag is text
+	somebody typed, and one holding a line feed would split a finding over
+	two lines, which whoever counts the lines takes for two findings.
+*/
+QString checkReportLine(const DrcFinding &finding)
+{
+	const auto flat = [](QString text) {
+		text.replace(QLatin1Char('\t'), QLatin1Char(' '));
+		text.replace(QLatin1Char('\r'), QLatin1Char(' '));
+		text.replace(QLatin1Char('\n'), QLatin1Char(' '));
+		return text;
+	};
+
+	const QStringList fields {
+		DrcRule::severityToString(finding.severity()),
+		finding.hasFolio() ? QString::number(finding.folio()) : QString(),
+		flat(finding.position()),
+		finding.ruleIdentifier(),
+		flat(finding.text())};
+	return fields.join(QLatin1Char('\t'));
+}
+
+/**
+	@brief The design rule check of a project, from the command line.
+	@param project the project, open
+	@param options what follows the project on the command line: at most
+	the report file
+	@return 0 when nothing of severity error was found; 1 when something
+	was; 2 when the options are malformed; 3 when there is no verdict to
+	give - a rule could not run, no rule is switched on, or the report
+	could not be written
+
+	@par The check of the program, and not one of its own
+	DrcProjectActions::runCheck() is what the check command of the editor
+	runs: the same rules, with the same severities, in the same order. A
+	second list of rules kept here would be a second opinion on the same
+	project, and the day the two disagreed the build server would be
+	refusing a project the draughtsman was told was clean - or the other
+	way round, which is worse.
+
+	@par Only an error fails
+	A warning is listed and does not change the exit code. What severity
+	"error" stops is decided by the project and its rules, not here: a
+	draughtsman who lowers a rule to a warning has decided that it no
+	longer stops the delivery, and the build server has to agree with him.
+
+	@par No verdict is not a clean project
+	The exit code 0 means "checked, and nothing serious found". A run in
+	which a rule could not run does not know what that rule would have
+	found, and a run with every rule switched off checked nothing: both
+	answer 3, which a build server reads as a failure all the same, but
+	which says that the tool and not the project is what has to be looked
+	at. An error found wins over that: what was found is found, whatever
+	the rule that failed beside it would have added.
+
+	@par Failure to write the report is no verdict either
+	The list is built in full before the file is opened, and written
+	through QSaveFile: a report that cannot be written leaves no file, and
+	the code is 3 rather than 1 - a 1 tells whoever reads it to go and
+	look at a report that is not there.
+*/
+int checkProject(QETProject &project, const QStringList &options)
+{
+	if (options.size() > 1) {
+		err << "Too many arguments (expected --check-project "
+			   "<project.qet> [report.txt]).\n";
+		return 2;
+	}
+	const QString report = options.value(0);
+	if (report.startsWith(QLatin1String("--"))) {
+		err << "Bad option '" << report
+			<< "' (expected the name of a report file).\n";
+		return 2;
+	}
+
+	const DrcProjectActions::CheckOutcome outcome =
+		DrcProjectActions::runCheck(&project);
+
+	QStringList lines;
+	for (const DrcFinding &finding : outcome.findings)
+		lines << checkReportLine(finding);
+
+		//Counted by the one function that compares severities, so that the
+		//number printed and the exit code cannot read the order apart.
+	const int findings = int(outcome.findings.size());
+	const int errors = DrcFinding::countAtLeast(outcome.findings,
+						     DrcSeverity::Error);
+	const int warnings = DrcFinding::countAtLeast(outcome.findings,
+						       DrcSeverity::Warning)
+			     - errors;
+	const int information = findings - errors - warnings;
+
+	for (const QString &failure : outcome.failures)
+		err << "Rule could not run: " << failure << "\n";
+	if (outcome.ruleCount() == 0)
+		err << "No rule is switched on: nothing was checked.\n";
+
+	if (report.isEmpty()) {
+		for (const QString &line : std::as_const(lines))
+			out << line << "\n";
+	} else {
+		QByteArray bytes;
+		for (const QString &line : std::as_const(lines)) {
+			bytes += line.toUtf8();
+			bytes += '\n';
+		}
+		QSaveFile file(report);
+		if (!file.open(QIODevice::WriteOnly)) {
+			err << "Cannot open '" << report << "' for writing: "
+				<< file.errorString() << "\n";
+			return 3;
+		}
+		file.write(bytes);
+		if (!file.commit()) {
+			err << "Cannot write '" << report << "': "
+				<< file.errorString() << "\n";
+			return 3;
+		}
+	}
+
+	out << "Checked " << outcome.ruleCount() << " rule(s): " << findings
+		<< " finding(s), " << errors << " error(s), " << warnings
+		<< " warning(s), " << information << " information";
+	if (!report.isEmpty())
+		out << " -> " << report;
+	out << "\n";
+
+	if (errors > 0)
+		return 1;
+	if (!outcome.failures.isEmpty() || outcome.ruleCount() == 0)
+		return 3;
+	return 0;
+}
+
 /// Map every element in the project to its 1-based folio (page) position.
 QHash<Element *, int> folioIndex(QETProject &project)
 {
@@ -2058,12 +2207,18 @@ int run(const QStringList &args)
 	if (project.state() != QETProject::Ok) {
 		err << "Failed to open project: " << input
 			<< " (state " << project.state() << ")\n";
-		return 1;
+		// --check-project keeps 1 for "the check found an error": a
+		// project it could not open was not checked, which is no verdict.
+		return format == "checkproject" ? 3 : 1;
 	}
 
 	// --info writes JSON to stdout, or to an optional output file.
 	if (format == "info")
 		return exportInfo(project, rest.value(1));
+	// --check-project lists its findings on stdout, or in an optional
+	// report file, and answers with its exit code.
+	if (format == "checkproject")
+		return checkProject(project, rest.mid(1));
 
 	const QString output = rest.value(1);
 	if (output.isEmpty()) {
