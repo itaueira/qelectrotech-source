@@ -43,12 +43,11 @@ class QETProject;
 	second output format does not touch this class - which is the point of
 	collecting before formatting rather than the other way round.
 
-	@par What this does not do yet
-	The location comes out as it is stored: writing it the way the standard
-	writes it is the step that applies QETInformation::displayedInfoValue(),
-	and it is not applied here.
+	@par How the location and the tag are written
+	The location comes out the way the standard writes it
+	(ComponentLabelQuery::writtenLocation(), see LabelEntry::location).
 
-	The tag no longer comes out that way. It is composed through
+	The tag does too. It is composed through
 	IecStructureSettings::composedTag(), the function the sheet itself draws
 	with, so a project with the identification structure on prints the
 	structured tag rather than the stored field. With the structure off - the

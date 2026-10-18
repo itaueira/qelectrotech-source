@@ -70,14 +70,13 @@ struct LabelEntry
 	/// Which collector produced this entry.
 	LabelSource source = LabelSource::Component;
 	/**
-		The location of the item, as it was stored.
-
-		Not as it should be written: turning a stored location path into the
-		mark the standard uses belongs to the step that applies
-		QETInformation::displayedInfoValue(), and doing it here would put a
-		second, silent implementation of that rule in the code. Held apart
-		from secondary_texts for that reason - it is the one field that is
-		not yet in its final written form.
+		The location of the item, written the way the standard writes it:
+		a path of the location tree as "+QCM1+PLACA", the free field with
+		a "+" only where the project says that field is the location, and
+		empty when there is none - never a "+" alone. The collectors write
+		it through ComponentLabelQuery::writtenLocation(), the one rule
+		both kinds of label follow. Held apart from secondary_texts because
+		it is a field of its own in every format a writer produces.
 	*/
 	QString location;
 	/// The folio number of the sheet the item is drawn on, as the sheet says it.

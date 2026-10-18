@@ -19,6 +19,7 @@
 
 #include "../autoNum/iecstructure.h"
 #include "../diagramcontext.h"
+#include "../qetinformation.h"
 
 namespace ComponentLabelQuery
 {
@@ -120,12 +121,48 @@ DiagramContext folioInformation(const QString &plant, const QString &locmach)
 	return info;
 }
 
+QString writtenLocation(const DiagramContext &element_info,
+			const IecStructureSettings &settings)
+{
+		//The `+` part the composition of the tag reads, asked of the very
+		//function that reads it: the path down the tree first and whatever
+		//the project says, the free text field only when the project says
+		//it is a place of the norm. The switch counts only with the
+		//structure on, as composedTag() - which returns before reading it -
+		//and the dialogue that greys it out both have it. No tag is passed:
+		//what is wanted is the place alone, and not what a tag typed with
+		//its own `+` would add to it.
+	const IecStructure place = IecStructure::fromElementInformation(
+			QString(), element_info,
+			settings.enabled && settings.location_from_element);
+
+	if (!place.location.isEmpty())
+	{
+			//Written by toFullTag() of a structure holding the place and
+			//nothing else, so the `+` comes from where the full tag on the
+			//sheet takes it. For a path this is LocationTree::iecTag() of
+			//that path, character for character - the same string
+			//QETInformation::displayedInfoValue() gives for it.
+		return IecStructure(QString(), place.location, QString())
+				.toFullTag();
+	}
+
+		//Not a place of the norm: the field as it was typed, through the
+		//function every reader of a data base row writes a value with. An
+		//empty field stays empty - there is no `+` to write for nothing.
+	return QETInformation::displayedInfoValue(
+			IecStructure::locationKey(),
+			element_info.value(IecStructure::locationKey()));
+}
+
 LabelEntry entryFromRow(const QHash<QString, QString> &row,
 			const IecStructureSettings &settings,
 			const DiagramContext &folio_info)
 {
 	LabelEntry entry;
 	entry.source = LabelSource::Component;
+
+	const DiagramContext element_info = elementInformation(row);
 
 		//Composed, never the column on its own. The `label` column holds
 		//Element::actualLabel() - what somebody typed, or what a formula
@@ -136,7 +173,7 @@ LabelEntry entryFromRow(const QHash<QString, QString> &row,
 		//asked of it.
 	entry.primary_text = settings.composedTag(
 			row.value(QStringLiteral("label")),
-			elementInformation(row),
+			element_info,
 			folio_info);
 
 		//Empty fields are dropped rather than printed as blank lines: tape
@@ -144,26 +181,30 @@ LabelEntry entryFromRow(const QHash<QString, QString> &row,
 		//is that the reader cannot tell a manufacturer from a function by
 		//counting lines, which is why the writer, and not this, decides
 		//whether to label them.
+		//
+		//Each value is written the way the parts list and the table drawn
+		//on a folio write the same column - a date in the locale of the
+		//machine, the rest as it stands - so that one component does not
+		//read two ways depending on which document it was read from.
 	for (const QString &key : {
 			QStringLiteral("designation"),
 			QStringLiteral("manufacturer"),
 			QStringLiteral("manufacturer_reference"),
 			QStringLiteral("function") })
 	{
-		const QString value = row.value(key);
+		const QString value =
+				QETInformation::displayedInfoValue(key, row.value(key));
 		if (!value.isEmpty()) {
 			entry.secondary_texts << value;
 		}
 	}
 
-		//The stored path when the project has one, the plain field
-		//otherwise. Which of the two it is does not change here: both are
-		//kept as they were stored, and turning them into the mark the
-		//standard writes is the job of the step that applies
-		//QETInformation::displayedInfoValue().
-	const QString path = row.value(IecStructure::locationPathKey());
-	entry.location = path.isEmpty() ? row.value(IecStructure::locationKey())
-					: path;
+		//The mark of the norm, and never the stored path: QCM1/PLACA is
+		//how the tree keeps a place, +QCM1+PLACA is how the norm writes it,
+		//and so do the location dialogues and the parts list. The free text
+		//field keeps its typing unless the project said it is a place. Read
+		//from the very information the tag above was composed from.
+	entry.location = writtenLocation(element_info, settings);
 
 	entry.folio = row.value(QStringLiteral("folio"));
 

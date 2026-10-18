@@ -25,12 +25,15 @@
 #include "../../../../sources/TerminalStrip/terminalstrip.h"
 #include "../../../../sources/autoNum/iecstructure.h"
 #include "../../../../sources/diagram.h"
+#include "../../../../sources/label/componentlabelcollector.h"
 #include "../../../../sources/label/terminallabelcollector.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetgraphicsitem/terminalelement.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/titleblockproperties.h"
+#include "../../../../sources/undocommand/assignlocationcommand.h"
+#include "../../../../sources/undocommand/changeelementinformationcommand.h"
 
 #include <catch2/catch.hpp>
 
@@ -754,6 +757,153 @@ TEST_CASE("T21 — with the structure on, a terminal label carries the tag the s
 				CHECK(entries.at(i).primary_text
 				      == element->displayedLabel());
 			}
+		}
+	}
+}
+
+/*
+	The location of a terminal, written the way the norm writes it.
+
+	The rule is ComponentLabelQuery::writtenLocation(), checked answer by
+	answer and setting by setting in tests/catch/src/componentlabel_test.cpp,
+	where it passes whatever this collector does with it. What only a project
+	can show is that the collector calls it, and calls it with the settings
+	of the project its symbol is drawn in: the case reads the location with
+	the structure off and on, and holds every terminal against the row the
+	data base gives the same symbol as a component. A collector with a rule
+	of its own - the stored path, the field with a `+` always - or with
+	settings of its own comes out red here.
+
+	Labelled T21: CU-21.14 ends at an exported file, and that is
+	labelexport_test.cpp.
+*/
+TEST_CASE("T21 — a terminal label writes its location as the norm writes it, and as the component label does",
+	  "[t21][label][terminalstrip][iec]")
+{
+	UiBench::ScratchProject bench(fixtureXml(),
+				      QStringLiteral("terminal-location.qet"));
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+
+	Diagram *sheet = bench.diagram(0);
+	REQUIRE(sheet != nullptr);
+
+	Element *two = terminalLabelled(sheet, QStringLiteral("2"));
+	Element *ten = terminalLabelled(sheet, QStringLiteral("10"));
+	REQUIRE(two != nullptr);
+	REQUIRE(ten != nullptr);
+
+		//2 is given a place of the tree, by the command the location
+		//manager pushes; 10 gets the free text field and nothing more; 1
+		//gets nothing at all.
+	const QString path = QStringLiteral("QCM1/PLACA");
+	bench->undoStack()->push(new AssignLocationCommand(
+			QList<Element *>({two}), path));
+	REQUIRE(two->elementInformations()
+		.value(IecStructure::locationPathKey()).toString() == path);
+
+	DiagramContext information = ten->elementInformations();
+	information.addValue(IecStructure::locationKey(), QStringLiteral("X9"));
+	bench->undoStack()->push(new ChangeElementInformationCommand(
+			ten, ten->elementInformations(), information));
+	REQUIRE(ten->elementInformations()
+		.value(IecStructure::locationKey()).toString()
+		== QStringLiteral("X9"));
+
+	REQUIRE(mountStrip(bench.project(), QStringLiteral("X1"),
+			   {{sheet, QStringLiteral("2")},
+			    {sheet, QStringLiteral("10")},
+			    {sheet, QStringLiteral("1")}})
+		!= nullptr);
+
+	TerminalLabelCollector collector(bench.project());
+
+	SECTION("off: the place as the norm writes it, the field as typed, nothing as nothing")
+	{
+		REQUIRE(bench->iecSettings().enabled == false);
+
+		const LabelEntryList entries = collector.collect();
+		REQUIRE(collector.error().isEmpty());
+		REQUIRE(primaryTexts(entries)
+			== QStringList({QStringLiteral("2"), QStringLiteral("10"),
+					QStringLiteral("1")}));
+
+			//Not the QCM1/PLACA the symbol stores.
+		CHECK(entries.at(0).location == QStringLiteral("+QCM1+PLACA"));
+
+			//As typed, with no `+`: this project never said the field is
+			//a place, and the field is where projects write the strip the
+			//wiring lands on.
+		CHECK(entries.at(1).location == QStringLiteral("X9"));
+
+			//And nothing is nothing - not a lone `+`.
+		CHECK(entries.at(2).location.isEmpty());
+	}
+
+	SECTION("on, with the field declared a place: the field behind the + of the norm")
+	{
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Full;
+		settings.location_from_element = true;
+		bench->setIecSettings(settings);
+
+		const LabelEntryList entries = collector.collect();
+		REQUIRE(collector.error().isEmpty());
+		REQUIRE(entries.count() == 3);
+
+		CHECK(entries.at(0).location == QStringLiteral("+QCM1+PLACA"));
+		CHECK(entries.at(1).location == QStringLiteral("+X9"));
+		CHECK(entries.at(2).location.isEmpty());
+
+			//The very `+` the full tag of each terminal opens with: no
+			//folio of this bench hands down a function or a place, so the
+			//tag the sheet draws is the place, then the connection of the
+			//norm - the number, after the colon.
+		CHECK(entries.at(0).primary_text == QStringLiteral("+QCM1+PLACA:2"));
+		CHECK(entries.at(1).primary_text == QStringLiteral("+X9:10"));
+	}
+
+	SECTION("a terminal and the component row of its symbol read the same location")
+	{
+		ComponentLabelCollector components(bench.project());
+
+			//The short form leaves a terminal number as it is, so every
+			//terminal can be found among the component rows by its tag in
+			//both settings.
+		for (bool declared : {false, true})
+		{
+			IecStructureSettings settings;
+			settings.enabled = declared;
+			settings.display = IecTagDisplay::Short;
+			settings.location_from_element = declared;
+			bench->setIecSettings(settings);
+
+			const LabelEntryList terminals = collector.collect();
+			REQUIRE(collector.error().isEmpty());
+			const LabelEntryList rows = components.collect();
+			INFO("component collector said: "
+			     << components.error().toStdString());
+			REQUIRE(components.error().isEmpty());
+			REQUIRE(terminals.count() == 3);
+
+			for (const LabelEntry &terminal : terminals)
+			{
+				const LabelEntry row =
+						entryTagged(rows, terminal.primary_text);
+				INFO("field declared a place: " << declared
+				     << ", terminal " << terminal.primary_text.toStdString());
+				REQUIRE(row.primary_text == terminal.primary_text);
+				CHECK(row.location == terminal.location);
+			}
+
+				//And the agreement is not two empty strings: the field of
+				//10 is read, and read the way the project says.
+			CHECK(entryTagged(terminals, QStringLiteral("10")).location
+			      == (declared ? QStringLiteral("+X9")
+					   : QStringLiteral("X9")));
+			CHECK(entryTagged(terminals, QStringLiteral("2")).location
+			      == QStringLiteral("+QCM1+PLACA"));
 		}
 	}
 }

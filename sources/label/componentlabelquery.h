@@ -111,6 +111,45 @@ namespace ComponentLabelQuery
 					const QString &locmach);
 
 	/**
+		The location of an item, written the way the norm writes it: the
+		form that goes on the tape, and never the form it is stored in.
+
+		@param element_info the information of the item - its path down the
+		location tree and its free text location field, under the keys
+		IecStructure gives them
+		@param settings the identification structure of the project
+
+		Three answers, in this order:
+		- the item was given a place of the location tree: the designation
+		  IEC 81346 writes for that path, the prefix repeated once per
+		  level - QCM1/PLACA is written +QCM1+PLACA. A path is a place by
+		  construction, so this holds whatever the project says about the
+		  structure, exactly as the location dialogues and the parts list
+		  write it;
+		- it was not, and the project says its free text field is the `+`
+		  of the norm - the structure on and the field switched in: that
+		  field behind a `+`, the very `+` the full tag on the sheet writes
+		  for it;
+		- otherwise the field as it was typed, and no `+`. The field is
+		  older than the norm and holds whatever a project wrote in it, the
+		  strip the wiring lands on more often than not, and `+X1` on a tape
+		  would announce a place nobody put there.
+
+		An item with no location at all gives an empty string, never a lone
+		`+`.
+
+		Which of the path and the field becomes the `+` is not decided here:
+		it is asked of IecStructure::fromElementInformation(), the one place
+		the composition of the tag decides it, so the mark in the location
+		of a label and the `+` of the tag on the sheet cannot drift apart.
+		And it is the one rule for both kinds of label: the terminal
+		collector calls it too, for the symbol behind each terminal, so a
+		terminal and a component of the same place read the same mark.
+	*/
+	QString writtenLocation(const DiagramContext &element_info,
+				const IecStructureSettings &settings);
+
+	/**
 		One entry built from one row of selectStatement(), the row given as
 		column name to value.
 
@@ -135,6 +174,11 @@ namespace ComponentLabelQuery
 		With the structure off, which is what a default constructed
 		@a settings says, the composition gives the stored tag back
 		untouched.
+
+		Every other value the row brings is written the way every reader of
+		a data base row writes it, QETInformation::displayedInfoValue(), so
+		that one component does not read two ways on the tape and on the
+		parts list. The location is written by writtenLocation().
 	*/
 	LabelEntry entryFromRow(const QHash<QString, QString> &row,
 				const IecStructureSettings &settings,

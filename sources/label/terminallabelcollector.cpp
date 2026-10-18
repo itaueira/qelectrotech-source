@@ -25,6 +25,7 @@
 #include "../diagramcontext.h"
 #include "../qetgraphicsitem/element.h"
 #include "../qetproject.h"
+#include "componentlabelquery.h"
 
 #include <QSharedPointer>
 #include <QVector>
@@ -89,15 +90,24 @@ LabelEntry terminalEntry(const QString &strip_name,
 		//labels - read.
 	const DiagramContext information = element->elementInformations();
 
-		//The stored path when there is one, the plain field otherwise - the
-		//same choice the component labels make, and for the same reason left
-		//unwritten here: turning it into the mark of the standard is a step
-		//of its own.
-	const QString path =
-			information.value(IecStructure::locationPathKey()).toString();
-	entry.location = path.isEmpty()
-			? information.value(IecStructure::locationKey()).toString()
-			: path;
+		//The sheet the symbol is drawn on, and the project of that sheet:
+		//the settings are asked of the same project Element::displayedLabel()
+		//composes the tag above with, so the location and the tag of one
+		//terminal cannot be read against two different structures. A symbol
+		//on no sheet has no project to say anything, and reads as one whose
+		//structure is off.
+	Diagram *diagram = element->diagram();
+	QETProject *project = diagram ? diagram->project() : nullptr;
+	const IecStructureSettings settings =
+			project ? project->iecSettings() : IecStructureSettings();
+
+		//The mark of the norm and not the stored path, through the very
+		//rule the component labels write theirs with - not a copy of it -
+		//so that a terminal and a component in the same place read the same
+		//mark, and a terminal symbol, which the data base also publishes as
+		//a component, reads the same in both of its rows.
+	entry.location = ComponentLabelQuery::writtenLocation(information,
+							      settings);
 
 		//Compared the way the parts list view compares it, so that an entry
 		//says it is excluded exactly when the parts list leaves it out.
@@ -113,7 +123,6 @@ LabelEntry terminalEntry(const QString &strip_name,
 		//information is the very context the title block draws and the data
 		//base stores for that sheet, so a terminal and a component of the
 		//same sheet read the same folio and the same revision.
-	Diagram *diagram = element->diagram();
 	if (!diagram) {
 		return entry;
 	}
@@ -126,7 +135,7 @@ LabelEntry terminalEntry(const QString &strip_name,
 		//Counted from 1, like the diagram_position of the data base the
 		//component labels read, so that one sheet has one number on both
 		//kinds of entry.
-	if (QETProject *project = diagram->project())
+	if (project)
 	{
 		const int index = project->folioIndex(diagram);
 		entry.folio_position = index < 0 ? -1 : index + 1;

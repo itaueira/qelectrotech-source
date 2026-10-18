@@ -22,6 +22,10 @@
 #include "../../../sources/autoNum/iecstructure.h"
 #include "../../../sources/diagramcontext.h"
 #include "../../../sources/label/componentlabelquery.h"
+#include "../../../sources/location/locationtree.h"
+#include "../../../sources/qetinformation.h"
+
+#include <QList>
 
 /*
 	What a component label asks for, and what it makes of the answer.
@@ -81,6 +85,44 @@ namespace {
 	{
 		return ComponentLabelQuery::entryFromRow(
 				r, IecStructureSettings(), DiagramContext());
+	}
+
+	/**
+		The four ways a project can stand towards the location of its
+		components, in this order: the structure off; off, with the free
+		text field switched in - what a project that turned the structure
+		off again keeps; on, with the field left out; on, with the field
+		declared a place of the norm.
+
+		Only the last one says the field is a place. The second is there
+		because the switch is kept in the file whatever the structure says,
+		and it must not be read on its own.
+	*/
+	QList<IecStructureSettings> everySetting()
+	{
+		IecStructureSettings off;
+
+		IecStructureSettings off_with_field;
+		off_with_field.location_from_element = true;
+
+		IecStructureSettings on;
+		on.enabled = true;
+		on.display = IecTagDisplay::Full;
+
+		IecStructureSettings on_with_field = on;
+		on_with_field.location_from_element = true;
+
+		return {off, off_with_field, on, on_with_field};
+	}
+
+	/// One of everySetting(), as a line a failure can be read by.
+	std::string describe(const IecStructureSettings &settings)
+	{
+		return std::string("structure ")
+				+ (settings.enabled ? "on" : "off")
+				+ ", free text field "
+				+ (settings.location_from_element ? "declared a place"
+								  : "left out");
 	}
 }
 
@@ -153,7 +195,9 @@ TEST_CASE("T21 — a component row becomes a label, and empty fields take no lin
 	CHECK(entry.secondary_texts.at(0) == QStringLiteral("LC1D09"));
 	CHECK(entry.secondary_texts.at(1) == QStringLiteral("LC1D09BD"));
 
-	CHECK(entry.location == QStringLiteral("CT1/QCM"));
+		//The mark of the norm, and not the path the row stores: the tape
+		//names a place the way the folio and the location dialogues do.
+	CHECK(entry.location == QStringLiteral("+CT1+QCM"));
 	CHECK(entry.folio == QStringLiteral("4"));
 	CHECK(entry.folio_position == 3);
 
@@ -170,6 +214,9 @@ TEST_CASE("T21 — the location falls back to the plain field when there is no p
 	r.insert(QStringLiteral("location_path"), QString());
 	r.insert(QStringLiteral("location"), QStringLiteral("QCM"));
 
+		//As it was typed, and with no `+` put in front: this project never
+		//said the field is a place of the norm, so the tape does not say it
+		//either.
 	CHECK(entryWithStructureOff(r).location
 	      == QStringLiteral("QCM"));
 }
@@ -336,12 +383,12 @@ TEST_CASE("T21 — the tag of a row is composed, never the stored field",
 
 	SECTION("composing the tag does not touch the other fields of the entry")
 	{
-			//The location stays as it was stored: writing it the way the
-			//standard writes it is the step that applies
-			//displayedInfoValue(), and it is not this one. Said with an
-			//assertion because doing it here, in passing, is exactly the
-			//shortcut that would put a second copy of that rule in the
-			//code.
+			//The location is the row's own place, written as the norm
+			//writes it - +CT1+QCM for the path CT1/QCM - and nothing of the
+			//composed tag: not the `=` the folio hands down, not the
+			//product. It used to be asserted here that it stayed as it was
+			//stored; that was the state before the location had a rule of
+			//its own, and the rule is checked case by case further down.
 		settings.display = IecTagDisplay::Full;
 
 		QHash<QString, QString> r = row(QStringLiteral("K3"), 4);
@@ -352,10 +399,182 @@ TEST_CASE("T21 — the tag of a row is composed, never the stored field",
 		const LabelEntry entry =
 				ComponentLabelQuery::entryFromRow(r, settings, folio);
 
-		CHECK(entry.location == QStringLiteral("CT1/QCM"));
+		CHECK(entry.location == QStringLiteral("+CT1+QCM"));
 		REQUIRE(entry.secondary_texts.count() == 1);
 		CHECK(entry.secondary_texts.at(0) == QStringLiteral("LC1D09"));
 		CHECK(entry.folio_position == 4);
+	}
+}
+
+TEST_CASE("T21 — the location on a label is the mark of the norm, never the stored form",
+	  "[t21][label][iec]")
+{
+	/*
+		The rule CU-21.14 rests on, checked without a project: a place the
+		location tree of the project gave a component is written the way
+		IEC 81346 writes it - the `+` repeated once per level - and not the
+		path the component stores. The case itself ends at an exported file
+		and is proved in tests/catch/src/ui/labelexport_test.cpp; what is
+		here is every answer of the rule, one setting of the project at a
+		time, which is why it is labelled T21.
+	*/
+	const QString path = QStringLiteral("QCM1/PLACA");
+	const QString mark = QStringLiteral("+QCM1+PLACA");
+
+	SECTION("a path of the tree, whatever the project says about the structure")
+	{
+		QHash<QString, QString> r = row(QStringLiteral("K3"), 1);
+		r.insert(IecStructure::locationPathKey(), path);
+
+		for (const IecStructureSettings &settings : everySetting())
+		{
+			INFO(describe(settings));
+			CHECK(ComponentLabelQuery::entryFromRow(r, settings,
+								DiagramContext())
+			      .location == mark);
+		}
+
+			//And it is the very string the rest of the program writes for
+			//that path: the tree's own conversion, and the function the
+			//parts list and the table drawn on a folio write a row with. A
+			//second spelling of the rule in the label code would pass the
+			//loop above and fail one of these the day the two drift.
+		CHECK(LocationTree::iecTag(path) == mark);
+		CHECK(QETInformation::displayedInfoValue(
+			      IecStructure::locationPathKey(), path)
+		      == mark);
+	}
+
+	SECTION("one level is one prefix, and five levels are five")
+	{
+		QHash<QString, QString> r = row(QStringLiteral("K3"), 1);
+
+		r.insert(IecStructure::locationPathKey(), QStringLiteral("QCM1"));
+		CHECK(entryWithStructureOff(r).location == QStringLiteral("+QCM1"));
+
+		r.insert(IecStructure::locationPathKey(),
+			 QStringLiteral("CT1/QCM1/PORTA/PAINEL/TOPO"));
+		CHECK(entryWithStructureOff(r).location
+		      == QStringLiteral("+CT1+QCM1+PORTA+PAINEL+TOPO"));
+	}
+
+	SECTION("the path wins over the free text field, even where the field is a place")
+	{
+		QHash<QString, QString> r = row(QStringLiteral("K3"), 1);
+		r.insert(IecStructure::locationPathKey(), path);
+		r.insert(IecStructure::locationKey(), QStringLiteral("X1"));
+
+		for (const IecStructureSettings &settings : everySetting())
+		{
+			INFO(describe(settings));
+			CHECK(ComponentLabelQuery::entryFromRow(r, settings,
+								DiagramContext())
+			      .location == mark);
+		}
+	}
+
+	SECTION("the free text field as it was typed, unless the project says it is a place")
+	{
+		QHash<QString, QString> r = row(QStringLiteral("K3"), 1);
+		r.insert(IecStructure::locationKey(), QStringLiteral("X1"));
+
+		const QList<IecStructureSettings> settings = everySetting();
+		REQUIRE(settings.count() == 4);
+
+			//Three of the four never said the field is a place - and the
+			//second one switched it in under a structure that is off, which
+			//the composition of the tag does not read either. In none of
+			//them does a `+` appear: the field is older than the norm, and
+			//in the project measured for T10 it held the strip the wiring
+			//lands on, X1 among them.
+		for (int i = 0 ; i < 3 ; ++i)
+		{
+			INFO(describe(settings.at(i)));
+			CHECK(ComponentLabelQuery::entryFromRow(r, settings.at(i),
+								DiagramContext())
+			      .location == QStringLiteral("X1"));
+		}
+
+			//The fourth said it: the field behind the `+` of the norm.
+		REQUIRE(settings.at(3).enabled);
+		REQUIRE(settings.at(3).location_from_element);
+		const LabelEntry entry = ComponentLabelQuery::entryFromRow(
+				r, settings.at(3),
+				ComponentLabelQuery::folioInformation(
+					QStringLiteral("CT1"), QStringLiteral("QCM")));
+		CHECK(entry.location == QStringLiteral("+X1"));
+
+			//And it is the `+` the full tag on the sheet writes for the
+			//same row: the tape's location and the tag above it name the
+			//same place - the component's own, not the QCM of its folio.
+		CHECK(entry.primary_text == QStringLiteral("=CT1+X1-K3"));
+	}
+
+	SECTION("nothing to say is an empty cell, never a lone +")
+	{
+		QHash<QString, QString> nothing = row(QStringLiteral("K3"), 1);
+
+		QHash<QString, QString> empty = row(QStringLiteral("K3"), 1);
+		empty.insert(IecStructure::locationPathKey(), QString());
+		empty.insert(IecStructure::locationKey(), QString());
+
+			//A path that is nothing but a separator names no place: the
+			//tree splits it into no code at all. Stored as it is, it would
+			//have reached the tape as a lone slash.
+		QHash<QString, QString> separator = row(QStringLiteral("K3"), 1);
+		separator.insert(IecStructure::locationPathKey(),
+				 QStringLiteral("/"));
+
+		for (const IecStructureSettings &settings : everySetting())
+		{
+			for (const QHash<QString, QString> &r : {nothing, empty, separator})
+			{
+				INFO(describe(settings) << ", path '"
+				     << r.value(IecStructure::locationPathKey())
+					.toStdString() << "'");
+				CHECK(ComponentLabelQuery::entryFromRow(
+					      r, settings, DiagramContext())
+				      .location.isEmpty());
+			}
+		}
+	}
+}
+
+TEST_CASE("T21 — the lines under the tag are written as every reader of the row writes them",
+	  "[t21][label]")
+{
+	/*
+		The other half of the step that writes the location: every value a
+		component label reads from the data base goes through
+		QETInformation::displayedInfoValue(), the function the parts list
+		and the table drawn on a folio already write a row with, so that one
+		component does not read two ways on two documents. Besides the
+		location, what it changes today is a date, written in the locale of
+		the machine - a designation somebody filled with one is the probe.
+	*/
+	const QString typed = QStringLiteral("2026-10-17");
+	const QString written = QETInformation::displayedInfoValue(
+			QStringLiteral("designation"), typed);
+
+	QHash<QString, QString> r = row(QStringLiteral("K3"), 1);
+	r.insert(QStringLiteral("designation"), typed);
+	r.insert(QStringLiteral("function"), QStringLiteral("Pump 2"));
+
+	const LabelEntry entry = entryWithStructureOff(r);
+	REQUIRE(entry.secondary_texts.count() == 2);
+	CHECK(entry.secondary_texts.at(0) == written);
+
+		//Text that is not a date is written as it stands.
+	CHECK(entry.secondary_texts.at(1) == QStringLiteral("Pump 2"));
+
+		//The first check tells a converted value from a raw one only where
+		//the machine writes a short date differently from ISO - pt_BR
+		//writes 17/10/2026 - and not where the short date is ISO itself.
+		//Said, rather than failed: a case reddened for a reason of the
+		//platform is a false alarm.
+	if (written == typed) {
+		WARN("this machine writes a short date as ISO: the first check "
+		     "cannot tell a converted designation from a raw one");
 	}
 }
 

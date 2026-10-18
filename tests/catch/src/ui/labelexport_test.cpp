@@ -23,15 +23,20 @@
 #include "../../../../sources/TerminalStrip/physicalterminal.h"
 #include "../../../../sources/TerminalStrip/realterminal.h"
 #include "../../../../sources/TerminalStrip/terminalstrip.h"
+#include "../../../../sources/autoNum/iecstructure.h"
 #include "../../../../sources/cli_export.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/label/componentlabelcollector.h"
 #include "../../../../sources/label/labelcsvwriter.h"
 #include "../../../../sources/label/terminallabelcollector.h"
+#include "../../../../sources/location/locationtree.h"
+#include "../../../../sources/location/projectlocation.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/titleblockproperties.h"
+#include "../../../../sources/undocommand/assignlocationcommand.h"
+#include "../../../../sources/undocommand/changeelementinformationcommand.h"
 
 #include <catch2/catch.hpp>
 
@@ -61,7 +66,7 @@
 	and never on the file the bench has open: opening one file twice in a
 	process is a question these cases do not ask.
 
-	Two cases carry the number of their use case, because they prove it
+	Three cases carry the number of their use case, because they prove it
 	whole:
 
 	- CU-21.11: a ';' in the tag of a component and in the function of a
@@ -74,6 +79,10 @@
 	  that very command -, exported again: the first file is the order of
 	  the rail, the second the new order, and the position column travels
 	  with each label.
+	- CU-21.14: a component and a terminal given a place of the location
+	  tree, by the command the location manager pushes, come out with the
+	  mark of the norm in the location column - +QCM1+PLACA -, and the file
+	  holds neither the path they store nor the names the tree gives them.
 
 	CU-21.16 is not claimed: it ends at the file the window produces for the
 	same selection, and no window exports labels yet. What is proved instead
@@ -295,6 +304,23 @@ namespace
 		{
 			if (element->elementData().m_type == ElementData::Terminal
 			    && element->actualLabel() == label) {
+				return element;
+			}
+		}
+		return nullptr;
+	}
+
+	/// The symbol of @a diagram tagged @a label, of any kind; nullptr when none.
+	Element *elementLabelled(Diagram *diagram, const QString &label)
+	{
+		if (!diagram) {
+			return nullptr;
+		}
+
+		const auto elements = diagram->elements();
+		for (Element *element : elements)
+		{
+			if (element->actualLabel() == label) {
 				return element;
 			}
 		}
@@ -969,4 +995,213 @@ TEST_CASE("T21 — the accents of a label reach the exported file as UTF-8",
 	      .value(column(QStringLiteral("lines")))
 	      == accentedDesignation() + QStringLiteral("\n")
 		 + accentedFunction());
+}
+
+/*
+	CU-21.14, whole: a place given by the location tree reaches the file as
+	the norm writes it.
+
+	The project holds a place in two forms, and the norm in a third. The
+	component stores the path of codes the tree keeps it by, QCM1/PLACA; the
+	tree has names for a person to read, which displayPath() joins with
+	slashes; and IEC 81346 writes the place as +QCM1+PLACA, which is what
+	the sheet and every location dialogue show. Only the third goes on a
+	tape. The bench gives the tree names on purpose, so that the readable
+	form is a real string the file could carry by mistake and is checked
+	for, rather than a form that happens not to exist.
+
+	The place is given by AssignLocationCommand, the command the location
+	manager of T32 pushes, and the export runs from the file, so what is
+	read is what a project saves and not what the bench holds in memory.
+*/
+TEST_CASE("CU-21.14 — the location column carries the mark of the norm, never the stored path",
+	  "[t21][label][cli][iec]")
+{
+	UiBench::ScratchProject bench(fixtureXml(),
+				      QStringLiteral("labels-location.qet"));
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+
+	Diagram *sheet_one = bench.diagram(0);
+	Diagram *sheet_two = bench.diagram(1);
+	REQUIRE(sheet_one != nullptr);
+	REQUIRE(sheet_two != nullptr);
+
+		//A cabinet and the plate inside it, both named.
+	LocationTree tree;
+	QString tree_error;
+	const QString cabinet = tree.append(
+			ProjectLocation(QStringLiteral("QCM1"),
+					QStringLiteral("Command cabinet")),
+			&tree_error);
+	ProjectLocation plate_location(QStringLiteral("PLACA"),
+				       QStringLiteral("Mounting plate"));
+	plate_location.parent_uuid = cabinet;
+	const QString plate = tree.append(plate_location, &tree_error);
+	INFO("tree said: " << tree_error.toStdString());
+	REQUIRE_FALSE(cabinet.isEmpty());
+	REQUIRE_FALSE(plate.isEmpty());
+	bench->setLocationTree(tree);
+
+		//The three forms, measured and not assumed: the case below is
+		//only worth anything if they are three different strings.
+	const QString path = tree.path(plate);
+	const QString mark = LocationTree::iecTag(path);
+	const QString readable = tree.displayPath(plate);
+	REQUIRE(path == QStringLiteral("QCM1/PLACA"));
+	REQUIRE(mark == QStringLiteral("+QCM1+PLACA"));
+	REQUIRE(readable == QStringLiteral("Command cabinet / Mounting plate"));
+
+		//K2, a component of sheet two, and the terminal 2 of sheet one, put
+		//on the plate in one go, as the manager puts a selection.
+	Element *k2 = elementLabelled(sheet_two, QStringLiteral("K2"));
+	Element *two = terminalLabelled(sheet_one, QStringLiteral("2"));
+	Element *ten = terminalLabelled(sheet_one, QStringLiteral("10"));
+	REQUIRE(k2 != nullptr);
+	REQUIRE(two != nullptr);
+	REQUIRE(ten != nullptr);
+	bench->undoStack()->push(new AssignLocationCommand(
+			QList<Element *>({k2, two}), path));
+
+		//What they store is the path, and the project file carries it:
+		//the form the export must not copy is there to be copied.
+	REQUIRE(k2->elementInformations()
+		.value(IecStructure::locationPathKey()).toString() == path);
+	REQUIRE(two->elementInformations()
+		.value(IecStructure::locationPathKey()).toString() == path);
+	REQUIRE(bench->toXml().toString().contains(path));
+
+		//10 gets the free text field, which no tree stands behind; 1, the
+		//component Q1;Q2 and the rest get nothing.
+	DiagramContext information = ten->elementInformations();
+	information.addValue(IecStructure::locationKey(), QStringLiteral("X9"));
+	bench->undoStack()->push(new ChangeElementInformationCommand(
+			ten, ten->elementInformations(), information));
+
+	REQUIRE(mountStrip(bench.project(), QStringLiteral("X1"),
+			   {{sheet_one, QStringLiteral("2")},
+			    {sheet_one, QStringLiteral("10")},
+			    {sheet_one, QStringLiteral("1")}})
+		!= nullptr);
+
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString location = QStringLiteral("location");
+
+	SECTION("the structure off: the place as the norm writes it, the free field as typed")
+	{
+		REQUIRE(bench->iecSettings().enabled == false);
+
+		const QString project_path =
+				dir.filePath(QStringLiteral("location-off.qet"));
+		REQUIRE(writeProject(bench.project(), project_path));
+		const LabelFile file = exportLabels(
+				project_path,
+				dir.filePath(QStringLiteral("location-off.csv")));
+		INFO(file.text.toStdString());
+		REQUIRE(file.code == 0);
+		checkShape(file);
+
+		const QVector<QStringList> components =
+				rowsOfKind(file, QStringLiteral("component"));
+		const QVector<QStringList> terminals =
+				rowsOfKind(file, QStringLiteral("terminal"));
+
+			//The case: the component the tree placed, with the mark of the
+			//norm on its row.
+		const QStringList k2_row = rowTagged(components, QStringLiteral("K2"));
+		REQUIRE_FALSE(k2_row.isEmpty());
+		CHECK(k2_row.value(column(location)) == mark);
+
+			//The terminal the tree placed, on its row of the rail and on the
+			//row the data base gives its symbol among the components: one
+			//rule for both kinds of label, so the same mark on both.
+		const QStringList two_terminal = rowTagged(terminals, QStringLiteral("2"));
+		const QStringList two_component = rowTagged(components, QStringLiteral("2"));
+		REQUIRE_FALSE(two_terminal.isEmpty());
+		REQUIRE_FALSE(two_component.isEmpty());
+		CHECK(two_terminal.value(column(location)) == mark);
+		CHECK(two_component.value(column(location)) == mark);
+
+			//The free text field as it was typed, with no `+`: this project
+			//never said the field is a place of the norm.
+		CHECK(rowTagged(terminals, QStringLiteral("10"))
+		      .value(column(location)) == QStringLiteral("X9"));
+		CHECK(rowTagged(components, QStringLiteral("10"))
+		      .value(column(location)) == QStringLiteral("X9"));
+
+			//Nothing is an empty cell, on both kinds of row.
+		const QStringList one_terminal = rowTagged(terminals, QStringLiteral("1"));
+		const QStringList q_component = rowTagged(components, separatorTag());
+		REQUIRE_FALSE(one_terminal.isEmpty());
+		REQUIRE_FALSE(q_component.isEmpty());
+		CHECK(one_terminal.value(column(location)).isEmpty());
+		CHECK(q_component.value(column(location)).isEmpty());
+
+			//And the two other forms are nowhere in the file - not in the
+			//location column, not anywhere else a careless writer could
+			//have put them.
+		CHECK_FALSE(file.text.contains(path));
+		CHECK_FALSE(file.text.contains(readable));
+		CHECK_FALSE(file.text.contains(QStringLiteral("Command cabinet")));
+		CHECK_FALSE(file.text.contains(QStringLiteral("Mounting plate")));
+
+			//No row reads a lone `+`, which is what a prefix glued to an
+			//empty place would print.
+		const QVector<QStringList> rows = labelRows(file);
+		for (const QStringList &row : rows)
+		{
+			INFO("row " << row.join(QStringLiteral("|")).toStdString());
+			CHECK(row.value(column(location)) != QStringLiteral("+"));
+		}
+	}
+
+	SECTION("the structure on and the free field declared a place: that field behind the +")
+	{
+			//The short form keeps the terminal numbers as they are, so the
+			//rows can be found by them; the component reads -K2.
+		IecStructureSettings settings;
+		settings.enabled = true;
+		settings.display = IecTagDisplay::Short;
+		settings.location_from_element = true;
+		bench->setIecSettings(settings);
+
+		const QString project_path =
+				dir.filePath(QStringLiteral("location-on.qet"));
+		REQUIRE(writeProject(bench.project(), project_path));
+		const LabelFile file = exportLabels(
+				project_path,
+				dir.filePath(QStringLiteral("location-on.csv")));
+		INFO(file.text.toStdString());
+		REQUIRE(file.code == 0);
+		checkShape(file);
+
+		const QVector<QStringList> components =
+				rowsOfKind(file, QStringLiteral("component"));
+		const QVector<QStringList> terminals =
+				rowsOfKind(file, QStringLiteral("terminal"));
+
+			//The place of the tree does not change with the switch: it is
+			//a place by construction, and it wins over the field.
+		const QStringList k2_row = rowTagged(components, QStringLiteral("-K2"));
+		REQUIRE_FALSE(k2_row.isEmpty());
+		CHECK(k2_row.value(column(location)) == mark);
+		CHECK(rowTagged(terminals, QStringLiteral("2"))
+		      .value(column(location)) == mark);
+
+			//The field, now that the project says it is a place, behind
+			//the `+` of the norm - on both kinds of row.
+		CHECK(rowTagged(terminals, QStringLiteral("10"))
+		      .value(column(location)) == QStringLiteral("+X9"));
+		CHECK(rowTagged(components, QStringLiteral("10"))
+		      .value(column(location)) == QStringLiteral("+X9"));
+
+			//And nothing is still nothing.
+		const QStringList one_terminal = rowTagged(terminals, QStringLiteral("1"));
+		REQUIRE_FALSE(one_terminal.isEmpty());
+		CHECK(one_terminal.value(column(location)).isEmpty());
+
+		CHECK_FALSE(file.text.contains(path));
+		CHECK_FALSE(file.text.contains(readable));
+	}
 }

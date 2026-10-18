@@ -56,15 +56,20 @@ class TerminalStrip;
 	a terminal the folio beside it does not name. With the structure off,
 	the default, the two are the same string.
 
+	@par The location is the mark of the norm
+	Written by ComponentLabelQuery::writtenLocation(), the rule the
+	component labels use, and not by one of its own: a place of the location
+	tree as IEC 81346 writes it, +QCM1+PLACA and not the stored QCM1/PLACA,
+	and the free text field as it was typed unless the project says it is a
+	place. A terminal symbol is also a component row of the data base, and
+	its two labels read the same location.
+
 	@par What this does not do yet
-	The location comes out as it is stored, like the component one: writing
-	it the way the standard writes it is the step that applies
-	QETInformation::displayedInfoValue(). Two terminals of different strips
-	reading the same tag are collected as two entries and not reported: that
-	check compares the final tags and is a step of its own. And the cross
-	reference of the terminal is not on the entry - the sheet it is drawn on
-	is, in @c folio, and the cell on that sheet is for the drawing, not for
-	the tape.
+	Two terminals of different strips reading the same tag are collected as
+	two entries and not reported: that check compares the final tags and is
+	a step of its own. And the cross reference of the terminal is not on the
+	entry - the sheet it is drawn on is, in @c folio, and the cell on that
+	sheet is for the drawing, not for the tape.
 */
 class TerminalLabelCollector
 {
