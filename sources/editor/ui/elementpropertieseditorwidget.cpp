@@ -20,6 +20,7 @@
 #include "../../qet.h"
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
+#include "../../qetpalette.h"
 #include "../../TerminalStrip/terminalcatalog.h"
 #include "../../TerminalStrip/terminalcolor.h"
 #include "../../TerminalStrip/realterminal.h"
@@ -524,7 +525,8 @@ void ElementPropertiesEditorWidget::populateTree()
 						  QETInformation::translatedInfoKey(key));
 			qtwi->setData(0, Qt::UserRole, key);
 			qtwi->setText(1, m_data.m_informations.value(key).toString());
-			qtwi->setForeground(0, QColor(0, 100, 180));
+			qtwi->setForeground(0, QET::Palette::readable(QColor(0, 100, 180),
+								      ui->m_tree->palette()));
 		}
 	}
 

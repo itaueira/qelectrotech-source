@@ -17,6 +17,7 @@
 */
 #include "diagramcontextwidget.h"
 #include "ui_diagramcontextwidget.h"
+#include "../qetpalette.h"
 
 #include <QRegularExpression>
 
@@ -121,6 +122,7 @@ void DiagramContextWidget::clear()
 int DiagramContextWidget::highlightNonAcceptableKeys()
 {
 	QBrush fg_brush = ui->m_table->palette().brush(QPalette::WindowText);
+	const QBrush invalid_brush(QET::Palette::readable(QColor(Qt::red), ui->m_table->palette()));
 
 	int invalid_keys = 0;
 	for (int i = 0 ; i < ui->m_table->rowCount() ; ++ i)
@@ -139,7 +141,7 @@ int DiagramContextWidget::highlightNonAcceptableKeys()
 				++ invalid_keys;
 			}
 		}
-		qtwi_name -> setForeground(highlight ? Qt::red : fg_brush);
+		qtwi_name -> setForeground(highlight ? invalid_brush : fg_brush);
 	}
 
 	return(invalid_keys);
@@ -157,7 +159,9 @@ void DiagramContextWidget::refreshFormatLabel()
 	);
 
 	if (highlightNonAcceptableKeys()) {
-		format_text = QString("<span style=\"color: red;\">%1</span>").arg(format_text);
+		format_text = QString("<span style=\"color: %1;\">%2</span>")
+				.arg(QET::Palette::readable(QColor(Qt::red), ui->m_label->palette()).name(),
+				     format_text);
 	}
 	ui->m_label->setText(format_text);
 }

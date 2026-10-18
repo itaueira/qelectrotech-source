@@ -109,7 +109,7 @@ ContactGroupSelectionDialog::ContactGroupSelectionDialog(
 	// Mark used group rows as disabled (grayed out)
 	QFont disabled_font;
 	disabled_font.setStrikeOut(true);
-	QColor disabled_color(Qt::gray);
+	QColor disabled_color(QET::Palette::readable(QColor(Qt::gray), palette()));
 
 	for (int row = 0; row < groups.size(); ++row) {
 		bool disabled = false;

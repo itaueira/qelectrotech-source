@@ -1102,7 +1102,8 @@ void GeneralConfigurationPage::on_MaxPartsElementEditorList_sb_valueChanged(int 
 {
 	if (value > 500) {
 		ui->MaxPartsElementEditorList_sb->setToolTip(tr("Values that are too high might cause the application to crash"));
-		ui->MaxPartsElementEditorList_sb->setStyleSheet("background-color: orange");
+			//Black text: the white text of a dark palette does not read on orange
+		ui->MaxPartsElementEditorList_sb->setStyleSheet("background-color: orange; color: black");
 	} else {
 		ui->MaxPartsElementEditorList_sb->setToolTip("");
 		ui->MaxPartsElementEditorList_sb->setStyleSheet("");

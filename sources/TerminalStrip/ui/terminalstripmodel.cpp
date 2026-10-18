@@ -243,12 +243,16 @@ QVariant TerminalStripModel::data(const QModelIndex &index, int role) const
 	{
 		return mrtd.separator_ ? Qt::Checked : Qt::Unchecked;
 	}
-	else if (role == Qt::BackgroundRole && index.column() < COLUMN_COUNT )
+	else if ((role == Qt::BackgroundRole || role == Qt::ForegroundRole) &&
+			 index.column() < COLUMN_COUNT )
 	{
 		if (m_modified_cell.contains(mrtd.element_) &&
 			m_modified_cell.value(mrtd.element_).at(index.column()))
 		{
-			return QBrush(Qt::yellow);
+				//The yellow of a modified cell is light on a dark palette
+				//too, whose text is white: white on yellow does not read,
+				//so the text of that cell is black on both palettes.
+			return QBrush(role == Qt::BackgroundRole ? Qt::yellow : Qt::black);
 		}
 	}
 	else if (role == Qt::DecorationRole &&

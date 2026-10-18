@@ -372,24 +372,21 @@ namespace
 		@return @a saved in the form two saves of the same edit share, with
 		@a blanked set to the number of uuids it blanked.
 
-		Two things in a saved symbol do not depend on the edit, and both
-		were measured to differ between two saves on the same palette:
-		- the uuids @a source does not have. ElementScene::toXml() gives the
-		  definition a new one on every save, so that a folio knows its
-		  symbol changed; and a graphic part read from a file written before
-		  parts carried one keeps the fresh uuid it was built with
-		  (CustomElementGraphicPart::stylesFromXml()), so two editors that
-		  open the coil give its rectangle and lines different ones. These
-		  are blanked; the uuids of the terminals and texts come from the
-		  file, and are compared.
-		- the order of the <terminal> lines. ElementScene::zItems() sorts
-		  the drawing by z value and appends the terminals in the order the
-		  scene lists its items, and a scene without an index lists them
-		  sorted by address once any item has been removed
-		  (QGraphicsSceneLinearIndex::removeItem()): over five runs the two
-		  terminals of the coil came out A1, A2 in some saves and A2, A1 in
-		  others, on either palette. They are put in one order here; every
-		  other line keeps its own, the drawing's included.
+		One thing in a saved symbol does not depend on the edit, and it was
+		measured to differ between two saves on the same palette: the uuids
+		@a source does not have. ElementScene::toXml() gives the definition
+		a new one on every save, so that a folio knows its symbol changed;
+		and a graphic part read from a file written before parts carried one
+		keeps the fresh uuid it was built with
+		(CustomElementGraphicPart::stylesFromXml()), so two editors that
+		open the coil give its rectangle and lines different ones. These are
+		blanked; the uuids of the terminals and texts come from the file,
+		and are compared.
+
+		Every line keeps its place, the <terminal> lines included: the
+		editor saves the terminals, and the parts of equal z, in the order
+		of the file (elementsaveorder_test.cpp), so two saves of the same
+		edit write them in the same order and it is compared as it is.
 	*/
 	QByteArray comparable(const QByteArray &saved, const QByteArray &source, int *blanked)
 	{
@@ -403,8 +400,6 @@ namespace
 
 		*blanked = 0;
 		QStringList lines = QString::fromUtf8(saved).split(QLatin1Char('\n'));
-		QList<int> terminal_rows;
-		QStringList terminals;
 		for (int row = 0 ; row < lines.size() ; ++ row) {
 			const QString &line = lines.at(row);
 			QString kept;
@@ -422,14 +417,6 @@ namespace
 			}
 			kept += line.mid(from);
 			lines[row] = kept;
-			if (kept.trimmed().startsWith(QLatin1String("<terminal "))) {
-				terminal_rows << row;
-				terminals << kept;
-			}
-		}
-		terminals.sort();
-		for (int i = 0 ; i < terminal_rows.size() ; ++ i) {
-			lines[terminal_rows.at(i)] = terminals.at(i);
 		}
 		return lines.join(QLatin1Char('\n')).toUtf8();
 	}
@@ -525,10 +512,10 @@ TEST_CASE("CU-63.8 — o editor de símbolos em modo escuro: área escura, traç
 		// The edit is in both: the coil's two lines and the one drawn.
 	CHECK(dark_file.count("<line ") == 3);
 	CHECK(light_file.count("<line ") == 3);
-		// Same length - a uuid is as long on both sides, and the terminals
-		// only change places - and the same bytes once what does not
-		// depend on the edit is set aside (comparable()): the uuid of the
-		// definition, those of the rectangle and of the three lines.
+		// Same length - a uuid is as long on both sides - and the same
+		// bytes once what does not depend on the edit is set aside
+		// (comparable()): the uuid of the definition, those of the
+		// rectangle and of the three lines.
 	CHECK(dark_file.size() == light_file.size());
 	int dark_blanked = 0;
 	int light_blanked = 0;

@@ -22,6 +22,7 @@
 #include "../elementprovider.h"
 #include "../undocommand/linkelementcommand.h"
 #include "../diagram.h"
+#include "../qetpalette.h"
 #include "../qetproject.h"
 #include "../properties/elementdata.h"
 
@@ -263,7 +264,7 @@ void PlcLinkWidget::buildPlcTree()
 					child_item->setFont(4, strike_font);
 					child_item->setFont(5, strike_font);
 
-					QBrush grey_brush(Qt::gray);
+					QBrush grey_brush(QET::Palette::readable(QColor(Qt::gray), palette()));
 					for (int col = 0; col < 6; ++col)
 						child_item->setForeground(col, grey_brush);
 

@@ -141,12 +141,16 @@ QVariant FreeTerminalModel::data(const QModelIndex &index, int role) const
 			 index.column() == LED_CELL) {
 		return real_t_data.led_ ? Qt::Checked : Qt::Unchecked;
 	}
-	else if (role == Qt::BackgroundRole && index.column() <= LED_CELL)
+	else if ((role == Qt::BackgroundRole || role == Qt::ForegroundRole) &&
+			 index.column() <= LED_CELL)
 	{
 		if (m_modified_cell.contains(real_t_data.real_terminal) &&
 			m_modified_cell.value(real_t_data.real_terminal).at(index.column()))
 		{
-			return QBrush(Qt::yellow);
+				//The yellow of a modified cell is light on a dark palette
+				//too, whose text is white: white on yellow does not read,
+				//so the text of that cell is black on both palettes.
+			return QBrush(role == Qt::BackgroundRole ? Qt::yellow : Qt::black);
 		}
 	}
 

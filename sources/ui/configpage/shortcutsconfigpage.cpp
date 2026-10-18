@@ -391,10 +391,13 @@ void ShortcutsConfigPage::checkConflicts()
 				}
 			}
 			current_row.item->setBackground(ActionColumn, QColor(255, 205, 205));
+				//Black text: the white text of a dark palette does not read on the pink
+			current_row.item->setForeground(ActionColumn, QBrush(Qt::black));
 			current_row.edit->setToolTip(
 				tr("This shortcut is also used by : %1").arg(other_descriptions.join(QStringLiteral(", "))));
 		} else {
 			current_row.item->setBackground(ActionColumn, QBrush());
+			current_row.item->setForeground(ActionColumn, QBrush());
 			current_row.edit->setToolTip(QString());
 		}
 	}

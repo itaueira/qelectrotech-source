@@ -20,6 +20,7 @@
 #include "../../diagram.h"
 #include "../../qetgraphicsitem/element.h"
 #include "../../qetinformation.h"
+#include "../../qetpalette.h"
 
 #include <QBrush>
 #include <QDialog>
@@ -105,7 +106,8 @@ RenumberPreviewDialog::Answer RenumberPreviewDialog::ask(
 	table->horizontalHeader()->setStretchLastSection(true);
 	table->setAlternatingRowColors(true);
 
-	const auto add_row = [table](const QStringList &cells, bool grey) {
+	const QBrush grey_brush(QET::Palette::readable(QColor(Qt::gray), table->palette()));
+	const auto add_row = [table, grey_brush](const QStringList &cells, bool grey) {
 		const int row = table->rowCount();
 		table->insertRow(row);
 		for (int column = 0 ; column < cells.size() ; ++column) {
@@ -114,7 +116,7 @@ RenumberPreviewDialog::Answer RenumberPreviewDialog::ask(
 				QFont font = item->font();
 				font.setItalic(true);
 				item->setFont(font);
-				item->setForeground(QBrush(Qt::gray));
+				item->setForeground(grey_brush);
 			}
 			table->setItem(row, column, item);
 		}

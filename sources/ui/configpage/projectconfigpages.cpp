@@ -31,6 +31,7 @@
 #include "../qet.h"
 #include "../qeticons.h"
 #include "../qetapp.h"
+#include "../qetpalette.h"
 #include "../qetproject.h"
 #include "../wiringrules.h"
 #include "../wiringruleswarning.h"
@@ -1000,7 +1001,8 @@ void ProjectAutoNumConfigPage::refreshElementUsers()
 				QFont font = item->font();
 				font.setItalic(true);
 				item->setFont(font);
-				item->setForeground(QBrush(Qt::gray));
+				item->setForeground(QBrush(QET::Palette::readable(QColor(Qt::gray),
+										   m_element_users->palette())));
 			}
 			m_element_users->setItem(row, column, item);
 		}

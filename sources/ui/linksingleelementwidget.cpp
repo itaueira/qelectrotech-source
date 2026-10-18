@@ -706,6 +706,7 @@ void LinkSingleElementWidget::linkTriggered()
 							      QBrush(
 								      Qt::white,
 								      Qt::NoBrush));
+				m_pending_qtwi->setForeground(i, QBrush());
 			}
 		}
 
@@ -714,6 +715,9 @@ void LinkSingleElementWidget::linkTriggered()
 			m_qtwi_at_context_menu->setBackground(i,
 							      QBrush(Qt::green,
 								     Qt::SolidPattern));
+				//The green is light on a dark palette too, whose
+				//text is white and would not read on it
+			m_qtwi_at_context_menu->setForeground(i, QBrush(Qt::black));
 		}
 		m_pending_qtwi = m_qtwi_at_context_menu;
 	}

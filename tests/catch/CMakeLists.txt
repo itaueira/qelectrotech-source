@@ -739,6 +739,10 @@ if(TARGET qelectrotech_objects)
         # T63, steps 6 and 7: the symbol, title block and plate editors in
         # the dark palette, and what they save unchanged.
         src/ui/darkeditors_test.cpp
+        # T63: fixed colors the first pass did not reach - the yellow of an
+        # edited terminal cell, the orange of a value too high, and the red
+        # of a refused key or query - on the dark palette.
+        src/ui/darkfixedcolors_test.cpp
         # The order the symbol editor saves the parts of a symbol in: the
         # order of its file, whatever order the scene lists them in.
         src/ui/elementsaveorder_test.cpp

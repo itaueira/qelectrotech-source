@@ -20,6 +20,7 @@
 #include "../../properties/elementdata.h"
 #include "../../qetapp.h"
 #include "../../qetinformation.h"
+#include "../../qetpalette.h"
 #include "../legacyelementtypes.h"
 #include "../projectdatabase.h"
 #include "ui_elementquerywidget.h"
@@ -41,6 +42,9 @@ ElementQueryWidget::ElementQueryWidget(QWidget *parent) :
 	ui(new Ui::ElementQueryWidget)
 {
 	ui->setupUi(this);
+		//Red picked for a light background, made readable on a dark one
+	ui->m_query_warning_label->setStyleSheet(QStringLiteral("color: %1;")
+		.arg(QET::Palette::readable(QColor(Qt::red), palette()).name()));
 
 	m_export_info.insert("position", tr("Position"));
 	m_export_info.insert("title", tr("Sheet title"));
