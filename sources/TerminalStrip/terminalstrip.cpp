@@ -26,6 +26,8 @@
 #include "realterminal.h"
 #include "terminalstripbridge.h"
 
+#include <QHash>
+
 using shared_real_terminal     = QSharedPointer<RealTerminal>;
 using shared_physical_terminal = QSharedPointer<PhysicalTerminal>;
 
@@ -575,11 +577,15 @@ bool TerminalStrip::groupTerminals(const QSharedPointer<PhysicalTerminal> &recei
 /**
  * @brief TerminalStrip::unGroupTerminals
  * Ungroup all real terminals of \p terminals_to_ungroup
+ * Each one becomes a terminal of its own, placed right after the
+ * terminal it leaves, in the order given: a level taken out of a
+ * group stays beside it instead of jumping to the end of the strip.
  * @param terminals_to_ungroup
  */
 void TerminalStrip::unGroupTerminals(const QVector<QSharedPointer<RealTerminal>> &terminals_to_ungroup)
 {
 	bool ungrouped = false;
+	QHash<PhysicalTerminal *, int> placed_after;
 	for (const auto &real_terminal : terminals_to_ungroup)
 	{
 		if (real_terminal)
@@ -590,7 +596,10 @@ void TerminalStrip::unGroupTerminals(const QVector<QSharedPointer<RealTerminal>>
 				{
 					physical_terminal->removeTerminal(real_terminal);
 					auto raw_ptr = new PhysicalTerminal(this, QVector<QSharedPointer<RealTerminal>>{real_terminal});
-					m_physical_terminals.append(raw_ptr->sharedRef());
+					const int already = placed_after.value(physical_terminal.data());
+					m_physical_terminals.insert(m_physical_terminals.indexOf(physical_terminal) + 1 + already,
+												raw_ptr->sharedRef());
+					placed_after.insert(physical_terminal.data(), already + 1);
 					ungrouped = true;
 				}
 			}

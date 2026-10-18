@@ -19,6 +19,9 @@
 #include "../physicalterminal.h"
 #include "../realterminal.h"
 
+#include <algorithm>
+#include <limits>
+
 /**
  * @brief GroupTerminalsCommand::GroupTerminalsCommand
  * @param strip : The parent strip of terminal to group
@@ -35,11 +38,41 @@ GroupTerminalsCommand::GroupTerminalsCommand(TerminalStrip *strip,
 	m_to_group(to_group)
 {
 	setText(QObject::tr("Group a set of terminals"));
+
+	if (strip)
+	{
+		const auto physicals = strip->physicalTerminal();
+		for (int i = 0 ; i < physicals.size() ; ++i) {
+			for (const auto &real_t : physicals.at(i)->realTerminals()) {
+				m_position_before.insert(real_t.data(), i);
+			}
+		}
+	}
 }
 
 void GroupTerminalsCommand::undo() {
 	if (m_terminal_strip) {
 		m_terminal_strip->unGroupTerminals(m_to_group);
+
+			//Ungrouping puts each terminal beside the group. When the
+			//grouped terminals were not neighbours, that is not where
+			//they were: put every one back at its position before the group.
+		auto order = m_terminal_strip->physicalTerminal();
+		const auto rank = [this](const QSharedPointer<PhysicalTerminal> &physical) {
+			int rank_ = std::numeric_limits<int>::max();
+			for (const auto &real_t : physical->realTerminals()) {
+				rank_ = std::min(rank_, m_position_before.value(real_t.data(), rank_));
+			}
+			return rank_;
+		};
+		std::stable_sort(order.begin(), order.end(),
+						 [&rank](const QSharedPointer<PhysicalTerminal> &a,
+								 const QSharedPointer<PhysicalTerminal> &b) {
+			return rank(a) < rank(b);
+		});
+		if (order != m_terminal_strip->physicalTerminal()) {
+			m_terminal_strip->setOrderTo(order);
+		}
 	}
 }
 

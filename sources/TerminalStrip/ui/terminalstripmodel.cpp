@@ -34,6 +34,8 @@
 #include <QPainter>
 #include <QApplication>
 
+#include <algorithm>
+
 /**
  * Some const int who describe what a column contain
  */
@@ -489,6 +491,29 @@ QVector<modelRealTerminalData> TerminalStripModel::modifiedmodelRealTerminalData
 }
 
 /**
+ * @brief rowsTopToBottom
+ * @param index_list
+ * @return the rows holding a valid index of @a index_list, each once,
+ * from the top of the table to the bottom.
+ * The order is what the group button relies on: the terminal of the
+ * topmost row receives the others and stays level 0, the others follow
+ * as levels 1, 2... A QSet gave them in hash order, which changes from
+ * one run to the next, so the same selection grouped in a different
+ * order each time.
+ */
+static QVector<int> rowsTopToBottom(const QModelIndexList &index_list)
+{
+	QVector<int> rows;
+	for (const auto &index : index_list) {
+		if (index.isValid() && !rows.contains(index.row())) {
+			rows.append(index.row());
+		}
+	}
+	std::sort(rows.begin(), rows.end());
+	return rows;
+}
+
+/**
  * @brief TerminalStripModel::terminalsForIndex
  * @param index_list
  * @return A vector of PhysicalTerminalData represented by index_list.
@@ -501,16 +526,7 @@ QVector<modelPhysicalTerminalData> TerminalStripModel::modelPhysicalTerminalData
 		return vector_;
 	}
 
-	QSet<int> set_;
-
-		//We use a QSet to avoid insert several time the same terminal.
-	for (auto index : index_list) {
-		if (index.isValid()) {
-			set_.insert(index.row());
-		}
-	}
-
-	for (const auto i : set_)
+	for (const auto i : rowsTopToBottom(index_list))
 	{
 		const auto phy = physicalDataAtIndex(i);
 		if (!vector_.contains(phy)) {
@@ -533,15 +549,7 @@ QVector<modelRealTerminalData> TerminalStripModel::modelRealTerminalDataForIndex
 		return vector_;
 	}
 
-	QSet<int> set_;
-		//We use a QSet to avoid insert several time the same terminal.
-	for (auto index : index_list) {
-		if (index.isValid()) {
-			set_.insert(index.row());
-		}
-	}
-
-	for (auto i : set_) {
+	for (auto i : rowsTopToBottom(index_list)) {
 		const auto rtd_ = realDataAtIndex(i);
 		if (rtd_.level_ > -1) {
 			vector_.append(realDataAtIndex(i));

@@ -19,6 +19,7 @@
 #define GROUPTERMINALSCOMMAND_H
 
 #include <QUndoCommand>
+#include <QHash>
 #include <QPointer>
 #include <QVector>
 #include "../terminalstrip.h"
@@ -42,6 +43,10 @@ class GroupTerminalsCommand : public QUndoCommand
 		QPointer<TerminalStrip> m_terminal_strip;
 		QSharedPointer<PhysicalTerminal> m_receiver;
 		QVector<QSharedPointer<RealTerminal>> m_to_group;
+			//Position of every terminal of the strip before the group,
+			//for undo to put them back. The key is only compared, never
+			//dereferenced.
+		QHash<const RealTerminal *, int> m_position_before;
 };
 
 /**

@@ -953,3 +953,161 @@ TEST_CASE("T33 — mudar a ordem à mão: Subir, Descer e Mover para a posição
 				      QStringLiteral("2"), QStringLiteral("DJ1")}));
 	}
 }
+
+namespace
+{
+	/**
+		The editor of @a strip with its two grouping buttons, as the
+		person finds them on the page of the strip.
+	*/
+	struct GroupEditor : Editor
+	{
+		GroupEditor(UiBench::ScratchProject &project, TerminalStrip *strip) :
+			Editor(project, strip),
+			group(buttonNamed(editor, "m_group_terminals_pb")),
+			ungroup(buttonNamed(editor, "m_ungroup_pb"))
+		{}
+
+		QPushButton *group = nullptr;
+		QPushButton *ungroup = nullptr;
+	};
+}
+
+/*
+	Grouping and ungrouping: a terminal of several levels is made of one
+	symbol per level, joined with the Group button.
+
+	Which terminal received the others - and so stayed level 0 - came from
+	a QSet of rows: hash order, a different one from run to run. The same
+	selection grouped as 5.2/5.1 on the screen, with 5.1 clicked first.
+	The rule now is the table's: the topmost row is level 0 and the others
+	follow it, whatever order they were selected in. The selections below
+	are made bottom-up on purpose.
+
+	Undo and Ungroup used to give every level a position of its own at the
+	end of the strip: undoing a group moved the terminal from position 5
+	to 7, and a level taken out of a group landed far from it. Undo now
+	gives back the positions of before, and Ungroup leaves the level right
+	after its group.
+*/
+TEST_CASE("T33 — Agrupar: o borne mais acima na tabela fica no nível 0",
+	  "[terminalstrip][group]")
+{
+	UiBench::ScratchProject project(fixtureXml(), QStringLiteral("stripgroup.qet"));
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+
+	const Bench bench = benchStrip(project);
+	TerminalStrip *strip = bench.strip;
+	REQUIRE(strip != nullptr);
+	REQUIRE(rail(strip) == original());
+
+	GroupEditor ui(project, strip);
+	REQUIRE(ui.isComplete());
+	REQUIRE(ui.group != nullptr);
+
+	QUndoStack *stack = project->undoStack();
+	REQUIRE(stack != nullptr);
+	const int before = stack->count();
+
+	selectLabels(ui.table, {QStringLiteral("3"), QStringLiteral("1"), QStringLiteral("2")});
+	const auto selected = ui.table->selectionModel()->selectedIndexes();
+	REQUIRE(selected.size() == 3);
+	REQUIRE(ui.model->index(selected.first().row(), TerminalStripModel::Label).data().toString()
+		== QStringLiteral("3"));
+	REQUIRE(ui.group->isEnabled());
+
+	ui.group->click();
+
+	REQUIRE(stack->count() == before + 1);
+	CHECK(rail(strip) == QStringList({QStringLiteral("1/2/3"), QStringLiteral("4"),
+					  QStringLiteral("DJ0"), QStringLiteral("DJ1")}));
+	CHECK(bench["1"]->level() == 0);
+	CHECK(bench["2"]->level() == 1);
+	CHECK(bench["3"]->level() == 2);
+	CHECK(renamedTerminals(bench).isEmpty());
+
+	SECTION("a caixa Estágio mostra o estágio da linha escolhida, sem gravá-lo")
+	{
+		QSpinBox *level = ui.editor.findChild<QSpinBox *>(QStringLiteral("m_level_sb"));
+		REQUIRE(level != nullptr);
+
+		selectLabels(ui.table, {QStringLiteral("3")});
+		REQUIRE(level->isEnabled());
+		CHECK(level->value() == 2);
+
+		selectLabels(ui.table, {QStringLiteral("2")});
+		CHECK(level->value() == 1);
+
+		selectLabels(ui.table, {QStringLiteral("1")});
+		CHECK(level->value() == 0);
+
+			//Showing is not choosing: nothing is pending, nothing moved
+		const auto model = qobject_cast<TerminalStripModel *>(ui.model);
+		REQUIRE(model != nullptr);
+		CHECK(model->modifiedmodelRealTerminalData().isEmpty());
+		CHECK(rail(strip) == QStringList({QStringLiteral("1/2/3"), QStringLiteral("4"),
+						  QStringLiteral("DJ0"), QStringLiteral("DJ1")}));
+		CHECK(stack->count() == before + 1);
+	}
+
+	SECTION("desfazer devolve os três às posições 1, 2 e 3")
+	{
+		stack->undo();
+		CHECK(rail(strip) == original());
+		CHECK(labelsShown(ui.model) == original());
+	}
+
+	SECTION("desagrupar o 3 deixa-o logo depois do grupo, e não no fim da régua")
+	{
+		REQUIRE(ui.ungroup != nullptr);
+		selectLabels(ui.table, {QStringLiteral("3")});
+		REQUIRE(ui.ungroup->isEnabled());
+
+		ui.ungroup->click();
+
+		REQUIRE(stack->count() == before + 2);
+		CHECK(rail(strip) == QStringList({QStringLiteral("1/2"), QStringLiteral("3"),
+						  QStringLiteral("4"), QStringLiteral("DJ0"),
+						  QStringLiteral("DJ1")}));
+	}
+}
+
+TEST_CASE("T33 — Desfazer o agrupamento de bornes que não são vizinhos devolve cada um ao seu lugar",
+	  "[terminalstrip][group]")
+{
+	UiBench::ScratchProject project(fixtureXml(), QStringLiteral("stripgroup.qet"));
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+
+	const Bench bench = benchStrip(project);
+	TerminalStrip *strip = bench.strip;
+	REQUIRE(strip != nullptr);
+	REQUIRE(rail(strip) == original());
+
+	GroupEditor ui(project, strip);
+	REQUIRE(ui.isComplete());
+	REQUIRE(ui.group != nullptr);
+	QUndoStack *stack = project->undoStack();
+	REQUIRE(stack != nullptr);
+
+	selectLabels(ui.table, {QStringLiteral("DJ0"), QStringLiteral("2")});
+	REQUIRE(ui.group->isEnabled());
+
+	ui.group->click();
+
+	REQUIRE(rail(strip) == QStringList({QStringLiteral("1"), QStringLiteral("2/DJ0"),
+					    QStringLiteral("3"), QStringLiteral("4"),
+					    QStringLiteral("DJ1")}));
+
+	stack->undo();
+
+	CHECK(rail(strip) == original());
+	CHECK(labelsShown(ui.model) == original());
+
+	stack->redo();
+
+	CHECK(rail(strip) == QStringList({QStringLiteral("1"), QStringLiteral("2/DJ0"),
+					  QStringLiteral("3"), QStringLiteral("4"),
+					  QStringLiteral("DJ1")}));
+}

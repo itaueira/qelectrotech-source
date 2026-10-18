@@ -472,6 +472,16 @@ void TerminalStripEditor::selectionChanged()
 	}
 	ui->m_level_sb->setEnabled(enable_);
 
+		//Show the level of the selected terminal, without writing it back.
+		//The box used to keep its last value whatever the row: it read 0
+		//on a terminal at level 1, and choosing 0 there changed nothing.
+	if (enable_ && model_real_terminal_vector.size() == 1)
+	{
+		const auto level_index = m_model->index(index_list.first().row(), TerminalStripModel::Level);
+		const QSignalBlocker blocker_(ui->m_level_sb);
+		ui->m_level_sb->setValue(level_index.data().toInt());
+	}
+
 		//Enable/disable bridge and unbridge
 	bool enable_bridge = false;
 	bool enable_unbridge = false;
