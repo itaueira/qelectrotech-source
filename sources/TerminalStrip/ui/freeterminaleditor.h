@@ -23,8 +23,8 @@
 
 class RealTerminal;
 class FreeTerminalModel;
+class FreeTerminalProxyModel;
 class QTableView;
-class QSortFilterProxyModel;
 
 namespace Ui {
 	class FreeTerminalEditor;
@@ -66,11 +66,13 @@ class FreeTerminalEditor : public QWidget
 	private:
 		void selectionChanged();
 		void setDisabledMove(bool b=true);
+		void fillFolioComboBox();
+		void applyFolioFilter();
 
 	private:
 		Ui::FreeTerminalEditor *ui;
         QPointer <QETProject> m_project;
         FreeTerminalModel *m_model {nullptr};
-		QSortFilterProxyModel *m_proxy_model {nullptr};
+		FreeTerminalProxyModel *m_proxy_model {nullptr};
 };
 #endif // FREETERMINALEDITOR_H

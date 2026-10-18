@@ -21,12 +21,158 @@
 #include "../undocommand/changeelementdatacommand.h"
 #include "../../diagram.h"
 #include "../../elementprovider.h"
+#include "../../utils/qetutils.h"
 #include "freeterminalmodel.h"
 #include "../terminalmove.h"
 #include "../terminalstrip.h"
 #include "../UndoCommand/addterminaltostripcommand.h"
 
+#include <QHeaderView>
+#include <QMimeData>
+#include <QSet>
+#include <QSignalBlocker>
 #include <QSortFilterProxyModel>
+
+#include <algorithm>
+
+namespace
+{
+	/**
+		@return one index of the first column for each row that @a indexes
+		touches, top to bottom: the order the table shows those rows in,
+		and not the order they were selected in. A selection lists its
+		indexes in the order it was made, cell by cell, so a row shows up
+		once per selected cell and a bottom-up selection comes reversed.
+	*/
+	QModelIndexList rowsInTableOrder(const QModelIndexList &indexes)
+	{
+		QSet<int> row_set;
+		const QAbstractItemModel *model = nullptr;
+		for (const auto &index : indexes)
+		{
+			if (index.isValid()) {
+				row_set.insert(index.row());
+				model = index.model();
+			}
+		}
+
+		QList<int> rows(row_set.cbegin(), row_set.cend());
+		std::sort(rows.begin(), rows.end());
+
+		QModelIndexList ordered;
+		if (model)
+		{
+			for (const int row : std::as_const(rows)) {
+				ordered.append(model->index(row, 0));
+			}
+		}
+		return ordered;
+	}
+
+	/**
+		@return the text the folio box shows for @a folio: the folio
+		number as its title block writes it - the number the
+		cross-reference column starts with, in the default settings -
+		then the title of the folio, when it has one.
+	*/
+	QString folioText(Diagram *folio)
+	{
+		QString number = folio->border_and_titleblock.finalfolio();
+		if (number.isEmpty()) {
+			number = QString::number(folio->folioIndex() + 1);
+		}
+
+		const QString title = folio->title();
+		return title.isEmpty() ? number
+				       : QStringLiteral("%1 - %2").arg(number, title);
+	}
+}
+
+/**
+	@brief The FreeTerminalProxyModel class
+	The table of free terminals as the editor shows it: filtered by the
+	text typed, which is matched on the label only, and by the folio
+	chosen; sorted on the column clicked, in natural order.
+
+	The folio of a terminal is the folio its element is drawn on, and not
+	a piece of the cross-reference text: "4-" is found in "14-B2" too.
+*/
+class FreeTerminalProxyModel : public QSortFilterProxyModel
+{
+	public:
+		FreeTerminalProxyModel(FreeTerminalModel *model, QObject *parent) :
+			QSortFilterProxyModel(parent),
+			m_free_model(model)
+		{
+			setSourceModel(model);
+		}
+
+		/**
+			@brief setFolio
+			Show only the terminals drawn on @a folio, or every
+			terminal when @a folio is nullptr.
+		*/
+		void setFolio(Diagram *folio)
+		{
+			const bool filter = folio != nullptr;
+			if (filter == m_folio_filter && folio == m_folio.data()) {
+				return;
+			}
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+			beginFilterChange();
+			m_folio = folio;
+			m_folio_filter = filter;
+			endFilterChange(QSortFilterProxyModel::Direction::Rows);
+#else
+			m_folio = folio;
+			m_folio_filter = filter;
+			invalidateFilter();
+#endif
+		}
+
+			//A drag carries the terminals in the order the table shows
+			//them, as the move button does: the strip they are dropped on
+			//receives them in that order.
+		QMimeData *mimeData(const QModelIndexList &indexes) const override {
+			return QSortFilterProxyModel::mimeData(rowsInTableOrder(indexes));
+		}
+
+	protected:
+		bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override
+		{
+			if (!QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent)) {
+				return false;
+			}
+			if (!m_folio_filter) {
+				return true;
+			}
+
+				//A folio deleted while it is chosen has no terminal left
+			const auto element_ = m_free_model->dataAtRow(source_row).element_;
+			return element_
+					&& !m_folio.isNull()
+					&& element_->diagram() == m_folio.data();
+		}
+
+			//Natural order, so that "2" comes before "10" in the labels and
+			//"4-B2" before "4-B10" in the cross-references: sorted on that
+			//column, the terminals of a folio come in the order of its grid.
+		bool lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const override
+		{
+			if (FreeTerminalModel::columnTypeForIndex(source_left) == FreeTerminalModel::Led) {
+				return !m_free_model->dataAtRow(source_left.row()).led_
+						&& m_free_model->dataAtRow(source_right.row()).led_;
+			}
+
+			return QETUtils::naturalLessThan(source_left.data(Qt::DisplayRole).toString(),
+							 source_right.data(Qt::DisplayRole).toString());
+		}
+
+	private:
+		FreeTerminalModel *m_free_model {nullptr};
+		QPointer<Diagram> m_folio;
+		bool m_folio_filter {false};
+};
 
 /**
  * @brief FreeTerminalEditor::FreeTerminalEditor
@@ -43,15 +189,24 @@ FreeTerminalEditor::FreeTerminalEditor(QETProject *project, QWidget *parent) :
 
     m_model = new FreeTerminalModel(m_project, this);
 
-		//The view works on a filtered proxy of the model. The filter is a plain,
-		//case insensitive "contains" on the label, so typing Z1 shows Z1:1, Z1:2...
-		//Not dynamic : an edited label must not vanish from the table while it is typed.
-	m_proxy_model = new QSortFilterProxyModel(this);
-	m_proxy_model->setSourceModel(m_model);
+		//The view works on a filtered proxy of the model. The text filter is a
+		//plain, case insensitive "contains" on the label, so typing Z1 shows
+		//Z1:1, Z1:2... The folio box keeps the terminals of one folio.
+		//Not dynamic : an edited label must not vanish from the table, nor move
+		//to another row, while it is typed.
+	m_proxy_model = new FreeTerminalProxyModel(m_model, this);
 	m_proxy_model->setFilterKeyColumn(FreeTerminalModel::Label);
 	m_proxy_model->setFilterCaseSensitivity(Qt::CaseInsensitive);
 	m_proxy_model->setDynamicSortFilter(false);
 	ui->m_table_view->setModel(m_proxy_model);
+
+		//Sorted by clicking a column header. The indicator is set before
+		//sorting is enabled, because enabling it sorts at once on what the
+		//indicator says, and a header starts on the first column in
+		//descending order: the table opens as it always did, in natural
+		//order of label.
+	ui->m_table_view->horizontalHeader()->setSortIndicator(FreeTerminalModel::Label, Qt::AscendingOrder);
+	ui->m_table_view->setSortingEnabled(true);
 	ui->m_table_view->setCurrentIndex(m_proxy_model->index(0,0));
 
 	connect(ui->m_filter_le, &QLineEdit::textChanged, this, [this](const QString &text)
@@ -59,6 +214,14 @@ FreeTerminalEditor::FreeTerminalEditor(QETProject *project, QWidget *parent) :
 		m_proxy_model->setFilterFixedString(text);
 		selectionChanged();
 	});
+
+	fillFolioComboBox();
+	connect(ui->m_folio_cb, &QComboBox::currentIndexChanged, this, [this]()
+	{
+		applyFolioFilter();
+		selectionChanged();
+	});
+
 		//Selected rows can be dragged onto a strip of the terminal strip tree
 	ui->m_table_view->setDragEnabled(true);
 	ui->m_table_view->setDragDropMode(QAbstractItemView::DragOnly);
@@ -114,8 +277,11 @@ FreeTerminalEditor::~FreeTerminalEditor()
  */
 void FreeTerminalEditor::reload()
 {
+		//The column the table is sorted on is kept: the proxy sorts the rows
+		//of the model again when it reads them anew.
 	m_model->clear();
 	ui->m_move_in_cb->clear();
+	fillFolioComboBox();
 
 	if (m_project)
 	{
@@ -287,9 +453,13 @@ void FreeTerminalEditor::on_m_led_cb_activated(int index)
 
 void FreeTerminalEditor::on_m_move_pb_clicked()
 {
-		//Get the selected real terminal
+		//Get the selected real terminals, in the order the table shows them
+		//from top to bottom and not in the order they were selected: the
+		//strip receives them in that order. Sorted on the cross-reference,
+		//that is the order they are drawn in on the folio.
 	QModelIndexList index_list;
-	for (const auto &proxy_index : ui->m_table_view->selectionModel()->selectedIndexes()) {
+	const auto proxy_rows = rowsInTableOrder(ui->m_table_view->selectionModel()->selectedIndexes());
+	for (const auto &proxy_index : proxy_rows) {
 		index_list.append(m_proxy_model->mapToSource(proxy_index));
 	}
 	const auto real_t_vector = m_model->realTerminalForIndex(index_list);
@@ -365,5 +535,63 @@ void FreeTerminalEditor::setDisabledMove(bool b)
 	ui->m_move_label->setDisabled(b);
 	ui->m_move_in_cb->setDisabled(b);
 	ui->m_move_pb->setDisabled(b);
+}
+
+/**
+ * @brief FreeTerminalEditor::fillFolioComboBox
+ * Fill the folio box with every folio of the project, in the order of
+ * the project, after an entry for all of them. The folio chosen stays
+ * chosen while it exists: a move reloads the editor, and the next
+ * terminals to move are most often on the same folio.
+ * The folios are listed whether their items are built yet or not, and
+ * none is built to list it.
+ */
+void FreeTerminalEditor::fillFolioComboBox()
+{
+	const QUuid chosen = ui->m_folio_cb->currentData().toUuid();
+
+	{
+		const QSignalBlocker blocker(ui->m_folio_cb);
+		ui->m_folio_cb->clear();
+		ui->m_folio_cb->addItem(tr("All folios"));
+
+		if (m_project)
+		{
+			const auto folios = m_project->folios();
+			for (const auto &folio : folios) {
+				ui->m_folio_cb->addItem(folioText(folio), folio->uuid());
+			}
+		}
+
+		const int index = chosen.isNull() ? 0
+						  : ui->m_folio_cb->findData(chosen);
+		ui->m_folio_cb->setCurrentIndex(index < 0 ? 0 : index);
+	}
+
+	applyFolioFilter();
+}
+
+/**
+ * @brief FreeTerminalEditor::applyFolioFilter
+ * Show in the table the terminals of the folio chosen in the folio box,
+ * or every terminal when the box says all folios.
+ */
+void FreeTerminalEditor::applyFolioFilter()
+{
+	Diagram *folio = nullptr;
+	const QUuid chosen = ui->m_folio_cb->currentData().toUuid();
+	if (m_project && !chosen.isNull())
+	{
+		const auto folios = m_project->folios();
+		for (const auto &diagram : folios)
+		{
+			if (diagram->uuid() == chosen) {
+				folio = diagram;
+				break;
+			}
+		}
+	}
+
+	m_proxy_model->setFolio(folio);
 }
 

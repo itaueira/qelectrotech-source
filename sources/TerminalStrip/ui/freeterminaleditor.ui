@@ -15,14 +15,38 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
-    <widget class="QLineEdit" name="m_filter_le">
-     <property name="placeholderText">
-      <string>Filter by label (e.g. Z1)</string>
-     </property>
-     <property name="clearButtonEnabled">
-      <bool>true</bool>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="m_filter_layout">
+     <item>
+      <widget class="QLineEdit" name="m_filter_le">
+       <property name="placeholderText">
+        <string>Filter by label (e.g. Z1)</string>
+       </property>
+       <property name="clearButtonEnabled">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="m_folio_label">
+       <property name="text">
+        <string>Folio:</string>
+       </property>
+       <property name="buddy">
+        <cstring>m_folio_cb</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="m_folio_cb">
+       <property name="toolTip">
+        <string>Show only the free terminals drawn on this folio</string>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QComboBox::AdjustToContents</enum>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item row="1" column="1">
     <widget class="QLabel" name="m_move_label">

@@ -937,6 +937,12 @@ if(TARGET qelectrotech_objects)
         # adjacent terminals on one wire number, in one command. Needs a folio:
         # the wire number is read off the conductors drawn on it.
         src/ui/bridgebywire_test.cpp
+        # The page of free terminals of the terminal strip manager: the folio
+        # box, the natural sort on a column header, and the move button and
+        # the drag putting the terminals on the strip in the order the table
+        # shows them. Needs folios: the folio of a terminal is the folio its
+        # element is drawn on, and the cross-reference is read off the grid.
+        src/ui/freeterminalfolio_test.cpp
         # Undo of the bridge button of the terminal strip editor when the
         # selection extends a bridge that is already there: the bridge comes
         # back as it was. Needs terminal elements on a folio.
