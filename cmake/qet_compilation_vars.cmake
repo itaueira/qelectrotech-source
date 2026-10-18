@@ -475,6 +475,10 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/drc/drcruleset.h
   ${QET_DIR}/sources/drc/drcscanengine.cpp
   ${QET_DIR}/sources/drc/drcscanengine.h
+  ${QET_DIR}/sources/drc/drcstripnumbers.cpp
+  ${QET_DIR}/sources/drc/drcstripnumbers.h
+  ${QET_DIR}/sources/drc/drcstriprules.cpp
+  ${QET_DIR}/sources/drc/drcstriprules.h
   ${QET_DIR}/sources/drc/drctagrules.cpp
   ${QET_DIR}/sources/drc/drctagrules.h
   ${QET_DIR}/sources/drc/drctitleblock.cpp

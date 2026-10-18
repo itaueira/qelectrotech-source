@@ -28,6 +28,7 @@
 #include "../drcpotentialrules.h"
 #include "../drcruleset.h"
 #include "../drcscanengine.h"
+#include "../drcstriprules.h"
 #include "../drctagrules.h"
 #include "../drctitleblockrules.h"
 
@@ -201,6 +202,7 @@ int DrcProjectActions::buildFactoryCheck(DrcRuleSet &rules,
 	taken += DrcPotentialRules::registerRules(rules, scan);
 	taken += DrcTagRules::registerRules(rules, scan);
 	taken += DrcTitleBlockRules::registerRules(rules, scan);
+	taken += DrcStripRules::registerRules(rules, scan);
 	taken += DrcFieldRules::registerRules(rules, sql);
 	return taken;
 }

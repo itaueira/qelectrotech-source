@@ -292,7 +292,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 		const DrcProjectActions::CheckOutcome outcome =
 				DrcProjectActions::runCheck(bench.project());
 
-		CHECK(outcome.scan_rules_run == 6);
+		CHECK(outcome.scan_rules_run == 9);
 		CHECK_FALSE(outcome.isClean());
 
 		CHECK(taggedBy(outcome.findings, master_rule)
@@ -336,7 +336,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 		const DrcProjectActions::CheckOutcome outcome =
 				DrcProjectActions::runCheck(bench.project());
 
-		CHECK(outcome.scan_rules_run == 6);
+		CHECK(outcome.scan_rules_run == 9);
 		CHECK(taggedBy(outcome.findings, master_rule)
 		      == QStringList({QStringLiteral("KM2")}));
 		CHECK(taggedBy(outcome.findings, slave_rule)
@@ -366,7 +366,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 
 			//E "limpo" exige que alguma regra tenha rodado: lista vazia
 			//sozinha é o que uma rodada sem regra nenhuma também devolve.
-		CHECK(outcome.scan_rules_run == 6);
+		CHECK(outcome.scan_rules_run == 9);
 		CHECK(outcome.isClean());
 	}
 }

@@ -128,6 +128,7 @@ add_executable(
     src/drcwirenumbers_test.cpp
     src/drcduplicatetags_test.cpp
     src/drctitleblock_test.cpp
+    src/drcstripnumbers_test.cpp
     src/connectorways_test.cpp
     src/connectorswap_test.cpp
     src/csvwriter_test.cpp
@@ -454,6 +455,8 @@ add_executable(
     ${QET_DIR}/sources/drc/drcduplicatetags.h
     ${QET_DIR}/sources/drc/drctitleblock.cpp
     ${QET_DIR}/sources/drc/drctitleblock.h
+    ${QET_DIR}/sources/drc/drcstripnumbers.cpp
+    ${QET_DIR}/sources/drc/drcstripnumbers.h
     # The catalog core depends on Qt Core and Qt Sql only - not on QETApp,
     # not on Diagram - which is what lets the test binary link it with the
     # handful of sources below instead of half the program. Keep it that way:
@@ -992,6 +995,7 @@ if(TARGET qelectrotech_objects)
         src/ui/drcpotentialrules_test.cpp
         src/ui/drctagrules_test.cpp
         src/ui/drctitleblockrules_test.cpp
+        src/ui/drcstriprules_test.cpp
         # The check of a project from the command line (--check-project): the
         # exit code and the lines of the report. Needs a project because what
         # is proven is the whole way - the file the verb opens, the factory
