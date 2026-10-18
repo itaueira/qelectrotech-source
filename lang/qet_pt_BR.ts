@@ -666,6 +666,156 @@
     </message>
 </context>
 <context>
+    <name>AssemblyChangesDialog</name>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="205"/>
+        <source>Components to add (%1)</source>
+        <translation>Componentes a acrescentar (%1)</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="207"/>
+        <source>Wires to add (%1)</source>
+        <translation>Fios a acrescentar (%1)</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="211"/>
+        <source>Components to remove (%1)</source>
+        <translation>Componentes a remover (%1)</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="213"/>
+        <source>Wires to remove (%1)</source>
+        <translation>Fios a remover (%1)</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="217"/>
+        <source>Components to relabel (%1)</source>
+        <translation>Componentes a reetiquetar (%1)</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="219"/>
+        <source>Wires to renumber (%1)</source>
+        <translation>Fios a renumerar (%1)</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="252"/>
+        <source>Changes since assembly</source>
+        <comment>window title</comment>
+        <translation>Alterações desde a montagem</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="335"/>
+        <source>This project is not marked as assembled.</source>
+        <translation>Este projeto não está marcado como montado.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="375"/>
+        <source>Label</source>
+        <translation>Tag</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="376"/>
+        <source>Folio</source>
+        <translation>Folha</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="377"/>
+        <source>Position</source>
+        <translation>Posição</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="378"/>
+        <source>Description</source>
+        <translation>Descrição</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="379"/>
+        <source>Part code</source>
+        <translation>Código da peça</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="382"/>
+        <source>Double-click a line to show the item on its folio.</source>
+        <translation>Clique duas vezes numa linha para mostrar o item na folha.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="396"/>
+        <source>Refresh</source>
+        <translation>Atualizar</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="399"/>
+        <source>Export CSV…</source>
+        <translation>Exportar CSV…</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="402"/>
+        <source>Write this list to a file for the workshop.</source>
+        <translation>Grava esta lista num arquivo para a oficina.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="445"/>
+        <source>This project is not marked as assembled: there is no photograph of the panel to compare the drawing with.</source>
+        <translation>Este projeto não está marcado como montado: não há fotografia do quadro para comparar com o desenho.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="454"/>
+        <source>Nothing has changed since the project was marked as %1.</source>
+        <translation>Nada mudou desde que o projeto foi marcado como %1.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="457"/>
+        <source>%n change(s) since the project was marked as %1.</source>
+        <translation>
+            <numerusform>%n alteração desde que o projeto foi marcado como %1.</numerusform>
+            <numerusform>%n alterações desde que o projeto foi marcado como %1.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="501"/>
+        <source>Drawn on no folio any more: take it out of the panel.</source>
+        <translation>Não está mais desenhado em nenhuma folha: retire-o do quadro.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="518"/>
+        <source>An item to remove is named by the label it carried: the photograph taken when the project was marked records nothing else about it - neither its folio nor, for a wire, its two ends.</source>
+        <translation>Um item a remover é identificado pela tag que ele tinha: a fotografia tirada ao marcar o projeto não guarda mais nada sobre ele, nem a folha nem, no caso de um fio, as duas extremidades.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="565"/>
+        <source>%1 - changes since assembly.csv</source>
+        <translation>%1 - alterações desde a montagem.csv</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="571"/>
+        <source>Export the changes since assembly</source>
+        <translation>Exportar as alterações desde a montagem</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="573"/>
+        <source>CSV file (*.csv)</source>
+        <translation>Arquivo CSV (*.csv)</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="581"/>
+        <source>Changes since assembly</source>
+        <translation>Alterações desde a montagem</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="582"/>
+        <source>The file &quot;%1&quot; could not be written: %2</source>
+        <translation>Não foi possível gravar o arquivo &quot;%1&quot;: %2</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/ui/assemblychangesdialog.cpp" line="586"/>
+        <source>%n line(s) written to &quot;%1&quot;.</source>
+        <translation>
+            <numerusform>%n linha gravada em &quot;%1&quot;.</numerusform>
+            <numerusform>%n linhas gravadas em &quot;%1&quot;.</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>AssemblyState</name>
     <message>
         <location filename="../sources/autoNum/assemblystate.cpp" line="266"/>
@@ -686,23 +836,33 @@
 <context>
     <name>AssemblyStateDialog</name>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="35"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="37"/>
         <source>État de montage du projet</source>
         <comment>window title</comment>
         <translation>Estado de montagem do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="94"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="128"/>
         <source>Une fois le châssis câblé, les repères sont imprimés et collés sur les appareils : les renuméroter ne coûte pas un clic, cela coûte une visite avec une étiqueteuse. Marquer le projet comme monté prend une photographie de ce qui existe à cet instant, et l&apos;automatisation ne numérote plus que ce qui sera dessiné après.</source>
         <translation>Uma vez que o quadro está cabeado, as tags são impressas e coladas nos aparelhos: renumerá-las não custa um clique, custa uma visita com etiquetadora. Marcar o projeto como montado tira uma fotografia do que existe neste instante, e a automação só numera mais o que for desenhado depois.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="114"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="148"/>
         <source>État du projet :</source>
         <translation>Estado do projeto:</translation>
     </message>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="173"/>
+        <source>Changes since assembly…</source>
+        <translation>Alterações desde a montagem…</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="177"/>
+        <source>What to mount, remove and relabel on the panel since the project was marked.</source>
+        <translation>O que montar, remover e reetiquetar no quadro desde que o projeto foi marcado.</translation>
+    </message>
     <message numerus="yes">
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="167"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="219"/>
         <source>État actuel : %1, %n élément(s) figé(s).</source>
         <translation>
             <numerusform>Estado atual: %1, %n elemento congelado.</numerusform>
@@ -710,12 +870,12 @@
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="171"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="223"/>
         <source>État actuel : %1, rien n&apos;est figé.</source>
         <translation>Estado atual: %1, nada está congelado.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="182"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="234"/>
         <source>%n component(s)</source>
         <translation>
             <numerusform>%n componente</numerusform>
@@ -723,7 +883,7 @@
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="184"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="236"/>
         <source>%n conductor(s)</source>
         <translation>
             <numerusform>%n condutor</numerusform>
@@ -731,12 +891,12 @@
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="188"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="240"/>
         <source>Confirming freezes the tags of %1 and the numbers of %2: the automatic numbering leaves them as they are, and numbers only what is drawn afterwards.</source>
         <translation>Confirmar congela as tags de %1 e os números de %2: a numeração automática não os altera e numera apenas o que for desenhado depois.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="196"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="248"/>
         <source>Le projet revient en étude : la photographie est effacée et l&apos;automatisation retrouve l&apos;ensemble du dessin.
 
 Les verrous posés à la main sur un composant ne sont pas touchés — ils n&apos;ont jamais fait partie de la photographie, et survivent donc au retour en étude.</source>
@@ -745,7 +905,7 @@ Les verrous posés à la main sur un composant ne sont pas touchés — ils n&ap
 Os travamentos feitos manualmente num componente não são afetados — eles nunca fizeram parte da fotografia, e por isso sobrevivem à volta para o estudo.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/assemblystatedialog.cpp" line="205"/>
+        <location filename="../sources/ui/assemblystatedialog.cpp" line="257"/>
         <source>Ce projet a des modifications non enregistrées : comme tout le reste, la marque ne sera dans le fichier qu&apos;après l&apos;enregistrement.</source>
         <translation>Este projeto tem alterações não salvas: como todo o resto, a marca só estará no arquivo depois de salvar.</translation>
     </message>
@@ -7136,6 +7296,52 @@ Hold Shift and drag to move this text on its own</source>
     </message>
 </context>
 <context>
+    <name>DrcDuplicateTags</name>
+    <message>
+        <location filename="../sources/drc/drcduplicatetags.cpp" line="136"/>
+        <source>Compared as composed by the IEC 81346 structure, the + part taken from the location tree only: the location field is not read.</source>
+        <translation>Comparado como composto pela estrutura IEC 81346, com a parte + tirada só da árvore de localização: o campo de localização não é lido.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcduplicatetags.cpp" line="142"/>
+        <source>Compared as composed by the IEC 81346 structure, the + part taken from the location tree, or from the location field where there is no tree path.</source>
+        <translation>Comparado como composto pela estrutura IEC 81346, com a parte + tirada da árvore de localização ou, onde não há caminho na árvore, do campo de localização.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcduplicatetags.cpp" line="150"/>
+        <source>Compared as typed: the IEC 81346 structure is off.</source>
+        <translation>Comparado como digitado: a estrutura IEC 81346 está desligada.</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcduplicatetags.cpp" line="162"/>
+        <source>folio %1, %2</source>
+        <translation>folha %1, %2</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcduplicatetags.cpp" line="168"/>
+        <source>folio %1</source>
+        <translation>folha %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcduplicatetags.cpp" line="175"/>
+        <source>place unknown</source>
+        <translation>local desconhecido</translation>
+    </message>
+    <message>
+        <location filename="../sources/drc/drcduplicatetags.cpp" line="227"/>
+        <source>%1 on %2</source>
+        <translation>%1 em %2</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/drc/drcduplicatetags.cpp" line="236"/>
+        <source>Tag %1 on %n components: %2.</source>
+        <translation>
+            <numerusform>Tag %1 em %n componente: %2.</numerusform>
+            <numerusform>Tag %1 em %n componentes: %2.</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>DrcFieldRules</name>
     <message>
         <location filename="../sources/drc/drcfieldrules.cpp" line="153"/>
@@ -7238,32 +7444,32 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>DrcProjectActions</name>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="137"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="138"/>
         <source>Aucune règle activée : rien n&apos;a été vérifié. Un projet sans constat n&apos;est pas pour autant un projet sans défaut.</source>
         <translation>Nenhuma regra ativada: nada foi verificado. Um projeto sem ocorrência não é, por isso, um projeto sem defeito.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="144"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="145"/>
         <source>%1 règle(s) exécutée(s) : parcours %2 ms, requêtes %3 ms.</source>
         <translation>%1 regra(s) executada(s): percurso %2 ms, consultas %3 ms.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="153"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="154"/>
         <source>%1 règle(s) n&apos;ont pas pu être exécutées : leur résultat est inconnu, et non vide.</source>
         <translation>%1 regra(s) não puderam ser executadas: o resultado delas é desconhecido, e não vazio.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="161"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="162"/>
         <source>Aucun constat.</source>
         <translation>Nenhuma ocorrência.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="170"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="171"/>
         <source>%1 constat(s), dont %2 erreur(s). Double-cliquez une ligne, ou appuyez sur Entrée, pour aller au constat.</source>
         <translation>%1 ocorrência(s), sendo %2 erro(s). Dê duplo clique numa linha, ou pressione Enter, para ir até a ocorrência.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="362"/>
+        <location filename="../sources/drc/ui/drcprojectactions.cpp" line="364"/>
         <source>Contrôle du projet</source>
         <translation>Verificação do projeto</translation>
     </message>
@@ -7307,6 +7513,14 @@ Hold Shift and drag to move this text on its own</source>
         <location filename="../sources/dataBase/drcsqlengine.cpp" line="51"/>
         <source>La requête n&apos;a pas pu être exécutée : %1</source>
         <translation>A consulta não pôde ser executada: %1</translation>
+    </message>
+</context>
+<context>
+    <name>DrcTagRules</name>
+    <message>
+        <location filename="../sources/drc/drctagrules.cpp" line="194"/>
+        <source>Two components with the same tag</source>
+        <translation>Dois componentes com a mesma tag</translation>
     </message>
 </context>
 <context>
@@ -32511,7 +32725,7 @@ Os outros campos não são utilizados.</translation>
         <translation>Mover</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="352"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="362"/>
         <source>Description</source>
         <translation>Descrição</translation>
     </message>
@@ -32546,27 +32760,37 @@ Os outros campos não são utilizados.</translation>
         <translation>Remover ponte dos bornes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="309"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="305"/>
+        <source>Bridge each run of adjacent terminals with the same wire number; only generic and ground terminals are bridged.</source>
+        <translation>Ponteia cada sequência de bornes vizinhos com o mesmo número de fio; só bornes genéricos e de terra são ponteados.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="308"/>
+        <source>Bridge same wire numbers</source>
+        <translation>Pontear números de fio iguais</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="319"/>
         <source>Properties</source>
         <translation>Propriedades</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="315"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="325"/>
         <source>Name:</source>
         <translation>Nome:</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="322"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="332"/>
         <source>Comment :</source>
         <translation>Comentário:</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="329"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="339"/>
         <source>Plant:</source>
         <translation>Instalação:</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="345"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="355"/>
         <source>Location :</source>
         <translation>Localização:</translation>
     </message>
@@ -32647,14 +32871,37 @@ Os outros campos não são utilizados.</translation>
         <translation>Com</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="121"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="179"/>
         <source>Independent terminals</source>
         <translation>Bornes independentes</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="192"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="250"/>
         <source>Modify terminal strip properties</source>
         <translation>Editar propriedades da régua de bornes</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1042"/>
+        <source>Apply the pending changes first: bridging by wire number reads the saved terminal types.</source>
+        <translation>Aplique antes as alterações pendentes: o ponteamento por número de fio lê os tipos de borne gravados.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1049"/>
+        <source>Bridge terminals with the same wire number</source>
+        <translation>Pontear bornes com o mesmo número de fio</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1116"/>
+        <source>No adjacent terminals left to bridge by wire number.</source>
+        <translation>Não restam bornes vizinhos para pontear por número de fio.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/TerminalStrip/ui/terminalstripeditor.cpp" line="1121"/>
+        <source>%n bridge(s) made or extended by wire number.</source>
+        <translation>
+            <numerusform>%n ponte feita ou ampliada por número de fio.</numerusform>
+            <numerusform>%n pontes feitas ou ampliadas por número de fio.</numerusform>
+        </translation>
     </message>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripeditor.ui" line="132"/>
