@@ -28,6 +28,7 @@
 #include "../drcpotentialrules.h"
 #include "../drcruleset.h"
 #include "../drcscanengine.h"
+#include "../drctagrules.h"
 
 #include <QCoreApplication>
 #include <QDialog>
@@ -197,6 +198,7 @@ int DrcProjectActions::buildFactoryCheck(DrcRuleSet &rules,
 		//findings are listed in.
 	int taken = DrcLinkRules::registerRules(rules, scan);
 	taken += DrcPotentialRules::registerRules(rules, scan);
+	taken += DrcTagRules::registerRules(rules, scan);
 	taken += DrcFieldRules::registerRules(rules, sql);
 	return taken;
 }

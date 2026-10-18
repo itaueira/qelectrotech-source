@@ -457,6 +457,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/connector/ui/connectorreportdialog.cpp
   ${QET_DIR}/sources/connector/ui/connectorreportdialog.h
 
+  ${QET_DIR}/sources/drc/drcduplicatetags.cpp
+  ${QET_DIR}/sources/drc/drcduplicatetags.h
   ${QET_DIR}/sources/drc/drcfieldrules.cpp
   ${QET_DIR}/sources/drc/drcfieldrules.h
   ${QET_DIR}/sources/drc/drcfinding.cpp
@@ -471,6 +473,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/drc/drcruleset.h
   ${QET_DIR}/sources/drc/drcscanengine.cpp
   ${QET_DIR}/sources/drc/drcscanengine.h
+  ${QET_DIR}/sources/drc/drctagrules.cpp
+  ${QET_DIR}/sources/drc/drctagrules.h
   ${QET_DIR}/sources/drc/drcwirenumbers.cpp
   ${QET_DIR}/sources/drc/drcwirenumbers.h
   ${QET_DIR}/sources/drc/ui/drcpanel.cpp
