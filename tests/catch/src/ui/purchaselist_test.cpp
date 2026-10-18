@@ -24,10 +24,13 @@
 
 #include <catch2/catch.hpp>
 
+#include <limits>
+
 #include <QChar>
 #include <QDomDocument>
 #include <QFile>
 #include <QList>
+#include <QLocale>
 #include <QPointF>
 #include <QSet>
 #include <QSizeF>
@@ -738,14 +741,78 @@ namespace
 		return QStringList();
 	}
 
-	/// @return what the quantity column adds up to over @p rows
+	/**
+		@return true when @p row is a line bought by the metre
+
+		The unit is written here as the file writes it, and not taken
+		from the code under test, for the reason the headers are.
+	*/
+	bool isMetreLine(const QStringList &row)
+	{
+		return lineCell(row, QStringLiteral("unit")) == QStringLiteral("m");
+	}
+
+	/**
+		@return what the quantity column adds up to over @p rows, the
+		lines bought by the metre left out
+
+		Left out and not added in: a piece and a metre in one total is a
+		number nothing in the world corresponds to, and a bar added into
+		the pieces would hide exactly the defect a total is asserted for.
+	*/
 	double piecesOf(const QVector<QStringList> &rows)
 	{
 		double total = 0.0;
-		for (const QStringList &row : rows) {
+		for (const QStringList &row : rows)
+		{
+			if (isMetreLine(row)) {
+				continue;
+			}
 			total += lineCell(row, QStringLiteral("quantity")).toDouble();
 		}
 		return total;
+	}
+
+	/**
+		@return how many metres the lines bought by the metre add up to,
+		not a number when one of them cannot be read
+
+		Read in the locale of the machine, which is the one the file
+		writes a length in - the decimal separator a spreadsheet opened
+		here expects. A cell that does not read poisons the total rather
+		than adding nothing to it, so that a length written in a form
+		nobody can read fails the case instead of shortening it.
+	*/
+	double metresOf(const QVector<QStringList> &rows)
+	{
+		double total = 0.0;
+		for (const QStringList &row : rows)
+		{
+			if (!isMetreLine(row)) {
+				continue;
+			}
+			bool ok = false;
+			const double value = QLocale().toDouble(
+				lineCell(row, QStringLiteral("quantity")), &ok);
+			if (!ok) {
+				return std::numeric_limits<double>::quiet_NaN();
+			}
+			total += value;
+		}
+		return total;
+	}
+
+	/// @return how many lines of @p rows are bought by the metre
+	int metreLinesOf(const QVector<QStringList> &rows)
+	{
+		int count = 0;
+		for (const QStringList &row : rows)
+		{
+			if (isMetreLine(row)) {
+				++count;
+			}
+		}
+		return count;
 	}
 
 	/// The face the plate cases lay their parts on: the mounting plate
@@ -774,17 +841,24 @@ namespace
 		return item;
 	}
 
+	/// The rail every plate case cuts from: 35 wide, 7,5 deep
+	MountingProfile standardRail()
+	{
+		return MountingProfile::rail(35.0, 7.5);
+	}
+
 	/**
 		@return a piece of rail cut to 600 from a bar of @p code
 
-		With a code on purpose: a piece with none would come back, if it
-		were counted by the piece, as a pendency, and a pendency is not
-		the failure this guards against. The failure is a line ordering
-		rail by the piece, and only a code can make one.
+		With a code on purpose: a bar is bought by its profile, and a
+		line under the code of a piece is a line ordering rail by the
+		piece - only a code can make one, and a piece with none would
+		come back as a pendency, which is not the failure this guards
+		against.
 	*/
 	MountedItem railPiece(const QString &code)
 	{
-		const MountingProfile profile = MountingProfile::rail(35.0, 7.5);
+		const MountingProfile profile = standardRail();
 		MountedItem item(QString(), QPointF(0.0, 300.0),
 				 profile.sizeFor(600.0, MountingRun::Across));
 		item.part_code = code;
@@ -794,8 +868,33 @@ namespace
 	}
 
 	/**
+		@return a piece cut from a bar of @p profile, with no code - the
+		way the house cuts rail and duct, which have no catalogue part
+		@param run which way it runs
+		@param x where its corner is across the plate, millimetre
+		@param y where its corner is down the plate, millimetre
+		@param length how long it was cut, millimetre; zero for a piece
+		nobody has given a length to yet
+	*/
+	MountedItem cutPiece(const MountingProfile &profile,
+			     MountingRun run,
+			     qreal x,
+			     qreal y,
+			     qreal length)
+	{
+		MountedItem item;
+		item.profile = profile;
+		item.run = run;
+		item.position = QPointF(x, y);
+		if (length > 0.0) {
+			item.size = profile.sizeFor(length, run);
+		}
+		return item;
+	}
+
+	/**
 		@return the <mounting_layout> of a project with @p items on one
-		plate, empty when the layout refused any of them
+		plate of @p area, empty when the layout refused any of them
 
 		Built through MountingLayout and written by its own toXml(), and
 		not spelled out here like the tree: the file a person's plate is
@@ -803,13 +902,14 @@ namespace
 		element that drifted from it would prove the export against a
 		file nobody can make.
 	*/
-	QString plateXml(const QList<MountedItem> &items)
+	QString plateXml(const QList<MountedItem> &items,
+			 const MountingArea &area = MountingArea(600.0, 800.0))
 	{
 		MountingLayout layout;
 		const QString face = layout.appendSurface(
 					MountingSurface(platePath(),
 							QStringLiteral("plate"),
-							MountingArea(600.0, 800.0)));
+							area));
 		if (face.isEmpty()) {
 			return QString();
 		}
@@ -1230,7 +1330,7 @@ TEST_CASE("T19 — a peça da placa sem símbolo entra uma vez na lista de compr
 
 		//(a) a block laid from the catalogue, with no symbol behind it;
 		//(b) the plate part of K1, whose symbol is on the first folio;
-		//(c) a piece of rail cut from a bar that has a code;
+		//(c) a piece of rail, 600 long, cut from a bar that has a code;
 		//(d) a part whose symbol was deleted after it was mounted - it
 		//    names an element of the bench that no folio holds. Without
 		//    it a set built from the names alone, never asking the
@@ -1274,8 +1374,16 @@ TEST_CASE("T19 — a peça da placa sem símbolo entra uma vez na lista de compr
 	CHECK(lineCell(contactor, QStringLiteral("designation"))
 	      == QStringLiteral("Contator 9 A"));
 
-		//(c): no line ordering rail by the piece.
+		//(c): no line ordering rail by the piece - the bar is bought by
+		//its profile and its metres, on a line of its own, and the code
+		//of the piece is not the key of that line.
 	CHECK(linesOf(file, QStringLiteral("XA-700")).isEmpty());
+	const QVector<QStringList> rails = linesOf(file, standardRail().key());
+	REQUIRE(rails.size() == 1);
+	CHECK(lineCell(rails.first(), QStringLiteral("unit")) == QStringLiteral("m"));
+	CHECK(lineCell(rails.first(), QStringLiteral("designation"))
+	      == standardRail().designation());
+	CHECK(lineCell(rails.first(), QStringLiteral("tags")) == platePath());
 
 		//(d): the symbol is gone, the part is still on the plate the shop
 		//builds, so it is bought - one piece, under its tag.
@@ -1284,22 +1392,28 @@ TEST_CASE("T19 — a peça da placa sem símbolo entra uma vez na lista de compr
 	CHECK(lineCell(orphan, QStringLiteral("quantity")) == QStringLiteral("1"));
 	CHECK(lineCell(orphan, QStringLiteral("tags")) == QStringLiteral("-F9"));
 
-		//The count of lines: the drawn half, the enclosures, and the two
-		//parts of the plate no folio draws - (a) and (d).
-	const int lines = expectedDrawnLines(instances) + enclosure_lines + 2;
-	REQUIRE(lines == 6);
+		//The count of lines: the drawn half, the enclosures, the two
+		//parts of the plate no folio draws - (a) and (d) - and the bar of
+		//(c).
+	const int lines = expectedDrawnLines(instances) + enclosure_lines + 2 + 1;
+	REQUIRE(lines == 7);
 	CHECK(dataOf(file, 1).size() == lines);
 	CHECK(countIn(file, QStringLiteral("lines")) == lines);
+	CHECK(metreLinesOf(dataOf(file, 1)) == 1);
 
-		//And the total, which is what catches (b): counted twice, it
-		//changes no count of lines and makes this nine.
+		//And the totals. The pieces are what catch (b): counted twice, it
+		//changes no count of lines and makes this nine - and they catch
+		//(c) counted by the piece too, which would make it nine as well.
+		//The metres are what say (c) was bought at all: 600 of rail.
 	const double pieces = expectedDrawnPieces(instances) + enclosure_pieces
 			      + 2.0;
 	REQUIRE(pieces == 8.0);
 	CHECK(piecesOf(dataOf(file, 1)) == pieces);
+	CHECK(metresOf(dataOf(file, 1)) == Approx(0.6));
 
-		//And the count in front says how many came from the plate.
-	CHECK(countIn(file, QStringLiteral("mounted")) == 2);
+		//And the count in front says how many pieces came from the
+		//plate: (a), (d), and the piece of rail - a piece, not 0,6.
+	CHECK(countIn(file, QStringLiteral("mounted")) == 3);
 }
 
 TEST_CASE("T19 — sem nenhum símbolo desenhado, a lista de compra sai da placa",
@@ -1331,18 +1445,24 @@ TEST_CASE("T19 — sem nenhum símbolo desenhado, a lista de compra sai da placa
 	REQUIRE_FALSE(blocks.isEmpty());
 	CHECK(lineCell(blocks, QStringLiteral("quantity")) == QStringLiteral("2"));
 	CHECK(lineCell(blocks, QStringLiteral("tags")) == platePath());
+		//The rail, by its bar and never by the piece
 	CHECK(linesOf(file, QStringLiteral("XA-700")).isEmpty());
+	CHECK(linesOf(file, standardRail().key()).size() == 1);
 
-	const int lines = expectedDrawnLines(instances) + enclosure_lines + 1;
-	REQUIRE(lines == 4);
+		//The enclosures, the line of the blocks and the line of the bar.
+	const int lines = expectedDrawnLines(instances) + enclosure_lines + 1 + 1;
+	REQUIRE(lines == 5);
 	CHECK(dataOf(file, 1).size() == lines);
 	CHECK(countIn(file, QStringLiteral("lines")) == lines);
+	CHECK(metreLinesOf(dataOf(file, 1)) == 1);
 
 	const double pieces = expectedDrawnPieces(instances) + enclosure_pieces
 			      + 2.0;
 	REQUIRE(pieces == 6.0);
 	CHECK(piecesOf(dataOf(file, 1)) == pieces);
-	CHECK(countIn(file, QStringLiteral("mounted")) == 2);
+	CHECK(metresOf(dataOf(file, 1)) == Approx(0.6));
+		//Two blocks and a piece of rail
+	CHECK(countIn(file, QStringLiteral("mounted")) == 3);
 
 		//The part with no code is not dropped and not a line with an
 		//empty code: it is pending, named as the plate names it and
@@ -1357,4 +1477,155 @@ TEST_CASE("T19 — sem nenhum símbolo desenhado, a lista de compra sai da placa
 	for (const QStringList &row : dataOf(file, 1)) {
 		CHECK_FALSE(lineCell(row, QStringLiteral("part_code")).isEmpty());
 	}
+}
+
+/*
+	The bar rail and duct are cut from (T22, step 11).
+
+	Labelled T22 and not CU-22.6, although the first case lays out the very
+	panel that case names. The program has a second list of material on the
+	screen - the one the location tree opens - and the bars do not reach it
+	here; a label saying the case is proved would say it for both.
+*/
+
+TEST_CASE("T22 — 6 m de trilho e 11 m de canaleta saem na lista de compra "
+	  "somados, uma linha por perfil", "[purchase][bom][t22]")
+{
+		//One contactor drawn, and a plate of 1200 by 2000 cut the way
+		//the house cuts it: rail and duct with no code, because they have
+		//no catalogue part. Six metres of rail in six pieces, eleven of
+		//duct in seven, none of them a whole number of bars.
+	QList<Instance> instances;
+	instances << drawn(1, "K1", "Contator 9 A", "XA-300", "");
+
+	const MountingProfile duct = MountingProfile::duct(60.0, 80.0);
+	QList<MountedItem> items;
+	for (int row = 0 ; row < 5 ; ++row) {
+		items << cutPiece(standardRail(), MountingRun::Across,
+				  80.0, 200.0 + 250.0 * row, 1100.0);
+	}
+	items << cutPiece(standardRail(), MountingRun::Across,
+			  80.0, 1450.0, 500.0);
+	for (int column = 0 ; column < 5 ; ++column) {
+		items << cutPiece(duct, MountingRun::Down,
+				  0.0 + 285.0 * column, 60.0, 1900.0);
+	}
+	items << cutPiece(duct, MountingRun::Across, 80.0, 0.0, 750.0)
+	      << cutPiece(duct, MountingRun::Across, 80.0, 1940.0, 750.0);
+
+	const QString plate = plateXml(items, MountingArea(1200.0, 2000.0));
+	REQUIRE_FALSE(plate.isEmpty());
+	REQUIRE(plate.count(QStringLiteral("<mounted_item")) == 13);
+
+	const PurchaseFile file = exportOf(fixtureXml(instances, plate));
+	INFO(file.text.toStdString());
+	REQUIRE(file.written);
+	checkShape(file);
+
+		//A bar has no code and is still no pendency: its line is keyed
+		//by its profile, so the list is whole.
+	CHECK(file.code == 0);
+	CHECK(countIn(file, QStringLiteral("pending")) == 0);
+
+		//One line per profile, in metres, named by the profile, and
+		//saying the plate it was cut on. Whole metres print with no
+		//decimal in any locale, so the cell is checked as it is written.
+	const QVector<QStringList> rails = linesOf(file, standardRail().key());
+	REQUIRE(rails.size() == 1);
+	CHECK(lineCell(rails.first(), QStringLiteral("quantity")) == QStringLiteral("6"));
+	CHECK(lineCell(rails.first(), QStringLiteral("unit")) == QStringLiteral("m"));
+	CHECK(lineCell(rails.first(), QStringLiteral("part_revision")).isEmpty());
+	CHECK(lineCell(rails.first(), QStringLiteral("designation"))
+	      == standardRail().designation());
+	CHECK(lineCell(rails.first(), QStringLiteral("tags")) == platePath());
+
+	const QVector<QStringList> ducts = linesOf(file, duct.key());
+	REQUIRE(ducts.size() == 1);
+	CHECK(lineCell(ducts.first(), QStringLiteral("quantity")) == QStringLiteral("11"));
+	CHECK(lineCell(ducts.first(), QStringLiteral("unit")) == QStringLiteral("m"));
+	CHECK(lineCell(ducts.first(), QStringLiteral("designation"))
+	      == duct.designation());
+
+		//The lines: the contactor, the enclosures, and the two bars.
+	const int lines = expectedDrawnLines(instances) + enclosure_lines + 2;
+	REQUIRE(lines == 6);
+	CHECK(dataOf(file, 1).size() == lines);
+	CHECK(countIn(file, QStringLiteral("lines")) == lines);
+	CHECK(metreLinesOf(dataOf(file, 1)) == 2);
+
+		//And the totals: seventeen metres, and not one of the thirteen
+		//pieces of bar among the pieces - those are the contactor and
+		//the enclosures, as they were before the plate was cut.
+	CHECK(metresOf(dataOf(file, 1)) == Approx(17.0));
+	const double pieces = expectedDrawnPieces(instances) + enclosure_pieces;
+	REQUIRE(pieces == 5.0);
+	CHECK(piecesOf(dataOf(file, 1)) == pieces);
+
+		//Thirteen pieces came from the plate, and the count says pieces
+		//and not metres.
+	CHECK(countIn(file, QStringLiteral("mounted")) == 13);
+}
+
+TEST_CASE("T22 — o pedaço sem comprimento sai pendente e nunca como zero metro, "
+	  "e duas alturas de trilho são duas linhas", "[purchase][bom][t22]")
+{
+		//Two pieces of 600 from two bars of the same width and different
+		//depth - the same number of metres, which is the trap: a join by
+		//the number would make them one line. And one piece of the
+		//standard rail nobody has given a length to yet.
+	const QList<Instance> instances;
+	const MountingProfile deep = MountingProfile::rail(35.0, 15.0);
+	const QString plate = plateXml(
+		QList<MountedItem>()
+		<< cutPiece(standardRail(), MountingRun::Across, 10.0, 100.0, 600.0)
+		<< cutPiece(deep, MountingRun::Across, 10.0, 300.0, 600.0)
+		<< cutPiece(standardRail(), MountingRun::Across, 10.0, 500.0, 0.0));
+	REQUIRE_FALSE(plate.isEmpty());
+	REQUIRE(plate.count(QStringLiteral("<mounted_item")) == 3);
+
+	const PurchaseFile file = exportOf(fixtureXml(instances, plate));
+	INFO(file.text.toStdString());
+	REQUIRE(file.written);
+	checkShape(file);
+
+		//Two lines for two bars, each of the 600 that were cut and not
+		//one millimetre of the piece nobody measured.
+	const QVector<QStringList> standard = linesOf(file, standardRail().key());
+	const QVector<QStringList> deeper = linesOf(file, deep.key());
+	REQUIRE(standard.size() == 1);
+	REQUIRE(deeper.size() == 1);
+	CHECK(metresOf(standard) == Approx(0.6));
+	CHECK(metresOf(deeper) == Approx(0.6));
+
+	const int lines = expectedDrawnLines(instances) + enclosure_lines + 2;
+	REQUIRE(lines == 5);
+	CHECK(dataOf(file, 1).size() == lines);
+	CHECK(countIn(file, QStringLiteral("lines")) == lines);
+	CHECK(metreLinesOf(dataOf(file, 1)) == 2);
+	CHECK(metresOf(dataOf(file, 1)) == Approx(1.2));
+	CHECK(piecesOf(dataOf(file, 1)) == enclosure_pieces);
+
+		//No line of zero metres anywhere: that is the form the piece
+		//nobody measured must not take.
+	for (const QStringList &row : dataOf(file, 1))
+	{
+		INFO(row.join(QStringLiteral(";")).toStdString());
+		if (isMetreLine(row)) {
+			CHECK(metresOf(QVector<QStringList> {row}) > 0.0);
+		}
+	}
+
+		//It is a pendency instead: which bar, and on which plate - with
+		//no tag, which a bar does not carry - and the list says it is not
+		//whole yet.
+	CHECK(file.code == 3);
+	CHECK(countIn(file, QStringLiteral("pending")) == 1);
+	const QVector<QStringList> pendings = dataOf(file, 2);
+	REQUIRE(pendings.size() == 1);
+	CHECK(pendings.first()
+	      == (QStringList {QStringLiteral("unreadable_quantity"), QString(),
+			       standardRail().designation(), platePath()}));
+
+		//Two pieces reached a line; the third is the pendency.
+	CHECK(countIn(file, QStringLiteral("mounted")) == 2);
 }

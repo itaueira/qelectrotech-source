@@ -96,8 +96,10 @@ namespace CLIExport {
 		      plate) beside the drawn components, and the parts of the
 		      mounting layout that no folio draws, one piece each. A part
 		      of the layout whose symbol is on a folio is counted once,
-		      from the symbol; rail and duct cut to length are not counted
-		      by the piece. Three blocks, an empty row between them: the
+		      from the symbol; rail and duct cut to length are counted by
+		      the metre, one line per profile, and never by the piece (a
+		      piece with no length is pending). Three blocks, an empty row
+		      between them: the
 		      counts first (pending, excluded, nameless, lines, mounted -
 		      mounted being the pieces counted from the layout), then the
 		      lines, then every item that could not be put on a line,

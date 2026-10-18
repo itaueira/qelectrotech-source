@@ -22,6 +22,8 @@
 #include "../../../sources/location/mountingprofile.h"
 #include "qt_catch_tostring.h"
 
+#include <cmath>
+
 #include <QHash>
 #include <QList>
 #include <QPointF>
@@ -117,6 +119,34 @@ namespace
 	{
 		return BomCollector::totalOf(result.lines,
 					     BomMeasure::countUnit());
+	}
+
+		/// @return how many metres the whole list comes to
+	double metres(const BomCollector::Result &result)
+	{
+		return BomCollector::totalOf(result.lines,
+					     BomMeasure::defaultLengthUnit());
+	}
+
+		/// @return the line of the bar of @p profile, an empty one when
+		/// there is none
+	LocationTree::BomLine barOf(const BomCollector::Result &result,
+				    const MountingProfile &profile)
+	{
+		const int found = LocationTree::indexOfBomLine(
+					result.lines, profile.key(), 0);
+		return found < 0 ? LocationTree::BomLine()
+				 : result.lines.at(found);
+	}
+
+		/// @return how many pieces of the plate @p rows stand for
+	int piecesIn(const QList<BomCollector::MountedRow> &rows)
+	{
+		int total = 0;
+		for (const BomCollector::MountedRow &row : rows) {
+			total += row.pieces;
+		}
+		return total;
 	}
 }
 
@@ -682,9 +712,15 @@ TEST_CASE("T19 — a peça posta na placa sem símbolo entra uma vez na lista, e
 
 	const QList<BomCollector::MountedRow> mounted =
 			BomCollector::mountedRowsOf(layout, drawn_elements);
-		//Four: not K1, which its symbol counts, and not the rail, which
-		//is bought by the length of its bar.
-	REQUIRE(mounted.size() == 4);
+		//Four parts - not K1, which its symbol counts - and then the
+		//rail: one row of half a metre of its bar, never a piece.
+	REQUIRE(mounted.size() == 5);
+	const BomCollector::MountedRow bar = mounted.at(4);
+	CHECK(bar.part_code == MountingProfile::rail(35.0, 7.5).key());
+	CHECK(bar.unit == BomMeasure::defaultLengthUnit());
+	CHECK(bar.quantity == Approx(0.5));
+	CHECK(bar.pieces == 1);
+	CHECK(bar.where == QString("QCM1"));
 
 	const BomCollector::Result drawn_only =
 			BomCollector::collect(rows, QList<LocationTree::BomLine>());
@@ -696,11 +732,22 @@ TEST_CASE("T19 — a peça posta na placa sem símbolo entra uma vez na lista, e
 		//to it are not bought, and nothing in the file says so.
 	CHECK(drawn_only.lines.size() == 2);
 	CHECK(pieces(drawn_only) == 2.0);
+	CHECK(metres(drawn_only) == 0.0);
 
-		//Three lines says the terminal block arrived; six pieces says K1
-		//did not arrive twice.
-	REQUIRE(result.lines.size() == 3);
+		//Four lines says the terminal block and the rail arrived; six
+		//pieces says K1 did not arrive twice and the rail was not
+		//counted by the piece; half a metre says it was counted by its
+		//bar instead.
+	REQUIRE(result.lines.size() == 4);
 	CHECK(pieces(result) == 6.0);
+	CHECK(metres(result) == Approx(0.5));
+
+	const LocationTree::BomLine rail =
+			barOf(result, MountingProfile::rail(35.0, 7.5));
+	CHECK(rail.quantity == Approx(0.5));
+	CHECK(rail.unit == BomMeasure::defaultLengthUnit());
+	CHECK(rail.name == MountingProfile::rail(35.0, 7.5).designation());
+	CHECK(rail.paths == QStringList({QStringLiteral("QCM1")}));
 
 	const LocationTree::BomLine contactor = lineOf(result, "XB-200");
 		//K1 from its symbol, the second contactor from the plate
@@ -725,14 +772,17 @@ TEST_CASE("T19 — a peça posta na placa sem símbolo entra uma vez na lista, e
 	CHECK(LocationTree::indexOfBomLine(result.lines, QString(), 0) < 0);
 	CHECK(result.pendings.isEmpty());
 	CHECK(result.drawn == 2);
-	CHECK(result.mounted == 4);
+		//Pieces of the plate, the piece of rail among them, and never
+		//its metres
+	CHECK(result.mounted == 5);
 
 	SECTION("o que segura o total é o vínculo, e a contagem de linhas não o vê")
 	{
 			//The careless join, built by hand: every part of the plate
-			//that is not a cut piece, its link ignored. The same three
-			//lines, one piece more - which is why the case asserts the
-			//total and not only the lines.
+			//that is not a cut piece, its link ignored, and the bar as
+			//the right join gives it. The same four lines, one piece
+			//more - which is why the case asserts the total and not
+			//only the lines.
 		QList<BomCollector::MountedRow> careless;
 		for (const QString &uuid : layout.mountedItemUuids())
 		{
@@ -746,6 +796,7 @@ TEST_CASE("T19 — a peça posta na placa sem símbolo entra uma vez na lista, e
 			row.name = item.designation();
 			careless << row;
 		}
+		careless << bar;
 
 		const BomCollector::Result twice =
 				BomCollector::collect(rows,
@@ -753,6 +804,7 @@ TEST_CASE("T19 — a peça posta na placa sem símbolo entra uma vez na lista, e
 						      careless);
 		CHECK(twice.lines.size() == result.lines.size());
 		CHECK(pieces(twice) == 7.0);
+		CHECK(metres(twice) == Approx(0.5));
 	}
 
 	SECTION("o símbolo apagado passa a conta para a placa, e o total não muda")
@@ -764,19 +816,20 @@ TEST_CASE("T19 — a peça posta na placa sem símbolo entra uma vez na lista, e
 		without_k1 << rows.at(1);
 		const QList<BomCollector::MountedRow> now =
 				BomCollector::mountedRowsOf(layout, QSet<QUuid>());
-		REQUIRE(now.size() == 5);
+		REQUIRE(now.size() == 6);
 
 		const BomCollector::Result moved =
 				BomCollector::collect(without_k1,
 						      QList<LocationTree::BomLine>(),
 						      now);
-		REQUIRE(moved.lines.size() == 3);
+		REQUIRE(moved.lines.size() == 4);
 		CHECK(pieces(moved) == 6.0);
+		CHECK(metres(moved) == Approx(0.5));
 		CHECK(lineOf(moved, "XB-200").quantity == 2.0);
 		CHECK(lineOf(moved, "XB-200").paths
 		      == QStringList({QStringLiteral("K1"), QStringLiteral("QCM1")}));
 		CHECK(moved.drawn == 1);
-		CHECK(moved.mounted == 5);
+		CHECK(moved.mounted == 6);
 	}
 
 	SECTION("a caixa marcada no símbolo vale também para a peça dele na placa")
@@ -790,8 +843,9 @@ TEST_CASE("T19 — a peça posta na placa sem símbolo entra uma vez na lista, e
 				BomCollector::collect(kept_out,
 						      QList<LocationTree::BomLine>(),
 						      mounted);
-		REQUIRE(result_kept.lines.size() == 3);
+		REQUIRE(result_kept.lines.size() == 4);
 		CHECK(pieces(result_kept) == 5.0);
+		CHECK(metres(result_kept) == Approx(0.5));
 		CHECK(lineOf(result_kept, "XB-200").quantity == 1.0);
 		CHECK(result_kept.excluded == 1);
 	}
@@ -827,11 +881,14 @@ TEST_CASE("T19 — sem folha nenhuma a lista sai da placa, e a peça sem código
 
 	const QList<BomCollector::MountedRow> mounted =
 			BomCollector::mountedRowsOf(layout, QSet<QUuid>());
-		//Face by face, in the order the parts were laid, the rail left
-		//out: t1, t2, loose, then the door
-	REQUIRE(mounted.size() == 4);
+		//The parts face by face, in the order they were laid, the rail
+		//not among them: t1, t2, loose, then the door. And then the bar
+		//the rail was cut from, which has no code and is still no
+		//pendency: its key is its profile.
+	REQUIRE(mounted.size() == 5);
 	CHECK(mounted.at(3).label == QString("H1"));
 	CHECK(mounted.at(3).where == QString("QCM1"));
+	CHECK(mounted.at(4).part_code == MountingProfile::rail(35.0, 7.5).key());
 
 	const BomCollector::Result result =
 			BomCollector::collect(QList<BomCollector::ElementRow>(),
@@ -839,10 +896,13 @@ TEST_CASE("T19 — sem folha nenhuma a lista sai da placa, e a peça sem código
 					      mounted);
 
 		//The list comes out with no schematic behind it at all
-	REQUIRE(result.lines.size() == 2);
+	REQUIRE(result.lines.size() == 3);
 	CHECK(pieces(result) == 3.0);
+	CHECK(metres(result) == Approx(0.5));
 	CHECK(lineOf(result, "XT-100").quantity == 2.0);
 	CHECK(lineOf(result, "XL-022").quantity == 1.0);
+	CHECK(barOf(result, MountingProfile::rail(35.0, 7.5)).quantity
+	      == Approx(0.5));
 		//A part with a tag is named by its tag, as a symbol is
 	CHECK(lineOf(result, "XL-022").paths == QStringList({QStringLiteral("H1")}));
 
@@ -856,6 +916,298 @@ TEST_CASE("T19 — sem folha nenhuma a lista sai da placa, e a peça sem código
 	CHECK(result.pendings.at(0).name == QString("loose"));
 	CHECK(result.pendings.at(0).where == QString("QCM1"));
 
-		//Every part that came in left through one door
-	CHECK(result.mounted + result.pendings.size() == mounted.size());
+		//Every piece that came in left through one door - five here, the
+		//piece of rail among them, and each pendency is one piece
+	REQUIRE(piecesIn(mounted) == 5);
+	CHECK(result.mounted + result.pendings.size() == piecesIn(mounted));
+}
+
+/*
+	The bar rail and duct are cut from (T22, step 11).
+
+	They are not bought by the piece and have no catalogue part: what the
+	shop orders is the length used, one line per profile. Two numbers can
+	go wrong here, and each case asserts both. The count of lines catches a
+	bar split over two lines or two bars run into one; only the metres
+	catch a length added into the wrong line, or a breaker's width added
+	into a rail - which changes no count and comes out as a total that
+	still reads like one somebody measured.
+*/
+
+namespace
+{
+		/// One piece cut from a bar of @p profile, @p length long
+	MountedItem cutPiece(const MountingProfile &profile,
+			     MountingRun run,
+			     qreal x,
+			     qreal y,
+			     qreal length)
+	{
+		MountedItem piece;
+		piece.profile = profile;
+		piece.run = run;
+		piece.position = QPointF(x, y);
+		piece.size = profile.sizeFor(length, run);
+		return piece;
+	}
+
+		/// One piece of a bar of @p profile that nobody has given a
+		/// length to: on the plate, and not cut yet
+	MountedItem uncutPiece(const MountingProfile &profile)
+	{
+		MountedItem piece;
+		piece.profile = profile;
+		piece.position = QPointF(10.0, 700.0);
+		return piece;
+	}
+
+	MountingProfile standardRail()
+	{
+		return MountingProfile::rail(35.0, 7.5);
+	}
+
+		/// The same width on the plate, and another bar on the shelf
+	MountingProfile deepRail()
+	{
+		return MountingProfile::rail(35.0, 15.0);
+	}
+
+	MountingProfile duct()
+	{
+		return MountingProfile::duct(40.0, 60.0);
+	}
+}
+
+TEST_CASE("T22 — trilho e canaleta entram na lista pelo metro somado, uma linha por perfil",
+	  "[bom][t22]")
+{
+		//A plate and a door of one enclosure. On the plate: three pieces
+		//of standard rail, two of duct, one of a deeper rail of the same
+		//width, and a breaker bought as a piece with no symbol. On the
+		//door: one more piece of standard rail.
+	MountingLayout layout;
+	const QString plate = layout.appendSurface(
+				MountingSurface(QStringLiteral("QCM1"),
+						QStringLiteral("plate"),
+						MountingArea(600.0, 800.0)));
+	const QString door = layout.appendSurface(
+				MountingSurface(QStringLiteral("QCM1/PORTE"),
+						QStringLiteral("door"),
+						MountingArea(500.0, 700.0)));
+	REQUIRE_FALSE(plate.isEmpty());
+	REQUIRE_FALSE(door.isEmpty());
+
+	for (const MountedItem &item :
+	     {cutPiece(standardRail(), MountingRun::Across, 10.0, 100.0, 480.0),
+	      cutPiece(standardRail(), MountingRun::Across, 10.0, 300.0, 480.0),
+	      cutPiece(standardRail(), MountingRun::Across, 10.0, 500.0, 240.0),
+	      cutPiece(duct(), MountingRun::Down, 560.0, 10.0, 560.0),
+	      cutPiece(duct(), MountingRun::Across, 10.0, 10.0, 540.0),
+	      cutPiece(deepRail(), MountingRun::Across, 10.0, 600.0, 300.0),
+	      plated("q1", "", "XQ-100")})
+	{
+		REQUIRE_FALSE(layout.mountItem(plate, item).isEmpty());
+	}
+	REQUIRE_FALSE(layout.mountItem(door,
+				       cutPiece(standardRail(),
+						MountingRun::Across,
+						20.0, 20.0, 300.0))
+		      .isEmpty());
+
+	const QList<BomCollector::MountedRow> mounted =
+			BomCollector::mountedRowsOf(layout, QSet<QUuid>());
+		//The breaker, then the three bars of the plate, then the one of
+		//the door: one row per profile and face, never one per piece.
+	REQUIRE(mounted.size() == 5);
+	CHECK(piecesIn(mounted) == 8);
+
+	const BomCollector::Result result =
+			BomCollector::collect(QList<BomCollector::ElementRow>(),
+					      QList<LocationTree::BomLine>(),
+					      mounted);
+
+		//Four lines: the breaker, and one per profile - the rail of the
+		//door on the line of the rail of the plate, and the deeper rail
+		//on a line of its own.
+	REQUIRE(result.lines.size() == 4);
+		//And the totals, which are what a wrong join would hide in: 1,5
+		//+ 1,1 + 0,3 metres, and the breaker one piece and not one
+		//millimetre.
+	CHECK(metres(result) == Approx(2.9));
+	CHECK(pieces(result) == 1.0);
+	CHECK(lineOf(result, "XQ-100").quantity == 1.0);
+
+	const LocationTree::BomLine rail = barOf(result, standardRail());
+	CHECK(rail.quantity == Approx(1.5));
+	CHECK(rail.unit == BomMeasure::defaultLengthUnit());
+	CHECK(rail.name == standardRail().designation());
+	CHECK(rail.part_revision == 0);
+		//Each face it was cut on said once
+	CHECK(rail.paths == QStringList({QStringLiteral("QCM1"),
+					 QStringLiteral("QCM1/PORTE")}));
+
+	CHECK(barOf(result, duct()).quantity == Approx(1.1));
+	CHECK(barOf(result, duct()).name == duct().designation());
+	CHECK(barOf(result, deepRail()).quantity == Approx(0.3));
+	CHECK(barOf(result, deepRail()).unit == BomMeasure::defaultLengthUnit());
+
+		//The list cannot come to another total than the layout's own:
+		//every bar of the project is one line, and that line says what
+		//MountingLayout::profileTotals() says.
+	const QList<MountingProfileTotal> totals = layout.profileTotals();
+	REQUIRE(totals.size() == 3);
+	for (const MountingProfileTotal &total : totals)
+	{
+		INFO(total.profile.key().toStdString());
+		CHECK(barOf(result, total.profile).quantity
+		      == Approx(total.metres()));
+	}
+
+	CHECK(result.pendings.isEmpty());
+		//Pieces of the plate and never metres: the breaker, four pieces
+		//of standard rail, two of duct, one of deep rail.
+	CHECK(result.mounted == 8);
+
+	SECTION("a linha se consolida pela chave, nunca pelo número")
+	{
+			//Built by hand, so that the numbers are chosen to be the
+			//trap: the same metres under two keys are two lines, and
+			//the same key on two faces is one line of the sum - not
+			//one line of 0,6 for having read the same number twice.
+		BomCollector::MountedRow first;
+		first.part_code = standardRail().key();
+		first.name = standardRail().designation();
+		first.designation = first.name;
+		first.where = QStringLiteral("QCM1");
+		first.quantity = 0.6;
+		first.unit = BomMeasure::defaultLengthUnit();
+
+		BomCollector::MountedRow second = first;
+		second.where = QStringLiteral("QCM2");
+
+		BomCollector::MountedRow other = first;
+		other.part_code = duct().key();
+		other.name = duct().designation();
+		other.designation = other.name;
+
+		const BomCollector::Result joined =
+				BomCollector::collect(
+					QList<BomCollector::ElementRow>(),
+					QList<LocationTree::BomLine>(),
+					{first, second, other});
+
+		REQUIRE(joined.lines.size() == 2);
+		CHECK(metres(joined) == Approx(1.8));
+		CHECK(barOf(joined, standardRail()).quantity == Approx(1.2));
+		CHECK(barOf(joined, duct()).quantity == Approx(0.6));
+		CHECK(joined.mounted == 3);
+	}
+}
+
+TEST_CASE("T22 — o pedaço de trilho sem comprimento é pendência, e nunca zero metro",
+	  "[bom][t22]")
+{
+		//One piece of rail cut to 480, one piece of the same rail nobody
+		//gave a length to, and a piece of duct nobody gave a length to
+		//either - the only piece of duct on the plate.
+	MountingLayout layout;
+	const QString plate = layout.appendSurface(
+				MountingSurface(QStringLiteral("QCM1"),
+						QStringLiteral("plate"),
+						MountingArea(600.0, 800.0)));
+	REQUIRE_FALSE(plate.isEmpty());
+	for (const MountedItem &item :
+	     {cutPiece(standardRail(), MountingRun::Across, 10.0, 100.0, 480.0),
+	      uncutPiece(standardRail()),
+	      uncutPiece(duct())})
+	{
+		REQUIRE_FALSE(layout.mountItem(plate, item).isEmpty());
+	}
+
+	const QList<BomCollector::MountedRow> mounted =
+			BomCollector::mountedRowsOf(layout, QSet<QUuid>());
+		//The measured rail, and one row per piece nobody measured: the
+		//duct has no row of metres at all, and no row of zero metres.
+	REQUIRE(mounted.size() == 3);
+	int unmeasured = 0;
+	for (const BomCollector::MountedRow &row : mounted)
+	{
+		CHECK(row.quantity != 0.0);
+		if (std::isnan(row.quantity)) {
+			++ unmeasured;
+		}
+	}
+	CHECK(unmeasured == 2);
+
+	const BomCollector::Result result =
+			BomCollector::collect(QList<BomCollector::ElementRow>(),
+					      QList<LocationTree::BomLine>(),
+					      mounted);
+
+		//One line, of the 480 that were measured, and the duct on none:
+		//a line of zero metres would read as a duct somebody measured.
+	REQUIRE(result.lines.size() == 1);
+	CHECK(metres(result) == Approx(0.48));
+	CHECK(barOf(result, standardRail()).quantity == Approx(0.48));
+	CHECK(LocationTree::indexOfBomLine(result.lines, duct().key(), 0) < 0);
+	for (const LocationTree::BomLine &line : result.lines) {
+		CHECK(line.quantity > 0.0);
+	}
+
+		//The two pieces nobody measured, each a pendency of its own,
+		//saying which bar and where - and with no tag, which a bar
+		//does not carry, rather than its profile written twice.
+	REQUIRE(BomCollector::countOf(result,
+				      BomCollector::Pendency::UnreadableQuantity)
+		== 2);
+	CHECK(result.pendings.size() == 2);
+	QStringList said;
+	for (const BomCollector::Pending &pending : result.pendings)
+	{
+		CHECK(pending.name.isEmpty());
+		CHECK(pending.where == QString("QCM1"));
+		said << pending.designation;
+	}
+	said.sort();
+	QStringList expected {duct().designation(),
+			      standardRail().designation()};
+	expected.sort();
+	CHECK(said == expected);
+
+		//As many as the layout itself counts apart
+	int uncut = 0;
+	const QList<MountingProfileTotal> totals = layout.profileTotals();
+	for (const MountingProfileTotal &total : totals) {
+		uncut += total.uncut;
+	}
+	CHECK(uncut == 2);
+
+		//Every piece left through one door: one on a line, two pending.
+	CHECK(result.mounted == 1);
+	CHECK(result.mounted + result.pendings.size() == piecesIn(mounted));
+
+	SECTION("zero metro escrito à mão também não vira linha")
+	{
+			//The same refusal a symbol whose quantity field says zero
+			//gets: zero looks like an answer and is not one a list can
+			//order from.
+		BomCollector::MountedRow zero;
+		zero.part_code = standardRail().key();
+		zero.name = standardRail().designation();
+		zero.designation = zero.name;
+		zero.where = QStringLiteral("QCM1");
+		zero.quantity = 0.0;
+		zero.unit = BomMeasure::defaultLengthUnit();
+
+		const BomCollector::Result refused =
+				BomCollector::collect(
+					QList<BomCollector::ElementRow>(),
+					QList<LocationTree::BomLine>(),
+					{zero});
+		CHECK(refused.lines.isEmpty());
+		CHECK(BomCollector::countOf(
+			      refused, BomCollector::Pendency::UnreadableQuantity)
+		      == 1);
+		CHECK(refused.mounted == 0);
+	}
 }

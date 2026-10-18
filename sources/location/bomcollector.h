@@ -68,6 +68,17 @@ class MountingLayout;
 	window lists what is off the folios with - so that this list and that
 	window cannot disagree about which parts no folio draws.
 
+	@par And the bar the rail and the duct are cut from
+
+	Rail and duct are not bought by the piece and have no catalogue part:
+	they are cut to size from a bar, and what the shop orders is the
+	length that was used. The plate is the only place that knows it, so the
+	plate gives one line per profile - kind, section and depth, which is
+	MountingProfile::key() - with the metres cut from it added up. A piece
+	nobody gave a length to is a pendency and never zero metres, because a
+	line that took it as nothing would order short, and that is only found
+	when the bar runs out on the bench.
+
 	@par The key is the part, never the words describing it
 
 	A line is (part_code, part_revision) and nothing else. Two products
@@ -131,27 +142,58 @@ namespace BomCollector
 
 	/**
 		@brief One part screwed to a face of the layout that no folio
-		draws, as this list reads it.
+		draws, or one bar cut on it, as this list reads it.
 
-		Text, like ElementRow and for the same reason: the rule that joins
-		it to the other halves has to be provable on rows built by hand.
-		There is no quantity and no revision, because the layout keeps
-		neither - a part on the plate is one piece of whatever revision is
-		current - and no designation of the product, because the layout
-		keeps the code it was laid as and not what the catalogue calls it.
+		Plain values, like ElementRow and for the same reason: the rule
+		that joins it to the other halves has to be provable on rows built
+		by hand.
+
+		There is no revision, because the layout keeps none - a part on
+		the plate is whatever revision is current. A part bought as a piece
+		is one piece and names no product, because the layout keeps the
+		code it was laid as and not what the catalogue calls it. A bar is
+		the other way round: no catalogue part, and the profile is both its
+		key and its name.
 	*/
 	struct MountedRow
 	{
-			/// the catalogue part it was laid as, empty when none was
+			/// the catalogue part it was laid as, empty when none
+			/// was; the key of the profile for a bar
 		QString part_code;
 			/// the tag it carries on the plate, empty for a part laid
-			/// straight from the catalogue
+			/// straight from the catalogue and for a bar
 		QString label;
 			/// how to call it out loud, never empty - for naming it
 			/// in a pendency (MountedItem::designation)
 		QString name;
+			/// what the product is called, when the plate knows it:
+			/// the profile of a bar; empty for a part bought as a
+			/// piece, which only the catalogue can name
+		QString designation;
 			/// the location of the face it is screwed to, as a path
 		QString where;
+		/**
+			How much this row stands for, in @ref unit: one for a
+			part bought as a piece, the metres cut from the bar for a
+			bar.
+
+			Not a number for a piece nobody gave a length to, and not
+			zero: zero is a length, and a total that added it would
+			go on reading as one. collect() refuses both, as it
+			refuses them in the quantity field of a symbol.
+		*/
+		double quantity = 1.0;
+			/// the unit of quantity, empty for pieces
+		QString unit;
+		/**
+			How many pieces of the plate this row stands for: one for
+			a part, the pieces the metres were cut into for a bar.
+
+			Kept beside the metres and never worked out from them,
+			because Result::mounted counts what is screwed to the
+			plate - four rails are four pieces whatever their length.
+		*/
+		int pieces = 1;
 	};
 
 		/// Why an item could not be put on a line of the list.
@@ -220,11 +262,16 @@ namespace BomCollector
 			/// how many lines of the enclosure half reached the list
 		int enclosures = 0;
 		/**
-			How many parts of the layout reached a line, one piece
-			each.
+			How many pieces of the layout reached a line: each part
+			bought as a piece, and each piece of a bar whose metres
+			went into a line.
 
-			With the pendencies named at a face it accounts for every
-			MountedRow that came in, for the reason @ref drawn gives.
+			Pieces and never metres. The number says how much of the
+			list the plate answers for, and twelve metres of rail are
+			not twelve parts. Every MountedRow leaves collect() through
+			a line or a pendency named at a face, for the reason
+			@ref drawn gives, and this adds up MountedRow::pieces of
+			the ones that reached a line.
 		*/
 		int mounted = 0;
 	};
@@ -317,14 +364,16 @@ namespace BomCollector
 
 	/**
 		@brief The parts of the layout this list has to count, because no
-		folio does.
+		folio does, and the bars cut on it.
 		@param layout the layout of the project
 		@param drawn_elements the uuid of the elements the folios hold -
 		at least every one UndrawnPart::namedElements() returns
-		@return one row per part, face by face in the order of the layout
+		@return one row per part, face by face in the order of the layout;
+		then, face by face, one row per profile cut on the face and one
+		per piece of it nobody gave a length to
 
-		Exactly the parts UndrawnPart::of() answers, less the pieces cut to
-		length, and for both of its reasons:
+		The parts are exactly the ones UndrawnPart::of() answers, less the
+		pieces cut to length, and for both of its reasons:
 
 		- a part laid with no symbol behind it is the layout drawn before
 		  the schematic, and the plate is the only place that knows it has
@@ -341,10 +390,24 @@ namespace BomCollector
 		whoever reads them - and the plate never brings back a part the
 		drawing kept out.
 
-		A piece of rail or duct is left out because it is not bought as a
-		piece: it is cut from a bar, and the bar is bought by the length
-		MountingLayout::profileTotals() adds up. Counted here, a plate
-		with four rails would order four rails by the piece.
+		A piece of rail or duct is not one of them, because it is not
+		bought as a piece: counted with the parts, a plate with four rails
+		would order four rails by the piece. It arrives in the bars
+		instead - one row per profile and face, keyed by
+		MountingProfile::key(), named by MountingProfile::designation(),
+		its quantity the metres MountingSurface::profileTotals() adds up
+		for that face, in BomMeasure::defaultLengthUnit(). The face adds
+		up its own pieces, and collect() adds up the faces by the key of
+		the line, so the list cannot come to another total than the one
+		MountingLayout::profileTotals() gives for the whole project. Every
+		piece cut is in it, whatever symbol it names: a length is known
+		only to the plate.
+
+		A piece nobody gave a length to is not added into the metres - the
+		face counts it apart, in MountingProfileTotal::uncut - and comes
+		back as a row of its own whose quantity is not a number, which
+		collect() turns into a pendency. One row per piece, so that three
+		pieces nobody measured are three pendencies and not one.
 
 		The set is the one input this cannot check. An element a folio
 		does hold, missing from it, reads as a symbol gone, and the part
@@ -368,8 +431,9 @@ namespace BomCollector
 		the designation of the product rather than the name of the place:
 		a cabinet is called "Armoire 2000x800" on an order form and
 		"Coffret principal" on a plan, and only one of the two can be
-		looked up by whoever buys it. The plate names no product, so the
-		order of the last two halves changes no name.
+		looked up by whoever buys it. The plate names no product but the
+		profile of a bar, and it is read last, so a name another half gives
+		the same key is the one kept.
 
 		A part code that appears in two halves gives one line with the
 		quantities added. That case is the whole reason this function
@@ -377,10 +441,11 @@ namespace BomCollector
 		directions at once - one line too many, or one contribution lost
 		inside the line that survived.
 
-		A part of the plate is one piece of revision 0, so it shares the
-		line of a symbol of the same code only when nobody typed a
-		revision on that symbol either - the key of a line is the part
-		and its revision, whichever half it comes from.
+		A row of the plate is revision 0, so it shares the line of a symbol
+		of the same code only when nobody typed a revision on that symbol
+		either - the key of a line is the part and its revision, whichever
+		half it comes from. Two bars share a line when they share a key,
+		and never because they come to the same number of metres.
 	*/
 	Result collect(const QList<ElementRow> &rows,
 		       const QList<LocationTree::BomLine> &enclosures,

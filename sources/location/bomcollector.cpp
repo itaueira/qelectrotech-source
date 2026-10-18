@@ -19,17 +19,44 @@
 
 #include "bommeasure.h"
 #include "mountinglayout.h"
+#include "mountingprofile.h"
 #include "undrawnparts.h"
 
 #include "../qetinformation.h"
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace BomCollector
 {
 
 namespace {
+
+/**
+	@param value a quantity, already a number
+	@return true when a line can be bought from it
+
+	One spelling for the two halves that read a quantity - the enclosures
+	arrive with theirs worked out: a symbol whose field says zero and a bar
+	nobody gave a length to are refused by the same words. Zero is refused
+	with the rest because it looks like an answer and is not one this list
+	can act on - see quantityOf().
+*/
+bool isUsableQuantity(double value)
+{
+	return std::isfinite(value) && value > 0.0;
+}
+
+/**
+	@param raw the unit a row says it is in
+	@return the unit its line carries: the count unit when it says none
+*/
+QString lineUnitOf(const QString &raw)
+{
+	const QString unit = raw.trimmed();
+	return unit.isEmpty() ? BomMeasure::countUnit() : unit;
+}
 
 /**
 	@param a one unit
@@ -170,7 +197,7 @@ double quantityOf(const QString &raw, bool *ok)
 
 	bool parsed = false;
 	const double value = text.toDouble(&parsed);
-	if (!parsed || !std::isfinite(value) || value <= 0.0)
+	if (!parsed || !isUsableQuantity(value))
 	{
 		if (ok) {
 			*ok = false;
@@ -232,7 +259,7 @@ QList<MountedRow> mountedRowsOf(const MountingLayout &layout,
 	{
 		const MountedItem &item = part.item;
 			//A piece cut from a bar: bought by the length of the bar,
-			//never by the piece - see the header.
+			//which is the loop below, and never by the piece.
 		if (item.isCutToLength()) {
 			continue;
 		}
@@ -243,6 +270,47 @@ QList<MountedRow> mountedRowsOf(const MountingLayout &layout,
 		row.name = item.designation();
 		row.where = where_of.value(part.surface_uuid);
 		rows << row;
+	}
+
+		//And the bars, face by face. What a face cut is the face's own
+		//answer - profileTotals() groups by the key of the profile and
+		//keeps apart the pieces nobody measured - and nothing here adds
+		//up a length again: a second sum would be free to disagree with
+		//the layout's. Face by face rather than over the whole project so
+		//that each row can say where it was cut, which is what the tags
+		//of the line and a pendency both need; collect() adds the faces
+		//up by the same key.
+	for (int index = 0 ; index < layout.count() ; ++index)
+	{
+		const MountingSurface &surface = layout.at(index);
+		const QList<MountingProfileTotal> totals = surface.profileTotals();
+		for (const MountingProfileTotal &total : totals)
+		{
+			MountedRow bar;
+			bar.part_code = total.profile.key();
+			bar.name = total.profile.designation();
+			bar.designation = bar.name;
+			bar.where = where_of.value(surface.uuid);
+			bar.unit = BomMeasure::defaultLengthUnit();
+
+			const int measured = total.pieces - total.uncut;
+			if (measured > 0)
+			{
+				bar.quantity = total.metres();
+				bar.pieces = measured;
+				rows << bar;
+			}
+
+				//Not a number, and not zero: the piece is still to
+				//be cut, and a zero added into the line would read
+				//as a length somebody measured. One row per piece,
+				//so that each is a pendency of its own.
+			bar.quantity = std::numeric_limits<double>::quiet_NaN();
+			bar.pieces = 1;
+			for (int uncut = 0 ; uncut < total.uncut ; ++uncut) {
+				rows << bar;
+			}
+		}
 	}
 	return rows;
 }
@@ -290,9 +358,7 @@ Result collect(const QList<ElementRow> &rows,
 			continue;
 		}
 
-		const QString unit = row.unit.trimmed().isEmpty()
-				     ? BomMeasure::countUnit()
-				     : row.unit.trimmed();
+		const QString unit = lineUnitOf(row.unit);
 		const int revision = revisionOf(row.part_revision);
 
 		int found = LocationTree::indexOfBomLine(result.lines, code,
@@ -396,47 +462,73 @@ Result collect(const QList<ElementRow> &rows,
 		++ result.enclosures;
 	}
 
-		//And the parts on a plate that no folio draws. Whether a part
-		//belongs here was settled by mountedRowsOf(), and settled by the
-		//link to its symbol: what arrives is counted, each one piece,
-		//and nothing that arrives is a part some symbol already counts.
+		//And the plate: the parts on it that no folio draws, and the bars
+		//cut on it. Whether a part belongs here was settled by
+		//mountedRowsOf(), and settled by the link to its symbol: what
+		//arrives is counted, and nothing that arrives is a part some
+		//symbol already counts.
 	for (const MountedRow &row : mounted)
 	{
+			//The tag column of a pendency: the tag when the row says
+			//what the product is, and otherwise the plate's own name
+			//for it, which is all there is - a part with no code and
+			//no tag still has to be found on the plate. A bar says
+			//what it is and carries no tag, so it is named by its
+			//profile and not by its profile twice.
+		const QString tag = row.designation.isEmpty() ? row.name
+							       : row.label;
+
 		const QString code = row.part_code.trimmed();
 		if (code.isEmpty())
 		{
-				//Named as the plate names it, and where it is
-				//screwed: a part with no code and no tag is still
-				//a part somebody put on the plate, and has to be
-				//found there.
-			addPending(result, Pendency::NoPart, row.name, QString(),
+			addPending(result, Pendency::NoPart, tag, row.designation,
 				   row.where);
+			continue;
+		}
+
+			//Refused by the rule a symbol's quantity is refused by,
+			//and the case it is here for is the piece of a bar nobody
+			//gave a length to: as zero metres it would make the line
+			//order short, and nothing on paper would say so.
+		if (!isUsableQuantity(row.quantity))
+		{
+			addPending(result, Pendency::UnreadableQuantity, tag,
+				   row.designation, row.where);
 			continue;
 		}
 
 			//Revision 0: the layout keeps none, and 0 is "whatever is
 			//current" - see LocationTree::BomLine.
-		const QString unit = BomMeasure::countUnit();
+		const QString unit = lineUnitOf(row.unit);
 		int found = LocationTree::indexOfBomLine(result.lines, code, 0);
 		if (found < 0)
 		{
-				//No name: the plate keeps the code a part was laid
-				//as and not what the catalogue calls it. Another
+				//The name of the product when the plate knows it,
+				//which is a bar's profile. A part bought as a piece
+				//has none here: the plate keeps the code it was laid
+				//as and not what the catalogue calls it, and another
 				//half that names the same part fills it in.
 			LocationTree::BomLine line;
 			line.part_code = code;
+			line.name = row.designation;
 			line.unit = unit;
 			result.lines.append(line);
 			found = int(result.lines.count()) - 1;
 		}
 		else if (!readsAsSameUnit(result.lines.at(found).unit, unit))
 		{
-			addPending(result, Pendency::UnitConflict, row.name,
-				   QString(), row.where);
+			addPending(result, Pendency::UnitConflict, tag,
+				   row.designation, row.where);
 			continue;
 		}
 
-		result.lines[found].quantity += 1.0;
+		if (result.lines.at(found).name.isEmpty()) {
+			result.lines[found].name = row.designation;
+		}
+			//Added as a number, under the key: two bars that come to
+			//the same metres are two lines when their profiles differ,
+			//and one bar cut on two faces is one line of the sum.
+		result.lines[found].quantity += row.quantity;
 			//The tag when the part has one, as a symbol is named by
 			//its tag. A part laid from the catalogue has none, and is
 			//named by the place it is screwed in - once per place: a
@@ -450,7 +542,8 @@ Result collect(const QList<ElementRow> &rows,
 			 && !result.lines.at(found).paths.contains(row.where)) {
 			result.lines[found].paths << row.where;
 		}
-		++ result.mounted;
+			//Pieces, never metres - see Result::mounted.
+		result.mounted += row.pieces;
 	}
 
 		//Ordered by the key, so that two exports of the same project can

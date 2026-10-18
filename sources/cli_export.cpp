@@ -982,8 +982,10 @@ QSet<QUuid> drawnElementsNamedBy(QETProject &project,
 	of its code. A part whose symbol is on a folio is not, because the
 	symbol already counts it - which is the whole of "once", and is decided
 	by BomCollector::mountedRowsOf() and the set drawnElementsNamedBy()
-	builds, never here. A piece of rail or duct is not either: it is cut
-	from a bar, and a bar is not bought by the piece.
+	builds, never here. A piece of rail or duct is on a line too, but by
+	the metre: it is cut from a bar, a bar is bought by its length, and
+	the pieces of one profile are summed into one line in metres. A piece
+	with no length is pending, never zero metres.
 
 	@par The layout of the file
 	Three blocks with one empty row between them, each opened by a fixed
