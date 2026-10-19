@@ -234,11 +234,14 @@ void ProjectMainConfigPage::applyProjectConf()
 		}
 	}
 		//And the tags already drawn take it, in one undo
-	if (tag_format_changed) {
+		//Or when asked to: the tags placed before a default changed, and
+		//the ones moved by hand, with no option to change for it
+	if (tag_format_changed || report_tag_reformat_cb_ -> isChecked()) {
 		if (QUndoCommand *format = ReportTags::formatCommand(m_project)) {
 			m_project -> undoStack() -> push(format);
 		}
 	}
+	report_tag_reformat_cb_ -> setChecked(false);
 
 		//Following the application's rules stores nothing in the project
 	WiringRules::Settings wiring_rules;
@@ -339,7 +342,7 @@ void ProjectMainConfigPage::initWidgets()
 		//one undo, and to the ones given afterwards
 	report_tag_font_label_ = new QLabel(tr("Police du repère :", "label when configuring"));
 	report_tag_font_pb_ = new QPushButton();
-	report_tag_font_pb_ -> setToolTip(tr("Par défaut, celle de la référence de chaque renvoi.", "tooltip"));
+	report_tag_font_pb_ -> setToolTip(tr("By default, the family of each arrow's reference, at size 4.", "tooltip"));
 	connect(report_tag_font_pb_, &QPushButton::clicked, this, [this]() {
 		QFont current = QETApp::diagramTextsFont(9);
 		if (!m_report_tag_font.isEmpty()) {
@@ -353,7 +356,7 @@ void ProjectMainConfigPage::initWidgets()
 		}
 	});
 	report_tag_font_reset_pb_ = new QPushButton(tr("Par défaut", "button label"));
-	report_tag_font_reset_pb_ -> setToolTip(tr("Reprendre la police de la référence de chaque renvoi.", "tooltip"));
+	report_tag_font_reset_pb_ -> setToolTip(tr("Go back to the family of each arrow's reference, at size 4.", "tooltip"));
 	connect(report_tag_font_reset_pb_, &QPushButton::clicked, this, [this]() {
 		m_report_tag_font.clear();
 		updateReportTagFormatWidgets();
@@ -373,6 +376,9 @@ void ProjectMainConfigPage::initWidgets()
 									   int(QETProject::ReportTagPosition::Above));
 	report_tag_position_cb_ -> addItem(tr("Au-dessous du renvoi", "report tag position"),
 									   int(QETProject::ReportTagPosition::Below));
+	report_tag_reformat_cb_ = new QCheckBox(tr("Reformat the tags already placed", "checkbox label"));
+	report_tag_reformat_cb_ -> setToolTip(tr("On applying, every tag already placed takes the font, the colour and the place above, even one moved by hand.",
+											 "tooltip"));
 	report_tag_position_cb_ -> setToolTip(tr("Les repères déjà placés y sont remis, même déplacés à la main.",
 											 "tooltip"));
 
@@ -473,6 +479,7 @@ void ProjectMainConfigPage::initLayout()
 	report_tag_position_layout -> addWidget(report_tag_position_cb_);
 	report_tag_position_layout -> addStretch();
 	references_layout -> addLayout(report_tag_position_layout);
+	references_layout -> addWidget(report_tag_reformat_cb_);
 	main_layout0 -> addWidget(folio_references_gb_);
 	main_layout0 -> addSpacing(10);
 
@@ -519,6 +526,7 @@ void ProjectMainConfigPage::readValuesFromProject()
 	m_report_tag_color = m_project -> reportTagColor();
 	report_tag_position_cb_ -> setCurrentIndex(qMax(0, report_tag_position_cb_ -> findData(
 														int(m_project -> reportTagPosition()))));
+	report_tag_reformat_cb_ -> setChecked(false);
 	updateReportTagFormatWidgets();
 
 		//The rules that apply: the project's own or the application's
@@ -568,7 +576,7 @@ void ProjectMainConfigPage::updateReportTagFormatWidgets()
 		}
 		report_tag_font_pb_ -> setText(described);
 	} else {
-		report_tag_font_pb_ -> setText(tr("Celle de la référence", "report tag font"));
+		report_tag_font_pb_ -> setText(tr("The reference's, at size 4", "report tag font"));
 	}
 	report_tag_font_reset_pb_ -> setEnabled(!m_report_tag_font.isEmpty());
 

@@ -29,13 +29,18 @@
 #include "../../../../sources/qetgraphicsitem/reporttags.h"
 #include "../../../../sources/qetinformation.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/ui/configpage/projectconfigpages.h"
 #include "../../../../sources/undocommand/addgraphicsobjectcommand.h"
 
 #include <catch2/catch.hpp>
 
+#include <QCheckBox>
 #include <QCoreApplication>
 #include <QDomDocument>
+#include <QFontMetricsF>
 #include <QGraphicsSceneMouseEvent>
+#include <QLineF>
+#include <QTextDocument>
 #include <QTransform>
 #include <QtMath>
 #include <QUndoStack>
@@ -93,17 +98,28 @@ namespace
 
 	/// The elements of @p diagram in the order the sheet is read, so that a
 	/// case picks the same one every time: Diagram::elements() has no order
-	/// The box of the tag of @p report and the arrow's, as the tag reads
-	/// them: turned back by the tag's angle, in the arrow's coordinates.
-	/// For an arrow and a tag that are not turned, the arrow's coordinates
+	/// The letters of the tag of @p report - from the top of a capital to
+	/// the line they stand on, the width of the text - and the drawing of
+	/// the arrow, as the tag reads them: turned back by the tag's angle, in
+	/// the arrow's coordinates. For an arrow and a tag that are not turned,
+	/// the arrow's coordinates. The drawing, and not the box the symbol
+	/// declares, and the letters, and not the text's box: those are what
+	/// the eye sees close together or far apart.
 	QPair<QRectF, QRectF> asTagReads(const Element *report)
 	{
 		const DynamicElementTextItem *text = ReportTags::tagText(report);
+		const QFontMetricsF metrics(text->font());
+		const QRectF box = text->boundingRect();
+		const qreal baseline = box.top() + text->document()->documentMargin() + metrics.ascent();
+		const QRectF letters(box.left(), baseline - metrics.capHeight(), box.width(), metrics.capHeight());
 		QTransform back;
 		back.rotate(-text->rotation());
-		return qMakePair(back.mapRect(text->mapRectToParent(text->boundingRect())),
-						 back.mapRect(report->boundingRect()));
+		return qMakePair(back.mapRect(text->mapRectToParent(letters)),
+						 back.mapRect(report->drawnRect()));
 	}
+
+		/// Between the letters of a tag and the drawing of its arrow
+	constexpr qreal tag_gap = 1;
 
 	/// The angle @p item is drawn at on the folio, in [0, 360)
 	qreal sceneAngle(const QGraphicsItem *item)
@@ -297,8 +313,11 @@ TEST_CASE("CU-59.1 — A folio report is born with its tag",
 		CHECK(text->toPlainText() == QStringLiteral("S1"));
 		CHECK(text->isVisible());
 		CHECK(bool(text->flags() & QGraphicsItem::ItemIsMovable));
-			//Above the arrow
-		CHECK(text->sceneBoundingRect().bottom() <= arrow->sceneBoundingRect().top() + 0.5);
+			//Small, just above the arrow
+		CHECK(text->font().pointSizeF() == Approx(4));
+		const auto [letters, drawing] = asTagReads(arrow);
+		CHECK(letters.bottom() == Approx(drawing.top() - tag_gap).margin(0.5));
+		CHECK(letters.center().x() == Approx(drawing.center().x()).margin(0.5));
 
 		doubleClick(text);
 		CHECK_FALSE(text->textInteractionFlags() & Qt::TextEditable);
@@ -586,6 +605,43 @@ TEST_CASE("CU-59.7 — The options, the tags and a moved tag text come back when
 	CHECK(reopened_text->toPlainText() == tags.first());
 }
 
+TEST_CASE("T59 — Reformat the tags already placed, with no option changed", "[T59][reporttags]")
+{
+		//A tag placed before the default changed, or moved by hand: the
+		//page has an option to change for neither, and a box for both
+	UiBench::Project bench(example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	QETProject *project = bench.project();
+	project->setShowReportTags(true);
+	tagAll(project);
+	const QList<Element *> reports = ReportTags::reports(project);
+	REQUIRE_FALSE(reports.isEmpty());
+	DynamicElementTextItem *text = ReportTags::tagText(reports.first());
+	REQUIRE(text);
+	const QPointF placed = text->pos();
+	const QPointF moved = placed + QPointF(30, -20);
+	text->setPos(moved);
+
+	ProjectMainConfigPage page(project);
+	page.applyProjectConf();
+	CHECK(text->pos() == moved);
+
+	QCheckBox *reformat = nullptr;
+	const auto boxes = page.findChildren<QCheckBox *>();
+	for (QCheckBox *box : boxes) {
+		if (box->text() == QLatin1String("Reformat the tags already placed")) {
+			reformat = box;
+		}
+	}
+	REQUIRE(reformat);
+	CHECK_FALSE(reformat->isChecked());
+	reformat->setChecked(true);
+	page.applyProjectConf();
+	CHECK(QLineF(text->pos(), placed).length() < 0.01);
+	CHECK_FALSE(reformat->isChecked());
+}
+
 TEST_CASE("CU-59.9 — The font and the colour of the tags, set in the project",
 		  "[T59][reporttags]")
 {
@@ -622,7 +678,7 @@ TEST_CASE("CU-59.9 — The font and the colour of the tags, set in the project",
 		CHECK(text->color() == QColor(Qt::red));
 			//Centred above the arrow, as the tag reads
 		const auto [tag_box, arrow_box] = asTagReads(report);
-		CHECK(tag_box.bottom() == Approx(arrow_box.top()).margin(0.5));
+		CHECK(tag_box.bottom() == Approx(arrow_box.top() - tag_gap).margin(0.5));
 		CHECK(tag_box.center().x() == Approx(arrow_box.center().x()).margin(0.5));
 	}
 
@@ -666,7 +722,7 @@ TEST_CASE("CU-59.10 — The tags below the arrows",
 
 	auto below = [](const Element *report) {
 		const auto [tag_box, arrow_box] = asTagReads(report);
-		return qAbs(tag_box.top() - arrow_box.bottom()) < 0.5
+		return qAbs(tag_box.top() - (arrow_box.bottom() + tag_gap)) < 0.5
 				&& qAbs(tag_box.center().x() - arrow_box.center().x()) < 0.5;
 	};
 	for (Element *report : reports) {
@@ -720,7 +776,7 @@ TEST_CASE("CU-59.11 — The formatting of the tags saved and reopened",
 		CHECK(text->font().italic());
 		CHECK(text->color() == QColor(QStringLiteral("#1e64c8")));
 		const auto [tag_box, arrow_box] = asTagReads(report);
-		CHECK(tag_box.top() == Approx(arrow_box.bottom()).margin(0.5));
+		CHECK(tag_box.top() == Approx(arrow_box.bottom() + tag_gap).margin(0.5));
 	}
 }
 
@@ -754,9 +810,14 @@ TEST_CASE("T59 — On an arrow turned half a turn, the tag reads the way its ref
 	CAPTURE(arrow->rotation(), tag->rotation(), sceneAngle(tag));
 	CHECK(angleBetween(sceneAngle(tag), sceneAngle(reference)) < 0.01);
 		//Above on the folio, not above the arrow as it is turned
-	CHECK(tag->sceneBoundingRect().bottom() == Approx(arrow->sceneBoundingRect().top()).margin(0.5));
-	CHECK(tag->sceneBoundingRect().center().x()
-		  == Approx(arrow->sceneBoundingRect().center().x()).margin(0.5));
+	const QRectF tag_letters = tag->sceneBoundingRect();
+	const QRectF drawing = arrow->mapRectToScene(arrow->drawnRect());
+	CHECK(tag_letters.top() < drawing.top());
+	{
+		const auto [letters, drawn] = asTagReads(arrow);
+		CHECK(letters.bottom() == Approx(drawn.top() - tag_gap).margin(0.5));
+	}
+	CHECK(tag_letters.center().x() == Approx(drawing.center().x()).margin(0.5));
 
 	SECTION("a tag read upside down is turned back by the formatting, in its one undo")
 	{
@@ -767,7 +828,8 @@ TEST_CASE("T59 — On an arrow turned half a turn, the tag reads the way its ref
 		REQUIRE(format);
 		project->undoStack()->push(format);
 		CHECK(angleBetween(tag->rotation(), right) < 0.01);
-		CHECK(tag->sceneBoundingRect().bottom() == Approx(arrow->sceneBoundingRect().top()).margin(0.5));
+		const auto [letters, drawn] = asTagReads(arrow);
+		CHECK(letters.bottom() == Approx(drawn.top() - tag_gap).margin(0.5));
 
 		project->undoStack()->undo();
 		CHECK(angleBetween(tag->rotation(), wrong) < 0.01);

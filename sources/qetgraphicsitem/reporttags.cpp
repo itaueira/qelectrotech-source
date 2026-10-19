@@ -28,10 +28,12 @@
 #include "element.h"
 #include "elementtextitemgroup.h"
 
+#include <QFontMetricsF>
 #include <QHash>
 #include <QLineF>
 #include <QMap>
 #include <QPointer>
+#include <QTextDocument>
 #include <QTransform>
 #include <QUndoCommand>
 
@@ -91,35 +93,56 @@ namespace
 		return QET::correctAngle(-report->rotation(), true);
 	}
 
+	/// The size of a tag when the project chooses no font: small, as the
+	/// arrow itself is, and not the size of its reference
+	constexpr qreal default_tag_size = 4;
+	/// Between the letters of a tag and the drawing of its arrow
+	constexpr qreal tag_gap = 1;
+
 	/// The font of the tag of @p report: the one chosen for the project,
-	/// or the font of the reference the arrow shows. False when neither
-	/// says, and the text keeps the default font of a text
+	/// or the family of the reference the arrow shows, at
+	/// default_tag_size. False when neither says, and the text keeps the
+	/// default font of a text
 	bool tagFont(const Element *report, const QETProject *project, QFont *font)
 	{
 		if (project && !project->reportTagFont().isEmpty() && font->fromString(project->reportTagFont())) {
 			return true;
 		}
-		return referenceFont(report, font);
+		if (!referenceFont(report, font)) {
+			return false;
+		}
+		font->setPointSizeF(default_tag_size);
+		return true;
 	}
 
 	/// Where @p text goes on @p report once turned by @p rotation: centred
-	/// above or below the arrow as the tag reads - above is above on the
-	/// folio for a tag upright on the folio, whichever way the arrow is
-	/// turned. In the coordinates of the arrow, as the text's pos().
+	/// above or below the drawing of the arrow as the tag reads, its
+	/// letters tag_gap from it - above is above on the folio for a tag
+	/// upright on the folio, whichever way the arrow is turned. In the
+	/// coordinates of the arrow, as the text's pos(). The drawing, and not
+	/// the box the symbol declares, which can leave the tag far above the
+	/// arrow; and the letters, and not the text's box, which has a margin
+	/// around them.
 	/// @param box : the text's bounding rect, in the font and with the text it
 	/// is about to have
+	/// @param font : that font
 	QPointF tagPlace(const Element *report, const DynamicElementTextItem *text,
-					 const QRectF &box, qreal rotation,
+					 const QRectF &box, const QFont &font, qreal rotation,
 					 QETProject::ReportTagPosition position)
 	{
 		QTransform turn;
 		turn.rotate(rotation);
 			//The arrow as the tag reads it
-		const QRectF body = turn.inverted().mapRect(report->boundingRect());
+		const QRectF body = turn.inverted().mapRect(report->drawnRect());
 		const qreal x = body.center().x() - box.width() / 2.0;
+			//The letters in the box: from the top of a capital to the line
+			//they stand on
+		const QFontMetricsF metrics(font);
+		const qreal baseline = box.top() + text->document()->documentMargin() + metrics.ascent();
+		const qreal cap_top = baseline - metrics.capHeight();
 		const QPointF corner = position == QETProject::ReportTagPosition::Below
-				? QPointF(x, body.bottom())
-				: QPointF(x, body.top() - box.height());
+				? QPointF(x, body.bottom() + tag_gap - (cap_top - box.top()))
+				: QPointF(x, body.top() - tag_gap - (baseline - box.top()));
 			//A text is turned about its transform origin: its box's corner
 			//lands on pos + origin + turn(box corner - origin)
 		const QPointF origin = text->transformOriginPoint();
@@ -362,7 +385,7 @@ QUndoCommand *ReportTags::formatCommand(QETProject *project)
 		const QRectF box = text->boundingRect();
 		text->setFont(old_font);
 		text->setPos(old_pos);
-		const QPointF pos = tagPlace(report, text, box, rotation, project->reportTagPosition());
+		const QPointF pos = tagPlace(report, text, box, font, rotation, project->reportTagPosition());
 
 		if (font != old_font) {
 			new QPropertyUndoCommand(text, "font", old_font, font, command);
@@ -448,7 +471,7 @@ DynamicElementTextItem *ReportTags::newTagText(Element *report, const QString &t
 	const QString shown = text->toPlainText();
 	text->setPlainText(tag);
 	const QRectF box = text->boundingRect();
-	text->setPos(tagPlace(report, text, box, rotation,
+	text->setPos(tagPlace(report, text, box, text->font(), rotation,
 						  project ? project->reportTagPosition()
 								  : QETProject::ReportTagPosition::Above));
 	text->setPlainText(shown);

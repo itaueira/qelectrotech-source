@@ -531,6 +531,19 @@ QRectF Element::boundingRect() const
 }
 
 /**
+	@brief Element::drawnRect
+	@return the part of the symbol that is drawn, in the element's
+	coordinates. boundingRect() is the box the definition declares, which
+	may be much larger: the going arrow of the collection declares 20 high
+	for a triangle 8 high. The box when nothing is drawn.
+*/
+QRectF Element::drawnRect() const
+{
+	const QRectF drawn = m_picture.boundingRect();
+	return drawn.isEmpty() ? boundingRect() : drawn;
+}
+
+/**
 	@brief Element::setSize
 	Define the size of the element.
 	The size must be a multiple of 10.

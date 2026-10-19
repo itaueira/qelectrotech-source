@@ -154,6 +154,7 @@ class ProjectMainConfigPage : public ProjectConfigPage {
 	QPushButton *report_tag_color_pb_;
 	QLabel *report_tag_position_label_;
 	QComboBox *report_tag_position_cb_;
+	QCheckBox *report_tag_reformat_cb_;
 		/// The font and the colour chosen for the tags, applied with the page
 	QString m_report_tag_font;
 	QColor m_report_tag_color;
