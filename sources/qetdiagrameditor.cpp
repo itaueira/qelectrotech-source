@@ -154,6 +154,8 @@
 #include "toolbarsettings.h"
 #include <QDateTime>
 #include <QDebug>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QFileInfo>
 #include <QInputDialog>
@@ -165,6 +167,7 @@
 #include <QGuiApplication>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QSpinBox>
 #include <QClipboard>
 #include <QPainter>
 #include <QJsonArray>
@@ -1814,6 +1817,23 @@ void QETDiagramEditor::setUpActions()
 	for (const auto &a : align_actions)
 	{
 		QAction *action = m_align_actions_group.addAction(a.icon, a.text);
+		ShortcutManager::instance().registerAction(action, QStringLiteral("diagrameditor.") + QLatin1String(a.id), tr("Diagram editors"), QKeySequence());
+		action->setStatusTip(a.tip);
+		action->setData(QString::fromLatin1(a.id));
+	}
+		//Distribute: the first item stays and the others follow it at one
+		//pitch, asked first (alignGroupTriggered())
+	const struct {
+		const char *id;
+		QString text;
+		QString tip;
+	} distribute_actions[] = {
+		{"distribute_vertical",   tr("Distribute vertically…"),   tr("Spaces the selected items evenly downwards, the top one staying in place", "status bar tip")},
+		{"distribute_horizontal", tr("Distribute horizontally…"), tr("Spaces the selected items evenly to the right, the left one staying in place", "status bar tip")}
+	};
+	for (const auto &a : distribute_actions)
+	{
+		QAction *action = m_align_actions_group.addAction(a.text);
 		ShortcutManager::instance().registerAction(action, QStringLiteral("diagrameditor.") + QLatin1String(a.id), tr("Diagram editors"), QKeySequence());
 		action->setStatusTip(a.tip);
 		action->setData(QString::fromLatin1(a.id));
@@ -3731,7 +3751,10 @@ void QETDiagramEditor::setUpMenu()
 	m_align_menu -> addSeparator();
 	m_align_menu -> addActions(m_align_actions_group.actions().mid(1, 3));
 	m_align_menu -> addSeparator();
-	m_align_menu -> addActions(m_align_actions_group.actions().mid(4));
+	m_align_menu -> addActions(m_align_actions_group.actions().mid(4, 3));
+	m_align_menu -> addSeparator();
+		//And the two distributions
+	m_align_menu -> addActions(m_align_actions_group.actions().mid(7));
 	QMenu *arrange_menu = menu_edition -> addMenu(tr("Organiser"));
 	arrange_menu -> addAction(m_rotate_group_selection);
 	arrange_menu -> addAction(m_rotate_texts);
@@ -5257,11 +5280,64 @@ void QETDiagramEditor::selectionGroupTriggered(QAction *action)
 	}
 }
 
+namespace
+{
+	/**
+		Ask the pitch of a distribution, in grid steps, with @a automatic
+		filled in: the smallest at which no text touches the next one. A
+		smaller one is taken too, and the box says texts will touch.
+		@return the pitch, or 0 when the box is cancelled
+	*/
+	int askDistributionPitch(QWidget *parent, const QString &title, int automatic)
+	{
+		QDialog dialog(parent);
+		dialog.setWindowTitle(title);
+
+		auto *pitch = new QSpinBox(&dialog);
+		pitch->setRange(1, 999);
+		pitch->setValue(automatic);
+		pitch->setSuffix(QCoreApplication::translate("QETDiagramEditor", " × grid"));
+		pitch->setToolTip(QCoreApplication::translate("QETDiagramEditor",
+			"From the centre of one item to the centre of the next, in grid steps"));
+		auto *automatic_button = new QPushButton(
+			QCoreApplication::translate("QETDiagramEditor", "Automatic"), &dialog);
+		automatic_button->setToolTip(QCoreApplication::translate("QETDiagramEditor",
+			"The smallest pitch at which no text touches the next one"));
+		auto *warning = new QLabel(QCoreApplication::translate("QETDiagramEditor",
+			"Smaller than the automatic pitch: some texts will touch."), &dialog);
+		warning->setWordWrap(true);
+		auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+
+		auto *row = new QHBoxLayout;
+		row->addWidget(new QLabel(QCoreApplication::translate("QETDiagramEditor", "Pitch:"), &dialog));
+		row->addWidget(pitch, 1);
+		row->addWidget(automatic_button);
+		auto *layout = new QVBoxLayout(&dialog);
+		layout->addLayout(row);
+		layout->addWidget(warning);
+		layout->addWidget(buttons);
+
+		auto update = [pitch, warning, automatic]() {
+			warning->setVisible(pitch->value() < automatic);
+		};
+		QObject::connect(pitch, QOverload<int>::of(&QSpinBox::valueChanged), &dialog, update);
+		QObject::connect(automatic_button, &QPushButton::clicked, &dialog,
+						 [pitch, automatic]() { pitch->setValue(automatic); });
+		QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+		QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+		update();
+		pitch->selectAll();
+		pitch->setFocus();
+		return dialog.exec() == QDialog::Accepted ? pitch->value() : 0;
+	}
+}
+
 /**
 	@brief QETDiagramEditor::alignGroupTriggered
 	Run the align action @a action on the selection of the current diagram,
 	and say in the status bar what it did, including when there was nothing
-	to do or when locked items were left in place.
+	to do or when locked items were left in place. A distribution asks its
+	pitch first.
 	@param action
 */
 void QETDiagramEditor::alignGroupTriggered(QAction *action)
@@ -5277,23 +5353,44 @@ void QETDiagramEditor::alignGroupTriggered(QAction *action)
 		{QStringLiteral("align_right"),   AlignSelectionCommand::AlignRight},
 		{QStringLiteral("align_top"),     AlignSelectionCommand::AlignTop},
 		{QStringLiteral("align_vcenter"), AlignSelectionCommand::AlignVCenter},
-		{QStringLiteral("align_bottom"),  AlignSelectionCommand::AlignBottom}
+		{QStringLiteral("align_bottom"),  AlignSelectionCommand::AlignBottom},
+		{QStringLiteral("distribute_vertical"),   AlignSelectionCommand::DistributeVertical},
+		{QStringLiteral("distribute_horizontal"), AlignSelectionCommand::DistributeHorizontal}
 	};
 	const QString id = action->data().toString();
 	if (!modes.contains(id))
 		return;
 	const AlignSelectionCommand::Mode mode = modes.value(id);
+	const bool distribution = mode == AlignSelectionCommand::DistributeVertical
+			|| mode == AlignSelectionCommand::DistributeHorizontal;
 
 	Diagram *diagram = dv->diagram();
-	auto *command = new AlignSelectionCommand(diagram, mode);
+		//The pitch, asked with the automatic one filled in; with fewer than
+		//two pieces there is none, and the command says why below
+	int pitch_steps = 0;
+	if (distribution)
+	{
+		const int automatic = AlignSelectionCommand::automaticPitch(diagram, mode);
+		if (automatic > 0)
+		{
+			pitch_steps = askDistributionPitch(this,
+				action->text().remove(QStringLiteral("…")), automatic);
+			if (pitch_steps <= 0)
+				return;
+		}
+	}
+	auto *command = new AlignSelectionCommand(diagram, mode, pitch_steps);
 	const int locked = command->lockedCount();
 
 	QString message;
 	if (command->isValid())
 	{
-		message = mode == AlignSelectionCommand::SnapToGrid
-				? tr("%n items put back on the grid", "", command->movedCount())
-				: tr("%n items aligned", "", command->movedCount());
+		if (mode == AlignSelectionCommand::SnapToGrid)
+			message = tr("%n items put back on the grid", "", command->movedCount());
+		else if (distribution)
+			message = tr("%n items distributed", "", command->movedCount());
+		else
+			message = tr("%n items aligned", "", command->movedCount());
 		diagram->undoStack().push(command);
 	}
 	else
@@ -5302,6 +5399,8 @@ void QETDiagramEditor::alignGroupTriggered(QAction *action)
 			message = tr("The selection is already on the grid");
 		else if (command->itemCount() < 2)
 			message = tr("Select at least two unlocked elements, images, texts, shapes or groups");
+		else if (distribution)
+			message = tr("The selection is already distributed at this pitch");
 		else
 			message = tr("The selection is already aligned, to the nearest grid step");
 		delete command;

@@ -40,10 +40,15 @@ class AlignSelectionCommand : public QUndoCommand
 			AlignRight,
 			AlignTop,
 			AlignVCenter,
-			AlignBottom
+			AlignBottom,
+			DistributeVertical,   ///< the top piece stays, the others follow it downwards at one pitch
+			DistributeHorizontal  ///< the left piece stays, the others follow it to the right at one pitch
 		};
 
 		AlignSelectionCommand(Diagram *diagram, Mode mode, QUndoCommand *parent = nullptr);
+			/// The Distribute modes at @a pitch_steps grid steps from one
+			/// piece's centre to the next one's; 0 for automaticPitch()
+		AlignSelectionCommand(Diagram *diagram, Mode mode, int pitch_steps, QUndoCommand *parent = nullptr);
 
 		void undo() override;
 		void redo() override;
@@ -54,6 +59,7 @@ class AlignSelectionCommand : public QUndoCommand
 		int itemCount() const;
 
 		static int unitCount(const DiagramContent &dc);
+		static int automaticPitch(Diagram *diagram, Mode mode);
 
 	private:
 		QPointer<Diagram> m_diagram;

@@ -24,7 +24,9 @@
 #include "../diagramcontent.h"
 #include "../itemgroups.h"
 #include "../qetgraphicsitem/diagramimageitem.h"
+#include "../qetgraphicsitem/dynamicelementtextitem.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qetgraphicsitem/elementtextitemgroup.h"
 #include "../qetgraphicsitem/independenttextitem.h"
 #include "../qetgraphicsitem/qetshapeitem.h"
 
@@ -42,7 +44,25 @@ namespace {
 		Alignment::Item geometry;
 		QPointF snap_point;
 		qreal divisor;
+			/// What is not to touch the next item when distributing: for a
+			/// symbol, its outline and its texts together
+		QRectF box;
 	};
+
+	/**
+		@return the box of @a element with its visible texts and text groups
+	*/
+	QRectF boxWithTexts(Element *element)
+	{
+		QRectF box = element->sceneBoundingRect();
+		for (DynamicElementTextItem *text : element->dynamicTextItems())
+			if (text->isVisible())
+				box = box.united(text->sceneBoundingRect());
+		for (ElementTextItemGroup *group : element->textGroups())
+			if (group->isVisible())
+				box = box.united(group->sceneBoundingRect());
+		return box;
+	}
 
 	/**
 		@return the items of @a dc that take part, symbols first so a
@@ -55,16 +75,16 @@ namespace {
 			//its centre is its origin point: that is where its wires leave.
 		for (Element *element : std::as_const(dc.m_elements))
 			entries << Entry{element, {element->sceneBoundingRect(), element->pos()},
-					 element->pos(), 1};
+					 element->pos(), 1, boxWithTexts(element)};
 			//A picture's edges are the picture's, without its caption
 		for (DiagramImageItem *image : std::as_const(dc.m_images))
 		{
 			const QRectF rect = image->mapRectToScene(image->imageRect());
-			entries << Entry{image, {rect, rect.center()}, image->pos(), 1};
+			entries << Entry{image, {rect, rect.center()}, image->pos(), 1, rect};
 		}
 		for (IndependentTextItem *text : std::as_const(dc.m_text_fields))
 			entries << Entry{text, {text->sceneBoundingRect(), text->sceneBoundingRect().center()},
-					 text->pos(), text_divisor};
+					 text->pos(), text_divisor, text->sceneBoundingRect()};
 			//A shape's edges are the shape as drawn. What goes on the grid is
 			//the top-left corner of that box: a rectangle's corner, an
 			//ellipse's box, a line's end. Its pos() says nothing a user can
@@ -72,7 +92,7 @@ namespace {
 		for (QetShapeItem *shape : std::as_const(dc.m_shapes))
 		{
 			const QRectF rect = shape->sceneOutlineRect();
-			entries << Entry{shape, {rect, rect.center()}, rect.topLeft(), 1};
+			entries << Entry{shape, {rect, rect.center()}, rect.topLeft(), 1, rect};
 		}
 		return entries;
 	}
@@ -101,6 +121,55 @@ namespace {
 		}
 		return units;
 	}
+
+		//The room left at least between the texts of one distributed piece
+		//and the next, a fifth of the default grid step
+	const qreal distribution_gap = 2.0;
+
+	bool isDistribution(AlignSelectionCommand::Mode mode)
+	{
+		return mode == AlignSelectionCommand::DistributeVertical
+				|| mode == AlignSelectionCommand::DistributeHorizontal;
+	}
+
+	Alignment::Direction directionOf(AlignSelectionCommand::Mode mode)
+	{
+		return mode == AlignSelectionCommand::DistributeVertical ? Alignment::Vertical
+																 : Alignment::Horizontal;
+	}
+
+	/**
+		@return the pieces of @a units to distribute, in the same order:
+		their boxes, texts included, together, and as centre the point of
+		their first member that goes on the grid - a group follows its
+		first member, as it does when aligned.
+	*/
+	QList<Alignment::Item> distributionPieces(const QList<Entry> &entries,
+											  const QList<QList<int>> &units)
+	{
+		QList<Alignment::Item> pieces;
+		for (const QList<int> &unit : units)
+		{
+			Alignment::Item piece;
+			piece.ref = entries.at(unit.first()).snap_point;
+			for (int i : unit)
+				piece.edges = piece.edges.isNull() ? entries.at(i).box
+												   : piece.edges.united(entries.at(i).box);
+			pieces << piece;
+		}
+		return pieces;
+	}
+
+	/**
+		@return the grid step along @a direction, from the settings
+	*/
+	int gridStep(Alignment::Direction direction)
+	{
+		QSettings settings;
+		return direction == Alignment::Vertical
+				? FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid)
+				: FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+	}
 }
 
 /**
@@ -115,6 +184,20 @@ namespace {
 	@param parent : parent undo command
 */
 AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, QUndoCommand *parent) :
+	AlignSelectionCommand(diagram, mode, 0, parent)
+{}
+
+/**
+	@brief AlignSelectionCommand::AlignSelectionCommand
+	The same, with the pitch of a distribution.
+	@param diagram : diagram whose selection is aligned or distributed
+	@param mode : what to align the selection to, or how to distribute it
+	@param pitch_steps : for the Distribute modes, the grid steps from the
+	centre of one piece to the centre of the next; 0 for automaticPitch()
+	@param parent : parent undo command
+*/
+AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, int pitch_steps,
+											 QUndoCommand *parent) :
 	QUndoCommand(parent),
 	m_diagram(diagram)
 {
@@ -155,6 +238,25 @@ AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, QUndoC
 	if (units.size() < 2)
 		return;
 
+		//Distributing: the first piece stays, and the others follow it at
+		//one pitch, a whole number of grid steps; a group moves as one
+	if (isDistribution(mode))
+	{
+		const Alignment::Direction direction = directionOf(mode);
+		const int grid = gridStep(direction);
+		const QList<Alignment::Item> pieces = distributionPieces(entries, units);
+		const int steps = pitch_steps > 0
+				? pitch_steps
+				: Alignment::distributionPitch(pieces, direction, grid, distribution_gap);
+		const QList<QPointF> offsets = Alignment::distributeOffsets(pieces, direction,
+																	qreal(steps) * grid);
+		for (int u = 0 ; u < units.size() ; ++u)
+			for (int i : units.at(u))
+				move(entries.at(i).item, offsets.at(u));
+		setText(QObject::tr("Distribute %n items", "", childCount()));
+		return;
+	}
+
 	Alignment::Edge edge = Alignment::Left;
 	switch (mode) {
 		case AlignLeft:    edge = Alignment::Left;    break;
@@ -163,7 +265,10 @@ AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, QUndoC
 		case AlignTop:     edge = Alignment::Top;     break;
 		case AlignVCenter: edge = Alignment::VCenter; break;
 		case AlignBottom:  edge = Alignment::Bottom;  break;
-		case SnapToGrid:   break;
+		case SnapToGrid:
+		case DistributeVertical:
+		case DistributeHorizontal:
+			break;
 	}
 
 	QList<Alignment::Item> geometry;
@@ -198,6 +303,27 @@ AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, QUndoC
 int AlignSelectionCommand::unitCount(const DiagramContent &dc)
 {
 	return unitsOf(entriesOf(dc, 1)).size();
+}
+
+/**
+	@brief AlignSelectionCommand::automaticPitch
+	@return for a Distribute @a mode, the smallest pitch, in grid steps,
+	at which no selected piece of @a diagram touches the next one, texts
+	included; 0 when fewer than two pieces would move, or for another mode
+*/
+int AlignSelectionCommand::automaticPitch(Diagram *diagram, Mode mode)
+{
+	if (!diagram || !isDistribution(mode))
+		return 0;
+	DiagramContent dc(diagram);
+	dc.removeNonMovableItems();
+	const QList<Entry> entries = entriesOf(dc, 1);
+	const QList<QList<int>> units = unitsOf(entries);
+	if (units.size() < 2)
+		return 0;
+	const Alignment::Direction direction = directionOf(mode);
+	return Alignment::distributionPitch(distributionPieces(entries, units), direction,
+										gridStep(direction), distribution_gap);
 }
 
 /**

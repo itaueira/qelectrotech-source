@@ -25,6 +25,7 @@
 #include <QRectF>
 
 #include <algorithm>
+#include <cmath>
 
 /**
 	The geometry behind the align commands, kept free of any scene so it
@@ -162,6 +163,99 @@ namespace Alignment
 							       : QPointF(0, snap.y()));
 		auto clean = [](qreal v) { return qAbs(v) < 1e-6 ? 0.0 : v; };
 		return QPointF(clean(result.x()), clean(result.y()));
+	}
+
+	/**
+		The direction a selection is distributed along: one piece after
+		the other, downwards or to the right.
+	*/
+	enum Direction {
+		Vertical,
+		Horizontal
+	};
+
+	/**
+		@return the coordinate of @a point along @a direction
+	*/
+	inline qreal along(const QPointF &point, Direction direction)
+	{
+		return direction == Vertical ? point.y() : point.x();
+	}
+
+	/**
+		@return the indexes of @a items in the order they are distributed
+		in: by their centre along @a direction, the top one (or the left
+		one) first. A tie goes to the one further left (or further up),
+		then to the one first in @a items.
+	*/
+	inline QList<int> distributionOrder(const QList<Item> &items, Direction direction)
+	{
+		QList<int> order;
+		for (int i = 0 ; i < items.size() ; ++i)
+			order << i;
+		const Direction across = direction == Vertical ? Horizontal : Vertical;
+		std::stable_sort(order.begin(), order.end(), [&items, direction, across](int a, int b) {
+			const qreal a_along = along(items.at(a).ref, direction);
+			const qreal b_along = along(items.at(b).ref, direction);
+			if (qAbs(a_along - b_along) >= 1e-6)
+				return a_along < b_along;
+			return along(items.at(a).ref, across) < along(items.at(b).ref, across);
+		});
+		return order;
+	}
+
+	/**
+		@return the smallest pitch, a whole number of @a grid steps and at
+		least one, at which @a items set one pitch apart, centre to centre
+		and in distributionOrder(), leave at least @a gap between the edges
+		of each one and the edges of the next. For a symbol the edges are
+		its outline and its texts together: what is not to touch.
+	*/
+	inline int distributionPitch(const QList<Item> &items, Direction direction, int grid, qreal gap)
+	{
+		grid = qMax(1, grid);
+		const QList<int> order = distributionOrder(items, direction);
+		qreal needed = 0;
+		for (int k = 0 ; k + 1 < order.size() ; ++k)
+		{
+			const Item &one = items.at(order.at(k));
+			const Item &next = items.at(order.at(k + 1));
+				//From the centre of one to the end of its edges, then from
+				//the start of the next one's edges to its centre
+			const qreal after = direction == Vertical ? one.edges.bottom() - one.ref.y()
+													  : one.edges.right() - one.ref.x();
+			const qreal before = direction == Vertical ? next.ref.y() - next.edges.top()
+													   : next.ref.x() - next.edges.left();
+			needed = qMax(needed, after + before + gap);
+		}
+		return qMax(1, static_cast<int>(std::ceil(needed / grid - 1e-6)));
+	}
+
+	/**
+		@return the movement of each of @a items, in the same order, that
+		sets them @a pitch apart, centre to centre, along @a direction and
+		in distributionOrder(): the first one stays, and every other one
+		goes one pitch after the one before it. Nothing moves across:
+		distributing downwards never moves anything left or right.
+	*/
+	inline QList<QPointF> distributeOffsets(const QList<Item> &items, Direction direction, qreal pitch)
+	{
+		QList<QPointF> offsets;
+		for (int i = 0 ; i < items.size() ; ++i)
+			offsets << QPointF();
+		const QList<int> order = distributionOrder(items, direction);
+		if (order.isEmpty())
+			return offsets;
+
+		const qreal start = along(items.at(order.first()).ref, direction);
+		for (int k = 1 ; k < order.size() ; ++k)
+		{
+			const int i = order.at(k);
+			const qreal shift = start + k * pitch - along(items.at(i).ref, direction);
+			if (qAbs(shift) >= 1e-6)
+				offsets[i] = direction == Vertical ? QPointF(0, shift) : QPointF(shift, 0);
+		}
+		return offsets;
 	}
 }
 

@@ -119,6 +119,7 @@ add_executable(
     src/terminalstripstructure_test.cpp
     src/terminalmove_test.cpp
     src/wireendformat_test.cpp
+    src/distribution_test.cpp
     src/collectionloadgate_test.cpp
     src/collectionthreadbudget_test.cpp
     src/terminalmatch_test.cpp
@@ -1130,6 +1131,7 @@ if(TARGET qelectrotech_objects)
         src/ui/rememberedtoggles_test.cpp
         # The tag of the folio reports, and the references by tag.
         src/ui/reporttags_test.cpp
+        src/ui/distribute_test.cpp
         # A symbol saved in the symbol editor reaches the folio and the file:
         # the folio reports follow their symbol, the project is changed.
         src/ui/reportsymbolsync_test.cpp
