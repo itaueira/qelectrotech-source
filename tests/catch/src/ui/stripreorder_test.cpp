@@ -19,6 +19,7 @@
 
 #include "../qt_catch_tostring.h"
 
+#include "../../../../sources/dataBase/projectdatabase.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
@@ -45,6 +46,7 @@
 #include <QSharedPointer>
 #include <QSignalSpy>
 #include <QSpinBox>
+#include <QSqlQuery>
 #include <QString>
 #include <QStringList>
 #include <QTableView>
@@ -1110,4 +1112,44 @@ TEST_CASE("T33 — Desfazer o agrupamento de bornes que não são vizinhos devol
 	CHECK(rail(strip) == QStringList({QStringLiteral("1"), QStringLiteral("2/DJ0"),
 					  QStringLiteral("3"), QStringLiteral("4"),
 					  QStringLiteral("DJ1")}));
+}
+
+/*
+	The spare terminals the terminal strip editor adds - terminals on no
+	folio - are lines of the bill of materials: the nomenclature view of the
+	project database reads them from a table of their own, in a second
+	SELECT after the one of the drawn elements. That view is built here from
+	a shared body, and the spare terminals came from another line of work
+	that built it whole: merging the two put the second SELECT on the shared
+	body. A view that fails to be created fails for every project, not only
+	for those with spare terminals, so the case asks the view itself.
+*/
+TEST_CASE("T33 — Borne de reserva entra na visão da lista de material",
+	  "[terminalstrip][spare]")
+{
+	UiBench::ScratchProject project(fixtureXml(), QStringLiteral("stripspare.qet"));
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+
+	const Bench bench = benchStrip(project);
+	REQUIRE(bench.strip != nullptr);
+	REQUIRE(project->dataBase() != nullptr);
+
+	ElementData data;
+	data.m_informations.addValue(QStringLiteral("label"), QStringLiteral("R1"));
+	const auto spare = RealTerminal::createSpare(data);
+	REQUIRE(bench.strip->insertSpareTerminals(-1, {spare}).size() == 1);
+	project->dataBase()->spareTerminalsChanged();
+
+	QSqlQuery query = project->dataBase()->newQuery(
+				QStringLiteral("SELECT label, element_type FROM element_nomenclature_view"));
+	REQUIRE(query.exec());
+
+	QStringList spare_types;
+	while (query.next()) {
+		if (query.value(0).toString() == QStringLiteral("R1")) {
+			spare_types << query.value(1).toString();
+		}
+	}
+	CHECK(spare_types == QStringList{QStringLiteral("terminal")});
 }
