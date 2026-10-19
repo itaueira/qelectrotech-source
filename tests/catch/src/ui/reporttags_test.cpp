@@ -233,17 +233,19 @@ TEST_CASE("T59 — The position of a reference formula gives way to the tag",
 		  "[T59][reporttags]")
 {
 	using autonum::AssignVariables;
-	CHECK(AssignVariables::positionToTag(QStringLiteral("%f-%l%c")) == QStringLiteral("%f-%tag"));
-	CHECK(AssignVariables::positionToTag(QStringLiteral("(%f-%l%c)")) == QStringLiteral("(%f-%tag)"));
-	CHECK(AssignVariables::positionToTag(QStringLiteral("%F/%c.%l")) == QStringLiteral("%F/%tag"));
+	CHECK(AssignVariables::positionToTag(QStringLiteral("%f-%l%c")) == QStringLiteral("%f-%RT"));
+	CHECK(AssignVariables::positionToTag(QStringLiteral("(%f-%l%c)")) == QStringLiteral("(%f-%RT)"));
+	CHECK(AssignVariables::positionToTag(QStringLiteral("%F/%c.%l")) == QStringLiteral("%F/%RT"));
 	CHECK(AssignVariables::positionToTag(QStringLiteral("Fo %f")) == QStringLiteral("Fo %f"));
 	CHECK(AssignVariables::positionToTag(QString()).isEmpty());
 }
 
 /*
-	The tag is %tag, and %T is the title of the folio the reference points
-	to: both came as %T, the tag from this fork and the title from the
-	upstream, and one would have hidden the other in a formula with both.
+	The tag of a reference is %RT, and %T is the title of the folio the
+	reference points to: both came as %T, the tag from this fork and the
+	title from the upstream, and one would have hidden the other in a
+	formula with both. Not %tag: in the plan of a terminal strip, %tag
+	already names the component at the other end of a wire.
 */
 TEST_CASE("T59 — The tag and the folio title in one formula", "[T59][reporttags]")
 {
@@ -254,7 +256,7 @@ TEST_CASE("T59 — The tag and the folio title in one formula", "[T59][reporttag
 	context.has_element = true;
 	context.element_tag = QStringLiteral("K1");
 	sequentialNumbers seq;
-	CHECK(AssignVariables::formulaToLabel(QStringLiteral("%F-%tag %T"), seq, context)
+	CHECK(AssignVariables::formulaToLabel(QStringLiteral("%F-%RT %T"), seq, context)
 		  == QStringLiteral("3-K1 Comando"));
 	CHECK(AssignVariables::formulaToLabel(QStringLiteral("%F-%T"), seq, context)
 		  == QStringLiteral("3-Comando"));

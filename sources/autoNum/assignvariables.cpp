@@ -246,7 +246,7 @@ namespace autonum
 			context.element_prefix = elmt->getPrefix();
 				//Only when asked for: the tag of an element can be its own
 				//label, which is worked out with this very function
-			if (formula.contains(QLatin1String("%tag"))) {
+			if (formula.contains(QLatin1String("%RT"))) {
 				context.element_tag = referenceTag(elmt);
 			}
 		}
@@ -317,7 +317,7 @@ namespace autonum
 
 	/**
 		@brief AssignVariables::referenceTag
-		@return the tag a reference to @p element shows (%tag): the tag of a
+		@return the tag a reference to @p element shows (%RT): the tag of a
 		folio report, the label of anything else. A linked slave is named by
 		the label of its master, which is the one its texts show: the
 		contact of K1 is K1. Its own label is not asked: it can be a copy
@@ -333,10 +333,10 @@ namespace autonum
 					.value(QETInformation::ELMT_REPORT_TAG).toString();
 		}
 		auto label = [](const Element *e) {
-				//A label made from a formula that asks for %tag would come
+				//A label made from a formula that asks for %RT would come
 				//back here: the stored label is what it last gave
 			if (e->elementInformations().value(QETInformation::ELMT_FORMULA)
-					.toString().contains(QLatin1String("%tag"))) {
+					.toString().contains(QLatin1String("%RT"))) {
 				return e->elementInformations()
 						.value(QETInformation::ELMT_LABEL).toString();
 			}
@@ -354,8 +354,8 @@ namespace autonum
 	/**
 		@brief AssignVariables::positionToTag
 		@return @p formula with the position, from its first %l or %c to
-		its last, replaced by %tag: "%f-%l%c" gives "%f-%tag", "(%f-%l%c)"
-		gives "(%f-%tag)". What lies outside of it is kept, so a formula of
+		its last, replaced by %RT: "%f-%l%c" gives "%f-%RT", "(%f-%l%c)"
+		gives "(%f-%RT)". What lies outside of it is kept, so a formula of
 		one's own keeps the rest of it. A formula without a position is
 		returned as it is.
 	*/
@@ -379,7 +379,7 @@ namespace autonum
 		if (first < 0) {
 			return formula;
 		}
-		return formula.left(first) + QStringLiteral("%tag") + formula.mid(last);
+		return formula.left(first) + QStringLiteral("%RT") + formula.mid(last);
 	}
 
 	/**
@@ -563,7 +563,7 @@ namespace autonum
 			}
 			m_assigned_label.replace("%l", m_context.element_position.letter());
 			m_assigned_label.replace("%prefix", m_context.element_prefix);
-			m_assigned_label.replace("%tag", m_context.element_tag);
+			m_assigned_label.replace("%RT", m_context.element_tag);
 		}
 
 		if (m_context.has_conductor)

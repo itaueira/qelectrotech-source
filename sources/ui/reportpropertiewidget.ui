@@ -41,7 +41,7 @@ Create your own text using the following variables:
 %T: the sheet title
 %l: the row number
 %c: the column number
-%tag: the tag of the sheet reference</string>
+%RT: the tag of the sheet reference</string>
           </property>
           <property name="scaledContents">
            <bool>false</bool>

@@ -82,7 +82,7 @@ namespace autonum
 		bool has_element = false;
 		DiagramPosition element_position;
 		QString element_prefix;
-			/// an element's tag (%tag): the tag of a folio report, the label
+			/// an element's tag (%RT): the tag of a folio report, the label
 			/// of anything else, see AssignVariables::referenceTag()
 		QString element_tag;
 			/// a conductor's %wf, %wv, %wc and %ws

@@ -29158,8 +29158,30 @@ Create your own text using the following variables:
 %T: the sheet title
 %l: the row number
 %c: the column number
-%tag: the tag of the sheet reference</source>
+%RT: the tag of the sheet reference</source>
         <translation>Você pode definir um texto personalizado para as referências de folha.
+Crie seu próprio texto com as variáveis a seguir:
+%f: a posição da folha no projeto
+%F: o número da folha
+%M: a instalação
+%LM: a localização
+%T: o título da folha
+%l: o número da linha
+%c: o número da coluna
+%RT: a tag da referência de folha</translation>
+    </message>
+    <message>
+        <source>You can define a custom label for sheet references.
+Create your own text using the following variables:
+%f: the sheet position in the project
+%F: the sheet number
+%M: the installation
+%LM: the location
+%T: the sheet title
+%l: the row number
+%c: the column number
+%tag: the tag of the sheet reference</source>
+        <translation type="vanished">Você pode definir um texto personalizado para as referências de folha.
 Crie seu próprio texto com as variáveis a seguir:
 %f: a posição da folha no projeto
 %F: o número da folha
@@ -35450,8 +35472,28 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 %M: the installation
 %LM: the location
 %T: the sheet title
-%tag: the label of the element</source>
+%RT: the label of the element</source>
         <translation>Crie seu próprio texto com as variáveis a seguir:
+%f: o número da folha
+%F: a tag da folha
+%l: o número da linha
+%c: o número da coluna
+%M: a instalação
+%LM: a localização
+%T: o título da folha
+%RT: a tag do elemento</translation>
+    </message>
+    <message>
+        <source>Create your own text using the following variables:
+%f: the sheet number
+%F: the sheet label
+%l: the row number
+%c: the column number
+%M: the installation
+%LM: the location
+%T: the sheet title
+%tag: the label of the element</source>
+        <translation type="vanished">Crie seu próprio texto com as variáveis a seguir:
 %f: o número da folha
 %F: a tag da folha
 %l: o número da linha
