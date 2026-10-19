@@ -267,6 +267,13 @@ endfunction()
 # alone and with a group.
 qet_add_app_test(tst_rotateselectionimage tst_rotateselectionimage.cpp)
 
+# Editing the information of several elements at once (#1439): kept, set
+# and cleared fields, restore and reset, one undo step, the selection
+# panel's editor and the Edit action.
+qet_add_app_test(tst_multielementinfo tst_multielementinfo.cpp)
+target_compile_definitions(tst_multielementinfo PRIVATE
+  "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
+
 # Accepting the settings dialog writes qet-assistant.json with the
 # collection paths just chosen, not the ones they replace.
 qet_add_app_test(tst_assistantinfopaths tst_assistantinfopaths.cpp)
@@ -278,6 +285,10 @@ qet_add_app_test(tst_imagehandleescape tst_imagehandleescape.cpp)
 # A folio's pictures, decoded in parallel, each come back with its own
 # pixels and position; an <image> with no picture does not stop the others.
 qet_add_app_test(tst_folioimageload tst_folioimageload.cpp)
+
+# The Selection properties panel keeps the height the user gave it when the
+# selection has nothing to edit for a moment (#1439).
+qet_add_app_test(tst_selectionpanelheight tst_selectionpanelheight.cpp)
 
 # SVG export with smaller pictures (--svg-small-pictures, the export dialog's
 # option): a picture drawn at a tenth of its size is stored at four times
@@ -907,6 +918,19 @@ if(QET_HAS_SCRIPTING)
   target_link_libraries(tst_savedstamps PRIVATE Qt::Test Qt::Xml)
   target_compile_definitions(tst_savedstamps PRIVATE
     "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\"")
+
+  # Deleting a symbol whose terminal held several wires joins them with a
+  # new wire; its uuid comes from its two ends, so the same deletion saves
+  # the same file every time (F115): examples/affuteuse_250h.qet.
+  add_executable(
+    tst_joinedwireuuid
+    tst_joinedwireuuid.cpp)
+  add_test(NAME tst_joinedwireuuid COMMAND tst_joinedwireuuid)
+  add_dependencies(tst_joinedwireuuid qelectrotech)
+  target_link_libraries(tst_joinedwireuuid PRIVATE Qt::Test)
+  target_compile_definitions(tst_joinedwireuuid PRIVATE
+    "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
+    "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
 
   # qet.terminalPosition() and qet.conductorPath(), checked against each
   # other on a fixture's conductors.

@@ -370,6 +370,7 @@ class projectDataBase : public QObject
 		*/
 		static QString elementTypeClause(ElementData::Types types,
 						 const QString &column);
+		void spareTerminalsChanged();
 
 	signals:
 		void dataBaseUpdated();
@@ -390,6 +391,7 @@ class projectDataBase : public QObject
 		void populateElementTable();
 		void populateElementInfoTable();
 		void populateElementInfoTableFromFolios();
+		void populateSpareTerminalTable();
 		void populateDiagramInfoTable();
 		void populateConductorTable();
 		static void bindElementValues(QSqlQuery &query, Element *element, Diagram *diagram);

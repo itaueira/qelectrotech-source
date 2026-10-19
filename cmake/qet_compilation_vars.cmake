@@ -1147,6 +1147,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ui/elementinfopartwidget.h
   ${QET_DIR}/sources/ui/elementinfowidget.cpp
   ${QET_DIR}/sources/ui/elementinfowidget.h
+  ${QET_DIR}/sources/ui/multielementinfowidget.cpp
+  ${QET_DIR}/sources/ui/multielementinfowidget.h
   ${QET_DIR}/sources/ui/terminalnumberingdialog.cpp
   ${QET_DIR}/sources/ui/terminalnumberingdialog.h
   ${QET_DIR}/sources/ui/cablenumberingdialog.cpp
@@ -1489,4 +1491,5 @@ set(TS_FILES
   ${QET_DIR}/lang/qet_tr.ts
   ${QET_DIR}/lang/qet_uk.ts
   ${QET_DIR}/lang/qet_zh.ts
+  ${QET_DIR}/lang/qet_zh_TW.ts
   )

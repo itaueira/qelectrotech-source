@@ -64,6 +64,14 @@ const int COLUMN_COUNT = 19;
 static QVector<bool> UNMODIFIED_CELL_VECTOR(COLUMN_COUNT, false);
 
 /**
+ * @brief modifiedCellKey
+ * @return the key of the real terminal of @a data in the modified cells
+ */
+static const RealTerminal *modifiedCellKey(const modelRealTerminalData &data) {
+	return data.real_terminal.toStrongRef().data();
+}
+
+/**
  * @brief parsePositiveNumber
  * Convert the text written by the user to a number >= 0
  * (a section in mm2 or a width in mm).
@@ -210,14 +218,20 @@ QVariant TerminalStripModel::data(const QModelIndex &index, int role) const
 			case LEVEL_CELL :      return mrtd.level_;
 			case LABEL_CELL :      return mrtd.label_;
 			case CONDUCTOR_CELL :  return mrtd.conductor_;
-			case XREF_CELL :       return mrtd.Xref_;
+			case XREF_CELL :       return mrtd.spare_ ? tr("Spare") : mrtd.Xref_;
 			case CABLE_CELL :      return mrtd.cable_;
 			case CABLE_WIRE_CELL : return mrtd.cable_wire;
 			case TYPE_CELL :       return ElementData::translatedTerminalType(mrtd.type_);
 			case FUNCTION_CELL :   return ElementData::translatedTerminalFunction(mrtd.function_);
 			case COLOR_CELL :      return TerminalColor::displayName(mrtd.color_, mrtd.stripe_color_);
 			case SECTION_CELL :    return mrtd.section_ > 0 ? QLocale().toString(mrtd.section_, 'g', 6) : QString();
-			case WIDTH_CELL :      return mrtd.width_mm_ > 0 ? QLocale().toString(mrtd.width_mm_, 'g', 6) : QString();
+			case WIDTH_CELL :
+				if (mrtd.width_mm_ <= 0) {
+					return QString();
+				}
+					//"6,2 - Phoenix Contact ST 4" : the width alone doesn't say which terminal it is
+				return mrtd.catalog_entry_.isEmpty() ? QLocale().toString(mrtd.width_mm_, 'g', 6)
+													 : QLocale().toString(mrtd.width_mm_, 'g', 6) + QStringLiteral(" - ") + mrtd.catalog_entry_;
 			default :              return QVariant();
 		}
 	}
@@ -234,6 +248,11 @@ QVariant TerminalStripModel::data(const QModelIndex &index, int role) const
 
 		}
 	}
+	else if (role == CatalogEntryRole &&
+			 index.column() == WIDTH_CELL)
+	{
+		return mrtd.catalog_entry_;
+	}
 	else if (role == Qt::CheckStateRole &&
 			   index.column() == LED_CELL)
 	{
@@ -249,11 +268,17 @@ QVariant TerminalStripModel::data(const QModelIndex &index, int role) const
 	{
 		return mrtd.separator_ ? Qt::Checked : Qt::Unchecked;
 	}
+	else if (role == Qt::ForegroundRole &&
+			 index.column() == XREF_CELL && mrtd.spare_)
+	{
+		return QBrush(Qt::gray);	//"Spare" : not a reference to a folio
+	}
 	else if ((role == Qt::BackgroundRole || role == Qt::ForegroundRole) &&
 			 index.column() < COLUMN_COUNT )
 	{
-		if (m_modified_cell.contains(mrtd.element_) &&
-			m_modified_cell.value(mrtd.element_).at(index.column()))
+		const auto key_ = modifiedCellKey(mrtd);
+		if (m_modified_cell.contains(key_) &&
+			m_modified_cell.value(key_).at(index.column()))
 		{
 				//The yellow of a modified cell is light on a dark palette
 				//too, whose text is white: white on yellow does not read,
@@ -379,13 +404,41 @@ bool TerminalStripModel::setData(const QModelIndex &index, const QVariant &value
 		}
 	}
 	else if (column_ == WIDTH_CELL &&
-			 role == Qt::EditRole)
+			 (role == Qt::EditRole || role == CatalogEntryRole))
 	{
 		bool ok_ = false;
-		const auto width_ = parsePositiveNumber(value.toString(), &ok_);
-		if (ok_ && !qFuzzyCompare(1 + mrtd.width_mm_, 1 + width_))
+		qreal width_ = 0;
+		QString entry_;
+		if (role == CatalogEntryRole)
+		{
+				//Chosen in the list : the width and the terminal of the catalog
+			const auto map_ = value.toMap();
+			width_ = map_.value(QStringLiteral("mm")).toDouble(&ok_);
+			ok_ = ok_ && width_ >= 0;
+			entry_ = map_.value(QStringLiteral("entry")).toString();
+		}
+		else
+		{
+				//Typed or pasted : "6.2", or "6,2 - Phoenix Contact ST 4" as copied from this column
+			const auto text_ = value.toString();
+			const auto separator_ = text_.indexOf(QStringLiteral(" - "));
+			width_ = parsePositiveNumber(separator_ < 0 ? text_ : text_.left(separator_), &ok_);
+			if (ok_ && separator_ >= 0) {
+				entry_ = text_.mid(separator_ + 3).trimmed();
+			}
+		}
+			//Only a terminal of the catalog with this width is kept
+		const auto *catalog_entry_ = TerminalCatalog::entryByLabel(entry_);
+		if (!catalog_entry_ || width_ <= 0 ||
+			!qFuzzyCompare(1 + catalog_entry_->mm, 1 + width_)) {
+			entry_.clear();
+		}
+
+		if (ok_ && (!qFuzzyCompare(1 + mrtd.width_mm_, 1 + width_) ||
+					mrtd.catalog_entry_ != entry_))
 		{
 			mrtd.width_mm_ = width_;
+			mrtd.catalog_entry_ = entry_;
 			modified_ = true;
 			modified_cell = WIDTH_CELL;
 		}
@@ -396,17 +449,17 @@ bool TerminalStripModel::setData(const QModelIndex &index, const QVariant &value
 	{
 		replaceDataAtRow(mrtd, index.row());
 
-		if (mrtd.element_)
+		if (const auto key_ = modifiedCellKey(mrtd))
 		{
 			QVector<bool> vector_;
-			if (m_modified_cell.contains(mrtd.element_)) {
-				vector_ = m_modified_cell.value(mrtd.element_);
+			if (m_modified_cell.contains(key_)) {
+				vector_ = m_modified_cell.value(key_);
 			} else {
 				vector_ = UNMODIFIED_CELL_VECTOR;
 			}
 
 			vector_.replace(modified_cell, true);
-			m_modified_cell.insert(mrtd.element_, vector_);
+			m_modified_cell.insert(key_, vector_);
 		}
 		emit dataChanged(index, index);
 		return true;
@@ -480,7 +533,7 @@ QVector<modelRealTerminalData> TerminalStripModel::modifiedmodelRealTerminalData
 		for (auto j = 0 ; j < ptd_.real_data.size() ; ++j)
 		{
 			auto mrtd_ = ptd_.real_data.at(j);
-			if (modified_real_terminal.contains(mrtd_.element_))
+			if (modified_real_terminal.contains(modifiedCellKey(mrtd_)))
 			{
 				returned_vector.append(m_physical_data.at(i).real_data.at(j));
 			}
@@ -953,6 +1006,15 @@ TerminalStripModelDelegate::TerminalStripModelDelegate(QObject *parent) :
 	QStyledItemDelegate(parent)
 {}
 
+/**
+ * @brief TerminalStripModelDelegate::setManufacturer
+ * @param manufacturer : manufacturer of the terminals proposed
+ * in the Width column, an empty string proposes all the manufacturers.
+ */
+void TerminalStripModelDelegate::setManufacturer(const QString &manufacturer) {
+	m_manufacturer = manufacturer;
+}
+
 QWidget *TerminalStripModelDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
 	if (index.column() == TYPE_CELL) {
@@ -996,23 +1058,29 @@ QWidget *TerminalStripModelDelegate::createEditor(QWidget *parent, const QStyleO
 		qcb->setObjectName(QStringLiteral("terminal_width"));
 		qcb->addItem(tr("None (default)"), 0.0);
 
-		// Show manufacturer products compatible with the section selected in this row.
+			// Show the terminals of the selected manufacturer (all if none),
+			// compatible with the section selected in this row.
+		const auto manufacturer_ok = [this](const TerminalCatalog::WidthEntry &entry) {
+			return m_manufacturer.isEmpty() || m_manufacturer == QString::fromUtf8(entry.manufacturer);
+		};
 		const auto section_index = index.sibling(index.row(), SECTION_CELL);
 		bool section_ok = false;
 		const auto section = parsePositiveNumber(section_index.data(Qt::EditRole).toString(), &section_ok);
 		bool has_compatible_entry = false;
 		if (section_ok && section > 0.0) {
 			for (const auto &entry : TerminalCatalog::widthEntries()) {
-				if (qFuzzyCompare(1 + entry.section, 1 + section)) {
-					qcb->addItem(widthItemText(entry.mm, QString::fromUtf8(entry.label)), entry.mm);
+				if (manufacturer_ok(entry) && qFuzzyCompare(1 + entry.section, 1 + section)) {
 					has_compatible_entry = true;
+					break;
 				}
 			}
 		}
-		// If the section has no catalog match (or is unspecified), keep all widths available.
-		if (!has_compatible_entry) {
-			for (const auto &entry : TerminalCatalog::widthEntries()) {
+			// If the section has no catalog match (or is unspecified), keep all widths available.
+		for (const auto &entry : TerminalCatalog::widthEntries()) {
+			if (manufacturer_ok(entry) &&
+				(!has_compatible_entry || qFuzzyCompare(1 + entry.section, 1 + section))) {
 				qcb->addItem(widthItemText(entry.mm, QString::fromUtf8(entry.label)), entry.mm);
+				qcb->setItemData(qcb->count() - 1, QString::fromUtf8(entry.label), TerminalStripModel::CatalogEntryRole);
 			}
 		}
 
@@ -1093,18 +1161,26 @@ void TerminalStripModelDelegate::setEditorData(QWidget *editor, const QModelInde
 		{
 			bool ok_ = false;
 			const auto width_ = parsePositiveNumber(index.data(Qt::EditRole).toString(), &ok_);
-			auto pos_ = -1;
-			for (auto i = 0 ; i < qcb->count() ; ++i)
+			const auto entry_ = index.data(TerminalStripModel::CatalogEntryRole).toString();
+				//The terminal chosen in the catalog. A width typed or set before
+				//the catalog entry was stored is not tied to a terminal of the
+				//catalog : it must not take the first one with the same width.
+			auto pos_ = entry_.isEmpty() ? -1 : qcb->findData(entry_, TerminalStripModel::CatalogEntryRole);
+			for (auto i = 0 ; pos_ < 0 && entry_.isEmpty() && i < qcb->count() ; ++i)
 			{
-				if (qFuzzyCompare(1 + qcb->itemData(i).toDouble(), 1 + width_)) {
+				if (qcb->itemData(i, TerminalStripModel::CatalogEntryRole).toString().isEmpty() &&
+					qFuzzyCompare(1 + qcb->itemData(i).toDouble(), 1 + width_)) {
 					pos_ = i;
-					break;
 				}
 			}
 			if (pos_ < 0)
 			{
-					//The width is not in the list (typed or pasted), keep it in the list
-				qcb->addItem(widthItemText(width_), width_);
+					//The width or the terminal is not in the list
+					//(typed, pasted, or another manufacturer), keep it in the list
+				qcb->addItem(widthItemText(width_, entry_), width_);
+				if (!entry_.isEmpty()) {
+					qcb->setItemData(qcb->count() - 1, entry_, TerminalStripModel::CatalogEntryRole);
+				}
 				pos_ = qcb->count() - 1;
 			}
 			qcb->setCurrentIndex(pos_);
@@ -1140,7 +1216,10 @@ void TerminalStripModelDelegate::setModelData(QWidget *editor, QAbstractItemMode
 		else if (editor->objectName() == QLatin1String("terminal_width"))
 		{
 			if (auto qcb = dynamic_cast<QComboBox *>(editor)) {
-				model->setData(index, qcb->currentData().toDouble(), Qt::EditRole);
+				QVariantMap map_;
+				map_.insert(QStringLiteral("mm"), qcb->currentData().toDouble());
+				map_.insert(QStringLiteral("entry"), qcb->currentData(TerminalStripModel::CatalogEntryRole).toString());
+				model->setData(index, map_, TerminalStripModel::CatalogEntryRole);
 			}
 		}
 		else if (editor->objectName() == QLatin1String("terminal_color"))

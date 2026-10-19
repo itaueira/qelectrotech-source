@@ -22,6 +22,7 @@
 #include <QColor>
 #include <QDomElement>
 #include <QStringList>
+#include <QUuid>
 #include "../properties/elementdata.h"
 
 class TerminalStrip;
@@ -57,6 +58,12 @@ class RealTerminal
 
 	public:
 		~RealTerminal();
+		static QSharedPointer<RealTerminal> createSpare(const ElementData &data, const QUuid &uuid = QUuid());
+		static QSharedPointer<RealTerminal> spareFromXml(const QDomElement &xml_element);
+		bool isSpare() const;
+		ElementData spareData() const;
+		void setSpareData(const ElementData &data);
+		ElementData terminalData() const;
 		TerminalStrip *parentStrip() const noexcept;
 		QSharedPointer<PhysicalTerminal> physicalTerminal() const noexcept;
 
@@ -85,6 +92,7 @@ class RealTerminal
 		QColor stripeColor() const;
 		qreal section() const;
 		qreal widthMm() const;
+		QString catalogEntry() const;
 		bool hasSeparatorAfter() const;
 
 		//Keys used to store the cable data in the element informations
@@ -96,8 +104,12 @@ class RealTerminal
 		static QString sectionInfoKey()   { return QStringLiteral("terminal_section"); }
 		//Key used to store the width (mm) of the terminal, drawn in the terminal strip
 		static QString widthInfoKey()     { return QStringLiteral("terminal_width"); }
+		//Key used to store the terminal chosen in the catalog (TerminalCatalog::WidthEntry::label)
+		static QString catalogEntryInfoKey() { return QStringLiteral("terminal_catalog_entry"); }
 		//Key used to store if a separator plate is mounted after the terminal
 		static QString separatorInfoKey() { return QStringLiteral("terminal_separator"); }
+
+		static void applyCatalogEntry(DiagramContext &informations, const QString &entry_label);
 
 		/// @return conductors(), written for a single cell
 		QString conductor() const;
@@ -117,7 +129,13 @@ class RealTerminal
 		static QString xmlTagName();
 
 	private :
+		bool hasData() const;
+
 		QPointer<Element> m_element;
+			//A spare terminal has no element : it is on no folio, its data are its own
+		bool m_spare = false;
+		QUuid m_spare_uuid;
+		ElementData m_spare_data;
 		QWeakPointer<RealTerminal> m_this_weak;
 		QSharedPointer<PhysicalTerminal> m_physical_terminal;
 };
