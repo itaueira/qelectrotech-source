@@ -127,12 +127,13 @@ namespace
 			element->setSelected(true);
 	}
 
-	/// The box of @a element with its texts, as the command measures it
+	/// The box of @a element with the texts it shows, as the command measures it
 	QRectF box(Element *element)
 	{
 		QRectF rect = element->sceneBoundingRect();
 		for (DynamicElementTextItem *text : element->dynamicTextItems())
-			rect = rect.united(text->sceneBoundingRect());
+			if (!text->toPlainText().trimmed().isEmpty())
+				rect = rect.united(text->sceneBoundingRect());
 		return rect;
 	}
 
@@ -167,18 +168,17 @@ TEST_CASE("T65 — A column distributed downwards", "[T65][distribute]")
 		CAPTURE(i);
 		CHECK(list.at(i)->pos() == QPointF(200, 100 + i * steps * grid));
 	}
-		//And no box touches the next one
+		//And no box runs into the next one: tight, they may touch
 	for (int i = 0 ; i + 1 < list.size() ; ++i)
 	{
 		CAPTURE(i);
-		CHECK(box(list.at(i)).bottom() < box(list.at(i + 1)).top());
+		CHECK(box(list.at(i)).bottom() <= box(list.at(i + 1)).top() + 1e-6);
 	}
-		//One pitch less, and two of them would come closer than the 2 units
-		//kept between texts: it is the smallest
-	bool too_close = false;
+		//One pitch less, and two of them would overlap: it is the smallest
+	bool overlap = false;
 	for (int i = 0 ; i + 1 < list.size() ; ++i)
-		too_close |= box(list.at(i + 1)).top() - box(list.at(i)).bottom() - grid < 2;
-	CHECK(too_close);
+		overlap |= box(list.at(i + 1)).top() - grid < box(list.at(i)).bottom() - 1e-6;
+	CHECK(overlap);
 
 		//One undo puts all of them back
 	sheet->undoStack().undo();
@@ -217,6 +217,38 @@ TEST_CASE("T65 — A longer text asks for a longer pitch", "[T65][distribute]")
 	const int after = AlignSelectionCommand::automaticPitch(sheet, AlignSelectionCommand::DistributeVertical);
 	CAPTURE(before, after);
 	CHECK(after > before);
+}
+
+/*
+	A text that shows nothing - an information the symbol does not have,
+	a text left blank - is still a box on the folio, often away from the
+	symbol. Counted, it made the pitch proposed for a column of terminals
+	far longer than the tags needed. The same text, written, counts.
+*/
+TEST_CASE("T65 — An empty text does not ask for room", "[T65][distribute]")
+{
+	UiBench::ScratchProject bench(fixtureXml(column));
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	Diagram *sheet = bench.diagram(0);
+	const QList<Element *> list = blocks(sheet);
+	REQUIRE(list.size() == 5);
+	for (int i = 0 ; i < list.size() ; ++i)
+		addText(list.at(i), QStringLiteral("X1:%1").arg(i + 1));
+	select(sheet, list);
+	const int before = AlignSelectionCommand::automaticPitch(sheet, AlignSelectionCommand::DistributeVertical);
+
+		//An empty text well under the second symbol
+	DynamicElementTextItem *empty = addText(list.at(1), QString());
+	empty->setPos(0, 90);
+	const int with_empty = AlignSelectionCommand::automaticPitch(sheet, AlignSelectionCommand::DistributeVertical);
+
+		//The same text, written: now it counts
+	empty->setText(QStringLiteral("K1"));
+	const int written = AlignSelectionCommand::automaticPitch(sheet, AlignSelectionCommand::DistributeVertical);
+	CAPTURE(before, with_empty, written);
+	CHECK(with_empty == before);
+	CHECK(written > before);
 }
 
 TEST_CASE("T65 — A group moves as one, and a locked symbol stays", "[T65][distribute]")

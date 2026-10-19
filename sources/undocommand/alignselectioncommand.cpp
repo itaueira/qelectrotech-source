@@ -50,17 +50,30 @@ namespace {
 	};
 
 	/**
-		@return the box of @a element with its visible texts and text groups
+		@return true if @a text shows something on the folio. An empty text -
+		an information the symbol does not have, a text left blank - is
+		still a box, often away from the symbol, that nobody can see.
+	*/
+	bool showsSomething(const DynamicElementTextItem *text)
+	{
+		return text->isVisible() && !text->toPlainText().trimmed().isEmpty();
+	}
+
+	/**
+		@return the box of @a element with the texts it shows, alone or in
+		a text group
 	*/
 	QRectF boxWithTexts(Element *element)
 	{
 		QRectF box = element->sceneBoundingRect();
 		for (DynamicElementTextItem *text : element->dynamicTextItems())
-			if (text->isVisible())
+			if (showsSomething(text))
 				box = box.united(text->sceneBoundingRect());
 		for (ElementTextItemGroup *group : element->textGroups())
 			if (group->isVisible())
-				box = box.united(group->sceneBoundingRect());
+				for (DynamicElementTextItem *text : group->texts())
+					if (showsSomething(text))
+						box = box.united(text->sceneBoundingRect());
 		return box;
 	}
 
@@ -123,8 +136,9 @@ namespace {
 	}
 
 		//The room left at least between the texts of one distributed piece
-		//and the next, a fifth of the default grid step
-	const qreal distribution_gap = 2.0;
+		//and the next: none, the automatic pitch is tight - boxes may touch,
+		//none overlaps - and more room is asked for in the box, from it
+	const qreal distribution_gap = 0.0;
 
 	bool isDistribution(AlignSelectionCommand::Mode mode)
 	{
@@ -308,7 +322,7 @@ int AlignSelectionCommand::unitCount(const DiagramContent &dc)
 /**
 	@brief AlignSelectionCommand::automaticPitch
 	@return for a Distribute @a mode, the smallest pitch, in grid steps,
-	at which no selected piece of @a diagram touches the next one, texts
+	at which no selected piece of @a diagram overlaps the next one, texts
 	included; 0 when fewer than two pieces would move, or for another mode
 */
 int AlignSelectionCommand::automaticPitch(Diagram *diagram, Mode mode)

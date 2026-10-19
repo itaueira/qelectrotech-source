@@ -20525,6 +20525,16 @@ Todas as suas outras configurações serão mantidas.</translation>
         <source>Avancer dans l&apos;historique des folios</source>
         <translation>Avançar no histórico de folhas</translation>
     </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5304"/>
+        <source>The smallest pitch at which no text overlaps the next one</source>
+        <translation>O menor passo em que nenhum texto invade o do vizinho</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5306"/>
+        <source>Smaller than the automatic pitch: some texts will overlap.</source>
+        <translation>Menor que o automático: alguns textos vão se sobrepor.</translation>
+    </message>
     <message numerus="yes">
         <location filename="../sources/qetdiagrameditor.cpp" line="7216"/>
         <source>%n élément(s) non redessiné(s) : leurs bornes ont changé.</source>
@@ -22311,14 +22321,12 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         <translation>Automático</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5304"/>
         <source>The smallest pitch at which no text touches the next one</source>
-        <translation>O menor passo em que nenhum texto encosta no do vizinho</translation>
+        <translation type="vanished">O menor passo em que nenhum texto encosta no do vizinho</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5306"/>
         <source>Smaller than the automatic pitch: some texts will touch.</source>
-        <translation>Menor que o automático: alguns textos vão se encostar.</translation>
+        <translation type="vanished">Menor que o automático: alguns textos vão se encostar.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="5312"/>
@@ -27505,7 +27513,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>Modificar o borne de reserva %1</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="256"/>
+        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="270"/>
         <source>Distribute %n items</source>
         <translation>
             <numerusform>Distribuir %n objeto</numerusform>
@@ -27513,7 +27521,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="293"/>
+        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="307"/>
         <source>Align %n items</source>
         <translation>
             <numerusform>Alinhar %n objeto</numerusform>
@@ -27897,7 +27905,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="227"/>
+        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="241"/>
         <source>Align %n objects to the grid</source>
         <translation>
             <numerusform>Alinhar %n objeto à grade</numerusform>

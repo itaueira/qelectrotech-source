@@ -65,6 +65,9 @@ TEST_CASE("T65 — The automatic pitch is the one the largest box needs",
 		//10 above and 10 under each centre, and 2 between: 22, so 3 steps of 10
 	QList<Item> items{item(0, 0, 10, 10), item(0, 100, 10, 10), item(0, 200, 10, 10)};
 	CHECK(distributionPitch(items, Vertical, 10, 2) == 3);
+		//Tight, nothing between: 20, so 2 steps - on a grid of 1, 20 steps
+	CHECK(distributionPitch(items, Vertical, 10, 0) == 2);
+	CHECK(distributionPitch(items, Vertical, 1, 0) == 20);
 
 		//A text 35 under the second one: 35 + 10 + 2 = 47, so 5 steps
 	items[1] = item(0, 100, 10, 35);

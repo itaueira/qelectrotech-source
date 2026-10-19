@@ -5284,8 +5284,8 @@ namespace
 {
 	/**
 		Ask the pitch of a distribution, in grid steps, with @a automatic
-		filled in: the smallest at which no text touches the next one. A
-		smaller one is taken too, and the box says texts will touch.
+		filled in: the smallest at which no text overlaps the next one. A
+		smaller one is taken too, and the box says texts will overlap.
 		@return the pitch, or 0 when the box is cancelled
 	*/
 	int askDistributionPitch(QWidget *parent, const QString &title, int automatic)
@@ -5302,9 +5302,9 @@ namespace
 		auto *automatic_button = new QPushButton(
 			QCoreApplication::translate("QETDiagramEditor", "Automatic"), &dialog);
 		automatic_button->setToolTip(QCoreApplication::translate("QETDiagramEditor",
-			"The smallest pitch at which no text touches the next one"));
+			"The smallest pitch at which no text overlaps the next one"));
 		auto *warning = new QLabel(QCoreApplication::translate("QETDiagramEditor",
-			"Smaller than the automatic pitch: some texts will touch."), &dialog);
+			"Smaller than the automatic pitch: some texts will overlap."), &dialog);
 		warning->setWordWrap(true);
 		auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
 
