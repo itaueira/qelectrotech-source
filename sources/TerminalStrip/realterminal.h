@@ -84,6 +84,15 @@ class RealTerminal
 			entry with nothing in it.
 		*/
 		QStringList conductors() const;
+		/**
+			@brief Where the wires of one point of the terminal go
+			@param side : 0 for the entry of the terminal, 1 for its exit
+			@return "K1:24" for each wire of that point, in the order the
+			point keeps them; see the definition for the rules
+		*/
+		QStringList destinations(int side) const;
+		/// How many connection points the symbol of the terminal has (0 for a spare)
+		int pointCount() const;
 
 		QString cable() const;
 		QString cableWire() const;

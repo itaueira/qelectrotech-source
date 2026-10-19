@@ -949,6 +949,9 @@ if(TARGET qelectrotech_objects)
         # it read before the start of its four places. Needs the drawer and
         # its pattern, and paints into an image.
         src/ui/terminalstripdrawer_test.cpp
+        # Where the wires of each point of a terminal go, as the plan of a
+        # terminal strip writes them (T64). Needs a folio with wires.
+        src/ui/terminaldestination_test.cpp
         # The button of the terminal strip manager that bridges every run of
         # adjacent terminals on one wire number, in one command. Needs a folio:
         # the wire number is read off the conductors drawn on it.

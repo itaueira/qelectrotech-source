@@ -22,6 +22,7 @@
 #include "terminalcolor.h"
 #include "terminalcatalog.h"
 #include "../qetgraphicsitem/conductor.h"
+#include "../qetgraphicsitem/terminal.h"
 #include "../diagram.h"
 #include "../qetproject.h"
 
@@ -358,6 +359,73 @@ QStringList RealTerminal::conductors() const
 	}
 
 	return list_;
+}
+
+/**
+ * @brief RealTerminal::destinations
+ * The entry and the exit of a terminal are the first and the second
+ * connection point of its symbol, in the order of the symbol file: a
+ * rotation or a mirror of the symbol on the folio changes where they are
+ * drawn, not which is which.
+ * @param side : 0 for the entry, 1 for the exit
+ * @return for each wire of that point, the other end: the tag of its
+ * element and the name of its point, "K1:24" ("K1" when the point has no
+ * name). When the other end is a terminal of a strip, the name of the
+ * strip and the tag of the terminal, "X2:2". In the order the point keeps
+ * its wires. Empty for a spare terminal or a point with no wire.
+ */
+QStringList RealTerminal::destinations(int side) const
+{
+	QStringList list_;
+	if (m_element.isNull()) {
+		return list_;
+	}
+	const auto points_ = m_element->terminals();
+	if (side < 0 || side >= points_.size()) {
+		return list_;
+	}
+
+	const Terminal *point_ = points_.at(side);
+	const auto conductors_ = point_->conductors();
+	for (const Conductor *conductor_ : conductors_)
+	{
+		const Terminal *other_ = conductor_->terminal1 == point_ ? conductor_->terminal2
+																 : conductor_->terminal1;
+		Element *element_ = other_ ? other_->parentElement() : nullptr;
+		if (!element_) {
+			continue;
+		}
+
+		QString tag_ = element_->actualLabel();
+		QString point_name_ = other_->name();
+			//A terminal at the other end: the strip says which rail and the
+			//tag which terminal on it; the points of a terminal have no name
+		if (element_->elementData().m_type == ElementData::Terminal)
+		{
+			point_name_.clear();
+			const auto other_real_{static_cast<TerminalElement *>(element_)->realTerminal()};
+			if (other_real_ && other_real_->parentStrip()) {
+				point_name_ = tag_;
+				tag_ = other_real_->parentStrip()->name();
+			}
+		}
+		if (tag_.isEmpty()) {
+			tag_ = unnamedEntry();
+		}
+		list_ << (point_name_.isEmpty() ? tag_ : tag_ + QLatin1Char(':') + point_name_);
+	}
+
+	return list_;
+}
+
+/**
+ * @brief RealTerminal::pointCount
+ * @return the number of connection points of the symbol of this terminal,
+ * 0 for a spare terminal, which has no symbol
+ */
+int RealTerminal::pointCount() const
+{
+	return m_element.isNull() ? 0 : static_cast<int>(m_element->terminals().size());
 }
 
 /**

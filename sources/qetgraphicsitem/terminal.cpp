@@ -242,6 +242,33 @@ void Terminal::paint(
 			painter -> setRenderHint(QPainter::Antialiasing, true);
 			painter -> drawEllipse(QRectF(c.x() - 2.5, c.y() - 2.5, 5.0, 5.0));
 		} else painter -> drawPoint(c);
+
+			//The entry and the exit of a terminal of a terminal strip are the
+			//first and the second point of its symbol, whatever its rotation
+			//(RealTerminal::destinations()). A small arrow beside the point
+			//says which is which - into the symbol for the entry, out of it
+			//for the exit -, on the screen only, like the point itself.
+		if (parent_element_
+			&& parent_element_->elementData().m_type == ElementData::Terminal)
+		{
+			const auto points_ = parent_element_->terminals();
+			const QLineF line_{c, e};
+			if (points_.size() == 2 && line_.length() > 0.1)
+			{
+				const QPointF along_{(e - c) / line_.length()};	//Into the symbol
+				const QPointF forward_{points_.first() == this ? along_ : -along_};
+					//Beside the point, on the same side for the entry and the
+					//exit: the side is taken from the direction of the arrow
+				const QPointF beside_{-forward_.y(), forward_.x()};
+				const QPointF center_{(c + e) / 2 + beside_ * 4.0};
+				const QPointF tip_{center_ + forward_ * 2.0};
+				const QPointF back_{center_ - forward_ * 2.0};
+				painter -> setRenderHint(QPainter::Antialiasing, true);
+				painter -> setPen(Qt::NoPen);
+				painter -> setBrush(QColor(0, 128, 0));
+				painter -> drawPolygon(QPolygonF{{tip_, back_ + beside_ * 1.8, back_ - beside_ * 1.8}});
+			}
+		}
 	}
 
 	//Draw help line if needed,

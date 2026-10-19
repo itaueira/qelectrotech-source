@@ -90,6 +90,9 @@ namespace TerminalStripDrawer
 			virtual QString catalogEntry() const { return QString(); }
 			//A separator plate is mounted after the terminal (drawn by the realistic styles)
 			virtual bool hasSeparatorAfter() const { return false; }
+			//Where the wires of the entry (0) and of the exit (1) of the terminal go,
+			//written above and under it. Empty draws nothing.
+			virtual QString destination(int side) const { Q_UNUSED(side) return QString(); }
     };
 
 	class AbstractPhysicalTerminalInterface

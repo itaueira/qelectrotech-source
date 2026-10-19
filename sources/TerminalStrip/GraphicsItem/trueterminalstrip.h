@@ -69,6 +69,7 @@ namespace TerminalStripDrawer
 			qreal widthMm() const override;
 			QString catalogEntry() const override;
 			bool hasSeparatorAfter() const override;
+			QString destination(int side) const override;
 
 		private:
 			QSharedPointer<RealTerminal> m_real;

@@ -308,3 +308,104 @@ TEST_CASE("T33 — Every level draws the clamping parts of the last one, not one
 	}
 }
 
+/*
+	Where the wires of a terminal go (T64): the destination of its entry is
+	written above it and the one of its exit under it, in the zone at the
+	end of the connections, next to the connection. An empty destination
+	writes nothing. Read on the image of one terminal of one level.
+*/
+namespace
+{
+	class DestinationLevel : public AbstractRealTerminalInterface
+	{
+		public:
+			DestinationLevel(const QString &entry, const QString &exit) :
+				m_entry(entry), m_exit(exit) {}
+			QString label() const override {return QStringLiteral("1");}
+			bool isBridged() const override {return false;}
+			AbstractBridgeInterface *bridge() const override {return nullptr;}
+			QString xref() const override {return QString();}
+			QString destination(int side) const override {
+				return side == 0 ? m_entry : (side == 1 ? m_exit : QString());
+			}
+		private:
+			QString m_entry;
+			QString m_exit;
+	};
+
+	class OneLevelTerminal : public AbstractPhysicalTerminalInterface
+	{
+		public:
+			explicit OneLevelTerminal(QSharedPointer<AbstractRealTerminalInterface> level) :
+				m_level(level) {}
+			QVector<QSharedPointer<AbstractRealTerminalInterface>> realTerminals() const override {
+				return {m_level};
+			}
+		private:
+			QSharedPointer<AbstractRealTerminalInterface> m_level;
+	};
+
+	class OneTerminalStrip : public AbstractTerminalStripInterface
+	{
+		public:
+			OneTerminalStrip(const QString &entry, const QString &exit) {
+				m_terminals << QSharedPointer<AbstractPhysicalTerminalInterface>(
+								   new OneLevelTerminal(QSharedPointer<AbstractRealTerminalInterface>(
+															new DestinationLevel(entry, exit))));
+			}
+			QString installation() const override {return QString();}
+			QString location() const override {return QString();}
+			QString name() const override {return QStringLiteral("X1");}
+			QVector<QSharedPointer<AbstractPhysicalTerminalInterface>> physicalTerminal() const override {
+				return m_terminals;
+			}
+		private:
+			QVector<QSharedPointer<AbstractPhysicalTerminalInterface>> m_terminals;
+	};
+
+		//Room above the strip in the image: the entry is written above y = 0
+	const int image_shift = 120;
+
+	QImage drawnDestinations(const QString &entry, const QString &exit)
+	{
+		TerminalStripDrawer::TerminalStripDrawer drawer(
+					QSharedPointer<AbstractTerminalStripInterface>(new OneTerminalStrip(entry, exit)),
+					QSharedPointer<TerminalStripLayoutPattern>::create());
+		QImage image(400, 520, QImage::Format_ARGB32);
+		image.fill(Qt::white);
+		QPainter painter(&image);
+		painter.translate(0, image_shift);
+		drawer.paint(&painter);
+		painter.end();
+		return image;
+	}
+}
+
+TEST_CASE("T64 — The destination of the entry is written above the terminal, the one of the exit under it",
+		  "[terminalstripdrawer]")
+{
+	const TerminalStripLayoutPattern pattern;
+	REQUIRE(pattern.m_destination_text_length > 0);
+	const QRectF rect = pattern.m_terminal_rect.at(3);
+	const int x0 = firstLevelX(pattern) + 3;
+	const int x1 = firstLevelX(pattern) + qRound(rect.width()) - 4;
+	const int stub = qRound(pattern.m_connection_length);
+	const int length = qRound(pattern.m_destination_text_length);
+	const int top = image_shift + qRound(rect.top()) - stub;	//End of the connection above
+	const int bottom = image_shift + qRound(rect.bottom()) + stub;	//End of the connection under
+
+	const QImage both = drawnDestinations(QStringLiteral("K1:24"), QStringLiteral("M1:A1"));
+	const QImage entry_only = drawnDestinations(QStringLiteral("K1:24"), QString());
+
+		//Above: written next to the connection, and short enough to leave
+		//the far end of the zone empty
+	CHECK(pixelsDarkerThan(both, 100, x0, top - length / 2, x1, top - 2) > 0);
+	CHECK(pixelsDarkerThan(both, 100, x0, top - length + 2, x1, top - length + 12) == 0);
+
+		//Under: written next to the connection too
+	CHECK(pixelsDarkerThan(both, 100, x0, bottom + 2, x1, bottom + length / 2) > 0);
+	CHECK(pixelsDarkerThan(both, 100, x0, bottom + length - 12, x1, bottom + length - 2) == 0);
+
+		//No destination, nothing written
+	CHECK(pixelsDarkerThan(entry_only, 100, x0, bottom + 2, x1, bottom + length - 2) == 0);
+}

@@ -260,6 +260,54 @@ void drawConnections(QPainter *painter, const QRectF &terminal_rect, qreal lengt
 }
 
 /**
+ * @brief drawDestination
+ * Write where the wires of one point of a terminal go, in the zone at the
+ * end of its connection: vertical text, like the number of the terminal,
+ * next to the connection.
+ * @param painter : in the frame of the terminal, its pen and font set
+ * @param width : width of the terminal
+ * @param text : the destination; nothing is drawn when empty
+ * @param y : top of the zone
+ * @param length : length of the zone, along the text
+ * @param above : true for the zone above the terminal, whose text starts at
+ * its bottom; false for the one under it, whose text ends at its top
+ */
+void drawDestination(QPainter *painter, qreal width, const QString &text,
+					 qreal y, qreal length, bool above)
+{
+	if (text.isEmpty() || width < 4.0 || length <= 2.0) {
+		return;
+	}
+
+	painter->save();
+	painter->translate(0, y + length);
+	painter->rotate(270);
+
+		//Longer than the zone ("K1:24 / X2:2"...): a smaller font, like the
+		//number on a marker tag that does not fit
+	const qreal available_{length - 2.0};
+	const QFontMetricsF metrics_{painter->font()};
+	const qreal text_length_{metrics_.horizontalAdvance(text)};
+	if (text_length_ > available_)
+	{
+		auto font_{painter->font()};
+		const auto size_{font_.pixelSize() > 0 ? qreal(font_.pixelSize()) : font_.pointSizeF()};
+		const auto new_size_{std::max<qreal>(3.0, size_ * available_ / text_length_)};
+		if (font_.pixelSize() > 0) {
+			font_.setPixelSize(std::max(1, static_cast<int>(new_size_)));
+		} else {
+			font_.setPointSizeF(new_size_);
+		}
+		painter->setFont(font_);
+	}
+
+	painter->drawText(QRectF{1.0, 0, available_, width},
+					  (above ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter,
+					  text);
+	painter->restore();
+}
+
+/**
  * @brief The CableCell struct
  * What is needed to draw the cable under a terminal.
  */
@@ -1147,6 +1195,20 @@ void TerminalStripDrawer::paint(QPainter *painter)
 					//The cable replace the connection under the terminal
 					drawConnections(painter, terminal_rect, m_pattern->m_connection_length, !have_cable);
 				}
+					//Where the wires of the entry and of the exit go, at the end
+					//of the connections. Under a terminal with a cable, the cable
+					//already shows where its wire goes.
+				if (m_pattern->m_destination_text_length > 0 && real_terminal_vector[i])
+				{
+					const qreal stub_{qMax<qreal>(0, m_pattern->m_connection_length)};
+					const qreal length_{m_pattern->m_destination_text_length};
+					drawDestination(painter, terminal_rect.width(), real_terminal_vector[i]->destination(0),
+									terminal_rect.top() - stub_ - length_, length_, true);
+					if (!have_cable) {
+						drawDestination(painter, terminal_rect.width(), real_terminal_vector[i]->destination(1),
+										terminal_rect.top() + terminal_rect.height() + stub_, length_, false);
+					}
+				}
                     //Draw a stronger line if the current terminal have level
                     //and the current level is the first
                 if (real_t_count > 1 && i == 0)
@@ -1359,6 +1421,18 @@ QRectF TerminalStripDrawer::boundingRect() const
 			}
 			rect_.setTop(top_);
 			extra_bottom = length_;
+		}
+
+			//The destinations of the wires are written beyond the connections
+		if (m_pattern->m_destination_text_length > 0)
+		{
+			const qreal stub_{qMax<qreal>(0, m_pattern->m_connection_length)};
+			qreal top_{rect_.top()};
+			for (const auto &terminal_rect : std::as_const(m_pattern->m_terminal_rect)) {
+				top_ = std::min(top_, terminal_rect.top() - stub_ - m_pattern->m_destination_text_length);
+			}
+			rect_.setTop(top_);
+			extra_bottom = std::max(extra_bottom, stub_ + m_pattern->m_destination_text_length);
 		}
 
 			//The cables are drawn under the terminals

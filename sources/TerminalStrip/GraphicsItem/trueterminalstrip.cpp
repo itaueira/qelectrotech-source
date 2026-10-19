@@ -22,6 +22,8 @@
 #include "../terminalstripbridge.h"
 #include "../../autoNum/assignvariables.h"
 
+#include <QCoreApplication>
+
 #include "terminalstripdrawer.h"
 
 namespace TerminalStripDrawer
@@ -141,6 +143,31 @@ namespace TerminalStripDrawer
 	QString TrueRealTerminal::cable() const
 	{
 		return m_real ? m_real->cable() : QString();
+	}
+
+	/**
+	 * @brief TrueRealTerminal::destination
+	 * @param side : 0 for the entry, 1 for the exit (RealTerminal::destinations())
+	 * @return the destinations of the wires of that point, joined by " / ";
+	 * "Free" for a point with no wire, "Spare" for a spare terminal, and
+	 * nothing for a point the symbol does not have
+	 */
+	QString TrueRealTerminal::destination(int side) const
+	{
+		if (!m_real) {
+			return QString();
+		}
+		if (m_real->isSpare()) {
+			return QCoreApplication::translate("TerminalStripModel", "Spare");
+		}
+		if (side < 0 || side >= m_real->pointCount()) {
+			return QString();
+		}
+		const auto ends_{m_real->destinations(side)};
+		if (ends_.isEmpty()) {
+			return QCoreApplication::translate("TerminalStripDrawer", "Free");
+		}
+		return ends_.join(QStringLiteral(" / "));
 	}
 
 	QString TrueRealTerminal::cableWire() const

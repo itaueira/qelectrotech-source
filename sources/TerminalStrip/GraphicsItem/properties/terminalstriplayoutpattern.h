@@ -121,6 +121,9 @@ class TerminalStripLayoutPattern
 			//Length of the connection drawn above and under each terminal,
 			//in the middle of the terminal. 0 disable the connections.
 		qreal m_connection_length{10};
+			//Length of the destinations of the wires written above and under
+			//each terminal, at the end of the connections. 0 disable them.
+		qreal m_destination_text_length{70};
 			//Cable drawn under the terminals which have a cable (hose).
 			//Length of the wires between the terminals and the cable
 			//0 disable the drawing of the cables.

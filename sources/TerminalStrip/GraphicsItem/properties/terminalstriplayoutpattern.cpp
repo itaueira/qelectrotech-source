@@ -245,6 +245,7 @@ QDomElement TerminalStripLayoutPattern::toXml(QDomDocument &document) const
 	element.setAttribute(QStringLiteral("type_symbol_y"), m_type_symbol_y);
 	element.setAttribute(QStringLiteral("type_symbol_height"), m_type_symbol_height);
 	element.setAttribute(QStringLiteral("connection_length"), m_connection_length);
+	element.setAttribute(QStringLiteral("destination_text_length"), m_destination_text_length);
 	element.setAttribute(QStringLiteral("cable_wire_length"), m_cable_wire_length);
 	element.setAttribute(QStringLiteral("cable_length"), m_cable_length);
 	element.setAttribute(QStringLiteral("cable_end_length"), m_cable_end_length);
@@ -313,6 +314,7 @@ void TerminalStripLayoutPattern::fromXml(const QDomElement &layout_element)
 	m_type_symbol_y = realFromXml(layout_element, QStringLiteral("type_symbol_y"), m_type_symbol_y);
 	m_type_symbol_height = realFromXml(layout_element, QStringLiteral("type_symbol_height"), m_type_symbol_height);
 	m_connection_length = realFromXml(layout_element, QStringLiteral("connection_length"), m_connection_length);
+	m_destination_text_length = realFromXml(layout_element, QStringLiteral("destination_text_length"), m_destination_text_length);
 	m_cable_wire_length = realFromXml(layout_element, QStringLiteral("cable_wire_length"), m_cable_wire_length);
 	m_cable_length = realFromXml(layout_element, QStringLiteral("cable_length"), m_cable_length);
 	m_cable_end_length = realFromXml(layout_element, QStringLiteral("cable_end_length"), m_cable_end_length);
