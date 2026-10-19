@@ -252,11 +252,15 @@ QList<ElementCollectionItem *> ElementCollectionItem::items() const
 
 /**
 	@brief onGuiThread
-	@return true when called from the thread the application lives in
+	@return true when called from the thread the application lives in.
+	False once the application is gone: a worker thread still setting up
+	items while the program closes - a test that ends before the loading
+	of the collection does - used to dereference the null instance here.
 */
 static bool onGuiThread()
 {
-	return QThread::currentThread() == QCoreApplication::instance()->thread();
+	const QCoreApplication *app_ = QCoreApplication::instance();
+	return app_ && QThread::currentThread() == app_->thread();
 }
 
 /**
