@@ -22,6 +22,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <QColor>
 #include <QImage>
 #include <QPainter>
 #include <QSharedPointer>
@@ -173,3 +174,137 @@ TEST_CASE("T33 — Up to four levels, every level is drawn, as before",
 	CHECK(level > 0);
 	CHECK(widthOf(levels) - widthOf(1) == level * (levels - 1));
 }
+
+/*
+	How a terminal looks in the schematic style.
+
+	The number of a terminal is written on a marker tag, and the tag takes
+	its place in the text zone from the alignment of the layout. The number
+	took the same alignment inside the tag: a short one, such as "1", sat at
+	one end of it. It is now always in the middle of its tag.
+
+	A terminal of several levels draws one column per level, side by side,
+	each one shorter than the one before - the step of the levels. The
+	clamping parts fill the free room of the body, and the step gave the
+	first level room the others do not have: a second screw, under its xref.
+	Every level now draws its parts in the band of the last level.
+
+	Both are read on the drawn image, with the default pattern.
+*/
+namespace
+{
+	/// A strip of one terminal of @a levels levels, drawn with the default pattern
+	QImage drawnTerminal(int levels)
+	{
+		QVector<int> drawn(levels, 0);
+		TerminalStripDrawer::TerminalStripDrawer drawer(
+					QSharedPointer<AbstractTerminalStripInterface>(new FakeStrip(drawn)),
+					QSharedPointer<TerminalStripLayoutPattern>::create());
+		QImage image(400, 320, QImage::Format_ARGB32);
+		image.fill(Qt::white);
+		QPainter painter(&image);
+		drawer.paint(&painter);
+		painter.end();
+		return image;
+	}
+
+	/// The pixels of @a image from (@a x0, @a y0) to (@a x1, @a y1), both included, darker than @a gray
+	int pixelsDarkerThan(const QImage &image, int gray, int x0, int y0, int x1, int y1)
+	{
+		int count = 0;
+		for (int y = y0 ; y <= y1 ; ++y) {
+			for (int x = x0 ; x <= x1 ; ++x) {
+				if (qGray(image.pixel(x, y)) < gray) {
+					++count;
+				}
+			}
+		}
+		return count;
+	}
+
+		//Where the levels begin: after the header and the spacer
+	int firstLevelX(const TerminalStripLayoutPattern &pattern)
+	{
+		return qRound(pattern.m_header_rect.width() + pattern.m_spacer_rect.width());
+	}
+}
+
+TEST_CASE("T33 — The number of a terminal is written in the middle of its marker tag",
+		  "[terminalstripdrawer]")
+{
+	const TerminalStripLayoutPattern pattern;
+	REQUIRE(pattern.m_terminals_text_orientation == Qt::Vertical);
+	const QRectF rect = pattern.m_terminal_rect.at(3);
+	const int x0 = firstLevelX(pattern);
+	const int x1 = x0 + qRound(rect.width()) - 1;
+	const QImage image = drawnTerminal(1);
+
+		//Along the vertical text, the rows of the white tag - read near the
+		//sides of the column, where the number never reaches -, then the
+		//rows of the black number inside it (the outline of the tag left out)
+	const int zone_top = qRound(pattern.m_terminals_text_y);
+	const int zone_bottom = qRound(pattern.m_terminals_text_y + pattern.m_terminals_text_height);
+	int tag_first = -1, tag_last = -1;
+	for (int y = zone_top ; y <= zone_bottom ; ++y)
+	{
+		if (qGray(image.pixel(x0 + 3, y)) > 240 && qGray(image.pixel(x1 - 3, y)) > 240) {
+			if (tag_first < 0) {
+				tag_first = y;
+			}
+			tag_last = y;
+		}
+	}
+	REQUIRE(tag_first >= 0);
+	REQUIRE(tag_last - tag_first >= 8);
+
+	int text_first = -1, text_last = -1;
+	for (int y = tag_first ; y <= tag_last ; ++y)
+	{
+		if (pixelsDarkerThan(image, 100, x0 + 5, y, x1 - 5, y) > 0) {
+			if (text_first < 0) {
+				text_first = y;
+			}
+			text_last = y;
+		}
+	}
+	REQUIRE(text_first >= 0);
+	CAPTURE(tag_first, tag_last, text_first, text_last);
+
+		//The number "1" is shorter than the tag: in the middle, the room left
+		//on each side of it is the same, within a pixel or two of rounding
+	const int before = text_first - tag_first;
+	const int after = tag_last - text_last;
+	CHECK(qAbs(before - after) <= 2);
+}
+
+TEST_CASE("T33 — Every level draws the clamping parts of the last one, not one more in its step",
+		  "[terminalstripdrawer]")
+{
+	const int levels = GENERATE(2, 3);
+	CAPTURE(levels);
+
+	const TerminalStripLayoutPattern pattern;
+	const int x0 = firstLevelX(pattern);
+	const QImage image = drawnTerminal(levels);
+	const qreal under_xref = pattern.m_xref_text_y + pattern.m_xref_text_height;
+
+	int x = x0;
+	for (int i = 0 ; i < levels ; ++i)
+	{
+		CAPTURE(i);
+		const QRectF rect = pattern.m_terminal_rect.at(4 - levels + i);
+		const int width = qRound(rect.width());
+		const int body_bottom = qRound(rect.bottom() - qMin(6.0, rect.height() * 0.06)
+									   - qMin(2.0, rect.height() * 0.03));
+
+			//The column is the one of this level: its body has its drawing
+		REQUIRE(pixelsDarkerThan(image, 100, x + 3, qRound(rect.top()) + 10, x + width - 4, body_bottom - 2) > 0);
+
+			//Between the xref and the end of the body, nothing: the room the
+			//step gives a taller level is not filled with one more screw
+		CHECK(pixelsDarkerThan(image, 100, x + 3, qRound(under_xref) + 4, x + width - 4, body_bottom - 2) == 0);
+
+		x += width;
+	}
+}
+

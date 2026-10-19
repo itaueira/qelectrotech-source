@@ -520,6 +520,19 @@ struct Zone
 };
 
 /**
+ * @brief bodyBand
+ * @param rect : rectangle of a terminal
+ * @return the band of @a rect between its two wire entries (caps),
+ * where drawTerminalBody() draws the clamping parts.
+ */
+Zone bodyBand(const QRectF &rect)
+{
+	const qreal cap_ = qMin(qreal(6.0), rect.height() * 0.06);
+	const qreal slope_ = qMin(qreal(2.0), rect.height() * 0.03);
+	return Zone{rect.top() + cap_ + slope_, rect.bottom() - cap_ - slope_};
+}
+
+/**
  * @brief drawTerminalBody Draw a terminal housing seen from the front,
  * like in a terminal line-up diagram : a grey body with wire entries (caps) at both ends,
  * and clamping screws drawn in the free zones of the body.
@@ -543,10 +556,9 @@ void drawTerminalBody(QPainter *painter, const QRectF &rect, const QVector<Zone>
 		return;
 	}
 
-	const qreal cap_ = qMin(qreal(6.0), rect.height() * 0.06);
-	const qreal slope_ = qMin(qreal(2.0), rect.height() * 0.03);
-	const qreal body_top_ = rect.top() + cap_ + slope_;
-	const qreal body_bottom_ = rect.bottom() - cap_ - slope_;
+	const Zone band_{bodyBand(rect)};
+	const qreal body_top_ = band_.top;
+	const qreal body_bottom_ = band_.bottom;
 
 		//Limit between the body and the wire entries
 	painter->drawLine(QPointF(rect.left(), body_top_),
@@ -696,13 +708,14 @@ Zone markerTagZone(const QFontMetricsF &metrics, qreal text_y, qreal text_height
  * @param vertical : true if the text is rotated
  * @param sectional : true for an isolating terminal
  * @param tag_length : length of the marker tags of the strip, along the text
+ * @return the rectangle of the tag, where the text is written
  */
-void drawMarkerTag(QPainter *painter, const QRectF &text_rect, const QString &text,
-				   const QTextOption &option, bool vertical, bool sectional,
-				   qreal tag_length)
+QRectF drawMarkerTag(QPainter *painter, const QRectF &text_rect, const QString &text,
+					 const QTextOption &option, bool vertical, bool sectional,
+					 qreal tag_length)
 {
 	if (text.isEmpty()) {
-		return;
+		return text_rect;
 	}
 	const QFontMetricsF metrics_{painter->font()};
 		//Vertical text : fixed length, like a real marker tag.
@@ -749,6 +762,7 @@ void drawMarkerTag(QPainter *painter, const QRectF &text_rect, const QString &te
 		}
 		painter->setFont(font_);
 	}
+	return tag_rect_;
 }
 
 /**
@@ -1084,6 +1098,26 @@ void TerminalStripDrawer::paint(QPainter *painter)
 					used_zones_.append(Zone{m_pattern->m_type_symbol_y,
 											m_pattern->m_type_symbol_y + m_pattern->m_type_symbol_height});
 				}
+					//A level taller than the last one of its terminal is the
+					//step of the levels, not room for more clamping parts:
+					//they are drawn in the band of the last level, so every
+					//level shows the same ones. The first level of two used
+					//to get a second screw under its xref.
+				if (real_t_count > 1)
+				{
+					const auto last_rect_{terminalRect(*m_pattern,
+													   int(std::min<qsizetype>(offset_ + real_t_count - 1, 3)),
+													   real_terminal_vector[i])};
+					const Zone own_{bodyBand(terminal_rect)};
+					const Zone last_{bodyBand(last_rect_)};
+					const qreal margin_{2.5};	//The one drawTerminalBody() keeps around a used zone
+					if (last_.top > own_.top) {
+						used_zones_.append(Zone{own_.top - margin_, last_.top - margin_});
+					}
+					if (last_.bottom < own_.bottom) {
+						used_zones_.append(Zone{last_.bottom + margin_, own_.bottom + margin_});
+					}
+				}
                 drawTerminalBody(painter, terminal_rect, used_zones_, !have_symbol_);
 				if (colors_.stripe.isValid())
 				{
@@ -1155,15 +1189,21 @@ void TerminalStripDrawer::paint(QPainter *painter)
                 }
 
                 const auto shared_real_terminal{real_terminal_vector[i]};
+					//The alignment of the layout places the tag in the text zone;
+					//the number is always written in the middle of its tag. Aligned
+					//like the tag, a short number such as "1" sat at one end of it.
+				QRectF number_rect_{text_rect};
 				if (shared_real_terminal && terminal_rect.width() >= 4.0) {
-					drawMarkerTag(painter, text_rect, terminalNumber(shared_real_terminal->label()),
-								  terminals_text_option, terminals_text_orientation == Qt::Vertical,
-								  shared_real_terminal->type() == ElementData::TTSectional,
-								  tag_length_);
+					number_rect_ = drawMarkerTag(painter, text_rect, terminalNumber(shared_real_terminal->label()),
+												 terminals_text_option, terminals_text_orientation == Qt::Vertical,
+												 shared_real_terminal->type() == ElementData::TTSectional,
+												 tag_length_);
 				}
-				painter->drawText(text_rect,
+				QTextOption number_option_{terminals_text_option};
+				number_option_.setAlignment(Qt::AlignCenter);
+				painter->drawText(number_rect_,
 								  shared_real_terminal ? terminalNumber(shared_real_terminal->label()) : QString(),
-								  terminals_text_option);
+								  number_option_);
 
 				if (m_preview_draw)
 				{
