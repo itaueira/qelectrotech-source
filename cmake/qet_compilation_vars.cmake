@@ -198,6 +198,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/conductorrouter.cpp
   ${QET_DIR}/sources/wirelanes.h
   ${QET_DIR}/sources/wirelanes.cpp
+  ${QET_DIR}/sources/wirepath.h
+  ${QET_DIR}/sources/wirepath.cpp
   ${QET_DIR}/sources/wirearrangement.h
   ${QET_DIR}/sources/wirearrangement.cpp
   ${QET_DIR}/sources/ui/wiringlistdialog.h

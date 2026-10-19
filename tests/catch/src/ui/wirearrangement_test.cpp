@@ -610,3 +610,70 @@ TEST_CASE("CU-67.14 — A conductor dragged by hand is not arranged by a move", 
 	CHECK_FALSE(by_hand->isAutoArranged());
 	CHECK(bridge(by_hand) == Approx(was + 40));
 }
+
+/*
+	Dragging the segment next to the one joined to a terminal (T68): the
+	conductor from S1, whose terminal points right at (167, 168), to T1 at
+	(277, 178), with the segment of the terminal of S1 long, to 200 - as a
+	move of a component leaves it.
+*/
+namespace
+{
+	Conductor *longStub(Bench &bench)
+	{
+		Conductor *c = bench.draw(1);
+		if (!c) return nullptr;
+		if (!c->setPathPoints({{167, 168}, {200, 168}, {200, 178}, {277, 178}})) return nullptr;
+		return c;
+	}
+}
+
+TEST_CASE("CU-68.1 — Dragging the long arm shortens the short one", "[T68][wirearrangement]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *c = longStub(bench);
+	REQUIRE(c);
+		//The upright segment dragged 25 towards S1: the bend where it was let
+		//go, and nothing beyond it
+	REQUIRE(c->moveSegment(1, -25, 0));
+	const QList<QPointF> bent{{167, 168}, {175, 168}, {175, 178}, {200, 178}, {277, 178}};
+	CHECK(points(c) == bent);
+
+	SECTION("CU-68.4 — one undo")
+	{
+		bench.sheet->undoStack().undo();
+		const QList<QPointF> before{{167, 168}, {200, 168}, {200, 178}, {277, 178}};
+		CHECK(points(c) == before);
+	}
+}
+
+TEST_CASE("CU-68.2 — The bend right over the terminal", "[T68][wirearrangement]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *c = longStub(bench);
+	REQUIRE(c);
+		//Dragged all the way to the terminal: one unit off it, and the
+		//segment dragged still a middle one, which drags
+	REQUIRE(c->moveSegment(1, -40, 0));
+	const QList<QPointF> bent{{167, 168}, {168, 168}, {168, 178}, {200, 178}, {277, 178}};
+	CHECK(points(c) == bent);
+	REQUIRE(c->moveSegment(1, 10, 0));
+	const QList<QPointF> dragged{{167, 168}, {168, 168}, {178, 168}, {178, 178}, {200, 178}, {277, 178}};
+	CHECK(points(c) == dragged);
+}
+
+TEST_CASE("CU-68.3 — Dragging away draws as before", "[T68][wirearrangement]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *c = longStub(bench);
+	REQUIRE(c);
+	REQUIRE(c->moveSegment(1, 20, 0));
+	const QList<QPointF> bent{{167, 168}, {200, 168}, {220, 168}, {220, 178}, {277, 178}};
+	CHECK(points(c) == bent);
+}

@@ -125,6 +125,7 @@ add_executable(
     src/terminalmatch_test.cpp
     src/namesimilarity_test.cpp
     src/wirelanes_test.cpp
+    src/wirepath_test.cpp
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
     src/labelcsvwriter_test.cpp
@@ -578,6 +579,9 @@ add_executable(
     # Where the bridge of each conductor goes (T67): numbers in, numbers out.
     ${QET_DIR}/sources/wirelanes.cpp
     ${QET_DIR}/sources/wirelanes.h
+    # The path of a conductor made clean after a drag (T68)
+    ${QET_DIR}/sources/wirepath.cpp
+    ${QET_DIR}/sources/wirepath.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string

@@ -300,6 +300,7 @@ class Conductor : public QGraphicsObject
 		void generateConductorPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
 		static QList<QPointF> automaticPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
 		bool applyPathPoints(const QList<QPointF> &scene_points, bool by_hand);
+		void simplifyPath();
 		void updateConductorPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
 		uint segmentsCount(QET::ConductorSegmentType = QET::Both) const;
 		QList<QPointF> segmentsToPoints() const;

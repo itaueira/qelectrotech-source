@@ -23,6 +23,7 @@
 #include "../autoNum/numerotationcontextcommands.h"
 #include "../conductorautonumerotation.h"
 #include "../conductorsegment.h"
+#include "../wirepath.h"
 #include "../conductorsegmentprofile.h"
 #include "../dataBase/projectdatabase.h"
 #include "../diagram.h"
@@ -1253,6 +1254,7 @@ void Conductor::handlerMouseReleaseEvent(QetGraphicsHandlerItem *qghi, QGraphics
 	m_moving_segment = false;
 	if (has_to_save_profile)
 	{
+		simplifyPath();
 		saveProfile();
 		has_to_save_profile = false;
 	}
@@ -1690,10 +1692,27 @@ bool Conductor::moveSegment(int index, qreal dx, qreal dy)
 	seg->moveX(dx);
 	seg->moveY(dy);
 	modified_path = true;
+	simplifyPath();
 	segmentsToPath();
 	calculateTextItemPosition();
 	saveProfile();
 	return true;
+}
+
+/**
+	@brief Conductor::simplifyPath
+	After a segment was dragged: the path without a point repeated and
+	without a segment running back over the one before it (WirePath), so
+	that the bend is where the segment was let go and the segment joined to
+	the terminal gets shorter, instead of a tail beyond the bend (T68).
+*/
+void Conductor::simplifyPath()
+{
+	const QList<QPointF> points = segmentsToPoints();
+	const QList<QPointF> clean = WirePath::simplified(points);
+	if (clean.size() == points.size()) return;
+	pointsToSegments(clean);
+	segmentsToPath();
 }
 
 /**

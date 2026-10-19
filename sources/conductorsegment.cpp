@@ -18,6 +18,16 @@
 #include "conductorsegment.h"
 #include <QDebug>
 
+namespace
+{
+		/// How short the segment joined to a terminal can get when the
+		/// segment next to it is dragged towards the terminal: one unit, so
+		/// that the bend can go right over the terminal while the dragged
+		/// segment stays a middle one, with its handle (T68). It was 12, and
+		/// no bend could be made closer than that to a terminal.
+	constexpr qreal minimum_static_length = 1.0;
+}
+
 /**
 	Constructeur
 	@param p1 Le point 
@@ -89,16 +99,16 @@ bool ConductorSegment::canMove1stPointX(const qreal &asked_dx, qreal &possible_d
 	/// Il se peut que le mouvement doive etre limite de facon a ce
 	/// que le segment statique conserve une taille minimale.
 	if (previous_segment -> length() > 0.0) {
-		if (first_x + asked_dx < prev_segment_first_x + 12.0) {
-			possible_dx = -first_x + prev_segment_first_x + 12.0;
+		if (first_x + asked_dx < prev_segment_first_x + minimum_static_length) {
+			possible_dx = -first_x + prev_segment_first_x + minimum_static_length;
 			return(false);
 		} else {
 			possible_dx = asked_dx;
 			return(true);
 		}
 	} else {
-		if (first_x + asked_dx >= prev_segment_first_x - 12.0) {
-			possible_dx = prev_segment_first_x - 12.0 - first_x;
+		if (first_x + asked_dx >= prev_segment_first_x - minimum_static_length) {
+			possible_dx = prev_segment_first_x - minimum_static_length - first_x;
 			return(false);
 		} else {
 			possible_dx = asked_dx;
@@ -149,16 +159,16 @@ bool ConductorSegment::canMove2ndPointX(const qreal &asked_dx, qreal &possible_d
 	/// Il se peut que le mouvement doive etre limite de facon a ce
 	/// que le segment statique conserve une taille minimale.
 	if (next_segment -> length() < 0.0) {
-		if (second_x + asked_dx < next_segment_second_x + 12.0) {
-			possible_dx = -second_x + next_segment_second_x + 12.0;
+		if (second_x + asked_dx < next_segment_second_x + minimum_static_length) {
+			possible_dx = -second_x + next_segment_second_x + minimum_static_length;
 			return(false);
 		} else {
 			possible_dx = asked_dx;
 			return(true);
 		}
 	} else {
-		if (second_x + asked_dx >= next_segment_second_x - 12.0) {
-			possible_dx = next_segment_second_x - 12.0 - second_x;
+		if (second_x + asked_dx >= next_segment_second_x - minimum_static_length) {
+			possible_dx = next_segment_second_x - minimum_static_length - second_x;
 			return(false);
 		} else {
 			possible_dx = asked_dx;
@@ -209,16 +219,16 @@ bool ConductorSegment::canMove1stPointY(const qreal &asked_dy, qreal &possible_d
 	/// Il se peut que le mouvement doive etre limite de facon a ce
 	/// que le segment statique conserve une taille minimale.
 	if (previous_segment -> length() > 0.0) {
-		if (first_y + asked_dy < prev_segment_first_y + 12.0) {
-			possible_dy = -first_y + prev_segment_first_y + 12.0;
+		if (first_y + asked_dy < prev_segment_first_y + minimum_static_length) {
+			possible_dy = -first_y + prev_segment_first_y + minimum_static_length;
 			return(false);
 		} else {
 			possible_dy = asked_dy;
 			return(true);
 		}
 	} else {
-		if (first_y + asked_dy >= prev_segment_first_y - 12.0) {
-			possible_dy = prev_segment_first_y - 12.0 - first_y;
+		if (first_y + asked_dy >= prev_segment_first_y - minimum_static_length) {
+			possible_dy = prev_segment_first_y - minimum_static_length - first_y;
 			return(false);
 		} else {
 			possible_dy = asked_dy;
@@ -269,16 +279,16 @@ bool ConductorSegment::canMove2ndPointY(const qreal &asked_dy, qreal &possible_d
 	/// Il se peut que le mouvement doive etre limite de facon a ce
 	/// que le segment statique conserve une taille minimale.
 	if (next_segment -> length() < 0.0) {
-		if (second_y + asked_dy < next_segment_second_y + 12.0) {
-			possible_dy = -second_y + next_segment_second_y + 12.0;
+		if (second_y + asked_dy < next_segment_second_y + minimum_static_length) {
+			possible_dy = -second_y + next_segment_second_y + minimum_static_length;
 			return(false);
 		} else {
 			possible_dy = asked_dy;
 			return(true);
 		}
 	} else {
-		if (second_y + asked_dy >= next_segment_second_y - 12.0) {
-			possible_dy = next_segment_second_y - 12.0 - second_y;
+		if (second_y + asked_dy >= next_segment_second_y - minimum_static_length) {
+			possible_dy = next_segment_second_y - minimum_static_length - second_y;
 			return(false);
 		} else {
 			possible_dy = asked_dy;
