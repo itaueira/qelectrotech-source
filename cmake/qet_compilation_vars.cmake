@@ -1034,6 +1034,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/TerminalStrip/terminalstripbridge.h
   ${QET_DIR}/sources/TerminalStrip/terminalstrip.cpp
   ${QET_DIR}/sources/TerminalStrip/terminalstrip.h
+  ${QET_DIR}/sources/TerminalStrip/terminalstripautoimport.cpp
+  ${QET_DIR}/sources/TerminalStrip/terminalstripautoimport.h
   ${QET_DIR}/sources/TerminalStrip/terminalstripdata.cpp
   ${QET_DIR}/sources/TerminalStrip/terminalstripdata.h
   ${QET_DIR}/sources/TerminalStrip/terminalstripreader.cpp
