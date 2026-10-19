@@ -278,6 +278,9 @@ target_compile_definitions(tst_multielementinfo PRIVATE
 # collection paths just chosen, not the ones they replace.
 qet_add_app_test(tst_assistantinfopaths tst_assistantinfopaths.cpp)
 
+# %T in a report or cross reference formula is the target folio's title.
+qet_add_app_test(tst_reportfoliotitle tst_reportfoliotitle.cpp)
+
 # Escape during a picture's resize, rotate or pivot drag puts it back, keeps
 # it selected and records no undo step (#1414); the key goes to the view.
 qet_add_app_test(tst_imagehandleescape tst_imagehandleescape.cpp)
@@ -289,6 +292,11 @@ qet_add_app_test(tst_folioimageload tst_folioimageload.cpp)
 # The Selection properties panel keeps the height the user gave it when the
 # selection has nothing to edit for a moment (#1439).
 qet_add_app_test(tst_selectionpanelheight tst_selectionpanelheight.cpp)
+
+# Opening a project before the elements panel's first reload() left its tree
+# item detached, and selecting the item's first child crashed in QTreeModel
+# (pre-existing since a82f6de23).
+qet_add_app_test(tst_elementspanelprojectopen tst_elementspanelprojectopen.cpp)
 
 # SVG export with smaller pictures (--svg-small-pictures, the export dialog's
 # option): a picture drawn at a tenth of its size is stored at four times
@@ -1444,3 +1452,11 @@ if(QET_HAS_SCRIPTING)
     "QET_TEST_BINARY_PATH=\"$<TARGET_FILE:qelectrotech>\""
     "QET_EXAMPLES_DIR=\"${QET_DIR}/examples\"")
 endif()
+
+# Closing a modified project with Discard left it in the project tree, with
+# items for its freed sheets; a click on one crashed (forum topic 3215).
+qet_add_app_test(tst_elementspanelclosedproject tst_elementspanelclosedproject.cpp)
+
+# A project closed before the element collection panel's first load, or during
+# a load, stayed in the collection and the next reload read the freed project.
+qet_add_app_test(tst_collectionclosedproject tst_collectionclosedproject.cpp)

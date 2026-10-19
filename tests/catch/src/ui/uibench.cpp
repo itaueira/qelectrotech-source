@@ -290,7 +290,7 @@ bool UiBench::ScratchProject::saveAndReopen()
 	}
 
 		//Reopened from the file written, which is not always the file
-		//opened: a project read from a .qet is saved as a .qetz beside it
+		//opened: a case may have given the project another path to save to
 	m_file_path = m_project->filePath();
 	delete m_project;
 	m_project = nullptr;

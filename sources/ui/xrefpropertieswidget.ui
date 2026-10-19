@@ -319,7 +319,8 @@
 %c: the column number
 %M: the installation
 %LM: the location
-%T: the label of the element</string>
+%T: the sheet title
+%tag: the label of the element</string>
           </property>
          </widget>
         </item>

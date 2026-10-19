@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include <QtTest>
+#include <QSet>
 
 #include <QDir>
 #include <QFile>
@@ -481,6 +482,137 @@ private slots:
 		QVERIFY2(out.contains(QStringLiteral("link rows: 0 differ")), qPrintable(out.right(600)));
 	}
 
+	// Removing a folio with every folio built saves no link to its symbols:
+	// the save takes each symbol's links from the project database, which
+	// drops a partner the project no longer has (F113; lazy folios already
+	// saved it so). affuteuse_250h, folio 3 removed: its coil KA1 is linked
+	// to contacts on other folios.
+	void removedFolioLeavesNoLinkToIt()
+	{
+#ifndef QET_HAS_SCRIPTING
+		QSKIP("needs --run: this QElectroTech is built without Qt Qml");
+#endif
+		const QString saved = m_dir.filePath(QStringLiteral("removed%1.qet").arg(m_run));
+		const QString js = m_dir.filePath(QStringLiteral("removed%1.js").arg(m_run));
+		QFile script(js);
+		QVERIFY(script.open(QIODevice::WriteOnly));
+		script.write(QStringLiteral(
+			"qet.log('REMOVED ' + qet.removeFolio(3));\n"
+			"qet.save('%1');\n").arg(saved).toUtf8());
+		script.close();
+		const QString out = runChecked({QStringLiteral("--run"), js,
+										QStringLiteral(QET_EXAMPLES_DIR "/affuteuse_250h.qet")}, true);
+		QVERIFY2(out.contains(QStringLiteral("REMOVED true")), qPrintable(out.right(600)));
+
+		QFile file(saved);
+		QVERIFY(file.open(QIODevice::ReadOnly));
+		const QString text = QString::fromUtf8(file.readAll());
+			//Placed symbols carry a uuid; symbol definitions in the
+			//collection do not
+		QSet<QString> symbols;
+		auto it = QRegularExpression(QStringLiteral("<element [^>]*\\buuid=\"(\\{[0-9a-f-]+\\})\"")).globalMatch(text);
+		while (it.hasNext()) symbols.insert(it.next().captured(1));
+		QList<QString> links;
+		auto lt = QRegularExpression(QStringLiteral("<link_uuid [^>]*\\buuid=\"(\\{[0-9a-f-]+\\})\"")).globalMatch(text);
+		while (lt.hasNext()) links << lt.next().captured(1);
+		QVERIFY(!symbols.isEmpty() && !links.isEmpty());
+		int dangling = 0;
+		for (const QString &link : std::as_const(links))
+			if (!symbols.contains(link)) ++dangling;
+		QCOMPARE(dangling, 0);
+	}
+
+	// Each placed symbol's saved links in the .qetz @p path, as "symbol
+	// partner" lines, sorted: the link table of its database
+	static QStringList qetzLinks(const QString &path)
+	{
+		QList<QetZip::Entry> entries;
+		if (!QetZip::fromBytes(read(path), &entries)) return {QStringLiteral("not a zip")};
+		QByteArray database;
+		for (const QetZip::Entry &entry : std::as_const(entries))
+			if (entry.name == QLatin1String("project.sqlite")) database = entry.data;
+		sqlite3 *db = nullptr;
+		sqlite3_open(":memory:", &db);
+		unsigned char *copy = static_cast<unsigned char *>(sqlite3_malloc64(sqlite3_uint64(database.size())));
+		memcpy(copy, database.constData(), size_t(database.size()));
+		sqlite3_deserialize(db, "main", copy, database.size(), database.size(), SQLITE_DESERIALIZE_FREEONCLOSE);
+		sqlite3_stmt *list = nullptr;
+		QStringList links;
+		sqlite3_prepare_v2(db, "SELECT element_uuid, linked_uuid FROM link", -1, &list, nullptr);
+		while (list && sqlite3_step(list) == SQLITE_ROW)
+			links << QString::fromUtf8(reinterpret_cast<const char *>(sqlite3_column_text(list, 0)))
+					 + QLatin1Char(' ')
+					 + QString::fromUtf8(reinterpret_cast<const char *>(sqlite3_column_text(list, 1)));
+		sqlite3_finalize(list);
+		sqlite3_close(db);
+		links.sort();
+		return links;
+	}
+
+	// Removing a symbol or a folio and undoing it, with lazy folios, gives
+	// back every link, also those to symbols on folios not built, which
+	// only the project database's link rows hold (QETZ-DB-FIRST stage
+	// 2a-3). m_000 as a .qetz saved with every folio built; a contact of
+	// its middle folio, its folio, or its coil's folio (not built: the coil
+	// is built alone) removed, then undone.
+	void undoKeepsLinksToUnbuiltFolios_data()
+	{
+		QTest::addColumn<QString>("edit");
+		QTest::newRow("symbol") << QStringLiteral("qet.deleteElement(f, u)");
+		QTest::newRow("folio") << QStringLiteral("qet.removeFolio(f)");
+		QTest::newRow("coil folio") << QStringLiteral("qet.removeFolio(folio_of[m])");
+	}
+	void undoKeepsLinksToUnbuiltFolios()
+	{
+#ifndef QET_HAS_SCRIPTING
+		QSKIP("needs --run: this QElectroTech is built without Qt Qml");
+#endif
+		QFETCH(QString, edit);
+			//Each symbol's folio, from the file: asking QElectroTech would
+			//build the folios
+		QFile source(QStringLiteral(QET_EXAMPLES_DIR "/m_000.qet"));
+		QVERIFY(source.open(QIODevice::ReadOnly));
+		const QStringList folios = QString::fromUtf8(source.readAll()).split(QStringLiteral("<diagram "));
+		QStringList folio_of;
+		static const QRegularExpression placed(QStringLiteral("<element [^>]*\\buuid=\"(\\{[0-9a-f-]+\\})\""));
+		for (int i = 1 ; i < folios.size() ; ++i) {
+			auto it = placed.globalMatch(folios.at(i));
+			while (it.hasNext()) folio_of << QStringLiteral("'%1': %2").arg(it.next().captured(1)).arg(i - 1);
+		}
+		const QString qetz = m_dir.filePath(QStringLiteral("undo%1.qetz").arg(m_run));
+		QVERIFY(!runChecked({QStringLiteral("--resave"),
+							 QStringLiteral(QET_EXAMPLES_DIR "/m_000.qet"), qetz}, true).isEmpty());
+		auto save = [&](const QString &name, const QString &body) {
+			const QString saved = m_dir.filePath(name + QString::number(m_run) + QStringLiteral(".qetz"));
+			const QString js = m_dir.filePath(name + QString::number(m_run) + QStringLiteral(".js"));
+			QFile script(js);
+			if (!script.open(QIODevice::WriteOnly)) return std::pair<QString, QString>();
+			script.write(QStringLiteral(
+				"var folio_of = {%3};\n"
+				"var n = qet.folioCount(), f = -1, u = '', m = '';\n"
+				"for (var k = 0 ; k < n && !u ; ++k) {\n"
+				"  var g = (Math.floor(n / 2) + k) % n;\n"
+				"  var all = qet.elementUuids(g).slice().sort();\n"
+				"  for (var i = 0 ; i < all.length && !u ; ++i)\n"
+				"    if (qet.elementLinkType(g, all[i]) == 'slave' && qet.linkedElements(g, all[i]).length) { f = g; u = all[i]; m = qet.linkedElements(g, u)[0]; }\n"
+				"}\n"
+				"%1\n"
+				"qet.save('%2');\n").arg(body, saved, folio_of.join(QStringLiteral(", "))).toUtf8());
+			script.close();
+			return std::pair<QString, QString>(saved, runChecked({QStringLiteral("--run"), js, qetz}, false,
+																  "QET_CHECK_LINK_ROWS"));
+		};
+		const auto plain = save(QStringLiteral("undo-plain"), QStringLiteral("qet.log('FOUND ' + !!u);"));
+		QVERIFY2(plain.second.contains(QStringLiteral("FOUND true")), qPrintable(plain.second.right(600)));
+		const auto undone = save(QStringLiteral("undo-undone"),
+								 QStringLiteral("qet.log('UNDONE ' + (%1) + ' ' + qet.undo());").arg(edit));
+		QVERIFY2(undone.second.contains(QStringLiteral("UNDONE true true")), qPrintable(undone.second.right(600)));
+		QVERIFY2(undone.second.contains(QStringLiteral("link rows: 0 differ")), qPrintable(undone.second.right(600)));
+		const QStringList before = qetzLinks(plain.first);
+		QVERIFY(before.size() > 10);
+		QCOMPARE(qetzLinks(undone.first), before);
+	}
+
 	// The stores filled from the document before the folios are built
 	// hold what building them gives, for a
 	// project saved by this version (every symbol, folio and wire carries
@@ -600,10 +732,11 @@ private slots:
 		QCOMPARE(rowsOf(edited), rowsOf(reopened));
 	}
 
-	// A project read from a .qet and saved where it is, is saved as a .qetz
-	// beside it, and the .qet is left as it was (stage D1).
-	// What the .qetz holds is what a plain save of the .qet holds.
-	void qetSavedAsQetzBeside()
+	// A project read from a .qet and saved where it is stays a .qet: Save
+	// keeps the format it was opened in, only Save As changes it (#1512).
+	// It used to be saved as a .qetz beside the .qet (stage D1). What the
+	// .qet holds is what a plain save of it holds.
+	void qetSavedAsQet()
 	{
 #ifndef QET_HAS_SCRIPTING
 		QSKIP("needs --run: this QElectroTech is built without Qt Qml");
@@ -620,19 +753,19 @@ private slots:
 		const QString log = runChecked({QStringLiteral("--run"), script, qet});
 		QVERIFY2(log.contains(QStringLiteral("SAVED true")), qPrintable(log.right(400)));
 
-		QCOMPARE(read(qet), before);
-		const QString qetz = m_dir.filePath(QStringLiteral("beside.qetz"));
-		QVERIFY2(read(qetz).startsWith("PK\x03\x04"), "no .qetz beside the .qet");
+		QVERIFY2(!QFile::exists(m_dir.filePath(QStringLiteral("beside.qetz"))), "a .qetz written beside the .qet");
+		const QByteArray saved = read(qet);
+		QVERIFY2(saved.startsWith("<project"), "the .qet is no longer XML");
+		QVERIFY(saved != before); //written: the saved date and path are new
 
 		auto without_save_stamps = [](QByteArray xml) {
 			static const QRegularExpression stamp(QStringLiteral(
 				"\\s*<property [^>]*name=\"saved(filename|filepath|filenamedir|date|date-us|date-eu|time)\"[^>]*>[^<]*</property>"));
 			return QString::fromUtf8(xml).remove(stamp);
 		};
-		const QString straight = resave(qet);
-		const QString back = resave(qetz);
-		QVERIFY(!straight.isEmpty() && !back.isEmpty());
-		QCOMPARE(without_save_stamps(read(back)), without_save_stamps(read(straight)));
+		const QString straight = resave(QStringLiteral(QET_EXAMPLES_DIR "/industrial.qet"));
+		QVERIFY(!straight.isEmpty());
+		QCOMPARE(without_save_stamps(saved), without_save_stamps(read(straight)));
 	}
 
 	// A title-block value that is a single space is kept through two saves
@@ -668,6 +801,103 @@ private slots:
 		QVERIFY2(saved.contains(QRegularExpression(
 					 QStringLiteral("<property [^>]*name=\"accents\"[^>]*>Armoire façade été</property>"))),
 				 "the accented value changed");
+	}
+
+	// What a folio cannot load is saved back as it was read (F127, F128).
+	// fixtures/coil_contact_wired.qet: a coil K1 and its contact, linked,
+	// two wires between them. Each row damages it as an uploaded project
+	// can be: the coil's definition missing from the file, or the
+	// contact's definition redrawn (terminals moved, other uuids). A save
+	// keeps both symbols, both wires and both links, a second save changes
+	// nothing, and once the coil's definition is back the save is the
+	// undamaged project's again.
+	void unloadableItemsKept_data()
+	{
+		QTest::addColumn<QString>("damage");
+		QTest::newRow("definition missing") << QStringLiteral("coil");
+		QTest::newRow("terminals redrawn") << QStringLiteral("contact");
+	}
+	void unloadableItemsKept()
+	{
+		QFETCH(QString, damage);
+		const QString fixture = QFINDTESTDATA("fixtures/coil_contact_wired.qet");
+		const QString whole = resave(fixture);
+		QVERIFY2(!whole.isEmpty(), "--resave of the fixture failed");
+		const QString xml = QString::fromUtf8(read(whole));
+			//A definition's tag may carry more than its name (where the
+			//definition came from, for one)
+		static const QRegularExpression coil_definition(QStringLiteral(
+			"<element name=\"bobine3\\.elmt\"[^>]*>.*?</element>\\s*"),
+			QRegularExpression::DotMatchesEverythingOption);
+		const QString coil = coil_definition.match(xml).captured(0);
+		QVERIFY(!coil.isEmpty());
+		QString damaged = xml;
+		if (damage == QLatin1String("coil")) {
+			damaged.remove(coil);
+		} else {
+				//The contact's terminals 40 further right, with new uuids
+			static const QRegularExpression contact_definition(QStringLiteral(
+				"<element name=\"con_simple\\.elmt\"[^>]*>.*?</element>"),
+				QRegularExpression::DotMatchesEverythingOption);
+			QString contact = contact_definition.match(xml).captured(0);
+			QVERIFY(!contact.isEmpty());
+			const QString before = contact;
+			static const QRegularExpression terminal(QStringLiteral(
+				"(<terminal [^>]*uuid=\"\\{)[0-9a-f]{8}([^>]*\\bx=\")(-?[0-9.]+)"));
+			int n = 0;
+			for (auto it = terminal.globalMatch(before); it.hasNext() ; ++n) {
+				const auto m = it.next();
+				contact.replace(m.captured(0), m.captured(1) + QStringLiteral("%1").arg(n, 8, 10, QLatin1Char('0'))
+								+ m.captured(2) + QString::number(m.captured(3).toDouble() + 40));
+			}
+			QCOMPARE(n, 2);
+			damaged.replace(before, contact);
+		}
+		const QString damaged_path = m_dir.filePath(QStringLiteral("damaged%1.qet").arg(m_run));
+		QFile out(damaged_path);
+		QVERIFY(out.open(QIODevice::WriteOnly));
+		out.write(damaged.toUtf8());
+		out.close();
+
+		auto count = [](const QString &text, const char *pattern) {
+			return int(text.count(QRegularExpression(QString::fromLatin1(pattern))));
+		};
+		const QString first = resave(damaged_path);
+		QVERIFY2(!first.isEmpty(), "--resave of the damaged project failed");
+		const QString saved = QString::fromUtf8(read(first));
+		QCOMPARE(count(saved, "<element [^>]*\\btype="), 2);
+		QCOMPARE(count(saved, "<conductor "), 2);
+		QCOMPARE(count(saved, "<link_uuid "), 2);
+		const QString second = resave(first);
+		QVERIFY2(!second.isEmpty(), "second --resave failed");
+		QVERIFY2(read(second) == read(first), "the second save changed the file");
+
+		if (damage != QLatin1String("coil")) return;
+			//The definition back: the coil and its wires are built again
+		static const QRegularExpression collection_category(QStringLiteral(
+			"(<category name=\"01_coils\">\\s*<names>.*?</names>\\s*)"),
+			QRegularExpression::DotMatchesEverythingOption);
+		QString mended = saved;
+		QVERIFY(collection_category.match(mended).hasMatch());
+		mended.replace(collection_category, QStringLiteral("\\1") + coil);
+		const QString mended_path = m_dir.filePath(QStringLiteral("mended%1.qet").arg(m_run));
+		QFile mend(mended_path);
+		QVERIFY(mend.open(QIODevice::WriteOnly));
+		mend.write(mended.toUtf8());
+		mend.close();
+		const QString back = resave(mended_path);
+		QVERIFY2(!back.isEmpty(), "--resave of the mended project failed");
+		auto items = [](const QString &text, const char *tag) {
+			QStringList found;
+			static const QRegularExpression noise(QStringLiteral(" (element[12]_(label|linked|name)|terminalname[12])=\"[^\"]*\""));
+			auto it = QRegularExpression(QStringLiteral("<%1 [^>]*>").arg(QLatin1String(tag))).globalMatch(text);
+			while (it.hasNext()) found << it.next().captured(0).remove(noise);
+			found.sort();
+			return found;
+		};
+		const QString again = QString::fromUtf8(read(back));
+		QCOMPARE(items(again, "element"), items(xml, "element"));
+		QCOMPARE(items(again, "conductor"), items(xml, "conductor"));
 	}
 };
 

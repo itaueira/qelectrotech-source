@@ -69,6 +69,8 @@ namespace autonum
 	{
 			/// border_and_titleblock.folio(), folioIndex(), folioTotal()...
 		QString folio;
+			/// the folio's title, %T
+		QString folio_title;
 		int folio_index = 0;
 		int folio_total = 0;
 		QString plant;
@@ -80,7 +82,7 @@ namespace autonum
 		bool has_element = false;
 		DiagramPosition element_position;
 		QString element_prefix;
-			/// an element's tag (%T): the tag of a folio report, the label
+			/// an element's tag (%tag): the tag of a folio report, the label
 			/// of anything else, see AssignVariables::referenceTag()
 		QString element_tag;
 			/// a conductor's %wf, %wv, %wc and %ws

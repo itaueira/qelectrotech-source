@@ -32,7 +32,10 @@
 /*
 	T25 - a project saved through QETProject::write(), the way the program
 	saves it, leaves nothing in its folder but itself: the version kept
-	before the second save is in the folder of versions.
+	before each save is in the folder of versions. A project opened from
+	a .qet is saved to that .qet (since the upstream's 89c397995; it used
+	to be saved as a .qetz beside it, and the first save then kept
+	nothing), so two saves keep two versions.
 */
 
 TEST_CASE("CU-25.12 — Saving leaves nothing in the project's folder",
@@ -62,13 +65,14 @@ TEST_CASE("CU-25.12 — Saving leaves nothing in the project's folder",
 
 	const QString saved = project->filePath();
 	const QStringList kept = PreviousVersions::kept(saved);
-	CHECK(kept.size() == 1);
+	CHECK(kept.size() == 2);
 	for (const QString &version : kept) {
 		CHECK(version.startsWith(QDir(versions.path()).absolutePath()));
 	}
 
-		//The project's folder: the file opened, the .qetz the program saves
-		//it as, and the lock while it is open - nothing else
+		//The project's folder: the file opened, the one the program saves
+		//it as (the same one now), and the lock while it is open - nothing
+		//else
 	const QStringList allowed = {QFileInfo(opened).fileName(),
 								 QFileInfo(saved).fileName(),
 								 QFileInfo(ProjectLock::lockPathFor(saved)).fileName()};

@@ -159,7 +159,8 @@ QList<Element *> moved_elements(QETProject *project, const QList<Element *> &pas
 void link_moved(Element *element, QETProject *project)
 {
 	QList<QUuid> saved;
-	const QList<std::pair<QUuid, int>> waiting = element->waitingLinks();
+		//Nothing linked yet: the list it was saved with is the one waiting
+	const QList<std::pair<QUuid, int>> waiting = element->savedLinkList();
 	for (const auto &link : waiting) {
 		saved << link.first;
 	}

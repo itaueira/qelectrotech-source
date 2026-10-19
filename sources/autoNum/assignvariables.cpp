@@ -17,6 +17,8 @@
 */
 #include "assignvariables.h"
 
+#include <QRegularExpression>
+
 #include "../diagram.h"
 #include "../diagramposition.h"
 #include "../qetapp.h"
@@ -230,6 +232,7 @@ namespace autonum
 		FormulaContext context;
 		const BorderTitleBlock &border = diagram->border_and_titleblock;
 		context.folio = border.folio();
+		context.folio_title = border.title();
 		context.folio_index = diagram->folioIndex();
 		context.folio_total = border.folioTotal();
 		context.plant = border.plant();
@@ -243,7 +246,7 @@ namespace autonum
 			context.element_prefix = elmt->getPrefix();
 				//Only when asked for: the tag of an element can be its own
 				//label, which is worked out with this very function
-			if (formula.contains(QLatin1String("%T"))) {
+			if (formula.contains(QLatin1String("%tag"))) {
 				context.element_tag = referenceTag(elmt);
 			}
 		}
@@ -314,7 +317,7 @@ namespace autonum
 
 	/**
 		@brief AssignVariables::referenceTag
-		@return the tag a reference to @p element shows (%T): the tag of a
+		@return the tag a reference to @p element shows (%tag): the tag of a
 		folio report, the label of anything else. A linked slave is named by
 		the label of its master, which is the one its texts show: the
 		contact of K1 is K1. Its own label is not asked: it can be a copy
@@ -330,10 +333,10 @@ namespace autonum
 					.value(QETInformation::ELMT_REPORT_TAG).toString();
 		}
 		auto label = [](const Element *e) {
-				//A label made from a formula that asks for %T would come
+				//A label made from a formula that asks for %tag would come
 				//back here: the stored label is what it last gave
 			if (e->elementInformations().value(QETInformation::ELMT_FORMULA)
-					.toString().contains(QLatin1String("%T"))) {
+					.toString().contains(QLatin1String("%tag"))) {
 				return e->elementInformations()
 						.value(QETInformation::ELMT_LABEL).toString();
 			}
@@ -351,8 +354,8 @@ namespace autonum
 	/**
 		@brief AssignVariables::positionToTag
 		@return @p formula with the position, from its first %l or %c to
-		its last, replaced by %T: "%f-%l%c" gives "%f-%T", "(%f-%l%c)"
-		gives "(%f-%T)". What lies outside of it is kept, so a formula of
+		its last, replaced by %tag: "%f-%l%c" gives "%f-%tag", "(%f-%l%c)"
+		gives "(%f-%tag)". What lies outside of it is kept, so a formula of
 		one's own keeps the rest of it. A formula without a position is
 		returned as it is.
 	*/
@@ -376,7 +379,7 @@ namespace autonum
 		if (first < 0) {
 			return formula;
 		}
-		return formula.left(first) + QStringLiteral("%T") + formula.mid(last);
+		return formula.left(first) + QStringLiteral("%tag") + formula.mid(last);
 	}
 
 	/**
@@ -560,7 +563,7 @@ namespace autonum
 			}
 			m_assigned_label.replace("%l", m_context.element_position.letter());
 			m_assigned_label.replace("%prefix", m_context.element_prefix);
-			m_assigned_label.replace("%T", m_context.element_tag);
+			m_assigned_label.replace("%tag", m_context.element_tag);
 		}
 
 		if (m_context.has_conductor)
@@ -574,6 +577,12 @@ namespace autonum
 		assignTitleBlockVar();
 		assignProjectVar();
 		assignSequence();
+
+			//The folio title last: it is free text, and a title such as
+			//"Schema %c" must stay as typed, not have the variables in it
+			//replaced. %T on its own only, not the start of a longer word.
+		static const QRegularExpression folio_title(QStringLiteral("%T(?![A-Za-z0-9_])"));
+		m_assigned_label.replace(folio_title, m_context.folio_title);
 	}
 
 	void AssignVariables::assignTitleBlockVar()

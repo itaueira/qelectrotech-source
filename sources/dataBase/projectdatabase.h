@@ -26,6 +26,7 @@
 //two different vocabularies.
 #include "../properties/elementdata.h"
 
+#include <functional>
 #include <QObject>
 #include <QSqlDatabase>
 #include <QSqlQuery>
@@ -249,6 +250,16 @@ class projectDataBase : public QObject
 		void conductorUuidChanged(Conductor *conductor, const QUuid &old_uuid);
 		QStringList conductorPropertiesMismatches() const;
 		QStringList linkRowMismatches();
+		bool savedLinks(const Element *element, QList<std::pair<QUuid, int>> *links);
+			//The link rows are written (opening filled them): a symbol
+			//built links from them (Element::initLink())
+		bool holdsLinks() const {return m_holds_links;}
+		void forgetLinks() {m_holds_links = false;}
+		QList<std::pair<QUuid, int>> partnersToLink(const QUuid &element);
+		QList<std::pair<QUuid, int>> linkRowsOf(const QUuid &element) const;
+		QSet<QUuid> waitingPartners(const QUuid &element, const QSet<QUuid> &waiting);
+		QSet<QUuid> waitingSymbols() const;
+		QSet<QUuid> unbuiltSymbols() const;
 
 			//Fill the three stores from a project's document before its
 			//folios are built, then, once
@@ -398,8 +409,12 @@ class projectDataBase : public QObject
 		static void bindElementInfoValues(QSqlQuery &query, Element *element);
 		void populateLinkTable();
 		void flushLinks();
-		void insertLinkRows(QSqlQuery &insert, Element *element, const QSet<QUuid> &waiting);
-		QSet<QUuid> waitingSymbols() const;
+		void insertLinkRows(QSqlQuery &insert, Element *element, const std::function<bool(const QUuid &)> &waiting,
+							const QList<std::pair<QUuid, int>> &old_rows);
+		bool builtAlone(Element *element) const;
+		bool linksLater(const QUuid &uuid) const;
+		QList<std::pair<QUuid, int>> rowsToWrite(Element *element, const std::function<bool(const QUuid &)> &waiting,
+												 const QList<std::pair<QUuid, int>> &old_rows) const;
 		void populateDrawingItemTables();
 		bool populateFromDocument(const QDomDocument &document, QString *why = nullptr);
 		bool writeDrawingItem(QObject *object);
@@ -485,6 +500,13 @@ class projectDataBase : public QObject
 			//written: a link is made first and its contact group set after,
 			//so the rows are written when next read, as drawing items are.
 		QList<QPointer<Element>> m_dirty_link_elements;
+		QSqlQuery m_saved_links_query;
+		bool m_holds_links = false;
+			/// waitingSymbols() as it was last, for these folios not built
+			/// and this count of symbols built alone on them
+		mutable QList<Diagram *> m_waiting_folios;
+		mutable int m_waiting_alone = 0;
+		mutable QSet<QUuid> m_waiting_symbols;
 			//Elements moved since their folio cell was last written: a move
 			//sends xChanged and yChanged for every step of a drag, so the
 			//cell is written when next read, as drawing items are.

@@ -38,9 +38,10 @@ Create your own text using the following variables:
 %F: the sheet number
 %M: the installation
 %LM: the location
+%T: the sheet title
 %l: the row number
 %c: the column number
-%T: the tag of the sheet reference</string>
+%tag: the tag of the sheet reference</string>
           </property>
           <property name="scaledContents">
            <bool>false</bool>

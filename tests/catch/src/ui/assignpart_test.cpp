@@ -32,6 +32,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <QFileInfo>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QUndoCommand>
@@ -916,8 +917,11 @@ TEST_CASE("T13 — o nome do borne no projeto sobrevive a salvar em .qetz, e o \
 	const QPointF first_at = named->terminals().at(0)->dockConductor();
 	named->terminals().at(0)->setInstanceName(QStringLiteral("PINO-13"));
 
-		//Saved: opened from a .qet, it is saved as a .qetz beside it, and
-		//opened again from there
+		//Saved as a .qetz beside the .qet it was opened from, and opened
+		//again from there: a .qet is saved to itself, and the case is about
+		//the .qetz
+	scratch->setFilePath(QFileInfo(scratch.filePath()).absolutePath()
+						 + QStringLiteral("/industrial.qetz"));
 	REQUIRE(scratch.saveAndReopen());
 	INFO(scratch.error().toStdString());
 	REQUIRE(scratch.filePath().endsWith(QStringLiteral(".qetz")));

@@ -21,6 +21,7 @@
 #include "../qetproject.h"
 #include "../TerminalStrip/terminalstrip.h"
 #include "../TerminalStrip/ui/terminalstripeditorwindow.h"
+#include "../dataBase/projectdatabase.h"
 #include "../conductorautonumerotation.h"
 #include "../diagram.h"
 #include "../qetapp.h"
@@ -1285,8 +1286,10 @@ QList<Terminal *> relatedPotentialTerminal (
 			//folio is; not while folios are being read or built, which
 			//would build whole report chains
 		Element *report = terminal->parentElement();
-		const QSet<QUuid> waiting = report->pendingLinks();
 		QETProject *project = report->diagram() ? report->diagram()->project() : nullptr;
+		const QSet<QUuid> waiting = project && project->unloadedFolioCount()
+				? project->dataBase()->waitingPartners(report->uuid(), project->symbolsOnUnbuiltFolios())
+				: QSet<QUuid>();
 		if (!waiting.isEmpty() && project
 				&& project->state() != QETProject::ProjectParsingRunning) {
 			project->buildFoliosHoldingSymbols(waiting);

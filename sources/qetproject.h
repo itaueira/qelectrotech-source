@@ -154,9 +154,6 @@ class QETProject : public QObject
 		void buildFoliosHoldingSymbols(const QSet<QUuid> &symbols);
 		void buildFoliosHoldingTables();
 		QSet<QUuid> symbolsOnUnbuiltFolios() const;
-			/// While saving: the symbols on folios not built a built symbol
-			/// may be saved linked to (Element::toXml())
-		QSet<QUuid> waitingLinkTargets() const {return m_waiting_link_targets;}
 		QDomDocument folioXml(Diagram *folio);
 		QSet<Diagram *> tableChainFolios(Diagram *folio) const;
 		void loadFolios() const;
@@ -372,7 +369,6 @@ class QETProject : public QObject
 		static QString spliceKeptFolios(QString text, const QHash<int, QByteArray> &kept_folios);
 		bool close();
 		QETResult write(bool overwrite_changed = false);
-		QString writeTarget() const;
 		void rememberDiskState();
 		bool changedOnDisk(QDateTime *when = nullptr) const;
 
@@ -672,11 +668,6 @@ class QETProject : public QObject
 	public:
 		static bool isContainerPath(const QString &path);
 		static QString openFileFilter();
-			/// Saving writes a .qetz: one read from a .qet is saved as
-			/// a .qetz beside it, the .qet left as it is
-			/// (stage D1)
-		bool savesBesideOpenedFile() const {return m_opened_from_qet;}
-		QString besideContainerPath() const;
 		QETResult writeCopyForOlderVersions(const QString &path);
 		static bool writeContainer(const QDomDocument &project, const QString &path,
 								   QString *error = nullptr,
@@ -773,8 +764,6 @@ class QETProject : public QObject
 			/// database rows came from it, and nothing project-wide that
 			/// a folio's saved items depend on has changed since
 		bool m_kept_folios_trusted = false;
-			/// Read from a .qet whose path nobody chose since: saved beside it
-		bool m_opened_from_qet = false;
 			/// The file the saved date and path were set for, and the undo
 			/// index then: an unchanged project keeps them (stampSaved())
 		QString m_stamped_path;
@@ -787,7 +776,6 @@ class QETProject : public QObject
 			/// Saving a .qetz may copy the part of a folio not built
 			/// (toXml(), stage D4)
 		bool m_kept_parts_trusted = false;
-		QSet<QUuid> m_waiting_link_targets;
 			/// The entries of the .qetz opened, and the part each folio
 			/// was read from, in order
 		QHash<QString, QByteArray> m_container_files;
