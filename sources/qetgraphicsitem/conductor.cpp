@@ -287,6 +287,29 @@ bool Conductor::replaceTerminal(Terminal *from, Terminal *to)
 }
 
 /**
+	@brief Conductor::dockAt
+	Dock the two ends of this conductor at @a end1 and @a end2, keeping
+	everything else, as replaceTerminal() does for one. Both at once, for a
+	conductor whose two ends change together: changed one after the other,
+	the first change can leave both ends on the same terminal, and the second
+	would then find the wrong one (ExchangeElementsCommand).
+	Take the conductor off its folio before and put it back after, as for
+	replaceTerminal().
+	@param end1 : the terminal for terminal1
+	@param end2 : the terminal for terminal2
+*/
+void Conductor::dockAt(Terminal *end1, Terminal *end2)
+{
+	if (!end1 || !end2) {
+		return;
+	}
+	terminal1 = end1;
+	terminal2 = end2;
+	watchLocationOf(end1);
+	watchLocationOf(end2);
+}
+
+/**
 	@brief Conductor::elementInformationChanged
 	@param old_info what the component said before
 	@param new_info what it says now

@@ -75,6 +75,7 @@ class ElementsCollectionWidget : public QWidget
 		void addTemplate(const ElementsLocation &location);
 		QVector<ElementSearchHit> rankedSearch(const QString &text,
 						 const QModelIndex &within = QModelIndex());
+		QVector<ElementSearchHit> similarSearch(const QString &text);
 
 	protected:
 		void leaveEvent(QEvent *event) override;

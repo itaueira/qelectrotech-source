@@ -2249,6 +2249,8 @@ QList<QAction *> DiagramView::contextMenuActions() const
 					//Alt+Q: another element in the place of this one,
 					//with its wires (T54)
 				list << qde->m_replace_element;
+					//Alt+Q: each of two elements in the place of the other (T66)
+				list << qde->m_exchange_elements;
 					//The texts as the symbol has them (T58)
 				list << qde->m_reset_symbol_texts;
 			}

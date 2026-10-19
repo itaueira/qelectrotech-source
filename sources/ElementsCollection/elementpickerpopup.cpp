@@ -776,7 +776,12 @@ void ElementPickerPopup::runSearch()
 	m_view->setGridSize(QSize());
 	m_view->setIconSize(QSize(40, 40));
 
-	const QVector<ElementSearchHit> hits = m_source->rankedSearch(m_search->text());
+		//Replacing looks for look-alikes word by word, accents aside: the
+		//name of the selected symbol is rarely written like the names of
+		//the symbols that can take its place (T54)
+	const QVector<ElementSearchHit> hits = m_replace_mode
+			? m_source->similarSearch(m_search->text())
+			: m_source->rankedSearch(m_search->text());
 	for (const ElementSearchHit &hit : hits)
 	{
 		auto *item = new QStandardItem(hit.name);

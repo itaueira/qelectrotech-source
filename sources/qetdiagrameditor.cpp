@@ -29,6 +29,7 @@
 #include "undocommand/addgraphicsobjectcommand.h"
 #include "undocommand/explodeelementcommand.h"
 #include "undocommand/swapelementcommand.h"
+#include "undocommand/exchangeelementscommand.h"
 #include "undocommand/syncsymboltextscommand.h"
 #include "undocommand/conductortextcommand.h"
 #include "catalog/ui/catalogreplacedialog.h"
@@ -1097,7 +1098,8 @@ void QETDiagramEditor::setUpActions()
 
 		//Another element in the place of the selected ones, with their wires:
 		//the picker opens as Insert opens it, and what is chosen there
-		//replaces the selection instead of being placed (T54).
+		//replaces the selection instead of being placed (T54). Alt+S: Alt+Q
+		//is the swap, as in the schematic editors it was asked to match.
 	m_replace_element = new QAction(tr("Remplacer l'élément…"), this);
 	m_replace_element->setStatusTip(tr(
 		"Met un autre élément à la place des éléments sélectionnés, en "
@@ -1105,10 +1107,24 @@ void QETDiagramEditor::setUpActions()
 	m_replace_element->setData("replace_element");
 	ShortcutManager::instance().registerAction(
 		m_replace_element, "diagrameditor.replace_element",
-		tr("Éditeur de schémas"), QKeySequence(Qt::ALT | Qt::Key_Q));
+		tr("Éditeur de schémas"), QKeySequence(Qt::ALT | Qt::Key_S));
 	connect(m_replace_element, &QAction::triggered,
 		this, &QETDiagramEditor::replaceSelectedElements);
 	addAction(m_replace_element);
+
+		//Each of two selected elements in the place of the other: position,
+		//rotation and mirrors, the wires staying where they are (T66)
+	m_exchange_elements = new QAction(tr("Swap elements"), this);
+	m_exchange_elements->setStatusTip(tr(
+		"Puts each of the two selected elements in the place of the other; "
+		"the wires stay, and each one takes those of its new place", "status bar tip"));
+	m_exchange_elements->setData("exchange_elements");
+	ShortcutManager::instance().registerAction(
+		m_exchange_elements, "diagrameditor.exchange_elements",
+		tr("Éditeur de schémas"), QKeySequence(Qt::ALT | Qt::Key_Q));
+	connect(m_exchange_elements, &QAction::triggered,
+		this, &QETDiagramEditor::exchangeSelectedElements);
+	addAction(m_exchange_elements);
 
 		//The texts of the selected elements as their symbol has them: the
 		//update of the drawings keeps what was changed on a folio, and this
@@ -3494,6 +3510,74 @@ void QETDiagramEditor::replaceSelectionWith(const ElementsLocation &location)
 	}
 }
 
+/**
+	@brief QETDiagramEditor::exchangeSelectedElements
+	Put each of the two selected elements in the place of the other, in one
+	undoable step (T66). The wires stay where they are and each element takes
+	those of its new place; when a wire would end on no terminal, the user is
+	asked first, with the list. With other than two elements selected the
+	status bar says so.
+*/
+void QETDiagramEditor::exchangeSelectedElements()
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+	Diagram *diagram = view->diagram();
+
+	auto say = [this](const QString &message) {
+			//Queued, as for the align actions: closing the menu the action
+			//came from would clear a message shown right now
+		QTimer::singleShot(0, this, [this, message]() {
+			statusBar()->showMessage(message, 8000);
+		});
+	};
+
+	const QList<Element *> elements = selectedElementsInOrder(diagram);
+	if (elements.size() != 2) {
+		say(tr("Select two elements to swap them (%n selected)", "", elements.size()));
+		return;
+	}
+
+	ExchangeElementsCommand::Plan plan =
+			ExchangeElementsCommand::plan(elements.at(0), elements.at(1));
+	if (!plan.error.isEmpty()) {
+		say(plan.error);
+		return;
+	}
+
+	if (!plan.lost_conductors.isEmpty())
+	{
+		QStringList details;
+		for (Conductor *conductor : std::as_const(plan.lost_conductors))
+		{
+			const QString number = conductor->properties().text;
+			details << (number.isEmpty() ? tr("Wire without a number")
+						     : tr("Wire « %1 »").arg(number));
+		}
+		QMessageBox box(QMessageBox::Question, tr("Swap elements"),
+				tr("%n wire(s) would end on no terminal of the other element, "
+				   "and will be deleted.", "", plan.lost_conductors.size())
+				+ QStringLiteral("\n") + tr("Ctrl+Z undoes the swap."),
+				QMessageBox::NoButton, this);
+		box.setDetailedText(details.join(QStringLiteral("\n")));
+		QPushButton *swap = box.addButton(tr("Swap"), QMessageBox::AcceptRole);
+		box.addButton(QMessageBox::Cancel);
+		box.setDefaultButton(swap);
+		box.exec();
+		if (box.clickedButton() != swap) {
+			return;
+		}
+	}
+
+	diagram->undoStack().push(new ExchangeElementsCommand(plan));
+	say(tr("%1 and %2 swapped", "the labels of the two elements")
+		.arg(elementLabel(elements.at(0)), elementLabel(elements.at(1)))
+	    + QStringLiteral(" · ")
+	    + tr("%n wire(s) handed over", "", plan.moved_conductors.size()));
+}
+
 
 /**
 	@brief QETDiagramEditor::setConductorTextVisible
@@ -3792,6 +3876,7 @@ void QETDiagramEditor::setUpMenu()
 	symbol_menu -> addAction(m_create_symbol);
 	symbol_menu -> addAction(m_explode_element);
 	symbol_menu -> addAction(m_replace_element);
+	symbol_menu -> addAction(m_exchange_elements);
 	symbol_menu -> addAction(m_reset_symbol_texts);
 	symbol_menu -> addSeparator();
 	symbol_menu -> addAction(m_generate_pinout);
@@ -5634,6 +5719,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 			    << m_mirror_horizontal
 			    << m_mirror_vertical
 			    << m_replace_element
+			    << m_exchange_elements
 			    << m_reset_symbol_texts
 			    << m_edit_selection
 			    << m_group_selected_texts
@@ -5663,6 +5749,9 @@ void QETDiagramEditor::slot_updateComplexActions()
 	m_mirror_horizontal->setEnabled(!ro && selected_elements_count);
 	m_mirror_vertical->setEnabled(!ro && selected_elements_count);
 	m_replace_element->setEnabled(!ro && selected_elements_count);
+		//On as soon as there is an element: with other than two, the swap
+		//says so instead of keeping quiet (T66)
+	m_exchange_elements->setEnabled(!ro && selected_elements_count);
 	m_reset_symbol_texts->setEnabled(!ro && selected_elements_count);
 
 		//Navigating answers « where is the other one », so it is offered as

@@ -146,3 +146,39 @@ TEST_CASE("CU-54.5 — A terminal with nowhere to go has no match",
 	      == QVector<int>{-1});
 	CHECK(TerminalMatch::match({}, new_spots).isEmpty());
 }
+
+/*
+	Where the wires of a place go when another element comes to it, the
+	wires staying where they are (T66): the terminal that lies where a wire
+	ends, then the one of the same name. The uuid says nothing: the two are
+	different components.
+*/
+TEST_CASE("T66 — By place: the same point first, the uuid aside",
+	  "[t66][terminalmatch]")
+{
+		//The terminal with the same uuid is elsewhere; the one at the point
+		//of the wire takes it
+	const QVector<Spot> old_spots {spot(uuid_a, {}, 0, 0),
+				       spot(uuid_b, {}, 0, 20)};
+	const QVector<Spot> new_spots {spot(uuid_a, {}, 40, 0),
+				       spot({}, {}, 0, 0),
+				       spot({}, {}, 0, 20)};
+	CHECK(TerminalMatch::matchByPlace(old_spots, new_spots) == QVector<int>{1, 2});
+}
+
+TEST_CASE("T66 — By place: the same name for what the point left",
+	  "[t66][terminalmatch]")
+{
+		//A1 is not where it was on the other symbol, and nothing lies there:
+		//the name takes it; 14 has no match at all
+	const QVector<Spot> old_spots {spot({}, QStringLiteral("A1"), 0, 0),
+				       spot({}, QStringLiteral("14"), 0, 40)};
+	const QVector<Spot> new_spots {spot({}, QStringLiteral("A1"), 0, 10),
+				       spot({}, QStringLiteral("A2"), 0, 30)};
+	CHECK(TerminalMatch::matchByPlace(old_spots, new_spots) == QVector<int>{0, -1});
+
+		//And a terminal is taken once: two old ones on the same point
+	const QVector<Spot> twice {spot({}, {}, 0, 0), spot({}, {}, 0, 0)};
+	const QVector<Spot> one {spot({}, {}, 0, 0)};
+	CHECK(TerminalMatch::matchByPlace(twice, one) == QVector<int>{0, -1});
+}

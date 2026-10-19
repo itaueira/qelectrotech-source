@@ -44,6 +44,68 @@ namespace
 		}
 		return counts;
 	}
+
+		/// The pairing being built: for each old terminal its match, and
+		/// which new terminals are taken
+	struct Pairing
+	{
+		QVector<int> result;
+		QVector<bool> taken;
+
+		Pairing(int old_count, int new_count) :
+			result(old_count, -1), taken(new_count, false) {}
+		void take(int i, int j) { result[i] = j; taken[j] = true; }
+	};
+
+		/// The same printed name, when it is carried by one terminal on each side
+	void pairByName(const QVector<TerminalMatch::Spot> &old_spots,
+			const QVector<TerminalMatch::Spot> &new_spots, Pairing &pairing)
+	{
+		const QHash<QString, int> old_names = nameCounts(old_spots);
+		const QHash<QString, int> new_names = nameCounts(new_spots);
+		for (int i = 0 ; i < old_spots.size() ; ++i)
+		{
+			const QString &name = old_spots.at(i).name;
+			if (pairing.result.at(i) >= 0
+			    || old_names.value(name) != 1
+			    || new_names.value(name) != 1) {
+				continue;
+			}
+			for (int j = 0 ; j < new_spots.size() ; ++j)
+			{
+				if (!pairing.taken.at(j) && new_spots.at(j).name == name) {
+					pairing.take(i, j);
+					break;
+				}
+			}
+		}
+	}
+
+		/// The same point, facing the same way when @a same_orientation
+	void pairByPoint(const QVector<TerminalMatch::Spot> &old_spots,
+			 const QVector<TerminalMatch::Spot> &new_spots, Pairing &pairing,
+			 bool same_orientation)
+	{
+		for (int i = 0 ; i < old_spots.size() ; ++i)
+		{
+			if (pairing.result.at(i) >= 0) {
+				continue;
+			}
+			for (int j = 0 ; j < new_spots.size() ; ++j)
+			{
+				if (pairing.taken.at(j)
+				    || !samePoint(new_spots.at(j).point, old_spots.at(i).point)) {
+					continue;
+				}
+				if (same_orientation
+				    && new_spots.at(j).orientation != old_spots.at(i).orientation) {
+					continue;
+				}
+				pairing.take(i, j);
+				break;
+			}
+		}
+	}
 }
 
 /**
@@ -69,13 +131,7 @@ namespace
 QVector<int> TerminalMatch::match(const QVector<Spot> &old_spots,
 				  const QVector<Spot> &new_spots)
 {
-	QVector<int> result(old_spots.size(), -1);
-	QVector<bool> taken(new_spots.size(), false);
-
-	auto take = [&](int i, int j) {
-		result[i] = j;
-		taken[j] = true;
-	};
+	Pairing pairing(old_spots.size(), new_spots.size());
 
 		//1. The same terminal, by its uuid
 	for (int i = 0 ; i < old_spots.size() ; ++i)
@@ -85,56 +141,45 @@ QVector<int> TerminalMatch::match(const QVector<Spot> &old_spots,
 		}
 		for (int j = 0 ; j < new_spots.size() ; ++j)
 		{
-			if (!taken.at(j) && new_spots.at(j).uuid == old_spots.at(i).uuid) {
-				take(i, j);
+			if (!pairing.taken.at(j) && new_spots.at(j).uuid == old_spots.at(i).uuid) {
+				pairing.take(i, j);
 				break;
 			}
 		}
 	}
-
 		//2. The same printed name, one on each side
-	const QHash<QString, int> old_names = nameCounts(old_spots);
-	const QHash<QString, int> new_names = nameCounts(new_spots);
-	for (int i = 0 ; i < old_spots.size() ; ++i)
-	{
-		const QString &name = old_spots.at(i).name;
-		if (result.at(i) >= 0
-		    || old_names.value(name) != 1
-		    || new_names.value(name) != 1) {
-			continue;
-		}
-		for (int j = 0 ; j < new_spots.size() ; ++j)
-		{
-			if (!taken.at(j) && new_spots.at(j).name == name) {
-				take(i, j);
-				break;
-			}
-		}
-	}
-
+	pairByName(old_spots, new_spots, pairing);
 		//3. and 4. The same point, facing the same way first
-	for (const bool same_orientation : {true, false})
-	{
-		for (int i = 0 ; i < old_spots.size() ; ++i)
-		{
-			if (result.at(i) >= 0) {
-				continue;
-			}
-			for (int j = 0 ; j < new_spots.size() ; ++j)
-			{
-				if (taken.at(j)
-				    || !samePoint(new_spots.at(j).point, old_spots.at(i).point)) {
-					continue;
-				}
-				if (same_orientation
-				    && new_spots.at(j).orientation != old_spots.at(i).orientation) {
-					continue;
-				}
-				take(i, j);
-				break;
-			}
-		}
-	}
+	pairByPoint(old_spots, new_spots, pairing, true);
+	pairByPoint(old_spots, new_spots, pairing, false);
+	return pairing.result;
+}
 
-	return result;
+/**
+	@brief TerminalMatch::matchByPlace
+	For each terminal of @a old_spots, the terminal of @a new_spots that
+	takes its wires when another element comes to its place, the wires
+	staying where they are. Two passes, each terminal of @a new_spots taken
+	once at most:
+
+	1. the same point: the wire ends where it ended, now on the terminal
+	   that lies there;
+	2. the same name, when that name is carried by one terminal on each
+	   side, for what the first pass left.
+
+	The uuid says nothing here: the two elements are different components,
+	and a terminal of one is not "the same terminal" as one of the other.
+	@param old_spots : the terminals of the element leaving the place
+	@param new_spots : the terminals of the element coming to it, where
+	they will be once there
+	@return for each of @a old_spots, the index of its match in @a new_spots,
+	or -1 when it has none
+*/
+QVector<int> TerminalMatch::matchByPlace(const QVector<Spot> &old_spots,
+					 const QVector<Spot> &new_spots)
+{
+	Pairing pairing(old_spots.size(), new_spots.size());
+	pairByPoint(old_spots, new_spots, pairing, false);
+	pairByName(old_spots, new_spots, pairing);
+	return pairing.result;
 }

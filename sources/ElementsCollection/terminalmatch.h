@@ -49,6 +49,8 @@ namespace TerminalMatch
 
 	QVector<int> match(const QVector<Spot> &old_spots,
 			   const QVector<Spot> &new_spots);
+	QVector<int> matchByPlace(const QVector<Spot> &old_spots,
+				  const QVector<Spot> &new_spots);
 }
 
 #endif // TERMINALMATCH_H

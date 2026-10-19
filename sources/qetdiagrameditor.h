@@ -193,6 +193,7 @@ class QETDiagramEditor : public QETMainWindow
 		void showShortcutBar();
 		void replaceSelectedElements();
 		void replaceSelectionWith(const ElementsLocation &location);
+		void exchangeSelectedElements();
 		void resetSymbolTexts();
 		void rebuildToolBars();
 		bool repeatLastCommand();
@@ -294,6 +295,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_show_on_plate = nullptr, ///< Show the selected element on its mounting plate
 		*m_navigate = nullptr,      ///< Go to the other representation of the selected object
 		*m_replace_element = nullptr, ///< Put another element in the place of the selected ones
+		*m_exchange_elements = nullptr, ///< Put each of the two selected elements in the place of the other
 		*m_reset_symbol_texts = nullptr, ///< Give the selected elements the texts of their symbol
 		*m_paste_element_info,      ///< Copy the information of the copied element onto the selected elements (#1375)
 		*m_insert_last_element = nullptr, ///< Place the last placed element again

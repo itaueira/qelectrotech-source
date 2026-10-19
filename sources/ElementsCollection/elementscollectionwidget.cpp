@@ -31,6 +31,7 @@
 #include "elementscollectionmodel.h"
 #include "elementslocation.h"
 #include "elementstreeview.h"
+#include "namesimilarity.h"
 #include "fileelementcollectionitem.h"
 #include "xmlprojectelementcollectionitem.h"
 
@@ -42,6 +43,7 @@
 #include <QStandardItemModel>
 #include <QSet>
 #include <algorithm>
+#include <functional>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFileDialog>
@@ -1220,6 +1222,103 @@ QVector<ElementSearchHit> ElementsCollectionWidget::rankedSearch(
 	hits.reserve(scored.size());
 	for (const auto &p : std::as_const(scored)) {
 		hits.append(p.second);
+	}
+	return hits;
+}
+
+/**
+	@brief ElementsCollectionWidget::similarSearch
+	The symbols whose name is like @a text, word by word, for replacing a
+	selected one (T54): no difference of accent or case, at least one word
+	in common (NameSimilarity). The rarer the words a name shares, the
+	higher it comes (NameSimilarity::rarityScore()), and among equals,
+	rankMatch() as the search does. Searching the whole text, as
+	rankedSearch() does, finds none of the look-alikes of a symbol whose
+	name is written another way - "Borne de combinacao" and the "Terminal
+	de combinação" of another collection.
+	@param text : the search text, usually the name of the symbol replaced
+	@return ranked hits, best first
+*/
+QVector<ElementSearchHit> ElementsCollectionWidget::similarSearch(const QString &text)
+{
+	QVector<ElementSearchHit> hits;
+	const QStringList query = NameSimilarity::words(text);
+	if (!m_model || query.isEmpty()) {
+		return hits;
+	}
+
+	struct Candidate
+	{
+		QVector<bool> matched;
+		int rank;
+		ElementSearchHit hit;
+	};
+	QVector<Candidate> candidates;
+	QSet<QString> seen;
+	int name_count = 0;
+	const QString needle = text.toLower();
+
+	std::function<void(const QModelIndex &)> walk = [&](const QModelIndex &parent)
+	{
+		for (int row = 0 ; row < m_model->rowCount(parent) ; ++row)
+		{
+			const QModelIndex index = m_model->index(row, 0, parent);
+			ElementCollectionItem *eci = elementCollectionItemForIndex(index);
+			if (!(eci && eci->isElement()))
+			{
+				if (m_model->hasChildren(index)) {
+					walk(index);
+				}
+				continue;
+			}
+			++name_count;
+			const QString path = eci->collectionPath();
+			const QString name = index.data(Qt::DisplayRole).toString();
+			const QVector<bool> matched = NameSimilarity::matchedWords(query, name);
+			if (!matched.contains(true) || path.isEmpty() || seen.contains(path)) {
+				continue;
+			}
+			seen.insert(path);
+
+			ElementSearchHit hit;
+			hit.path = path;
+			hit.name = name;
+			hit.icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
+			QStringList parts;
+			for (QModelIndex p = index.parent(); p.isValid(); p = p.parent()) {
+				parts.prepend(p.data(Qt::DisplayRole).toString());
+			}
+			hit.folder = parts.join(QStringLiteral(" / "));
+			candidates.append({matched, rankMatch(needle, name, name.toLower()), hit});
+		}
+	};
+	walk(QModelIndex());
+
+		//How many names have each word: a word in many names says little
+	QVector<int> names_with_word(query.size(), 0);
+	for (const Candidate &candidate : std::as_const(candidates)) {
+		for (int i = 0 ; i < query.size() ; ++i) {
+			if (candidate.matched.at(i)) {
+				++names_with_word[i];
+			}
+		}
+	}
+
+	QVector<QPair<double, int>> order;
+	for (int i = 0 ; i < candidates.size() ; ++i) {
+		order.append({NameSimilarity::rarityScore(candidates.at(i).matched,
+							  names_with_word, name_count), i});
+	}
+	std::stable_sort(order.begin(), order.end(),
+			 [&candidates](const QPair<double, int> &a, const QPair<double, int> &b) {
+		if (qAbs(a.first - b.first) > 1e-9) {
+			return a.first > b.first;
+		}
+		return candidates.at(a.second).rank > candidates.at(b.second).rank;
+	});
+	hits.reserve(order.size());
+	for (const auto &o : std::as_const(order)) {
+		hits.append(candidates.at(o.second).hit);
 	}
 	return hits;
 }
