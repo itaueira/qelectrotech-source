@@ -153,6 +153,7 @@
 #include "undocommand/changeelementinformationcommand.h"
 #include "ui/cablenumberingdialog.h"
 #include "toolbarsettings.h"
+#include "wirearrangement.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDialog>
@@ -595,6 +596,16 @@ void QETDiagramEditor::setUpActions()
 		if (DiagramView *dv = currentDiagramView())
 			dv->resetConductors();
 	});
+
+		//Arrange conductors: the bend in the free space, one lane each (T67)
+	m_conductor_arrange = new QAction(QET::Icons::ConductorSettings, tr("Arrange conductors"), this);
+	ShortcutManager::instance().registerAction(m_conductor_arrange, "diagrameditor.conductor_arrange", tr("Diagram editors"), QKeySequence());
+	m_conductor_arrange->setStatusTip(tr("Put the bend of each selected conductor in the middle of the free space, on its own lane", "status bar tip"));
+	connect(m_conductor_arrange, &QAction::triggered, this, [this]() {arrangeConductors(false);});
+	m_conductor_arrange_folio = new QAction(QET::Icons::ConductorSettings, tr("Arrange the folio's conductors"), this);
+	ShortcutManager::instance().registerAction(m_conductor_arrange_folio, "diagrameditor.conductor_arrange_folio", tr("Diagram editors"), QKeySequence());
+	m_conductor_arrange_folio->setStatusTip(tr("Arrange every conductor of the folio not dragged by hand", "status bar tip"));
+	connect(m_conductor_arrange_folio, &QAction::triggered, this, [this]() {arrangeConductors(true);});
 
 		//AutoConductor
 	m_auto_conductor = new QAction   (QET::Icons::Autoconnect, tr("Automatic creation conductor (s)","Tool tip of auto conductor"), this);
@@ -3524,6 +3535,34 @@ void QETDiagramEditor::replaceSelectionWith(const ElementsLocation &location)
 }
 
 /**
+	@brief QETDiagramEditor::arrangeConductors
+	Arrange the selected conductors, or every conductor of the folio the
+	user did not drag by hand (T67), and say in the status bar how many
+	changed.
+*/
+void QETDiagramEditor::arrangeConductors(bool whole_folio)
+{
+	DiagramView *view = currentDiagramView();
+	if (!view || !view->diagram() || view->diagram()->isReadOnly()) {
+		return;
+	}
+	Diagram *diagram = view->diagram();
+	const QSet<Conductor *> selected = diagram->selectedConductors();
+	const int changed = WireArrangement::arrange(
+				diagram, QList<Conductor *>(selected.cbegin(), selected.cend()),
+				whole_folio ? WireArrangement::Scope::Folio
+					    : WireArrangement::Scope::Selection);
+	const QString message = changed
+			? tr("%n conductor(s) arranged", "status bar message", changed)
+			: tr("Nothing to arrange: the conductors are already in place", "status bar message");
+		//Queued, as for the align actions: closing the menu the action came
+		//from would clear a message shown right now
+	QTimer::singleShot(0, this, [this, message]() {
+		statusBar()->showMessage(message, 8000);
+	});
+}
+
+/**
 	@brief QETDiagramEditor::exchangeSelectedElements
 	Put each of the two selected elements in the place of the other, in one
 	undoable step (T66). The wires stay where they are and each element takes
@@ -3868,6 +3907,8 @@ void QETDiagramEditor::setUpMenu()
 	menu_edition -> addSeparator();
 	QMenu *conductor_menu = menu_edition -> addMenu(tr("Conducteurs"));
 	conductor_menu -> addAction(m_conductor_reset);
+	conductor_menu -> addAction(m_conductor_arrange);
+	conductor_menu -> addAction(m_conductor_arrange_folio);
 	conductor_menu -> addSeparator();
 	conductor_menu -> addAction(m_show_conductor_text);
 	conductor_menu -> addAction(m_hide_conductor_text);
@@ -5721,6 +5762,8 @@ void QETDiagramEditor::slot_updateComplexActions()
 	{
 		QList <QAction *> action_list;
 		action_list << m_conductor_reset
+			    << m_conductor_arrange
+			    << m_conductor_arrange_folio
 			    << m_find_element
 			    << m_navigate
 			    << m_cut
@@ -5754,6 +5797,8 @@ void QETDiagramEditor::slot_updateComplexActions()
 	//Number of selected conductors
 	int selected_conductors_count = diagram_->selectedConductors().count();
 	m_conductor_reset->setEnabled(!ro && selected_conductors_count);
+	m_conductor_arrange->setEnabled(!ro && selected_conductors_count);
+	m_conductor_arrange_folio->setEnabled(!ro && !diagram_->conductors().isEmpty());
 
 	// number of selected elements
 	int selected_elements_count = dc.count(DiagramContent::Elements);

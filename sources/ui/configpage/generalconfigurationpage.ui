@@ -223,6 +223,16 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="m_arrange_new_conductors_cb">
+         <property name="toolTip">
+          <string>The bend goes in the middle of the free space, and conductors that would touch go on separate lanes. Conductors dragged by hand never move.</string>
+         </property>
+         <property name="text">
+          <string>Arrange each new conductor and its neighbours</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="guides_startup_cb">
          <property name="text">
           <string>Show default guides (applies from the next time the programme is launched)</string>

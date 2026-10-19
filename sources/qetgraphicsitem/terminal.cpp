@@ -34,6 +34,7 @@
 #include "../qetgraphicsitem/element.h"
 #include "../qetgraphicsitem/terminalelement.h"
 #include "conductortextitem.h"
+#include "../wirearrangement.h"
 #include "../wiringrules.h"
 
 #include <QToolTip>
@@ -734,6 +735,9 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 		ConductorAutoNumerotation can (new_conductor, diagram(), undo);
 		can.numerate();
 	}
+		//Its bridge in the free space, and its neighbours with it (T67),
+		//in the same undo step as the conductor
+	WireArrangement::arrangeNewConductors(diagram(), {new_conductor}, undo);
 	//Add undo command to the parent diagram
 	diagram() -> undoStack().push(undo);
 	if (use_properties)

@@ -2350,6 +2350,7 @@ QList<QAction *> DiagramView::contextMenuActions() const
 				}));
 			list << m_generate_cabinet_thumbnail;
 			list << qde->m_conductor_reset;
+			list << qde->m_conductor_arrange;
 				//Assigning a catalog part is offered here, and not only in the
 				//Catalog menu, because the component is already under the
 				//cursor: going up to a menu and coming back is the long way

@@ -36,7 +36,7 @@ class Conductor;
 class ConductorCreator
 {
 	public:
-		ConductorCreator(Diagram *d, QList<Terminal *> terminals_list);
+		ConductorCreator(Diagram *d, QList<Terminal *> terminals_list, bool arrange = false);
 		static void create(Diagram *d, const QPolygonF &polygon);
 		static bool needsPotentialChoice(const QList<Terminal *> &terminals_list);
 

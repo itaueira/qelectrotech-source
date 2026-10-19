@@ -124,6 +124,7 @@ add_executable(
     src/collectionthreadbudget_test.cpp
     src/terminalmatch_test.cpp
     src/namesimilarity_test.cpp
+    src/wirelanes_test.cpp
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
     src/labelcsvwriter_test.cpp
@@ -574,6 +575,9 @@ add_executable(
     ${QET_DIR}/sources/ElementsCollection/terminalmatch.h
     ${QET_DIR}/sources/ElementsCollection/namesimilarity.cpp
     ${QET_DIR}/sources/ElementsCollection/namesimilarity.h
+    # Where the bridge of each conductor goes (T67): numbers in, numbers out.
+    ${QET_DIR}/sources/wirelanes.cpp
+    ${QET_DIR}/sources/wirelanes.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string
@@ -1136,6 +1140,7 @@ if(TARGET qelectrotech_objects)
         src/ui/reporttags_test.cpp
         src/ui/distribute_test.cpp
         src/ui/exchangeelements_test.cpp
+        src/ui/wirearrangement_test.cpp
         # A symbol saved in the symbol editor reaches the folio and the file:
         # the folio reports follow their symbol, the project is changed.
         src/ui/reportsymbolsync_test.cpp

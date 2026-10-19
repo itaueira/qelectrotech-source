@@ -964,6 +964,7 @@ void ChangeConductorCommand::undo()
 	diagram -> showMe();
 	conductor -> setProfile(old_profile, path_type);
 	conductor -> textItem() -> setPos(text_pos_before_mov_);
+	if (m_set_arranged) conductor -> setAutoArranged(m_arranged_before);
 }
 
 /**
@@ -978,6 +979,7 @@ void ChangeConductorCommand::redo()
 	} else {
 		conductor -> setProfile(new_profile, path_type);
 		conductor -> textItem() -> setPos(text_pos_after_mov_);
+		if (m_set_arranged) conductor -> setAutoArranged(m_arranged_after);
 	}
 }
 
@@ -991,6 +993,19 @@ void ChangeConductorCommand::redo()
 void ChangeConductorCommand::setConductorTextItemMove(const QPointF &pos_before, const QPointF &pos_after) {
 	text_pos_before_mov_ = pos_before;
 	text_pos_after_mov_  = pos_after;
+}
+
+/**
+	@brief ChangeConductorCommand::setAutoArranged
+	The change also says whether the path was placed by the application
+	(Conductor::isAutoArranged()): a drag takes that away, and undoing the
+	drag gives it back.
+*/
+void ChangeConductorCommand::setAutoArranged(bool before, bool after)
+{
+	m_set_arranged = true;
+	m_arranged_before = before;
+	m_arranged_after = after;
 }
 
 /**

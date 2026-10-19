@@ -136,6 +136,15 @@ class Conductor : public QGraphicsObject
 		const QList<ConductorSegment *> segmentsList() const;
 		bool moveSegment(int index, qreal dx, qreal dy);
 		bool setPathPoints(const QList<QPointF> &scene_points);
+		bool setArrangedPath(const QList<QPointF> &scene_points);
+		QList<QPointF> automaticPathPoints() const;
+		bool hasSavedPath() const;
+			/// Whether the saved path of this conductor was placed by the
+			/// application (WireArrangement) and not dragged by the user:
+			/// it may then be moved again when a new conductor comes next
+			/// to it
+		bool isAutoArranged() const {return m_auto_arranged;}
+		void setAutoArranged(bool arranged) {m_auto_arranged = arranged;}
 
 		void setPropertyToPotential(
 				const ConductorProperties &property,
@@ -267,6 +276,8 @@ class Conductor : public QGraphicsObject
 		Highlight must_highlight_;
 		bool m_valid;
 		bool m_freeze_label = false;
+			/// See isAutoArranged()
+		bool m_auto_arranged = false;
 		QUuid m_uuid;
 			/// false when m_uuid was synthesized by fromXml() because the
 			/// file had none -- toXml() must not persist that value, or
@@ -287,6 +298,8 @@ class Conductor : public QGraphicsObject
 		void segmentsToPath();
 		void saveProfile(bool = true);
 		void generateConductorPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
+		static QList<QPointF> automaticPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
+		bool applyPathPoints(const QList<QPointF> &scene_points, bool by_hand);
 		void updateConductorPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
 		uint segmentsCount(QET::ConductorSegmentType = QET::Both) const;
 		QList<QPointF> segmentsToPoints() const;

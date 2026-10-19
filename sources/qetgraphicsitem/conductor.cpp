@@ -611,15 +611,52 @@ QHash<ConductorSegmentProfile *, qreal> Conductor::shareOffsetBetweenSegments(
 	@param o2 Orientation de la borne 2
 */
 void Conductor::generateConductorPath(const QPointF &p1, Qet::Orientation o1, const QPointF &p2, Qet::Orientation o2) {
-	QPointF sp1, sp2, depart, newp1, newp2, arrivee, depart0, arrivee0;
+	pointsToSegments(automaticPath(mapFromScene(p1), o1, mapFromScene(p2), o2));
+	segmentsToPath();
+}
+
+/**
+	@brief Conductor::automaticPathPoints
+	@return the path generateConductorPath() gives this conductor, in scene
+	coordinates, whatever path it has now: what WireArrangement starts from
+*/
+QList<QPointF> Conductor::automaticPathPoints() const
+{
+	QList<QPointF> points;
+	if (!terminal1 || !terminal2) return points;
+	const QList<QPointF> local = automaticPath(
+			mapFromScene(terminal1->dockConductor()), terminal1->orientation(),
+			mapFromScene(terminal2->dockConductor()), terminal2->orientation());
+	for (const QPointF &p : local) points << mapToScene(p);
+	return points;
+}
+
+/**
+	@brief Conductor::hasSavedPath
+	@return true if this conductor has a path of its own for the way its
+	terminals face each other now - dragged, loaded from the file, or
+	arranged - instead of the one generateConductorPath() draws
+*/
+bool Conductor::hasSavedPath() const
+{
+	return !conductor_profiles.value(currentPathType()).isNull();
+}
+
+/**
+	@brief Conductor::automaticPath
+	The "default" path between two docking points, in their own
+	coordinates: generateConductorPath() without the conductor.
+	@param sp1 Coordonnees du point d'amarrage de la borne 1
+	@param o1 Orientation de la borne 1
+	@param sp2 Coordonnees du point d'amarrage de la borne 2
+	@param o2 Orientation de la borne 2
+*/
+QList<QPointF> Conductor::automaticPath(const QPointF &sp1, Qet::Orientation o1, const QPointF &sp2, Qet::Orientation o2) {
+	QPointF depart, newp1, newp2, arrivee, depart0, arrivee0;
 	Qet::Orientation ori_depart, ori_arrivee;
 
 	// s'assure qu'il n'y a ni points
 	QList<QPointF> points;
-
-	// mappe les points par rapport a la scene
-	sp1 = mapFromScene(p1);
-	sp2 = mapFromScene(p2);
 
 	// prolonge les bornes
 	newp1 = extendTerminal(sp1, o1);
@@ -743,8 +780,7 @@ void Conductor::generateConductorPath(const QPointF &p1, Qet::Orientation o1, co
 		points = points2;
 	}
 
-	pointsToSegments(points);
-	segmentsToPath();
+	return(points);
 }
 
 /**
@@ -1389,6 +1425,8 @@ bool Conductor::fromXml(QDomElement &dom_element)
 	setPos(qIsFinite(x) ? x : 0, qIsFinite(y) ? y : 0);
 
 	bool retval = pathFromXml(dom_element);
+	m_auto_arranged = modified_path
+			&& dom_element.attribute(QStringLiteral("autoarranged")) == QLatin1String("true");
 
 	m_text_item -> fromXml(dom_element);
 	ConductorProperties pr;
@@ -1488,6 +1526,9 @@ QDomElement Conductor::toXml(QDomDocument &dom_document,
 			dom_element.appendChild(current_segment);
 		}
 	}
+
+	if (modified_path && m_auto_arranged)
+		dom_element.setAttribute(QStringLiteral("autoarranged"), QStringLiteral("true"));
 
 	QDomElement dom_seq = m_autoNum_seq.toXml(dom_document);
 	dom_element.appendChild(dom_seq);
@@ -1667,6 +1708,29 @@ bool Conductor::moveSegment(int index, qreal dx, qreal dy)
 */
 bool Conductor::setPathPoints(const QList<QPointF> &scene_points)
 {
+	return applyPathPoints(scene_points, true);
+}
+
+/**
+	@brief Conductor::setArrangedPath
+	The same as setPathPoints(), with no undo step of its own - the caller,
+	ArrangeConductorsCommand, is one - and the path marked as placed by the
+	application (isAutoArranged()).
+	@return false, changing nothing, if the points do not make a path
+*/
+bool Conductor::setArrangedPath(const QList<QPointF> &scene_points)
+{
+	if (!applyPathPoints(scene_points, false)) return false;
+	m_auto_arranged = true;
+	return true;
+}
+
+/**
+	@brief Conductor::applyPathPoints
+	@param by_hand : the change is the user's, with its undo step
+*/
+bool Conductor::applyPathPoints(const QList<QPointF> &scene_points, bool by_hand)
+{
 	if (scene_points.size() < 2 || !terminal1 || !terminal2) return false;
 	const auto isNear = [](const QPointF &a, const QPointF &b) {
 		return qAbs(a.x() - b.x()) < 0.5 && qAbs(a.y() - b.y()) < 0.5;
@@ -1691,7 +1755,7 @@ bool Conductor::setPathPoints(const QList<QPointF> &scene_points)
 	modified_path = true;
 	segmentsToPath();
 	calculateTextItemPosition();
-	saveProfile();
+	saveProfile(by_hand);
 	return true;
 }
 
@@ -1909,6 +1973,10 @@ void Conductor::saveProfile(bool undo) {
 	Qt::Corner current_path_type = currentPathType();
 	ConductorProfile old_profile(conductor_profiles[current_path_type]);
 	conductor_profiles[current_path_type].fromConductor(this);
+		//Saved with an undo step, the change is the user's: the path is no
+		//longer the application's to move (WireArrangement)
+	const bool was_arranged = m_auto_arranged;
+	if (undo) m_auto_arranged = false;
 	Diagram *dia = diagram();
 	if (undo && dia) {
 		ChangeConductorCommand *undo_object = new ChangeConductorCommand(
@@ -1918,6 +1986,7 @@ void Conductor::saveProfile(bool undo) {
 			current_path_type
 		);
 		undo_object -> setConductorTextItemMove(before_mov_text_pos_, m_text_item -> pos());
+		if (was_arranged) undo_object -> setAutoArranged(true, false);
 		dia -> undoStack().push(undo_object);
 	}
 }

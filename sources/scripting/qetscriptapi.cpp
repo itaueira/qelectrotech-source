@@ -48,6 +48,7 @@
 #include "../qetgraphicsitem/conductortextitem.h"
 #include "../conductorsegment.h"
 #include "../conductorrouter.h"
+#include "../wirearrangement.h"
 #include "../qetgraphicsitem/diagramimageitem.h"
 #include "../utils/qetsettings.h"
 #include "assistantinfo.h"
@@ -1707,6 +1708,32 @@ QString QetScriptApi::routeConductorBetween(int folioIndex,
 	}
 	log(QStringLiteral("qet.%1: no conductor joins those two terminals").arg(caller));
 	return QString();
+}
+
+/**
+	@brief QetScriptApi::arrangeConductors
+	Arrange the conductors of the folio not dragged by hand (T67): the bend
+	of each one in the middle of the free space, outside the frames, and
+	the ones that would touch on separate lanes - what the folio editor's
+	"Arrange the folio's conductors" does, as one undo step. Unlike
+	routeConductor() the shape of each conductor is kept; only where its
+	bend lies changes.
+	@return how many conductors changed, or -1 for a bad folio index or a
+	read-only project
+*/
+int QetScriptApi::arrangeConductors(int folioIndex)
+{
+	if (!m_project) return -1;
+	if (m_project->isReadOnly()) {
+		log(QStringLiteral("qet.arrangeConductors: project is read-only"));
+		return -1;
+	}
+	if (folioIndex < 0 || folioIndex >= m_project->folios().count()) {
+		log(QStringLiteral("qet.arrangeConductors: no folio %1").arg(folioIndex));
+		return -1;
+	}
+	Diagram *diagram = built(m_project->folios().at(folioIndex));
+	return WireArrangement::arrange(diagram, {}, WireArrangement::Scope::Folio);
 }
 
 QString QetScriptApi::elementLinkType(int folioIndex, const QString &elementUuid) const

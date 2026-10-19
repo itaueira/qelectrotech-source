@@ -49,6 +49,7 @@
 
 #include "../../diagram.h"
 #include "../../qetproject.h"
+#include "../../wirearrangement.h"
 
 namespace {
 	/**
@@ -145,6 +146,7 @@ GeneralConfigurationPage::GeneralConfigurationPage(QWidget *parent) :
 	ui->m_collection_dblclick_edits->setChecked(!settings.value("elementscollection/double-click-inserts", true).toBool());
 	ui->m_collection_search_flat_cb->setChecked(settings.value("elementscollection/search-flat-list", true).toBool());
 	ui->m_context_toolbar_cb->setChecked(settings.value("diagrameditor/context_toolbar", true).toBool());
+	ui->m_arrange_new_conductors_cb->setChecked(WireArrangement::arrangesNewConductors());
 	ui->m_mouse_gestures_cb->setChecked(settings.value("diagrameditor/mouse_gestures", true).toBool());
 	ui->DiagramEditor_xGrid_sb->setValue(settings.value("diagrameditor/Xgrid", 10).toInt());
 	ui->DiagramEditor_yGrid_sb->setValue(settings.value("diagrameditor/Ygrid", 10).toInt());
@@ -480,6 +482,7 @@ void GeneralConfigurationPage::applyConf()
 	settings.setValue("elementscollection/double-click-inserts", !ui->m_collection_dblclick_edits->isChecked());
 	settings.setValue("elementscollection/search-flat-list", ui->m_collection_search_flat_cb->isChecked());
 	settings.setValue("diagrameditor/context_toolbar", ui->m_context_toolbar_cb->isChecked());
+	WireArrangement::setArrangesNewConductors(ui->m_arrange_new_conductors_cb->isChecked());
 	settings.setValue("diagrameditor/mouse_gestures", ui->m_mouse_gestures_cb->isChecked());
 		//Grid step and key navigation
 	settings.setValue("diagrameditor/Xgrid", ui->DiagramEditor_xGrid_sb->value());

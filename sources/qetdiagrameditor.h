@@ -194,6 +194,7 @@ class QETDiagramEditor : public QETMainWindow
 		void replaceSelectedElements();
 		void replaceSelectionWith(const ElementsLocation &location);
 		void exchangeSelectedElements();
+		void arrangeConductors(bool whole_folio);
 		void resetSymbolTexts();
 		void rebuildToolBars();
 		bool repeatLastCommand();
@@ -285,6 +286,8 @@ class QETDiagramEditor : public QETMainWindow
 		QAction
 		*m_edit_diagram_properties, ///< Show a dialog to edit diagram properties
 		*m_conductor_reset,         ///< Reset paths of selected conductors
+		*m_conductor_arrange,       ///< Arrange the selected conductors (T67)
+		*m_conductor_arrange_folio, ///< Arrange the conductors of the folio (T67)
 		*m_cut,                     ///< Cut selection to clipboard
 		*m_copy,                    ///< Copy selection to clipboard
 			//Public for the same reason as the four above, and for no other:

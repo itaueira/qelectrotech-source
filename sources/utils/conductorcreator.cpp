@@ -26,6 +26,7 @@
 #include "../qetgraphicsitem/element.h"
 #include "../qetgraphicsitem/terminal.h"
 #include "../ui/potentialselectordialog.h"
+#include "../wirearrangement.h"
 #include "../wiringrules.h"
 #include "qgraphicsitem.h"
 
@@ -37,8 +38,10 @@
 	the terminals of the list must be in the same diagram.
 	@param d Diagram
 	@param terminals_list QList<Terminal *>
+	@param arrange : arrange the new conductors and their neighbours as a
+	conductor drawn by hand is (WireArrangement), in the same undo step
 */
-ConductorCreator::ConductorCreator(Diagram *d, QList<Terminal *> terminals_list) :
+ConductorCreator::ConductorCreator(Diagram *d, QList<Terminal *> terminals_list, bool arrange) :
 	m_terminals_list(terminals_list)
 {
 	if (m_terminals_list.size() <= 1) {
@@ -67,6 +70,11 @@ ConductorCreator::ConductorCreator(Diagram *d, QList<Terminal *> terminals_list)
 		d->undoStack().push(new AddGraphicsObjectCommand(cond, d));
 		
 		c_list.append(cond);
+	}
+	if (arrange && !c_list.isEmpty()) {
+		if (QUndoCommand *arranging = WireArrangement::arrangeNewConductors(d, c_list)) {
+			d->undoStack().push(arranging);
+		}
 	}
 	d->undoStack().endMacro();
 	
@@ -104,7 +112,7 @@ void ConductorCreator::create(Diagram *d, const QPolygonF &polygon)
 	if (t_list.size() <= 1) {
 		return;
 	} else {
-		ConductorCreator cc(d, t_list);
+		ConductorCreator cc(d, t_list, true);
 	}
 }
 

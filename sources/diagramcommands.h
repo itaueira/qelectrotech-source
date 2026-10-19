@@ -164,6 +164,7 @@ class ChangeConductorCommand : public QUndoCommand {
 	void undo() override;
 	void redo() override;
 	virtual void setConductorTextItemMove(const QPointF &, const QPointF &);
+	void setAutoArranged(bool before, bool after);
 	
 	// attributes
 	private:
@@ -179,6 +180,11 @@ class ChangeConductorCommand : public QUndoCommand {
 	QPointF text_pos_before_mov_;
 	/// position of the text item after the change
 	QPointF text_pos_after_mov_;
+	/// whether the path was placed by the application, before and after
+	/// the change (Conductor::isAutoArranged()), when the change moves it
+	bool m_set_arranged = false;
+	bool m_arranged_before = false;
+	bool m_arranged_after = false;
 	/// prevent the first call to redo()
 	bool first_redo;
 	Diagram *diagram;

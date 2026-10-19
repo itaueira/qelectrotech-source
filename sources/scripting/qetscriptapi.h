@@ -459,6 +459,7 @@ class QetScriptApi : public QObject
 		Q_INVOKABLE QString routeConductorBetween(int folioIndex,
 												  const QString &elementUuidA, int terminalIndexA,
 												  const QString &elementUuidB, int terminalIndexB);
+		Q_INVOKABLE int arrangeConductors(int folioIndex);
 
 		// -- cross-references: master/slave and report links --
 		Q_INVOKABLE QString elementLinkType(int folioIndex, const QString &elementUuid) const;

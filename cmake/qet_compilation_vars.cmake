@@ -196,6 +196,10 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/wiringrules.cpp
   ${QET_DIR}/sources/conductorrouter.h
   ${QET_DIR}/sources/conductorrouter.cpp
+  ${QET_DIR}/sources/wirelanes.h
+  ${QET_DIR}/sources/wirelanes.cpp
+  ${QET_DIR}/sources/wirearrangement.h
+  ${QET_DIR}/sources/wirearrangement.cpp
   ${QET_DIR}/sources/ui/wiringlistdialog.h
   ${QET_DIR}/sources/ui/wiringlistdialog.cpp
   ${QET_DIR}/sources/conductornumexport.h
@@ -1315,6 +1319,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/swapelementcommand.h
   ${QET_DIR}/sources/undocommand/exchangeelementscommand.cpp
   ${QET_DIR}/sources/undocommand/exchangeelementscommand.h
+  ${QET_DIR}/sources/undocommand/arrangeconductorscommand.cpp
+  ${QET_DIR}/sources/undocommand/arrangeconductorscommand.h
 
   ${QET_DIR}/sources/utils/apppreferences.cpp
   ${QET_DIR}/sources/utils/apppreferences.h
