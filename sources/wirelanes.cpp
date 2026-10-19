@@ -291,12 +291,15 @@ QVector<int> WireLanes::lanes(const QVector<Wire> &wires, double gap)
 	Where @a lane_count lanes go between @a low and @a high: centered, at
 	most @a max_pitch apart, and with as much room left at each end as
 	between two lanes when they do not fit at that pitch. On @a grid when
-	they all fit on it, else on whole units, else as they are. Fitting on a
-	grid means more than staying inside: no lane may lose more than a
-	quarter of the room it would have had at either end, counted up to the
-	pitch - five lanes on a grid of 10 between a frame and the terminals
-	would otherwise be pushed against the frame, the thing the arrangement
-	is for.
+	they all fit on it, else on whole units, else as they are.
+	On a grid the pitch is a whole number of its steps, the largest that
+	fits, and the lanes are centered as one block: rounding each lane on
+	its own would leave gaps of 5 and 6 side by side for a pitch of 5.85,
+	and the eye reads that as uneven. Fitting on a grid also means no lane
+	may lose more than a quarter of the room it would have had at either
+	end, counted up to the pitch - five lanes on a grid of 10 between a
+	frame and the terminals would otherwise be pushed against the frame,
+	the thing the arrangement is for.
 */
 QVector<double> WireLanes::positions(int lane_count, double low, double high,
 				     double max_pitch, double grid)
@@ -317,22 +320,18 @@ QVector<double> WireLanes::positions(int lane_count, double low, double high,
 	if (grid != 1) steps << 1;
 	for (double step : steps)
 	{
+		const double whole = std::floor(pitch / step + eps) * step;
+		if (lane_count > 1 && whole < step - eps) continue;
+		const double block = whole * (lane_count - 1);
+		const double first = std::round((middle - block / 2) / step) * step;
 		QVector<double> snapped;
-		bool fits = true;
-		for (double p : exact)
-		{
-			const double s = std::round(p / step) * step;
-			if (s <= low + eps || s >= high - eps
-				|| (!snapped.isEmpty() && s <= snapped.last() + eps)) {
-				fits = false;
-				break;
-			}
-			snapped << s;
+		for (int k = 0 ; k < lane_count ; ++k) {
+			snapped << first + k * whole;
 		}
-		if (fits && std::min(snapped.first() - low, high - snapped.last()) < least - eps) {
-			fits = false;
+		if (snapped.first() > low + eps && snapped.last() < high - eps
+			&& std::min(snapped.first() - low, high - snapped.last()) >= least - eps) {
+			return snapped;
 		}
-		if (fits) return snapped;
 	}
 	return exact;
 }

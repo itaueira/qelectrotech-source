@@ -22,6 +22,7 @@
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/qetshapeitem.h"
+#include "qetgraphicsitem/terminal.h"
 #include "undocommand/arrangeconductorscommand.h"
 #include "wirelanes.h"
 
@@ -35,7 +36,7 @@ namespace
 		/// Kept clear around the body of a symbol, as ConductorRouter keeps
 	constexpr double symbol_margin = 5.0;
 
-	const char *setting_key = "diagrameditor/arrange_new_conductors";
+	const char *setting_key = "diagrameditor/arrange_conductors";
 
 		/// A conductor whose automatic path has a bridge, in the terms of
 		/// WireLanes
@@ -205,7 +206,8 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		{
 			case Scope::NewConductors: if (given || !placedByHand(c)) movable << c; break;
 			case Scope::Selection:     if (given) movable << c; break;
-			case Scope::Folio:         if (!placedByHand(c)) movable << c; break;
+			case Scope::Folio:
+			case Scope::Moved:         if (!placedByHand(c)) movable << c; break;
 		}
 	}
 
@@ -265,7 +267,8 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 	const auto collect = [&](const QList<Described> &described, const WireLanes::Request &request) {
 		const WireLanes::Result result = WireLanes::arrange(request);
 		QSet<int> wanted;
-		if (scope == Scope::NewConductors) {
+		const bool only_their_groups = scope == Scope::NewConductors || scope == Scope::Moved;
+		if (only_their_groups) {
 			for (int i = 0 ; i < described.size() ; ++i) {
 				if (conductors.contains(described.at(i).conductor) && result.group.at(i) >= 0) {
 					wanted << result.group.at(i);
@@ -275,7 +278,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		for (int i = 0 ; i < described.size() ; ++i)
 		{
 			if (std::isnan(result.at.at(i))) continue;
-			if (scope == Scope::NewConductors && !wanted.contains(result.group.at(i))) continue;
+			if (only_their_groups && !wanted.contains(result.group.at(i))) continue;
 			const QList<QPointF> points = withBridgeAt(described.at(i), result.at.at(i));
 			if (!samePath(points, currentPoints(described.at(i).conductor))) {
 				changes << Change{described.at(i).conductor, points};
@@ -303,20 +306,54 @@ int WireArrangement::arrange(Diagram *diagram, const QList<Conductor *> &conduct
 }
 
 /**
-	@brief WireArrangement::arrangesNewConductors
+	@brief WireArrangement::arrangesAutomatically
 	@return true if a conductor drawn by the user is arranged, with its
-	group, as it is drawn. On unless switched off in the configuration.
+	group, as it is drawn, and the conductors of a component the user
+	moved when the move ends. On unless switched off in the configuration.
 */
-bool WireArrangement::arrangesNewConductors()
+bool WireArrangement::arrangesAutomatically()
 {
 	QSettings settings;
 	return settings.value(setting_key, true).toBool();
 }
 
-void WireArrangement::setArrangesNewConductors(bool arrange)
+void WireArrangement::setArrangesAutomatically(bool arrange)
 {
 	QSettings settings;
 	settings.setValue(setting_key, arrange);
+}
+
+/**
+	@brief WireArrangement::arrangeMovedConductors
+	The undo command that arranges again the conductors of @a elements,
+	just moved on @a diagram, with their groups - a child of @a parent, the
+	command of the move, so that one undo puts the components and the
+	conductors back. A conductor placed by hand stays as the move left it.
+	Without it, an arranged conductor would follow the move as one placed
+	by hand does, its runs stretched in proportion: the bends drift apart
+	unevenly, and the room the move opened is not used.
+	@return the command, or nullptr if arranging is switched off or nothing
+	moves
+*/
+QUndoCommand *WireArrangement::arrangeMovedConductors(Diagram *diagram,
+						      const QList<Element *> &elements,
+						      QUndoCommand *parent)
+{
+	if (!arrangesAutomatically() || elements.isEmpty()) return nullptr;
+	QList<Conductor *> attached;
+	for (Element *e : elements) {
+		const QList<Terminal *> terminals = e->terminals();
+		for (Terminal *t : terminals) {
+			const QList<Conductor *> on = t->conductors();
+			for (Conductor *c : on) {
+				if (!attached.contains(c)) attached << c;
+			}
+		}
+	}
+	if (attached.isEmpty()) return nullptr;
+	const QList<Change> changes = plan(diagram, attached, Scope::Moved);
+	if (changes.isEmpty()) return nullptr;
+	return new ArrangeConductorsCommand(diagram, changes, parent);
 }
 
 /**
@@ -331,7 +368,7 @@ QUndoCommand *WireArrangement::arrangeNewConductors(Diagram *diagram,
 						    const QList<Conductor *> &conductors,
 						    QUndoCommand *parent)
 {
-	if (!arrangesNewConductors()) return nullptr;
+	if (!arrangesAutomatically()) return nullptr;
 	const QList<Change> changes = plan(diagram, conductors, Scope::NewConductors);
 	if (changes.isEmpty()) return nullptr;
 	return new ArrangeConductorsCommand(diagram, changes, parent);

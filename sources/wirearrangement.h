@@ -23,6 +23,7 @@
 
 class Conductor;
 class Diagram;
+class Element;
 class QUndoCommand;
 
 /**
@@ -46,7 +47,10 @@ namespace WireArrangement
 			/// the conductors given, whoever placed them
 		Selection,
 			/// every conductor of the folio the user did not place by hand
-		Folio
+		Folio,
+			/// the conductors given, of components just moved, and the
+			/// others of their groups, all but those placed by hand
+		Moved
 	};
 
 	struct Change
@@ -59,11 +63,13 @@ namespace WireArrangement
 	QList<Change> plan(Diagram *diagram, const QList<Conductor *> &conductors, Scope scope);
 	int arrange(Diagram *diagram, const QList<Conductor *> &conductors, Scope scope);
 
-	bool arrangesNewConductors();
-	void setArrangesNewConductors(bool arrange);
+	bool arrangesAutomatically();
+	void setArrangesAutomatically(bool arrange);
 
 	QUndoCommand *arrangeNewConductors(Diagram *diagram, const QList<Conductor *> &conductors,
 					   QUndoCommand *parent = nullptr);
+	QUndoCommand *arrangeMovedConductors(Diagram *diagram, const QList<Element *> &elements,
+					     QUndoCommand *parent = nullptr);
 }
 
 #endif // WIREARRANGEMENT_H

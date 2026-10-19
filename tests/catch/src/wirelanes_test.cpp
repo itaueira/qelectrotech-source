@@ -133,12 +133,13 @@ TEST_CASE("T67 — The grid gives way when it would push a lane against the fram
 
 		//On the folio itself the terminals, with their margin, start at 267:
 		//on the grid the first lane would be 4.5 from the frame where it
-		//should have 8.6, which half of it would still have let through
+		//should have 8.6, which half of it would still have let through.
+		//On whole units, 8 apart: 51.5 / 6 is 8.58
 	const QVector<double> folio = WireLanes::positions(5, 215.5, 267, 10, 10);
 	REQUIRE(folio.size() == 5);
-	CHECK(folio.at(0) == Approx(224));
+	CHECK(folio.at(0) == Approx(225));
 	CHECK(folio.at(2) == Approx(241));
-	CHECK(folio.at(4) == Approx(258));
+	CHECK(folio.at(4) == Approx(257));
 
 		//Two lanes have room enough: on the grid
 	const QVector<double> two = WireLanes::positions(2, 215.5, 270, 10, 10);
@@ -203,13 +204,13 @@ TEST_CASE("T67 — Few lanes: 10 apart, centered", "[T67][wirelanes]")
 
 TEST_CASE("CU-67.6 — A narrow room: the lanes spread with the same room at each end", "[T67][wirelanes]")
 {
-		//Six bridges in a chain, in a room 48 wide: 48 / 7 apart, less
-		//than 10
+		//Six bridges in a chain, in a room 48 wide: 48 / 7 is 6.86 apart,
+		//less than 10; on whole units 6, the block centered, 9 from each
+		//end
 	const QVector<double> at = WireLanes::positions(6, 0, 48, 10, 0.5);
 	REQUIRE(at.size() == 6);
-	const double pitch = 48.0 / 7;
 	for (int k = 0 ; k < 6 ; ++k) {
-		CHECK(at.at(k) == Approx(pitch * (k + 1)).margin(0.5));
+		CHECK(at.at(k) == Approx(9 + 6 * k));
 	}
 
 	Request r;
@@ -219,11 +220,25 @@ TEST_CASE("CU-67.6 — A narrow room: the lanes spread with the same room at eac
 	const WireLanes::Result result = WireLanes::arrange(r);
 	QVector<double> sorted = result.at;
 	std::sort(sorted.begin(), sorted.end());
-	CHECK(sorted.first() == Approx(pitch).margin(0.5));
-	CHECK(48 - sorted.last() == Approx(pitch).margin(0.5));
+	CHECK(sorted.first() == Approx(48 - sorted.last()));
 	for (int k = 1 ; k < 6 ; ++k) {
-		CHECK(sorted.at(k) - sorted.at(k - 1) == Approx(pitch).margin(1));
+		CHECK(sorted.at(k) - sorted.at(k - 1) == Approx(6));
 	}
+}
+
+TEST_CASE("CU-67.15 — The gaps between neighbours are all the same", "[T67][wirelanes]")
+{
+		//The 22 bridges of the folio with its terminals moved away: 134.5
+		//of room is 5.85 apart, which rounded lane by lane would give gaps
+		//of 5 and 6 side by side
+	const QVector<double> at = WireLanes::positions(22, 215.5, 350, 10, 1);
+	REQUIRE(at.size() == 22);
+	for (int k = 1 ; k < 22 ; ++k) {
+		CAPTURE(k);
+		CHECK(at.at(k) - at.at(k - 1) == Approx(5));
+	}
+		//Centered: the room left at the two ends differs by less than a step
+	CHECK(std::abs((at.first() - 215.5) - (350 - at.last())) < 1);
 }
 
 TEST_CASE("T67 — A symbol in the room is not crossed", "[T67][wirelanes]")

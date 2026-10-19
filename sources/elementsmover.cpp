@@ -36,6 +36,7 @@
 #include "qetgraphicsitem/locationareaitem.h"
 #include "undocommand/movegraphicsitemcommand.h"
 #include "utils/qetutils.h"
+#include "wirearrangement.h"
 
 /**
 	@brief ElementsMover::ElementsMover Constructor
@@ -297,6 +298,12 @@ void ElementsMover::endMovement()
 	if (!m_current_movement.isNull()) {
 		QUndoCommand *quc{new MoveGraphicsItemCommand(m_diagram, m_moved_content, m_current_movement, undo_object)};
 		undo_object->setText(quc->text());
+
+			//The conductors of the moved components that the application
+			//placed are arranged again with their groups (T67): followed as
+			//a conductor dragged by hand is, their bends would drift apart
+			//unevenly and leave unused the room the move opened
+		WireArrangement::arrangeMovedConductors(m_diagram, m_moved_content.m_elements, undo_object);
 	}
 
 		//Auto-break conductors: for each moved element, break any conductor
