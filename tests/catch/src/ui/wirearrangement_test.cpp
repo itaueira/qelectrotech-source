@@ -24,6 +24,7 @@
 #include "../../../../sources/elementsmover.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
+#include "../../../../sources/qetgraphicsitem/qetshapeitem.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/wirearrangement.h"
@@ -524,56 +525,88 @@ TEST_CASE("CU-67.13 — A symbol in the space is not crossed", "[T67][wirearrang
 	CHECK((at < body.left() - 5 || at > body.right() + 5));
 }
 
+namespace
+{
+		/// The elements of @a terminals dragged @a dx to the right, in two
+		/// steps, as the mouse does - and with them the frame drawn around
+		/// the terminals, as on the folio of the request: left behind, it
+		/// would stand in the room the move opened
+	void dragTerminals(Diagram *sheet, const QList<Terminal *> &terminals, qreal dx)
+	{
+		sheet->clearSelection();
+		for (Terminal *t : terminals) {
+			t->parentElement()->setSelected(true);
+		}
+		const auto items = sheet->items();
+		for (QGraphicsItem *item : items) {
+			auto *shape = qgraphicsitem_cast<QetShapeItem *>(item);
+			if (shape && shape->mapRectToScene(shape->rect()).left() > 250) {
+				shape->setSelected(true);
+			}
+		}
+		ElementsMover &mover = sheet->elementsMover();
+		REQUIRE(mover.beginMovement(sheet) > 0);
+		mover.continueMovement(QPointF(dx / 2, 0));
+		mover.continueMovement(QPointF(dx / 2, 0));
+		mover.endMovement();
+	}
+}
+
 TEST_CASE("CU-67.14 — Moving the terminals away arranges the group again", "[T67][wirearrangement]")
 {
 	Setup setup;
 	Bench bench;
 	REQUIRE(bench.open());
 	QList<Conductor *> drawn;
-	for (int i = 1 ; i <= 4 ; ++i) {
+	for (int i = 0 ; i < 6 ; ++i) {
 		drawn << bench.draw(i);
 		REQUIRE(drawn.last());
 	}
-		//The fourth one dragged by hand
-	REQUIRE(drawn.at(3)->moveSegment(2, -6, 0));
+		//Five lanes in the 54.5 between the frame and the terminal ends: 9
+		//apart, the largest whole pitch that fits
 	QList<double> before;
-	for (Conductor *c : drawn) before << bridge(c);
-
-		//The four terminals dragged 80 to the right, as the mouse does
-	bench.sheet->clearSelection();
-	for (int i = 1 ; i <= 4 ; ++i) {
-		bench.terminal.at(i)->parentElement()->setSelected(true);
+	for (int i = 1 ; i < 6 ; ++i) before << bridge(drawn.at(i));
+	for (int i = 1 ; i < 5 ; ++i) {
+		REQUIRE(before.at(i - 1) - before.at(i) == Approx(9));
 	}
-	ElementsMover &mover = bench.sheet->elementsMover();
-	REQUIRE(mover.beginMovement(bench.sheet) > 0);
-	mover.continueMovement(QPointF(40, 0));
-	mover.continueMovement(QPointF(40, 0));
-	mover.endMovement();
 
-		//The terminal ends at 350 now. The one dragged by hand followed the
-		//move, as before, and stays its own; the three placed by the
-		//application are arranged again in the room the move opened, 10
-		//apart, the upper one on the right, clear of the one dragged
-	CHECK_FALSE(drawn.at(3)->isAutoArranged());
-	const double by_hand = bridge(drawn.at(3));
-	QList<double> lanes;
-	for (int i = 0 ; i < 3 ; ++i) {
+		//The terminals 80 further: 134.5 of room, where 10 apart fits. A
+		//conductor following the move as one dragged by hand does would
+		//keep 9 - each bend pushed by the same 40
+	dragTerminals(bench.sheet, bench.terminal, 80);
+	QList<double> after;
+	for (int i = 1 ; i < 6 ; ++i) {
 		CHECK(drawn.at(i)->isAutoArranged());
-		lanes << bridge(drawn.at(i));
+		after << bridge(drawn.at(i));
 	}
-	CAPTURE(lanes, by_hand);
-	CHECK(lanes.at(0) - lanes.at(1) == Approx(10));
-	CHECK(lanes.at(1) - lanes.at(2) == Approx(10));
-	for (double x : lanes) {
-		CHECK(x > 270);
-		CHECK(x < 350);
-		CHECK(std::abs(x - by_hand) >= 4);
+	CAPTURE(before, after);
+	for (int i = 1 ; i < 5 ; ++i) {
+		CHECK(after.at(i - 1) - after.at(i) == Approx(10));
 	}
+		//Centered between the frame and the new terminal ends
+	CHECK((after.first() + after.last()) / 2 == Approx((215.5 + 350) / 2).margin(1));
 
 		//One undo: the terminals and the bends back
 	bench.sheet->undoStack().undo();
-	for (int i = 0 ; i < 4 ; ++i) {
+	for (int i = 1 ; i < 6 ; ++i) {
 		CAPTURE(i);
-		CHECK(bridge(drawn.at(i)) == Approx(before.at(i)));
+		CHECK(bridge(drawn.at(i)) == Approx(before.at(i - 1)));
 	}
+}
+
+TEST_CASE("CU-67.14 — A conductor dragged by hand is not arranged by a move", "[T67][wirearrangement]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *by_hand = bench.draw(2);
+	REQUIRE(by_hand);
+	REQUIRE(by_hand->moveSegment(2, -6, 0));
+	const double was = bridge(by_hand);
+
+	dragTerminals(bench.sheet, {bench.terminal.at(2)}, 80);
+		//It follows the move as before: the 80 shared among its four runs,
+		//40 of it before the bend
+	CHECK_FALSE(by_hand->isAutoArranged());
+	CHECK(bridge(by_hand) == Approx(was + 40));
 }

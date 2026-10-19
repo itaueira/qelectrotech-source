@@ -11740,6 +11740,16 @@ que você criar. Entradas de texto e números
         <translation>Desativado</translation>
     </message>
     <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="228"/>
+        <source>When a conductor is drawn, and when a component is moved, the bend goes in the middle of the free space, and conductors that would touch go on separate lanes. Conductors dragged by hand never move.</source>
+        <translation>Ao ligar um condutor, e ao mover um componente, a curva vai para o meio do espaço livre, e os condutores que se tocariam vão para linhas separadas. Os arrastados à mão nunca se movem.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="231"/>
+        <source>Arrange the conductors automatically</source>
+        <translation>Arrumar os condutores automaticamente</translation>
+    </message>
+    <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="438"/>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="445"/>
         <source>Before a project is saved, the file as it was is copied to the folder of previous versions, out of the project folder, if it changed since the last version kept. Only the newest are kept.</source>
@@ -11855,16 +11865,6 @@ Aqui você pode especificar o valor padrão deste campo para os elementos que vo
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="201"/>
         <source>Show search results as a sorted list</source>
         <translation>Exibir os resultados da pesquisa em forma de lista ordenada</translation>
-    </message>
-    <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="228"/>
-        <source>The bend goes in the middle of the free space, and conductors that would touch go on separate lanes. Conductors dragged by hand never move.</source>
-        <translation>A curva vai para o meio do espaço livre, e os condutores que se tocariam vão para linhas separadas. Os arrastados à mão nunca se movem.</translation>
-    </message>
-    <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="231"/>
-        <source>Arrange each new conductor and its neighbours</source>
-        <translation>Arrumar cada condutor novo e os vizinhos</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="238"/>
@@ -25332,8 +25332,8 @@ O que você deseja fazer?</translation>
         <translation>Coleção</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="388"/>
-        <location filename="../sources/elementsmover.cpp" line="391"/>
+        <location filename="../sources/elementsmover.cpp" line="395"/>
+        <location filename="../sources/elementsmover.cpp" line="398"/>
         <source>Affecter les composants d&apos;une zone</source>
         <translation>Atribuir os componentes de uma zona</translation>
     </message>
@@ -26678,7 +26678,7 @@ the translated name of this folder could not be read, so its folder name is disp
         <translation>Projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="102"/>
+        <location filename="../sources/elementsmover.cpp" line="103"/>
         <source>This group cannot be moved: the position of one of its elements is locked.</source>
         <translation>Este grupo não pode ser movido: a posição de um de seus elementos está travada.</translation>
     </message>
@@ -27859,7 +27859,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Coleção da empresa</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/elementsmover.cpp" line="337"/>
+        <location filename="../sources/elementsmover.cpp" line="344"/>
         <source>Add %n conductors</source>
         <comment>add a numbers of conductor one or more</comment>
         <translation>
