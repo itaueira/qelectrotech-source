@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "demoterminalstrip.h"
+#include "../wireendformat.h"
 
 namespace TerminalStripDrawer
 {
@@ -85,6 +86,19 @@ namespace TerminalStripDrawer
 
 			bool isShield() const override {
 				return m_shield;
+			}
+
+				//A destination for the preview, so the pattern of the
+				//project can be seen at work
+			QString destination(int side, const QString &format) const override {
+				WireEnd end_;
+				end_.tag = QStringLiteral("K1");
+				end_.point = side == 0 ? QStringLiteral("13") : QStringLiteral("14");
+				end_.folio = QStringLiteral("3");
+				end_.position = QStringLiteral("B4");
+				end_.wire = QStringLiteral("10");
+				end_.description = QStringLiteral("M1");
+				return WireEndFormat::format(format, end_);
 			}
 
         private:

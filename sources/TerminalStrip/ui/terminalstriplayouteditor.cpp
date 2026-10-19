@@ -54,6 +54,11 @@ TerminalStripLayoutEditor::TerminalStripLayoutEditor(QSharedPointer<TerminalStri
 			this, &TerminalStripLayoutEditor::valueEdited);
 	connect(ui->m_realistic_group_marker_cb, &QCheckBox::toggled,
 			this, &TerminalStripLayoutEditor::valueEdited);
+		//The destinations of the wires
+	connect(ui->m_destination_length_sb, &QSpinBox::valueChanged,
+			this, &TerminalStripLayoutEditor::valueEdited);
+	connect(ui->m_destination_format_le, &QLineEdit::editingFinished,
+			this, &TerminalStripLayoutEditor::valueEdited);
 
 	updateUi();
 }
@@ -180,6 +185,8 @@ void TerminalStripLayoutEditor::valueEdited()
 	m_layout.data()->m_cable_wire_length = ui->m_cable_wire_length_sb->value();
 	m_layout.data()->m_cable_length = ui->m_cable_length_sb->value();
 	m_layout.data()->m_cable_end_length = ui->m_cable_end_length_sb->value();
+	m_layout.data()->m_destination_text_length = ui->m_destination_length_sb->value();
+	m_layout.data()->m_destination_format = ui->m_destination_format_le->text();
 
 		//Values of the realistic styles
 	m_layout.data()->m_realistic_px_per_mm = ui->m_realistic_scale_sb->value();
@@ -298,6 +305,8 @@ void TerminalStripLayoutEditor::updateUi()
 	ui->m_cable_wire_length_sb->setValue(data->m_cable_wire_length);
 	ui->m_cable_length_sb->setValue(data->m_cable_length);
 	ui->m_cable_end_length_sb->setValue(data->m_cable_end_length);
+	ui->m_destination_length_sb->setValue(qRound(data->m_destination_text_length));
+	ui->m_destination_format_le->setText(data->m_destination_format);
 
 		//Values of the realistic styles
 	ui->m_realistic_scale_sb->setValue(data->m_realistic_px_per_mm);

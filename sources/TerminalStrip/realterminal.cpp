@@ -362,21 +362,23 @@ QStringList RealTerminal::conductors() const
 }
 
 /**
- * @brief RealTerminal::destinations
+ * @brief RealTerminal::wireEnds
  * The entry and the exit of a terminal are the first and the second
  * connection point of its symbol, in the order of the symbol file: a
  * rotation or a mirror of the symbol on the folio changes where they are
  * drawn, not which is which.
  * @param side : 0 for the entry, 1 for the exit
  * @return for each wire of that point, the other end: the tag of its
- * element and the name of its point, "K1:24" ("K1" when the point has no
- * name). When the other end is a terminal of a strip, the name of the
- * strip and the tag of the terminal, "X2:2". In the order the point keeps
- * its wires. Empty for a spare terminal or a point with no wire.
+ * element and the name of its point - "K1" and "24" -, or, when the other
+ * end is a terminal of a strip, the name of the strip and the tag of the
+ * terminal - "X2" and "2" -; the number of its folio, its cell on the
+ * grid, the number of the wire and the description of the element. In the
+ * order the point keeps its wires. Empty for a spare terminal or a point
+ * with no wire. WireEndFormat::format() writes them.
  */
-QStringList RealTerminal::destinations(int side) const
+QVector<WireEnd> RealTerminal::wireEnds(int side) const
 {
-	QStringList list_;
+	QVector<WireEnd> list_;
 	if (m_element.isNull()) {
 		return list_;
 	}
@@ -412,7 +414,19 @@ QStringList RealTerminal::destinations(int side) const
 		if (tag_.isEmpty()) {
 			tag_ = unnamedEntry();
 		}
-		list_ << (point_name_.isEmpty() ? tag_ : tag_ + QLatin1Char(':') + point_name_);
+
+		WireEnd end_;
+		end_.tag = tag_;
+		end_.point = point_name_;
+		end_.wire = conductor_->properties().text;
+		end_.description = element_->elementInformations()
+						   .value(QETInformation::ELMT_DESCRIPTION).toString();
+		if (Diagram *diagram_ = element_->diagram())
+		{
+			end_.folio = QString::number(diagram_->folioIndex() + 1);
+			end_.position = diagram_->convertPosition(element_->scenePos()).toString();
+		}
+		list_ << end_;
 	}
 
 	return list_;

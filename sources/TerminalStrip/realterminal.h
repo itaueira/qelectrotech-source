@@ -24,6 +24,7 @@
 #include <QStringList>
 #include <QUuid>
 #include "../properties/elementdata.h"
+#include "wireendformat.h"
 
 class TerminalStrip;
 class Element;
@@ -87,10 +88,10 @@ class RealTerminal
 		/**
 			@brief Where the wires of one point of the terminal go
 			@param side : 0 for the entry of the terminal, 1 for its exit
-			@return "K1:24" for each wire of that point, in the order the
-			point keeps them; see the definition for the rules
+			@return the other end of each wire of that point, in the order
+			the point keeps them; see the definition for the rules
 		*/
-		QStringList destinations(int side) const;
+		QVector<WireEnd> wireEnds(int side) const;
 		/// How many connection points the symbol of the terminal has (0 for a spare)
 		int pointCount() const;
 

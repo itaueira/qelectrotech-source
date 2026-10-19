@@ -622,6 +622,30 @@
         </property>
        </widget>
       </item>
+      <item row="14" column="2">
+       <widget class="QLabel" name="label_destination">
+        <property name="text">
+         <string>Wire destination</string>
+        </property>
+       </widget>
+      </item>
+      <item row="14" column="3">
+       <widget class="QSpinBox" name="m_destination_length_sb">
+        <property name="toolTip">
+         <string>Length of the destinations of the wires written above and under each terminal. 0 disable them.</string>
+        </property>
+        <property name="maximum">
+         <number>1000</number>
+        </property>
+       </widget>
+      </item>
+      <item row="14" column="4" colspan="2">
+       <widget class="QLineEdit" name="m_destination_format_le">
+        <property name="toolTip">
+         <string>What the destination of a wire says. %tag: tag of the component, or the strip; %point: its point, or the terminal; %folio: number of its folio; %position: its cell on the grid; %wire: number of the wire; %description: description of the component.</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>

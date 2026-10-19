@@ -1025,6 +1025,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/TerminalStrip/realterminal.h
   ${QET_DIR}/sources/TerminalStrip/terminalmove.cpp
   ${QET_DIR}/sources/TerminalStrip/terminalmove.h
+  ${QET_DIR}/sources/TerminalStrip/wireendformat.cpp
+  ${QET_DIR}/sources/TerminalStrip/wireendformat.h
   ${QET_DIR}/sources/TerminalStrip/terminalcatalog.h
   ${QET_DIR}/sources/TerminalStrip/terminalstripbridge.cpp
   ${QET_DIR}/sources/TerminalStrip/terminalstripbridge.h

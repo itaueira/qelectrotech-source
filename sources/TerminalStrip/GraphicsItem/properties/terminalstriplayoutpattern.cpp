@@ -18,10 +18,15 @@
 #include "terminalstriplayoutpattern.h"
 #include "../../../utils/qetutils.h"
 
+#include <QCoreApplication>
 #include <QDomDocument>
 
 TerminalStripLayoutPattern::TerminalStripLayoutPattern()
 {
+		//The destination of a wire: tag, point and folio. The word before
+		//the folio is in the language of the user, so is the pattern.
+	m_destination_format = QCoreApplication::translate("TerminalStripLayoutPattern",
+													   "%tag:%point (Folio %folio)");
     m_font.setPixelSize(15);
 	updateHeaderTextOption();
 	updateTerminalsTextOption();
@@ -246,6 +251,7 @@ QDomElement TerminalStripLayoutPattern::toXml(QDomDocument &document) const
 	element.setAttribute(QStringLiteral("type_symbol_height"), m_type_symbol_height);
 	element.setAttribute(QStringLiteral("connection_length"), m_connection_length);
 	element.setAttribute(QStringLiteral("destination_text_length"), m_destination_text_length);
+	element.setAttribute(QStringLiteral("destination_format"), m_destination_format);
 	element.setAttribute(QStringLiteral("cable_wire_length"), m_cable_wire_length);
 	element.setAttribute(QStringLiteral("cable_length"), m_cable_length);
 	element.setAttribute(QStringLiteral("cable_end_length"), m_cable_end_length);
@@ -315,6 +321,9 @@ void TerminalStripLayoutPattern::fromXml(const QDomElement &layout_element)
 	m_type_symbol_height = realFromXml(layout_element, QStringLiteral("type_symbol_height"), m_type_symbol_height);
 	m_connection_length = realFromXml(layout_element, QStringLiteral("connection_length"), m_connection_length);
 	m_destination_text_length = realFromXml(layout_element, QStringLiteral("destination_text_length"), m_destination_text_length);
+	if (layout_element.hasAttribute(QStringLiteral("destination_format"))) {
+		m_destination_format = layout_element.attribute(QStringLiteral("destination_format"));
+	}
 	m_cable_wire_length = realFromXml(layout_element, QStringLiteral("cable_wire_length"), m_cable_wire_length);
 	m_cable_length = realFromXml(layout_element, QStringLiteral("cable_length"), m_cable_length);
 	m_cable_end_length = realFromXml(layout_element, QStringLiteral("cable_end_length"), m_cable_end_length);

@@ -24,8 +24,10 @@
 #include <QPainterPath>
 #include <QFontMetricsF>
 #include <QHash>
+#include <QStringList>
 
 #include <algorithm>
+#include <cmath>
 
 namespace TerminalStripDrawer {
 
@@ -260,11 +262,86 @@ void drawConnections(QPainter *painter, const QRectF &terminal_rect, qreal lengt
 }
 
 /**
+ * @brief shrinkToFit
+ * @return @a font, reduced until @a text is not longer than @a available,
+ * but not under @a minimum. The size found from the proportion is checked
+ * on the text itself: a font of a whole pixel size is not exactly
+ * proportional, and the end of a text a little too long is cut off.
+ */
+QFont shrinkToFit(QFont font, const QString &text, qreal available, qreal minimum)
+{
+	const qreal length_{QFontMetricsF{font}.horizontalAdvance(text)};
+	if (length_ <= available || length_ <= 0) {
+		return font;
+	}
+
+	const bool pixel_{font.pixelSize() > 0};
+	const auto set_size_ = [&font, pixel_](qreal size) {
+		if (pixel_) {
+			font.setPixelSize(std::max(1, static_cast<int>(size)));
+		} else {
+			font.setPointSizeF(size);
+		}
+	};
+	const qreal size_{pixel_ ? qreal(font.pixelSize()) : font.pointSizeF()};
+	qreal new_size_{std::max(minimum, std::floor(size_ * available / length_))};
+	set_size_(new_size_);
+	while (new_size_ > minimum && QFontMetricsF{font}.horizontalAdvance(text) > available)
+	{
+		new_size_ = std::max(minimum, new_size_ - 1.0);
+		set_size_(new_size_);
+	}
+	return font;
+}
+
+/**
+ * @brief destinationRoom
+ * @return the length a destination may take in a zone of @a length: one
+ * unit is kept at each end of the zone, and two more as a slack.
+ */
+qreal destinationRoom(qreal length)
+{
+	return length - 4.0;
+}
+
+/**
+ * @brief destinationFont
+ * The font of the destinations of a strip: the font of the strip, reduced
+ * until the longest destination fits in its zone, so every destination of
+ * the strip is written in the same size - like the numbers on the marker
+ * tags. A destination much longer than the others does not take the strip
+ * under half of the size: drawDestination() reduces it alone.
+ *
+ * The font is not hinted. Hinted, a text fitted to the pixels of the
+ * screen is a few pixels longer in a zoomed view than measured here, and
+ * a destination that just fitted lost its end - its ")".
+ * @param font : the font of the strip
+ * @param texts : every destination of the strip
+ * @param length : length of the zone of a destination
+ */
+QFont destinationFont(const QFont &font, const QStringList &texts, qreal length)
+{
+	QFont font_{font};
+	font_.setHintingPreference(QFont::PreferNoHinting);
+
+	const QFontMetricsF metrics_{font_};
+	QString longest_;
+	for (const auto &text_ : texts) {
+		if (metrics_.horizontalAdvance(text_) > metrics_.horizontalAdvance(longest_)) {
+			longest_ = text_;
+		}
+	}
+	const qreal size_{font_.pixelSize() > 0 ? qreal(font_.pixelSize()) : font_.pointSizeF()};
+	return shrinkToFit(font_, longest_, destinationRoom(length), std::max(3.0, std::floor(size_ / 2)));
+}
+
+/**
  * @brief drawDestination
  * Write where the wires of one point of a terminal go, in the zone at the
  * end of its connection: vertical text, like the number of the terminal,
  * next to the connection.
- * @param painter : in the frame of the terminal, its pen and font set
+ * @param painter : in the frame of the terminal, its pen set
+ * @param font : the font of the destinations of the strip, see destinationFont()
  * @param width : width of the terminal
  * @param text : the destination; nothing is drawn when empty
  * @param y : top of the zone
@@ -272,7 +349,7 @@ void drawConnections(QPainter *painter, const QRectF &terminal_rect, qreal lengt
  * @param above : true for the zone above the terminal, whose text starts at
  * its bottom; false for the one under it, whose text ends at its top
  */
-void drawDestination(QPainter *painter, qreal width, const QString &text,
+void drawDestination(QPainter *painter, const QFont &font, qreal width, const QString &text,
 					 qreal y, qreal length, bool above)
 {
 	if (text.isEmpty() || width < 4.0 || length <= 2.0) {
@@ -283,26 +360,14 @@ void drawDestination(QPainter *painter, qreal width, const QString &text,
 	painter->translate(0, y + length);
 	painter->rotate(270);
 
-		//Longer than the zone ("K1:24 / X2:2"...): a smaller font, like the
-		//number on a marker tag that does not fit
-	const qreal available_{length - 2.0};
-	const QFontMetricsF metrics_{painter->font()};
-	const qreal text_length_{metrics_.horizontalAdvance(text)};
-	if (text_length_ > available_)
-	{
-		auto font_{painter->font()};
-		const auto size_{font_.pixelSize() > 0 ? qreal(font_.pixelSize()) : font_.pointSizeF()};
-		const auto new_size_{std::max<qreal>(3.0, size_ * available_ / text_length_)};
-		if (font_.pixelSize() > 0) {
-			font_.setPixelSize(std::max(1, static_cast<int>(new_size_)));
-		} else {
-			font_.setPointSizeF(new_size_);
-		}
-		painter->setFont(font_);
-	}
+		//Still longer than the zone ("K1:24 / X2:2 / ..."): a smaller font
+		//for this one, like the number on a marker tag that does not fit
+	painter->setFont(shrinkToFit(font, text, destinationRoom(length), 3.0));
 
-	painter->drawText(QRectF{1.0, 0, available_, width},
-					  (above ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter,
+		//Not clipped: a text a little longer than measured runs into the
+		//margin of the zone instead of losing its end
+	painter->drawText(QRectF{1.0, 0, length - 2.0, width},
+					  (above ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignVCenter | Qt::TextDontClip,
 					  text);
 	painter->restore();
 }
@@ -1071,6 +1136,26 @@ void TerminalStripDrawer::paint(QPainter *painter)
 			tag_length_ = markerTagLength(tag_metrics_, longest_number_, terminals_text_height);
 		}
 
+			//One font for every destination of the strip, from the longest one
+		QFont destination_font_{painter->font()};
+		if (m_pattern->m_destination_text_length > 0)
+		{
+			QStringList destinations_;
+			for (const auto &physical_t : m_strip->physicalTerminal()) {
+				for (const auto &real_t : physical_t->realTerminals()) {
+					if (!real_t) {
+						continue;
+					}
+					destinations_ << real_t->destination(0, m_pattern->m_destination_format);
+					if (m_pattern->m_cable_wire_length <= 0 || real_t->cable().isEmpty()) {
+						destinations_ << real_t->destination(1, m_pattern->m_destination_format);
+					}
+				}
+			}
+			destination_font_ = destinationFont(painter->font(), destinations_,
+												m_pattern->m_destination_text_length);
+		}
+
 		int physical_index = 0;
             //Loop over physical terminals
         for (const auto &physical_t : m_strip->physicalTerminal())
@@ -1202,10 +1287,12 @@ void TerminalStripDrawer::paint(QPainter *painter)
 				{
 					const qreal stub_{qMax<qreal>(0, m_pattern->m_connection_length)};
 					const qreal length_{m_pattern->m_destination_text_length};
-					drawDestination(painter, terminal_rect.width(), real_terminal_vector[i]->destination(0),
+					drawDestination(painter, destination_font_, terminal_rect.width(),
+									real_terminal_vector[i]->destination(0, m_pattern->m_destination_format),
 									terminal_rect.top() - stub_ - length_, length_, true);
 					if (!have_cable) {
-						drawDestination(painter, terminal_rect.width(), real_terminal_vector[i]->destination(1),
+						drawDestination(painter, destination_font_, terminal_rect.width(),
+										real_terminal_vector[i]->destination(1, m_pattern->m_destination_format),
 										terminal_rect.top() + terminal_rect.height() + stub_, length_, false);
 					}
 				}

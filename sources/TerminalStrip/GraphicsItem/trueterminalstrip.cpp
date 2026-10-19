@@ -147,12 +147,13 @@ namespace TerminalStripDrawer
 
 	/**
 	 * @brief TrueRealTerminal::destination
-	 * @param side : 0 for the entry, 1 for the exit (RealTerminal::destinations())
+	 * @param side : 0 for the entry, 1 for the exit (RealTerminal::wireEnds())
+	 * @param format : the pattern of the project (WireEndFormat::format())
 	 * @return the destinations of the wires of that point, joined by " / ";
 	 * "Free" for a point with no wire, "Spare" for a spare terminal, and
 	 * nothing for a point the symbol does not have
 	 */
-	QString TrueRealTerminal::destination(int side) const
+	QString TrueRealTerminal::destination(int side, const QString &format) const
 	{
 		if (!m_real) {
 			return QString();
@@ -163,11 +164,15 @@ namespace TerminalStripDrawer
 		if (side < 0 || side >= m_real->pointCount()) {
 			return QString();
 		}
-		const auto ends_{m_real->destinations(side)};
+		const auto ends_{m_real->wireEnds(side)};
 		if (ends_.isEmpty()) {
 			return QCoreApplication::translate("TerminalStripDrawer", "Free");
 		}
-		return ends_.join(QStringLiteral(" / "));
+		QStringList texts_;
+		for (const auto &end_ : ends_) {
+			texts_ << WireEndFormat::format(format, end_);
+		}
+		return texts_.join(QStringLiteral(" / "));
 	}
 
 	QString TrueRealTerminal::cableWire() const

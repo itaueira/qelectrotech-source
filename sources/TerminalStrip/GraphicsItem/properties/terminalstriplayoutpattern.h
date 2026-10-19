@@ -124,6 +124,9 @@ class TerminalStripLayoutPattern
 			//Length of the destinations of the wires written above and under
 			//each terminal, at the end of the connections. 0 disable them.
 		qreal m_destination_text_length{70};
+			//What the destination of a wire says (WireEndFormat::format()):
+			//%tag, %point, %folio, %position, %wire and %description
+		QString m_destination_format;
 			//Cable drawn under the terminals which have a cable (hose).
 			//Length of the wires between the terminals and the cable
 			//0 disable the drawing of the cables.

@@ -32602,7 +32602,7 @@ Os outros campos não são utilizados.</translation>
 <context>
     <name>Terminal</name>
     <message numerus="yes">
-        <location filename="../sources/qetgraphicsitem/terminal.cpp" line="689"/>
+        <location filename="../sources/qetgraphicsitem/terminal.cpp" line="691"/>
         <source>This terminal already has %n conductors, the project&apos;s limit. Add a terminal to connect one more conductor.</source>
         <comment>wire refused by the wires-per-terminal limit</comment>
         <translation>
@@ -32999,7 +32999,7 @@ Os outros campos não são utilizados.</translation>
 <context>
     <name>TerminalStripDrawer</name>
     <message>
-        <location filename="../sources/TerminalStrip/GraphicsItem/trueterminalstrip.cpp" line="168"/>
+        <location filename="../sources/TerminalStrip/GraphicsItem/trueterminalstrip.cpp" line="169"/>
         <source>Free</source>
         <translation>Livre</translation>
     </message>
@@ -33558,12 +33558,12 @@ Clique duplo para ir ao componente</translation>
         <translation>Borne nível 0 :</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="645"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="669"/>
         <source>Headser :</source>
         <translation>No topo :</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="694"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="718"/>
         <source>Bridge point</source>
         <translation>Ponto de ponte</translation>
     </message>
@@ -33668,12 +33668,27 @@ Clique duplo para ir ao componente</translation>
         <translation>Marcador de grupo</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="687"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="628"/>
+        <source>Wire destination</source>
+        <translation>Destino do fio</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="635"/>
+        <source>Length of the destinations of the wires written above and under each terminal. 0 disable them.</source>
+        <translation>Comprimento da faixa do destino dos fios, escrita acima e abaixo de cada borne. 0 desliga.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="645"/>
+        <source>What the destination of a wire says. %tag: tag of the component, or the strip; %point: its point, or the terminal; %folio: number of its folio; %position: its cell on the grid; %wire: number of the wire; %description: description of the component.</source>
+        <translation>O que o destino do fio escreve. %tag: tag do componente, ou a régua; %point: o ponto dele, ou o borne; %folio: número da folha; %position: casa da grade; %wire: número do fio; %description: descrição do componente.</translation>
+    </message>
+    <message>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="711"/>
         <source>Height</source>
         <translation>Altura</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="708"/>
+        <location filename="../sources/TerminalStrip/ui/terminalstriplayouteditor.ui" line="732"/>
         <source>Preview:</source>
         <translation>Visualização :</translation>
     </message>
@@ -33760,6 +33775,14 @@ Clique duplo para ir ao componente</translation>
     </message>
 </context>
 <context>
+    <name>TerminalStripLayoutPattern</name>
+    <message>
+        <location filename="../sources/TerminalStrip/GraphicsItem/properties/terminalstriplayoutpattern.cpp" line="28"/>
+        <source>%tag:%point (Folio %folio)</source>
+        <translation>%tag:%point (Folha %folio)</translation>
+    </message>
+</context>
+<context>
     <name>TerminalStripModel</name>
     <message>
         <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="478"/>
@@ -33787,7 +33810,7 @@ Clique duplo para ir ao componente</translation>
         <translation>Estágio</translation>
     </message>
     <message>
-        <location filename="../sources/TerminalStrip/GraphicsItem/trueterminalstrip.cpp" line="161"/>
+        <location filename="../sources/TerminalStrip/GraphicsItem/trueterminalstrip.cpp" line="162"/>
         <location filename="../sources/TerminalStrip/ui/terminalstripmodel.cpp" line="221"/>
         <source>Spare</source>
         <translation>Reserva</translation>

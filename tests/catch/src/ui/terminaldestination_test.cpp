@@ -19,7 +19,10 @@
 
 #include "../qt_catch_tostring.h"
 
+#include "../../../../sources/conductorproperties.h"
 #include "../../../../sources/diagram.h"
+#include "../../../../sources/diagramposition.h"
+#include "../../../../sources/TerminalStrip/GraphicsItem/properties/terminalstriplayoutpattern.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
@@ -175,14 +178,21 @@ namespace
 		return element->terminals().at(index);
 	}
 
-	/// Draw a wire from @a a to @a b, as the folio does
-	bool wire(Diagram *sheet, Terminal *a, Terminal *b)
+	/// Draw a wire from @a a to @a b, as the folio does, numbered @a number
+	bool wire(Diagram *sheet, Terminal *a, Terminal *b, const QString &number = QString())
 	{
 		if (!sheet || !a || !b) {
 			return false;
 		}
 		auto *conductor = new Conductor(a, b);
 		sheet->undoStack().push(new AddGraphicsObjectCommand(conductor, sheet, QPointF()));
+		if (!number.isEmpty())
+		{
+			ConductorProperties properties = conductor->properties();
+			properties.m_formula.clear();
+			properties.text = number;
+			conductor->setProperties(properties);
+		}
 		return true;
 	}
 
@@ -195,14 +205,18 @@ namespace
 		return static_cast<TerminalElement *>(element)->realTerminal();
 	}
 
-		/// What the plan writes on @a side of the terminal tagged @a label
-	QString written(Diagram *sheet, const char *label, int side)
+		/**
+			What the plan writes on @a side of the terminal tagged @a label,
+			with @a format - tag and point only, unless a case says otherwise
+		*/
+	QString written(Diagram *sheet, const char *label, int side,
+			const QString &format = QStringLiteral("%tag:%point"))
 	{
 		const auto real_t = realTerminal(sheet, label);
 		if (!real_t) {
 			return QStringLiteral("(no terminal %1)").arg(QLatin1String(label));
 		}
-		return TerminalStripDrawer::TrueRealTerminal(real_t).destination(side);
+		return TerminalStripDrawer::TrueRealTerminal(real_t).destination(side, format);
 	}
 
 	/**
@@ -215,7 +229,7 @@ namespace
 	bool wireTheBench(UiBench::ScratchProject &project)
 	{
 		Diagram *sheet = project.diagram(0);
-		if (!wire(sheet, point(sheet, "1", 0), point(sheet, "K1", 0))
+		if (!wire(sheet, point(sheet, "1", 0), point(sheet, "K1", 0), QStringLiteral("105"))
 		    || !wire(sheet, point(sheet, "1", 1), point(sheet, "M1", 1))
 		    || !wire(sheet, point(sheet, "1", 1), point(sheet, "2", 0))
 		    || !wire(sheet, point(sheet, "3", 0), point(sheet, "K1", 1))
@@ -290,4 +304,33 @@ TEST_CASE("T64 — Turning a terminal on the folio does not swap its entry and i
 
 	CHECK(written(sheet, "1", 0) == QStringLiteral("K1:24"));
 	CHECK(written(sheet, "1", 1) == QStringLiteral("M1:A1 / X2:2"));
+}
+
+TEST_CASE("T64 — The destination says the folio, and the pattern of the project is followed",
+	  "[terminaldestination]")
+{
+	UiBench::ScratchProject project(fixtureXml(), QStringLiteral("destination.qet"));
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	REQUIRE(sheet != nullptr);
+	REQUIRE(wireTheBench(project));
+
+	SECTION("the default pattern: tag, point and folio")
+	{
+		const QString pattern = TerminalStripLayoutPattern().m_destination_format;
+		REQUIRE(pattern == QStringLiteral("%tag:%point (Folio %folio)"));
+		CHECK(written(sheet, "1", 0, pattern) == QStringLiteral("K1:24 (Folio 1)"));
+		CHECK(written(sheet, "2", 0, pattern) == QStringLiteral("X1:1 (Folio 1)"));
+	}
+
+	SECTION("a pattern of the user: the cell and the number of the wire")
+	{
+		Element *k1 = elementTagged(sheet, "K1");
+		REQUIRE(k1 != nullptr);
+		const QString cell = sheet->convertPosition(k1->scenePos()).toString();
+		REQUIRE_FALSE(cell.isEmpty());
+		CHECK(written(sheet, "1", 0, QStringLiteral("%tag:%point %position %wire"))
+		      == QStringLiteral("K1:24 %1 105").arg(cell));
+	}
 }

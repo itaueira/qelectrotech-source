@@ -118,6 +118,7 @@ add_executable(
     src/option_test.cpp
     src/terminalstripstructure_test.cpp
     src/terminalmove_test.cpp
+    src/wireendformat_test.cpp
     src/collectionloadgate_test.cpp
     src/collectionthreadbudget_test.cpp
     src/terminalmatch_test.cpp
@@ -597,6 +598,8 @@ add_executable(
     # janela da régua, que precisa de projeto aberto e fica de fora.
     ${QET_DIR}/sources/TerminalStrip/terminalmove.cpp
     ${QET_DIR}/sources/TerminalStrip/terminalmove.h
+    ${QET_DIR}/sources/TerminalStrip/wireendformat.cpp
+    ${QET_DIR}/sources/TerminalStrip/wireendformat.h
     # O que uma etiqueta de componente pergunta ao banco do projeto, e o que
     # ela faz da resposta (T21). Duas strings de consulta e duas
     # transformações de valor: nem QSqlQuery entra aqui, o que é justamente

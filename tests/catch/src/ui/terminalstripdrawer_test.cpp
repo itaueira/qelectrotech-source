@@ -23,9 +23,12 @@
 #include <catch2/catch.hpp>
 
 #include <QColor>
+#include <QDomDocument>
+#include <QFontMetricsF>
 #include <QImage>
 #include <QPainter>
 #include <QSharedPointer>
+#include <QStringList>
 
 /*
 	The drawer of a terminal strip has four places for the levels of one
@@ -325,7 +328,8 @@ namespace
 			bool isBridged() const override {return false;}
 			AbstractBridgeInterface *bridge() const override {return nullptr;}
 			QString xref() const override {return QString();}
-			QString destination(int side) const override {
+			QString destination(int side, const QString &format) const override {
+				Q_UNUSED(format)
 				return side == 0 ? m_entry : (side == 1 ? m_exit : QString());
 			}
 		private:
@@ -408,4 +412,179 @@ TEST_CASE("T64 — The destination of the entry is written above the terminal, t
 
 		//No destination, nothing written
 	CHECK(pixelsDarkerThan(entry_only, 100, x0, bottom + 2, x1, bottom + length - 2) == 0);
+}
+
+/*
+	The pattern of the destinations is the project's, kept in the layout of
+	the plan: the drawer hands it to every level, and it survives saving.
+*/
+namespace
+{
+	class FormatSpyLevel : public DestinationLevel
+	{
+		public:
+			explicit FormatSpyLevel(QString *seen) :
+				DestinationLevel(QString(), QString()), m_seen(seen) {}
+			QString destination(int side, const QString &format) const override {
+				Q_UNUSED(side)
+				*m_seen = format;
+				return QString();
+			}
+		private:
+			QString *m_seen;
+	};
+
+	class FormatSpyStrip : public OneTerminalStrip
+	{
+		public:
+			explicit FormatSpyStrip(QString *seen) : OneTerminalStrip(QString(), QString()) {
+				m_spy << QSharedPointer<AbstractPhysicalTerminalInterface>(
+							 new OneLevelTerminal(QSharedPointer<AbstractRealTerminalInterface>(
+													  new FormatSpyLevel(seen))));
+			}
+			QVector<QSharedPointer<AbstractPhysicalTerminalInterface>> physicalTerminal() const override {
+				return m_spy;
+			}
+		private:
+			QVector<QSharedPointer<AbstractPhysicalTerminalInterface>> m_spy;
+	};
+}
+
+TEST_CASE("T64 — The plan writes the destinations with the pattern of the project, which is saved with it",
+		  "[terminalstripdrawer]")
+{
+	auto pattern = QSharedPointer<TerminalStripLayoutPattern>::create();
+	pattern->m_destination_format = QStringLiteral("%tag (%folio) %wire");
+	pattern->m_destination_text_length = 90;
+
+	SECTION("the drawer hands the pattern to the levels")
+	{
+		QString seen;
+		TerminalStripDrawer::TerminalStripDrawer drawer(
+					QSharedPointer<AbstractTerminalStripInterface>(new FormatSpyStrip(&seen)), pattern);
+		QImage image(400, 520, QImage::Format_ARGB32);
+		image.fill(Qt::white);
+		QPainter painter(&image);
+		drawer.paint(&painter);
+		painter.end();
+		CHECK(seen == QStringLiteral("%tag (%folio) %wire"));
+	}
+
+	SECTION("the pattern and the length survive the project file")
+	{
+		QDomDocument document;
+		document.appendChild(pattern->toXml(document));
+		TerminalStripLayoutPattern read;
+		read.fromXml(document.documentElement());
+		CHECK(read.m_destination_format == QStringLiteral("%tag (%folio) %wire"));
+		CHECK(read.m_destination_text_length == 90);
+	}
+}
+
+/*
+	Every destination of a strip is written in the same size, the one that
+	lets the longest fit in its zone, like the numbers on the marker tags.
+	Each one used to be reduced alone: "Free" came out bigger than the
+	destinations with a folio, and on screen one that just fitted lost its
+	end - its ")". A destination much longer than the others is reduced alone, so
+	it does not take the whole strip down with it.
+	Read on the height of the first letter of each destination, which lies
+	across the column of its terminal: the same letter in all of them, and
+	the light gray of its edges counted, because the destinations are not
+	hinted and a thin stem is gray on the pixels it straddles.
+*/
+namespace
+{
+	class EntriesStrip : public AbstractTerminalStripInterface
+	{
+		public:
+			explicit EntriesStrip(const QStringList &entries) {
+				for (const auto &entry : entries) {
+					m_terminals << QSharedPointer<AbstractPhysicalTerminalInterface>(
+									   new OneLevelTerminal(QSharedPointer<AbstractRealTerminalInterface>(
+																new DestinationLevel(entry, QString()))));
+				}
+			}
+			QString installation() const override {return QString();}
+			QString location() const override {return QString();}
+			QString name() const override {return QStringLiteral("X1");}
+			QVector<QSharedPointer<AbstractPhysicalTerminalInterface>> physicalTerminal() const override {
+				return m_terminals;
+			}
+		private:
+			QVector<QSharedPointer<AbstractPhysicalTerminalInterface>> m_terminals;
+	};
+
+	QImage drawnEntries(const QStringList &entries)
+	{
+		TerminalStripDrawer::TerminalStripDrawer drawer(
+					QSharedPointer<AbstractTerminalStripInterface>(new EntriesStrip(entries)),
+					QSharedPointer<TerminalStripLayoutPattern>::create());
+		QImage image(400, 520, QImage::Format_ARGB32);
+		image.fill(Qt::white);
+		QPainter painter(&image);
+		painter.translate(0, image_shift);
+		drawer.paint(&painter);
+		painter.end();
+		return image;
+	}
+
+		/// Across the column of terminal @a index, the width of the ink of the
+		/// first letter of its entry, next to the end of its connection
+	int firstLetterHeight(const QImage &image, int index)
+	{
+		const TerminalStripLayoutPattern pattern;
+		const QRectF rect = pattern.m_terminal_rect.at(3);
+		const int x0 = firstLevelX(pattern) + index * qRound(rect.width()) + 1;
+		const int x1 = x0 + qRound(rect.width()) - 3;
+		const int end = image_shift + qRound(rect.top() - pattern.m_connection_length);
+		int first = -1, last = -1;
+		for (int y = end - 5 ; y <= end - 2 ; ++y) {
+			for (int x = x0 ; x <= x1 ; ++x) {
+				if (qGray(image.pixel(x, y)) < 200) {
+					first = first < 0 ? x : qMin(first, x);
+					last = qMax(last, x);
+				}
+			}
+		}
+		return first < 0 ? 0 : last - first + 1;
+	}
+}
+
+TEST_CASE("T64 — One size for the destinations of a strip", "[terminalstripdrawer]")
+{
+	const TerminalStripLayoutPattern pattern;
+	const QString free_ = QStringLiteral("Livre");
+	const QString folio_ = QStringLiteral("L1:24 (Folha 1) 105");
+	const QString long_ = QStringLiteral("L1:24 (Folha 1) 105 / L2:13 (Folha 2) 106 / L3:13 (Folha 3) 107");
+
+		//The destination with the folio has to be reduced, the free one not:
+		//the zone keeps one unit at each end, and two more as a slack
+	const QFontMetricsF metrics(pattern.font());
+	const qreal room = pattern.m_destination_text_length - 4;
+	CAPTURE(metrics.horizontalAdvance(folio_), metrics.horizontalAdvance(free_), room);
+	REQUIRE(metrics.horizontalAdvance(folio_) > room + 4);
+	REQUIRE(metrics.horizontalAdvance(free_) < room - 4);
+
+	SECTION("the free terminal is written in the size of the reduced one")
+	{
+		const QImage image = drawnEntries({free_, folio_});
+		const int free_height = firstLetterHeight(image, 0);
+		const int folio_height = firstLetterHeight(image, 1);
+		CAPTURE(free_height, folio_height);
+		REQUIRE(folio_height >= 4);
+		CHECK(qAbs(free_height - folio_height) <= 1);
+	}
+
+	SECTION("a much longer destination is reduced alone")
+	{
+		const QImage image = drawnEntries({free_, folio_, long_});
+		const int free_height = firstLetterHeight(image, 0);
+		const int folio_height = firstLetterHeight(image, 1);
+		const int long_height = firstLetterHeight(image, 2);
+		CAPTURE(free_height, folio_height, long_height);
+		REQUIRE(folio_height >= 4);
+		CHECK(qAbs(free_height - folio_height) <= 1);
+		CHECK(long_height < folio_height - 1);
+	}
 }
