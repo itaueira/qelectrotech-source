@@ -8014,12 +8014,12 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>DynamicElementTextItem</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="912"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="914"/>
         <source>texte</source>
         <translation>texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1106"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1108"/>
         <source>Déplacer la référence croisée</source>
         <translation>Mover a referência cruzada</translation>
     </message>
@@ -8034,7 +8034,7 @@ Hold Shift and drag to move this text on its own</source>
         <translation>Editar texto do elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1298"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1300"/>
         <source>Resize an element text</source>
         <translation>Redimensionar um texto de elemento</translation>
     </message>
@@ -8555,7 +8555,7 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>Element</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="2554"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="2687"/>
         <source>Automatically number an element</source>
         <comment>undo caption</comment>
         <translation>Numerar automaticamente um elemento</translation>
@@ -25452,8 +25452,8 @@ O que você deseja fazer?</translation>
         <translation>Coleção</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="488"/>
-        <location filename="../sources/elementsmover.cpp" line="491"/>
+        <location filename="../sources/elementsmover.cpp" line="511"/>
+        <location filename="../sources/elementsmover.cpp" line="514"/>
         <source>Affecter les composants d&apos;une zone</source>
         <translation>Atribuir os componentes de uma zona</translation>
     </message>
@@ -25482,7 +25482,7 @@ O que você deseja fazer?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="209"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1604"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2044"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3249"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3382"/>
         <source>Type</source>
         <translation>Tipo</translation>
     </message>
@@ -26147,7 +26147,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Observações</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="5812"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="5811"/>
         <location filename="../sources/scripting/qetscripting.cpp" line="147"/>
         <location filename="../sources/scripting/qetscripting.cpp" line="232"/>
         <source>Script</source>
@@ -26639,7 +26639,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
     </message>
     <message>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="316"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="695"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="793"/>
         <source>Warning: the element has been saved with a more recent version of QElectroTech.</source>
         <translation>Aviso: o elemento foi salvo por uma versão mais recente do QElectroTech.</translation>
     </message>
@@ -26798,7 +26798,7 @@ the translated name of this folder could not be read, so its folder name is disp
         <translation>Projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="166"/>
+        <location filename="../sources/elementsmover.cpp" line="188"/>
         <source>This group cannot be moved: the position of one of its elements is locked.</source>
         <translation>Este grupo não pode ser movido: a posição de um de seus elementos está travada.</translation>
     </message>
@@ -27023,7 +27023,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="210"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1605"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2045"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3250"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3383"/>
         <source>Address</source>
         <translation>Endereço</translation>
     </message>
@@ -27031,7 +27031,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="212"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1607"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2047"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3252"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3385"/>
         <location filename="../sources/qetinformation.cpp" line="460"/>
         <source>Annotation</source>
         <translation>Comentário</translation>
@@ -27040,7 +27040,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="213"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1608"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2048"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3253"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3386"/>
         <location filename="../sources/qetinformation.cpp" line="527"/>
         <source>Cross-reference</source>
         <translation>Ref. cruzada</translation>
@@ -27049,7 +27049,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="211"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1606"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2046"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3251"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3384"/>
         <location filename="../sources/qetinformation.cpp" line="461"/>
         <location filename="../sources/qetinformation.cpp" line="478"/>
         <source>Function</source>
@@ -27651,7 +27651,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
     <message>
         <location filename="../sources/elementtextsmover.cpp" line="172"/>
         <location filename="../sources/scripting/qetscriptapi.cpp" line="865"/>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="3672"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="3671"/>
         <source>Move %1</source>
         <translation>Mover %1</translation>
     </message>
@@ -27764,73 +27764,73 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>Editar as propriedades do condutor</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2295"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2294"/>
         <source>Edit a text</source>
         <translation>Editar um texto</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2318"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2317"/>
         <source>Change the color of a text</source>
         <translation>Alterar a cor de um texto</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2336"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2335"/>
         <source>Rotate a text</source>
         <translation>Girar um texto</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2597"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2596"/>
         <source>Edit line of a form</source>
         <translation>Editar o contorno de uma forma</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2609"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2608"/>
         <source>Edit filling a form</source>
         <translation>Editar o preenchimento de uma forma</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2617"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2616"/>
         <source>Rotate a shape</source>
         <translation>Girar uma forma</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2824"/>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2946"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2823"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2945"/>
         <source>Change the shape of %1</source>
         <translation>Alterar a forma de %1</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="2974"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="2973"/>
         <source>Close/Open %1</source>
         <translation>Fechar/Abrir %1</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="4054"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="4053"/>
         <source>Resize an image</source>
         <translation>Redimensionar uma imagem</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="4080"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="4079"/>
         <source>Rotate an image</source>
         <translation>Girar uma imagem</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="4456"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="4455"/>
         <source>Edit element text</source>
         <translation>Editar texto do elemento</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="4538"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="4537"/>
         <source>Automatically number an element</source>
         <translation>Numerar automaticamente um elemento</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="4580"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="4579"/>
         <source>Renumber elements (%1)</source>
         <translation>Renumerar os elementos (%1)</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="5521"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="5520"/>
         <source>Search and replace</source>
         <translation>Localizar e substituir</translation>
     </message>
@@ -27991,7 +27991,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Coleção da empresa</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/elementsmover.cpp" line="430"/>
+        <location filename="../sources/elementsmover.cpp" line="453"/>
         <source>Add %n conductors</source>
         <comment>add a numbers of conductor one or more</comment>
         <translation>
@@ -35999,12 +35999,12 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 <context>
     <name>projectDataBase</name>
     <message>
-        <location filename="../sources/dataBase/projectdatabase.cpp" line="5354"/>
+        <location filename="../sources/dataBase/projectdatabase.cpp" line="5371"/>
         <source>Export the internal project database</source>
         <translation>Exportar o banco de dados interno do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/dataBase/projectdatabase.cpp" line="5361"/>
+        <location filename="../sources/dataBase/projectdatabase.cpp" line="5378"/>
         <source>untitled</source>
         <translation>Sem Nome</translation>
     </message>

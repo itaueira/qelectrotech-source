@@ -864,14 +864,11 @@ void DynamicElementTextItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 	if(isSelected())
 		return;
 	
-	if ((parentElement()->linkType() & Element::AllReport) && m_other_report)
+	if (linkedElementShown())
 	{
-		if( (m_text_from == ElementInfo && m_info_name == "label") ||
-			(m_text_from == CompositeText && m_composite_text.contains("%{label}")) )
-		{
-			m_user_color = color();
-			setDefaultTextColor(Qt::blue);
-		}
+		m_user_color = color();
+		setDefaultTextColor(Qt::blue);
+		setCursor(Qt::PointingHandCursor);
 	}
 }
 
@@ -888,11 +885,16 @@ void DynamicElementTextItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 		setDefaultTextColor(m_user_color);
 		m_user_color = QColor(); //m_user_color is now invalid
 	}
-	
+		//Out of the test above: a click (mousePressEvent()) already put
+		//the colour back, and the hand would stay after it
+	unsetCursor();
 }
 
 void DynamicElementTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+	if (m_jump_highlight)
+		painter->fillRect(boundingRect(), QColor(69, 137, 255, 90));
+
 	DiagramTextItem::paint(painter, option, widget);
 
 		//A field bound to component information that has no value yet draws
@@ -1831,39 +1833,39 @@ QString DynamicElementTextItem::reportReplacedCompositeText() const
 }
 
 /**
+	@brief DynamicElementTextItem::linkedElementShown
+	@return the element this text leads to: the master of a linked slave
+	or the other end of a linked folio report, when the text shows its
+	label; nullptr otherwise. Such a text turns blue under the mouse, shows
+	a pointing hand and jumps there on a double click.
+*/
+Element *DynamicElementTextItem::linkedElementShown() const
+{
+	if(!parentElement())
+		return nullptr;
+	if (!((m_text_from == ElementInfo && m_info_name == "label") ||
+		  (m_text_from == CompositeText && m_composite_text.contains("%{label}"))))
+		return nullptr;
+		//A terminal linked to a strip terminal: m_master_element is the
+		//terminal itself, which answers for its own information
+	if(parentElement()->elementData().isStripTerminalSlave()
+	   && !parentElement()->linkedElements().isEmpty())
+		return parentElement()->linkedElements().first();
+	if(parentElement()->linkType() == Element::Slave && m_master_element)
+		return m_master_element.data();
+	if((parentElement()->linkType() & Element::AllReport) && m_other_report)
+		return m_other_report.data();
+	return nullptr;
+}
+
+/**
 	@brief DynamicElementTextItem::zoomToLinkedElement
 	If the parent element is a folio report or a slave element,
 	and is linked, zoom to the linked element
 */
 void DynamicElementTextItem::zoomToLinkedElement()
 {
-	if(!parentElement())
-		return;
-	
-	Element *zoomed_element = nullptr;
-	
-	if(parentElement()->linkType() == Element::Slave && m_master_element)
-	{
-		if ((m_text_from == ElementInfo && m_info_name == "label") ||
-			(m_text_from == CompositeText && m_composite_text.contains("%{label}")))
-			zoomed_element = m_master_element.data();
-	}
-		//A terminal linked to a strip terminal: m_master_element is the
-		//terminal itself, which answers for its own information
-	if(parentElement()->elementData().isStripTerminalSlave()
-	   && !parentElement()->linkedElements().isEmpty())
-	{
-		if ((m_text_from == ElementInfo && m_info_name == "label") ||
-			(m_text_from == CompositeText && m_composite_text.contains("%{label}")))
-			zoomed_element = parentElement()->linkedElements().first();
-	}
-	if((parentElement()->linkType() & Element::AllReport) && m_other_report)
-	{
-		if((m_text_from == ElementInfo && m_info_name == "label") ||
-		   (m_text_from == CompositeText && m_composite_text.contains("%{label}")))
-			zoomed_element = m_other_report.data();
-	}
-	
+	Element *zoomed_element = linkedElementShown();
 	if(zoomed_element)
 	{
 			//Unselect and ungrab mouse to prevent unwanted
@@ -1871,8 +1873,16 @@ void DynamicElementTextItem::zoomToLinkedElement()
 		setSelected(false);
 		ungrabMouse();
 
-		QetGraphicsItem::showItem(zoomed_element);
+		Element::jumpTo(zoomed_element);
 	}
+}
+
+void DynamicElementTextItem::setJumpHighlight(bool on)
+{
+	if (on == m_jump_highlight)
+		return;
+	m_jump_highlight = on;
+	update();
 }
 
 /**

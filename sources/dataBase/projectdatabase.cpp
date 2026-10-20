@@ -3171,15 +3171,28 @@ bool projectDataBase::createDataBase()
 */
 QString projectDataBase::elementViewBody()
 {
+		//The plant and the location of an element are its own, else those
+		//of its folio: an installation is laid out by its folios (the %M
+		//and %LM of the folio), and an element drawn on a +UV1 folio is in
+		//+UV1 without the information typed into every element. In this
+		//body, and not in one view, so that a label reads where the parts
+		//list says the part is.
+	const auto column = [](const QString &key) -> QString {
+		if (key == QLatin1String("plant")) {
+			return QStringLiteral("COALESCE(NULLIF(ei.plant, ''), di.plant)");
+		}
+		if (key == QLatin1String("location")) {
+			return QStringLiteral("COALESCE(NULLIF(ei.location, ''), di.locmach)");
+		}
+		return QStringLiteral("ei.") + key;
+	};
 	QString body(QStringLiteral("SELECT "));
 	for (const QString &key : QETInformation::elementInfoKeys())
 	{
 			//Aliased to its own name on purpose: the callers select by
 			//column name, so the name an information key carries in
 			//element_info is the name it has to carry here.
-		body += QStringLiteral("ei.") + key
-			+ QStringLiteral(" AS ") + key
-			+ QStringLiteral(",");
+		body += column(key) + QStringLiteral(" AS ") + key + QStringLiteral(",");
 	}
 
 		//What is left is what no list of information keys can produce: these
@@ -3357,6 +3370,10 @@ void projectDataBase::createElementNomenclatureView()
 		columns_.replace(QStringLiteral("e.sub_type AS element_sub_type"), QStringLiteral("NULL AS element_sub_type"));
 		columns_.replace(QStringLiteral("di.title AS title"), QStringLiteral("st.title AS title"));
 		columns_.replace(QStringLiteral("di.folio AS folio"), QStringLiteral("st.folio AS folio"));
+			//A spare terminal is on no folio: no folio plant or location
+			//to fall back to, its own value as before
+		columns_.replace(QStringLiteral("di.plant"), QStringLiteral("''"));
+		columns_.replace(QStringLiteral("di.locmach"), QStringLiteral("''"));
 		columns_.replace(QStringLiteral("e.pos AS position"), QStringLiteral("st.position AS position"));
 		create_view += QStringLiteral(" UNION ALL SELECT ") + columns_ +
 					   QStringLiteral(" FROM spare_terminal st"

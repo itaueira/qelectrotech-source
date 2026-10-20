@@ -49,8 +49,13 @@
 
 #include <QAbstractTextDocumentLayout>
 #include <QApplication>
+#include <QCursor>
+#include <QGuiApplication>
 #include <QCollator>
 #include <QScreen>
+#include <QTimer>
+#include <QPointer>
+#include "../diagramview.h"
 
 static const QString plcTerminalKeys[] = {
 	QETInformation::ELMT_PLC_T1,
@@ -253,6 +258,99 @@ void Element::setHighlighted(bool hl)
 {
 	m_must_highlight = hl;
 	update();
+}
+
+/**
+	@brief Element::showAsJumpTarget
+	Highlight this element for a moment, so the user sees where a jump
+	from a folio report (or a cross reference) landed. Independent of
+	setHighlighted(), which follows the mouse over a linked element and
+	would be cleared as soon as the mouse leaves the element jumped from.
+*/
+void Element::showAsJumpTarget()
+{
+		//The symbol and its texts, so that the label jumped to is seen too
+	QList<DynamicElementTextItem *> texts = dynamicTextItems();
+	for (ElementTextItemGroup *group : textGroups())
+		texts.append(group->texts());
+	for (DynamicElementTextItem *text : std::as_const(texts))
+		text->setJumpHighlight(true);
+
+	++m_jump_highlight;
+	update();
+	QPointer<Element> self(this);
+	QTimer::singleShot(3000, this, [self]() {
+		if (!self) return;
+		if (self->m_jump_highlight > 0)
+			--self->m_jump_highlight;
+		if (self->m_jump_highlight == 0) {
+			QList<DynamicElementTextItem *> texts = self->dynamicTextItems();
+			for (ElementTextItemGroup *group : self->textGroups())
+				texts.append(group->texts());
+			for (DynamicElementTextItem *text : std::as_const(texts))
+				text->setJumpHighlight(false);
+		}
+		self->update();
+	});
+}
+
+/**
+	@brief Element::jumpTo
+	Go to @a target, the other end of a folio report or the master of a
+	cross reference: its folio is shown whole, as a page, without zooming
+	in on it, and the target and its texts are shaded blue for a moment,
+	so that the eye finds it on the page.
+	The mouse pointer is put on it too, except on Wayland, which does not
+	let a program move the pointer.
+*/
+void Element::jumpTo(Element *target)
+{
+	if (!target || !target->diagram())
+		return;
+	Diagram *diagram = target->diagram();
+	diagram->showMe();
+	diagram->clearSelection();
+	target->setSelected(true);
+	for (QGraphicsView *view : diagram->views())
+	{
+		if (auto *diagram_view = qobject_cast<DiagramView *>(view))
+			diagram_view->zoomFit();
+		else
+			view->fitInView(diagram->sceneRect(), Qt::KeepAspectRatio);
+	}
+	target->showAsJumpTarget();
+
+		//Put the mouse pointer on the target, so that a double click
+		//there jumps back. Once the folio shown has its size (next turn
+		//of the event loop). Wayland does not let a program move the
+		//pointer: there the highlight alone shows where the jump landed.
+	if (QGuiApplication::platformName().startsWith(QLatin1String("wayland")))
+		return;
+	QTimer::singleShot(0, target, [target]() {
+		if (!target->diagram())
+			return;
+		for (QGraphicsView *view : target->diagram()->views())
+		{
+			if (!view->isVisible())
+				continue;
+			const QPoint pos = view->mapFromScene(target->sceneBoundingRect().center());
+			if (view->viewport()->rect().contains(pos))
+				QCursor::setPos(view->viewport()->mapToGlobal(pos));
+			return;
+		}
+	});
+}
+
+/**
+	@brief Element::jumpTarget
+	@return the element a double click on this one jumps to: the other end
+	of a linked folio report, or nullptr.
+*/
+Element *Element::jumpTarget() const
+{
+	if ((linkType() & AllReport) && !connected_elements.isEmpty())
+		return connected_elements.first();
+	return nullptr;
 }
 
 /**
@@ -476,7 +574,7 @@ void Element::paint(
 		const QStyleOptionGraphicsItem *options,
 		QWidget *)
 {
-	if (m_must_highlight) {
+	if (m_must_highlight || m_jump_highlight > 0) {
 		drawHighlight(painter, options);
 	}
 
@@ -2405,6 +2503,29 @@ void Element::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 }
 
 /**
+	@brief Element::mouseDoubleClickEvent
+	A double click on a linked folio report goes to its other end, as a
+	double click on its text does; on any other element it opens the
+	properties. A report's properties stay reachable from the context menu
+	and the properties panel.
+	@param event
+*/
+void Element::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (Element *target = jumpTarget())
+	{
+		event->accept();
+			//Unselect and ungrab mouse to prevent unwanted
+			//move when the target is in the same scene as this.
+		setSelected(false);
+		ungrabMouse();
+		jumpTo(target);
+		return;
+	}
+	QetGraphicsItem::mouseDoubleClickEvent(event);
+}
+
+/**
 	When mouse over element
 	change m_mouse_over to true   (used in paint() function )
 	Also highlight linked elements
@@ -2416,6 +2537,13 @@ void Element::hoverEnterEvent(QGraphicsSceneHoverEvent *e)
 
 	foreach (Element *elmt, linkedElements())
 		elmt -> setHighlighted(true);
+
+		//A linked folio report jumps to its other end on a double
+		//click: the pointing hand says so
+	if (jumpTarget()) {
+		setCursor(Qt::PointingHandCursor);
+		m_jump_cursor = true;
+	}
 
 	m_mouse_over = true;
 	setToolTip( name() );
@@ -2434,6 +2562,11 @@ void Element::hoverLeaveEvent(QGraphicsSceneHoverEvent *e)
 
 	foreach (Element *elmt, linkedElements())
 		elmt -> setHighlighted(false);
+
+	if (m_jump_cursor) {
+		unsetCursor();
+		m_jump_cursor = false;
+	}
 
 	m_mouse_over = false;
 	update();
