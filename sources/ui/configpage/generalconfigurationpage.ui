@@ -1123,7 +1123,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
-          <string>Grid: 1 - 30</string>
+          <string>Grid: 0.1 - 30</string>
          </property>
          <property name="flat">
           <bool>false</bool>
@@ -1242,50 +1242,56 @@
        <item>
         <widget class="QGroupBox" name="groupBox_2">
          <property name="title">
-          <string>Keyboard movement: 1 - 30</string>
+          <string>Keyboard movement: 0.1 - 30</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_10">
           <item row="0" column="2">
-           <widget class="QSpinBox" name="DiagramEditor_xKeyGrid_sb">
+           <widget class="QDoubleSpinBox" name="DiagramEditor_xKeyGrid_sb">
             <property name="minimumSize">
              <size>
               <width>80</width>
               <height>0</height>
              </size>
             </property>
+            <property name="decimals">
+             <number>2</number>
+            </property>
             <property name="minimum">
-             <number>1</number>
+             <double>0.100000000000000</double>
             </property>
             <property name="maximum">
-             <number>30</number>
+             <double>30.000000000000000</double>
             </property>
-            <property name="singleStep">
-             <number>1</number>
+            <property name="stepType">
+             <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
             </property>
             <property name="value">
-             <number>10</number>
+             <double>10.000000000000000</double>
             </property>
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QSpinBox" name="DiagramEditor_yKeyGrid_sb">
+           <widget class="QDoubleSpinBox" name="DiagramEditor_yKeyGrid_sb">
             <property name="minimumSize">
              <size>
               <width>80</width>
               <height>0</height>
              </size>
             </property>
+            <property name="decimals">
+             <number>2</number>
+            </property>
             <property name="minimum">
-             <number>1</number>
+             <double>0.100000000000000</double>
             </property>
             <property name="maximum">
-             <number>30</number>
+             <double>30.000000000000000</double>
             </property>
-            <property name="singleStep">
-             <number>1</number>
+            <property name="stepType">
+             <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
             </property>
             <property name="value">
-             <number>10</number>
+             <double>10.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -1322,7 +1328,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox_4">
          <property name="title">
-          <string>Keyboard movement with the Ctrl key: 1 - 9</string>
+          <string>Keyboard movement with the Ctrl key: 0.1 - 9</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_11">
           <item row="0" column="1">
@@ -1333,24 +1339,27 @@
            </widget>
           </item>
           <item row="1" column="3">
-           <widget class="QSpinBox" name="DiagramEditor_yKeyGridFine_sb">
+           <widget class="QDoubleSpinBox" name="DiagramEditor_yKeyGridFine_sb">
             <property name="minimumSize">
              <size>
               <width>80</width>
               <height>0</height>
              </size>
             </property>
+            <property name="decimals">
+             <number>2</number>
+            </property>
             <property name="minimum">
-             <number>1</number>
+             <double>0.100000000000000</double>
             </property>
             <property name="maximum">
-             <number>9</number>
+             <double>9.000000000000000</double>
             </property>
-            <property name="singleStep">
-             <number>1</number>
+            <property name="stepType">
+             <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
             </property>
             <property name="value">
-             <number>1</number>
+             <double>1.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -1362,24 +1371,27 @@
            </widget>
           </item>
           <item row="0" column="3">
-           <widget class="QSpinBox" name="DiagramEditor_xKeyGridFine_sb">
+           <widget class="QDoubleSpinBox" name="DiagramEditor_xKeyGridFine_sb">
             <property name="minimumSize">
              <size>
               <width>80</width>
               <height>0</height>
              </size>
             </property>
+            <property name="decimals">
+             <number>2</number>
+            </property>
             <property name="minimum">
-             <number>1</number>
+             <double>0.100000000000000</double>
             </property>
             <property name="maximum">
-             <number>9</number>
+             <double>9.000000000000000</double>
             </property>
-            <property name="singleStep">
-             <number>1</number>
+            <property name="stepType">
+             <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
             </property>
             <property name="value">
-             <number>1</number>
+             <double>1.000000000000000</double>
             </property>
            </widget>
           </item>

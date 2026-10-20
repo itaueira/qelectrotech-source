@@ -160,10 +160,11 @@ GeneralConfigurationPage::GeneralConfigurationPage(QWidget *parent) :
 	if (text_grid_index < 0)
 		text_grid_index = ui->DiagramEditor_textGrid_cb->findData(qreal(1));
 	ui->DiagramEditor_textGrid_cb->setCurrentIndex(text_grid_index);
-	ui->DiagramEditor_xKeyGrid_sb->setValue(settings.value("diagrameditor/key_Xgrid", 10).toInt());
-	ui->DiagramEditor_yKeyGrid_sb->setValue(settings.value("diagrameditor/key_Ygrid", 10).toInt());
-	ui->DiagramEditor_xKeyGridFine_sb->setValue(settings.value("diagrameditor/key_fine_Xgrid", 1).toInt());
-	ui->DiagramEditor_yKeyGridFine_sb->setValue(settings.value("diagrameditor/key_fine_Ygrid", 1).toInt());
+		//A fraction allowed, as the grid (T69)
+	ui->DiagramEditor_xKeyGrid_sb->setValue(FolioGrid::step(settings.value("diagrameditor/key_Xgrid"), 10));
+	ui->DiagramEditor_yKeyGrid_sb->setValue(FolioGrid::step(settings.value("diagrameditor/key_Ygrid"), 10));
+	ui->DiagramEditor_xKeyGridFine_sb->setValue(FolioGrid::step(settings.value("diagrameditor/key_fine_Xgrid"), 1));
+	ui->DiagramEditor_yKeyGridFine_sb->setValue(FolioGrid::step(settings.value("diagrameditor/key_fine_Ygrid"), 1));
 	ui->DiagramEditor_Grid_PointSize_min_sb->setValue(settings.value("diagrameditor/grid_pointsize_min", 1).toInt());
 	ui->DiagramEditor_Grid_PointSize_max_sb->setValue(settings.value("diagrameditor/grid_pointsize_max", 1).toInt());
 	ui->m_use_system_color_cb->setChecked(settings.value("usesystemcolors", "true").toBool());

@@ -93,10 +93,10 @@ class Diagram : public QGraphicsScene
 		static qreal xGrid;
 		/// ordinate grid step size, a fraction allowed (FolioGrid)
 		static qreal yGrid;
-		/// Key grid x step size
-		static int xKeyGrid;
-		/// Key grid y step size
-		static int yKeyGrid;
+		/// Key grid x step size, a fraction allowed (FolioGrid)
+		static qreal xKeyGrid;
+		/// Key grid y step size, a fraction allowed (FolioGrid)
+		static qreal yKeyGrid;
 		/// Key grid fine x step size
 		/**
 			@brief Whether the finer grid is drawn under the main one.
@@ -140,9 +140,9 @@ class Diagram : public QGraphicsScene
 		*/
 		static bool displayEmptyTextFields;
 
-		static int xKeyGridFine;
+		static qreal xKeyGridFine;
 		/// Key grid fine y step size
-		static int yKeyGridFine;
+		static qreal yKeyGridFine;
 		/// margin around the diagram
 		static const qreal margin;
 		/// background color of diagram

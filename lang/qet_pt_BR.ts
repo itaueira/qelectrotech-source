@@ -5514,13 +5514,13 @@ Continuar?</translation>
 <context>
     <name>Conductor</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2404"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2616"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2409"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2621"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
@@ -6466,7 +6466,7 @@ Continuar?</translation>
 <context>
     <name>Diagram</name>
     <message>
-        <location filename="../sources/diagram.cpp" line="3341"/>
+        <location filename="../sources/diagram.cpp" line="3368"/>
         <source>Change the depth</source>
         <translation>Modificar a profundidade</translation>
     </message>
@@ -8014,12 +8014,12 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>DynamicElementTextItem</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="908"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="912"/>
         <source>texte</source>
         <translation>texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1102"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1106"/>
         <source>Déplacer la référence croisée</source>
         <translation>Mover a referência cruzada</translation>
     </message>
@@ -8034,7 +8034,7 @@ Hold Shift and drag to move this text on its own</source>
         <translation>Editar texto do elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1294"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1298"/>
         <source>Resize an element text</source>
         <translation>Redimensionar um texto de elemento</translation>
     </message>
@@ -11606,24 +11606,29 @@ que você criar. Entradas de texto e números
         <translation>Rotação:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1502"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1509"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1331"/>
+        <source>Keyboard movement with the Ctrl key: 0.1 - 9</source>
+        <translation>Movimento pelo teclado com a tecla Ctrl: 0,1 - 9</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1514"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1521"/>
         <source>max:</source>
         <translation>máx:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1411"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1516"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1423"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1528"/>
         <source>min:</source>
         <translation>mín:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1547"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1559"/>
         <source>Editor</source>
         <translation>Editor</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1555"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1567"/>
         <source>Max. parts in Element Editor List</source>
         <translation>Máx. de peças na lista do editor de elementos</translation>
     </message>
@@ -11652,7 +11657,7 @@ que você criar. Entradas de texto e números
         <translation>Esta versão do Qt não pode escolher o esquema de cores; vale o do sistema.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="662"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="663"/>
         <source>Catalan</source>
         <translation>Catalão</translation>
     </message>
@@ -11698,12 +11703,12 @@ que você criar. Entradas de texto e números
         <translation>Permitir zoom além da folha</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="823"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="824"/>
         <source>User Collection Path</source>
         <translation>Endereço de usuário coletados</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="795"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="796"/>
         <source>Path of the Common Collection</source>
         <translation>Endereço de coletados comuns</translation>
     </message>
@@ -11805,11 +11810,6 @@ Aqui você pode especificar o valor padrão deste campo para os elementos que vo
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1120"/>
         <source>Grid + Keyboard</source>
         <translation>Grade + Teclado</translation>
-    </message>
-    <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1126"/>
-        <source>Grid: 1 - 30</source>
-        <translation>Grade: 1 - 30</translation>
     </message>
     <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="104"/>
@@ -12023,37 +12023,37 @@ hint shown when no cable type file is configured yet</extracomment>
         <translation>Outros textos</translation>
     </message>
     <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1126"/>
+        <source>Grid: 0.1 - 30</source>
+        <translation>Grade: 0,1 - 30</translation>
+    </message>
+    <message>
         <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1170"/>
         <source>The Grid must be active to see the changes.</source>
         <translation>A Grade deve estar ativa para poder ver as modificações.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1245"/>
-        <source>Keyboard movement: 1 - 30</source>
-        <translation>Movimento do teclado: 1 - 30</translation>
-    </message>
-    <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1405"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1417"/>
         <source>View grid</source>
         <translation>Exibição da grade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1590"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1602"/>
         <source>When saving a symbol: refuse two terminals with the same name, and report terminals without a name (IEC 61666).</source>
         <translation>Ao salvar um elemento: recusar dois bornes com o mesmo nome e sinalizar os bornes sem nome (IEC 61666).</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1593"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1605"/>
         <source>Check terminal names when saving</source>
         <translation>Verificar os nomes dos bornes ao salvar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1463"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1475"/>
         <source>Point-size in diagram-editor: 1 - 5</source>
         <translation>Tamanho dos pontos da grade do editor de esquemas: 1 a 5</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1523"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1535"/>
         <source>Point-size in element-editor: 1 - 5</source>
         <translation>Tamanho dos pontos da grade do editor de elementos: 1 - 5</translation>
     </message>
@@ -12083,186 +12083,186 @@ hint shown when no cable type file is configured yet</extracomment>
         <translation>Sem arredondamento</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="239"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="240"/>
         <source>Kept in %1</source>
         <comment>the folder of the previous versions</comment>
         <translation>Guardadas em %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="363"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="364"/>
         <source>Not set (default: %1)</source>
         <comment>hint shown in the material file field when no file is configured yet</comment>
         <translation>Não configurado (padrão: %1)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="374"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="375"/>
         <source>Not set (default: %1)</source>
         <comment>hint shown in the cable type file field when no file is configured yet</comment>
         <translation>Não configurado (padrão: %1)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="638"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="639"/>
         <source>General</source>
         <comment>configuration page title</comment>
         <translation>Geral</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="656"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="657"/>
         <source>System</source>
         <translation>Sistema</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="660"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="661"/>
         <source>Arabic</source>
         <translation>Árabe</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="661"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="662"/>
         <source>Brazilian</source>
         <translation>Português BR</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="663"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="664"/>
         <source>Czech</source>
         <translation>Checo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="664"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="665"/>
         <source>German</source>
         <translation>Alemão</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="665"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="666"/>
         <source>Danish</source>
         <translation>Dinamarquês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="666"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="667"/>
         <source>Greek</source>
         <translation>Grego</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="667"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="668"/>
         <source>English</source>
         <translation>Inglês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="668"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="669"/>
         <source>Spanish</source>
         <translation>Espanhol</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="669"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="670"/>
         <source>French</source>
         <translation>Francês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="670"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="671"/>
         <source>Croatian</source>
         <translation>Croata</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="671"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="672"/>
         <source>Italian</source>
         <translation>Italiano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="672"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="673"/>
         <source>Japanese</source>
         <translation>Japonês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="673"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="674"/>
         <source>Korean</source>
         <translation>Coreano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="674"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="675"/>
         <source>Polish</source>
         <translation>Polonês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="675"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="676"/>
         <source>Portuguese</source>
         <translation>Português</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="676"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="677"/>
         <source>Romanian</source>
         <translation>Romeno</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="677"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="678"/>
         <source>Russian</source>
         <translation>Russo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="678"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="679"/>
         <source>Slovenian</source>
         <translation>Esloveno</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="679"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="680"/>
         <source>Dutch</source>
         <translation>Holandês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="681"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="682"/>
         <source>Belgium-Flemish</source>
         <translation>Belgo-Flamengo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="682"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="683"/>
         <source>Turkish</source>
         <translation>Turco</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="683"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="684"/>
         <source>Hungarian</source>
         <translation>Húngaro</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="684"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="685"/>
         <source>Mongolian</source>
         <translation>Mongol</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="685"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="686"/>
         <source>Ukrainian</source>
         <translation>Ucraniano</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="686"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="687"/>
         <source>Chinese</source>
         <translation>Chinês</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="687"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="688"/>
         <source>Chinese (Traditional)</source>
         <translation>Chinês (tradicional)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="688"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="689"/>
         <source>Swedish</source>
         <translation>Sueco</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="851"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="852"/>
         <source>User Title blocks Path</source>
         <translation>Caminho dos blocos de legenda do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="865"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="866"/>
         <source>User macro path</source>
         <translation>Caminho das macros do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="907"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="908"/>
         <source>Folder not found</source>
         <translation>Pasta não encontrada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="908"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="909"/>
         <source>The user collection folder:
 %1
 does not exist and could not be created.</source>
@@ -12271,12 +12271,12 @@ does not exist and could not be created.</source>
 não existe e não pôde ser criada.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="916"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="917"/>
         <source>No subfolder</source>
         <translation>Nenhuma subpasta</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="917"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="918"/>
         <source>The user collection:
 %1
 has no subfolder, so there is no prefix to configure.</source>
@@ -12285,34 +12285,34 @@ has no subfolder, so there is no prefix to configure.</source>
 não contém nenhuma subpasta: portanto não há nenhum prefixo a configurar.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="925"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="926"/>
         <source>Prefix file cannot be read</source>
         <translation>Arquivo de prefixos ilegível</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="934"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="935"/>
         <source>Prefix file damaged</source>
         <translation>Arquivo de prefixos danificado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="935"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="936"/>
         <source>The file %1 is not a valid XML file:
 %2</source>
         <translation>O arquivo %1 não é um arquivo XML válido:
 %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="939"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="940"/>
         <source>Fix the file</source>
         <translation>Corrigir o arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="940"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="941"/>
         <source>Rebuild</source>
         <translation>Reconstruir</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="941"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="942"/>
         <source>Nothing has been changed yet.
 
 “Fix the file”: this window closes without changing anything. Open the file in a text editor at the place shown, fix it, then run this command again.
@@ -12325,41 +12325,41 @@ não contém nenhuma subpasta: portanto não há nenhum prefixo a configurar.</t
 « Reconstruir »: a árvore de pastas é recriada, mas todos os prefixos atuais são perdidos. O arquivo atual é mantido com o nome qet_labels.xml.bak antes de ser substituído.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="950"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="951"/>
         <source>File: %1</source>
         <translation>Arquivo: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="974"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="975"/>
         <source>Select the materials list file</source>
         <translation>Selecionar o arquivo da lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="976"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="999"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1040"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1063"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="977"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1000"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1041"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1064"/>
         <source>CSV files (*.csv)</source>
         <translation>Arquivos csv (*.csv)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="997"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="998"/>
         <source>Create the materials list file</source>
         <translation>Criar o arquivo da lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1015"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1016"/>
         <source>Cannot create</source>
         <translation>Não foi possível criar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1079"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1080"/>
         <source>Cannot be created</source>
         <translation>Não foi possível criar</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1016"/>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1080"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1017"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1081"/>
         <source>Cannot create the file:
 %1
 %2</source>
@@ -12368,12 +12368,12 @@ não contém nenhuma subpasta: portanto não há nenhum prefixo a configurar.</t
 %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1145"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1146"/>
         <source>Experimental feature</source>
         <translation>Funcionalidade experimental</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1146"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1147"/>
         <source>WARNING:
 Any setting other than “No rounding” may cause rendering errors in the project, depending on:
 
@@ -12449,7 +12449,7 @@ Qualquer valor diferente de ‘Sem arredondamento’ pode causar erros na render
         <translation>Desativada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="207"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="208"/>
         <source>Enabled by the QET_ENABLE_SCRIPTING environment variable; this setting has no effect while it is set.</source>
         <translation>Ativado pela variável de ambiente QET_ENABLE_SCRIPTING; esta configuração não tem efeito enquanto ela estiver definida.</translation>
     </message>
@@ -12531,28 +12531,28 @@ Qualquer valor diferente de ‘Sem arredondamento’ pode causar erros na render
         <translation>Alinhado à esquerda</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1295"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1245"/>
+        <source>Keyboard movement: 0.1 - 30</source>
+        <translation>Movimento do teclado: 0,1 - 30</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1301"/>
         <source>DiagramEditor (key: left / right) xGrid</source>
         <comment>fr: DiagramEditor (touche :   gauche / droite)  xGrid</comment>
         <translation>Editor de diagrama (tecla: esquerda / direita) XGrade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1302"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1308"/>
         <source>DiagramEditor (key: up / down) yGrid</source>
         <translation>Editor de diagrama (tecla: cima / baixo) YGrade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1325"/>
-        <source>Keyboard movement with the Ctrl key: 1 - 9</source>
-        <translation>Movimento pelo teclado com a tecla Ctrl: 1 - 9</translation>
-    </message>
-    <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1331"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1337"/>
         <source>DiagramEditor (key: left / right) xGrid</source>
         <translation>Editor de diagrama (tecla: esquerda / direita) XGrade</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1360"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.ui" line="1369"/>
         <source>DiagramEditor (key: up / down) yGrid</source>
         <comment>fr: DiagramEditor (touche :  haut / bas)  yGrid</comment>
         <translation>Editor de diagrama (tecla: cima / baixo) YGrade</translation>
@@ -12578,42 +12578,42 @@ Qualquer valor diferente de ‘Sem arredondamento’ pode causar erros na render
         <translation>Normal</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="680"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="681"/>
         <source>Norwegian</source>
         <translation>Noruega</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="762"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="763"/>
         <source>Cable text font</source>
         <translation>Fonte do texto dos cabos</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="780"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="781"/>
         <source>Core colors font</source>
         <translation>Fonte das cores das veias</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="809"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="810"/>
         <source>Company collection path</source>
         <translation>Caminho da coleção da empresa</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="837"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="838"/>
         <source>Company title-blocks</source>
         <translation>Caminho dos blocos da empresa</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1038"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1039"/>
         <source>Select the cable types file</source>
         <translation>Selecione o arquivo de tipos de cabo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1061"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1062"/>
         <source>Create the cable types file</source>
         <translation>Criar o arquivo de tipos de cabo</translation>
     </message>
     <message>
-        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1109"/>
+        <location filename="../sources/ui/configpage/generalconfigurationpage.cpp" line="1110"/>
         <source>Values that are too high might cause the application to crash</source>
         <translation>Valores altos podem causar travamentos do aplicativo.</translation>
     </message>
@@ -28115,7 +28115,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Nome do fio por folha, com cor e bitola</translation>
     </message>
     <message>
-        <location filename="../sources/wirenames.cpp" line="718"/>
+        <location filename="../sources/wirenames.cpp" line="750"/>
         <source>Name the wire as its point</source>
         <comment>undo caption</comment>
         <translation>Dar ao fio o nome do ponto</translation>

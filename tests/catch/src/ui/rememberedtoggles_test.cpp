@@ -18,6 +18,8 @@
 #include "uibench.h"
 
 #include "../../../../sources/diagram.h"
+#include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
+#include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/ui/configpage/generalconfigurationpage.h"
 
@@ -25,7 +27,9 @@
 
 #include <catch2/catch.hpp>
 
+#include <QGraphicsSceneMouseEvent>
 #include <QImage>
+#include <QKeyEvent>
 #include <QPainter>
 #include <QSettings>
 #include <QVariant>
@@ -287,4 +291,148 @@ TEST_CASE("CU-69.3 — On a folio, the dots of a grid of 0.5", "[T69][grid]")
 		CHECK(inked >= 19 * 19);
 		CHECK(inked <= 21 * 21);
 	}
+}
+
+namespace
+{
+		/// A key pressed on @p folio, as the view hands it on
+	void press(Diagram *folio, Qt::Key key, Qt::KeyboardModifiers modifiers)
+	{
+		QKeyEvent event(QEvent::KeyPress, key, modifiers);
+		QCoreApplication::sendEvent(folio, &event);
+		QKeyEvent release(QEvent::KeyRelease, key, modifiers);
+		QCoreApplication::sendEvent(folio, &release);
+	}
+
+		/// The first symbol of @p folio that is not turned, with a text it
+		/// can be dragged by
+	Element *upright(Diagram *folio)
+	{
+		const QList<Element *> elements = folio->elements();
+		for (Element *element : elements)
+		{
+			if (element->rotation() == 0 && !element->dynamicTextItems().isEmpty()) {
+				return element;
+			}
+		}
+		return nullptr;
+	}
+}
+
+TEST_CASE("CU-69.6 — The arrows move a symbol on a grid of 0.5", "[T69][grid]")
+{
+	KeepSetting keep_x(QStringLiteral("diagrameditor/Xgrid"));
+	KeepSetting keep_y(QStringLiteral("diagrameditor/Ygrid"));
+	KeepSetting keep_kx(QStringLiteral("diagrameditor/key_Xgrid"));
+	KeepSetting keep_ky(QStringLiteral("diagrameditor/key_Ygrid"));
+	KeepSetting keep_fx(QStringLiteral("diagrameditor/key_fine_Xgrid"));
+	KeepSetting keep_fy(QStringLiteral("diagrameditor/key_fine_Ygrid"));
+	QSettings settings;
+	settings.setValue(QStringLiteral("diagrameditor/Xgrid"), 0.5);
+	settings.setValue(QStringLiteral("diagrameditor/Ygrid"), 0.5);
+	settings.setValue(QStringLiteral("diagrameditor/key_Xgrid"), 10);
+	settings.setValue(QStringLiteral("diagrameditor/key_Ygrid"), 10);
+		//The steps as they come: 1 for Ctrl, coarser than the grid
+	settings.setValue(QStringLiteral("diagrameditor/key_fine_Xgrid"), 1);
+	settings.setValue(QStringLiteral("diagrameditor/key_fine_Ygrid"), 1);
+
+	UiBench::Project bench(small_example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	Diagram *folio = bench.busiestSheet();
+	REQUIRE(folio != nullptr);
+	Element *element = upright(folio);
+	REQUIRE(element != nullptr);
+	folio->clearSelection();
+	element->setSelected(true);
+	const QPointF start = element->pos();
+
+		//Ctrl and an arrow: half a step, the grid, and not the 1 of the
+		//setting, which a grid of 0.5 would never reach half of
+	press(folio, Qt::Key_Right, Qt::ControlModifier);
+	CHECK(element->pos().x() == Approx(start.x() + 0.5));
+	press(folio, Qt::Key_Down, Qt::ControlModifier);
+	CHECK(element->pos().y() == Approx(start.y() + 0.5));
+		//An arrow alone: the step of the setting
+	press(folio, Qt::Key_Right, Qt::NoModifier);
+	CHECK(element->pos().x() == Approx(start.x() + 10.5));
+
+	SECTION("a step of a fraction, from the setting")
+	{
+		settings.setValue(QStringLiteral("diagrameditor/key_Xgrid"), 2.5);
+		const qreal before = element->pos().x();
+		press(folio, Qt::Key_Right, Qt::NoModifier);
+		CHECK(element->pos().x() == Approx(before + 2.5));
+	}
+
+	SECTION("a step finer than the grid moves one step of it")
+	{
+		settings.setValue(QStringLiteral("diagrameditor/key_Xgrid"), 0.2);
+		const qreal before = element->pos().x();
+		press(folio, Qt::Key_Right, Qt::NoModifier);
+		CHECK(element->pos().x() == Approx(before + 0.5));
+	}
+}
+
+TEST_CASE("T69 — The boxes of the arrow steps take 0.5", "[T69][grid]")
+{
+	KeepSetting keep_kx(QStringLiteral("diagrameditor/key_Xgrid"));
+	KeepSetting keep_fx(QStringLiteral("diagrameditor/key_fine_Xgrid"));
+	QSettings().setValue(QStringLiteral("diagrameditor/key_Xgrid"), 2.5);
+	QSettings().setValue(QStringLiteral("diagrameditor/key_fine_Xgrid"), 0.5);
+
+	GeneralConfigurationPage page;
+	auto *step = page.findChild<QDoubleSpinBox *>(QStringLiteral("DiagramEditor_xKeyGrid_sb"));
+	auto *fine = page.findChild<QDoubleSpinBox *>(QStringLiteral("DiagramEditor_xKeyGridFine_sb"));
+	REQUIRE(step);
+	REQUIRE(fine);
+	CHECK(step->value() == Approx(2.5));
+	CHECK(fine->value() == Approx(0.5));
+	CHECK(step->minimum() == Approx(0.1));
+	CHECK(fine->minimum() == Approx(0.1));
+	CHECK(fine->maximum() == Approx(9));
+}
+
+TEST_CASE("CU-69.7 — A text of a symbol dragged on a grid of 0.5", "[T69][grid]")
+{
+	KeepSetting keep_x(QStringLiteral("diagrameditor/Xgrid"));
+	KeepSetting keep_y(QStringLiteral("diagrameditor/Ygrid"));
+	KeepSetting keep_text(QStringLiteral("diagrameditor/text_grid_divisor"));
+	QSettings().setValue(QStringLiteral("diagrameditor/Xgrid"), 0.5);
+	QSettings().setValue(QStringLiteral("diagrameditor/Ygrid"), 0.5);
+		//The texts on the grid itself, and not on a finer one
+	QSettings().setValue(QStringLiteral("diagrameditor/text_grid_divisor"), 1);
+
+	UiBench::Project bench(small_example);
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	Diagram *folio = bench.busiestSheet();
+	REQUIRE(folio != nullptr);
+	Element *element = upright(folio);
+	REQUIRE(element != nullptr);
+	DynamicElementTextItem *text = element->dynamicTextItems().first();
+	REQUIRE((text->flags() & QGraphicsItem::ItemIsMovable));
+		//From a place on the grid
+	text->setPos(3, 0);
+	const QPointF start = text->pos();
+	const QPointF down = text->mapToScene(text->boundingRect().center());
+
+		//Half a pixel to the right, Shift held - Shift drags the text and
+		//not its symbol: on a grid of 0.5 the text goes half a step, and
+		//not the whole pixel the move used to be rounded to before it met
+		//the grid
+	const auto send = [&](QEvent::Type type, const QPointF &at) {
+		QGraphicsSceneMouseEvent event(type);
+		event.setButton(Qt::LeftButton);
+		event.setButtons(type == QEvent::GraphicsSceneMouseRelease ? Qt::NoButton : Qt::LeftButton);
+		event.setScenePos(at);
+		event.setButtonDownScenePos(Qt::LeftButton, down);
+		event.setModifiers(Qt::ShiftModifier);
+		folio->sendEvent(text, &event);
+	};
+	send(QEvent::GraphicsSceneMousePress, down);
+	send(QEvent::GraphicsSceneMouseMove, down + QPointF(0.5, 0));
+	CHECK(text->pos().x() == Approx(start.x() + 0.5));
+	CHECK(text->pos().y() == Approx(start.y()));
+	send(QEvent::GraphicsSceneMouseRelease, down + QPointF(0.5, 0));
 }

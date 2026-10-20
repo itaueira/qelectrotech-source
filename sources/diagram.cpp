@@ -159,13 +159,13 @@ namespace {
 
 qreal Diagram::xGrid  = 10;
 qreal Diagram::yGrid  = 10;
-int Diagram::xKeyGrid = 10;
-int Diagram::yKeyGrid = 10;
+qreal Diagram::xKeyGrid = 10;
+qreal Diagram::yKeyGrid = 10;
 bool Diagram::displayFineGrid = false;
 bool Diagram::displayTerminals = false;
 bool Diagram::displayEmptyTextFields = false;
-int Diagram::xKeyGridFine = 1;
-int Diagram::yKeyGridFine = 1;
+qreal Diagram::xKeyGridFine = 1;
+qreal Diagram::yKeyGridFine = 1;
 const qreal Diagram::margin = 5.0;
 
 /**
@@ -444,14 +444,17 @@ void Diagram::drawBackground(QPainter *p, const QRectF &r) {
 			//connection points have to sit on.
 			//Only drawn when zoomed in enough for the dots to be apart from
 			//each other, otherwise it is a grey wash over the folio.
-		if (Diagram::displayFineGrid && zoom_factor > 2.0)
+		const qreal fine_x = FolioGrid::step(
+				settings.value(QStringLiteral("diagrameditor/key_fine_Xgrid")),
+				Diagram::xKeyGridFine);
+		const qreal fine_y = FolioGrid::step(
+				settings.value(QStringLiteral("diagrameditor/key_fine_Ygrid")),
+				Diagram::yKeyGridFine);
+			//A fine step of a fraction: its dots drawn only where they are
+			//3 pixels apart on screen, as the main grid's
+		if (Diagram::displayFineGrid && zoom_factor > 2.0
+			&& fine_x * zoom_factor >= 3 && fine_y * zoom_factor >= 3)
 		{
-			const int fine_x = qMax(1, settings.value(
-				QStringLiteral("diagrameditor/key_fine_Xgrid"),
-				Diagram::xKeyGridFine).toInt());
-			const int fine_y = qMax(1, settings.value(
-				QStringLiteral("diagrameditor/key_fine_Ygrid"),
-				Diagram::yKeyGridFine).toInt());
 
 			QPen fine_pen = pen;
 			QColor fine_color = pen.color();
@@ -700,10 +703,17 @@ void Diagram::keyPressEvent(QKeyEvent *event)
 	#endif
 	{
 		QSettings settings;
-		int xKeyGrid = settings.value(QStringLiteral("diagrameditor/key_Xgrid"),
-									  Diagram::xKeyGrid).toInt();
-		int yKeyGrid = settings.value(QStringLiteral("diagrameditor/key_Ygrid"),
-									  Diagram::yKeyGrid).toInt();
+			//A fraction allowed, as the grid it snaps to, and never less
+			//than one step of it: the symbol snaps back to where it was
+			//(T69)
+		const qreal xKeyGrid = qMax(
+				FolioGrid::step(settings.value(QStringLiteral("diagrameditor/key_Xgrid")),
+						Diagram::xKeyGrid),
+				FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid));
+		const qreal yKeyGrid = qMax(
+				FolioGrid::step(settings.value(QStringLiteral("diagrameditor/key_Ygrid")),
+						Diagram::yKeyGrid),
+				FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid));
 		switch(event->key())
 		{
 			case Qt::Key_Left:
@@ -743,10 +753,21 @@ void Diagram::keyPressEvent(QKeyEvent *event)
 	else if(event->modifiers() == Qt::ControlModifier)
 	{
 		QSettings settings;
-		int xKeyGridFine = settings.value(QStringLiteral("diagrameditor/key_fine_Xgrid"),
-										  Diagram::xKeyGridFine).toInt();
-		int yKeyGridFine = settings.value(QStringLiteral("diagrameditor/key_fine_Ygrid"),
-										  Diagram::yKeyGridFine).toInt();
+			//A fraction allowed (T69): never coarser than the grid - a grid
+			//of 0.5 and the fine step of 1 would never reach half a step -
+			//and never finer than Ctrl places - a whole pixel, or the grid
+			//when finer (FolioGrid::freeStep()) -, which the symbol snaps
+			//to with Ctrl held and would undo a smaller move
+		const qreal x_grid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+		const qreal y_grid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+		const qreal xKeyGridFine = qMax(
+				qMin(FolioGrid::step(settings.value(QStringLiteral("diagrameditor/key_fine_Xgrid")),
+						     Diagram::xKeyGridFine), x_grid),
+				FolioGrid::freeStep(x_grid));
+		const qreal yKeyGridFine = qMax(
+				qMin(FolioGrid::step(settings.value(QStringLiteral("diagrameditor/key_fine_Ygrid")),
+						     Diagram::yKeyGridFine), y_grid),
+				FolioGrid::freeStep(y_grid));
 		switch(event->key())
 		{
 			case Qt::Key_Left:

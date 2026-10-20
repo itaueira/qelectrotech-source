@@ -788,16 +788,20 @@ void DynamicElementTextItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 			current_parent_pos = mapToParent(mapFromScene(event->scenePos()));
 			button_down_parent_pos = mapToParent(mapFromScene(event->buttonDownScenePos(Qt::LeftButton)));
 			
-			int diffx = qRound(current_parent_pos.x() - button_down_parent_pos.x());
-			int diffy = qRound(current_parent_pos.y() - button_down_parent_pos.y());
-			QPointF new_pos = m_initial_position + QPointF(diffx, diffy);
+				//The move as the mouse made it: rounded to a whole pixel
+				//here, a grid of a fraction was never reached (T69)
+			const QPointF new_pos = m_initial_position
+					+ (current_parent_pos - button_down_parent_pos);
 				//Snap to the grid, Ctrl to place freely -- the same line
 				//ElementTextItemGroup::mouseMoveEvent() and
 				//ElementTextsMover::continueMovement() already use, and
 				//DiagramTextItem::mouseMoveEvent() for independent texts.
 				//Without it this was the only text move in the editor that
-				//ignored the grid.
-			event->modifiers() == Qt::ControlModifier ? setPos(new_pos) : setPos(Diagram::snapToTextGrid(new_pos));
+				//ignored the grid. Freely is on the nearest pixel, or on the
+				//grid when it is finer, as a symbol placed with Ctrl.
+			event->modifiers() == Qt::ControlModifier
+					? setPos(Diagram::snapToGrid(new_pos, true))
+					: setPos(Diagram::snapToTextGrid(new_pos));
 
 			if(diagram())
 				diagram()->elementTextsMover().continueMovement(event);
