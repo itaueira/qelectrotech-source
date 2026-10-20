@@ -39,6 +39,89 @@
 #include "wirearrangement.h"
 #include "wirenames.h"
 #include "wiresections.h"
+#include "foliogrid.h"
+#include "qetgraphicsitem/terminal.h"
+
+#include <QApplication>
+#include <QSet>
+#include <QSettings>
+
+#include <cmath>
+
+namespace
+{
+	/**
+		@return how far each axis of a move by @a movement may pull a
+		terminal onto the line of another (terminalPull()): half the step
+		the move is made by, so that a move of one step away from a line
+		is never pulled back onto it. A drag by the mouse - a move with
+		@a driver - lands on the grid, or on the free step with Ctrl held
+		(Diagram::snapToGrid()), on both axes. A move by the keys - the one
+		move without a driver - goes by its own step on one axis only: the
+		fine step of Ctrl and an arrow is finer than the grid, and the other
+		axis is left alone, so that a fine move made before is not undone
+		(T72).
+	*/
+	QPointF pullReach(const QPointF &movement, bool driver)
+	{
+		QSettings settings;
+		const qreal grid_x = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+		const qreal grid_y = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+		if (driver)
+		{
+			const bool free = QApplication::keyboardModifiers().testFlag(Qt::ControlModifier);
+			return QPointF((free ? FolioGrid::freeStep(grid_x) : grid_x) / 2,
+				       (free ? FolioGrid::freeStep(grid_y) : grid_y) / 2);
+		}
+		return QPointF(qMin(grid_x, std::abs(movement.x())) / 2,
+			       qMin(grid_y, std::abs(movement.y())) / 2);
+	}
+
+	/**
+		@return how far the moved symbols of @a moved go, past the grid, so
+		that a terminal of theirs lands on the line of the terminal a wire
+		joins it to, when that terminal is left in place and closer than
+		@a reach on that axis (T72); 0 on an axis where none is. Between
+		several terminals, the smallest pull, on each axis.
+	*/
+	QPointF terminalPull(const DiagramContent &moved, const QPointF &reach)
+	{
+		const qreal half_x = reach.x();
+		const qreal half_y = reach.y();
+		constexpr qreal eps = 1e-6;
+
+		const QSet<const Element *> moving(moved.m_elements.cbegin(), moved.m_elements.cend());
+		qreal pull_x = 0;
+		qreal pull_y = 0;
+		for (const Element *element : moved.m_elements)
+		{
+			const QList<Terminal *> terminals = element->terminals();
+			for (const Terminal *terminal : terminals)
+			{
+				const QList<Conductor *> wires = terminal->conductors();
+				for (const Conductor *wire : wires)
+				{
+					const Terminal *other = wire->terminal1 == terminal ? wire->terminal2
+											    : wire->terminal1;
+					if (!other || !other->parentElement()
+						|| moving.contains(other->parentElement())) {
+						continue;
+					}
+					const QPointF d = other->dockConductor() - terminal->dockConductor();
+					if (std::abs(d.x()) > eps && std::abs(d.x()) < half_x - eps
+						&& (pull_x == 0 || std::abs(d.x()) < std::abs(pull_x))) {
+						pull_x = d.x();
+					}
+					if (std::abs(d.y()) > eps && std::abs(d.y()) < half_y - eps
+						&& (pull_y == 0 || std::abs(d.y()) < std::abs(pull_y))) {
+						pull_y = d.y();
+					}
+				}
+			}
+		}
+		return QPointF(pull_x, pull_y);
+	}
+}
 
 /**
 	@brief ElementsMover::ElementsMover Constructor
@@ -199,7 +282,42 @@ void ElementsMover::continueMovement(const QPointF &movement)
 	if (!m_movement_running || movement.isNull()) return;
 
 	m_current_movement += movement;
+	moveAlong(movement, false);
 
+		//A terminal of the moved symbols nearly on the line of the terminal
+		//its wire goes to goes onto it, past the grid: a symbol drawn with
+		//its terminals off whole numbers never lines up with another by the
+		//grid alone, and the wire kept a step of a fraction (T72). The
+		//driver too, which moved itself to the grid; the pull is part of
+		//the movement, undone and done again with it.
+	const QPointF pull = terminalPull(m_moved_content,
+					  pullReach(movement, m_movement_driver != nullptr));
+	if (!pull.isNull())
+	{
+		m_current_movement += pull;
+		moveAlong(pull, true);
+	}
+
+	if (m_status_bar && m_movement_driver)
+	{
+			//A line does not stand at a point of its own -- it is drawn
+			//straight on the sheet -- so its own end is what is worth
+			//showing rather than its origin, which never moves.
+		auto *cable = qgraphicsitem_cast<CablePart *>(m_movement_driver);
+		const auto point_{cable ? cable->firstPoint()
+								: m_movement_driver->scenePos()};
+		m_status_bar->showMessage(QString("x %1 : y %2").arg(QString::number(point_.x()), QString::number(point_.y())));
+	}
+}
+
+/**
+	@brief ElementsMover::moveAlong
+	Move what this movement carries by @a movement, the item the user drags
+	too when @a with_driver - it moves itself, but not by a pull of the
+	terminals (T72).
+*/
+void ElementsMover::moveAlong(const QPointF &movement, bool with_driver)
+{
 		//Move every movable item, except conductor
 	typedef DiagramContent dc;
 	for (auto &qgi : m_moved_content.items(dc::Elements
@@ -209,7 +327,7 @@ void ElementsMover::continueMovement(const QPointF &movement)
 										   | dc::ElementTextFields
 										   | dc::TextGroup))
 	{
-		if (qgi == m_movement_driver)
+		if (qgi == m_movement_driver && !with_driver)
 			continue;
 			//A text selected without its element is a child of it: the
 			//movement goes in the element's coordinates, which are turned
@@ -244,17 +362,6 @@ void ElementsMover::continueMovement(const QPointF &movement)
 	for (CablePart *cable : std::as_const(m_moved_cables))
 	{
 		if (cable) cable->continueLineGesture(movement);
-	}
-
-	if (m_status_bar && m_movement_driver)
-	{
-			//A line does not stand at a point of its own -- it is drawn
-			//straight on the sheet -- so its own end is what is worth
-			//showing rather than its origin, which never moves.
-		auto *cable = qgraphicsitem_cast<CablePart *>(m_movement_driver);
-		const auto point_{cable ? cable->firstPoint()
-								: m_movement_driver->scenePos()};
-		m_status_bar->showMessage(QString("x %1 : y %2").arg(QString::number(point_.x()), QString::number(point_.y())));
 	}
 }
 

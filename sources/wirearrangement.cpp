@@ -27,12 +27,14 @@
 #include "undocommand/arrangeconductorscommand.h"
 #include "wirelanes.h"
 
+#include <QMap>
 #include <QPair>
 #include <QSet>
 #include <QSettings>
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace
 {
@@ -42,6 +44,14 @@ namespace
 		/// How far a run may go out of its terminal before it leaves it to
 		/// the side, at most: two of the gaps between bridges in conflict
 	constexpr double longest_stub = 20.0;
+
+		/// The lanes of the conductors that turn round the end of a strip's
+		/// terminal, from it and from each other: the name of a wire, at
+		/// the size of 5, fits on each of them without touching the next
+		/// (T71)
+	constexpr double around_pitch = 15.0;
+		/// The runs of two such conductors of one column, one from the other
+	constexpr double around_run_gap = 10.0;
 
 	const char *setting_key = "diagrameditor/arrange_conductors";
 
@@ -66,6 +76,9 @@ namespace
 		bool reversed = false;
 			/// The across coordinate of the run that leaves it
 		double run = 0;
+			/// The component is on this side of the strip's own piece:
+			/// the conductor turns round its end, in a lane beyond it
+		bool around = false;
 	};
 
 		/// A conductor whose automatic path has a bridge, in the terms of
@@ -127,9 +140,17 @@ namespace
 			//beyond it, at another height
 		const double side = h->orientation() == Qet::West ? -1 : 1;
 		if (!near(s.stub.y(), s.end.y()) || (s.stub.x() - s.end.x()) * side < 0.5
-			|| (s.start.x() - s.stub.x()) * side < 1
 			|| std::abs(s.start.y() - s.end.y()) < 1) {
 			return false;
+		}
+			//The component on this side of the strip's own piece: the
+			//conductor goes past it and turns round it - when the
+			//component's terminal points towards the line of the strip's
+			//(fourth adjustment)
+		if ((s.start.x() - s.stub.x()) * side < 1)
+		{
+			if ((s.end.y() - s.start.y()) * s.outward <= 0) return false;
+			s.around = true;
 		}
 		out.conductor = c;
 		out.automatic = p;
@@ -425,7 +446,16 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		addInTheWay(points, vertical, horizontal);
 		scene.addPath(points, c);
 	}
-	if (vertical_wires.isEmpty() && horizontal_wires.isEmpty() && shaped.isEmpty()) return changes;
+		//The ones that turn round the end of a strip's terminal take their
+		//own way (fourth adjustment): the lanes of the others do not fit
+		//a conductor whose two runs leave the lane to the same side
+	QList<Described> around;
+	for (int i = shaped.size() - 1 ; i >= 0 ; --i)
+	{
+		if (shaped.at(i).shape.around) around.prepend(shaped.takeAt(i));
+	}
+	if (vertical_wires.isEmpty() && horizontal_wires.isEmpty() && shaped.isEmpty()
+		&& around.isEmpty()) return changes;
 
 	const QList<Element *> elements = diagram->elements();
 	for (Element *e : elements)
@@ -498,6 +528,75 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		return std::any_of(vertical_wires.cbegin(), vertical_wires.cend(), spans)
 			|| std::any_of(shaped.cbegin(), shaped.cend(), spans);
 	};
+
+		//The conductors that turn round the end of a strip's terminal, one
+		//column at a time - one side, one direction, the ends of the strip's
+		//terminals in one line (fourth adjustment). Outside goes the one
+		//whose component is nearest the side of the lanes: it turns first
+		//and goes to the farthest terminal, the one order in which no two
+		//of them cross - the order of the terminals of the strip decides
+		//the rest. Each lane a pitch out from the one inside it, the first a
+		//pitch from the end of the terminals; each run as near its terminal
+		//as is clear, and a gap past the run outside it.
+	{
+		QMap<QString, QList<Described>> columns;
+		for (const Described &d : std::as_const(around))
+		{
+			const Shaped &s = d.shape;
+			const int side = s.strip->orientation() == Qet::West ? -1 : 1;
+			columns[QStringLiteral("%1/%2/%3").arg(side).arg(s.outward).arg(qRound(s.stub.x()))] << d;
+		}
+		for (auto column = columns.begin() ; column != columns.end() ; ++column)
+		{
+			QList<Described> &wires = column.value();
+			const double side = wires.first().shape.strip->orientation() == Qet::West ? -1 : 1;
+			std::stable_sort(wires.begin(), wires.end(), [side](const Described &a, const Described &b) {
+				return (a.shape.start.x() - a.shape.stub.x()) * -side
+						< (b.shape.start.x() - b.shape.stub.x()) * -side;
+			});
+			const int n = wires.size();
+			double previous_run = std::nan("");
+			for (int k = 0 ; k < n ; ++k)
+			{
+				Described &d = wires[k];
+				Shaped &s = d.shape;
+				const QSet<const void *> own{d.conductor, s.component, s.strip,
+							     s.component->parentElement(), s.strip->parentElement()};
+				double lane = s.stub.x() + side * around_pitch * (n - k);
+				lane = std::round(lane / vertical.unit) * vertical.unit;
+
+				const WireLanes::Clearance across = scene.clearance(own, false);
+				double run = WireLanes::runAt(s.start.y(), s.outward, s.start.x(), lane,
+							      across, longest_stub, vertical.unit);
+				if (std::isnan(run)) run = automaticRun(d);
+				if (!std::isnan(previous_run) && (run - previous_run) * s.outward < around_run_gap) {
+					run = previous_run + s.outward * around_run_gap;
+				}
+					//Past the line of the strip's terminal, this is not the
+					//shape to take: the conductor is left as it is
+				if ((s.end.y() - run) * s.outward < 1) continue;
+				s.run = run;
+				previous_run = run;
+
+					//The lane further out, within the pitch that is its own,
+					//while its piece up or down is not clear
+				const WireLanes::Clearance upright = scene.clearance(own, true);
+				for (int t = 0 ; (t + 1) * vertical.unit < around_pitch
+					     && !WireLanes::isClear(lane, std::min(run, s.end.y()),
+								    std::max(run, s.end.y()), upright) ; ++t) {
+					lane += side * vertical.unit;
+				}
+
+				const QList<QPointF> points = shapedPath(s, lane);
+				if ((!only_their_groups || conductors.contains(d.conductor))
+					&& !samePath(points, currentPoints(d.conductor))) {
+					changes << Change{d.conductor, points};
+				}
+				addInTheWay(points, vertical, horizontal);
+				scene.addPath(points, d.conductor);
+			}
+		}
+	}
 
 		//The shapes, the narrowest room first: with one bend when the
 		//straight way is free, else leaving the terminal to the side, and

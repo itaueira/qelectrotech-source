@@ -152,6 +152,9 @@ class QETDiagramEditor : public QETMainWindow
 		QMdiSubWindow *subWindowForWidget(QWidget *) const;
 		void updateUsageTrackersActiveState();
 		void updateWindowModifiedState();
+		QETProject *replaceWithReopened(QETProject *project,
+						QETProject *(*reopen)(QETProject *, QString *),
+						const QString &title);
 
 	signals:
 		void syncElementsPanel();
@@ -221,6 +224,7 @@ class QETDiagramEditor : public QETMainWindow
 		void reloadProjectFromMemory(QETProject *project, const QStringList &collection_dirs,
 					     const QSet<QString> &taken_from_collection = QSet<QString>(),
 					     const QString &only_path = QString());
+		void putTerminalsOnWholeNumbers();
 #ifdef QET_HAS_SCRIPTING
 		void slot_runScript();
 		void rebuildScriptActions();
@@ -406,6 +410,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_add_cable_list,             ///< Add a cable list graphics item
 		*m_export_cable_list,          ///< Export the cable list of the project to CSV
 		*m_reload_element_drawings,    ///< Action to redraw every placed element from its current definition
+		*m_whole_terminals = nullptr,  ///< Action to put the terminals of the project's symbols on whole numbers (T72)
 #ifdef QET_HAS_SCRIPTING
 		*m_run_script,                 ///< Action to run a JavaScript macro against the current project
 		*m_open_scripts_folder,        ///< Action to open the folder stored scripts are read from

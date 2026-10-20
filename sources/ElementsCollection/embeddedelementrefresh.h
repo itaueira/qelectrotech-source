@@ -71,6 +71,9 @@ class QUndoCommand;
 	collection is found by its file name and the uuids of its parts, when
 	its old path is in no collection at all. The texts of the placed
 	elements follow their symbol too (textPlans(), SymbolTextSync).
+
+	The same reload puts the terminals of the project's own copies on whole
+	numbers, when they are off (reopenedOnWholeNumbers(), SymbolTerminals).
 */
 namespace EmbeddedElementRefresh
 {
@@ -143,6 +146,18 @@ namespace EmbeddedElementRefresh
 					      const QList<Element *> &elements = QList<Element *>());
 	int adoptBoxes(QETProject *project, const QString &only_path = QString());
 	QETProject *reopened(QETProject *project, QString *error = nullptr);
+
+	/// The copies of a project whose terminals are off whole numbers (T72)
+	struct OffWholeNumbers
+	{
+		QStringList copies;  ///< the copies to put on whole numbers, by path
+		int terminals = 0;   ///< their terminals off whole numbers
+		QStringList merged;  ///< copies left as they are: two of their terminals would meet
+		int placed = 0;      ///< the elements placed from the copies to put on whole numbers
+	};
+	OffWholeNumbers offWholeNumbers(QETProject *project);
+	QETProject *reopenedOnWholeNumbers(QETProject *project, QString *error = nullptr);
+
 	QStringList wiresLeftOut(QETProject *project);
 	QString reloadQuestion(int elements);
 	QString reloadReportText(const Report &report, int wires_left_out);

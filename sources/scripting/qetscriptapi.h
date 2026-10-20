@@ -464,6 +464,8 @@ class QetScriptApi : public QObject
 		Q_INVOKABLE int updateWireSections();
 		// -- the wires named F<folio>-<number> (colour cross-section) (T70) --
 		Q_INVOKABLE int convertWireNames();
+		// -- the terminals of the project's symbols on whole numbers (T72) --
+		Q_INVOKABLE int roundSymbolTerminals();
 
 		// -- cross-references: master/slave and report links --
 		Q_INVOKABLE QString elementLinkType(int folioIndex, const QString &elementUuid) const;

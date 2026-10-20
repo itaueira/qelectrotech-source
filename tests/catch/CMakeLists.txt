@@ -128,6 +128,8 @@ add_executable(
     src/wirepath_test.cpp
     src/wiregauge_test.cpp
     src/wirecolorname_test.cpp
+    # T72: the terminals of a symbol on whole numbers, on its XML alone.
+    src/symbolterminalsrule_test.cpp
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
     src/labelcsvwriter_test.cpp
@@ -595,6 +597,9 @@ add_executable(
     # The name of the colour of a wire, and the marker of its square (T70)
     ${QET_DIR}/sources/wirecolorname.cpp
     ${QET_DIR}/sources/wirecolorname.h
+    # The terminals of a symbol on whole numbers (T72): QtXml only.
+    ${QET_DIR}/sources/symbolterminals.cpp
+    ${QET_DIR}/sources/symbolterminals.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string
@@ -1187,9 +1192,17 @@ if(TARGET qelectrotech_objects)
         # CU-70.7: the name of a conductor drawn smaller to fit its longest
         # run, never under 5, and the size in the file left as it was.
         src/ui/wirenamefit_test.cpp
+        # CU-72.4: the terminals of a project's symbols put on whole numbers,
+        # the project reloaded and every wire on the same terminal.
+        src/ui/symbolterminals_test.cpp
         # T71: the name of a wire on the longest run it fits without
         # touching another wire, another name or the side of a frame.
         src/ui/wirenameroom_test.cpp
+        # T72: the magnet of the wire, a terminal pulled onto the line of the
+        # terminal its wire goes to.
+        src/ui/wiremagnet_test.cpp
+        # CU-72.5: the symbol editor keeps a terminal on whole numbers.
+        src/ui/editorterminal_test.cpp
         # T61: a symbol dropped on a folio of a project numbered 10 or more
         # becomes an element; one that cannot become one says why.
         src/ui/insertsymbolprojectid_test.cpp)

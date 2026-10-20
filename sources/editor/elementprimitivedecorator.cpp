@@ -19,6 +19,7 @@
 
 #include "../QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../editor/graphicspart/customelementpart.h"
+#include "../editor/graphicspart/partterminal.h"
 #include "../qet.h"
 #include "editorcommands.h"
 #include "elementscene.h"
@@ -27,6 +28,33 @@
 #include <QGraphicsSceneHoverEvent>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
+
+namespace
+{
+	/**
+		@return the first terminal of @a parts, nullptr if there is none.
+		A terminal stands on whole numbers only (PartTerminal::itemChange()):
+		a selection holding one is moved by whole steps, measured from it,
+		so that the drawing keeps its place against the terminal and the
+		move undone brings everything back.
+	*/
+	QGraphicsItem *firstTerminal(const QList<CustomElementPart *> &parts)
+	{
+		for (CustomElementPart *part : parts) {
+			if (auto terminal = qgraphicsitem_cast<PartTerminal *>(part->toItem())) {
+				return terminal;
+			}
+		}
+		return nullptr;
+	}
+
+	/// @return the part of @a parts the movement of a selection is measured from
+	QGraphicsItem *movementReference(const QList<CustomElementPart *> &parts)
+	{
+		QGraphicsItem *terminal = firstTerminal(parts);
+		return terminal ? terminal : parts.at(0)->toItem();
+	}
+}
 
 /**
 	Constructor
@@ -182,7 +210,7 @@ void ElementPrimitiveDecorator::mousePressEvent(QGraphicsSceneMouseEvent *event)
 	{
 		current_operation_square_ = QET::MoveArea;
 		
-		first_pos_ = decorated_items_.at(0) -> toItem() -> scenePos();
+		first_pos_ = movementReference(decorated_items_) -> scenePos();
 		latest_pos_ = event -> scenePos();
 		mouse_offset_ = event -> scenePos() - first_pos_;
 		startMovement();
@@ -213,7 +241,7 @@ void ElementPrimitiveDecorator::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 			(element_scene && !(event->modifiers() & Qt::ControlModifier))
 				? element_scene->snapToGrid(current_position)
 				: snapConstPointToGrid(current_position);
-		movement = rounded_current_position - decorated_items_.at(0) -> toItem() -> scenePos();
+		movement = rounded_current_position - movementReference(decorated_items_) -> scenePos();
 		
 		QRectF bounding_rect = modified_bounding_rect_;
 		applyMovementToRect(current_operation_square_, movement, modified_bounding_rect_);
@@ -268,15 +296,20 @@ void ElementPrimitiveDecorator::mouseReleaseEvent(QGraphicsSceneMouseEvent *even
 void ElementPrimitiveDecorator::keyPressEvent(QKeyEvent *e)
 {
 	const qreal movement_length = 1.0;
+		//A tenth would leave the terminals of the selection behind
+		//(firstTerminal())
+	const qreal fine_length = firstTerminal(decorated_items_)
+			? movement_length
+			: movement_length / 10;
 	QPointF movement;
 	
 	if (e->modifiers() & Qt::ControlModifier) {
 	switch(e -> key())
 	{
-		case Qt::Key_Left:  movement = QPointF(-movement_length / 10, 0.0); break;
-		case Qt::Key_Right: movement = QPointF(+movement_length / 10, 0.0); break;
-		case Qt::Key_Up:    movement = QPointF(0.0, -movement_length / 10); break;
-		case Qt::Key_Down:  movement = QPointF(0.0, +movement_length / 10); break;
+		case Qt::Key_Left:  movement = QPointF(-fine_length, 0.0); break;
+		case Qt::Key_Right: movement = QPointF(+fine_length, 0.0); break;
+		case Qt::Key_Up:    movement = QPointF(0.0, -fine_length); break;
+		case Qt::Key_Down:  movement = QPointF(0.0, +fine_length); break;
 	}
 	}
 	else {

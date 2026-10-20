@@ -77,7 +77,10 @@ class ElementsMover {
 				whole or not at all.
 			*/
 		void cancelMovement();
-	
+
+	private:
+		void moveAlong(const QPointF &movement, bool with_driver);
+
 		// attributes
 	private:
 		bool m_movement_running{false};

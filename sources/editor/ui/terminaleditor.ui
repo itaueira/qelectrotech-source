@@ -23,6 +23,9 @@
    </item>
    <item row="0" column="1">
     <widget class="QDoubleSpinBox" name="m_x_dsb">
+     <property name="decimals">
+      <number>0</number>
+     </property>
      <property name="minimum">
       <double>-5000.000000000000000</double>
      </property>
@@ -33,6 +36,9 @@
    </item>
    <item row="1" column="1">
     <widget class="QDoubleSpinBox" name="m_y_dsb">
+     <property name="decimals">
+      <number>0</number>
+     </property>
      <property name="minimum">
       <double>-5000.000000000000000</double>
      </property>

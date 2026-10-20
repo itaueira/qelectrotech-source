@@ -152,10 +152,13 @@ class PartTerminal : public CustomElementGraphicPart
 
 		QRectF labelRect() const;
 
+		static QPointF wholePoint(const QPointF &point);
+
 	protected:
 		void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 		void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
 		void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+		QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 	private:
 		void updateSecondPoint();
@@ -163,6 +166,10 @@ class PartTerminal : public CustomElementGraphicPart
 
 	private:
 		QPointF saved_position_;
+			//Where the last handleUserTransformation() put the terminal,
+			//before itemChange() rounded it
+		QPointF m_unrounded_pos;
+		bool m_has_unrounded_pos = false;
 		bool m_dragging_label = false;
 		QPointF m_original_label_pos;
 };

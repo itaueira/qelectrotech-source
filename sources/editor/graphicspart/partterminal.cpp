@@ -20,6 +20,9 @@
 #include "../elementscene.h"
 #include "../../QPropertyUndoCommand/qpropertyundocommand.h"
 #include "../../qetgraphicsitem/terminal.h"
+#include "../../symbolterminals.h"
+
+#include <cmath>
 
 /**
 	@brief PartTerminal::PartTerminal
@@ -61,7 +64,13 @@ void PartTerminal::fromXml(const QDomElement &xml_elmt) {
 */
 const QDomElement PartTerminal::toXml(QDomDocument &xml_document) const
 {
-	return d -> toXml(xml_document);
+	QDomElement xml_element = d -> toXml(xml_document);
+		//On whole numbers, as itemChange() keeps the terminal: written to
+		//the hundredth, a place that came from elsewhere would be kept.
+	const QPointF place = wholePoint(scenePos());
+	xml_element.setAttribute("x", QString::number(static_cast<int>(place.x())));
+	xml_element.setAttribute("y", QString::number(static_cast<int>(place.y())));
+	return xml_element;
 }
 
 /**
@@ -533,7 +542,13 @@ QRectF PartTerminal::sceneGeometricRect() const
 */
 void PartTerminal::startUserTransformation(const QRectF &initial_selection_rect) {
 	Q_UNUSED(initial_selection_rect)
-	saved_position_ = scenePos();
+		//Scaled from its rounded place, a terminal would not always come
+		//back: shrunk by half, 3 lands on 1.5, rounded to 2, and 2 scaled
+		//back is 4. So the scaling starts from where the last one put it
+		//before rounding - unless it has moved since.
+	saved_position_ = (m_has_unrounded_pos && wholePoint(m_unrounded_pos) == pos())
+			? m_unrounded_pos
+			: scenePos();
 }
 
 /**
@@ -543,6 +558,8 @@ void PartTerminal::handleUserTransformation(const QRectF &initial_selection_rect
 	QPointF mapped_point = mapPoints(
 		initial_selection_rect, new_selection_rect, QList<QPointF>() << saved_position_).first();
 	setPos(mapped_point);
+	m_unrounded_pos = mapped_point;
+	m_has_unrounded_pos = true;
 }
 
 void PartTerminal::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -593,4 +610,43 @@ void PartTerminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 		return;
 	}
 	CustomElementGraphicPart::mouseReleaseEvent(event);
+}
+
+/**
+	@brief PartTerminal::itemChange
+	Keeps the terminal on whole numbers of the symbol, whatever moves it:
+	the grid of the editor, Ctrl held, a typed place, a file, a paste, a
+	rotation or a mirror. A whole number is reached by every grid of a
+	folio of 1 or finer; a terminal at 628.17 is reached by none of them,
+	not even by a grid of 0.1, and the wire to it keeps a step of a
+	fraction. Only the terminal moves, by half a unit at most; the drawing
+	stays where it is.
+	A part of the symbol editor has no parent, so its position is its
+	place in the symbol, which toXml() writes.
+	@param change
+	@param value
+	@return
+*/
+QVariant PartTerminal::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+	if (change == ItemPositionChange) {
+		return QVariant(wholePoint(value.toPointF()));
+	}
+	return CustomElementGraphicPart::itemChange(change, value);
+}
+
+/**
+	@brief PartTerminal::wholePoint
+	@param point
+	@return @a point on the nearest whole numbers, a half going up. Up
+	for every sign, so that a terminal mirrored twice across an axis on a
+	half comes back where it was: rounded away from zero, as qRound()
+	does, 3 mirrored across 0.25 would go to -3 and come back on 4.
+*/
+QPointF PartTerminal::wholePoint(const QPointF &point)
+{
+		//The rule of the command that fixes the symbols of a project, so
+		//that a terminal rounded here and there lands on one place
+	return QPointF(SymbolTerminals::nearestWhole(point.x()),
+		       SymbolTerminals::nearestWhole(point.y()));
 }

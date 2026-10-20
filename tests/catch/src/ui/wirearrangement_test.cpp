@@ -1175,3 +1175,74 @@ TEST_CASE("CU-68.6 — Dragging by the handle, past the terminal", "[T68][wirear
 	bench.sheet->undoStack().undo();
 	CHECK(points(c) == before);
 }
+
+namespace
+{
+		/// The x of the longest piece of @a p that runs up or down, and
+		/// the y of its first piece that runs to the side
+	QPointF laneAndRun(const QList<QPointF> &p)
+	{
+		qreal lane = 0;
+		qreal longest = -1;
+		qreal run = 0;
+		bool run_found = false;
+		for (int i = 0 ; i + 1 < p.size() ; ++i)
+		{
+			const QPointF a = p.at(i), b = p.at(i + 1);
+			if (std::abs(a.x() - b.x()) < 0.01 && std::abs(a.y() - b.y()) > longest) {
+				longest = std::abs(a.y() - b.y());
+				lane = a.x();
+			}
+			if (!run_found && std::abs(a.y() - b.y()) < 0.01 && std::abs(a.x() - b.x()) > 0.01) {
+				run = a.y();
+				run_found = true;
+			}
+		}
+		return QPointF(lane, run);
+	}
+}
+
+TEST_CASE("CU-67.20 — Two wires turn round a column of terminals", "[T67][wirearrangement]")
+{
+	/*
+		The case of folio 5: two terminals of a strip pointing down, at x
+		497 and 527, wired to two terminals pointing left at x 499 - the
+		left one to the lower, the right one to the upper. Both components
+		are on this side of the end of the terminals they go to: each wire
+		has to go past it and come back.
+	*/
+	Setup setup;
+	UiBench::ScratchProject project(fixtureXml({{"south.elmt", 497, 89, "X1"},
+						    {"south.elmt", 527, 89, "X3"},
+						    {"terminal.elmt", 509, 172, "VP"},
+						    {"terminal.elmt", 509, 183, "VM"}}, QString()));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	REQUIRE(tagged(sheet, "X1")->terminals().at(0)->dockConductor() == QPointF(497, 99));
+	REQUIRE(tagged(sheet, "VM")->terminals().at(0)->dockConductor() == QPointF(499, 183));
+	Conductor *outer = draw(sheet, tagged(sheet, "X1")->terminals().at(0),
+				tagged(sheet, "VM")->terminals().at(0));
+	Conductor *inner = draw(sheet, tagged(sheet, "X3")->terminals().at(0),
+				tagged(sheet, "VP")->terminals().at(0));
+	REQUIRE((outer && inner));
+
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+	const QList<QPointF> o = points(outer);
+	const QList<QPointF> i = points(inner);
+	CAPTURE(text(o), text(i), text(crossings(sheet)));
+	const QPointF outer_way = laneAndRun(o);
+	const QPointF inner_way = laneAndRun(i);
+
+		//No crossing, and both lanes past the end of the terminals
+	CHECK(crossings(sheet).isEmpty());
+	CHECK(outer_way.x() < 495);
+	CHECK(inner_way.x() < 495);
+		//The wire of the left terminal outside, a pitch from the other
+	CHECK(outer_way.x() < inner_way.x());
+	CHECK(inner_way.x() - outer_way.x() == Approx(15));
+		//And it turns first
+	CHECK(outer_way.y() < inner_way.y());
+		//Each into its terminal, from its lane
+	CHECK(o.last() == QPointF(499, 183));
+	CHECK(i.last() == QPointF(499, 172));
+}

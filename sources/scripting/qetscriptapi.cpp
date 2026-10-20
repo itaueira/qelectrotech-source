@@ -21,6 +21,7 @@
 #include <optional>
 
 #include "../ElementsCollection/elementslocation.h"
+#include "../ElementsCollection/embeddedelementrefresh.h"
 #include "../QPropertyUndoCommand/qpropertyundocommand.h"
 #include "../cli_export.h"
 #include "../diagram.h"
@@ -1780,6 +1781,73 @@ int QetScriptApi::convertWireNames()
 		return -1;
 	}
 	return WireNames::convertProject(m_project, m_view ? m_view->diagram() : nullptr);
+}
+
+/**
+	@brief QetScriptApi::roundSymbolTerminals
+	Put the terminals of the project's symbols on whole numbers (T72) - what
+	the folio editor's "Round the terminals of the symbols"
+	does, without asking: every copy of the project's own collection with a
+	terminal off moves it to the nearest whole number, and the project is
+	reloaded the way opening it does, from memory, so that the elements
+	placed from them take the terminals there with their wires on them
+	(EmbeddedElementRefresh::reopenedOnWholeNumbers()). A symbol two of
+	whose terminals would meet is left as it is, and named in the log, as
+	is a wire whose terminal was not found again.
+
+	From here on this API acts on the project reloaded, which it owns, and
+	saving writes it: nothing is written until save() is called. The undo
+	history is gone with the project it belonged to.
+
+	Only a headless run can do it (--run): the editor and an assistant
+	show the project in a window, which a script cannot take it out of -
+	there the action of the Project menu does it.
+	@return how many terminals moved, or -1 for a read-only project, a run
+	from the editor or a project that could not be reloaded
+*/
+int QetScriptApi::roundSymbolTerminals()
+{
+	if (!m_project) return -1;
+	if (m_project->isReadOnly()) {
+		log(QStringLiteral("qet.roundSymbolTerminals: project is read-only"));
+		return -1;
+	}
+	const EmbeddedElementRefresh::OffWholeNumbers off =
+			EmbeddedElementRefresh::offWholeNumbers(m_project);
+	for (const QString &path : off.merged) {
+		log(QStringLiteral("qet.roundSymbolTerminals: %1 left as it is, two of its terminals would meet")
+			.arg(path));
+	}
+	if (off.copies.isEmpty()) {
+		return 0;
+	}
+	if (m_view || m_live_log) {
+		log(QStringLiteral("qet.roundSymbolTerminals: it reloads the project, which only --run can do"
+						   " from a script; use Project > Round the terminals of the symbols"));
+		return -1;
+	}
+
+	QString error;
+	QETProject *reloaded = EmbeddedElementRefresh::reopenedOnWholeNumbers(m_project, &error);
+	if (!reloaded) {
+		log(QStringLiteral("qet.roundSymbolTerminals: the project could not be reloaded: %1").arg(error));
+		return -1;
+	}
+		//The project this API was given belongs to whoever opened it; one
+		//it reloaded itself belongs to it, and goes when the next one comes
+	reloaded->setParent(this);
+	QETProject *previous = m_project;
+	m_project = reloaded;
+	if (previous->parent() == this) {
+		delete previous;
+	}
+
+	const QStringList left_out = EmbeddedElementRefresh::wiresLeftOut(m_project);
+	for (const QString &wire : left_out) {
+		log(QStringLiteral("qet.roundSymbolTerminals: wire left out, its terminal was not found: %1")
+			.arg(wire));
+	}
+	return off.terminals;
 }
 
 QString QetScriptApi::elementLinkType(int folioIndex, const QString &elementUuid) const

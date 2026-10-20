@@ -1502,6 +1502,13 @@ void QETDiagramEditor::setUpActions()
 		tr("Applique les éléments modifiés dans la collection et les redessine"));
 	connect(m_reload_element_drawings, &QAction::triggered, this, &QETDiagramEditor::slot_reloadElementDrawings);
 
+		//The terminals of the project's symbols on whole numbers, so that a
+		//wire between two terminals in line runs straight (T72)
+	m_whole_terminals = new QAction(tr("Round the terminals of the symbols"), this);
+	ShortcutManager::instance().registerAction(m_whole_terminals, "diagrameditor.whole_terminals", tr("Diagram editors"), QKeySequence());
+	m_whole_terminals->setStatusTip(tr("Move each terminal of the project's symbols to the nearest whole number, so that the wires on it can run straight", "status bar tip"));
+	connect(m_whole_terminals, &QAction::triggered, this, &QETDiagramEditor::putTerminalsOnWholeNumbers);
+
 #ifdef QET_HAS_SCRIPTING
 	// Run a JavaScript macro against the current project (bugtracker #162).
 	m_run_script = new QAction(tr("Run a script..."), this);
@@ -4048,6 +4055,7 @@ void QETDiagramEditor::setUpMenu()
 	menu_project -> addAction(m_replace_part);
 	menu_project -> addAction(m_drc_check);
 	menu_project -> addAction(m_reload_element_drawings);
+	menu_project -> addAction(m_whole_terminals);
 #ifdef QET_HAS_SCRIPTING
 	m_scripts_menu = menu_project -> addMenu(tr("Scripts"));
 	rebuildScriptActions();
@@ -5734,6 +5742,9 @@ void QETDiagramEditor::slot_updateActions()
 	m_add_cable_list              -> setEnabled(editable_project);
 	m_export_cable_list           -> setEnabled(editable_project);
 	m_reload_element_drawings     -> setEnabled(opened_project);
+		//It changes the project's symbols and reloads it: not on a project
+		//nobody can write to
+	m_whole_terminals             -> setEnabled(editable_project);
 	updateFolioHistoryActions();
 #ifdef QET_HAS_SCRIPTING
 	m_run_script                  -> setEnabled(opened_project);
@@ -7518,9 +7529,6 @@ void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
 		return;
 	}
 
-	DiagramView *shown = view->currentDiagram();
-	const int folio = shown ? project->diagrams().indexOf(shown->diagram()) : -1;
-
 	EmbeddedElementRefresh::Report brought = EmbeddedElementRefresh::bringFromCollections(
 				project, collection_dirs, true, taken_from_collection, only_path);
 		//The texts before the reload: opening a project puts back the texts
@@ -7543,6 +7551,55 @@ void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
 		project->undoStack()->push(texts);
 	}
 
+	QETProject *reloaded = replaceWithReopened(project, &EmbeddedElementRefresh::reopened,
+											   tr("Recharger les dessins des éléments"));
+	if (!reloaded) {
+		return;
+	}
+
+	const QStringList left_out = EmbeddedElementRefresh::wiresLeftOut(reloaded);
+	QMessageBox box(left_out.isEmpty() ? QMessageBox::Information : QMessageBox::Warning,
+					tr("Recharger les dessins des éléments"),
+					EmbeddedElementRefresh::reloadReportText(brought, left_out.size()),
+					QMessageBox::Ok,
+					this);
+	if (!left_out.isEmpty()) {
+		box.setDetailedText(left_out.join(QLatin1Char('\n')));
+	}
+	box.exec();
+}
+
+/**
+	@brief QETDiagramEditor::replaceWithReopened
+	Reload @p project with @p reopen and put the project reloaded in its
+	place, on the folio that was shown. What reloadProjectFromMemory() and
+	putTerminalsOnWholeNumbers() share; the symbol editors open on the
+	project are the caller's to close first (ProjectView::
+	closeElementEditors()), since one may ask to save and the user may
+	cancel.
+
+	The old view is closed without asking and without writing, since its
+	usual closing saves the file according to the answer. Reopening has the
+	price of reopening: the undo history and the windows tied to the old
+	project are gone, and @p project with them.
+	@param project : a project open in this editor
+	@param reopen : what reloads it, EmbeddedElementRefresh::reopened() or
+	one like it
+	@param title : the title of the message shown when it cannot be reloaded
+	@return the project reloaded, shown; nullptr when it could not be
+	reloaded - @p project then stays open as it was, and the user is told why
+*/
+QETProject *QETDiagramEditor::replaceWithReopened(QETProject *project,
+												  QETProject *(*reopen)(QETProject *, QString *),
+												  const QString &title)
+{
+	ProjectView *view = findProject(project);
+	if (!view) {
+		return nullptr;
+	}
+	DiagramView *shown = view->currentDiagram();
+	const int folio = shown ? project->diagrams().indexOf(shown->diagram()) : -1;
+
 		//Hidden before it is dropped: dropping it only schedules its
 		//deletion, which the message boxes below would never let happen
 	DialogWaiting *waiting = DialogWaiting::instance(this);
@@ -7551,16 +7608,16 @@ void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
 		DialogWaiting::dropInstance();
 	};
 	QString error;
-	QETProject *reloaded = EmbeddedElementRefresh::reopened(project, &error);
+	QETProject *reloaded = reopen(project, &error);
 	if (!reloaded)
 	{
 		drop_waiting();
 		QET::QetMessageBox::critical(
 					this,
-					tr("Recharger les dessins des éléments"),
+					title,
 					tr("Le projet n'a pas pu être rechargé ; il reste ouvert.\n\n%1")
 					.arg(error));
-		return;
+		return nullptr;
 	}
 
 		//The old view goes first, through the same door as any project
@@ -7581,13 +7638,108 @@ void QETDiagramEditor::reloadProjectFromMemory(QETProject *project,
 		activateProject(reloaded_view);
 	}
 	drop_waiting();
+	return reloaded;
+}
 
+/**
+	@brief QETDiagramEditor::putTerminalsOnWholeNumbers
+	Put the terminals of the symbols of the current project on whole
+	numbers (T72): a terminal at a fraction in its symbol puts the end of
+	every wire on it off the grid, and a wire from a terminal in line with
+	it runs with a step no grid takes away.
+
+	Every copy of the project's own collection with a terminal off is
+	changed, and the elements placed from them follow by reloading the
+	project the way opening it does - from memory, with nothing saved and
+	nothing to insert again; the wires stay on their terminals and follow
+	them (EmbeddedElementRefresh::reopenedOnWholeNumbers()). The user is
+	asked first, since the reload clears the undo history, and told
+	afterwards how many terminals and symbols changed.
+*/
+void QETDiagramEditor::putTerminalsOnWholeNumbers()
+{
+	QETProject *project = currentProject();
+	if (!project || project->isReadOnly()) {
+		return;
+	}
+	const QString title = tr("Round the terminals of the symbols");
+	const EmbeddedElementRefresh::OffWholeNumbers off =
+			EmbeddedElementRefresh::offWholeNumbers(project);
+
+		//A symbol two of whose terminals would meet is left whole, and named
+	QStringList merged;
+	if (!off.merged.isEmpty())
+	{
+		merged << tr("Left as they are, two of their terminals would meet:");
+		for (const QString &path : off.merged) {
+			merged << EmbeddedElementRefresh::collectionRelativePath(path);
+		}
+	}
+
+	if (off.copies.isEmpty())
+	{
+		if (merged.isEmpty())
+		{
+			const QString message = tr("The terminals of the symbols are already on whole numbers",
+									   "status bar message");
+				//Queued, as for the wire names: closing the menu the action
+				//came from would clear a message shown right now
+			QTimer::singleShot(0, this, [this, message]() {
+				statusBar()->showMessage(message, 8000);
+			});
+			return;
+		}
+		QMessageBox box(QMessageBox::Information, title,
+						tr("%n symbol(s) left as they are: two of their terminals would meet.",
+						   "", off.merged.size()),
+						QMessageBox::Ok, this);
+		box.setDetailedText(merged.join(QLatin1Char('\n')));
+		box.exec();
+		return;
+	}
+
+	QStringList details;
+	for (const QString &path : off.copies) {
+		details << EmbeddedElementRefresh::collectionRelativePath(path);
+	}
+	if (!merged.isEmpty()) {
+		details << QString() << merged;
+	}
+	QMessageBox question(QMessageBox::Question, title,
+						 tr("%n terminal(s) of the symbols are off whole numbers. Put them on"
+							" whole numbers?", "", off.terminals)
+						 % QStringLiteral("\n\n")
+						 % tr("The project is reloaded: the undo history is cleared. Nothing is"
+							  " saved on the disk."),
+						 QMessageBox::NoButton, this);
+	QPushButton *put = question.addButton(tr("Put on whole numbers"), QMessageBox::AcceptRole);
+	question.addButton(QMessageBox::Cancel);
+	question.setDefaultButton(put);
+	question.setDetailedText(details.join(QLatin1Char('\n')));
+	question.exec();
+	if (question.clickedButton() != put) {
+		return;
+	}
+
+	ProjectView *view = findProject(project);
+	if (!view || !view->closeElementEditors()) {
+		return;
+	}
+	QETProject *reloaded = replaceWithReopened(
+				project, &EmbeddedElementRefresh::reopenedOnWholeNumbers, title);
+	if (!reloaded) {
+		return;
+	}
+
+	QString message = tr("%n terminal(s) put on whole numbers, in %1 symbol(s).", "", off.terminals)
+			.arg(off.copies.size());
 	const QStringList left_out = EmbeddedElementRefresh::wiresLeftOut(reloaded);
+	if (!left_out.isEmpty()) {
+		message += QStringLiteral("\n\n")
+				% tr("%n conductor(s) left out: their terminal was not found.", "", left_out.size());
+	}
 	QMessageBox box(left_out.isEmpty() ? QMessageBox::Information : QMessageBox::Warning,
-					tr("Recharger les dessins des éléments"),
-					EmbeddedElementRefresh::reloadReportText(brought, left_out.size()),
-					QMessageBox::Ok,
-					this);
+					title, message, QMessageBox::Ok, this);
 	if (!left_out.isEmpty()) {
 		box.setDetailedText(left_out.join(QLatin1Char('\n')));
 	}

@@ -406,16 +406,21 @@ void ElementScene::keyPressEvent(QKeyEvent *event)
 		QPointF p = qgo->pos();
 
 		if (event->modifiers() & Qt::ControlModifier) {
+				//A terminal stands on whole numbers only
+				//(PartTerminal::itemChange()): a tenth would round back to
+				//where it was, and the key would do nothing
+			const qreal fine_step =
+				qgraphicsitem_cast<PartTerminal *>(qgo) ? 1.0 : 0.1;
 
 			int k = event->key();
 			if(k == Qt::Key_Right)
-				p.rx() += 0.1;
+				p.rx() += fine_step;
 			else if (k == Qt::Key_Left)
-				p.rx() -= 0.1;
+				p.rx() -= fine_step;
 			else if (k == Qt::Key_Up)
-				p.ry() -= 0.1;
+				p.ry() -= fine_step;
 			else if (k == Qt::Key_Down)
-				p.ry() += 0.1;
+				p.ry() += fine_step;
 				}
 			else {
 
@@ -1527,6 +1532,15 @@ ElementContent ElementScene::addContentAtPos(
 	 * au point demander
 	 */
 	QPointF offset = pos - bounding_rect.topLeft();
+
+		//A terminal lands on whole numbers only (PartTerminal::itemChange()):
+		//moved by a fraction, it would come apart from the drawing pasted
+		//with it, which a whole offset keeps as it was copied
+	const bool holds_terminal = std::any_of(content.cbegin(), content.cend(),
+		[](QGraphicsItem *part) { return qgraphicsitem_cast<PartTerminal *>(part) != nullptr; });
+	if (holds_terminal) {
+		offset = PartTerminal::wholePoint(offset);
+	}
 
 	// add the parts with the correct offset
 	// ajoute les parties avec le decalage adequat

@@ -21,13 +21,17 @@
 #include "../diagramcontent.h"
 #include "../qet.h"
 #include "../qetapp.h"
+#include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
 #include "../qetgraphicsitem/symboltextsync.h"
+#include "../qetgraphicsitem/terminal.h"
 #include "../qetproject.h"
+#include "../symbolterminals.h"
 #include "../undocommand/refreshembeddedelementscommand.h"
 #include "../undocommand/syncsymboltextscommand.h"
 #include "elementorigin.h"
 #include "elementslocation.h"
+#include "terminaluuids.h"
 #include "xmlelementcollection.h"
 
 #include <QCoreApplication>
@@ -505,6 +509,77 @@ EmbeddedElementRefresh::Report collect(
 	return report;
 }
 
+	//Every <element> under the collection @p root, by its path in it - the
+	//"import/..." of a copy taken from a collection - whatever its directory
+QList<QPair<QString, QDomElement>> symbolsUnder(const QDomElement &root)
+{
+	QList<QPair<QString, QDomElement>> symbols;
+	std::function<void(const QDomElement &, const QString &)> walk =
+			[&](const QDomElement &directory, const QString &path) {
+		for (QDomElement child = directory.firstChildElement() ;
+			 !child.isNull() ;
+			 child = child.nextSiblingElement())
+		{
+			const QString child_path = path.isEmpty()
+					? child.attribute(QStringLiteral("name"))
+					: path + QLatin1Char('/') + child.attribute(QStringLiteral("name"));
+			if (child.tagName() == QLatin1String("category")) {
+				walk(child, child_path);
+			}
+			else if (child.tagName() == QLatin1String("element")) {
+				symbols << qMakePair(child_path, child);
+			}
+		}
+	};
+	walk(root, QString());
+	return symbols;
+}
+
+	//EmbeddedElementRefresh::reopened(), from @p xml rather than from what
+	//@p project writes
+QETProject *reopenedFrom(QETProject *project, QDomDocument &xml, QString *error)
+{
+	QTemporaryDir dir;
+	if (!dir.isValid())
+	{
+		if (error) {
+			*error = dir.errorString();
+		}
+		return nullptr;
+	}
+
+	const QString name = project->filePath().isEmpty()
+			? QStringLiteral("project.qet")
+			: QFileInfo(project->filePath()).fileName();
+	const QString temporary = dir.filePath(name);
+	QString message;
+	if (!QET::writeXmlFile(xml, temporary, &message))
+	{
+		if (error) {
+			*error = message;
+		}
+		return nullptr;
+	}
+
+	QETProject *fresh = new QETProject(temporary);
+	if (fresh->state() != QETProject::Ok)
+	{
+		delete fresh;
+		if (error) {
+			*error = QCoreApplication::translate(
+						 "EmbeddedElementRefresh",
+						 "Le projet enregistré dans un fichier temporaire n'a pas pu être rouvert.");
+		}
+		return nullptr;
+	}
+
+	fresh->setFilePath(project->filePath());
+	fresh->setReadOnly(project->isReadOnly());
+	fresh->setModified(true);
+	project->handOverTo(fresh);
+	return fresh;
+}
+
 }
 
 /**
@@ -813,46 +888,198 @@ QETProject *EmbeddedElementRefresh::reopened(QETProject *project, QString *error
 	if (!project) {
 		return nullptr;
 	}
-
-	QTemporaryDir dir;
-	if (!dir.isValid())
-	{
-		if (error) {
-			*error = dir.errorString();
-		}
-		return nullptr;
-	}
-
-	const QString name = project->filePath().isEmpty()
-			? QStringLiteral("project.qet")
-			: QFileInfo(project->filePath()).fileName();
-	const QString temporary = dir.filePath(name);
 	QDomDocument xml = project->toXml();
-	QString message;
-	if (!QET::writeXmlFile(xml, temporary, &message))
+	return reopenedFrom(project, xml, error);
+}
+
+/**
+	@brief EmbeddedElementRefresh::offWholeNumbers
+	The copies of @p project whose terminals are off whole numbers, and what
+	putting them on whole numbers would do (SymbolTerminals::planned()):
+	every symbol of the project's own collection is looked at, placed on a
+	folio or not. Nothing is changed.
+	@return the copies, sorted, and the count of their terminals and of the
+	elements placed from them; a copy two of whose terminals would meet is
+	listed apart and counted nowhere else
+*/
+EmbeddedElementRefresh::OffWholeNumbers EmbeddedElementRefresh::offWholeNumbers(QETProject *project)
+{
+	OffWholeNumbers off;
+	if (!project || !project->embeddedElementCollection()) {
+		return off;
+	}
+	const QHash<QString, QList<Element *>> placed = placedByPath(project);
+	for (const auto &symbol : symbolsUnder(project->embeddedElementCollection()->root()))
 	{
-		if (error) {
-			*error = message;
+		const SymbolTerminals::Rounding rounding = SymbolTerminals::planned(
+					symbol.second.firstChildElement(QStringLiteral("definition")));
+		if (rounding.merged) {
+			off.merged << symbol.first;
 		}
+		else if (rounding.terminals)
+		{
+			off.copies << symbol.first;
+			off.terminals += rounding.terminals;
+			off.placed += placed.value(symbol.first).size();
+		}
+	}
+	off.copies.sort();
+	off.merged.sort();
+	return off;
+}
+
+namespace {
+
+	//Where an element saves the terminal at @p place of its symbol: the
+	//other end of the terminal from the one wires dock on, as
+	//Terminal::init() puts it and Terminal::toXml() writes it
+QPointF savedPlace(const QPointF &place, Qet::Orientation orientation)
+{
+	switch (orientation)
+	{
+		case Qet::North: return place + QPointF(0, Terminal::terminalSize);
+		case Qet::East:  return place + QPointF(-Terminal::terminalSize, 0);
+		case Qet::West:  return place + QPointF(Terminal::terminalSize, 0);
+		case Qet::South: return place + QPointF(0, -Terminal::terminalSize);
+	}
+	return place;
+}
+
+	//The terminals of each element placed from a copy whose terminals
+	//moved, in the <diagram>s of @p xml, moved with them: an element saves
+	//where its terminals are (Terminal::toXml()), and reads a terminal's
+	//name on the folio, and the legacy id a wire may be saved with, only
+	//from the record at the place of the terminal (Terminal::fromXml())
+void moveSavedTerminals(QDomDocument &xml,
+						const QHash<QString, QList<SymbolTerminals::Move>> &moved)
+{
+	for (QDomElement diagram = xml.documentElement().firstChildElement(QStringLiteral("diagram")) ;
+		 !diagram.isNull() ;
+		 diagram = diagram.nextSiblingElement(QStringLiteral("diagram")))
+	{
+		const QDomElement elements = diagram.firstChildElement(QStringLiteral("elements"));
+		for (QDomElement element = elements.firstChildElement(QStringLiteral("element")) ;
+			 !element.isNull() ;
+			 element = element.nextSiblingElement(QStringLiteral("element")))
+		{
+			QString path = element.attribute(QStringLiteral("type"));
+			if (!path.startsWith(QLatin1String("embed://"))) {
+				continue;
+			}
+			path.remove(0, QStringLiteral("embed://").size());
+			const auto moves = moved.constFind(path);
+			if (moves == moved.constEnd()) {
+				continue;
+			}
+			const QDomElement records = element.firstChildElement(QStringLiteral("terminals"));
+			for (QDomElement record = records.firstChildElement(QStringLiteral("terminal")) ;
+				 !record.isNull() ;
+				 record = record.nextSiblingElement(QStringLiteral("terminal")))
+			{
+				const int orientation = record.attribute(QStringLiteral("orientation")).toInt();
+				const QPointF saved(record.attribute(QStringLiteral("x")).toDouble(),
+									record.attribute(QStringLiteral("y")).toDouble());
+				for (const SymbolTerminals::Move &move : moves.value())
+				{
+					const Qet::Orientation side = Qet::orientationFromString(
+								move.terminal.attribute(QStringLiteral("orientation")));
+					const QPointF before = savedPlace(move.from, side);
+					if (static_cast<int>(side) != orientation
+							|| qAbs(before.x() - saved.x()) >= 1e-6
+							|| qAbs(before.y() - saved.y()) >= 1e-6) {
+						continue;
+					}
+					const QPointF after = savedPlace(move.to, side);
+					record.setAttribute(QStringLiteral("x"), QStringLiteral("%1").arg(after.x()));
+					record.setAttribute(QStringLiteral("y"), QStringLiteral("%1").arg(after.y()));
+					break;
+				}
+			}
+		}
+	}
+}
+
+}
+
+/**
+	@brief EmbeddedElementRefresh::reopenedOnWholeNumbers
+	reopened(), with the terminals of every copy of @p project on whole
+	numbers (SymbolTerminals::putOnWholeNumbers()): what offWholeNumbers()
+	lists is what changes.
+
+	The terminals are rounded in what the project writes, and not in the
+	project itself, so that @p project stays exactly as it was when the
+	reload fails. What the elements placed from those copies saved of each
+	terminal moves with it: the name a terminal was given on the folio, and
+	the legacy id of a wire, are read only at the place of the terminal.
+
+	A terminal keeps its uuid, and a conductor is found again by it (see
+	reopened()): every wire stays on its terminal. A terminal without a uuid
+	gets, before it moves, the one its place gives it
+	(TerminalUuids::fillMissingInDefinition()), which is the one the
+	conductors on it were saved with. Each wire on a terminal that moved is
+	then laid again the way it is when its element is moved
+	(Conductor::updatePath()): the bends drawn by hand stay, and the run
+	that reaches the terminal follows it - which is what straightens the
+	wire whose step was the fraction just taken away.
+
+	The copies keep the record of the version they were taken from
+	(ElementOrigin): they read as changed in the project, so the version
+	of a collection with the terminals off is not taken for a newer one
+	and brought back by "Recharger les dessins des éléments".
+	@param project : the project to reload; left as it is when this fails
+	@param error : why it failed, when it does
+	@return the project reloaded, owned by the caller, or nullptr
+*/
+QETProject *EmbeddedElementRefresh::reopenedOnWholeNumbers(QETProject *project, QString *error)
+{
+	if (!project) {
 		return nullptr;
 	}
-
-	QETProject *fresh = new QETProject(temporary);
-	if (fresh->state() != QETProject::Ok)
+	QDomDocument xml = project->toXml();
+	const QDomElement collection = xml.documentElement().firstChildElement(QStringLiteral("collection"));
+	QHash<QString, QList<SymbolTerminals::Move>> moved;
+	QHash<QString, QSet<QUuid>> moved_uuids;
+	for (const auto &symbol : symbolsUnder(collection))
 	{
-		delete fresh;
-		if (error) {
-			*error = QCoreApplication::translate(
-						 "EmbeddedElementRefresh",
-						 "Le projet enregistré dans un fichier temporaire n'a pas pu être rouvert.");
+		const QDomElement definition = symbol.second.firstChildElement(QStringLiteral("definition"));
+		if (!SymbolTerminals::planned(definition).terminals) {
+			continue;
 		}
-		return nullptr;
+		TerminalUuids::fillMissingInDefinition(definition);
+		QList<SymbolTerminals::Move> moves;
+		SymbolTerminals::putOnWholeNumbers(definition, &moves);
+		if (moves.isEmpty()) {
+			continue;
+		}
+		for (const SymbolTerminals::Move &move : std::as_const(moves)) {
+			moved_uuids[symbol.first].insert(QUuid(move.terminal.attribute(QStringLiteral("uuid"))));
+		}
+		moved.insert(symbol.first, moves);
+	}
+	moveSavedTerminals(xml, moved);
+
+	QETProject *fresh = reopenedFrom(project, xml, error);
+	if (!fresh || moved_uuids.isEmpty()) {
+		return fresh;
 	}
 
-	fresh->setFilePath(project->filePath());
-	fresh->setReadOnly(project->isReadOnly());
-	fresh->setModified(true);
-	project->handOverTo(fresh);
+	QSet<Conductor *> wires;
+	const QHash<QString, QList<Element *>> placed = placedByPath(fresh);
+	for (auto it = moved_uuids.cbegin() ; it != moved_uuids.cend() ; ++it) {
+		for (const Element *element : placed.value(it.key())) {
+			for (const Terminal *terminal : element->terminals()) {
+				if (it.value().contains(terminal->uuid())) {
+					for (Conductor *wire : terminal->conductors()) {
+						wires.insert(wire);
+					}
+				}
+			}
+		}
+	}
+	for (Conductor *wire : std::as_const(wires)) {
+		wire->updatePath();
+	}
 	return fresh;
 }
 
