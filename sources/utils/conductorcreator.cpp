@@ -27,6 +27,7 @@
 #include "../qetgraphicsitem/terminal.h"
 #include "../ui/potentialselectordialog.h"
 #include "../wirearrangement.h"
+#include "../wirenames.h"
 #include "../wiresections.h"
 #include "../wiringrules.h"
 #include "qgraphicsitem.h"
@@ -72,6 +73,11 @@ ConductorCreator::ConductorCreator(Diagram *d, QList<Terminal *> terminals_list,
 		d->undoStack().push(new AddGraphicsObjectCommand(cond, d));
 		
 		c_list.append(cond);
+	}
+		//One name on a point the new conductors join across a folio report
+		//(T70), before the cross-sections read their properties
+	for (Conductor *c : std::as_const(c_list)) {
+		WireNames::keepFolioOfPoint(c, d, nullptr);
 	}
 		//The cross-section of the point, the largest its components ask
 		//for (T70), in the macro: the texts are worked out again below

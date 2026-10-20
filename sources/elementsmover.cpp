@@ -37,6 +37,7 @@
 #include "undocommand/movegraphicsitemcommand.h"
 #include "utils/qetutils.h"
 #include "wirearrangement.h"
+#include "wirenames.h"
 #include "wiresections.h"
 
 /**
@@ -363,6 +364,8 @@ void ElementsMover::endMovement()
 				if (use_properties)
 				{
 					conductor->setProperties(others_properties);
+						//One name on a point across a folio report (T70)
+					WireNames::keepFolioOfPoint(conductor, m_diagram, undo_object);
 						//The cross-section the moved component may raise
 						//for the point it joins (T70), in this undo step
 					WireSections::giveNewConductorItsSection(conductor, m_diagram, undo_object);

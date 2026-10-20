@@ -35,6 +35,7 @@
 #include "../qetgraphicsitem/terminalelement.h"
 #include "conductortextitem.h"
 #include "../wirearrangement.h"
+#include "../wirenames.h"
 #include "../wiresections.h"
 #include "../wiringrules.h"
 
@@ -729,6 +730,9 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 		Conductor *other = conductors_list.values().first();
 		new_conductor->rSequenceNum() = other->sequenceNum();
 		new_conductor->setProperties(others_properties);
+			//A point across a folio report keeps the one name it has
+			//(T70): %id would read the folio of the new conductor
+		WireNames::keepFolioOfPoint(new_conductor, diagram(), undo);
 			//The properties of the point are not numbered again, and the
 			//cross-section is the one thing in them the new conductor can
 			//change: the component it lands on may ask for a larger one

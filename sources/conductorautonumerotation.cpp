@@ -26,6 +26,7 @@
 #include "qetdiagrameditor.h"
 #include "ui/potentialselectordialog.h"
 #include "undocommand/setautonumcontextcommand.h"
+#include "wirenames.h"
 #include "wiresections.h"
 
 namespace
@@ -134,6 +135,12 @@ void ConductorAutoNumerotation::numerate()
 	if (conductor_list.size() >= 1 ) numeratePotential();
 	else if (m_conductor -> properties().type == ConductorProperties::Multi)
 		numerateNewConductor();
+		//A point the new conductor joins across a folio report keeps
+		//the name it has, on both ends (T70): %id would read the folio of
+		//the new conductor
+	if (m_conductor) {
+		WireNames::keepFolioOfPoint(m_conductor.data(), m_diagram, m_parent_undo);
+	}
 		//And once numbered, with the rest of the point: taking the
 		//properties of its potential, the new conductor took the section
 		//the potential had, and the potential takes the one the new

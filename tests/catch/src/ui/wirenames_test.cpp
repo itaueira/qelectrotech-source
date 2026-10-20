@@ -94,8 +94,10 @@ namespace
 	}
 
 		/// A component with a terminal on its right, one with a terminal on
-		/// its left, and the terminal of a strip, with one on each side
-	enum class Kind {Sensor, Relay, Strip};
+		/// its left, the terminal of a strip, with one on each side, and the
+		/// two arrows of a folio report: the one a wire leaves a folio by,
+		/// its terminal on its left, and the one it arrives by, on its right
+	enum class Kind {Sensor, Relay, Strip, Going, Coming};
 
 	const char *kindName(Kind kind)
 	{
@@ -104,12 +106,31 @@ namespace
 			case Kind::Sensor: return "sensor";
 			case Kind::Relay:  return "relay";
 			case Kind::Strip:  return "strip";
+			case Kind::Going:  return "going";
+			case Kind::Coming: return "coming";
 		}
 		return "";
 	}
 
-	bool hasEast(Kind kind) {return kind != Kind::Relay;}
-	bool hasWest(Kind kind) {return kind != Kind::Sensor;}
+	bool hasEast(Kind kind)
+	{
+		return kind == Kind::Sensor || kind == Kind::Strip || kind == Kind::Coming;
+	}
+	bool hasWest(Kind kind)
+	{
+		return kind == Kind::Relay || kind == Kind::Strip || kind == Kind::Going;
+	}
+
+	QString linkType(Kind kind)
+	{
+		switch (kind)
+		{
+			case Kind::Strip:  return QStringLiteral("terminal");
+			case Kind::Going:  return QStringLiteral("next_report");
+			case Kind::Coming: return QStringLiteral("previous_report");
+			default:           return QStringLiteral("simple");
+		}
+	}
 
 	QString definition(Kind kind)
 	{
@@ -133,9 +154,7 @@ namespace
 			"</description>"
 			"</definition>"
 			"</element>")
-			.arg(QLatin1String(kindName(kind)),
-			     kind == Kind::Strip ? QStringLiteral("terminal") : QStringLiteral("simple"),
-			     terminals);
+			.arg(QLatin1String(kindName(kind)), linkType(kind), terminals);
 	}
 
 	struct Part
@@ -145,6 +164,9 @@ namespace
 		int y;
 			/// what the component says in "wire_section", "" for nothing
 		const char *section;
+			/// the arrow of the other folio an arrow is linked to, by its
+			/// index in the project; -1 for none
+		int linked = -1;
 	};
 
 		/// A wire written in the file, from the right terminal of the part
@@ -197,16 +219,21 @@ namespace
 						      "</elementInformation>")
 					.arg(QLatin1String(part.section));
 		}
+		QString links;
+		if (part.linked >= 0) {
+			links = QStringLiteral("<link_uuid uuid=\"%1\"/>").arg(partUuid(part.linked));
+		}
 		return QStringLiteral(
 			"<element x=\"%1\" y=\"%2\" z=\"10\" prefix=\"\" freezeLabel=\"false\""
 			" orientation=\"0\" type=\"embed://bench/%3.elmt\" uuid=\"%4\">"
 			"<terminals>%5</terminals><inputs/>"
+			"<links_uuids>%7</links_uuids>"
 			"<elementInformations>%6</elementInformations>"
 			"<dynamic_texts/><texts_groups/>"
 			"</element>")
 			.arg(part.x).arg(part.y)
 			.arg(QLatin1String(kindName(part.kind)), partUuid(index), terminals,
-			     informations);
+			     informations, links);
 	}
 
 	QString wireXml(int index, const Wire &wire)
@@ -221,7 +248,8 @@ namespace
 	QString projectXml(const QList<Folio> &folios)
 	{
 		const QString definitions = definition(Kind::Sensor) + definition(Kind::Relay)
-				+ definition(Kind::Strip);
+				+ definition(Kind::Strip) + definition(Kind::Going)
+				+ definition(Kind::Coming);
 		QString diagrams;
 		int part_index = 0;
 		int wire_index = 0;
@@ -424,6 +452,59 @@ namespace
 				   {3, 4, typedName(5, 7, "1,5")},
 				   {5, 6, QString()}}};
 		return {empty, empty, empty, empty, fifth};
+	}
+
+		/**
+			Two folios joined by two folio reports, as the two between
+			folios 4 and 5 of the project measured: a point typed F2-2
+			(1mm²) on both ends - named after the folio it arrives on - and
+			a point with no text on either end. On the second folio alone,
+			a point typed F9-3 (1mm²), a folio it is not drawn on, one with
+			no text, and two components left unwired. The relay the first
+			point arrives at says 1 for its cross-section.
+			Parts: 0 to 3 on the first folio, 4 to 13 on the second; wires:
+			0 and 1 on the first, 2 to 5 on the second.
+		*/
+	QList<Folio> acrossReports()
+	{
+		const Folio first{{{Kind::Sensor, 100, 100, ""},
+				   {Kind::Going, 300, 100, "", 4},
+				   {Kind::Sensor, 100, 300, ""},
+				   {Kind::Going, 300, 300, "", 6}},
+				  {{0, 1, typedName(2, 2, "1")},
+				   {2, 3, QString()}}};
+		const Folio second{{{Kind::Coming, 100, 100, "", 1},
+				    {Kind::Relay, 400, 100, "1"},
+				    {Kind::Coming, 100, 300, "", 3},
+				    {Kind::Relay, 400, 300, ""},
+				    {Kind::Sensor, 100, 500, ""},
+				    {Kind::Relay, 400, 500, ""},
+				    {Kind::Sensor, 600, 100, ""},
+				    {Kind::Relay, 800, 100, ""},
+				    {Kind::Sensor, 600, 300, ""},
+				    {Kind::Relay, 800, 300, ""}},
+				   {{4, 5, typedName(2, 2, "1")},
+				    {6, 7, QString()},
+				    {8, 9, typedName(9, 3, "1")},
+				    {10, 11, QString()}}};
+		return {first, second};
+	}
+
+		/**
+			A sensor and the arrow it leaves the first folio by, and the
+			arrow it arrives by on the second, linked to it, with a relay:
+			nothing wired yet. Parts 0 and 1 on the first folio, 2 and 3 on
+			the second.
+		*/
+	QList<Folio> reportNotWired()
+	{
+		const Folio first{{{Kind::Sensor, 100, 100, ""},
+				   {Kind::Going, 300, 100, "", 2}},
+				  {}};
+		const Folio second{{{Kind::Coming, 100, 100, "", 1},
+				    {Kind::Relay, 400, 100, ""}},
+				   {}};
+		return {first, second};
 	}
 }
 
@@ -785,4 +866,164 @@ TEST_CASE("T70 — PE, N, F and the cables on conversion", "[T70][wirenames]")
 	Conductor *added = drawBetween(bench, spare, spare + 1);
 	REQUIRE(added != nullptr);
 	CHECK(textOf(added) == wireName(1, 10));
+}
+
+TEST_CASE("CU-70.9 — One name on both ends of a folio report", "[T70][wirenames]")
+{
+	Bench bench(acrossReports());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	REQUIRE(bench.project.diagramCount() == 2);
+	QETProject *project = bench.project.project();
+	Conductor *typed_leaving = bench.wire(0);
+	Conductor *bare_leaving = bench.wire(1);
+	Conductor *typed_arriving = bench.wire(2);
+	Conductor *bare_arriving = bench.wire(3);
+	Conductor *elsewhere = bench.wire(4);
+	Conductor *alone = bench.wire(5);
+	REQUIRE((typed_leaving && bare_leaving && typed_arriving && bare_arriving
+		 && elsewhere && alone));
+		//The fixture is what it says: the two ends of a report are one
+		//point, and the two reports are two
+	REQUIRE(typed_leaving->relatedPotentialConductors().contains(typed_arriving));
+	REQUIRE(bare_leaving->relatedPotentialConductors().contains(bare_arriving));
+	REQUIRE_FALSE(typed_leaving->relatedPotentialConductors().contains(bare_arriving));
+
+	QUndoStack &stack = bench.stack();
+	const int index = stack.index();
+	CHECK(WireNames::convertProject(project, bench.project.diagram(1)) == 6);
+	CHECK(stack.index() == index + 1);
+
+		//The folio the typed name says, on both ends, with the cross-section
+		//of the point - which only the end on the second folio says
+	CHECK(textOf(typed_leaving) == wireName(2, 2, "1"));
+	CHECK(textOf(typed_arriving) == wireName(2, 2, "1"));
+		//No text: the first folio of the point, and the next number free on
+		//it - the typed point is named on the second folio, and takes none
+	CHECK(textOf(bare_leaving) == wireName(1, 1));
+	CHECK(textOf(bare_arriving) == wireName(1, 1));
+		//On one folio only, the folio of the wire: F9-3 is not drawn on
+		//folio 9
+	CHECK(textOf(elsewhere) == wireName(2, 3));
+	CHECK(textOf(alone) == wireName(2, 4));
+		//The folio written in the formula of a point across folios; %id
+		//kept on a point of one folio
+	CHECK(typed_leaving->properties().m_formula == WireNames::pinned(WireNames::formula(), 2));
+	CHECK(typed_arriving->properties().m_formula == WireNames::pinned(WireNames::formula(), 2));
+	CHECK(bare_arriving->properties().m_formula == WireNames::pinned(WireNames::formula(), 1));
+	CHECK(alone->properties().m_formula == WireNames::formula());
+
+		//Converted again, nothing changes
+	CHECK(WireNames::convertProject(project, bench.project.diagram(1)) == 0);
+	CHECK(stack.index() == index + 1);
+
+	SECTION("A wire drawn afterwards on the second folio goes on after its highest")
+	{
+		Conductor *added = drawBetween(bench, 12, 13);
+		REQUIRE(added != nullptr);
+		CHECK(textOf(added) == wireName(2, 5));
+	}
+
+	SECTION("One undo puts the texts back")
+	{
+		stack.undo();
+		CHECK(stack.index() == index);
+		CHECK(textOf(typed_leaving) == typedName(2, 2, "1"));
+		CHECK(textOf(typed_arriving) == typedName(2, 2, "1"));
+		CHECK(textOf(bare_arriving).isEmpty());
+		CHECK(bare_arriving->properties().m_formula.isEmpty());
+	}
+}
+
+TEST_CASE("T70 — Converted, saved and opened again", "[T70][wirenames]")
+{
+	/*
+		A project converted, saved and opened again has nothing left to
+		convert: the conductors read back hold one empty value in each part
+		of their count the file does not write, and that is no change. The
+		name of a point across folios comes back from the file whole, and
+		is worked out again with its number when a component changes.
+	*/
+	Bench bench(acrossReports());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	REQUIRE(WireNames::convertProject(bench.project.project()) == 6);
+	REQUIRE(bench.project.saveAndReopen());
+	INFO(bench.project.error().toStdString());
+
+	CHECK(WireNames::convertProject(bench.project.project()) == 0);
+	CHECK(textOf(bench.wire(0)) == wireName(2, 2, "1"));
+	CHECK(textOf(bench.wire(2)) == wireName(2, 2, "1"));
+	CHECK(textOf(bench.wire(1)) == wireName(1, 1));
+	CHECK(textOf(bench.wire(3)) == wireName(1, 1));
+
+	setComponentSection(bench.stack(), bench.part(5), QStringLiteral("1,5"));
+	CHECK(textOf(bench.wire(0)) == wireName(2, 2, "1,5"));
+	CHECK(textOf(bench.wire(2)) == wireName(2, 2, "1,5"));
+}
+
+TEST_CASE("T70 — A wire drawn across a folio report takes its point's name", "[T70][wirenames]")
+{
+	/*
+		The point is named on the first folio, and a wire drawn on the
+		second from the arrow it arrives by is the same point: it carries
+		the same name, F1-1, and not the F2-1 the formula would work out on
+		its own folio. The first folio is written in both formulas, so that
+		the two ends keep one name.
+	*/
+	Bench bench(reportNotWired());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	Diagram *other = bench.project.diagram(1);
+	followScheme(bench.project.project(), {one, other});
+
+	showFolio(one);
+	Conductor *leaving = drawBetween(bench, 0, 1);
+	REQUIRE(leaving != nullptr);
+	REQUIRE(textOf(leaving) == wireName(1, 1));
+	REQUIRE(leaving->properties().m_formula == WireNames::formula());
+
+	showFolio(other);
+	QUndoStack &stack = bench.stack();
+	const int index = stack.index();
+	Conductor *arriving = drawBetween(bench, 2, 3);
+	REQUIRE(arriving != nullptr);
+	REQUIRE(leaving->relatedPotentialConductors().contains(arriving));
+	CHECK(stack.index() == index + 1);
+	CHECK(textOf(arriving) == wireName(1, 1));
+	CHECK(textOf(leaving) == wireName(1, 1));
+	CHECK(arriving->properties().m_formula == WireNames::pinned(WireNames::formula(), 1));
+	CHECK(leaving->properties().m_formula == WireNames::pinned(WireNames::formula(), 1));
+
+		//One undo takes the wire away, and gives the first end its
+		//formula back
+	stack.undo();
+	CHECK(stack.index() == index);
+	CHECK(textOf(leaving) == wireName(1, 1));
+	CHECK(leaving->properties().m_formula == WireNames::formula());
+}
+
+TEST_CASE("T70 — A formula pinned to a folio", "[T70][wirenames]")
+{
+	const QString name = WireNames::formula();
+	const QString earth = WireNames::earthFormula();
+	const QString cable = WireNames::cableFormula(QStringLiteral("CAT6 STP"));
+	CHECK(WireNames::pinned(name, 5) == QStringLiteral("F5-%sequf_1 (%wq %ws)"));
+	CHECK(WireNames::pinned(earth, 12) == QStringLiteral("F12 PE (%wq %ws)"));
+	CHECK(WireNames::pinned(cable, 5) == QStringLiteral("F5-%sequf_1 (%wq Cabo CAT6 STP)"));
+		//And back, and known for what it is either way
+	CHECK(WireNames::unpinned(WireNames::pinned(name, 5)) == name);
+	CHECK(WireNames::unpinned(WireNames::pinned(earth, 12)) == earth);
+	CHECK(WireNames::unpinned(WireNames::pinned(cable, 5)) == cable);
+	CHECK(WireNames::isNameFormula(WireNames::pinned(cable, 5)));
+		//Any other formula is left as it is
+	CHECK(WireNames::pinned(QStringLiteral("%id-%sequf_1"), 5) == QStringLiteral("%id-%sequf_1"));
+	CHECK(WireNames::unpinned(QStringLiteral("F5-%sequ_1")) == QStringLiteral("F5-%sequ_1"));
+	CHECK_FALSE(WireNames::isNameFormula(QStringLiteral("F5-%sequ_1")));
+		//The folio a typed name carries
+	CHECK(WireNames::typedFolio(QStringLiteral("F5-2 (1mm2)")) == 5);
+	CHECK(WireNames::typedFolio(QStringLiteral("F12 PE (2,5mm2)")) == 12);
+	CHECK(WireNames::typedFolio(QStringLiteral("PE (2,5mm2)")) == -1);
+	CHECK(WireNames::typedFolio(QStringLiteral("F (2,5mm2)")) == -1);
 }

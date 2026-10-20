@@ -227,6 +227,38 @@ namespace
 				|| text.contains(QStringLiteral("mm2"), Qt::CaseInsensitive);
 	}
 
+		/// @p list without its empty values
+	QStringList withValues(const QStringList &list)
+	{
+		QStringList values;
+		for (const QString &value : list)
+		{
+			if (!value.isEmpty()) {
+				values << value;
+			}
+		}
+		return values;
+	}
+
+		/**
+			@return true when @p a and @p b count the same: a conductor read
+			from a file holds one empty value in each part the file does not
+			write (sequentialNumbers::fromXml() splits an empty text), and a
+			project converted, saved and opened again must not be converted
+			again for that
+		*/
+	bool sameSequence(const autonum::sequentialNumbers &a, const autonum::sequentialNumbers &b)
+	{
+		return withValues(a.unit) == withValues(b.unit)
+				&& withValues(a.wrap) == withValues(b.wrap)
+				&& withValues(a.unit_folio) == withValues(b.unit_folio)
+				&& withValues(a.ten) == withValues(b.ten)
+				&& withValues(a.ten_folio) == withValues(b.ten_folio)
+				&& withValues(a.hundred) == withValues(b.hundred)
+				&& withValues(a.hundred_folio) == withValues(b.hundred_folio)
+				&& withValues(a.alpha) == withValues(b.alpha);
+	}
+
 		/**
 			Add under @p parent what gives @p wire the formula @p formula,
 			the count @p sequence_after and the cross-section @p section of
@@ -246,7 +278,7 @@ namespace
 
 		const autonum::sequentialNumbers sequence_before = wire->sequenceNum();
 
-		const bool new_sequence = sequence_before != sequence_after;
+		const bool new_sequence = !sameSequence(sequence_before, sequence_after);
 		const bool new_properties = before.m_formula != after.m_formula
 				|| before.m_wire_section != after.m_wire_section;
 		if (!new_sequence && !new_properties) {
@@ -284,24 +316,30 @@ namespace
 		Cable     ///< F<folio>-<number> (<square> Cabo <type>)
 	};
 
-		/// One point of a folio, as the conversion reads it
+		/// One point of the project, as the conversion reads it
 	struct Point
 	{
-			/// its conductors on the folio, in the order the folio lists them
+			/**
+				its conductors, on every folio, in the order of the
+				folios of the project and, on a folio, the order it lists
+				them
+			*/
 		QList<Conductor *> wires;
-			/// the whole potential, the folio's conductors and the others
-		QList<Conductor *> whole;
+			/// the folios it is drawn on, in the order of the project
+		QList<Diagram *> folios;
+			/// the folio of its name (see the header)
+		Diagram *home = nullptr;
 			/// the number its text carries, -1 for none
 		int number = -1;
 		bool frozen = false;
 		Naming naming = Naming::Numbered;
-			/// the formula of a cable, with its type in it
+			/// the formula of a cable, with its type in it, with %id
 		QString cable_formula;
 	};
 
 		/**
-			Say what @p point is named as, from what its conductors on the
-			folio carry, in this order:
+			Say what @p point is named as, from what its conductors carry,
+			in this order:
 			- a formula of the conversion already there, earth or cable,
 			  is kept: a project converted twice does not change;
 			- a number typed "F<n>-<n>": numbered, keeping it;
@@ -317,10 +355,13 @@ namespace
 		for (Conductor *wire : std::as_const(point.wires))
 		{
 			const ConductorProperties properties = wire->properties();
+				//Pinned to a folio too: the formula of a point across
+				//folios
+			const QString formula = WireNames::unpinned(properties.m_formula);
 			if (kept.isEmpty()
-			    && (properties.m_formula == WireNames::earthFormula()
-				|| properties.m_formula.startsWith(cablePrefix()))) {
-				kept = properties.m_formula;
+			    && (formula == WireNames::earthFormula()
+				|| formula.startsWith(cablePrefix()))) {
+				kept = formula;
 			}
 			if (text.isEmpty() && !properties.text.trimmed().isEmpty()) {
 				text = properties.text;
@@ -346,64 +387,107 @@ namespace
 	}
 
 		/**
-			Add under @p parent what names every wire of @p diagram (see
-			WireNames::convertProject()).
-			@param highest : receives the highest number the folio carries
-			afterwards
-			@return how many conductors change
+			@return the points of the folios @p diagrams, in the order of
+			the folios and, on a folio, the order their first conductor
+			comes in the list of the folio; each one with all its
+			conductors, on every folio, and the folio of its name
 		*/
-	int convertFolio(Diagram *diagram, const QString &title, QUndoCommand *parent, int *highest)
+	QList<Point> pointsOf(const QList<Diagram *> &diagrams)
 	{
-		const QList<Conductor *> listed = diagram->conductors();
+		QHash<const Diagram *, int> order;
 		QHash<Conductor *, int> rank;
-		for (int i = 0 ; i < listed.size() ; ++i) {
-			rank.insert(listed.at(i), i);
+		for (int d = 0 ; d < diagrams.size() ; ++d)
+		{
+			order.insert(diagrams.at(d), d);
+			const QList<Conductor *> listed = diagrams.at(d)->conductors();
+			for (int i = 0 ; i < listed.size() ; ++i) {
+				rank.insert(listed.at(i), i);
+			}
 		}
+		const auto before = [&order, &rank](Conductor *a, Conductor *b)
+		{
+			const int folio_a = order.value(a->diagram(), order.size());
+			const int folio_b = order.value(b->diagram(), order.size());
+			if (folio_a != folio_b) {
+				return folio_a < folio_b;
+			}
+			return rank.value(a) < rank.value(b);
+		};
 
-			//The points, in the order their first conductor comes in the
-			//list of the folio, and the highest number the folio carries -
-			//a frozen point's too, which the next free number must not take
 		QList<Point> points;
 		QSet<Conductor *> seen;
-		int folio_highest = 0;
-		for (Conductor *conductor : listed)
+		for (Diagram *diagram : diagrams)
 		{
-			if (seen.contains(conductor)) {
-				continue;
-			}
-			Point point;
-			point.whole = WireSections::potentialOf(conductor);
-			for (Conductor *member : std::as_const(point.whole))
+			const QList<Conductor *> listed = diagram->conductors();
+			for (Conductor *conductor : listed)
 			{
-				seen.insert(member);
-				if (rank.contains(member)) {
-					point.wires << member;
-				}
-			}
-			std::sort(point.wires.begin(), point.wires.end(),
-				  [&rank](Conductor *a, Conductor *b) {return rank.value(a) < rank.value(b);});
-			for (Conductor *wire : std::as_const(point.wires))
-			{
-				const int number = WireNames::typedNumber(wire->properties().text);
-				if (number < 0) {
+				if (seen.contains(conductor)) {
 					continue;
 				}
-					//The first conductor of the folio carrying a number
-					//gives it to the point
-				if (point.number < 0) {
-					point.number = number;
+				Point point;
+				point.wires = WireSections::potentialOf(conductor);
+				for (Conductor *member : std::as_const(point.wires)) {
+					seen.insert(member);
 				}
-				folio_highest = qMax(folio_highest, number);
-			}
-			point.frozen = holdsFrozen(point.whole);
-			settleNaming(point);
-			points << point;
-		}
+				std::sort(point.wires.begin(), point.wires.end(), before);
 
+				int typed_folio = -1;
+				int first_typed_folio = -1;
+				for (Conductor *wire : std::as_const(point.wires))
+				{
+					Diagram *folio = wire->diagram();
+					if (folio && !point.folios.contains(folio)) {
+						point.folios << folio;
+					}
+						//The first conductor carrying a number gives it to
+						//the point, and the folio its text says with it
+					const QString text = wire->properties().text;
+					const int number = WireNames::typedNumber(text);
+					if (number >= 0 && point.number < 0) {
+						point.number = number;
+						typed_folio = WireNames::typedFolio(text);
+					}
+					if (first_typed_folio < 0) {
+						first_typed_folio = WireNames::typedFolio(text);
+					}
+				}
+					//No number: "F5 PE", an earth already converted
+				if (typed_folio < 0) {
+					typed_folio = first_typed_folio;
+				}
+					//The folio the typed name says, when the point is drawn
+					//there - "F9-3" typed on folio 5 alone is named on folio
+					//5 - and the first folio of the point otherwise
+				point.home = point.folios.value(0, diagram);
+				for (Diagram *folio : std::as_const(point.folios))
+				{
+					if (folio->folioIndex() + 1 == typed_folio) {
+						point.home = folio;
+						break;
+					}
+				}
+				point.frozen = holdsFrozen(point.wires);
+				settleNaming(point);
+				points << point;
+			}
+		}
+		return points;
+	}
+
+		/**
+			Add under @p parent what names every wire of @p points (see
+			WireNames::convertProject()).
+			@param highest : the highest number each folio carries, read
+			from the typed names - a frozen point's too, which the next free
+			number must not take; it receives the numbers given
+			@return how many conductors change
+		*/
+	int namePoints(QList<Point> &points, QHash<Diagram *, int> &highest, QUndoCommand *parent)
+	{
 		int changed = 0;
 		for (Point &point : points)
 		{
-			if (point.frozen) {
+			if (point.frozen || !point.home) {
 				continue;
 			}
 				//The earth has no number, and takes none from the folio
@@ -412,35 +496,28 @@ namespace
 			if (point.naming != Naming::Earth)
 			{
 				if (point.number < 0) {
-					point.number = ++folio_highest;
+					point.number = ++highest[point.home];
 				}
 				sequence.unit_folio << QString::number(point.number);
 				formula = point.naming == Naming::Cable ? point.cable_formula
 									: WireNames::formula();
 			}
+				//One name on every folio of the point: %id would read the
+				//folio of each wire
+			if (point.folios.size() > 1) {
+				formula = WireNames::pinned(formula, point.home->folioIndex() + 1);
+			}
 				//The section of the point, and nothing when no component of
 				//it says one: never what the old text said. A cable's formula
 				//does not show it, and its wires still carry it, as every
 				//wire of a point does
-			const QString section = WireSections::sectionOf(point.whole);
+			const QString section = WireSections::sectionOf(point.wires);
 			for (Conductor *wire : std::as_const(point.wires))
 			{
 				if (nameWire(wire, formula, sequence, section, parent)) {
 					++changed;
 				}
 			}
-		}
-
-			//The count of the folio goes on after its highest number, and
-			//never back below a number the scheme has given there already
-		folio_highest = qMax(folio_highest,
-				     diagram->m_cnd_unitfolio_max.value(title).value(0).toInt());
-		const QStringList count {QString::number(folio_highest)};
-		if (FolioCountCommand::changes(diagram, title, count)) {
-			new FolioCountCommand(diagram, title, count, parent);
-		}
-		if (highest) {
-			*highest = folio_highest;
 		}
 		return changed;
 	}
@@ -540,6 +617,143 @@ int WireNames::typedNumber(const QString &text)
 }
 
 /**
+	@brief WireNames::typedFolio
+	See the header.
+*/
+int WireNames::typedFolio(const QString &text)
+{
+	static const QRegularExpression typed(QStringLiteral("^ *F([0-9]+)(-[0-9]| +PE)"));
+	const QRegularExpressionMatch match = typed.match(text);
+	if (!match.hasMatch()) {
+		return -1;
+	}
+	bool ok = false;
+	const int folio = match.captured(1).toInt(&ok);
+	return ok ? folio : -1;
+}
+
+/**
+	@brief WireNames::pinned
+	See the header.
+*/
+QString WireNames::pinned(const QString &formula, int folio)
+{
+	const QString id = QStringLiteral("F%id");
+	if (folio < 1 || !formula.startsWith(id) || !isNameFormula(formula)) {
+		return formula;
+	}
+	return QLatin1Char('F') + QString::number(folio) + formula.mid(id.size());
+}
+
+/**
+	@brief WireNames::unpinned
+	See the header.
+*/
+QString WireNames::unpinned(const QString &formula)
+{
+		//The number of a folio where %id is, followed by the rest of one
+		//of the formulas: a formula typed "F5-..." of anything else stays
+	static const QRegularExpression pinned_folio(
+				QStringLiteral("^F[0-9]+(?=-%sequf_1 [(]%wq | PE [(]%wq %ws[)]$)"));
+	QString plain = formula;
+	plain.replace(pinned_folio, QStringLiteral("F%id"));
+	return plain;
+}
+
+/**
+	@brief WireNames::isNameFormula
+	See the header.
+*/
+bool WireNames::isNameFormula(const QString &formula)
+{
+	const QString plain = unpinned(formula);
+	return plain == WireNames::formula()
+			|| plain == earthFormula()
+			|| plain.startsWith(cablePrefix());
+}
+
+/**
+	@brief WireNames::keepFolioOfPoint
+	See the header.
+*/
+int WireNames::keepFolioOfPoint(Conductor *conductor, Diagram *diagram, QUndoCommand *parent_undo)
+{
+	if (!conductor) {
+		return 0;
+	}
+	ConductorProperties own = conductor->properties();
+	if (!own.m_formula.startsWith(QStringLiteral("F%id")) || !isNameFormula(own.m_formula)) {
+		return 0;
+	}
+	const QList<Conductor *> point = WireSections::potentialOf(conductor);
+	if (holdsFrozen(point)) {
+		return 0;
+	}
+
+		//The folio of the name the point has: the first folio the others
+		//are on. The new conductor does not move it - it takes the name
+	Diagram *home = nullptr;
+	bool across = false;
+	for (Conductor *other : point)
+	{
+		if (other == conductor || !other->diagram()) {
+			continue;
+		}
+		if (other->diagram() != conductor->diagram()) {
+			across = true;
+		}
+		if (!home || other->diagram()->folioIndex() < home->folioIndex()) {
+			home = other->diagram();
+		}
+	}
+	if (!across || !home) {
+		return 0;
+	}
+
+	const QString formula = pinned(own.m_formula, home->folioIndex() + 1);
+	QList<WireSections::Change> changes;
+	for (Conductor *other : point)
+	{
+		if (other == conductor) {
+			continue;
+		}
+		const ConductorProperties before = other->properties();
+		if (before.m_formula != own.m_formula) {
+			continue;
+		}
+		WireSections::Change change;
+		change.conductor = other;
+		change.before = before;
+		change.after = before;
+		change.after.m_formula = formula;
+		changes << change;
+	}
+
+		//The new conductor at once, as the numbering gives it its
+		//properties; the others at once too, as the cross-section given
+		//right after reads them, and through an undo command
+	own.m_formula = formula;
+	conductor->setProperties(own);
+	WireSections::apply(changes, true);
+	if (changes.isEmpty()) {
+		return 0;
+	}
+	if (parent_undo) {
+		return WireSections::addCommands(changes, parent_undo);
+	}
+	if (!diagram) {
+		diagram = conductor->diagram();
+	}
+	if (!diagram) {
+		return 0;
+	}
+	auto *undo = new QUndoCommand(QObject::tr("Name the wire as its point", "undo caption"));
+	const int added = WireSections::addCommands(changes, undo);
+	diagram->undoStack().push(undo);
+	return added;
+}
+
+/**
 	@brief WireNames::schemeOf
 	See the header.
 */
@@ -600,14 +814,31 @@ int WireNames::convertProject(QETProject *project, Diagram *shown)
 
 		//One gesture for the data base, every folio in it
 	auto *conversion = new GroupedUpdateCommand(project, undoCaption());
-	int changed = 0;
+	QList<Point> points = pointsOf(diagrams);
+		//The highest number the typed names carry on each folio: the
+		//numbers of the points named on it
+	QHash<Diagram *, int> highest;
+	for (const Point &point : std::as_const(points))
+	{
+		if (point.home && point.number >= 0) {
+			highest[point.home] = qMax(highest.value(point.home), point.number);
+		}
+	}
+	const int changed = namePoints(points, highest, conversion);
+
+		//The count of each folio goes on after its highest number, and
+		//never back below a number the scheme has given there already
 	int shown_highest = -1;
 	for (Diagram *diagram : diagrams)
 	{
-		int highest = 0;
-		changed += convertFolio(diagram, title, conversion, &highest);
+		const int folio_highest = qMax(highest.value(diagram),
+					       diagram->m_cnd_unitfolio_max.value(title).value(0).toInt());
+		const QStringList count {QString::number(folio_highest)};
+		if (FolioCountCommand::changes(diagram, title, count)) {
+			new FolioCountCommand(diagram, title, count, conversion);
+		}
 		if (diagram == shown) {
-			shown_highest = highest;
+			shown_highest = folio_highest;
 		}
 	}
 

@@ -25386,8 +25386,8 @@ O que você deseja fazer?</translation>
         <translation>Coleção</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="401"/>
         <location filename="../sources/elementsmover.cpp" line="404"/>
+        <location filename="../sources/elementsmover.cpp" line="407"/>
         <source>Affecter les composants d&apos;une zone</source>
         <translation>Atribuir os componentes de uma zona</translation>
     </message>
@@ -26161,21 +26161,21 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Formatar as tags das referências de folha</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="190"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="197"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="199"/>
-        <location filename="../sources/conductorautonumerotation.cpp" line="463"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="206"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="470"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="256"/>
-        <location filename="../sources/conductorautonumerotation.cpp" line="367"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="263"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="374"/>
         <source>Automatically number a conductor</source>
         <comment>undo caption</comment>
         <translation>Numerar automaticamente um condutor</translation>
@@ -26412,7 +26412,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Terminal</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminal.cpp" line="86"/>
+        <location filename="../sources/qetgraphicsitem/terminal.cpp" line="87"/>
         <source>Terminal</source>
         <comment>tooltip</comment>
         <translation>Terminal</translation>
@@ -26732,7 +26732,7 @@ the translated name of this folder could not be read, so its folder name is disp
         <translation>Projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="104"/>
+        <location filename="../sources/elementsmover.cpp" line="105"/>
         <source>This group cannot be moved: the position of one of its elements is locked.</source>
         <translation>Este grupo não pode ser movido: a posição de um de seus elementos está travada.</translation>
     </message>
@@ -27276,12 +27276,12 @@ Deseja substituí-lo?</translation>
         <translation>Caminho do arquivo salvo</translation>
     </message>
     <message>
-        <location filename="../sources/utils/conductorcreator.cpp" line="57"/>
+        <location filename="../sources/utils/conductorcreator.cpp" line="58"/>
         <source>Creation of conductors</source>
         <translation>Criação do condutor</translation>
     </message>
     <message>
-        <location filename="../sources/utils/conductorcreator.cpp" line="80"/>
+        <location filename="../sources/utils/conductorcreator.cpp" line="86"/>
         <location filename="../sources/wiresections.cpp" line="105"/>
         <source>Update the wire cross-sections</source>
         <comment>undo caption</comment>
@@ -27925,7 +27925,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Coleção da empresa</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/elementsmover.cpp" line="345"/>
+        <location filename="../sources/elementsmover.cpp" line="346"/>
         <source>Add %n conductors</source>
         <comment>add a numbers of conductor one or more</comment>
         <translation>
@@ -28113,6 +28113,12 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <source>Wire name per folio, with colour and cross-section</source>
         <comment>name of the conductor numbering the wire names are converted to</comment>
         <translation>Nome do fio por folha, com cor e bitola</translation>
+    </message>
+    <message>
+        <location filename="../sources/wirenames.cpp" line="718"/>
+        <source>Name the wire as its point</source>
+        <comment>undo caption</comment>
+        <translation>Dar ao fio o nome do ponto</translation>
     </message>
 </context>
 <context>
@@ -32910,7 +32916,7 @@ Os outros campos não são utilizados.</translation>
 <context>
     <name>Terminal</name>
     <message numerus="yes">
-        <location filename="../sources/qetgraphicsitem/terminal.cpp" line="694"/>
+        <location filename="../sources/qetgraphicsitem/terminal.cpp" line="695"/>
         <source>This terminal already has %n conductors, the project&apos;s limit. Add a terminal to connect one more conductor.</source>
         <comment>wire refused by the wires-per-terminal limit</comment>
         <translation>
