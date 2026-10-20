@@ -70,3 +70,58 @@ TEST_CASE("CU-68.5 — The path made clean", "[T68][wirepath]")
 		CHECK(WirePath::simplified(path) == path);
 	}
 }
+
+TEST_CASE("CU-68.7 — Dragging a segment, without a sheet", "[T68][wirepath]")
+{
+		//A terminal pointing down at (0, 0), its segment long, to 88, and
+		//the conductor going right at 88, down to 120 and to a terminal at
+		//(220, 120)
+	const QList<QPointF> long_arm{{0, 0}, {0, 88}, {200, 88}, {200, 120}, {220, 120}};
+
+	SECTION("towards the terminal, the segment of the terminal gets shorter")
+	{
+		QPointF middle;
+		const QList<QPointF> bent{{0, 0}, {0, 62}, {200, 62}, {200, 120}, {220, 120}};
+		CHECK(WirePath::dragged(long_arm, 1, QPointF(0, -26), &middle) == bent);
+		CHECK(middle == QPointF(100, 62));
+	}
+	SECTION("only the part of the drag across the segment counts")
+	{
+		const QList<QPointF> bent{{0, 0}, {0, 62}, {200, 62}, {200, 120}, {220, 120}};
+		CHECK(WirePath::dragged(long_arm, 1, QPointF(37, -26)) == bent);
+	}
+	SECTION("past the terminal, the drag stops one unit from it")
+	{
+		QPointF middle;
+		const QList<QPointF> stopped{{0, 0}, {0, 1}, {200, 1}, {200, 120}, {220, 120}};
+		CHECK(WirePath::dragged(long_arm, 1, QPointF(0, -100), &middle) == stopped);
+		CHECK(middle == QPointF(100, 1));
+	}
+	SECTION("the segment after the terminal's, on its line, turns back and goes")
+	{
+			//The automatic path: the terminal's segment to 10, the next one
+			//on to 40, then right
+		const QList<QPointF> automatic{{0, 0}, {0, 10}, {0, 40}, {100, 40}, {100, 60}, {120, 60}};
+		const QList<QPointF> bent{{0, 0}, {0, 2}, {100, 2}, {100, 60}, {120, 60}};
+		CHECK(WirePath::dragged(automatic, 2, QPointF(0, -38)) == bent);
+		const QList<QPointF> stopped{{0, 0}, {0, 1}, {100, 1}, {100, 60}, {120, 60}};
+		CHECK(WirePath::dragged(automatic, 2, QPointF(0, -45)) == stopped);
+	}
+	SECTION("a neighbour on the same line gets a segment joining the two")
+	{
+		const QList<QPointF> path{{0, 0}, {10, 0}, {50, 0}, {50, 30}, {90, 30}, {100, 30}};
+		const QList<QPointF> jog{{0, 0}, {10, 0}, {10, 10}, {50, 10}, {50, 30}, {90, 30}, {100, 30}};
+		CHECK(WirePath::dragged(path, 1, QPointF(0, 10)) == jog);
+	}
+	SECTION("the segments of the terminals do not drag")
+	{
+		CHECK(WirePath::dragged(long_arm, 0, QPointF(30, 0)) == long_arm);
+		CHECK(WirePath::dragged(long_arm, 3, QPointF(0, 30)) == long_arm);
+	}
+	SECTION("the other terminal holds too")
+	{
+			//The upright segment dragged right past the terminal at 220
+		const QList<QPointF> stopped{{0, 0}, {0, 88}, {219, 88}, {219, 120}, {220, 120}};
+		CHECK(WirePath::dragged(long_arm, 2, QPointF(50, 0)) == stopped);
+	}
+}

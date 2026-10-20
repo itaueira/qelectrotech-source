@@ -21,6 +21,9 @@
 
 namespace
 {
+		/// Two coordinates closer than this are the same: on one line, or
+		/// one point. Not for the length a segment of a terminal keeps,
+		/// which is measured exactly - with it the drag stopped at 0.99.
 	constexpr double near = 0.01;
 
 	bool same(const QPointF &a, const QPointF &b)
@@ -39,6 +42,49 @@ namespace
 			return (b.x() - a.x()) * (c.x() - b.x()) < 0;
 		}
 		return false;
+	}
+
+		/// @a points with the segment @a index moved by @a d across
+		/// itself, before the path is made clean: a neighbour across the
+		/// segment takes the move, getting longer or shorter; a neighbour on
+		/// the same line keeps its end, and a segment joining the two is
+		/// added
+	QList<QPointF> moved(const QList<QPointF> &points, int index, double d, bool horizontal)
+	{
+		const QPointF shift = horizontal ? QPointF(0, d) : QPointF(d, 0);
+		const QPointF a = points.at(index);
+		const QPointF b = points.at(index + 1);
+		const auto onLine = [horizontal](const QPointF &p, const QPointF &q) {
+			return horizontal ? std::abs(p.y() - q.y()) < near : std::abs(p.x() - q.x()) < near;
+		};
+
+		QList<QPointF> out;
+		for (int i = 0 ; i < index ; ++i) out << points.at(i);
+		if (onLine(points.at(index - 1), a)) out << a;
+		out << a + shift << b + shift;
+		if (onLine(points.at(index + 2), b)) out << b;
+		for (int i = index + 2 ; i < points.size() ; ++i) out << points.at(i);
+		return out;
+	}
+
+		/// Whether the segment of a terminal, from @a dock, still points
+		/// the way it did - to @a was - and is at least @a minimum long,
+		/// or as long as it was if it was shorter
+	bool endHolds(const QPointF &dock, const QPointF &was, const QPointF &now, double minimum)
+	{
+		const QPointF o = was - dock;
+		const QPointF n = now - dock;
+		const double length = std::abs(o.x()) + std::abs(o.y());
+		if (length < near) return true;
+		const double along = (o.x() * n.x() + o.y() * n.y()) / length;
+		const double across = std::abs(o.x() * n.y() - o.y() * n.x()) / length;
+		return across < near && along >= std::min(minimum, length) - 1e-6;
+	}
+
+	bool endsHold(const QList<QPointF> &before, const QList<QPointF> &after, double minimum)
+	{
+		return endHolds(before.first(), before.at(1), after.at(1), minimum)
+				&& endHolds(before.last(), before.at(before.size() - 2), after.at(after.size() - 2), minimum);
 	}
 }
 
@@ -76,4 +122,66 @@ QList<QPointF> WirePath::simplified(const QList<QPointF> &points)
 		path.insert(1, (path.first() + path.last()) / 2);
 	}
 	return path;
+}
+
+/**
+	@brief WirePath::dragged
+	@a points with its segment @a index dragged by @a delta - of which only
+	the part across the segment counts -, made clean. A neighbour across the
+	segment gets longer or shorter, the segment of a terminal included; a
+	neighbour on the same line keeps its end, and a segment joining the two
+	is added. The segments of the terminals, the first and the last, do not
+	drag, keep the way they point, and do not get shorter than
+	@a minimum_end: past that, the drag stops where it reaches it - that is
+	where the bend is right over the terminal, and further the conductor
+	would run into the symbol.
+	Computed from where the drag started and the whole of it, and not move
+	by move: what one move of the mouse did never limits the next.
+	@param middle : where the middle of the dragged segment is now
+*/
+QList<QPointF> WirePath::dragged(const QList<QPointF> &points, int index, const QPointF &delta,
+				 QPointF *middle, double minimum_end)
+{
+	const auto unchanged = [&]() {
+		if (middle && index >= 0 && index + 1 < points.size()) {
+			*middle = (points.at(index) + points.at(index + 1)) / 2;
+		}
+		return points;
+	};
+	if (points.size() < 4 || index < 1 || index > points.size() - 3) return unchanged();
+	const QPointF a = points.at(index);
+	const QPointF b = points.at(index + 1);
+	const bool horizontal = std::abs(a.y() - b.y()) < near && std::abs(a.x() - b.x()) >= near;
+	const bool vertical = std::abs(a.x() - b.x()) < near && std::abs(a.y() - b.y()) >= near;
+	if (!horizontal && !vertical) return unchanged();
+
+	const auto attempt = [&](double d) {
+		return simplified(moved(points, index, d, horizontal));
+	};
+	double d = horizontal ? delta.y() : delta.x();
+	QList<QPointF> result = attempt(d);
+	if (!endsHold(points, result, minimum_end))
+	{
+			// The largest part of the drag that keeps the two ends
+		double good = 0;
+		double bad = d;
+		for (int i = 0 ; i < 48 ; ++i)
+		{
+			const double half = (good + bad) / 2;
+			if (endsHold(points, attempt(half), minimum_end)) good = half;
+			else bad = half;
+		}
+			// On a whole hundredth when that holds too: the drag of the
+			// mouse is on the grid, the limit is not
+		const double nearest = std::round(good * 100) / 100;
+		const double inside = std::trunc(good * 100) / 100;
+		d = endsHold(points, attempt(nearest), minimum_end) ? nearest
+		  : endsHold(points, attempt(inside), minimum_end) ? inside
+		  : good;
+		result = attempt(d);
+	}
+	if (middle) {
+		*middle = (a + b) / 2 + (horizontal ? QPointF(0, d) : QPointF(d, 0));
+	}
+	return result;
 }

@@ -34,6 +34,8 @@
 namespace WirePath
 {
 	QList<QPointF> simplified(const QList<QPointF> &points);
+	QList<QPointF> dragged(const QList<QPointF> &points, int index, const QPointF &delta,
+			       QPointF *middle = nullptr, double minimum_end = 1.0);
 }
 
 #endif // WIREPATH_H

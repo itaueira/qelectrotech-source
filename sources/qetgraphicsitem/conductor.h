@@ -263,7 +263,11 @@ class Conductor : public QGraphicsObject
 		bool m_moving_segment;
 		int moved_point;
 		qreal m_previous_z_value;
-		ConductorSegment *m_moved_segment;
+			/// The drag of a segment by its handle: the path when it started,
+			/// the segment, and where its middle was (T68)
+		QList<QPointF> m_drag_points;
+		int m_drag_segment = -1;
+		QPointF m_drag_middle;
 		QPointF before_mov_text_pos_;
 			/// Whether the conductor was manually modified by users
 		bool modified_path;
@@ -300,7 +304,6 @@ class Conductor : public QGraphicsObject
 		void generateConductorPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
 		static QList<QPointF> automaticPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
 		bool applyPathPoints(const QList<QPointF> &scene_points, bool by_hand);
-		void simplifyPath();
 		void updateConductorPath(const QPointF &, Qet::Orientation, const QPointF &, Qet::Orientation);
 		uint segmentsCount(QET::ConductorSegmentType = QET::Both) const;
 		QList<QPointF> segmentsToPoints() const;

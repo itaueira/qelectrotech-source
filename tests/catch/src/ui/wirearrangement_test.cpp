@@ -23,11 +23,13 @@
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/elementsmover.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
+#include "../../../../sources/QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/qetshapeitem.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/wirearrangement.h"
+#include "../../../../sources/wirepath.h"
 
 #include <catch2/catch.hpp>
 
@@ -638,7 +640,7 @@ TEST_CASE("CU-68.1 — Dragging the long arm shortens the short one", "[T68][wir
 		//The upright segment dragged 25 towards S1: the bend where it was let
 		//go, and nothing beyond it
 	REQUIRE(c->moveSegment(1, -25, 0));
-	const QList<QPointF> bent{{167, 168}, {175, 168}, {175, 178}, {200, 178}, {277, 178}};
+	const QList<QPointF> bent{{167, 168}, {175, 168}, {175, 178}, {277, 178}};
 	CHECK(points(c) == bent);
 
 	SECTION("CU-68.4 — one undo")
@@ -659,10 +661,10 @@ TEST_CASE("CU-68.2 — The bend right over the terminal", "[T68][wirearrangement
 		//Dragged all the way to the terminal: one unit off it, and the
 		//segment dragged still a middle one, which drags
 	REQUIRE(c->moveSegment(1, -40, 0));
-	const QList<QPointF> bent{{167, 168}, {168, 168}, {168, 178}, {200, 178}, {277, 178}};
+	const QList<QPointF> bent{{167, 168}, {168, 168}, {168, 178}, {277, 178}};
 	CHECK(points(c) == bent);
 	REQUIRE(c->moveSegment(1, 10, 0));
-	const QList<QPointF> dragged{{167, 168}, {168, 168}, {178, 168}, {178, 178}, {200, 178}, {277, 178}};
+	const QList<QPointF> dragged{{167, 168}, {178, 168}, {178, 178}, {277, 178}};
 	CHECK(points(c) == dragged);
 }
 
@@ -674,6 +676,57 @@ TEST_CASE("CU-68.3 — Dragging away draws as before", "[T68][wirearrangement]")
 	Conductor *c = longStub(bench);
 	REQUIRE(c);
 	REQUIRE(c->moveSegment(1, 20, 0));
-	const QList<QPointF> bent{{167, 168}, {200, 168}, {220, 168}, {220, 178}, {277, 178}};
+	const QList<QPointF> bent{{167, 168}, {220, 168}, {220, 178}, {277, 178}};
 	CHECK(points(c) == bent);
+}
+
+TEST_CASE("CU-68.6 — Dragging by the handle, past the terminal", "[T68][wirearrangement]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *c = longStub(bench);
+	REQUIRE(c);
+	const QList<QPointF> before = points(c);
+
+		//The handle of the upright segment, the one the mouse takes
+	c->setSelected(true);
+	QetGraphicsHandlerItem *handle = nullptr;
+	const auto items = bench.sheet->items(QPointF(200, 173));
+	for (QGraphicsItem *item : items) {
+		if (item->type() == QetGraphicsHandlerItem::Type) {
+			handle = qgraphicsitem_cast<QetGraphicsHandlerItem *>(item);
+		}
+	}
+	REQUIRE(handle);
+
+	const auto send = [&](QEvent::Type type, qreal x) {
+		QGraphicsSceneMouseEvent event(type);
+		event.setScenePos(QPointF(x, 173));
+		event.setButton(Qt::LeftButton);
+		event.setButtons(type == QEvent::GraphicsSceneMouseRelease ? Qt::NoButton : Qt::LeftButton);
+		bench.sheet->sendEvent(handle, &event);
+	};
+	send(QEvent::GraphicsSceneMousePress, 200);
+		//Step by step towards S1, and on past its terminal at 167: at each
+		//step the bend is where the mouse is, or one unit from the
+		//terminal when the mouse is past it, and no segment runs back over
+		//another
+	for (qreal x : {190.0, 180.0, 170.0, 160.0, 150.0, 172.0, 140.0})
+	{
+		CAPTURE(x);
+		send(QEvent::GraphicsSceneMouseMove, x);
+		const QList<QPointF> now = points(c);
+		CAPTURE(now);
+		CHECK(WirePath::simplified(now) == now);
+		CHECK(now.at(1).x() == Approx(std::max(168.0, x)));
+		CHECK(now.at(1).y() == Approx(168));
+	}
+	send(QEvent::GraphicsSceneMouseRelease, 140);
+	const QList<QPointF> bent{{167, 168}, {168, 168}, {168, 178}, {277, 178}};
+	CHECK(points(c) == bent);
+
+		//One undo for the whole drag
+	bench.sheet->undoStack().undo();
+	CHECK(points(c) == before);
 }

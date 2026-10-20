@@ -1202,7 +1202,9 @@ void Conductor::handlerMousePressEvent(QetGraphicsHandlerItem *qghi, QGraphicsSc
 	{
 		qghi->setColor(Qt::cyan);
 		m_moving_segment = true;
-		m_moved_segment = segmentsList().at(m_vector_index+1);
+		m_drag_points = segmentsToPoints();
+		m_drag_segment = m_vector_index + 1;
+		m_drag_middle = segmentsList().at(m_drag_segment)->middle();
 		before_mov_text_pos_ = m_text_item -> pos();
 
 		for(QetGraphicsHandlerItem *handler : m_handler_vector)
@@ -1223,19 +1225,19 @@ void Conductor::handlerMouseMoveEvent(QetGraphicsHandlerItem *qghi, QGraphicsSce
 			//Snap the mouse pos to grid
 		QPointF pos_ = Diagram::snapToGrid(mapFromScene(event->scenePos()));
 
-			//Position of the last point
-		QPointF p = m_moved_segment -> middle();
-
-			//Calculate the movement
-		m_moved_segment -> moveX(pos_.x() - p.x());
-		m_moved_segment -> moveY(pos_.y() - p.y());
+			//The path from where the drag started and the whole of the
+			//movement, and not from where the last move left it: the
+			//segment of a terminal gets shorter instead of a tail, and the
+			//limit at the terminal holds through the whole drag (T68)
+		QPointF middle;
+		pointsToSegments(WirePath::dragged(m_drag_points, m_drag_segment, pos_ - m_drag_middle, &middle));
 
 			//Apply the movement
 		modified_path = true;
 		has_to_save_profile = true;
 		segmentsToPath();
 		calculateTextItemPosition();
-		qghi->setPos(mapToScene(m_moved_segment->middle()));
+		qghi->setPos(mapToScene(middle));
 	}
 }
 
@@ -1252,9 +1254,9 @@ void Conductor::handlerMouseReleaseEvent(QetGraphicsHandlerItem *qghi, QGraphics
 	m_vector_index = -1;
 
 	m_moving_segment = false;
+	m_drag_points.clear();
 	if (has_to_save_profile)
 	{
-		simplifyPath();
 		saveProfile();
 		has_to_save_profile = false;
 	}
@@ -1672,12 +1674,11 @@ const QList<ConductorSegment *> Conductor::segmentsList() const
 
 /**
 	@brief Conductor::moveSegment
-	Move one segment of this conductor by (dx, dy), the same primitive
-	handlerMouseMoveEvent()/handlerMouseReleaseEvent() apply on a manual
-	drag -- moveX()/moveY() each silently no-op on the wrong axis or a
-	static (terminal-anchored) segment, so both are always called and
-	whichever applies takes effect. Unlike a drag this commits the whole
-	move as a single undo step.
+	Move one segment of this conductor by (dx, dy), the same rule
+	handlerMouseMoveEvent() applies on a manual drag (WirePath::dragged):
+	only the part of the movement across the segment counts, and a static
+	(terminal-anchored) segment does not move. Unlike a drag this commits
+	the whole move as a single undo step.
 	@param index a segmentsList() index
 	@param dx @param dy the movement, in the diagram's own coordinates
 	@return false if index is out of range
@@ -1688,31 +1689,12 @@ bool Conductor::moveSegment(int index, qreal dx, qreal dy)
 	if (index < 0 || index >= segs.count()) return false;
 
 	before_mov_text_pos_ = m_text_item->pos();
-	ConductorSegment *seg = segs.at(index);
-	seg->moveX(dx);
-	seg->moveY(dy);
+	pointsToSegments(WirePath::dragged(segmentsToPoints(), index, QPointF(dx, dy)));
 	modified_path = true;
-	simplifyPath();
 	segmentsToPath();
 	calculateTextItemPosition();
 	saveProfile();
 	return true;
-}
-
-/**
-	@brief Conductor::simplifyPath
-	After a segment was dragged: the path without a point repeated and
-	without a segment running back over the one before it (WirePath), so
-	that the bend is where the segment was let go and the segment joined to
-	the terminal gets shorter, instead of a tail beyond the bend (T68).
-*/
-void Conductor::simplifyPath()
-{
-	const QList<QPointF> points = segmentsToPoints();
-	const QList<QPointF> clean = WirePath::simplified(points);
-	if (clean.size() == points.size()) return;
-	pointsToSegments(clean);
-	segmentsToPath();
 }
 
 /**
