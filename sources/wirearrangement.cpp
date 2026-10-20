@@ -19,6 +19,7 @@
 
 #include "conductorsegment.h"
 #include "diagram.h"
+#include "foliogrid.h"
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/qetshapeitem.h"
@@ -392,6 +393,11 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 	}
 
 	WireLanes::Request vertical, horizontal;
+		//The lanes on whole units, or on the grid when the person set it
+		//finer than that
+	QSettings settings;
+	vertical.unit = FolioGrid::freeStep(FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid));
+	horizontal.unit = FolioGrid::freeStep(FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid));
 	Scene scene;
 	const bool only_their_groups = scope == Scope::NewConductors || scope == Scope::Moved;
 
@@ -524,7 +530,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			continue;
 		}
 		const double run = WireLanes::runAt(s.start.y(), s.outward, s.start.x(), s.stub.x(),
-						    across, longest_stub);
+						    across, longest_stub, vertical.unit);
 		s.run = std::isnan(run) ? automaticRun(d) : run;
 		if (towards && std::abs(s.run - s.end.y()) < 1)
 		{

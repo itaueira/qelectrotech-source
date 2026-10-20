@@ -714,8 +714,8 @@ QList<QPointF> Conductor::automaticPath(const QPointF &sp1, Qet::Orientation o1,
 			// rounding but off by a sub-pixel remainder, and still route a
 			// degenerate bridge for it.
 			if (qRound(depart.x()) != qRound(arrivee.x())) {
-				int ligne_inter_x = qRound(depart.x() + arrivee.x()) / 2;
-				while (ligne_inter_x % Diagram::xGrid) -- ligne_inter_x;
+				const int middle_x = qRound(depart.x() + arrivee.x()) / 2;
+				const qreal ligne_inter_x = std::floor(middle_x / Diagram::xGrid + 1e-9) * Diagram::xGrid;
 				points << QPointF(ligne_inter_x, depart.y());
 				points << QPointF(ligne_inter_x, arrivee.y());
 			}
@@ -726,8 +726,8 @@ QList<QPointF> Conductor::automaticPath(const QPointF &sp1, Qet::Orientation o1,
 			// since "descendant" requires depart.y() < arrivee.y() strictly
 			// -- kept for symmetry with the "montant" branch below.)
 			if (qRound(depart.y()) != qRound(arrivee.y())) {
-				int ligne_inter_y = qRound(depart.y() + arrivee.y()) / 2;
-				while (ligne_inter_y % Diagram::yGrid) -- ligne_inter_y;
+				const int middle_y = qRound(depart.y() + arrivee.y()) / 2;
+				const qreal ligne_inter_y = std::floor(middle_y / Diagram::yGrid + 1e-9) * Diagram::yGrid;
 				points << QPointF(depart.x(), ligne_inter_y);
 				points << QPointF(arrivee.x(), ligne_inter_y);
 			}
@@ -746,8 +746,8 @@ QList<QPointF> Conductor::automaticPath(const QPointF &sp1, Qet::Orientation o1,
 			// straight into each other, no bridge needed). Compared
 			// qRound()ed, same as the other three guards.
 			if (qRound(depart.y()) != qRound(arrivee.y())) {
-				int ligne_inter_y = qRound(depart.y() + arrivee.y()) / 2;
-				while (ligne_inter_y % Diagram::yGrid) -- ligne_inter_y;
+				const int middle_y = qRound(depart.y() + arrivee.y()) / 2;
+				const qreal ligne_inter_y = std::floor(middle_y / Diagram::yGrid + 1e-9) * Diagram::yGrid;
 				points << QPointF(depart.x(), ligne_inter_y);
 				points << QPointF(arrivee.x(), ligne_inter_y);
 			}
@@ -756,8 +756,8 @@ QList<QPointF> Conductor::automaticPath(const QPointF &sp1, Qet::Orientation o1,
 			// and arrivee.y() -- unnecessary exactly when depart and
 			// arrivee already share an x.
 			if (qRound(depart.x()) != qRound(arrivee.x())) {
-				int ligne_inter_x = qRound(depart.x() + arrivee.x()) / 2;
-				while (ligne_inter_x % Diagram::xGrid) -- ligne_inter_x;
+				const int middle_x = qRound(depart.x() + arrivee.x()) / 2;
+				const qreal ligne_inter_x = std::floor(middle_x / Diagram::xGrid + 1e-9) * Diagram::xGrid;
 				points << QPointF(ligne_inter_x, depart.y());
 				points << QPointF(ligne_inter_x, arrivee.y());
 			}

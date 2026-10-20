@@ -47,7 +47,7 @@ namespace TextGrid
 		@return p snapped to a grid of x_grid / divisor by y_grid / divisor,
 		or rounded to the nearest pixel when divisor is 0 or less.
 	*/
-	inline QPointF snap(const QPointF &p, int x_grid, int y_grid, qreal divisor)
+	inline QPointF snap(const QPointF &p, qreal x_grid, qreal y_grid, qreal divisor)
 	{
 		if (divisor <= 0 || x_grid <= 0 || y_grid <= 0)
 			return QPointF(qRound(p.x()), qRound(p.y()));

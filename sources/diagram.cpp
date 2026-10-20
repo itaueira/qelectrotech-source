@@ -157,8 +157,8 @@ namespace {
 	}
 }
 
-int Diagram::xGrid  = 10;
-int Diagram::yGrid  = 10;
+qreal Diagram::xGrid  = 10;
+qreal Diagram::yGrid  = 10;
 int Diagram::xKeyGrid = 10;
 int Diagram::yKeyGrid = 10;
 bool Diagram::displayFineGrid = false;
@@ -388,8 +388,8 @@ void Diagram::drawBackground(QPainter *p, const QRectF &r) {
 
 		p -> setBrush(Qt::NoBrush);
 
-		const int xGrid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
-		const int yGrid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+		const qreal xGrid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+		const qreal yGrid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
 
 		qreal limit_x = rect.x() + rect.width();
 		qreal limit_y = rect.y() + rect.height();
@@ -417,19 +417,23 @@ void Diagram::drawBackground(QPainter *p, const QRectF &r) {
 			//A small grid seen from afar puts the dots closer than their
 			//own width, so only every few of them are drawn - still points
 			//of the grid, so what is seen stays where things snap.
-		const int x_step = xGrid * GridDots::stride(xGrid, zoom_factor, pen.width());
-		const int y_step = yGrid * GridDots::stride(yGrid, zoom_factor, pen.width());
+		const qreal x_step = xGrid * GridDots::stride(xGrid, zoom_factor, pen.width());
+		const qreal y_step = yGrid * GridDots::stride(yGrid, zoom_factor, pen.width());
+		const auto onStep = [](qreal v, qreal step) {
+			return std::abs(v - std::round(v / step) * step) < 1e-6;
+		};
 		if (zoom_factor > 0.5) // no grid below ... !
 		{
-			int g_x = (int)ceil(rect.x());
-			while (g_x % x_step) ++ g_x;
-			int g_y = (int)ceil(rect.y());
-			while (g_y % y_step) ++ g_y;
+				//Counted by multiples of the step, the grid may be a
+				//fraction: added up along the folio, a step of 0.1 would
+				//drift off its own grid
+			const qint64 first_x = qint64(std::ceil(rect.x() / x_step - 1e-9));
+			const qint64 first_y = qint64(std::ceil(rect.y() / y_step - 1e-9));
 
-			QPolygon points;
-			for (int gx = g_x ; gx < limit_x ; gx += x_step) {
-				for (int gy = g_y ; gy < limit_y ; gy += y_step) {
-					points << QPoint(gx, gy);
+			QPolygonF points;
+			for (qint64 i = first_x ; i * x_step < limit_x ; ++i) {
+				for (qint64 j = first_y ; j * y_step < limit_y ; ++j) {
+					points << QPointF(i * x_step, j * y_step);
 				}
 			}
 			p -> drawPoints(points);
@@ -456,20 +460,20 @@ void Diagram::drawBackground(QPainter *p, const QRectF &r) {
 			fine_pen.setWidth(1);
 			p->setPen(fine_pen);
 
-			int fx = (int)ceil(rect.x());
-			while (fx % fine_x) ++ fx;
-			int fy = (int)ceil(rect.y());
-			while (fy % fine_y) ++ fy;
+			const qint64 first_x = qint64(std::ceil(rect.x() / fine_x - 1e-9));
+			const qint64 first_y = qint64(std::ceil(rect.y() / fine_y - 1e-9));
 
-			QPolygon fine_points;
-			for (int gx = fx ; gx < limit_x ; gx += fine_x) {
-				for (int gy = fy ; gy < limit_y ; gy += fine_y) {
+			QPolygonF fine_points;
+			for (qint64 i = first_x ; i * fine_x < limit_x ; ++i) {
+				for (qint64 j = first_y ; j * fine_y < limit_y ; ++j) {
+					const qreal gx = i * fine_x;
+					const qreal gy = j * fine_y;
 						//The main grid already drew these, and drawing them
 						//again in a fainter pen only makes them muddy.
-					if (gx % x_step == 0 && gy % y_step == 0) {
+					if (onStep(gx, x_step) && onStep(gy, y_step)) {
 						continue;
 					}
-					fine_points << QPoint(gx, gy);
+					fine_points << QPointF(gx, gy);
 				}
 			}
 			p->drawPoints(fine_points);
@@ -3890,22 +3894,31 @@ DiagramPosition Diagram::convertPosition(const QPointF &pos) {
 */
 QPointF Diagram::snapToGrid(const QPointF &p)
 {
-	QSettings settings;
-	const int xGrid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
-	const int yGrid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+	return snapToGrid(p, QApplication::keyboardModifiers().testFlag(Qt::ControlModifier));
+}
 
-	//Return a point rounded to the nearest pixel
-	if (QApplication::keyboardModifiers().testFlag(Qt::ControlModifier))
+/**
+	@brief Diagram::snapToGrid
+	@return the nearest snap point of @a p: on the grid of the folio, or,
+	when @a free - Ctrl held -, on the nearest pixel, or on the grid when
+	it is finer than a pixel
+*/
+QPointF Diagram::snapToGrid(const QPointF &p, bool free)
+{
+	QSettings settings;
+	const qreal xGrid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+	const qreal yGrid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+
+		//Return a point rounded to the nearest pixel, or to the grid when
+		//it is finer than that
+	if (free)
 	{
-		int p_x = qRound(p.x());
-		int p_y = qRound(p.y());
-		return (QPointF(p_x, p_y));
+		return QPointF(FolioGrid::snap(p.x(), FolioGrid::freeStep(xGrid)),
+			       FolioGrid::snap(p.y(), FolioGrid::freeStep(yGrid)));
 	}
 
 		//Return a point snapped to the grid
-	int p_x = qRound(p.x() / xGrid) * xGrid;
-	int p_y = qRound(p.y() / yGrid) * yGrid;
-	return (QPointF(p_x, p_y));
+	return QPointF(FolioGrid::snap(p.x(), xGrid), FolioGrid::snap(p.y(), yGrid));
 }
 
 /**

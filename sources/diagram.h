@@ -89,10 +89,10 @@ class Diagram : public QGraphicsScene
 		ConductorProperties defaultConductorProperties;
 		/// Diagram dimensions and title block
 		BorderTitleBlock border_and_titleblock;
-		/// abscissa grid step size
-		static int xGrid;
-		/// ordinate grid step size
-		static int yGrid;
+		/// abscissa grid step size, a fraction allowed (FolioGrid)
+		static qreal xGrid;
+		/// ordinate grid step size, a fraction allowed (FolioGrid)
+		static qreal yGrid;
 		/// Key grid x step size
 		static int xKeyGrid;
 		/// Key grid y step size
@@ -365,6 +365,7 @@ class Diagram : public QGraphicsScene
 		BorderOptions borderOptions();
 		DiagramPosition convertPosition(const QPointF &);
 		static QPointF snapToGrid(const QPointF &p);
+		static QPointF snapToGrid(const QPointF &p, bool free);
 		static QPointF snapToTextGrid(const QPointF &p);
 	
 		bool drawTerminals() const;

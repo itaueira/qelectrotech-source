@@ -21,6 +21,7 @@
 #include "../cable/cablecreatedialog.h"
 #include "../cable/cablepart.h"
 #include "../diagram.h"
+#include "../foliogrid.h"
 #include "../qetapp.h"
 #include "../qetdiagrameditor.h"
 #include "../qetproject.h"
@@ -48,9 +49,7 @@ namespace {
 qreal gridStep()
 {
 	QSettings settings;
-	const int x = settings.value(QStringLiteral("diagrameditor/Xgrid"),
-								 Diagram::xGrid).toInt();
-	return qMax(1, x);
+	return FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
 }
 
 } // namespace

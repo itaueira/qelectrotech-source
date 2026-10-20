@@ -23,6 +23,7 @@
 #include "editcablecommand.h"
 #include "../autoNum/assignvariables.h"
 #include "../diagram.h"
+#include "../foliogrid.h"
 #include "../properties/xrefproperties.h"
 #include "../qetapp.h"
 #include "../qetproject.h"
@@ -1691,11 +1692,9 @@ void CablePart::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 				//against is taken from it on the far side of the
 				//label, never in front of it.
 			QSettings settings;
-			const int step = horizontal
-				? settings.value(QStringLiteral("diagrameditor/Xgrid"),
-								 Diagram::xGrid).toInt()
-				: settings.value(QStringLiteral("diagrameditor/Ygrid"),
-								 Diagram::yGrid).toInt();
+			const qreal step = horizontal
+				? FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid)
+				: FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
 			if (step > 0) {
 				high = std::ceil(high / step) * step;
 				low = std::floor(low / step) * step;

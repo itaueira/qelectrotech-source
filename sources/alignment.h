@@ -139,7 +139,7 @@ namespace Alignment
 		that went through arithmetic carry residues of that size, and
 		qFuzzyIsNull() (1e-12) is too strict to absorb them.
 	*/
-	inline QPointF gridOffset(const QPointF &p, int x_grid, int y_grid, qreal divisor = 1)
+	inline QPointF gridOffset(const QPointF &p, qreal x_grid, qreal y_grid, qreal divisor = 1)
 	{
 		const QPointF offset = TextGrid::snap(p, x_grid, y_grid, divisor) - p;
 		auto clean = [](qreal v) { return qAbs(v) < 1e-6 ? 0.0 : v; };
@@ -156,7 +156,7 @@ namespace Alignment
 		close to it as the grid allows.
 	*/
 	inline QPointF snappedOffset(const QPointF &pos, const QPointF &offset, Edge edge,
-				     int x_grid, int y_grid, qreal divisor = 1)
+				     qreal x_grid, qreal y_grid, qreal divisor = 1)
 	{
 		const QPointF snap = gridOffset(pos + offset, x_grid, y_grid, divisor);
 		QPointF result = offset + (isHorizontal(edge) ? QPointF(snap.x(), 0)
@@ -211,9 +211,9 @@ namespace Alignment
 		of each one and the edges of the next. For a symbol the edges are
 		its outline and its texts together: what is not to touch.
 	*/
-	inline int distributionPitch(const QList<Item> &items, Direction direction, int grid, qreal gap)
+	inline int distributionPitch(const QList<Item> &items, Direction direction, qreal grid, qreal gap)
 	{
-		grid = qMax(1, grid);
+		if (grid <= 0) grid = 1;
 		const QList<int> order = distributionOrder(items, direction);
 		qreal needed = 0;
 		for (int k = 0 ; k + 1 < order.size() ; ++k)

@@ -152,6 +152,8 @@ add_executable(
     # Which dots of the folio grid are drawn: a header only, like the one
     # above.
     src/griddots_test.cpp
+    # The folio grid with a step under 1: headers only too.
+    src/foliogrid_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h

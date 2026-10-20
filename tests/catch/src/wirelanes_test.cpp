@@ -297,6 +297,45 @@ TEST_CASE("T67 — Too narrow outside the frames: inside, where there is room", 
 	CHECK(two.at.at(0) == Approx(208));
 }
 
+TEST_CASE("T69 — The lanes on a grid of 0.5", "[T69][wirelanes]")
+{
+		//Ten lanes in 60: 5.45 apart. On whole units, 5, with 8 and 7 left
+		//at the ends; on a grid of 0.5, 5.5, with 5.5 and 5
+	const QVector<double> whole = WireLanes::positions(10, 0, 60);
+	REQUIRE(whole.size() == 10);
+	CHECK(whole.first() == Approx(8));
+	CHECK(whole.at(1) - whole.at(0) == Approx(5));
+
+	const QVector<double> half = WireLanes::positions(10, 0, 60, 0.5);
+	REQUIRE(half.size() == 10);
+	for (int k = 0 ; k < 10 ; ++k) {
+		CAPTURE(k);
+		CHECK(half.at(k) == Approx(5.5 + 5.5 * k));
+	}
+
+	SECTION("and through the arrangement")
+	{
+		Request r;
+		r.unit = 0.5;
+		for (int k = 0 ; k < 10 ; ++k) {
+			r.wires << wire(100 + 20 * k, 125 + 20 * k, 0, 60);
+		}
+		QVector<double> at = WireLanes::arrange(r).at;
+		std::sort(at.begin(), at.end());
+		CHECK(at.first() == Approx(5.5));
+		CHECK(at.at(1) - at.at(0) == Approx(5.5));
+	}
+	SECTION("the run that leaves a terminal, by halves")
+	{
+			//A line at 609.5 and the terminal at 608: 3 from it is 612.5 on
+			//halves, 613 on whole units
+		WireLanes::Clearance c;
+		c.parallel << WireLanes::Line{609.5, 180, 350};
+		CHECK(WireLanes::runAt(608, 1, 167, 350, c, 20) == Approx(613));
+		CHECK(WireLanes::runAt(608, 1, 167, 350, c, 20, 0.5) == Approx(612.5));
+	}
+}
+
 TEST_CASE("T67 — Where the run that leaves a terminal goes", "[T67][wirelanes]")
 {
 	using WireLanes::Clearance;

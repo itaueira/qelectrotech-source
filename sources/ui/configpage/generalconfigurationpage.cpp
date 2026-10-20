@@ -29,6 +29,7 @@
 #include "../../utils/qetutils.h"
 #include "../../utils/previousversions.h"
 #include "../../qetmessagebox.h"
+#include "../../foliogrid.h"
 #include "../../textgrid.h"
 #include "../../wiringrules.h"
 #include "../wiringruleswarning.h"
@@ -148,8 +149,8 @@ GeneralConfigurationPage::GeneralConfigurationPage(QWidget *parent) :
 	ui->m_context_toolbar_cb->setChecked(settings.value("diagrameditor/context_toolbar", true).toBool());
 	ui->m_arrange_new_conductors_cb->setChecked(WireArrangement::arrangesAutomatically());
 	ui->m_mouse_gestures_cb->setChecked(settings.value("diagrameditor/mouse_gestures", true).toBool());
-	ui->DiagramEditor_xGrid_sb->setValue(settings.value("diagrameditor/Xgrid", 10).toInt());
-	ui->DiagramEditor_yGrid_sb->setValue(settings.value("diagrameditor/Ygrid", 10).toInt());
+	ui->DiagramEditor_xGrid_sb->setValue(FolioGrid::step(settings.value(FolioGrid::x_key), 10));
+	ui->DiagramEditor_yGrid_sb->setValue(FolioGrid::step(settings.value(FolioGrid::y_key), 10));
 	for (const qreal divisor : TextGrid::divisors)
 		ui->DiagramEditor_textGrid_cb->addItem(
 					divisor > 0 ? TextGrid::ratioLabel(divisor) : tr("Disabled", "fr: Désactivée"),

@@ -22,6 +22,7 @@
 #include "../../../../sources/conductorsegment.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/elementsmover.h"
+#include "../../../../sources/foliogrid.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
@@ -34,6 +35,7 @@
 #include <catch2/catch.hpp>
 
 #include <QGraphicsSceneMouseEvent>
+#include <QSettings>
 #include <QUndoStack>
 
 #include <algorithm>
@@ -195,8 +197,8 @@ namespace
 				WireArrangement::setArrangesAutomatically(m_arrange);
 			}
 		private:
-			int m_x;
-			int m_y;
+			qreal m_x;
+			qreal m_y;
 			bool m_arrange;
 	};
 
@@ -521,6 +523,40 @@ TEST_CASE("CU-67.12 — Up and down: the same rule, the axes swapped", "[T67][wi
 	const double b = bridge(second);
 	CHECK(a > b);
 	CHECK(a - b == Approx(27));
+	CHECK((a + b) / 2 == Approx(150).margin(1));
+}
+
+TEST_CASE("CU-69.4 — Up and down on a grid of 0.5", "[T69][wirearrangement]")
+{
+		//The same two conductors, with the grid of the folio set to 0.5 in
+		//the settings: 80 / 3 is 26.67, 26.5 apart on halves where it was
+		//27 on whole units
+	Setup setup;
+	QSettings settings;
+	const QVariant had_x = settings.value(FolioGrid::x_key);
+	const QVariant had_y = settings.value(FolioGrid::y_key);
+	settings.setValue(FolioGrid::x_key, 0.5);
+	settings.setValue(FolioGrid::y_key, 0.5);
+
+	UiBench::ScratchProject project(fixtureXml({{"south.elmt", 100, 90, "A"},
+						    {"south.elmt", 113, 90, "B"},
+						    {"north.elmt", 110, 210, "C"},
+						    {"north.elmt", 133, 210, "D"}}, false));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Conductor *first = draw(sheet, tagged(sheet, "A")->terminals().at(0),
+				tagged(sheet, "C")->terminals().at(0));
+	Conductor *second = draw(sheet, tagged(sheet, "B")->terminals().at(0),
+				 tagged(sheet, "D")->terminals().at(0));
+	const double a = first ? bridge(first) : 0;
+	const double b = second ? bridge(second) : 0;
+
+	for (const auto &kept : {qMakePair(FolioGrid::x_key, had_x), qMakePair(FolioGrid::y_key, had_y)}) {
+		if (kept.second.isValid()) settings.setValue(kept.first, kept.second);
+		else settings.remove(kept.first);
+	}
+	REQUIRE((first && second));
+	CHECK(a - b == Approx(26.5));
 	CHECK((a + b) / 2 == Approx(150).margin(1));
 }
 

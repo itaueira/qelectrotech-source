@@ -87,6 +87,9 @@ namespace WireLanes
 		double min_pitch = 4;
 			/// Two bridges closer than this across are in conflict
 		double gap = 10;
+			/// The lanes, and the room between them, are whole numbers of
+			/// this: 1, or the grid of the folio when it is finer
+		double unit = 1;
 	};
 
 	struct Result
@@ -115,7 +118,7 @@ namespace WireLanes
 	bool inConflict(const Wire &a, const Wire &b, double gap);
 	int orderCost(const Wire &left, const Wire &right, double gap);
 	QVector<int> lanes(const QVector<Wire> &wires, double gap);
-	QVector<double> positions(int lane_count, double low, double high);
+	QVector<double> positions(int lane_count, double low, double high, double unit = 1);
 
 		/// A straight line: at the across coordinate @a at, from @a a to
 		/// @a b along - or, among the lines that run across, at the along
@@ -152,7 +155,7 @@ namespace WireLanes
 
 	bool isClear(double at, double a, double b, const Clearance &clearance);
 	double runAt(double start, double outward, double a, double b,
-		     const Clearance &clearance, double longest);
+		     const Clearance &clearance, double longest, double step = 1);
 }
 
 #endif // WIRELANES_H

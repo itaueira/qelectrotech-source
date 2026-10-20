@@ -299,10 +299,15 @@ QVector<int> WireLanes::lanes(const QVector<Wire> &wires, double gap)
 	ends nearest to a pitch: 22 lanes in 134.5 go 6 apart with 4 and 4.5 at
 	the ends, and not 5 apart with 15 at each end. An end never gets less
 	than half the exact pitch. Not on the grid of the folio: with a grid of
-	10, five lanes in 54.5 would have gone against the frame.
+	10, five lanes in 54.5 would have gone against the frame. On @a unit,
+	though, when the person sets the grid finer than a whole unit - 0.5 -:
+	the pitch and the lanes are then whole numbers of it, and the lanes
+	spread closer to the exact pitch.
 */
-QVector<double> WireLanes::positions(int lane_count, double low, double high)
+QVector<double> WireLanes::positions(int lane_count, double low, double high, double unit)
 {
+	const double u = unit > eps ? unit : 1;
+	const auto clean = [](double v) { return std::round(v * 1e6) / 1e6; };
 	QVector<double> exact;
 	if (lane_count <= 0) return exact;
 	const double pitch = (high - low) / (lane_count + 1);
@@ -313,14 +318,14 @@ QVector<double> WireLanes::positions(int lane_count, double low, double high)
 
 	QVector<double> best;
 	double best_score = std::numeric_limits<double>::infinity();
-	for (double whole : {std::floor(pitch), std::ceil(pitch)})
+	for (double whole : {std::floor(pitch / u) * u, std::ceil(pitch / u) * u})
 	{
-		if (lane_count > 1 && whole < 1) continue;
+		if (lane_count > 1 && whole < u - eps) continue;
 		const double block = whole * (lane_count - 1);
-		const double first = std::round(middle - block / 2);
+		const double first = std::round((middle - block / 2) / u) * u;
 		QVector<double> snapped;
 		for (int k = 0 ; k < lane_count ; ++k) {
-			snapped << first + k * whole;
+			snapped << clean(first + k * whole);
 		}
 		const double at_low = snapped.first() - low;
 		const double at_high = high - snapped.last();
@@ -388,15 +393,17 @@ bool WireLanes::isClear(double at, double a, double b, const Clearance &clearanc
 	little further out as it takes, by whole units in the direction
 	@a outward (1 or -1) that the terminal points, and no more than
 	@a longest - the person asked for the wire to leave a terminal to the
-	side, and not after a piece in the direction of the terminal.
+	side, and not after a piece in the direction of the terminal. By
+	@a step: 1, or the grid of the folio when it is finer.
 	@return the across coordinate of the run, or NaN when none is clear
 */
 double WireLanes::runAt(double start, double outward, double a, double b,
-			const Clearance &clearance, double longest)
+			const Clearance &clearance, double longest, double step)
 {
-	for (int k = 0 ; k <= longest + eps ; ++k)
+	const double s = step > eps ? step : 1;
+	for (int k = 0 ; k * s <= longest + eps ; ++k)
 	{
-		const double at = start + outward * k;
+		const double at = start + outward * k * s;
 		if (isClear(at, a, b, clearance)) return at;
 	}
 	return std::numeric_limits<double>::quiet_NaN();
@@ -487,7 +494,7 @@ WireLanes::Result WireLanes::arrange(const Request &request)
 			});
 		}
 
-		const QVector<double> at = positions(count, chosen->low, chosen->high);
+		const QVector<double> at = positions(count, chosen->low, chosen->high, request.unit);
 		const int id = next_group++;
 		for (int k = 0 ; k < members.size() ; ++k)
 		{

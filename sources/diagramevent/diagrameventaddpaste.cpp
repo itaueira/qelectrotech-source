@@ -126,12 +126,10 @@
 	}
 	const QPointF top_left = items_rect.topLeft();
 	QSettings settings;
-	const int xGrid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
-	const int yGrid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+	const qreal xGrid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+	const qreal yGrid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
 	const auto snapGrid = [xGrid, yGrid](const QPointF &p) -> QPointF {
-		return QPointF(
-			qRound(p.x() / xGrid) * xGrid,
-			qRound(p.y() / yGrid) * yGrid);
+		return QPointF(FolioGrid::snap(p.x(), xGrid), FolioGrid::snap(p.y(), yGrid));
 	};
 	const QPointF grid_origin = (m_placement == AtOrigin)
 			? snapGrid(top_left)
@@ -303,13 +301,11 @@ void DiagramEventAddPaste::showHint()
 void DiagramEventAddPaste::moveTo(const QPointF &scene_pos)
 {
 	QSettings settings;
-	const int xGrid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
-	const int yGrid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+	const qreal xGrid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+	const qreal yGrid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
 
 	const auto snapGrid = [xGrid, yGrid](const QPointF &p) -> QPointF {
-		return QPointF(
-			qRound(p.x() / xGrid) * xGrid,
-			qRound(p.y() / yGrid) * yGrid);
+		return QPointF(FolioGrid::snap(p.x(), xGrid), FolioGrid::snap(p.y(), yGrid));
 	};
 
 		//The constructor normally sets the baseline, having just put the

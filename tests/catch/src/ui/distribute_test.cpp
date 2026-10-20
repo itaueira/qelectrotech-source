@@ -112,7 +112,7 @@ namespace
 		return item;
 	}
 
-	int gridStep(bool vertical)
+	qreal gridStep(bool vertical)
 	{
 		QSettings settings;
 		return vertical ? FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid)
@@ -152,7 +152,7 @@ TEST_CASE("T65 — A column distributed downwards", "[T65][distribute]")
 		addText(list.at(i), QStringLiteral("X1:%1").arg(i + 1));
 	select(sheet, list);
 
-	const int grid = gridStep(true);
+	const qreal grid = gridStep(true);
 	const int steps = AlignSelectionCommand::automaticPitch(sheet, AlignSelectionCommand::DistributeVertical);
 	CAPTURE(grid, steps);
 	REQUIRE(steps > 0);
@@ -294,7 +294,7 @@ TEST_CASE("T65 — A row distributed to the right", "[T65][distribute]")
 		addText(list.at(i), QStringLiteral("K%1").arg(i + 1));
 	select(sheet, list);
 
-	const int grid = gridStep(false);
+	const qreal grid = gridStep(false);
 	const int steps = AlignSelectionCommand::automaticPitch(sheet, AlignSelectionCommand::DistributeHorizontal);
 	REQUIRE(steps > 0);
 	sheet->undoStack().push(new AlignSelectionCommand(sheet, AlignSelectionCommand::DistributeHorizontal, steps));

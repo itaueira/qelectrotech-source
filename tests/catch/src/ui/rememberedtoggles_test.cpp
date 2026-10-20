@@ -19,6 +19,9 @@
 
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/ui/configpage/generalconfigurationpage.h"
+
+#include <QDoubleSpinBox>
 
 #include <catch2/catch.hpp>
 
@@ -206,5 +209,82 @@ TEST_CASE("CU-60.4 — On a folio, a grid of 1 seen from afar draws one dot in f
 		CAPTURE(inked);
 		CHECK(inked >= 99 * 99);
 		CHECK(inked <= 101 * 101);
+	}
+}
+
+TEST_CASE("CU-69.2 — A symbol snaps to a grid of 0.5", "[T69][grid]")
+{
+	KeepSetting keep_x(QStringLiteral("diagrameditor/Xgrid"));
+	KeepSetting keep_y(QStringLiteral("diagrameditor/Ygrid"));
+	QSettings().setValue(QStringLiteral("diagrameditor/Xgrid"), 0.5);
+	QSettings().setValue(QStringLiteral("diagrameditor/Ygrid"), 0.5);
+
+	CHECK(Diagram::snapToGrid(QPointF(10.3, 7.8), false) == QPointF(10.5, 8));
+		//With Ctrl: the nearest pixel would be coarser than the grid
+	CHECK(Diagram::snapToGrid(QPointF(10.3, 7.8), true) == QPointF(10.5, 8));
+
+	SECTION("on a grid of 10, Ctrl still gives the nearest pixel")
+	{
+		QSettings().setValue(QStringLiteral("diagrameditor/Xgrid"), 10);
+		QSettings().setValue(QStringLiteral("diagrameditor/Ygrid"), 10);
+		CHECK(Diagram::snapToGrid(QPointF(10.3, 7.8), false) == QPointF(10, 10));
+		CHECK(Diagram::snapToGrid(QPointF(10.3, 7.8), true) == QPointF(10, 8));
+	}
+}
+
+TEST_CASE("T69 — The box of the grid in the preferences takes 0.5", "[T69][grid]")
+{
+		//Read back as the page opens. Applying the page is not done here:
+		//it also resets the collections and the screen scaling
+	KeepSetting keep_x(QStringLiteral("diagrameditor/Xgrid"));
+	KeepSetting keep_y(QStringLiteral("diagrameditor/Ygrid"));
+	QSettings().setValue(QStringLiteral("diagrameditor/Xgrid"), 0.5);
+	QSettings().setValue(QStringLiteral("diagrameditor/Ygrid"), 0.25);
+
+	GeneralConfigurationPage page;
+	auto *x = page.findChild<QDoubleSpinBox *>(QStringLiteral("DiagramEditor_xGrid_sb"));
+	auto *y = page.findChild<QDoubleSpinBox *>(QStringLiteral("DiagramEditor_yGrid_sb"));
+	REQUIRE(x);
+	REQUIRE(y);
+	CHECK(x->value() == Approx(0.5));
+	CHECK(y->value() == Approx(0.25));
+	CHECK(x->minimum() == Approx(0.1));
+	CHECK(x->decimals() == 2);
+	x->setValue(0.05);
+	CHECK(x->value() == Approx(0.1));
+}
+
+TEST_CASE("CU-69.3 — On a folio, the dots of a grid of 0.5", "[T69][grid]")
+{
+	KeepSetting keep_x(QStringLiteral("diagrameditor/Xgrid"));
+	KeepSetting keep_y(QStringLiteral("diagrameditor/Ygrid"));
+	QSettings().setValue(QStringLiteral("diagrameditor/Xgrid"), 0.5);
+	QSettings().setValue(QStringLiteral("diagrameditor/Ygrid"), 0.5);
+
+	QETProject project;
+	Diagram *folio = project.addNewDiagram();
+	REQUIRE(folio != nullptr);
+	folio->setDisplayGrid(true);
+
+	const QRectF inside = folio->border_and_titleblock.insideBorderRect();
+
+	SECTION("at zoom 10: a dot every half unit, 5 pixels apart, about 40 x 40")
+	{
+		const QRectF area(QPointF(qCeil(inside.x()) + 20, qCeil(inside.y()) + 20), QSizeF(20, 20));
+		REQUIRE(inside.contains(area));
+		const int inked = inkedPixels(drawn(folio, area, 10));
+		CAPTURE(inked);
+		CHECK(inked >= 39 * 39);
+		CHECK(inked <= 41 * 41);
+	}
+
+	SECTION("at zoom 1: one in ten, a dot every 5 units, as for a grid of 1")
+	{
+		const QRectF area(QPointF(qCeil(inside.x()) + 20, qCeil(inside.y()) + 20), QSizeF(100, 100));
+		REQUIRE(inside.contains(area));
+		const int inked = inkedPixels(drawn(folio, area, 1));
+		CAPTURE(inked);
+		CHECK(inked >= 19 * 19);
+		CHECK(inked <= 21 * 21);
 	}
 }

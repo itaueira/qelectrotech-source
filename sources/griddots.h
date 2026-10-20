@@ -41,11 +41,11 @@ namespace GridDots
 		that keeps the dots @ref min_gap_px apart, and wider than twice
 		their own width. The dots drawn are still points of the grid, only
 		fewer of them, so what is seen stays where things snap.
-		@param grid_step : the grid step, in folio units
+		@param grid_step : the grid step, in folio units - a fraction too
 		@param zoom : pixels per folio unit
 		@param dot_width : the width of a dot, in pixels
 	*/
-	inline int stride(int grid_step, qreal zoom, int dot_width = 1)
+	inline int stride(qreal grid_step, qreal zoom, int dot_width = 1)
 	{
 		if (grid_step <= 0 || zoom <= 0) {
 			return 1;

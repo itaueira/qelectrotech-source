@@ -177,7 +177,7 @@ namespace {
 	/**
 		@return the grid step along @a direction, from the settings
 	*/
-	int gridStep(Alignment::Direction direction)
+	qreal gridStep(Alignment::Direction direction)
 	{
 		QSettings settings;
 		return direction == Alignment::Vertical
@@ -219,8 +219,8 @@ AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, int pi
 	m_locked_count = dc.removeNonMovableItems();
 
 	QSettings settings;
-	const int x_grid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
-	const int y_grid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+	const qreal x_grid = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+	const qreal y_grid = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
 	const qreal text_divisor = settings.value(TextGrid::settings_key, 1).toReal();
 
 		//Each kind goes where dragging it would have left it: symbols,
@@ -257,7 +257,7 @@ AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, int pi
 	if (isDistribution(mode))
 	{
 		const Alignment::Direction direction = directionOf(mode);
-		const int grid = gridStep(direction);
+		const qreal grid = gridStep(direction);
 		const QList<Alignment::Item> pieces = distributionPieces(entries, units);
 		const int steps = pitch_steps > 0
 				? pitch_steps
