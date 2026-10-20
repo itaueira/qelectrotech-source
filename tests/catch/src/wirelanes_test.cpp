@@ -297,6 +297,64 @@ TEST_CASE("T67 — Too narrow outside the frames: inside, where there is room", 
 	CHECK(two.at.at(0) == Approx(208));
 }
 
+TEST_CASE("T67 — Where the run that leaves a terminal goes", "[T67][wirelanes]")
+{
+	using WireLanes::Clearance;
+	using WireLanes::Line;
+
+		//Nothing in the way: at the terminal itself, to the side
+	Clearance free;
+	CHECK(WireLanes::runAt(498, 1, 166, 350, free, 20) == Approx(498));
+
+	SECTION("on the line of a terminal of the strip, out by the least")
+	{
+			//The lower terminal of the middle sensor of the folio, at 608,
+			//and the line of the 15, at 608: 3 down
+		Clearance c;
+		c.parallel << Line{608, 180, 350};
+		CHECK(WireLanes::runAt(608, 1, 167, 350, c, 20) == Approx(611));
+			//The upper one of the first, at 438, and the line of the 6 at
+			//437: 4 up
+		Clearance d;
+		d.parallel << Line{437, 180, 350};
+		CHECK(WireLanes::runAt(438, -1, 166, 350, d, 20) == Approx(434));
+			//Exactly 3 from a line is clear
+		Clearance e;
+		e.parallel << Line{551, 180, 350};
+		CHECK(WireLanes::runAt(548, -1, 167, 350, e, 20) == Approx(548));
+	}
+	SECTION("a line that ends before the run starts is not in the way")
+	{
+		Clearance c;
+		c.parallel << Line{608, 400, 500};
+		CHECK(WireLanes::runAt(608, 1, 167, 350, c, 20) == Approx(608));
+	}
+	SECTION("not past the terminal of another component")
+	{
+		Clearance c;
+		c.spots << WireLanes::Spot{200, 500};
+		CHECK(WireLanes::runAt(500, 1, 166, 350, c, 20) == Approx(505));
+	}
+	SECTION("not across a wire that stays, nor close to its end")
+	{
+		Clearance c;
+		c.crossing << Line{200, 480, 520};
+		CHECK(WireLanes::runAt(500, 1, 166, 350, c, 30) == Approx(523));
+	}
+	SECTION("not through another component")
+	{
+		Clearance c;
+		c.bodies << WireLanes::Block{190, 210, 495, 515};
+		CHECK(WireLanes::runAt(500, 1, 166, 350, c, 20) == Approx(515));
+	}
+	SECTION("nothing clear within reach")
+	{
+		Clearance c;
+		c.bodies << WireLanes::Block{190, 210, 400, 600};
+		CHECK(std::isnan(WireLanes::runAt(500, 1, 166, 350, c, 20)));
+	}
+}
+
 TEST_CASE("T67 — A chain with no room in common: each wire on its own", "[T67][wirelanes]")
 {
 	Request r;

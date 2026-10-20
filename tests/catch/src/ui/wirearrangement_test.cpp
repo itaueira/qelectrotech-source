@@ -36,6 +36,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QUndoStack>
 
+#include <algorithm>
 #include <cmath>
 
 /*
@@ -84,6 +85,14 @@ namespace
 				     QStringLiteral("<terminal x=\"0\" y=\"10\" orientation=\"s\"/>"), 20)
 			+ definition("north.elmt",
 				     QStringLiteral("<terminal x=\"0\" y=\"-10\" orientation=\"n\"/>"), 20)
+			+ definition("east.elmt",
+				     QStringLiteral("<terminal x=\"10\" y=\"0\" orientation=\"e\"/>"), 20)
+				//A terminal that sticks out of its component by 10
+			+ definition("pin.elmt",
+				     QStringLiteral("<terminal x=\"20\" y=\"0\" orientation=\"e\"/>"), 20)
+			+ definition("door.elmt",
+				     QStringLiteral("<terminal x=\"0\" y=\"-30\" orientation=\"n\"/>"
+						    "<terminal x=\"0\" y=\"30\" orientation=\"s\"/>"), 60)
 			+ definition("block.elmt", QString(), 20);
 	}
 
@@ -95,7 +104,23 @@ namespace
 		const char *label;
 	};
 
+	QString fixtureXml(const QList<Instance> &instances, const QString &shapes);
+
 	QString fixtureXml(const QList<Instance> &instances, bool frames)
+	{
+		return fixtureXml(instances, frames
+			? QStringLiteral("<shapes>"
+					 "<shape type=\"Rectangle\" x1=\"75\" y1=\"120\" x2=\"215\" y2=\"615\""
+					 " is_movable=\"1\" closed=\"0\" z=\"5\">"
+					 "<pen color=\"#000000\" style=\"DashLine\" widthF=\"1\"/></shape>"
+					 "<shape type=\"Rectangle\" x1=\"282\" y1=\"122\" x2=\"292\" y2=\"706\""
+					 " is_movable=\"1\" closed=\"0\" z=\"5\">"
+					 "<pen color=\"#000000\" style=\"DashLine\" widthF=\"1\"/></shape>"
+					 "</shapes>")
+			: QString());
+	}
+
+	QString fixtureXml(const QList<Instance> &instances, const QString &shapes)
 	{
 		QString xml;
 		for (int i = 0 ; i < instances.size() ; ++i)
@@ -116,16 +141,6 @@ namespace
 				.arg(i, 2, 10, QLatin1Char('0'))
 				.arg(QLatin1String(instance.label));
 		}
-		const QString shapes = frames
-			? QStringLiteral("<shapes>"
-					 "<shape type=\"Rectangle\" x1=\"75\" y1=\"120\" x2=\"215\" y2=\"615\""
-					 " is_movable=\"1\" closed=\"0\" z=\"5\">"
-					 "<pen color=\"#000000\" style=\"DashLine\" widthF=\"1\"/></shape>"
-					 "<shape type=\"Rectangle\" x1=\"282\" y1=\"122\" x2=\"292\" y2=\"706\""
-					 " is_movable=\"1\" closed=\"0\" z=\"5\">"
-					 "<pen color=\"#000000\" style=\"DashLine\" widthF=\"1\"/></shape>"
-					 "</shapes>")
-			: QString();
 		return QStringLiteral(
 			"<project title=\"bench\" version=\"0.80\">"
 			"<collection><category name=\"bench\">%1</category></collection>"
@@ -612,6 +627,399 @@ TEST_CASE("CU-67.14 — A conductor dragged by hand is not arranged by a move", 
 		//40 of it before the bend
 	CHECK_FALSE(by_hand->isAutoArranged());
 	CHECK(bridge(by_hand) == Approx(was + 40));
+}
+
+namespace
+{
+		/// A rectangle drawn with a pen 1 wide, from (@a x1, @a y1) to
+		/// (@a x2, @a y2)
+	QString frame(int x1, int y1, int x2, int y2)
+	{
+		return QStringLiteral("<shape type=\"Rectangle\" x1=\"%1\" y1=\"%2\" x2=\"%3\" y2=\"%4\""
+				      " is_movable=\"1\" closed=\"0\" z=\"5\">"
+				      "<pen color=\"#000000\" style=\"DashLine\" widthF=\"1\"/></shape>")
+			.arg(x1).arg(y1).arg(x2).arg(y2);
+	}
+
+	/*
+		The foot of the folio of the request (T67, third adjustment): three
+		sensors one above the other, each with a terminal that points up
+		and one that points down, each in its frame, wired to the terminals
+		11 to 16 of a strip whose ends are at x = 360. A component whose
+		terminals point to the side, as the encoder of the folio, has wires
+		to the terminals 6 and 9 above them: the line of the 6 is one unit
+		from the upper terminal of the first sensor, and the lower terminal
+		of the middle one is on the line of the 15.
+	*/
+	struct Foot
+	{
+		Foot() : project(fixtureXml(
+			{{"door.elmt", 166, 468, "D1"},
+			 {"door.elmt", 167, 578, "D2"},
+			 {"door.elmt", 167, 675, "D3"},
+			 {"sensor.elmt", 156, 393, "E"},
+			 {"terminal.elmt", 370, 437, "R6"},
+			 {"terminal.elmt", 370, 494, "R9"},
+			 {"terminal.elmt", 370, 532, "R11"},
+			 {"terminal.elmt", 370, 551, "R12"},
+			 {"terminal.elmt", 370, 570, "R13"},
+			 {"terminal.elmt", 370, 589, "R14"},
+			 {"terminal.elmt", 370, 608, "R15"},
+			 {"terminal.elmt", 370, 627, "R16"}},
+			QStringLiteral("<shapes>%1%2%3</shapes>")
+				.arg(frame(75, 34, 215, 521), frame(75, 525, 215, 621), frame(75, 624, 215, 720))))
+		{}
+
+		Terminal *at(const char *label, int i) const
+		{
+			Element *e = tagged(sheet, label);
+			return e ? e->terminals().at(i) : nullptr;
+		}
+		bool open()
+		{
+			if (!project.isOpen()) return false;
+			sheet = project.diagram(0);
+			pairs = {{at("D1", 0), at("R11", 0)}, {at("D1", 1), at("R12", 0)},
+				 {at("D2", 0), at("R13", 0)}, {at("D2", 1), at("R14", 0)},
+				 {at("D3", 0), at("R15", 0)}, {at("D3", 1), at("R16", 0)},
+				 {at("E", 0), at("R6", 0)}, {at("E", 1), at("R9", 0)}};
+			for (const auto &p : pairs) {
+				if (!p.first || !p.second) return false;
+			}
+			return true;
+		}
+		bool drawAll()
+		{
+			for (const auto &p : pairs) {
+				if (!::draw(sheet, p.first, p.second)) return false;
+			}
+			return true;
+		}
+			/// The path of the wire @a i, from the component's terminal
+		QList<QPointF> path(int i) const
+		{
+			const QList<Conductor *> on = pairs.at(i).first->conductors();
+			if (on.isEmpty()) return {};
+			QList<QPointF> p = points(on.first());
+			if ((p.first() - pairs.at(i).first->dockConductor()).manhattanLength() > 0.5) {
+				std::reverse(p.begin(), p.end());
+			}
+			return p;
+		}
+
+		UiBench::ScratchProject project;
+		Diagram *sheet = nullptr;
+		QList<QPair<Terminal *, Terminal *>> pairs;
+	};
+
+	struct Piece
+	{
+		QPointF a;
+		QPointF b;
+		const Conductor *owner;
+	};
+
+	QList<Piece> pieces(Diagram *sheet)
+	{
+		QList<Piece> out;
+		const auto conductors = sheet->conductors();
+		for (Conductor *c : conductors)
+		{
+			const QList<QPointF> p = points(c);
+			for (int i = 0 ; i + 1 < p.size() ; ++i) out << Piece{p.at(i), p.at(i + 1), c};
+		}
+		return out;
+	}
+
+	bool runsAcross(const Piece &p) { return std::abs(p.a.y() - p.b.y()) < 0.01; }
+
+	QString text(const QList<QPointF> &points)
+	{
+		QStringList out;
+		for (const QPointF &p : points) out << QStringLiteral("(%1,%2)").arg(p.x()).arg(p.y());
+		return out.join(QLatin1Char(' '));
+	}
+
+		/// Where two conductors of @a sheet cross, inside both pieces
+	QList<QPointF> crossings(Diagram *sheet)
+	{
+		QList<QPointF> out;
+		const QList<Piece> all = pieces(sheet);
+		for (const Piece &h : all)
+		{
+			if (!runsAcross(h)) continue;
+			for (const Piece &v : all)
+			{
+				if (v.owner == h.owner || runsAcross(v)) continue;
+				const double x = v.a.x(), y = h.a.y();
+				if (x > std::min(h.a.x(), h.b.x()) + 0.5 && x < std::max(h.a.x(), h.b.x()) - 0.5
+					&& y > std::min(v.a.y(), v.b.y()) + 0.5 && y < std::max(v.a.y(), v.b.y()) - 0.5) {
+					out << QPointF(x, y);
+				}
+			}
+		}
+		return out;
+	}
+
+		/// The terminals of @a sheet that a conductor not joined to them
+		/// passes closer than @a distance to
+	QList<QPointF> passedTerminals(Diagram *sheet, double distance)
+	{
+		QList<QPointF> out;
+		const QList<Piece> all = pieces(sheet);
+		const auto elements = sheet->elements();
+		for (Element *e : elements)
+		{
+			const auto terminals = e->terminals();
+			for (Terminal *t : terminals)
+			{
+				const QPointF d = t->dockConductor();
+				for (const Piece &p : all)
+				{
+					if (p.owner->terminal1 == t || p.owner->terminal2 == t) continue;
+					const double dx = std::max({std::min(p.a.x(), p.b.x()) - d.x(), 0.0,
+								    d.x() - std::max(p.a.x(), p.b.x())});
+					const double dy = std::max({std::min(p.a.y(), p.b.y()) - d.y(), 0.0,
+								    d.y() - std::max(p.a.y(), p.b.y())});
+					if (std::hypot(dx, dy) < distance - 1e-6) {
+						out << d;
+						break;
+					}
+				}
+			}
+		}
+		return out;
+	}
+
+		/// How many pieces of conductors run along the side of a frame,
+		/// closer than @a distance
+	int alongFrames(Diagram *sheet, double distance)
+	{
+		int n = 0;
+		const QList<Piece> all = pieces(sheet);
+		const auto items = sheet->items();
+		for (QGraphicsItem *item : items)
+		{
+			auto *shape = qgraphicsitem_cast<QetShapeItem *>(item);
+			if (!shape) continue;
+			const QRectF r = shape->mapRectToScene(shape->rect()).adjusted(-0.5, -0.5, 0.5, 0.5);
+			for (const Piece &p : all)
+			{
+				const double lo_x = std::min(p.a.x(), p.b.x()), hi_x = std::max(p.a.x(), p.b.x());
+				const double lo_y = std::min(p.a.y(), p.b.y()), hi_y = std::max(p.a.y(), p.b.y());
+				if (runsAcross(p)) {
+					for (double side : {r.top(), r.bottom()}) {
+						if (std::abs(p.a.y() - side) < distance
+							&& std::min(hi_x, r.right()) - std::max(lo_x, r.left()) > 0.5) ++n;
+					}
+				} else {
+					for (double side : {r.left(), r.right()}) {
+						if (std::abs(p.a.x() - side) < distance
+							&& std::min(hi_y, r.bottom()) - std::max(lo_y, r.top()) > 0.5) ++n;
+					}
+				}
+			}
+		}
+		return n;
+	}
+
+	int bends(const QList<QPointF> &p)
+	{
+		int n = 0;
+		for (int i = 1 ; i + 1 < p.size() ; ++i)
+		{
+			const bool first = std::abs(p.at(i).y() - p.at(i - 1).y()) < 0.01;
+			const bool second = std::abs(p.at(i + 1).y() - p.at(i).y()) < 0.01;
+			if (first != second) ++n;
+		}
+		return n;
+	}
+}
+
+TEST_CASE("CU-67.17 — The foot of the folio, without crossing", "[T67][wirearrangement]")
+{
+	Setup setup(1, false);
+	Foot foot;
+	REQUIRE(foot.open());
+	REQUIRE(foot.drawAll());
+
+		//As the automatic paths draw it: the wire to the 12 down over the
+		//upper terminal of the middle sensor, the one to the 15 up to its
+		//lower one, the bridge of the 13 across the line of the 12, and
+		//the runs of the 14 and the 16 on the bottoms of the frames
+	CAPTURE(text(crossings(foot.sheet)), text(passedTerminals(foot.sheet, 5)));
+	REQUIRE(!crossings(foot.sheet).isEmpty());
+	REQUIRE(passedTerminals(foot.sheet, 5).size() >= 2);
+	REQUIRE(alongFrames(foot.sheet, 3) >= 2);
+
+	CHECK(WireArrangement::arrange(foot.sheet, {}, WireArrangement::Scope::Folio) > 0);
+	for (int i = 0 ; i < foot.pairs.size() ; ++i) {
+		UNSCOPED_INFO("wire " << i << ": " << text(foot.path(i)).toStdString());
+	}
+	CHECK(crossings(foot.sheet).isEmpty());
+	CHECK(passedTerminals(foot.sheet, 5).isEmpty());
+	CHECK(alongFrames(foot.sheet, 3) == 0);
+
+		//One undo: the automatic paths back, the defects with them
+	foot.sheet->undoStack().undo();
+	CHECK(!crossings(foot.sheet).isEmpty());
+}
+
+TEST_CASE("CU-67.17 — The foot of the folio drawn wire by wire", "[T67][wirearrangement]")
+{
+	Setup setup;
+	Foot foot;
+	REQUIRE(foot.open());
+	REQUIRE(foot.drawAll());
+	for (int i = 0 ; i < foot.pairs.size() ; ++i) {
+		UNSCOPED_INFO("wire " << i << ": " << text(foot.path(i)).toStdString());
+	}
+	CHECK(crossings(foot.sheet).isEmpty());
+	CHECK(passedTerminals(foot.sheet, 5).isEmpty());
+	CHECK(alongFrames(foot.sheet, 3) == 0);
+}
+
+TEST_CASE("CU-67.18 — To the side, out of the terminal only as needed", "[T67][wirearrangement]")
+{
+	Setup setup(1, false);
+	Foot foot;
+	REQUIRE(foot.open());
+	REQUIRE(foot.drawAll());
+	REQUIRE(WireArrangement::arrange(foot.sheet, {}, WireArrangement::Scope::Folio) > 0);
+
+		//The four whose terminal is on no other line leave it to the side
+	for (int i : {1, 2, 4, 5})
+	{
+		const QList<QPointF> p = foot.path(i);
+		CAPTURE(i, text(p));
+		REQUIRE(p.size() >= 3);
+		CHECK(p.at(1).y() == Approx(p.at(0).y()));
+	}
+		//The lower terminal of the middle sensor is on the line of the 15:
+		//down 3, the least a line keeps from another, and to the side
+	const QList<QPointF> fourteen = foot.path(3);
+	CAPTURE(text(fourteen));
+	REQUIRE(fourteen.size() >= 3);
+	CHECK(fourteen.at(1).x() == Approx(167));
+	CHECK(fourteen.at(1).y() == Approx(611));
+	CHECK(fourteen.at(2).y() == Approx(611));
+		//The upper one of the first sensor is one unit from the line of
+		//the 6: up 4
+	const QList<QPointF> eleven = foot.path(0);
+	CAPTURE(text(eleven));
+	REQUIRE(eleven.size() >= 3);
+	CHECK(eleven.at(1).y() == Approx(434));
+	CHECK(eleven.at(2).y() == Approx(434));
+
+	SECTION("saved and opened again, the shapes come back")
+	{
+		QList<QList<QPointF>> before;
+		for (int i = 0 ; i < foot.pairs.size() ; ++i) before << foot.path(i);
+		REQUIRE(foot.project.saveAndReopen());
+		REQUIRE(foot.open());
+		for (int i = 0 ; i < foot.pairs.size() ; ++i)
+		{
+			CAPTURE(i);
+			CHECK(text(foot.path(i)) == text(before.at(i)));
+		}
+	}
+}
+
+TEST_CASE("CU-67.19 — One bend, when the straight way is free", "[T67][wirearrangement]")
+{
+	Setup setup;
+	UiBench::ScratchProject project(fixtureXml({{"door.elmt", 167, 578, "D"},
+						    {"terminal.elmt", 370, 650, "R"}}, QString()));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Conductor *c = draw(sheet, tagged(sheet, "D")->terminals().at(1),
+			    tagged(sheet, "R")->terminals().at(0));
+	REQUIRE(c);
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+	const QList<QPointF> p = points(c);
+	CAPTURE(text(p));
+	CHECK(bends(p) == 1);
+	CHECK(text(p).contains(QStringLiteral("(167,650)")));
+
+	SECTION("with the terminal of another component on the way, it leaves to the side")
+	{
+		UiBench::ScratchProject other(fixtureXml({{"door.elmt", 167, 578, "D"},
+							  {"door.elmt", 167, 668, "F"},
+							  {"terminal.elmt", 370, 650, "R"}}, QString()));
+		REQUIRE(other.isOpen());
+		Diagram *s = other.diagram(0);
+		Conductor *w = draw(s, tagged(s, "D")->terminals().at(1),
+				    tagged(s, "R")->terminals().at(0));
+		REQUIRE(w);
+		WireArrangement::arrange(s, {}, WireArrangement::Scope::Folio);
+		const QList<QPointF> q = points(w);
+		CAPTURE(text(q));
+		CHECK(bends(q) == 2);
+		CHECK(passedTerminals(s, 5).isEmpty());
+	}
+	SECTION("with only the end of a terminal on the way, it leaves to the side too")
+	{
+			//The end of the terminal at (167, 630), on the way down; the
+			//body of its component too far for its margin to stand in
+		UiBench::ScratchProject other(fixtureXml({{"door.elmt", 167, 578, "D"},
+							  {"pin.elmt", 147, 630, "P"},
+							  {"terminal.elmt", 370, 650, "R"}}, QString()));
+		REQUIRE(other.isOpen());
+		Diagram *s = other.diagram(0);
+		REQUIRE(tagged(s, "P")->terminals().at(0)->dockConductor() == QPointF(167, 630));
+		Conductor *w = draw(s, tagged(s, "D")->terminals().at(1),
+				    tagged(s, "R")->terminals().at(0));
+		REQUIRE(w);
+		WireArrangement::arrange(s, {}, WireArrangement::Scope::Folio);
+		const QList<QPointF> q = points(w);
+		CAPTURE(text(q));
+		CHECK(bends(q) == 2);
+		CHECK(passedTerminals(s, 5).isEmpty());
+	}
+	SECTION("with a wire that would have to cross its line, it leaves to the side")
+	{
+			//A component further right, its terminal at 625, has a wire to
+			//a terminal at 700: on its way down, its bridge would cross the
+			//line at 650 that the one bend would draw
+		UiBench::ScratchProject other(fixtureXml({{"door.elmt", 167, 578, "D"},
+							  {"east.elmt", 190, 625, "E"},
+							  {"terminal.elmt", 370, 650, "R"},
+							  {"terminal.elmt", 370, 700, "S"}}, QString()));
+		REQUIRE(other.isOpen());
+		Diagram *s = other.diagram(0);
+		REQUIRE(draw(s, tagged(s, "E")->terminals().at(0), tagged(s, "S")->terminals().at(0)));
+		Conductor *w = draw(s, tagged(s, "D")->terminals().at(1),
+				    tagged(s, "R")->terminals().at(0));
+		REQUIRE(w);
+		WireArrangement::arrange(s, {}, WireArrangement::Scope::Folio);
+		const QList<QPointF> q = points(w);
+		CAPTURE(text(q));
+		CHECK(bends(q) == 2);
+		CHECK(crossings(s).isEmpty());
+	}
+}
+
+TEST_CASE("CU-67.18 — Not along the side of a frame", "[T67][wirearrangement]")
+{
+		//The bottom of the frame drawn at the height of the lower terminal,
+		//608, with a pen 1 wide: to the side there, the run would follow
+		//it half a unit off; down until it is 3 away
+	Setup setup;
+	UiBench::ScratchProject project(fixtureXml({{"door.elmt", 167, 578, "D"},
+						    {"terminal.elmt", 370, 570, "R"}},
+						   QStringLiteral("<shapes>%1</shapes>").arg(frame(75, 525, 215, 608))));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Conductor *c = draw(sheet, tagged(sheet, "D")->terminals().at(1),
+			    tagged(sheet, "R")->terminals().at(0));
+	REQUIRE(c);
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+	QList<QPointF> p = points(c);
+	if (p.first().y() > 608.5 || p.first().y() < 607.5) std::reverse(p.begin(), p.end());
+	CAPTURE(text(p));
+	REQUIRE(p.size() >= 3);
+	CHECK(text(p).startsWith(QStringLiteral("(167,608) (167,612) ")));
+	CHECK(alongFrames(sheet, 3) == 0);
 }
 
 /*

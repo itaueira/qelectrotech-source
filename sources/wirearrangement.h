@@ -32,6 +32,13 @@ class QUndoCommand;
 	are frames, and the conductors that are not being arranged stay where
 	they are and are in the way too.
 
+	A conductor between a terminal that points up or down and one that
+	points to the side, towards it, gets its shape chosen too: with one
+	bend when the straight way is free, else leaving the first terminal to
+	the side, going up or down in a lane, and arriving at the second - never
+	over the terminal of another component, nor along another wire or the
+	side of a frame.
+
 	A conductor placed by the application - drawn with the automatic path,
 	or arranged here - may be moved again when a new conductor comes into
 	its group. A conductor whose path the user dragged is not, unless the

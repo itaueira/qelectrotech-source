@@ -116,6 +116,43 @@ namespace WireLanes
 	int orderCost(const Wire &left, const Wire &right, double gap);
 	QVector<int> lanes(const QVector<Wire> &wires, double gap);
 	QVector<double> positions(int lane_count, double low, double high);
+
+		/// A straight line: at the across coordinate @a at, from @a a to
+		/// @a b along - or, among the lines that run across, at the along
+		/// coordinate @a at, from @a a to @a b across
+	struct Line
+	{
+		double at;
+		double a;
+		double b;
+	};
+
+		/// The end of a terminal, which a wire must not pass close to
+	struct Spot
+	{
+		double along;
+		double across;
+	};
+
+		/// What a straight piece of a wire keeps clear of, besides the
+		/// wires being arranged with it
+	struct Clearance
+	{
+			/// Lines in the direction of the piece: closer than @a line,
+			/// they would read as one wire with it
+		QVector<Line> parallel;
+			/// Lines across the piece, which it may neither cross nor pass
+			/// closer than @a line to the end of
+		QVector<Line> crossing;
+		QVector<Spot> spots;
+		QVector<Block> bodies;
+		double line = 3;
+		double spot = 5;
+	};
+
+	bool isClear(double at, double a, double b, const Clearance &clearance);
+	double runAt(double start, double outward, double a, double b,
+		     const Clearance &clearance, double longest);
 }
 
 #endif // WIRELANES_H

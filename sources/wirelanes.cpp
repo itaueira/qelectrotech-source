@@ -337,6 +337,72 @@ QVector<double> WireLanes::positions(int lane_count, double low, double high)
 }
 
 /**
+	@brief WireLanes::isClear
+	Whether a straight piece of wire at the across coordinate @a at, from
+	@a a to @a b along, keeps clear of @a clearance: no line in its
+	direction closer than clearance.line, which would read as the same
+	wire, even with a gap between the two; no line across it crossed, nor
+	passed closer than that to its end; no terminal end closer than
+	clearance.spot; and no body crossed.
+*/
+bool WireLanes::isClear(double at, double a, double b, const Clearance &clearance)
+{
+	const double lo = std::min(a, b);
+	const double hi = std::max(a, b);
+	for (const Line &l : clearance.parallel)
+	{
+		if (std::abs(l.at - at) < clearance.line - eps
+			&& std::min(hi, std::max(l.a, l.b)) - std::max(lo, std::min(l.a, l.b)) > -eps) {
+			return false;
+		}
+	}
+	for (const Line &l : clearance.crossing)
+	{
+		if (l.at > lo - eps && l.at < hi + eps
+			&& at > std::min(l.a, l.b) - clearance.line + eps
+			&& at < std::max(l.a, l.b) + clearance.line - eps) {
+			return false;
+		}
+	}
+	for (const Spot &s : clearance.spots)
+	{
+		if (s.along > lo - eps && s.along < hi + eps
+			&& std::abs(s.across - at) < clearance.spot - eps) {
+			return false;
+		}
+	}
+	for (const Block &k : clearance.bodies)
+	{
+		if (std::min(k.low, k.high) < hi - eps && std::max(k.low, k.high) > lo + eps
+			&& at > std::min(k.from, k.to) + eps && at < std::max(k.from, k.to) - eps) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+	@brief WireLanes::runAt
+	Where the run leaving a terminal goes, from @a a to @a b along: at the
+	terminal itself, @a start, when that is clear (isClear()), else as
+	little further out as it takes, by whole units in the direction
+	@a outward (1 or -1) that the terminal points, and no more than
+	@a longest - the person asked for the wire to leave a terminal to the
+	side, and not after a piece in the direction of the terminal.
+	@return the across coordinate of the run, or NaN when none is clear
+*/
+double WireLanes::runAt(double start, double outward, double a, double b,
+			const Clearance &clearance, double longest)
+{
+	for (int k = 0 ; k <= longest + eps ; ++k)
+	{
+		const double at = start + outward * k;
+		if (isClear(at, a, b, clearance)) return at;
+	}
+	return std::numeric_limits<double>::quiet_NaN();
+}
+
+/**
 	@brief WireLanes::arrange
 	The bridge of each wire of @a request: the wires in conflict, directly
 	or through others, form a group; the group gets lanes() in the room
