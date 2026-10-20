@@ -22,6 +22,7 @@
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
 #include "../qetproject.h"
+#include "../wirecolorname.h"
 
 #include <QObject>
 
@@ -159,7 +160,9 @@ AssemblyState AssemblyStateCommand::photograph(QETProject *project,
 			//project file, so the uuid has to survive the save. See
 			//Conductor::persistUuid().
 			conductor->persistUuid();
-			state.conductors.insert(uuid, conductor->properties().text);
+				//Without the marker of the square of the wire's colour,
+				//as the order of service reads it back (AssemblyChangesDialog)
+			state.conductors.insert(uuid, WireColorName::withoutMarker(conductor->properties().text));
 		}
 	}
 

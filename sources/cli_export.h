@@ -94,7 +94,9 @@ namespace CLIExport {
 		      conductor, so a number carried by three wires is three
 		      rows, and a wire drawn across two folios is two conductors
 		      and two markers. Not a list of distinct numbers: the rows of
-		      a number count the markers to print for it.
+		      a number count the markers to print for it. The colour of
+		      the wire is the second column: the colour typed in its
+		      properties, or the name of the colour it is drawn in.
 		bom: bill of materials (one row per element) as CSV.
 		--no-slaves: leave the contact blocks (slave elements) out of the
 		      bill of materials.
@@ -163,7 +165,8 @@ namespace CLIExport {
 		        the project database. Same logical list as `cables`, which
 		        reads the document XML instead; the two are meant to agree,
 		        so diffing them checks that the database still describes the
-		        project.
+		        project. The last column, wire_color, is the colour of the
+		        wire as `cables` writes it.
 		nets: electrical nets (connected-terminal groups) as JSON.
 		links: element cross-references (coil/contact) as CSV, with
 		       unresolved links flagged.

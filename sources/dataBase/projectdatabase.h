@@ -297,9 +297,10 @@ class projectDataBase : public QObject
 		};
 		QList<FolioSymbol> symbolsOnFolios(const QList<QUuid> &folios) const;
 		QList<QUuid> linkedSymbols(const QUuid &element) const;
-			/// A wire placed on a folio: its text and the kinds of the
-			/// symbols at its ends (ElementData::typeToString())
-		struct FolioWire { QString text; QString kind1; QString kind2; };
+			/// A wire placed on a folio: its text, the kinds of the
+			/// symbols at its ends (ElementData::typeToString()) and its
+			/// colour as a list writes it (WireColorName::label())
+		struct FolioWire { QString text; QString kind1; QString kind2; QString color; };
 		QList<FolioWire> wiresOnFolios(const QList<QUuid> &folios) const;
 		QString elementLabel(const QUuid &element) const;
 		QString terminalName(const QUuid &terminal, const QUuid &element) const;

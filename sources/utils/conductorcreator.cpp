@@ -27,10 +27,12 @@
 #include "../qetgraphicsitem/terminal.h"
 #include "../ui/potentialselectordialog.h"
 #include "../wirearrangement.h"
+#include "../wiresections.h"
 #include "../wiringrules.h"
 #include "qgraphicsitem.h"
 
 #include <QPolygonF>
+#include <QUndoCommand>
 
 /**
 	@brief ConductorCreator::ConductorCreator
@@ -70,6 +72,17 @@ ConductorCreator::ConductorCreator(Diagram *d, QList<Terminal *> terminals_list,
 		d->undoStack().push(new AddGraphicsObjectCommand(cond, d));
 		
 		c_list.append(cond);
+	}
+		//The cross-section of the point, the largest its components ask
+		//for (T70), in the macro: the texts are worked out again below
+	if (!c_list.isEmpty())
+	{
+		auto *sections = new QUndoCommand(QObject::tr("Update the wire cross-sections", "undo caption"));
+		if (WireSections::addCommands(WireSections::changesFor(c_list), sections)) {
+			d->undoStack().push(sections);
+		} else {
+			delete sections;
+		}
 	}
 	if (arrange && !c_list.isEmpty()) {
 		if (QUndoCommand *arranging = WireArrangement::arrangeNewConductors(d, c_list)) {

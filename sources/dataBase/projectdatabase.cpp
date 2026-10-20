@@ -43,6 +43,7 @@
 #include "../TerminalStrip/terminalstrip.h"
 #include "../TerminalStrip/physicalterminal.h"
 #include "../TerminalStrip/realterminal.h"
+#include "../wirecolorname.h"
 
 #include <QLocale>
 #include <QDate>
@@ -907,7 +908,10 @@ bool projectDataBase::populateFromDocument(const QDomDocument &document, QString
 			//next, so a placeholder left unbound here would keep the value
 			//the conductor before it had -- or NULL for the first one.
 		bindConductorProperties(m_insert_conductor_query, conductor.properties);
-		m_insert_conductor_query.bindValue(QStringLiteral(":text"), conductor.text);
+			//Without the square's marker, as bindConductorProperties()
+			//writes the text of a built folio's wire
+		m_insert_conductor_query.bindValue(QStringLiteral(":text"),
+										   WireColorName::withoutMarker(conductor.text));
 		if (!m_insert_conductor_query.exec()) {
 			qDebug() << "projectDataBase::populateFromDocument conductor insert error : " << m_insert_conductor_query.lastError();
 		}
@@ -1000,7 +1004,7 @@ QList<projectDataBase::FolioWire> projectDataBase::wiresOnFolios(const QList<QUu
 {
 	QList<FolioWire> wires;
 	QSqlQuery query(m_data_base);
-	query.prepare(QStringLiteral("SELECT c.text, e1.type, e2.type FROM conductor c "
+	query.prepare(QStringLiteral("SELECT c.text, e1.type, e2.type, c.conductor_color FROM conductor c "
 								 "LEFT JOIN element e1 ON e1.uuid = c.terminal1_element_uuid "
 								 "LEFT JOIN element e2 ON e2.uuid = c.terminal2_element_uuid "
 								 "WHERE c.diagram_uuid = :folio ORDER BY c.rowid"));
@@ -1011,7 +1015,7 @@ QList<projectDataBase::FolioWire> projectDataBase::wiresOnFolios(const QList<QUu
 		}
 		while (query.next()) {
 			wires.append({query.value(0).toString(), query.value(1).toString(),
-						  query.value(2).toString()});
+						  query.value(2).toString(), query.value(3).toString()});
 		}
 	}
 	return wires;
@@ -2488,12 +2492,26 @@ void projectDataBase::bindConductorValues(QSqlQuery &query, Conductor *conductor
 	word would change with the interface language of whoever last opened
 	the project -- neither can be compared against a project exported on
 	another machine.
+
+	@par The text without the square, the colour with a name
+
+	The text of a wire may hold the marker %wq puts there for the folio to
+	paint the square of the wire's colour over (WireColorName). A table
+	cannot paint, so the marker is left out of the text column, and the
+	colour column holds what a list writes as the colour of the wire: the
+	colour typed in its properties, or, when nothing was typed, the name of
+	the colour it is drawn in. That name is a word for a person to read, in
+	the language of the interface, unlike the type above: it is what the
+	lists made of this table show. The properties themselves are not
+	touched - they are stored on their own, in conductor_properties.
 */
 void projectDataBase::bindConductorProperties(QSqlQuery &query, const ConductorProperties &properties)
 {
-	query.bindValue(QStringLiteral(":text"), properties.text);
+	query.bindValue(QStringLiteral(":text"), WireColorName::withoutMarker(properties.text));
 	query.bindValue(QStringLiteral(":conductor_section"), properties.m_wire_section);
-	query.bindValue(QStringLiteral(":conductor_color"), properties.m_wire_color);
+	query.bindValue(QStringLiteral(":conductor_color"),
+					WireColorName::label(properties.m_wire_color, properties.color,
+										 properties.m_bicolor, properties.m_color_2));
 	query.bindValue(QStringLiteral(":function"), properties.m_function);
 	query.bindValue(QStringLiteral(":tension_protocol"), properties.m_tension_protocol);
 	query.bindValue(QStringLiteral(":conductor_type"), ConductorProperties::typeToString(properties.type));
@@ -3473,12 +3491,16 @@ void projectDataBase::createSummaryView()
 	dropped here. Only the terminal joins are inner, and both are guaranteed
 	by insertTerminal() running for each endpoint before the conductor row
 	is written.
+
+	wire_color is the conductor's colour column, which names the colour the
+	wire is drawn in when none was typed (bindConductorProperties()).
 */
 void projectDataBase::createWiringListView()
 {
 	QString create_view ("CREATE VIEW wiring_list_view AS SELECT "
 						 "c.uuid AS conductor_uuid,"
 						 "c.text AS wire_number,"
+						 "c.conductor_color AS wire_color,"
 						 "t1.element_uuid AS from_element_uuid,"
 						 "ei1.label AS from_element_label,"
 						 "t1.name AS from_terminal,"

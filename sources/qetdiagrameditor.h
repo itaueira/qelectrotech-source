@@ -195,6 +195,8 @@ class QETDiagramEditor : public QETMainWindow
 		void replaceSelectionWith(const ElementsLocation &location);
 		void exchangeSelectedElements();
 		void arrangeConductors(bool whole_folio);
+		void updateWireSections();
+		void convertWireNames();
 		void resetSymbolTexts();
 		void rebuildToolBars();
 		bool repeatLastCommand();
@@ -288,6 +290,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_conductor_reset,         ///< Reset paths of selected conductors
 		*m_conductor_arrange,       ///< Arrange the selected conductors (T67)
 		*m_conductor_arrange_folio, ///< Arrange the conductors of the folio (T67)
+		*m_update_wire_sections,    ///< Give the wires the cross-section of their components (T70)
 		*m_cut,                     ///< Cut selection to clipboard
 		*m_copy,                    ///< Copy selection to clipboard
 			//Public for the same reason as the four above, and for no other:
@@ -397,6 +400,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_show_conductor_text = nullptr,///< Action to show the number of the selected conductors
 		*m_hide_conductor_text = nullptr,///< Action to hide it
 		*m_align_conductor_text = nullptr,///< Action to line the conductor numbers up on one axis
+		*m_convert_wire_names = nullptr,///< Action to name the wires F<folio>-<number> (colour cross-section) (T70)
 		*m_link_accessory = nullptr,    ///< Action to say which component an accessory belongs to
 		*m_cable_numbering,            ///< Action to open the cable numbering window (rule + numbering of every cable)
 		*m_add_cable_list,             ///< Add a cable list graphics item

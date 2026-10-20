@@ -18,7 +18,9 @@
 #include "changeelementinformationcommand.h"
 #include "../qetproject.h"
 #include "../diagram.h"
+#include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
+#include "../qetinformation.h"
 
 #include <QObject>
 
@@ -76,6 +78,26 @@ bool ChangeElementInformationCommand::mergeWith(const QUndoCommand *other)
 							 m_map.value(key).first,
 							 other_undo->m_map.value(key).second));
 		}
+			//And the wires the other one moved (T70): a wire both moved
+			//goes back to what it had before this one, and on to what the
+			//other one gave it. Both were redone before the merge, as the
+			//stack redoes a command before it tries to merge it.
+		for (const WireSections::Change &change : other_undo->m_wire_changes)
+		{
+			bool known = false;
+			for (WireSections::Change &mine : m_wire_changes)
+			{
+				if (mine.conductor == change.conductor)
+				{
+					mine.after = change.after;
+					known = true;
+					break;
+				}
+			}
+			if (!known) {
+				m_wire_changes << change;
+			}
+		}
 		return true;
 	}
 	else {
@@ -88,6 +110,7 @@ bool ChangeElementInformationCommand::mergeWith(const QUndoCommand *other)
 */
 void ChangeElementInformationCommand::undo()
 {
+	updateWireSections(false);
 	for (auto element : m_map.keys()) {
 		element->setElementInformations(m_map.value(element).first);
 	}
@@ -103,6 +126,40 @@ void ChangeElementInformationCommand::redo()
 		element->setElementInformations(m_map.value(element).second);
 	}
 	updateProjectDB();
+	updateWireSections(true);
+}
+
+/**
+	@brief ChangeElementInformationCommand::updateWireSections
+	Give the points of the components whose wire cross-section changed the
+	section they now ask for (T70), or take it back.
+	@param forward : true from redo(), false from undo()
+*/
+void ChangeElementInformationCommand::updateWireSections(bool forward)
+{
+	if (forward && !m_wire_changes_known)
+	{
+		m_wire_changes_known = true;
+			//Only the components whose section changed: this command also
+			//carries edits of hundreds of components at once - a search
+			//and replace, the tags of the folio reports - and those move
+			//no wire
+		QList<Element *> changed;
+		for (auto it = m_map.cbegin() ; it != m_map.cend() ; ++it)
+		{
+			Element *element = it.key().data();
+			if (element
+			    && it.value().first.value(QETInformation::ELMT_WIRE_SECTION).toString()
+			       != it.value().second.value(QETInformation::ELMT_WIRE_SECTION).toString())
+			{
+				changed << element;
+			}
+		}
+		if (!changed.isEmpty()) {
+			m_wire_changes = WireSections::changesForElements(changed);
+		}
+	}
+	WireSections::apply(m_wire_changes, forward);
 }
 
 void ChangeElementInformationCommand::updateProjectDB()

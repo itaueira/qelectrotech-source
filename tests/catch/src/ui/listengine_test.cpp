@@ -466,7 +466,8 @@ TEST_CASE("T16 — a visão do banco nasce da lista canônica, e publica o que p
 			//upstream added to the list, which the generated view publishes
 			//by construction: model, category, voltage_rating,
 			//current_rating and notes, and width, height and depth -
-			//arrived with the sync of 2026-09-28.
+			//arrived with the sync of 2026-09-28. And wire_section, the
+			//cross-section a component asks of its wires (T70).
 		INFO("columns the generated view added: "
 		     << added.join(QStringLiteral(", ")).toStdString());
 		QStringList sorted = added;
@@ -479,7 +480,8 @@ TEST_CASE("T16 — a visão do banco nasce da lista canônica, e publica o que p
 					     QStringLiteral("model"),
 					     QStringLiteral("notes"),
 					     QStringLiteral("voltage_rating"),
-					     QStringLiteral("width")}));
+					     QStringLiteral("width"),
+					     QStringLiteral("wire_section")}));
 	}
 
 	SECTION("toda chave de informação é selecionável, sem exceção")

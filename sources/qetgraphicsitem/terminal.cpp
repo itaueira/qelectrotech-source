@@ -35,6 +35,7 @@
 #include "../qetgraphicsitem/terminalelement.h"
 #include "conductortextitem.h"
 #include "../wirearrangement.h"
+#include "../wiresections.h"
 #include "../wiringrules.h"
 
 #include <QToolTip>
@@ -728,6 +729,12 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 		Conductor *other = conductors_list.values().first();
 		new_conductor->rSequenceNum() = other->sequenceNum();
 		new_conductor->setProperties(others_properties);
+			//The properties of the point are not numbered again, and the
+			//cross-section is the one thing in them the new conductor can
+			//change: the component it lands on may ask for a larger one
+			//(T70). The point takes it in this undo step, so that the copy
+			//below, after the push, carries it too.
+		WireSections::giveNewConductorItsSection(new_conductor, diagram(), undo);
 	}
 	else
 	{

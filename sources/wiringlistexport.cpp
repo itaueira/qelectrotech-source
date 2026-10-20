@@ -6,6 +6,8 @@
 #include "dataBase/projectdatabase.h"
 #include "ElementsCollection/xmlelementcollection.h"
 #include "qetgraphicsitem/element.h"
+#include "wirecolorname.h"
+#include <QColor>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QTextStream>
@@ -359,7 +361,16 @@ QList<ConductorData> WiringListExport::collectConductors(const QDomElement &root
         data.terminalname1 = cond.attribute("terminalname1");
         data.terminalname2 = cond.attribute("terminalname2");
         data.tension_protocol = cond.attribute("tension_protocol");
-        data.conductor_color = cond.attribute("conductor_color");
+            //The colour typed in the wire's properties, or the name of the
+            //colour it is drawn in, read with the defaults
+            //ConductorProperties::fromXml() gives a missing one (T70)
+        const QColor drawn(cond.attribute("color"));
+        const QColor second(cond.attribute("color2"));
+        data.conductor_color = WireColorName::label(
+                    cond.attribute("conductor_color"),
+                    drawn.isValid() ? drawn : QColor(Qt::black),
+                    cond.attribute("bicolor") == QLatin1String("true"),
+                    second.isValid() ? second : QColor(Qt::black));
         data.conductor_section = cond.attribute("conductor_section");
         data.function = cond.attribute("function");
         data.cable = cond.attribute("cable");

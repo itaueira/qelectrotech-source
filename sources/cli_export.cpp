@@ -51,6 +51,7 @@
 #include "qetproject.h"
 #include "titleblockproperties.h"
 #include "utils/csvwriter.h"
+#include "wirecolorname.h"
 #include "wiringlistexport.h"
 
 // Private Qt PDF engine for drawHyperlink() — see pdf_links / projectprintwindow.
@@ -1720,6 +1721,11 @@ QHash<Element *, int> folioIndex(QETProject &project)
 /// file names the terminal by. These come last, after the columns the list
 /// has always had, so a reader of those is not disturbed.
 ///
+/// The colour of the wire comes after them, for the same reason: the colour
+/// typed in its properties, or the name of the colour it is drawn in when
+/// none was typed. The wire number holds no marker of the square of that
+/// colour, which only the folio draws (projectDataBase::bindConductorProperties()).
+///
 /// Reads wiring_list_view out of the project database. --export-cables produces
 /// the same logical list from the document XML instead, and the two are meant
 /// to agree: running both and diffing them is a direct check that the database
@@ -1733,7 +1739,8 @@ int exportWiring(QETProject &project, const QString &output)
 	static const QStringList columns {
 		"wire_number", "from_element_label", "from_terminal",
 		"to_element_label", "to_terminal", "diagram_position", "conductor_uuid",
-		"from_terminal_index", "from_terminal_uuid", "to_terminal_index", "to_terminal_uuid"
+		"from_terminal_index", "from_terminal_uuid", "to_terminal_index", "to_terminal_uuid",
+		"wire_color"
 	};
 
 	QSqlQuery query = project.dataBase()->newQuery(
@@ -1812,11 +1819,17 @@ int exportNets(QETProject &project, const QString &output)
 		if (c->terminal1) t_list << c->terminal1;
 		if (c->terminal2) t_list << c->terminal2;
 
-		// Wire number: smallest non-empty conductor text (deterministic).
+		// Wire number: smallest non-empty conductor text (deterministic),
+		// without the marker of the square of the wire's colour, which only
+		// the folio draws. The colour is the wire's and not the net's, so a
+		// net has none.
 		QStringList wire_nos;
 		for (Conductor *g : group)
-			if (!g->properties().text.isEmpty())
-				wire_nos << g->properties().text;
+		{
+			const QString text = WireColorName::withoutMarker(g->properties().text);
+			if (!text.isEmpty())
+				wire_nos << text;
+		}
 		wire_nos.sort();
 
 		++net_no;

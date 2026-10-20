@@ -192,6 +192,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/wiringlistexport.cpp
   ${QET_DIR}/sources/wirehops.h
   ${QET_DIR}/sources/wirehops.cpp
+  ${QET_DIR}/sources/wirecolorname.h
+  ${QET_DIR}/sources/wirecolorname.cpp
   ${QET_DIR}/sources/wiringrules.h
   ${QET_DIR}/sources/wiringrules.cpp
   ${QET_DIR}/sources/conductorrouter.h
@@ -202,6 +204,13 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/wirepath.cpp
   ${QET_DIR}/sources/wirearrangement.h
   ${QET_DIR}/sources/wirearrangement.cpp
+  ${QET_DIR}/sources/wiregauge.h
+  ${QET_DIR}/sources/wiregauge.cpp
+  ${QET_DIR}/sources/wiresections.h
+  ${QET_DIR}/sources/wiresections.cpp
+  ${QET_DIR}/sources/wirenames.h
+  ${QET_DIR}/sources/wirenames.cpp
+  ${QET_DIR}/sources/conductortextfit.h
   ${QET_DIR}/sources/ui/wiringlistdialog.h
   ${QET_DIR}/sources/ui/wiringlistdialog.cpp
   ${QET_DIR}/sources/conductornumexport.h

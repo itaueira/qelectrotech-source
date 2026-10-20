@@ -27,6 +27,7 @@
 #include "../qetinformation.h"
 #include "../qetxml.h"
 #include "../qetproject.h"
+#include "../wirecolorname.h"
 #include "../ElementsCollection/qetlabelsfile.h"
 #include <QDir>
 #include <QDomDocument>
@@ -253,10 +254,16 @@ namespace autonum
 		if (cndr)
 		{
 			context.has_conductor = true;
-			context.wire_function = cndr->properties().m_function;
-			context.wire_tension_protocol = cndr->properties().m_tension_protocol;
-			context.wire_color = cndr->properties().m_wire_color;
-			context.wire_section = cndr->properties().m_wire_section;
+				//The conductor's own properties, and not properties():
+				//those of a conductor on a folio come from the database of
+				//the project, which Conductor::setProperties() updates only
+				//after the text is worked out from this formula - a %ws
+				//would show the cross-section the conductor had before
+			const ConductorProperties own = cndr->ownProperties();
+			context.wire_function = own.m_function;
+			context.wire_tension_protocol = own.m_tension_protocol;
+			context.wire_color = own.m_wire_color;
+			context.wire_section = own.m_wire_section;
 		}
 		return formulaToLabel(std::move(formula), seqStruct, context);
 	}
@@ -568,9 +575,24 @@ namespace autonum
 
 		if (m_context.has_conductor)
 		{
+				//The marker of the square of the wire's colour, first: the
+				//values below are text somebody typed, and one of them
+				//holding "%wq" must stay as typed. %wq on its own only, so
+				//a title block field named "wquote" keeps its own value.
+			static const QRegularExpression wire_square(
+						QStringLiteral("%wq(?![A-Za-z0-9_])"));
+			m_assigned_label.replace(wire_square,
+						 QString(WireColorName::marker()));
 			m_assigned_label.replace("%wf", m_context.wire_function);
 			m_assigned_label.replace("%wv", m_context.wire_tension_protocol);
 			m_assigned_label.replace("%wc", m_context.wire_color);
+				//No cross-section, and the space written before it goes
+				//too: "(%wq %ws)" closes on the square, with no blank
+				//before the bracket. One space, the one right before: the
+				//rest is what the formula says
+			if (m_context.wire_section.isEmpty()) {
+				m_assigned_label.replace(QStringLiteral(" %ws"), QString());
+			}
 			m_assigned_label.replace("%ws", m_context.wire_section);
 		}
 

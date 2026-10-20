@@ -26,9 +26,13 @@
 #include "utils/csvwriter.h"
 #include "dataBase/projectdatabase.h"
 #include "properties/elementdata.h"
+#include "wirecolorname.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
+
+#include <algorithm>
+#include <utility>
 
 /**
 	@brief ConductorNumExport::ConductorNumExport
@@ -232,21 +236,28 @@ bool ConductorNumExport::toCsv()
 	crash instead of a skipped row. Guards are left out rather than added
 	because a dead guard hides which invariant is actually being relied on,
 	and this paragraph is the record of both.
+
+	@par Two columns: the number and the colour of the wire
+	The number comes without the marker of the square of the wire's colour
+	(WireColorName), which only the folio can draw, and the colour is
+	written beside it in words, as every list of wires writes it
+	(WireColorName::label()). Two wires of one number and two colours are
+	two rows of their own, and the count of the rows is still the count of
+	the wires.
 */
 QString ConductorNumExport::wiresNum() const
 {
 	QString csv;
 
-	QStringList list = m_hash.keys();
-	list.sort();
-	for (QString key : list)
+	QList<QPair<QString, QString>> list = m_hash.keys();
+	std::sort(list.begin(), list.end());
+	for (const QPair<QString, QString> &key : std::as_const(list))
 	{
 		for (int i=0; i<m_hash.value(key) ; ++i) {
-				//One column, and quoted all the same: a wire number
-				//is text somebody typed, and one holding a ';' or an
-				//end of line turns a one-column file into a ragged
-				//one that still opens.
-			csv.append(QETCsv::field(key) % "\n");
+				//Quoted all the same: a wire number is text somebody
+				//typed, and one holding a ';' or an end of line turns
+				//the file into a ragged one that still opens.
+			csv.append(QETCsv::row(QStringList{key.first, key.second}) % "\n");
 		}
 	}
 
@@ -290,11 +301,14 @@ void ConductorNumExport::fillHash()
 {
 	//We used this rx to avoid insert num composed only withe white space.
 	QRegularExpression rx("^ *$");
-	auto count = [this](const QString &num) {
-		m_hash.insert(num, m_hash.value(num, 0) + 1);
+	auto count = [this](const QString &num, const QString &color) {
+		const QPair<QString, QString> key(num, color);
+		m_hash.insert(key, m_hash.value(key, 0) + 1);
 	};
 		//The folios not built (lazy folios): their wires from the
-		//project database, by the same rules
+		//project database, by the same rules. Its text has no marker and
+		//its colour is already the one a list writes
+		//(projectDataBase::bindConductorProperties()).
 	QList<QUuid> unbuilt;
 	for (Diagram *d : m_project->folios())
 		if (!d->isLoaded()) unbuilt << d->uuid();
@@ -306,7 +320,7 @@ void ConductorNumExport::fillHash()
 		const bool report1 = ElementData::typeFromString(wire.kind1) & ElementData::AllReport;
 		const bool report2 = ElementData::typeFromString(wire.kind2) & ElementData::AllReport;
 		if (!(report1 && report2)) {
-			count(wire.text);
+			count(wire.text, wire.color);
 		}
 	}
 	for (Diagram *d : m_project->builtFolios())
@@ -315,7 +329,9 @@ void ConductorNumExport::fillHash()
 			//potentials onto other folios, building those not built
 		for (Conductor *c : d->conductors())
 		{
-			QString num = c->textItem()->toPlainText();
+				//Without the marker of the square: a number that is
+				//nothing but the square names no wire either
+			QString num = WireColorName::withoutMarker(c->textItem()->toPlainText());
 			if (num.isEmpty() || num.contains(rx)) {
 				continue;
 			}
@@ -330,9 +346,9 @@ void ConductorNumExport::fillHash()
 			bool terminal2_is_report = c->terminal2->parentElement()->linkType() & Element::AllReport;
 			if (!(terminal1_is_report && terminal2_is_report))
 			{
-				int value = m_hash.value(num, 0);
-				++value;
-				m_hash.insert(num, value);
+				const ConductorProperties wire = c->properties();
+				count(num, WireColorName::label(wire.m_wire_color, wire.color,
+								wire.m_bicolor, wire.m_color_2));
 			}
 		}
 	}

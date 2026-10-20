@@ -460,6 +460,10 @@ class QetScriptApi : public QObject
 												  const QString &elementUuidA, int terminalIndexA,
 												  const QString &elementUuidB, int terminalIndexB);
 		Q_INVOKABLE int arrangeConductors(int folioIndex);
+		// -- the cross-section of each point, from its components (T70) --
+		Q_INVOKABLE int updateWireSections();
+		// -- the wires named F<folio>-<number> (colour cross-section) (T70) --
+		Q_INVOKABLE int convertWireNames();
 
 		// -- cross-references: master/slave and report links --
 		Q_INVOKABLE QString elementLinkType(int folioIndex, const QString &elementUuid) const;

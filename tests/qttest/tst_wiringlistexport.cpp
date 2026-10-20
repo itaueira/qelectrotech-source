@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QSet>
 #include <QTemporaryDir>
 
 // The wiring list (--export-cables, and the wiring plan CSV export of the
@@ -85,8 +86,25 @@ private slots:
 			QStringLiteral("6/6;LD;A1;;1;;;;;;"),
 		};
 		bool ok;
-		QCOMPARE(exportCables(fixture, &ok), expected);
+		QStringList rows = exportCables(fixture, &ok);
 		QVERIFY(ok);
+
+		//The colour column names the colour a wire is drawn in when none
+		//was typed (T70), in the language the export runs in. Every wire
+		//of the fixture is black: one name on every row, measured apart
+		//and then left out of the comparison of the rest
+		QSet<QString> colours;
+		for (QString &row : rows) {
+			QStringList cells = row.split(QLatin1Char(';'));
+			if (cells.size() > 6) {
+				colours.insert(cells.at(6));
+				cells[6].clear();
+			}
+			row = cells.join(QLatin1Char(';'));
+		}
+		QCOMPARE(colours.size(), 1);
+		QVERIFY(!colours.values().constFirst().isEmpty());
+		QCOMPARE(rows, expected);
 	}
 
 	void pageIsTheFolioNumber_data()

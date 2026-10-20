@@ -701,7 +701,10 @@ TEST_CASE("T17 — seção, cor, função e tensão do fio chegam ao banco e à 
 					 QStringLiteral("Commande"),
 					 QStringLiteral("24 V DC"),
 					 QStringLiteral("multi")};
-	const QStringList expected_w2 = {QString(), QString(), QString(),
+		//The colour is the one exception, and not a placeholder: with no
+		//colour typed, the column names the colour the wire is drawn in
+		//(T70), and W2 is drawn in the default black.
+	const QStringList expected_w2 = {QString(), QStringLiteral("Black"), QString(),
 					 QString(), QStringLiteral("multi")};
 
 	SECTION("o povoamento da abertura escreve as cinco colunas")
@@ -817,7 +820,9 @@ TEST_CASE("T17 — seção, cor, função e tensão do fio chegam ao banco e à 
 		const QStringList empty_row = rowWithSection(rows, QString());
 		REQUIRE(empty_row.size() == 11);
 		CHECK(empty_row.value(5).isEmpty());
-		CHECK(empty_row.value(6).isEmpty());
+			//Except the colour, which names the colour the wire is drawn
+			//in when none was typed (T70): the default black
+		CHECK(empty_row.value(6) == QStringLiteral("Black"));
 		CHECK(empty_row.value(7).isEmpty());
 		CHECK(empty_row.value(8).isEmpty());
 

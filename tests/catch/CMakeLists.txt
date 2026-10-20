@@ -126,6 +126,8 @@ add_executable(
     src/namesimilarity_test.cpp
     src/wirelanes_test.cpp
     src/wirepath_test.cpp
+    src/wiregauge_test.cpp
+    src/wirecolorname_test.cpp
     src/updatecoalescer_test.cpp
     src/componentlabel_test.cpp
     src/labelcsvwriter_test.cpp
@@ -154,6 +156,9 @@ add_executable(
     src/griddots_test.cpp
     # The folio grid with a step under 1: headers only too.
     src/foliogrid_test.cpp
+    # The size the name of a conductor is drawn at to fit its run (T70):
+    # a header only, the width of the text given as a function.
+    src/conductortextfit_test.cpp
     main.cpp
     ${QET_DIR}/sources/borderproperties.cpp
     ${QET_DIR}/sources/borderproperties.h
@@ -584,6 +589,12 @@ add_executable(
     # The path of a conductor made clean after a drag (T68)
     ${QET_DIR}/sources/wirepath.cpp
     ${QET_DIR}/sources/wirepath.h
+    # The cross-section of a wire, read and written (T70): text in, text out.
+    ${QET_DIR}/sources/wiregauge.cpp
+    ${QET_DIR}/sources/wiregauge.h
+    # The name of the colour of a wire, and the marker of its square (T70)
+    ${QET_DIR}/sources/wirecolorname.cpp
+    ${QET_DIR}/sources/wirecolorname.h
     # A pré-visualização do símbolo é um widget, e entra aqui porque widget dá
     # para testar sem tela: ver o QT_QPA_PLATFORM=offscreen em main.cpp. Ela
     # não depende de item gráfico nenhum: a leitura da caneta a partir da string
@@ -1150,6 +1161,15 @@ if(TARGET qelectrotech_objects)
         src/ui/distribute_test.cpp
         src/ui/exchangeelements_test.cpp
         src/ui/wirearrangement_test.cpp
+        # T70: the cross-section of a point, from its components, on its
+        # wires - drawn, changed with the component, and updated at once.
+        src/ui/wiregauge_ui_test.cpp
+        # T70: the square of the colour of a wire on the folio, and the
+        # colour column of the lists of wires.
+        src/ui/wirecolor_ui_test.cpp
+        # CU-70.4 and CU-70.8: the name of a wire F<folio>-<number>, drawn on
+        # a folio that follows it, and a project typed by hand converted.
+        src/ui/wirenames_test.cpp
         # A symbol saved in the symbol editor reaches the folio and the file:
         # the folio reports follow their symbol, the project is changed.
         src/ui/reportsymbolsync_test.cpp
@@ -1164,6 +1184,9 @@ if(TARGET qelectrotech_objects)
         src/ui/xreffollow_test.cpp
         # T31: the number of a potential goes through a folio report.
         src/ui/reportpotential_test.cpp
+        # CU-70.7: the name of a conductor drawn smaller to fit its longest
+        # run, never under 5, and the size in the file left as it was.
+        src/ui/wirenamefit_test.cpp
         # T61: a symbol dropped on a folio of a project numbered 10 or more
         # becomes an element; one that cannot become one says why.
         src/ui/insertsymbolprojectid_test.cpp)

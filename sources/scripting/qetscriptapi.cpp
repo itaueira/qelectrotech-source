@@ -49,6 +49,8 @@
 #include "../conductorsegment.h"
 #include "../conductorrouter.h"
 #include "../wirearrangement.h"
+#include "../wirenames.h"
+#include "../wiresections.h"
 #include "../qetgraphicsitem/diagramimageitem.h"
 #include "../utils/qetsettings.h"
 #include "assistantinfo.h"
@@ -1734,6 +1736,50 @@ int QetScriptApi::arrangeConductors(int folioIndex)
 	}
 	Diagram *diagram = built(m_project->folios().at(folioIndex));
 	return WireArrangement::arrange(diagram, {}, WireArrangement::Scope::Folio);
+}
+
+/**
+	@brief QetScriptApi::updateWireSections
+	Give every conductor of the project the cross-section of its point: the
+	largest the components of the point ask for in their information
+	"wire_section" (T70) - what the folio editor's "Update the wire
+	cross-sections" does, one undo step per folio that changes. A point no
+	component says a section for keeps what its conductors have.
+	@return how many conductors changed, or -1 for a read-only project
+*/
+int QetScriptApi::updateWireSections()
+{
+	if (!m_project) return -1;
+	if (m_project->isReadOnly()) {
+		log(QStringLiteral("qet.updateWireSections: project is read-only"));
+		return -1;
+	}
+	return WireSections::updateProject(m_project);
+}
+
+/**
+	@brief QetScriptApi::convertWireNames
+	Name every wire of the project F<folio>-<number> (colour cross-section)
+	(T70) - what the folio editor's "Convert the wire names" does, in one
+	undo step: each point keeps the number its text carries as
+	"F<any number>-<n>", a point with none takes the next free on its folio,
+	an earth typed "PE" becomes "F<folio> PE" with no number, a text with no
+	cross-section becomes a cable "F<folio>-<n> (Cabo <type>)" (see
+	WireNames), the cross-section is the one of the point's components, and
+	every folio follows the numbering afterwards. A wire of a panel already built keeps
+	its text. The count of the folio on screen goes on from its highest
+	number at once; another folio's, when it is shown - headless, with no
+	folio on screen, none is put in place.
+	@return how many conductors changed, or -1 for a read-only project
+*/
+int QetScriptApi::convertWireNames()
+{
+	if (!m_project) return -1;
+	if (m_project->isReadOnly()) {
+		log(QStringLiteral("qet.convertWireNames: project is read-only"));
+		return -1;
+	}
+	return WireNames::convertProject(m_project, m_view ? m_view->diagram() : nullptr);
 }
 
 QString QetScriptApi::elementLinkType(int folioIndex, const QString &elementUuid) const

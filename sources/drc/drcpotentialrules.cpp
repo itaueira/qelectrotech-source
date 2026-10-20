@@ -24,6 +24,7 @@
 #include "../diagram.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetproject.h"
+#include "../wirecolorname.h"
 
 #include <QCoreApplication>
 #include <QHash>
@@ -143,7 +144,10 @@ QList<DrcFinding> DrcPotentialRules::potentialWithTwoNumbers(
 		for (Conductor *conductor : potential)
 		{
 			DrcWireNumbers::Mark mark;
-			mark.text = conductor->properties().text;
+				//Without the marker of the square of the wire's colour:
+				//the sentence names the number, and a text that is only
+				//the square carries none
+			mark.text = WireColorName::withoutMarker(conductor->properties().text);
 
 			Diagram *sheet = conductor->diagram();
 			if (sheet)

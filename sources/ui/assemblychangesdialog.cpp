@@ -27,6 +27,7 @@
 #include "../qetgraphicsitem/terminal.h"
 #include "../qetinformation.h"
 #include "../qetproject.h"
+#include "../wirecolorname.h"
 
 #include <QDialogButtonBox>
 #include <QDir>
@@ -168,7 +169,10 @@ namespace
 
 				AssemblyItem item;
 				item.uuid = conductor->uuid().toString();
-				item.label = conductor->properties().text;
+					//Without the marker of the square of the wire's
+					//colour, as AssemblyStateCommand::photograph() keeps
+					//it: the tag printed is the text, not the square
+				item.label = WireColorName::withoutMarker(conductor->properties().text);
 				item.folio = sheet->folioIndex() + 1;
 					//Where the wire starts: the middle of its bounding box
 					//falls in empty space for any wire that turns a corner.

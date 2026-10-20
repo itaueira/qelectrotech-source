@@ -26,6 +26,7 @@
 #include "../qetinformation.h"
 #include "../qetproject.h"
 #include "../qetgraphicsitem/masterelement.h"
+#include "../wirecolorname.h"
 #include "../ui_linksingleelementwidget.h"
 
 #include <QTreeWidgetItem>
@@ -351,7 +352,10 @@ void LinkSingleElementWidget::buildTree()
 			if (!elmt->conductors().isEmpty())
 			{
 				ConductorProperties cp = elmt->conductors().first()->properties();
-				str_list << cp.text;
+					//The number without the marker of the square of the
+					//wire's colour, and the colour in words in its own
+					//column, as every list of wires writes them (T70)
+				str_list << WireColorName::withoutMarker(cp.text);
 				if (!str_list.last().isEmpty())
 					search_list << str_list.last();
 				str_list << cp.m_function;
@@ -360,7 +364,8 @@ void LinkSingleElementWidget::buildTree()
 				str_list << cp.m_tension_protocol;
 				if (!str_list.last().isEmpty())
 					search_list << str_list.last();
-				str_list << cp.m_wire_color;
+				str_list << WireColorName::label(cp.m_wire_color, cp.color,
+								 cp.m_bicolor, cp.m_color_2);
 				if (!str_list.last().isEmpty())
 					search_list << str_list.last();
 				str_list << cp.m_wire_section;

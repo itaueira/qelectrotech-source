@@ -21,6 +21,15 @@
 #include "../diagram.h"
 #include "../diagramcommands.h"
 #include "../qetgraphicsitem/conductor.h"
+#include "../wirecolorname.h"
+
+#include <QFontMetricsF>
+#include <QPainter>
+#include <QPolygonF>
+#include <QTextBlock>
+#include <QTextCursor>
+#include <QTextDocument>
+#include <QTextLayout>
 
 /**
 	Constructeur
@@ -169,6 +178,146 @@ void ConductorTextItem::setPos(qreal x, qreal y)
 {
 	QPointF p(x,y);
 	setPos(p);
+}
+
+/**
+	@brief ConductorTextItem::colorSquareRects
+	@return where the square of the wire's colour goes for each marker of
+	the text (WireColorName::marker(), put there by %wq), in the
+	coordinates of this item: the ink of the marker's glyph, on the line
+	the layout put it on. Empty when the text holds no marker.
+
+	In the coordinates of the item, and so already turned with it: the
+	text of a vertical stretch is rotated by 270 degrees, and the squares
+	follow the text without a word about it.
+*/
+QList<QRectF> ConductorTextItem::colorSquareRects() const
+{
+	QList<QRectF> squares;
+	const QChar marker = WireColorName::marker();
+	const QTextDocument *text_document = document();
+		//Asked at every paint of every wire's text, and most hold no
+		//marker: the font is measured only for one that does
+	if (!text_document
+		|| text_document->find(QString(marker)).isNull()) {
+		return squares;
+	}
+
+		//The ink of the glyph, from the origin on the baseline. A font
+		//that has no such glyph lends one from its fallback, as the
+		//layout does, and an empty answer still gets a square: the
+		//height of a capital, sitting on the baseline.
+	const QFontMetricsF metrics(text_document->defaultFont());
+	const QRectF glyph = metrics.boundingRect(marker);
+
+	for (QTextBlock block = text_document->begin() ;
+		 block.isValid() ;
+		 block = block.next())
+	{
+		const QString text = block.text();
+		int at = text.indexOf(marker);
+		const QTextLayout *layout = block.layout();
+		if (at < 0 || !layout) {
+			continue;
+		}
+
+		const QPointF origin = layout->position();
+		for ( ; at >= 0 ; at = text.indexOf(marker, at + 1))
+		{
+			const QTextLine line = layout->lineForTextPosition(at);
+			if (!line.isValid()) {
+				continue;
+			}
+			const qreal left = qMin(line.cursorToX(at), line.cursorToX(at + 1));
+			const qreal advance = qAbs(line.cursorToX(at + 1) - line.cursorToX(at));
+			const qreal baseline = line.y() + line.ascent();
+
+			QRectF square;
+			if (glyph.width() > 0 && glyph.height() > 0) {
+				square = glyph.translated(left, baseline);
+			} else {
+				const qreal side = qMin(advance, metrics.capHeight());
+				square = QRectF(left + (advance - side) / 2, baseline - side,
+								side, side);
+			}
+			squares << square.translated(origin);
+		}
+	}
+	return squares;
+}
+
+/**
+	@brief ConductorTextItem::paint
+	Draw the text, then a square of the colour of the wire over each
+	marker of it (colorSquareRects()): filled with the colour the wire is
+	drawn in and edged in the colour of the text; for a two-colour wire,
+	cut by the diagonal that rises to the right, the main colour above it
+	and the second one below. This is what the PDF and the SVG get too,
+	since they are drawn by the same call.
+
+	The colour of the wire, not the colour it is shown in at this moment:
+	a selected or highlighted wire turns red or blue on screen, and its
+	square keeps saying what wire it is. A folio that does not draw
+	coloured conductors draws the square black, as it draws the wire.
+	@param painter
+	@param option
+	@param widget
+*/
+void ConductorTextItem::paint(QPainter *painter,
+			      const QStyleOptionGraphicsItem *option,
+			      QWidget *widget)
+{
+	DiagramTextItem::paint(painter, option, widget);
+
+	const QList<QRectF> squares = colorSquareRects();
+	if (squares.isEmpty() || !parent_conductor_) {
+		return;
+	}
+
+	const ConductorProperties wire = parent_conductor_->properties();
+	QColor main_color = wire.color;
+	QColor second_color = wire.m_color_2;
+	if (Diagram *folio = diagram())
+	{
+		if (!folio->drawColoredConductors())
+		{
+			main_color = Qt::black;
+			second_color = Qt::black;
+		}
+	}
+
+	painter->save();
+	painter->setRenderHint(QPainter::Antialiasing, false);
+	for (const QRectF &square : squares)
+	{
+		QPen edge(color());
+		edge.setWidthF(square.width() / 10.0);
+		edge.setJoinStyle(Qt::MiterJoin);
+
+		painter->setPen(Qt::NoPen);
+		if (wire.m_bicolor)
+		{
+			QPolygonF above;
+			above << square.topLeft() << square.topRight() << square.bottomLeft();
+			QPolygonF below;
+			below << square.topRight() << square.bottomRight() << square.bottomLeft();
+			painter->setBrush(main_color);
+			painter->drawPolygon(above);
+			painter->setBrush(second_color);
+			painter->drawPolygon(below);
+			painter->setPen(edge);
+			painter->drawLine(square.bottomLeft(), square.topRight());
+		}
+		else
+		{
+			painter->fillRect(square, main_color);
+		}
+
+		painter->setPen(edge);
+		painter->setBrush(Qt::NoBrush);
+		painter->drawRect(square);
+	}
+	painter->restore();
 }
 
 /**

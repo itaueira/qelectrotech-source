@@ -26,6 +26,7 @@
 #include "qetdiagrameditor.h"
 #include "ui/potentialselectordialog.h"
 #include "undocommand/setautonumcontextcommand.h"
+#include "wiresections.h"
 
 namespace
 {
@@ -41,6 +42,52 @@ namespace
 			return AssemblyState();
 		}
 		return project->assemblyState();
+	}
+
+	/**
+		Raise the highest numbers @a hash holds for @a title to the ones in
+		@a given, part by part, and never lower them.
+	*/
+	void raiseFolioMaximum(QHash<QString, QStringList> &hash,
+			       const QString &title,
+			       const QStringList &given)
+	{
+		if (given.isEmpty()) {
+			return;
+		}
+		QStringList highest = hash.value(title);
+		for (int i = 0 ; i < given.size() ; ++i)
+		{
+			if (i >= highest.size()) {
+				highest << given.at(i);
+			} else if (given.at(i).toInt() > highest.at(i).toInt()) {
+				highest[i] = given.at(i);
+			}
+		}
+		hash.insert(title, highest);
+	}
+
+	/**
+		Keep, on @a diagram, the highest number each folio counter of the
+		scheme @a title has given there - what Diagram::loadCndFolioSeq()
+		starts the count from when the folio is shown again (T70).
+		autonum::setSequential() writes it in the hashes of the element
+		numbering instead, so without this a folio shown a second time
+		counted from its first number again, and the next wire drawn on it
+		took a number one of its wires already carried. Not undone with the
+		number: undoing a wire leaves a gap in the count of its folio, and
+		never two wires with one number.
+	*/
+	void recordFolioCounters(Diagram *diagram,
+				 const QString &title,
+				 const autonum::sequentialNumbers &seq)
+	{
+		if (!diagram || title.isEmpty()) {
+			return;
+		}
+		raiseFolioMaximum(diagram->m_cnd_unitfolio_max, title, seq.unit_folio);
+		raiseFolioMaximum(diagram->m_cnd_tenfolio_max, title, seq.ten_folio);
+		raiseFolioMaximum(diagram->m_cnd_hundredfolio_max, title, seq.hundred_folio);
 	}
 }
 
@@ -80,9 +127,21 @@ void ConductorAutoNumerotation::numerate()
 		//created, which is never in the photograph; this is what keeps it
 		//that way for the next one.
 	if (isFrozen(m_conductor.data(), assemblyStateOf(m_diagram))) return;
+		//The cross-section of its point first (T70): the text of the new
+		//conductor is worked out of its formula below, and %ws reads it
+		//there
+	WireSections::giveOwnSection(m_conductor.data());
 	if (conductor_list.size() >= 1 ) numeratePotential();
 	else if (m_conductor -> properties().type == ConductorProperties::Multi)
 		numerateNewConductor();
+		//And once numbered, with the rest of the point: taking the
+		//properties of its potential, the new conductor took the section
+		//the potential had, and the potential takes the one the new
+		//conductor may have raised - in the same undo step
+	if (m_conductor) {
+		WireSections::giveNewConductorItsSection(m_conductor.data(), m_diagram,
+							 m_parent_undo);
+	}
 }
 
 /**
@@ -183,6 +242,7 @@ void ConductorAutoNumerotation::newProperties(
 	cp.m_formula = formula;
 
 	autonum::setSequential(formula, seq, context, diagram, autoNum_name);
+	recordFolioCounters(diagram, autoNum_name, seq);
 
 	NumerotationContextCommands ncc (context, diagram);
 	NumerotationContext new_context = ncc.next();
@@ -289,6 +349,7 @@ void ConductorAutoNumerotation::numerateNewConductor()
 							   context,
 							   m_diagram,
 							   autoNum_name);
+		recordFolioCounters(m_diagram, autoNum_name, m_conductor->sequenceNum());
 
 		NumerotationContextCommands ncc (context, m_diagram);
 		NumerotationContext new_context = ncc.next();

@@ -49,8 +49,12 @@ class ConductorTextItem : public DiagramTextItem
 		virtual void forceRotateByUser(bool);
 		virtual void setPos(const QPointF &pos);
 		virtual void setPos(qreal x, qreal y);
+		QList<QRectF> colorSquareRects() const;
 
 	protected:
+		void paint(QPainter *painter,
+			   const QStyleOptionGraphicsItem *option,
+			   QWidget *widget) override;
 		void mousePressEvent   (QGraphicsSceneMouseEvent *event) override;
 		void mouseMoveEvent    (QGraphicsSceneMouseEvent *event) override;
 		void mouseReleaseEvent (QGraphicsSceneMouseEvent *event) override;

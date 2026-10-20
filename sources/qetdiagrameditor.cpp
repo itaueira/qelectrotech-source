@@ -154,6 +154,9 @@
 #include "ui/cablenumberingdialog.h"
 #include "toolbarsettings.h"
 #include "wirearrangement.h"
+#include "wirecolorname.h"
+#include "wirenames.h"
+#include "wiresections.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDialog>
@@ -606,6 +609,21 @@ void QETDiagramEditor::setUpActions()
 	ShortcutManager::instance().registerAction(m_conductor_arrange_folio, "diagrameditor.conductor_arrange_folio", tr("Diagram editors"), QKeySequence());
 	m_conductor_arrange_folio->setStatusTip(tr("Arrange every conductor of the folio not dragged by hand", "status bar tip"));
 	connect(m_conductor_arrange_folio, &QAction::triggered, this, [this]() {arrangeConductors(true);});
+
+		//The cross-section of each point from its components, for a
+		//project drawn before they said one (T70)
+	m_update_wire_sections = new QAction(QET::Icons::ConductorSettings, tr("Update the wire cross-sections"), this);
+	ShortcutManager::instance().registerAction(m_update_wire_sections, "diagrameditor.update_wire_sections", tr("Diagram editors"), QKeySequence());
+	m_update_wire_sections->setStatusTip(tr("Give every conductor of the project the largest cross-section of the components of its point", "status bar tip"));
+	connect(m_update_wire_sections, &QAction::triggered, this, &QETDiagramEditor::updateWireSections);
+
+		//The names typed by hand, "F5-2 (1mm²)", taken to the numbering
+		//F<folio>-<number> (colour cross-section), each wire keeping its
+		//number (T70)
+	m_convert_wire_names = new QAction(QET::Icons::ConductorSettings, tr("Convert the wire names"), this);
+	ShortcutManager::instance().registerAction(m_convert_wire_names, "diagrameditor.convert_wire_names", tr("Diagram editors"), QKeySequence());
+	m_convert_wire_names->setStatusTip(tr("Name every wire of the project F<folio>-<number> (colour cross-section), keeping the number it has", "status bar tip"));
+	connect(m_convert_wire_names, &QAction::triggered, this, &QETDiagramEditor::convertWireNames);
 
 		//AutoConductor
 	m_auto_conductor = new QAction   (QET::Icons::Autoconnect, tr("Automatic creation conductor (s)","Tool tip of auto conductor"), this);
@@ -3461,7 +3479,7 @@ void QETDiagramEditor::replaceSelectionWith(const ElementsLocation &location)
 				continue;
 			}
 			lost.insert(conductor);
-			const QString number = conductor->properties().text;
+			const QString number = WireColorName::withoutMarker(conductor->properties().text);
 			details << (number.isEmpty()
 				    ? tr("Fil sans numéro, sur %1")
 				      .arg(elementLabel(plan.old_element))
@@ -3563,6 +3581,57 @@ void QETDiagramEditor::arrangeConductors(bool whole_folio)
 }
 
 /**
+	@brief QETDiagramEditor::updateWireSections
+	Give every conductor of the current project the cross-section of its
+	point, the largest its components ask for (T70) - one undo step per
+	folio - and say in the status bar how many changed.
+*/
+void QETDiagramEditor::updateWireSections()
+{
+	ProjectView *project_view = currentProjectView();
+	QETProject *project = project_view ? project_view->project() : nullptr;
+	if (!project || project->isReadOnly()) {
+		return;
+	}
+	const int changed = WireSections::updateProject(project);
+	const QString message = changed
+			? tr("Cross-section updated on %n conductor(s)", "status bar message", changed)
+			: tr("The conductors already have the cross-section of their components", "status bar message");
+		//Queued, as for the align actions: closing the menu the action came
+		//from would clear a message shown right now
+	QTimer::singleShot(0, this, [this, message]() {
+		statusBar()->showMessage(message, 8000);
+	});
+}
+
+/**
+	@brief QETDiagramEditor::convertWireNames
+	Name every wire of the current project F<folio>-<number> (colour
+	cross-section), each one keeping the number its text carries (T70) - one
+	undo step - and say in the status bar how many changed.
+*/
+void QETDiagramEditor::convertWireNames()
+{
+	ProjectView *project_view = currentProjectView();
+	QETProject *project = project_view ? project_view->project() : nullptr;
+	if (!project || project->isReadOnly()) {
+		return;
+	}
+		//The folio on screen, so that the next wire drawn on it goes on
+		//from its highest number without a change of folio
+	DiagramView *view = currentDiagramView();
+	const int changed = WireNames::convertProject(project, view ? view->diagram() : nullptr);
+	const QString message = changed
+			? tr("%n wire name(s) converted", "status bar message", changed)
+			: tr("The wires already carry the standard name", "status bar message");
+		//Queued, as for the cross-sections: closing the menu the action
+		//came from would clear a message shown right now
+	QTimer::singleShot(0, this, [this, message]() {
+		statusBar()->showMessage(message, 8000);
+	});
+}
+
+/**
 	@brief QETDiagramEditor::exchangeSelectedElements
 	Put each of the two selected elements in the place of the other, in one
 	undoable step (T66). The wires stay where they are and each element takes
@@ -3604,7 +3673,7 @@ void QETDiagramEditor::exchangeSelectedElements()
 		QStringList details;
 		for (Conductor *conductor : std::as_const(plan.lost_conductors))
 		{
-			const QString number = conductor->properties().text;
+			const QString number = WireColorName::withoutMarker(conductor->properties().text);
 			details << (number.isEmpty() ? tr("Wire without a number")
 						     : tr("Wire « %1 »").arg(number));
 		}
@@ -3909,6 +3978,8 @@ void QETDiagramEditor::setUpMenu()
 	conductor_menu -> addAction(m_conductor_reset);
 	conductor_menu -> addAction(m_conductor_arrange);
 	conductor_menu -> addAction(m_conductor_arrange_folio);
+	conductor_menu -> addAction(m_update_wire_sections);
+	conductor_menu -> addAction(m_convert_wire_names);
 	conductor_menu -> addSeparator();
 	conductor_menu -> addAction(m_show_conductor_text);
 	conductor_menu -> addAction(m_hide_conductor_text);
@@ -5655,6 +5726,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_show_conductor_text         -> setEnabled(editable_project);
 	m_hide_conductor_text         -> setEnabled(editable_project);
 	m_align_conductor_text        -> setEnabled(editable_project);
+	m_convert_wire_names          -> setEnabled(editable_project);
 	m_replace_part                -> setEnabled(editable_project);
 	m_save_group                  -> setEnabled(editable_project);
 	m_insert_group                -> setEnabled(editable_project);
@@ -5764,6 +5836,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 		action_list << m_conductor_reset
 			    << m_conductor_arrange
 			    << m_conductor_arrange_folio
+			    << m_update_wire_sections
 			    << m_find_element
 			    << m_navigate
 			    << m_cut
@@ -5799,6 +5872,9 @@ void QETDiagramEditor::slot_updateComplexActions()
 	m_conductor_reset->setEnabled(!ro && selected_conductors_count);
 	m_conductor_arrange->setEnabled(!ro && selected_conductors_count);
 	m_conductor_arrange_folio->setEnabled(!ro && !diagram_->conductors().isEmpty());
+		//The whole project, and not this folio: its folio may hold no
+		//conductor while the others do (T70)
+	m_update_wire_sections->setEnabled(!ro);
 
 	// number of selected elements
 	int selected_elements_count = dc.count(DiagramContent::Elements);

@@ -32,8 +32,9 @@
 /*
 	How many labels the workshop is told to print, and for which number.
 
-	The list this file measures is one column of text: one row per length
-	of wire, holding the number written on it. Somebody reads it, prints
+	The list this file measures is one row per length of wire, holding the
+	number written on it - and, since T70, the colour of the wire in a
+	second column, which is not what is counted here. Somebody reads it, prints
 	that many labels and ties them on. So the only thing it can get wrong
 	is how many times a number appears - and that is exactly the kind of
 	error nothing downstream catches. A roll with twice the labels does
@@ -262,12 +263,15 @@ namespace
 		return rows;
 	}
 
-	/// @return how many times each number appears in @a rows
+	/// @return how many times each number appears in @a rows, read from
+	/// the first of the two columns: the second is the colour of the wire
+	/// (T70), and the labels are counted by the number they carry
 	QHash<QString, int> countOf(const QStringList &rows)
 	{
 		QHash<QString, int> counted;
 		for (const QString &row : rows) {
-			counted[row] = counted.value(row, 0) + 1;
+			const QString number = row.section(QLatin1Char(';'), 0, 0);
+			counted[number] = counted.value(number, 0) + 1;
 		}
 		return counted;
 	}
@@ -312,6 +316,10 @@ TEST_CASE("T17 — a lista de números de fio conta por fio, não por ponta",
 		//distinct rows is the shape of the list, the sum above is its
 		//size, and a defect can move either one without the other.
 	CHECK(counted.count() == 3);
+
+		//And the colour beside each number: the wires of the fixture are
+		//drawn in the default colour, and none has a colour typed in
+	CHECK(rows.filter(QStringLiteral(";Black")).count() == 12);
 }
 
 TEST_CASE("T17 — o que não é fio fica fora da lista de números",

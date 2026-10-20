@@ -48,9 +48,12 @@ WiringListDialog::WiringListDialog(QETProject *project, QWidget *parent) :
 		//was edited earlier in the session.
 	m_project->dataBase()->updateDB();
 
+		//The colour beside the wire: the wire number holds no marker of the
+		//square of its colour, which only the folio can draw, so the list
+		//names the colour instead (projectDataBase::bindConductorProperties()).
 	auto *model = new QSqlQueryModel(this);
 	model->setQuery(QStringLiteral(
-				"SELECT wire_number, from_element_label, from_terminal,"
+				"SELECT wire_number, wire_color, from_element_label, from_terminal,"
 				" to_element_label, to_terminal, diagram_position"
 				" FROM wiring_list_view"
 				//Wire numbers are text, so a plain sort puts "10" before "9".
@@ -64,11 +67,12 @@ WiringListDialog::WiringListDialog(QETProject *project, QWidget *parent) :
 			m_project->dataBase()->database());
 
 	model->setHeaderData(0, Qt::Horizontal, tr("Wire", "column title"));
-	model->setHeaderData(1, Qt::Horizontal, tr("Component 1", "column title"));
-	model->setHeaderData(2, Qt::Horizontal, tr("Terminal 1", "column title"));
-	model->setHeaderData(3, Qt::Horizontal, tr("Component 2", "column title"));
-	model->setHeaderData(4, Qt::Horizontal, tr("Terminal 2", "column title"));
-	model->setHeaderData(5, Qt::Horizontal, tr("Sheet", "column title"));
+	model->setHeaderData(1, Qt::Horizontal, tr("Wire color", "column title"));
+	model->setHeaderData(2, Qt::Horizontal, tr("Component 1", "column title"));
+	model->setHeaderData(3, Qt::Horizontal, tr("Terminal 1", "column title"));
+	model->setHeaderData(4, Qt::Horizontal, tr("Component 2", "column title"));
+	model->setHeaderData(5, Qt::Horizontal, tr("Terminal 2", "column title"));
+	model->setHeaderData(6, Qt::Horizontal, tr("Sheet", "column title"));
 
 	const int excluded = m_project->dataBase()->excludedConductorCount();
 

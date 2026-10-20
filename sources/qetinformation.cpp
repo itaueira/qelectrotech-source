@@ -294,6 +294,7 @@ QStringList QETInformation::elementInfoKeys()
 						 ELMT_CATEGORY,
 						 ELMT_VOLTAGE_RATING,
 						 ELMT_CURRENT_RATING,
+						 ELMT_WIRE_SECTION,
 						 ELMT_NOTES,
 						 ELMT_MACHINE_MANUFACTURER_REF,
 						 ELMT_SUPPLIER,
@@ -428,6 +429,7 @@ QString QETInformation::translatedInfoKey(const QString &info)
 	else if (info == ELMT_CATEGORY)                    return QObject::tr("Category");
 	else if (info == ELMT_VOLTAGE_RATING)              return QObject::tr("Rated voltage");
 	else if (info == ELMT_CURRENT_RATING)              return QObject::tr("Rated current");
+	else if (info == ELMT_WIRE_SECTION)                return QObject::tr("Wire cross-section");
 	else if (info == ELMT_NOTES)                       return QObject::tr("Notes");
 	else if (info == DIA_AUTHOR)                       return QObject::tr("Author");
 	else if (info == DIA_DATE)                         return QObject::tr("Date");

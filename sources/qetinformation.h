@@ -69,6 +69,12 @@ namespace QETInformation
 	static QString ELMT_CATEGORY                     = "category";
 	static QString ELMT_VOLTAGE_RATING               = "voltage_rating";
 	static QString ELMT_CURRENT_RATING               = "current_rating";
+	/** The cross-section the wires landing on the component need (T70),
+	 * as the person typed it: "1", "1,5", "2,5 mm²". The wires of an
+	 * electrical point take the largest their components carry (see
+	 * WireSections), and a component that leaves it empty - the terminal
+	 * of a strip, say - does not count. */
+	static QString ELMT_WIRE_SECTION                 = "wire_section";
 	static QString ELMT_NOTES                        = "notes";
 	static QString ELMT_UNITY                        = "unity";
 	static QString ELMT_WIDTH						 = "width";

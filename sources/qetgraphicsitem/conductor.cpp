@@ -23,6 +23,7 @@
 #include "../autoNum/numerotationcontextcommands.h"
 #include "../conductorautonumerotation.h"
 #include "../conductorsegment.h"
+#include "../conductortextfit.h"
 #include "../wirepath.h"
 #include "../conductorsegmentprofile.h"
 #include "../dataBase/projectdatabase.h"
@@ -42,6 +43,7 @@
 #include "../wirehops.h"
 
 #include <QMultiHash>
+#include <QTransform>
 #include <QtDebug>
 
 namespace {
@@ -101,6 +103,56 @@ namespace
 
 		return element->elementInformations()
 				.value(QETInformation::ELMT_LOCATION_PATH).toString();
+	}
+
+	/**
+		@brief Draw the text of a conductor at @a size points.
+		Only the font of the item changes: the size written in the file is
+		ConductorProperties::text_size, and it is not touched here.
+		A size of 0 or less is left alone, as QFont::setPointSize() would
+		refuse it anyway.
+	*/
+	void drawTextAt(ConductorTextItem *text, int size)
+	{
+		if (size <= 0) {
+			return;
+		}
+		QFont font = text->font();
+		if (font.pointSizeF() == size) {
+			return;
+		}
+		font.setPointSize(size);
+		text->setFont(font);
+	}
+
+	/**
+		@brief The length @a text takes along a run going @a run, at the
+		size and rotation it has: the width of its box when it is written
+		along the run (0 on a horizontal run, 270 on a vertical one), its
+		height when it is written across.
+	*/
+	qreal extentAlong(const ConductorTextItem *text, Qt::Orientations run)
+	{
+		QTransform turn;
+		turn.rotate(text->rotation());
+		const QRectF box = turn.mapRect(text->boundingRect());
+		return run == Qt::Vertical ? box.height() : box.width();
+	}
+
+	/**
+		@brief Draw @a text at the largest size, from @a recorded down to
+		ConductorTextFit::smallest, at which it fits a run going @a run
+		of @a run_length
+	*/
+	void fitTextToRun(ConductorTextItem *text, int recorded, Qt::Orientations run, qreal run_length)
+	{
+		drawTextAt(text, ConductorTextFit::fittingSize(
+				   recorded,
+				   ConductorTextFit::room(run_length),
+				   [text, run](int size) {
+					   drawTextAt(text, size);
+					   return extentAlong(text, run);
+				   }));
 	}
 }
 
@@ -1794,8 +1846,11 @@ ConductorSegment *Conductor::middleSegment()
 	Calculate and return the better pos for text.
 	@param flag : flag is used to know if text pos is near of
 	a vertical or horizontal conductor segment.
+	@param run_length : when given, receives the length of the run the
+	text is centred on: the whole conductor when it is straight, the
+	longest segment otherwise
 */
-QPointF Conductor::posForText(Qt::Orientations &flag)
+QPointF Conductor::posForText(Qt::Orientations &flag, qreal *run_length)
 {
 	ConductorSegment *segment        = segments;
 	bool all_segments_are_vertical   = true;
@@ -1849,6 +1904,12 @@ QPointF Conductor::posForText(Qt::Orientations &flag)
 		p1 = longest_segment->middle();
 		flag = (longest_segment->isHorizontal())? Qt::Horizontal : Qt::Vertical;
 	}
+	if (run_length)
+	{
+		*run_length = (all_segments_are_vertical || all_segments_are_horizontal)
+				? length()
+				: qAbs(longest_segment->length());
+	}
 	return p1;
 }
 
@@ -1871,6 +1932,10 @@ void Conductor::updateTextVisibility()
 	Move the text at middle of conductor (if is vertical or horizontal)
 	otherwise, move conductor at the middle of the longest segment of conductor.
 	If text was moved by user, this function do nothing, except check if text is near conductor.
+	The text is drawn at the largest size, from the one the properties hold
+	down to ConductorTextFit::smallest, at which it fits that run - a text
+	moved or turned by the user too, its place kept. The properties
+	themselves are never changed.
 */
 void Conductor::calculateTextItemPosition()
 {
@@ -1903,6 +1968,15 @@ void Conductor::calculateTextItemPosition()
 		//position
 	if (m_text_item -> wasMovedByUser())
 	{
+			//Placed by the user: still drawn at the size that fits the
+			//run the application centres it on, so that a drag never
+			//makes it jump to another size the next time the conductor
+			//is laid out
+		Qt::Orientations along;
+		qreal run_length = 0;
+		posForText(along, &run_length);
+		fitTextToRun(m_text_item, m_properties.text_size, along, run_length);
+
 			//Text field was moved by user:
 			//we check if text field is yet  near the conductor
 		QPointF text_item_pos = m_text_item -> pos();
@@ -1915,13 +1989,21 @@ void Conductor::calculateTextItemPosition()
 	{
 			//Position and rotation of text is calculated.
 		Qt::Orientations rotation;
-		QPointF text_pos = posForText(rotation);
+		qreal run_length = 0;
+		QPointF text_pos = posForText(rotation, &run_length);
 
 		if (!m_text_item -> wasRotatedByUser())
 		{
 			rotation == Qt::Vertical ? m_text_item -> setRotation(m_properties.verti_rotate_text):
 									   m_text_item -> setRotation(m_properties.horiz_rotate_text);
+
 		}
+			//The name fits the run it is centred on: drawn smaller when
+			//it has to, from the size the file holds, which does not
+			//change - turned by the user too, so that nothing jumps. Before
+			//the position below, which centres the text by its width at
+			//the size it is drawn at.
+		fitTextToRun(m_text_item, m_properties.text_size, rotation, run_length);
 
 			//Adjust the position of text if his rotation
 			//is 0° or 270°, to be exactly centered to the conductor
@@ -2044,6 +2126,8 @@ ConductorProfile Conductor::profile(Qt::Corner path_type) const
 */
 void Conductor::refreshText()
 {
+	const QString shown = m_text_item->toPlainText();
+
 	if (m_freeze_label)
 	{
 		m_text_item->setPlainText(m_properties.text);
@@ -2070,6 +2154,12 @@ void Conductor::refreshText()
 			m_text_item->setPlainText(m_properties.text);
 		}
 	}
+
+		//A name of another length is fitted to its run and centred on it
+		//again: the size it is drawn at and its position both depend on
+		//its width
+	if (m_text_item->toPlainText() != shown)
+		calculateTextItemPosition();
 }
 
 void Conductor::setPath(const QPainterPath &path)

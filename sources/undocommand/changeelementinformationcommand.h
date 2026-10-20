@@ -19,6 +19,7 @@
 #define CHANGEELEMENTINFORMATIONCOMMAND_H
 
 #include "../diagramcontext.h"
+#include "../wiresections.h"
 
 #include <QUndoCommand>
 #include <QUuid>
@@ -30,6 +31,13 @@ class QETProject;
 /**
 	@brief The ChangeElementInformationCommand class
 	This class manage undo/redo to change the element information.
+
+	When the cross-section a component asks of its wires changes (T70,
+	QETInformation::ELMT_WIRE_SECTION), the points its terminals are on
+	take the new section in this same command, so that one undo puts the
+	information and the wires back together. The wires that change are
+	worked out at the first redo, once the information is in place, and
+	replayed after that.
 */
 class ChangeElementInformationCommand : public QUndoCommand
 {
@@ -50,9 +58,13 @@ class ChangeElementInformationCommand : public QUndoCommand
 
 	private:
 		void updateProjectDB();
+		void updateWireSections(bool forward);
 
 	private:
 		QMap<QPointer<Element>, QPair<DiagramContext, DiagramContext>> m_map;
+			/// The wires whose section followed the components (T70)
+		QList<WireSections::Change> m_wire_changes;
+		bool m_wire_changes_known = false;
 };
 
 /**

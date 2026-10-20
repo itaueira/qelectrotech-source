@@ -19,6 +19,8 @@
 #define ConductorNumExport_H
 
 #include <QHash>
+#include <QPair>
+#include <QString>
 
 class QETProject;
 class QWidget;
@@ -39,7 +41,8 @@ class ConductorNumExport
 	
 	private:
 	QETProject *m_project = nullptr;
-	QHash <QString, int> m_hash;
+		/// How many wires carry each number, in each colour
+	QHash <QPair<QString, QString>, int> m_hash;
 	QWidget *m_parent_widget = nullptr;
 };
 

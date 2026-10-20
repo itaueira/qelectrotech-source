@@ -37,6 +37,7 @@
 #include "qetgraphicsitem/terminal.h"
 #include "qetinformation.h"
 #include "textlines.h"
+#include "wirecolorname.h"
 
 #include <QFontMetricsF>
 #include <QGraphicsSimpleTextItem>
@@ -633,7 +634,9 @@ void DxfExport::write(Diagram *diagram, int width, int height,
 			qreal y = (cond->pos().y() + textItem -> pos().y())
 					- ydir * fontSize * 1.8
 					- xdir * fontSize * 0.9;
-			QStringList lines = textItem->toPlainText().split('\n');
+				//Without the marker of the square of the wire's colour: the
+				//folio paints the square over it, and a DXF text cannot
+			QStringList lines = WireColorName::withoutMarker(textItem->toPlainText()).split('\n');
 			qreal offset = fontSize * 1.6;
 			foreach (QString line, lines) {
 				if (line.size() > 0 && line != "_" )

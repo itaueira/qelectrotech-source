@@ -25,6 +25,7 @@
 #include "../qetgraphicsitem/terminal.h"
 #include "../diagram.h"
 #include "../qetproject.h"
+#include "../wirecolorname.h"
 
 #include <QHash>
 #include <QVector>
@@ -344,6 +345,9 @@ QString RealTerminal::Xref() const
  * The count of this list is the count of the conductors on the drawing, and
  * a caller that shows the entries is free to mark the empty ones; a caller
  * that never saw them could not.
+ *
+ * The number comes without the marker of the square of the wire's colour
+ * (WireColorName), which only the text of the wire on the folio draws.
  */
 QStringList RealTerminal::conductors() const
 {
@@ -355,7 +359,7 @@ QStringList RealTerminal::conductors() const
 
 	const auto conductors_ = m_element->conductors();
 	for (const Conductor *conductor_ : conductors_) {
-		list_ << conductor_->properties().text;
+		list_ << WireColorName::withoutMarker(conductor_->properties().text);
 	}
 
 	return list_;
@@ -418,7 +422,7 @@ QVector<WireEnd> RealTerminal::wireEnds(int side) const
 		WireEnd end_;
 		end_.tag = tag_;
 		end_.point = point_name_;
-		end_.wire = conductor_->properties().text;
+		end_.wire = WireColorName::withoutMarker(conductor_->properties().text);
 		end_.description = element_->elementInformations()
 						   .value(QETInformation::ELMT_DESCRIPTION).toString();
 		if (Diagram *diagram_ = element_->diagram())
