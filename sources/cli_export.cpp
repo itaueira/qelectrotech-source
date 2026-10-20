@@ -72,6 +72,7 @@
 #include <QPair>
 #include <QPainter>
 #include <QPdfWriter>
+#include <QPicture>
 #include <QSet>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -459,6 +460,13 @@ int exportImages(QETProject &project, const QString &format,
 			gen.setFileName(path);
 			gen.setSize(r.size());
 			gen.setViewBox(QRect(0, 0, r.width(), r.height()));
+				// At the resolution the symbols are recorded at: a QPicture
+				// played on a device of another resolution is scaled by the
+				// ratio, and at the generator's own 72 dpi every symbol came
+				// out at 72/96 of its size around its own origin, while the
+				// conductors, not recorded, kept theirs - the terminals left
+				// beside the symbols they belong to.
+			gen.setResolution(QPicture().logicalDpiX());
 			gen.setTitle(diagram->title());
 			QPainter painter(&gen);
 			diagram->setSmallPictures(svgSmallPictures);

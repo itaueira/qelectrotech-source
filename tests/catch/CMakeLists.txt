@@ -806,6 +806,9 @@ if(TARGET qelectrotech_objects)
         # abaixo, em csvwriter_test.cpp do C_unittests, e nao se repete
         # aqui.
         src/ui/csvexport_test.cpp
+        # The SVG of the command line, the symbols at their size: it needs
+        # the export, which opens the project the way the program does.
+        src/ui/svgexport_test.cpp
         src/ui/titleblockeditor_test.cpp
         src/ui/navigate_test.cpp
         # Which strip a terminal of the schematic belongs to - the half of
