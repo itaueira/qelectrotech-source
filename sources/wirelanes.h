@@ -82,15 +82,11 @@ namespace WireLanes
 		QVector<Wire> wires;
 		QVector<Block> blocks;
 		QVector<Frame> frames;
-			/// Two lanes of one group are never further apart than this
-		double max_pitch = 10;
 			/// A piece of room where the lanes would be closer than this
 			/// is too narrow, and the next one is tried
 		double min_pitch = 4;
 			/// Two bridges closer than this across are in conflict
 		double gap = 10;
-			/// The lanes go on this grid when they fit on it
-		double grid = 1;
 	};
 
 	struct Result
@@ -119,8 +115,7 @@ namespace WireLanes
 	bool inConflict(const Wire &a, const Wire &b, double gap);
 	int orderCost(const Wire &left, const Wire &right, double gap);
 	QVector<int> lanes(const QVector<Wire> &wires, double gap);
-	QVector<double> positions(int lane_count, double low, double high,
-				  double max_pitch, double grid);
+	QVector<double> positions(int lane_count, double low, double high);
 }
 
 #endif // WIRELANES_H

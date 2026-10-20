@@ -83,12 +83,6 @@ TEST_CASE("T67 — The bridge goes between the two frames", "[T67][wirelanes]")
 	const WireLanes::Result result = WireLanes::arrange(r);
 	CHECK(result.at.at(0) == Approx(243));	// 242.75 on the unit
 
-	SECTION("on the grid of 10, when it fits")
-	{
-		r.grid = 10;
-		CHECK(WireLanes::arrange(r).at.at(0) == Approx(240));
-	}
-
 	SECTION("the wider piece loses when it is inside a frame")
 	{
 			//The frame ends at 240 now: 180 to 240 inside it is wider than
@@ -121,31 +115,32 @@ TEST_CASE("CU-67.2 — Five bridges that touch, in a staircase", "[T67][wirelane
 	CHECK(result.at.at(5) == Approx(225));
 }
 
-TEST_CASE("T67 — The grid gives way when it would push a lane against the frame", "[T67][wirelanes]")
+TEST_CASE("CU-67.16 — The lanes take the whole corridor", "[T67][wirelanes]")
 {
-		//The five lanes of the folio on a grid of 10 would be 220 to 260,
-		//the first one 4.5 from the frame where it should have 9: on whole
-		//units instead
-	const QVector<double> at = WireLanes::positions(5, 215.5, 270, 10, 10);
+		//The five lanes of the folio: 54.5 / 6 is 9.08, 9 apart on whole
+		//units, and 9.5 and 9 left at the two ends
+	const QVector<double> at = WireLanes::positions(5, 215.5, 270);
 	REQUIRE(at.size() == 5);
 	CHECK(at.at(0) == Approx(225));
 	CHECK(at.at(4) == Approx(261));
 
 		//On the folio itself the terminals, with their margin, start at 267:
-		//on the grid the first lane would be 4.5 from the frame where it
-		//should have 8.6, which half of it would still have let through.
-		//On whole units, 8 apart: 51.5 / 6 is 8.58
-	const QVector<double> folio = WireLanes::positions(5, 215.5, 267, 10, 10);
+		//51.5 / 6 is 8.58. 8 apart would leave 9.5 and 10 at the ends, 9
+		//apart 7.5 and 8, nearer to the step: 9
+	const QVector<double> folio = WireLanes::positions(5, 215.5, 267);
 	REQUIRE(folio.size() == 5);
-	CHECK(folio.at(0) == Approx(225));
+	CHECK(folio.at(0) == Approx(223));
 	CHECK(folio.at(2) == Approx(241));
-	CHECK(folio.at(4) == Approx(257));
+	CHECK(folio.at(4) == Approx(259));
 
-		//Two lanes have room enough: on the grid
-	const QVector<double> two = WireLanes::positions(2, 215.5, 270, 10, 10);
+		//Two lanes in the same corridor are not kept 10 apart in its
+		//middle, with 20 empty on each side: 54.5 / 3 is 18.17, 18 apart
+	const QVector<double> two = WireLanes::positions(2, 215.5, 270);
 	REQUIRE(two.size() == 2);
-	CHECK(two.at(0) == Approx(240));
-	CHECK(two.at(1) == Approx(250));
+	CHECK(two.at(0) == Approx(234));
+	CHECK(two.at(1) == Approx(252));
+	CHECK(two.at(0) - 215.5 == Approx(18.5));
+	CHECK(270 - two.at(1) == Approx(18));
 }
 
 TEST_CASE("T67 — Two that go down: the lower one on the left", "[T67][wirelanes]")
@@ -193,24 +188,25 @@ TEST_CASE("T67 — Bridges far apart share a lane", "[T67][wirelanes]")
 	CHECK(result.group.at(0) != result.group.at(1));
 }
 
-TEST_CASE("T67 — Few lanes: 10 apart, centered", "[T67][wirelanes]")
+TEST_CASE("T67 — Few lanes: spread over the room, centered", "[T67][wirelanes]")
 {
+		//100 / 3 is 33.3: 33 apart, 34 and 33 left at the ends
 	Request r;
 	r.wires << wire(100, 130, 0, 100) << wire(120, 150, 0, 100);
 	const WireLanes::Result result = WireLanes::arrange(r);
-	CHECK(result.at.at(1) == Approx(45));
-	CHECK(result.at.at(0) == Approx(55));
+	CHECK(result.at.at(1) == Approx(34));
+	CHECK(result.at.at(0) == Approx(67));
 }
 
 TEST_CASE("CU-67.6 — A narrow room: the lanes spread with the same room at each end", "[T67][wirelanes]")
 {
-		//Six bridges in a chain, in a room 48 wide: 48 / 7 is 6.86 apart,
-		//less than 10; on whole units 6, the block centered, 9 from each
-		//end
-	const QVector<double> at = WireLanes::positions(6, 0, 48, 10, 0.5);
+		//Six bridges in a chain, in a room 48 wide: 48 / 7 is 6.86. 6
+		//apart would leave 9 at each end, 7 apart 7 and 6, nearer to the
+		//step: 7
+	const QVector<double> at = WireLanes::positions(6, 0, 48);
 	REQUIRE(at.size() == 6);
 	for (int k = 0 ; k < 6 ; ++k) {
-		CHECK(at.at(k) == Approx(9 + 6 * k));
+		CHECK(at.at(k) == Approx(7 + 7 * k));
 	}
 
 	Request r;
@@ -220,9 +216,9 @@ TEST_CASE("CU-67.6 — A narrow room: the lanes spread with the same room at eac
 	const WireLanes::Result result = WireLanes::arrange(r);
 	QVector<double> sorted = result.at;
 	std::sort(sorted.begin(), sorted.end());
-	CHECK(sorted.first() == Approx(48 - sorted.last()));
+	CHECK(std::abs(sorted.first() - (48 - sorted.last())) <= 1);
 	for (int k = 1 ; k < 6 ; ++k) {
-		CHECK(sorted.at(k) - sorted.at(k - 1) == Approx(6));
+		CHECK(sorted.at(k) - sorted.at(k - 1) == Approx(7));
 	}
 }
 
@@ -230,15 +226,33 @@ TEST_CASE("CU-67.15 — The gaps between neighbours are all the same", "[T67][wi
 {
 		//The 22 bridges of the folio with its terminals moved away: 134.5
 		//of room is 5.85 apart, which rounded lane by lane would give gaps
-		//of 5 and 6 side by side
-	const QVector<double> at = WireLanes::positions(22, 215.5, 350, 10, 1);
+		//of 5 and 6 side by side. 5 apart would leave 15 at each end, 6
+		//apart 4.5 and 4: 6
+	const QVector<double> at = WireLanes::positions(22, 215.5, 350);
 	REQUIRE(at.size() == 22);
 	for (int k = 1 ; k < 22 ; ++k) {
 		CAPTURE(k);
-		CHECK(at.at(k) - at.at(k - 1) == Approx(5));
+		CHECK(at.at(k) - at.at(k - 1) == Approx(6));
 	}
+	CHECK(at.first() == Approx(220));
+	CHECK(at.last() == Approx(346));
 		//Centered: the room left at the two ends differs by less than a step
 	CHECK(std::abs((at.first() - 215.5) - (350 - at.last())) < 1);
+}
+
+TEST_CASE("T67 — An end never gets less than half the step", "[T67][wirelanes]")
+{
+		//20 lanes in 116: 5.52 apart. 6 apart would leave 1 at each end,
+		//nearer to the step than the 11 and 10 that 5 apart leaves, and
+		//would put the first lane against the frame
+	const QVector<double> at = WireLanes::positions(20, 0, 116);
+	REQUIRE(at.size() == 20);
+	for (int k = 1 ; k < 20 ; ++k) {
+		CAPTURE(k);
+		CHECK(at.at(k) - at.at(k - 1) == Approx(5));
+	}
+	CHECK(at.first() == Approx(11));
+	CHECK(at.last() == Approx(106));
 }
 
 TEST_CASE("T67 — A symbol in the room is not crossed", "[T67][wirelanes]")
@@ -277,9 +291,10 @@ TEST_CASE("T67 — Too narrow outside the frames: inside, where there is room", 
 
 	r.wires << wire(180.98, 201, 180, 230);
 	const WireLanes::Result two = WireLanes::arrange(r);
-		//Inside the frame, 180 to 221.5: 10 apart, centered on 200.75
-	CHECK(two.at.at(1) == Approx(196));
-	CHECK(two.at.at(0) == Approx(206));
+		//Inside the frame, 180 to 221.5: 41.5 / 3 is 13.8, 14 apart, with
+		//14 and 13.5 left at the ends
+	CHECK(two.at.at(1) == Approx(194));
+	CHECK(two.at.at(0) == Approx(208));
 }
 
 TEST_CASE("T67 — A chain with no room in common: each wire on its own", "[T67][wirelanes]")

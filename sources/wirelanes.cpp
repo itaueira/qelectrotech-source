@@ -288,52 +288,52 @@ QVector<int> WireLanes::lanes(const QVector<Wire> &wires, double gap)
 
 /**
 	@brief WireLanes::positions
-	Where @a lane_count lanes go between @a low and @a high: centered, at
-	most @a max_pitch apart, and with as much room left at each end as
-	between two lanes when they do not fit at that pitch. On @a grid when
-	they all fit on it, else on whole units, else as they are.
-	On a grid the pitch is a whole number of its steps, the largest that
-	fits, and the lanes are centered as one block: rounding each lane on
-	its own would leave gaps of 5 and 6 side by side for a pitch of 5.85,
-	and the eye reads that as uneven. Fitting on a grid also means no lane
-	may lose more than a quarter of the room it would have had at either
-	end, counted up to the pitch - five lanes on a grid of 10 between a
-	frame and the terminals would otherwise be pushed against the frame,
-	the thing the arrangement is for.
+	Where @a lane_count lanes go between @a low and @a high: spread over the
+	whole room, as much room left at each end as between two lanes, as the
+	person asked for when the first version kept them 10 apart at most and
+	a wide corridor stayed empty on both sides.
+	On whole units, the pitch a whole number too, and the lanes centered as
+	one block: rounding each lane on its own would leave gaps of 5 and 6
+	side by side for a pitch of 5.85, and the eye reads that as uneven. Of
+	the two whole pitches around the exact one, the one that leaves the
+	ends nearest to a pitch: 22 lanes in 134.5 go 6 apart with 4 and 4.5 at
+	the ends, and not 5 apart with 15 at each end. An end never gets less
+	than half the exact pitch. Not on the grid of the folio: with a grid of
+	10, five lanes in 54.5 would have gone against the frame.
 */
-QVector<double> WireLanes::positions(int lane_count, double low, double high,
-				     double max_pitch, double grid)
+QVector<double> WireLanes::positions(int lane_count, double low, double high)
 {
 	QVector<double> exact;
 	if (lane_count <= 0) return exact;
-	const double pitch = std::min(max_pitch, (high - low) / (lane_count + 1));
+	const double pitch = (high - low) / (lane_count + 1);
 	const double middle = (low + high) / 2;
 	for (int k = 0 ; k < lane_count ; ++k) {
 		exact << middle + (k - (lane_count - 1) / 2.0) * pitch;
 	}
 
-	const double room = std::min(exact.first() - low, high - exact.last());
-	const double least = std::min(room, max_pitch) * 3 / 4;
-
-	QVector<double> steps;
-	if (grid >= 1) steps << grid;
-	if (grid != 1) steps << 1;
-	for (double step : steps)
+	QVector<double> best;
+	double best_score = std::numeric_limits<double>::infinity();
+	for (double whole : {std::floor(pitch), std::ceil(pitch)})
 	{
-		const double whole = std::floor(pitch / step + eps) * step;
-		if (lane_count > 1 && whole < step - eps) continue;
+		if (lane_count > 1 && whole < 1) continue;
 		const double block = whole * (lane_count - 1);
-		const double first = std::round((middle - block / 2) / step) * step;
+		const double first = std::round(middle - block / 2);
 		QVector<double> snapped;
 		for (int k = 0 ; k < lane_count ; ++k) {
 			snapped << first + k * whole;
 		}
-		if (snapped.first() > low + eps && snapped.last() < high - eps
-			&& std::min(snapped.first() - low, high - snapped.last()) >= least - eps) {
-			return snapped;
+		const double at_low = snapped.first() - low;
+		const double at_high = high - snapped.last();
+		if (at_low <= eps || at_high <= eps || std::min(at_low, at_high) < pitch / 2 - eps) continue;
+		const double score = lane_count > 1
+				? std::abs(at_low - whole) + std::abs(at_high - whole)
+				: std::abs(at_low - at_high);
+		if (score < best_score - eps) {
+			best = snapped;
+			best_score = score;
 		}
 	}
-	return exact;
+	return best.isEmpty() ? exact : best;
 }
 
 /**
@@ -421,8 +421,7 @@ WireLanes::Result WireLanes::arrange(const Request &request)
 			});
 		}
 
-		const QVector<double> at = positions(count, chosen->low, chosen->high,
-						     request.max_pitch, request.grid);
+		const QVector<double> at = positions(count, chosen->low, chosen->high);
 		const int id = next_group++;
 		for (int k = 0 ; k < members.size() ; ++k)
 		{

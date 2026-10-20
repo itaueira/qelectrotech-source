@@ -499,12 +499,13 @@ TEST_CASE("CU-67.12 — Up and down: the same rule, the axes swapped", "[T67][wi
 	REQUIRE((first && second));
 	REQUIRE(first->automaticPathPoints().size() == 6);
 
-		//The terminal ends at 110 and 190: the two bridges centered on 150,
-		//10 apart, the one on the left lower
+		//The terminal ends at 110 and 190: the two bridges spread over the
+		//80 between them, 27 apart, centered on 150, the one on the left
+		//lower
 	const double a = bridge(first);
 	const double b = bridge(second);
 	CHECK(a > b);
-	CHECK(a - b == Approx(10));
+	CHECK(a - b == Approx(27));
 	CHECK((a + b) / 2 == Approx(150).margin(1));
 }
 
@@ -565,16 +566,16 @@ TEST_CASE("CU-67.14 — Moving the terminals away arranges the group again", "[T
 		REQUIRE(drawn.last());
 	}
 		//Five lanes in the 54.5 between the frame and the terminal ends: 9
-		//apart, the largest whole pitch that fits
+		//apart, as much room left at each end
 	QList<double> before;
 	for (int i = 1 ; i < 6 ; ++i) before << bridge(drawn.at(i));
 	for (int i = 1 ; i < 5 ; ++i) {
 		REQUIRE(before.at(i - 1) - before.at(i) == Approx(9));
 	}
 
-		//The terminals 80 further: 134.5 of room, where 10 apart fits. A
-		//conductor following the move as one dragged by hand does would
-		//keep 9 - each bend pushed by the same 40
+		//The terminals 80 further: 134.5 of room, and the lanes take all of
+		//it, 22 apart. A conductor following the move as one dragged by
+		//hand does would keep 9 - each bend pushed by the same 40
 	dragTerminals(bench.sheet, bench.terminal, 80);
 	QList<double> after;
 	for (int i = 1 ; i < 6 ; ++i) {
@@ -583,7 +584,7 @@ TEST_CASE("CU-67.14 — Moving the terminals away arranges the group again", "[T
 	}
 	CAPTURE(before, after);
 	for (int i = 1 ; i < 5 ; ++i) {
-		CHECK(after.at(i - 1) - after.at(i) == Approx(10));
+		CHECK(after.at(i - 1) - after.at(i) == Approx(22));
 	}
 		//Centered between the frame and the new terminal ends
 	CHECK((after.first() + after.last()) / 2 == Approx((215.5 + 350) / 2).margin(1));

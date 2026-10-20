@@ -212,8 +212,6 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 	}
 
 	WireLanes::Request vertical, horizontal;
-	vertical.grid = Diagram::xGrid;
-	horizontal.grid = Diagram::yGrid;
 
 	QList<Described> vertical_wires, horizontal_wires;
 	for (Conductor *c : all)
