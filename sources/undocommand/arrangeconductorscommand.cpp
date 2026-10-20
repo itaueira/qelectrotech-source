@@ -61,6 +61,7 @@ void ArrangeConductorsCommand::undo()
 		entry.conductor->setAutoArranged(entry.arranged);
 		entry.conductor->textItem()->setPos(entry.text_pos);
 	}
+	placeNames();
 }
 
 /**
@@ -72,5 +73,21 @@ void ArrangeConductorsCommand::redo()
 	for (const Entry &entry : std::as_const(m_entries))
 	{
 		if (entry.conductor) entry.conductor->setArrangedPath(entry.points);
+	}
+	placeNames();
+}
+
+/**
+	@brief ArrangeConductorsCommand::placeNames
+	Place every name of the folio again, once every path is in place: the
+	place of a name depends on the conductors around it (T71), and each
+	one was placed as its own path changed, before the paths after it
+*/
+void ArrangeConductorsCommand::placeNames()
+{
+	if (!m_diagram) return;
+	const QList<Conductor *> conductors = m_diagram->conductors();
+	for (Conductor *conductor : conductors) {
+		conductor->calculateTextItemPosition();
 	}
 }

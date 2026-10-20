@@ -2912,6 +2912,12 @@ void Diagram::refreshContents()
 	for (auto &conductor : dc_.conductors()) {
 		conductor->refreshText();
 	}
+		//And every name placed again, now that the whole folio is there:
+		//where a name goes depends on the conductors around it (T71), and
+		//each one was placed as it was added, before the ones after it
+	for (auto &conductor : dc_.conductors()) {
+		conductor->calculateTextItemPosition();
+	}
 
 	for (auto &table : std::as_const(dc_.m_tables)) {
 		table->initLink();

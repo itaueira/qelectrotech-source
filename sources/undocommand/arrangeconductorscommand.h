@@ -44,6 +44,8 @@ class ArrangeConductorsCommand : public QUndoCommand
 		int count() const {return m_entries.size();}
 
 	private:
+		void placeNames();
+
 		struct Entry
 		{
 			QPointer<Conductor> conductor;

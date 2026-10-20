@@ -120,6 +120,18 @@ class Conductor : public QGraphicsObject
 		void setPath(const QPainterPath &path);
 		QPainterPath path() const;
 
+	private:
+			/// A run the name may be written along: its middle, its
+			/// direction and its length
+		struct TextRun
+		{
+			QPointF middle;
+			Qt::Orientations along;
+			qreal length;
+		};
+		QVector<TextRun> textRuns();
+		bool placeTextOn(const TextRun &run);
+
 	public:
 		static bool valideXml (QDomElement &);
 		bool fromXml (QDomElement &);

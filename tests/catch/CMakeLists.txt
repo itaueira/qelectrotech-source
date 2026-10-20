@@ -1187,6 +1187,9 @@ if(TARGET qelectrotech_objects)
         # CU-70.7: the name of a conductor drawn smaller to fit its longest
         # run, never under 5, and the size in the file left as it was.
         src/ui/wirenamefit_test.cpp
+        # T71: the name of a wire on the longest run it fits without
+        # touching another wire, another name or the side of a frame.
+        src/ui/wirenameroom_test.cpp
         # T61: a symbol dropped on a folio of a project numbered 10 or more
         # becomes an element; one that cannot become one says why.
         src/ui/insertsymbolprojectid_test.cpp)

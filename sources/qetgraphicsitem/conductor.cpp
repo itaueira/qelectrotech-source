@@ -38,13 +38,21 @@
 #include "../undocommand/groupedupdatecommand.h"
 #include "conductortextitem.h"
 #include "element.h"
+#include "qetshapeitem.h"
 #include "../QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../utils/qetutils.h"
 #include "../wirehops.h"
 
+#include <QFontMetricsF>
 #include <QMultiHash>
+#include <QPainterPathStroker>
+#include <QTextBlock>
+#include <QTextDocument>
+#include <QTextLayout>
 #include <QTransform>
 #include <QtDebug>
+
+#include <algorithm>
 
 namespace {
 		//Bumped whenever a conductor changes shape, moves, or enters or
@@ -153,6 +161,135 @@ namespace
 					   drawTextAt(text, size);
 					   return extentAlong(text, run);
 				   }));
+	}
+
+		/// How close two things may come before they touch, in scene units
+	constexpr qreal touch_clearance = 0.5;
+
+	/**
+		@brief The box of the letters of @a text, in scene coordinates: the
+		ink of each line of the text, from its baseline, as the square of
+		the colour of a wire is placed (ConductorTextItem::colorSquareRects).
+		Not the box of the text item: it carries the blank margin of the
+		document, and each line the room above the capitals and below the
+		parentheses - measured on a folio of the projects, a name between
+		two wires 13 apart, 2 clear of the next one, touched it by that
+		box. The box of the item less its margin when there are no letters
+		to measure.
+	*/
+	QRectF inkBox(const ConductorTextItem *text)
+	{
+		const QTextDocument *document = text->document();
+		const QFontMetricsF metrics(document->defaultFont());
+		QRectF ink;
+		for (QTextBlock block = document->begin() ; block.isValid() ; block = block.next())
+		{
+			const QTextLayout *layout = block.layout();
+			if (!layout) {
+				continue;
+			}
+			const QString words = block.text();
+			for (int i = 0 ; i < layout->lineCount() ; ++i)
+			{
+				const QTextLine line = layout->lineAt(i);
+				const QString part = words.mid(line.textStart(), line.textLength());
+				if (part.trimmed().isEmpty()) {
+					continue;
+				}
+				const QRectF letters = metrics.tightBoundingRect(part).translated(
+							layout->position()
+							+ QPointF(line.x(), line.y() + line.ascent()));
+				ink = ink.isNull() ? letters : ink.united(letters);
+			}
+		}
+		if (ink.isNull())
+		{
+			const qreal margin = document->documentMargin();
+			ink = text->boundingRect().adjusted(margin, margin, -margin, -margin);
+		}
+		return text->mapRectToScene(ink);
+	}
+
+		/// @a path, in the coordinates of @a item, as a stroke @a width wide in the scene
+	QPainterPath strokeInScene(const QGraphicsItem *item, const QPainterPath &path, qreal width)
+	{
+		QPainterPathStroker stroker;
+		stroker.setWidth(width);
+		return stroker.createStroke(item->mapToScene(path));
+	}
+
+	/**
+		@brief The outline of @a shape, in its coordinates: its sides, and
+		not its inside - a name may be in a frame, it may not cross its
+		side. Empty for a kind of shape that has no plain outline.
+	*/
+	QPainterPath outlineOf(const QetShapeItem *shape)
+	{
+		QPainterPath outline;
+		switch (shape->shapeType())
+		{
+			case QetShapeItem::Line:
+				outline.moveTo(shape->line().p1());
+				outline.lineTo(shape->line().p2());
+				break;
+			case QetShapeItem::Rectangle:
+				outline.addRect(shape->rect().normalized());
+				break;
+			case QetShapeItem::Ellipse:
+				outline.addEllipse(shape->rect().normalized());
+				break;
+			case QetShapeItem::Polygon:
+				outline.addPolygon(shape->polygon());
+				if (shape->isClosed()) {
+					outline.closeSubpath();
+				}
+				break;
+			default:
+				break;
+		}
+		return outline;
+	}
+
+	/**
+		@brief Whether the letters of @a text, the name of @a own, touch
+		what a name keeps clear of on @a scene: another conductor, the
+		name of another conductor, the side of a shape (T71). Asked of the
+		items in the box only, through the index of the scene, so that it
+		costs nothing to the drag of a wire.
+	*/
+	bool nameTouches(const Conductor *own, const ConductorTextItem *text, const QGraphicsScene *scene)
+	{
+		const QRectF around = inkBox(text).adjusted(-touch_clearance, -touch_clearance,
+							    touch_clearance, touch_clearance);
+		const QList<QGraphicsItem *> near = scene->items(around, Qt::IntersectsItemBoundingRect);
+		for (QGraphicsItem *item : near)
+		{
+			if (item == own || item == text || !item->isVisible()) {
+				continue;
+			}
+			if (const auto *other = qgraphicsitem_cast<const Conductor *>(item))
+			{
+				if (strokeInScene(other, other->path(), 1).intersects(around)) {
+					return true;
+				}
+			}
+			else if (const auto *name = qgraphicsitem_cast<const ConductorTextItem *>(item))
+			{
+				if (!name->toPlainText().isEmpty() && inkBox(name).intersects(around)) {
+					return true;
+				}
+			}
+			else if (const auto *shape = qgraphicsitem_cast<const QetShapeItem *>(item))
+			{
+				const QPainterPath outline = outlineOf(shape);
+				if (!outline.isEmpty()
+				    && strokeInScene(shape, outline, qMax<qreal>(1, shape->pen().widthF()))
+						.intersects(around)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }
 
@@ -1987,64 +2124,139 @@ void Conductor::calculateTextItemPosition()
 	}
 	else
 	{
-			//Position and rotation of text is calculated.
-		Qt::Orientations rotation;
-		qreal run_length = 0;
-		QPointF text_pos = posForText(rotation, &run_length);
-
-		if (!m_text_item -> wasRotatedByUser())
+			//Position and rotation of text is calculated: on the longest
+			//run the name fits without touching anything, and on the
+			//longest run when there is none (T71). The longest first: on a
+			//folio where nothing touches, the name is where it always was,
+			//at the cost of one look at the scene.
+		const QVector<TextRun> runs = textRuns();
+		bool placed = false;
+		for (const TextRun &run : runs)
 		{
-			rotation == Qt::Vertical ? m_text_item -> setRotation(m_properties.verti_rotate_text):
-									   m_text_item -> setRotation(m_properties.horiz_rotate_text);
-
-		}
-			//The name fits the run it is centred on: drawn smaller when
-			//it has to, from the size the file holds, which does not
-			//change - turned by the user too, so that nothing jumps. Before
-			//the position below, which centres the text by its width at
-			//the size it is drawn at.
-		fitTextToRun(m_text_item, m_properties.text_size, rotation, run_length);
-
-			//Adjust the position of text if his rotation
-			//is 0° or 270°, to be exactly centered to the conductor
-		if (m_text_item -> rotation() == 0)
-		{
-			text_pos.rx() -= m_text_item -> boundingRect().width()/2;
-			if(m_properties.m_horizontal_alignment == Qt::AlignTop)
-				text_pos.ry() -= m_text_item->boundingRect().height();
-		}
-		else if (m_text_item -> rotation() == 270)
-		{
-			text_pos.ry() += m_text_item -> boundingRect().width()/2;
-			if(m_properties.m_vertical_alignment == Qt::AlignLeft)
-				text_pos.rx() -= m_text_item->boundingRect().height();
-		}
-
-		m_text_item -> setPos(text_pos);
-
-			//Ensure text item does not collide with this conductor
-		while (m_text_item->collidesWithItem(this))
-		{
-			if(rotation == Qt::Vertical)
-			{
-				if(m_properties.m_vertical_alignment == Qt::AlignRight)
-					m_text_item->setX(m_text_item->x()+1);
-				else if (m_properties.m_vertical_alignment == Qt::AlignLeft)
-					m_text_item->setX(m_text_item->x()-1);
-				else
-					return; //avoid infinite loop
+				//A run the name does not fit: the shorter ones do not either
+			if (!placeTextOn(run)) {
+				break;
 			}
-			else if (rotation == Qt::Horizontal)
-			{
-				if(m_properties.m_horizontal_alignment == Qt::AlignTop)
-					m_text_item->setY(m_text_item->y()-1);
-				else if (m_properties.m_horizontal_alignment == Qt::AlignBottom)
-					m_text_item->setY(m_text_item->y()+1);
-				else
-					return; //avoid infinite loop
+			if (runs.size() == 1 || !nameTouches(this, m_text_item, diagram())) {
+				placed = true;
+				break;
 			}
+		}
+		if (!placed && !runs.isEmpty()) {
+			placeTextOn(runs.first());
 		}
 	}
+}
+
+/**
+	@brief Conductor::textRuns
+	@return the runs the name of this conductor may be written along, the
+	longest first and, between two of one length, in the order of the
+	path: the whole conductor when it is straight, as posForText() puts it
+	there, and each of its segments otherwise. The first one is always
+	where posForText() puts the name.
+*/
+QVector<Conductor::TextRun> Conductor::textRuns()
+{
+	QVector<TextRun> runs;
+	Qt::Orientations along;
+	qreal run_length = 0;
+	const QPointF middle = posForText(along, &run_length);
+
+	ConductorSegment *segment = segments;
+	if (!segment) {
+		runs << TextRun{middle, along, run_length};
+		return runs;
+	}
+	while (!segment->isFirstSegment()) {
+		segment = segment->previousSegment();
+	}
+	bool all_vertical = true;
+	bool all_horizontal = true;
+	for (ConductorSegment *s = segment ; s ; s = s->hasNextSegment() ? s->nextSegment() : nullptr)
+	{
+		if (s->firstPoint().x() != s->secondPoint().x()) all_vertical = false;
+		if (s->firstPoint().y() != s->secondPoint().y()) all_horizontal = false;
+		runs << TextRun{s->middle(),
+				s->isHorizontal() ? Qt::Horizontal : Qt::Vertical,
+				qAbs(s->length())};
+	}
+	if (all_vertical || all_horizontal) {
+		runs = {TextRun{middle, along, run_length}};
+		return runs;
+	}
+	std::stable_sort(runs.begin(), runs.end(),
+			 [](const TextRun &a, const TextRun &b) {return a.length > b.length;});
+	return runs;
+}
+
+/**
+	@brief Conductor::placeTextOn
+	Put the name of this conductor on @a run: turned along it, unless the
+	user turned it; drawn at the size that fits it (T70); centred on it;
+	and pushed off the conductor itself.
+	@return true when the name fits the run, at the size it is drawn at
+*/
+bool Conductor::placeTextOn(const TextRun &run)
+{
+	QPointF text_pos = run.middle;
+	const Qt::Orientations rotation = run.along;
+
+	if (!m_text_item -> wasRotatedByUser())
+	{
+		rotation == Qt::Vertical ? m_text_item -> setRotation(m_properties.verti_rotate_text):
+								   m_text_item -> setRotation(m_properties.horiz_rotate_text);
+
+	}
+		//The name fits the run it is centred on: drawn smaller when
+		//it has to, from the size the file holds, which does not
+		//change - turned by the user too, so that nothing jumps. Before
+		//the position below, which centres the text by its width at
+		//the size it is drawn at.
+	fitTextToRun(m_text_item, m_properties.text_size, rotation, run.length);
+
+		//Adjust the position of text if his rotation
+		//is 0° or 270°, to be exactly centered to the conductor
+	if (m_text_item -> rotation() == 0)
+	{
+		text_pos.rx() -= m_text_item -> boundingRect().width()/2;
+		if(m_properties.m_horizontal_alignment == Qt::AlignTop)
+			text_pos.ry() -= m_text_item->boundingRect().height();
+	}
+	else if (m_text_item -> rotation() == 270)
+	{
+		text_pos.ry() += m_text_item -> boundingRect().width()/2;
+		if(m_properties.m_vertical_alignment == Qt::AlignLeft)
+			text_pos.rx() -= m_text_item->boundingRect().height();
+	}
+
+	m_text_item -> setPos(text_pos);
+
+		//Ensure text item does not collide with this conductor
+	while (m_text_item->collidesWithItem(this))
+	{
+		if(rotation == Qt::Vertical)
+		{
+			if(m_properties.m_vertical_alignment == Qt::AlignRight)
+				m_text_item->setX(m_text_item->x()+1);
+			else if (m_properties.m_vertical_alignment == Qt::AlignLeft)
+				m_text_item->setX(m_text_item->x()-1);
+			else
+				break; //avoid infinite loop
+		}
+		else if (rotation == Qt::Horizontal)
+		{
+			if(m_properties.m_horizontal_alignment == Qt::AlignTop)
+				m_text_item->setY(m_text_item->y()-1);
+			else if (m_properties.m_horizontal_alignment == Qt::AlignBottom)
+				m_text_item->setY(m_text_item->y()+1);
+			else
+				break; //avoid infinite loop
+		}
+		else
+			break;
+	}
+	return extentAlong(m_text_item, rotation) <= ConductorTextFit::room(run.length);
 }
 
 /**
