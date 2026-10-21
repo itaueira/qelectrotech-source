@@ -483,6 +483,17 @@ void LinkElementCommand::redo()
 */
 bool LinkElementCommand::reportLinkNeedsPotentialChoice(Element *element_a, Element *element_b)
 {
+		//The question redo() asks, and only where it asks it: two reports
+		//that both carry a conductor. A master and its slave never open the
+		//dialog, wired or not, and a script used to be refused linking a
+		//contact to its coil when both had wires that disagreed
+	if (!element_a || !element_b
+	    || !(element_a->linkType() & Element::AllReport)
+	    || element_a->conductors().isEmpty()
+	    || element_b->conductors().isEmpty()) {
+		return false;
+	}
+
 	const QList<Conductor *> potential = reportPotential(element_a, element_b);
 	if (!reportPotentialDisagrees(potential)) return false;
 

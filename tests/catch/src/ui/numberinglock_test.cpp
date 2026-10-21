@@ -1080,6 +1080,24 @@ TEST_CASE("T29 — ligar duas setas de folha em quadro montado: o fio do quadro 
 		CHECK(textOf(wire_101) == textOf(wire_102));
 	}
 
+	SECTION("só duas setas perguntam: um elemento que não é seta não, com fio e tudo (P130)")
+	{
+		/*
+			The question asked of a script before a link is the one the
+			link asks, and the link asks it of two reports only. Answered
+			for any pair, it refused a contact and its coil because both
+			carried wires that disagreed - a link that opens no dialog.
+		*/
+		Conductor *fresh = drawFresh();
+		REQUIRE(fresh != nullptr);
+		REQUIRE_FALSE(loose->conductors().isEmpty());
+		REQUIRE_FALSE(going_a->conductors().isEmpty());
+		CHECK_FALSE(LinkElementCommand::reportLinkNeedsPotentialChoice(loose, going_a));
+			//And the two arrows still ask: the guard did not quiet the case
+			//it is for
+		CHECK(LinkElementCommand::reportLinkNeedsPotentialChoice(going_b, coming_b));
+	}
+
 	SECTION("marcado, a seta que liga um fio do quadro a um fio novo: o novo leva o número do quadro, sem perguntar")
 	{
 		markAsAssembled(scratch);
