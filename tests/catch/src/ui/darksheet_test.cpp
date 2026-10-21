@@ -1026,7 +1026,9 @@ TEST_CASE("T63 — o PDF da janela de impressão não muda com a folha escura es
 	const QString dark_path = work.filePath(QStringLiteral("dark.pdf"));
 	REQUIRE(printToPdf(scratch.project(), dark_path));
 
-	// The window gave the chosen color back when it closed.
+	// The chosen color is the sheets' again: the window takes it only while
+	// it draws a folio. Giving it back when the window goes would be too
+	// late - the editor's window is hidden when it closes, not destroyed.
 	CHECK(Diagram::background_color.name() == QColor(Qt::black).name());
 	CHECK(PaletteGraphicsView::customBackgroundColor());
 
