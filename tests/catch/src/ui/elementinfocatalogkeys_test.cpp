@@ -179,3 +179,54 @@ TEST_CASE("T20 — on a terminal the size of the part has its own field, as on a
 	CHECK(applied.value(QStringLiteral("height")) == before.value(QStringLiteral("height")));
 	CHECK(applied.value(QStringLiteral("insertion_x")) == before.value(QStringLiteral("insertion_x")));
 }
+
+TEST_CASE("T20 — the measures of an element with a catalog part are shown and not typed (P128)",
+	  "[t20][elementinfo]")
+{
+	UiBench::Project project(QStringLiteral("industrial.qet"));
+	INFO(project.error().toStdString());
+	REQUIRE(project.isOpen());
+	Element *element = firstOfType(project, ElementData::Simple);
+	REQUIRE(element != nullptr);
+
+	auto measureFields = [](ElementInfoWidget &panel) {
+		QList<ElementInfoPartWidget *> fields;
+		for (auto field : panel.findChildren<ElementInfoPartWidget *>()) {
+			if (field->key() == QETInformation::ELMT_WIDTH
+			    || field->key() == QETInformation::ELMT_HEIGHT
+			    || field->key() == QETInformation::ELMT_DEPTH) {
+				fields << field;
+			}
+		}
+		return fields;
+	};
+
+	SECTION("with a part, locked")
+	{
+		DiagramContext info = element->elementInformations();
+		info.addValue(QETInformation::ELMT_PART_CODE, QStringLiteral("K-001"));
+		info.addValue(QETInformation::ELMT_WIDTH, QStringLiteral("45"));
+		element->setElementInformations(info);
+		ElementInfoWidget panel(element);
+		const QList<ElementInfoPartWidget *> fields = measureFields(panel);
+		REQUIRE(fields.size() == 3);
+		for (ElementInfoPartWidget *field : fields) {
+			INFO(field->key().toStdString());
+			CHECK(field->isLocked());
+		}
+	}
+
+	SECTION("without a part, free to type")
+	{
+		DiagramContext info = element->elementInformations();
+		info.addValue(QETInformation::ELMT_PART_CODE, QString());
+		element->setElementInformations(info);
+		ElementInfoWidget panel(element);
+		const QList<ElementInfoPartWidget *> fields = measureFields(panel);
+		REQUIRE(fields.size() == 3);
+		for (ElementInfoPartWidget *field : fields) {
+			INFO(field->key().toStdString());
+			CHECK_FALSE(field->isLocked());
+		}
+	}
+}

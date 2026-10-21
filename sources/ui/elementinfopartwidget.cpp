@@ -164,6 +164,35 @@ void ElementInfoPartWidget::setEnabled(bool e)
 }
 
 /**
+	@brief ElementInfoPartWidget::setLockedTo
+	Show the value and let it be selected and copied, but not typed over,
+	saying @p why in the tip; @p locked false gives the field back its
+	own tip. Not disabled: a value read is a value one wants to copy.
+*/
+void ElementInfoPartWidget::setLockedTo(bool locked, const QString &why)
+{
+	if (locked && !ui->line_edit->isReadOnly()) {
+		m_free_tip = ui->line_edit->toolTip();
+	}
+	if (!locked && ui->line_edit->isReadOnly()) {
+		ui->line_edit->setToolTip(m_free_tip);
+	}
+	ui->line_edit->setReadOnly(locked);
+	if (locked) {
+		ui->line_edit->setToolTip(why);
+	}
+}
+
+/**
+	@brief ElementInfoPartWidget::isLocked
+	@return whether setLockedTo() keeps the value from being typed over
+*/
+bool ElementInfoPartWidget::isLocked() const
+{
+	return ui->line_edit->isReadOnly();
+}
+
+/**
 	@brief ElementInfoPartWidget::setDisabled
 	disable the line edit
 	@param d

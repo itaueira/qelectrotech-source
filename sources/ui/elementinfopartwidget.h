@@ -53,6 +53,8 @@ class ElementInfoPartWidget : public QWidget
 		void setFocusTolineEdit();
 		void setEnabled(bool e);
 		void setDisabled(bool d);
+		void setLockedTo(bool locked, const QString &why);
+		bool isLocked() const;
 		void setEraseTextVisible (bool visible);
 		void setEraseTextChecked (bool check);
 		Qt::CheckState EraseTextCheckState ()const;
@@ -73,6 +75,7 @@ class ElementInfoPartWidget : public QWidget
 		bool m_show_erase = false;
 		QCompleter *m_completer = nullptr;
 		QStringListModel *m_suggestions_model = nullptr;
+		QString m_free_tip; ///< The tip of the field while it is not locked
 };
 
 #endif // ELEMENTINFOPARTWIDGET_H

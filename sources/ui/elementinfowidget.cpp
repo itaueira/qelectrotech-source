@@ -874,6 +874,21 @@ void ElementInfoWidget::updateUi()
 	for (ElementInfoPartWidget *eipw : m_eipw_list) {
 		eipw -> setText (element_info[eipw->key()].toString());
 	}
+		//The measures of a component with a catalog part are the part's
+		//(P128): shown, and not typed, since a number typed here would not
+		//follow the part, and assigning another part writes over it without
+		//a word. A component with no part keeps them free to type
+	const bool has_part = !element_info.value(QETInformation::ELMT_PART_CODE)
+			.toString().trimmed().isEmpty();
+	for (const QString &key : {QETInformation::ELMT_WIDTH,
+				   QETInformation::ELMT_HEIGHT,
+				   QETInformation::ELMT_DEPTH})
+	{
+		if (ElementInfoPartWidget *field = infoPartWidgetForKey(key)) {
+			field->setLockedTo(has_part,
+					   tr("From the catalog part: assign another part to change it"));
+		}
+	}
 	refreshSchemeRow();
 	if (m_freeze_cb) {
 		m_freeze_cb->setChecked(m_element->isFreezeLabel());
