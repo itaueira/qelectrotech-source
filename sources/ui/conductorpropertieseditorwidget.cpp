@@ -131,20 +131,36 @@ void ConductorPropertiesEditorWidget::applyIgnored(bool ignored)
 	Conductor *first = firstConductor();
 	if (!first || !first->diagram()) return;
 
-	auto *undo = new QUndoCommand(ignored ? tr("Leave out of automatic numbering")
-					      : tr("Bring back into automatic numbering"));
-	for (const QPointer<Conductor> &c : std::as_const(m_conductors))
-	{
-		if (c && c->isFreezeLabel() != ignored) {
-			new QPropertyUndoCommand(c.data(), "freezeLabel", c->isFreezeLabel(), ignored, undo);
-		}
+	QList<Conductor *> conductors;
+	for (const QPointer<Conductor> &c : std::as_const(m_conductors)) {
+		if (c) conductors << c.data();
 	}
-	if (undo->childCount()) {
+	if (QUndoCommand *undo = leaveOutCommand(conductors, ignored)) {
 		first->diagram()->undoStack().push(undo);
-	} else {
-		delete undo;
 	}
 	updateUi();
+}
+
+/**
+	@brief ConductorPropertiesEditorWidget::leaveOutCommand
+	See the header.
+*/
+QUndoCommand *ConductorPropertiesEditorWidget::leaveOutCommand(const QList<Conductor *> &conductors,
+								bool ignored)
+{
+	auto *undo = new QUndoCommand(ignored ? tr("Leave out of automatic numbering")
+					      : tr("Bring back into automatic numbering"));
+	for (Conductor *c : conductors)
+	{
+		if (c && c->isFreezeLabel() != ignored) {
+			new QPropertyUndoCommand(c, "freezeLabel", c->isFreezeLabel(), ignored, undo);
+		}
+	}
+	if (!undo->childCount()) {
+		delete undo;
+		return nullptr;
+	}
+	return undo;
 }
 
 /**

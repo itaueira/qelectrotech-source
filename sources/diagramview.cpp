@@ -2351,6 +2351,11 @@ QList<QAction *> DiagramView::contextMenuActions() const
 			list << m_generate_cabinet_thumbnail;
 			list << qde->m_conductor_reset;
 			list << qde->m_conductor_arrange;
+				//Disabled, and so left out below, unless wires are selected;
+				//ticked from what they are now, which the panel may have
+				//changed since the selection did (T77)
+			qde->updateLeaveOutWires();
+			list << qde->m_leave_out_wires;
 				//Assigning a catalog part is offered here, and not only in the
 				//Catalog menu, because the component is already under the
 				//cursor: going up to a menu and coming back is the long way

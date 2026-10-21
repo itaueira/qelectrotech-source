@@ -686,6 +686,24 @@ bool WireNames::isNameFormula(const QString &formula)
 }
 
 /**
+	@brief WireNames::isNumberingName
+	See the header.
+*/
+bool WireNames::isNumberingName(const Conductor *wire)
+{
+	if (!wire || !wire->diagram()) {
+		return false;
+	}
+	const ConductorProperties properties = wire->properties();
+	if (!properties.m_formula.contains(QLatin1Char('%'))) {
+		return false;
+	}
+	autonum::sequentialNumbers sequence = wire->sequenceNum();
+	return properties.text == autonum::AssignVariables::formulaToLabel(
+				properties.m_formula, sequence, wire->diagram(), nullptr, wire);
+}
+
+/**
 	@brief WireNames::keepFolioOfPoint
 	See the header.
 */
@@ -885,6 +903,39 @@ namespace
 			point.number = number;
 		}
 	}
+
+		/**
+			Add under @p parent what takes from the wires left out of the
+			numbering on a folio of @p renumbering the name the numbering
+			gave them, the text and the formula (T78, step 3). A name typed
+			by hand stays (WireNames::isNumberingName()).
+			@return how many conductors change
+		*/
+	int clearLeftOutNames(const Renumbering &renumbering, QUndoCommand *parent)
+	{
+		int changed = 0;
+		for (Diagram *folio : renumbering.folios)
+		{
+			const QList<Conductor *> wires = folio->conductors();
+			for (Conductor *wire : wires)
+			{
+				if (!ConductorAutoNumerotation::isIgnored(wire)
+				    || !WireNames::isNumberingName(wire)) {
+					continue;
+				}
+				const ConductorProperties before = wire->properties();
+				ConductorProperties after = before;
+				after.text.clear();
+				after.m_formula.clear();
+				QVariant old_value, new_value;
+				old_value.setValue(before);
+				new_value.setValue(after);
+				new QPropertyUndoCommand(wire, "properties", old_value, new_value, parent);
+				++changed;
+			}
+		}
+		return changed;
+	}
 }
 
 /**
@@ -942,7 +993,10 @@ static int convertOrRenumber(QETProject *project, Diagram *shown,
 			highest[point.home] = qMax(highest.value(point.home), point.number);
 		}
 	}
-	const int changed = namePoints(points, highest, conversion);
+	int changed = namePoints(points, highest, conversion);
+	if (renumbering) {
+		changed += clearLeftOutNames(*renumbering, conversion);
+	}
 
 		//The count of each folio goes on after its highest number, and
 		//never back below a number the scheme has given there already -

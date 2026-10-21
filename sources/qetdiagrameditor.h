@@ -201,6 +201,8 @@ class QETDiagramEditor : public QETMainWindow
 		void updateWireSections();
 		void convertWireNames();
 		void renumberWires();
+		void leaveOutSelectedWires(bool ignored);
+		void updateLeaveOutWires();
 		void resetSymbolTexts();
 		void rebuildToolBars();
 		bool repeatLastCommand();
@@ -297,6 +299,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_conductor_arrange,       ///< Arrange the selected conductors (T67)
 		*m_conductor_arrange_folio, ///< Arrange the conductors of the folio (T67)
 		*m_update_wire_sections,    ///< Give the wires the cross-section of their components (T70)
+		*m_leave_out_wires = nullptr, ///< Leave the selected wires out of automatic numbering, or bring them back (T77)
 		*m_cut,                     ///< Cut selection to clipboard
 		*m_copy,                    ///< Copy selection to clipboard
 			//Public for the same reason as the four above, and for no other:

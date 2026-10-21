@@ -59,6 +59,14 @@ class ConductorPropertiesEditorWidget : public PropertiesEditorWidget
 		QString title() const override;
 		bool setLiveEdit(bool live_edit) override;
 
+		/**
+			@return one undo step that leaves @a conductors out of the
+			automatic numbering, or brings them back when @a ignored is
+			false; nullptr when none of them would change (T77). The box of
+			this panel and the entry of the context menu push the same one.
+		*/
+		static QUndoCommand *leaveOutCommand(const QList<Conductor *> &conductors, bool ignored);
+
 	protected:
 		bool eventFilter(QObject *watched, QEvent *event) override;
 

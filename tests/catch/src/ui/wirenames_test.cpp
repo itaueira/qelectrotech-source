@@ -1244,6 +1244,61 @@ TEST_CASE("CU-77.6 — The panel box marks the selected wires in one step", "[T7
 }
 
 /*
+	The step the entry of the context menu pushes (T77, step 5). The entry
+	itself is not reached here: DiagramView::contextMenuActions() needs the
+	editor window, which this suite cannot build (contextmenuassign_test.cpp
+	measures why). It is on the queue of screen tests, as CU-77.7.
+*/
+TEST_CASE("T77 — The step of the context menu leaves the wires out", "[T77][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+	showFolio(one);
+	Conductor *a = drawBetween(bench, 0, 1);
+	Conductor *b = drawBetween(bench, 2, 3);
+	Conductor *c = drawBetween(bench, 4, 5);
+	REQUIRE((a && b && c));
+	QUndoStack &stack = bench.stack();
+
+		//Nothing to bring back: no step at all
+	CHECK(ConductorPropertiesEditorWidget::leaveOutCommand({a, b}, false) == nullptr);
+
+		//One already out: the step holds the other only
+	leaveOut(stack, {a});
+	QUndoCommand *out = ConductorPropertiesEditorWidget::leaveOutCommand({a, b}, true);
+	REQUIRE(out != nullptr);
+	CHECK(out->childCount() == 1);
+	const int before = stack.index();
+	stack.push(out);
+	CHECK(a->isFreezeLabel());
+	CHECK(b->isFreezeLabel());
+	CHECK_FALSE(c->isFreezeLabel());
+	CHECK(stack.index() == before + 1);
+	CHECK(ConductorPropertiesEditorWidget::leaveOutCommand({a, b}, true) == nullptr);
+
+	SECTION("undone, the one it changed is back")
+	{
+		stack.undo();
+		CHECK(a->isFreezeLabel());
+		CHECK_FALSE(b->isFreezeLabel());
+	}
+
+	SECTION("both brought back in one step")
+	{
+		QUndoCommand *back = ConductorPropertiesEditorWidget::leaveOutCommand({a, b}, false);
+		REQUIRE(back != nullptr);
+		CHECK(back->childCount() == 2);
+		stack.push(back);
+		CHECK_FALSE(a->isFreezeLabel());
+		CHECK_FALSE(b->isFreezeLabel());
+		CHECK(stack.index() == before + 2);
+	}
+}
+
+/*
 	The wires numbered again from their place on the folio (T78): the
 	conversion of the names, with the numbers worked out of the place of
 	each name instead of read from it.
@@ -1415,4 +1470,150 @@ TEST_CASE("CU-78.5 — One undo puts every name back", "[T78][wirenames]")
 	CHECK(textOf(bench.wire(1)) == typedName(5, 2, "1"));
 	CHECK(textOf(bench.wire(2)) == typedName(5, 7, "1,5"));
 	CHECK(textOf(bench.wire(3)).isEmpty());
+}
+
+/*
+	The name of a wire left out of the numbering, when the wires are
+	numbered again (T78, step 3): the one the numbering gave goes, the one
+	typed by hand stays, and neither counts.
+*/
+namespace
+{
+		/// Three wires on the first folio of twoFolios(), named F1-1, F1-2
+		/// and F1-3 by the scheme, top to bottom
+	QList<Conductor *> threeNamed(Bench &bench)
+	{
+		Diagram *one = bench.project.diagram(0);
+		followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+		showFolio(one);
+		return {drawBetween(bench, 0, 1), drawBetween(bench, 2, 3), drawBetween(bench, 4, 5)};
+	}
+
+		/// The count new wires of @a folio go on from
+	QString countOf(Diagram *folio)
+	{
+		const QString title = WireNames::schemeOf(folio->project());
+		return folio->m_cnd_unitfolio_max.value(title).value(0);
+	}
+
+		/// What the text field of the wire panel pushes: the text, and the
+		/// formula as it was
+	void typeInPanel(QUndoStack &stack, Conductor *wire, const QString &text)
+	{
+		ConductorProperties typed = wire->properties();
+		typed.text = text;
+		stack.push(new QPropertyUndoCommand(wire, "properties",
+						    QVariant::fromValue(wire->properties()),
+						    QVariant::fromValue(typed)));
+	}
+
+		/// What typing on the folio pushes (Conductor::displayedTextChanged()):
+		/// the text, and the formula made of it
+	void typeOnFolio(QUndoStack &stack, Conductor *wire, const QString &text)
+	{
+		ConductorProperties typed = wire->properties();
+		typed.text = text;
+		typed.m_formula = text;
+		stack.push(new QPropertyUndoCommand(wire, "properties",
+						    QVariant::fromValue(wire->properties()),
+						    QVariant::fromValue(typed)));
+	}
+}
+
+TEST_CASE("CU-78.6 — The name the numbering gave a wire left out goes", "[T78][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *one = bench.project.diagram(0);
+	const QList<Conductor *> wires = threeNamed(bench);
+	Conductor *a = wires.value(0);
+	Conductor *b = wires.value(1);
+	Conductor *c = wires.value(2);
+	REQUIRE((a && b && c));
+	REQUIRE(textOf(b) == wireName(1, 2, "1,5"));
+	REQUIRE(WireNames::isNumberingName(b));
+		//What the undo has to bring back, kept before the step that clears it
+	const ConductorProperties named = b->properties();
+	REQUIRE_FALSE(named.text.isEmpty());
+	REQUIRE_FALSE(named.m_formula.isEmpty());
+	QUndoStack &stack = bench.stack();
+	leaveOut(stack, {b});
+	const int index = stack.index();
+
+		//b loses its name, c takes the 2 b no longer counts for
+	CHECK(WireNames::renumberProject(project, {one}, false, one) == 2);
+	CHECK(textOf(b).isEmpty());
+	CHECK(b->properties().m_formula.isEmpty());
+	CHECK(b->isFreezeLabel());
+	CHECK(textOf(a) == wireName(1, 1, "1"));
+	CHECK(textOf(c) == wireName(1, 2));
+	CHECK(countOf(one) == QLatin1String("2"));
+	CHECK(stack.index() == index + 1);
+
+	SECTION("numbered again, nothing more changes")
+	{
+		CHECK(WireNames::renumberProject(project, {one}, false, one) == 0);
+	}
+
+	SECTION("undone, the name is back")
+	{
+		stack.undo();
+		CHECK(textOf(b) == named.text);
+		CHECK(b->properties().m_formula == named.m_formula);
+		CHECK(textOf(c) == wireName(1, 3));
+	}
+
+	SECTION("a folio out of the renumbering keeps the name")
+	{
+		stack.undo();
+		WireNames::renumberProject(project, {bench.project.diagram(1)}, false, one);
+		CHECK(textOf(b) == named.text);
+	}
+}
+
+TEST_CASE("CU-78.7 — A name typed on a wire left out stays", "[T78][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *one = bench.project.diagram(0);
+	const QList<Conductor *> wires = threeNamed(bench);
+	Conductor *a = wires.value(0);
+	Conductor *b = wires.value(1);
+	Conductor *c = wires.value(2);
+	REQUIRE((a && b && c));
+	QUndoStack &stack = bench.stack();
+	leaveOut(stack, {b});
+	const QString typed = QStringLiteral("RESERVA");
+
+	SECTION("typed in the panel, once the numbering cleared it")
+	{
+		WireNames::renumberProject(project, {one}, false, one);
+		REQUIRE(textOf(b).isEmpty());
+		typeInPanel(stack, b, typed);
+	}
+	SECTION("typed in the panel over the name the numbering gave")
+	{
+			//The formula is still there, and the text is not what it gives
+		REQUIRE_FALSE(b->properties().m_formula.isEmpty());
+		typeInPanel(stack, b, typed);
+		REQUIRE_FALSE(b->properties().m_formula.isEmpty());
+	}
+	SECTION("typed on the folio")
+	{
+		typeOnFolio(stack, b, typed);
+	}
+
+	REQUIRE(textOf(b) == typed);
+	CHECK_FALSE(WireNames::isNumberingName(b));
+	WireNames::renumberProject(project, {one}, false, one);
+	CHECK(textOf(b) == typed);
+	CHECK(b->isFreezeLabel());
+		//And it does not count
+	CHECK(textOf(a) == wireName(1, 1, "1"));
+	CHECK(textOf(c) == wireName(1, 2));
+	CHECK(countOf(one) == QLatin1String("2"));
 }

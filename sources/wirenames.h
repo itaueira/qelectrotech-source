@@ -130,6 +130,18 @@ namespace WireNames
 	bool isNameFormula(const QString &formula);
 
 		/**
+			@return true when the text of @p wire is the name its formula
+			gives it: the formula holds a variable, and the text is what
+			the wire works out of it to show (Conductor::refreshText()). A
+			name typed by hand is not - typed in the panel, it is another
+			text than the formula's; typed on the folio, it is the formula
+			itself, with no variable. When it cannot be told, false: a
+			folio moved since makes the sum give another number, and the
+			name is taken for typed.
+		*/
+	bool isNumberingName(const Conductor *wire);
+
+		/**
 			Keep one name on a point that @p conductor has just joined
 			across a folio report: when it took a formula of the wire names
 			with %id, and the point is drawn on another folio as well, the
@@ -181,10 +193,12 @@ namespace WireNames
 
 			The place of a point is the place of its name: the first, in
 			reading order, of the names of its wires on the folio it is
-			named on. Left alone: a wire left out of the numbering, which
-			does not count either; a point of a panel marked as built,
-			whose number the others on its folio skip; the earth; and a
-			point named on a folio out of @p folios. The count of a folio
+			named on. A wire left out of the numbering does not count, and
+			on a folio of @p folios it loses the name the numbering gave
+			it - the text and the formula - and keeps a name typed by hand
+			(isNumberingName()). Left alone: a point of a panel marked as
+			built, whose number the others on its folio skip; the earth;
+			and a point named on a folio out of @p folios. The count of a folio
 			renumbered is its highest number, even when that is lower than
 			the count was, so that the next wire drawn takes the number
 			after the last.

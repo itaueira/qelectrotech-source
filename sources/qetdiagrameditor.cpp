@@ -154,6 +154,7 @@
 #include "qetinformation.h"
 #include "undocommand/changeelementinformationcommand.h"
 #include "ui/cablenumberingdialog.h"
+#include "ui/conductorpropertieseditorwidget.h"
 #include "toolbarsettings.h"
 #include "wirearrangement.h"
 #include "wirecolorname.h"
@@ -688,6 +689,13 @@ void QETDiagramEditor::setUpActions()
 	ShortcutManager::instance().registerAction(m_renumber_wires, "diagrameditor.renumber_wires", tr("Diagram editors"), QKeySequence());
 	m_renumber_wires->setStatusTip(tr("Number the wires again from their place on the folio, from 1 on each folio", "status bar tip"));
 	connect(m_renumber_wires, &QAction::triggered, this, &QETDiagramEditor::renumberWires);
+		//The box of the wire panel, for every selected wire at once (T77):
+		//ticked when they all are left out
+	m_leave_out_wires = new QAction(tr("Leave out of automatic numbering"), this);
+	m_leave_out_wires->setCheckable(true);
+	ShortcutManager::instance().registerAction(m_leave_out_wires, "diagrameditor.leave_out_wires", tr("Diagram editors"), QKeySequence());
+	m_leave_out_wires->setStatusTip(tr("Automatic numbering does not change the selected wires, and does not count their numbers", "status bar tip"));
+	connect(m_leave_out_wires, &QAction::triggered, this, &QETDiagramEditor::leaveOutSelectedWires);
 
 		//AutoConductor
 	m_auto_conductor = new QAction   (QET::Icons::Autoconnect, tr("Automatic creation conductor (s)","Tool tip of auto conductor"), this);
@@ -3746,7 +3754,8 @@ void QETDiagramEditor::renumberWires()
 	QSettings settings;
 	order->setCurrentIndex(settings.value(order_key, false).toBool() ? 1 : 0);
 	auto *note = new QLabel(tr("Every wire gets a new number from its place, from 1 on each folio. "
-				   "Wires left out of automatic numbering, and those of a panel marked as built, keep theirs."),
+				   "A wire left out of automatic numbering loses the name the numbering gave it, "
+				   "and keeps a name typed by hand; those of a panel marked as built keep theirs."),
 				&dialog);
 	note->setWordWrap(true);
 	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
@@ -3773,6 +3782,46 @@ void QETDiagramEditor::renumberWires()
 	QTimer::singleShot(0, this, [this, message]() {
 		statusBar()->showMessage(message, 8000);
 	});
+}
+
+/**
+	@brief QETDiagramEditor::leaveOutSelectedWires
+	Leave the selected wires out of the automatic numbering, or bring them
+	back, in one undo step: the step the box of the wire panel pushes (T77).
+	The other things selected are not touched.
+	@param ignored : the state the entry was clicked to
+*/
+void QETDiagramEditor::leaveOutSelectedWires(bool ignored)
+{
+	DiagramView *view = currentDiagramView();
+	Diagram *diagram = view ? view->diagram() : nullptr;
+	if (!diagram || diagram->isReadOnly()) {
+		return;
+	}
+	const QSet<Conductor *> selected = diagram->selectedConductors();
+	if (QUndoCommand *undo = ConductorPropertiesEditorWidget::leaveOutCommand(
+			QList<Conductor *>(selected.cbegin(), selected.cend()), ignored)) {
+		diagram->undoStack().push(undo);
+	}
+	updateLeaveOutWires();
+}
+
+/**
+	@brief QETDiagramEditor::updateLeaveOutWires
+	The entry that leaves the selected wires out of the numbering: usable
+	when wires are selected on a folio that can be changed, and ticked when
+	every one of them is left out already (T77).
+*/
+void QETDiagramEditor::updateLeaveOutWires()
+{
+	DiagramView *view = currentDiagramView();
+	Diagram *diagram = view ? view->diagram() : nullptr;
+	const QSet<Conductor *> selected = diagram ? diagram->selectedConductors()
+						   : QSet<Conductor *>();
+	m_leave_out_wires->setEnabled(diagram && !diagram->isReadOnly() && !selected.isEmpty());
+	m_leave_out_wires->setChecked(!selected.isEmpty()
+				      && std::all_of(selected.cbegin(), selected.cend(),
+						     [](const Conductor *c) {return c->isFreezeLabel();}));
 }
 
 /**
@@ -4126,6 +4175,7 @@ void QETDiagramEditor::setUpMenu()
 	conductor_menu -> addAction(m_update_wire_sections);
 	conductor_menu -> addAction(m_convert_wire_names);
 	conductor_menu -> addAction(m_renumber_wires);
+	conductor_menu -> addAction(m_leave_out_wires);
 	conductor_menu -> addSeparator();
 	conductor_menu -> addAction(m_show_conductor_text);
 	conductor_menu -> addAction(m_hide_conductor_text);
@@ -5988,6 +6038,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 			    << m_conductor_arrange
 			    << m_conductor_arrange_folio
 			    << m_update_wire_sections
+			    << m_leave_out_wires
 			    << m_find_element
 			    << m_navigate
 			    << m_cut
@@ -6022,6 +6073,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 	int selected_conductors_count = diagram_->selectedConductors().count();
 	m_conductor_reset->setEnabled(!ro && selected_conductors_count);
 	m_conductor_arrange->setEnabled(!ro && selected_conductors_count);
+	updateLeaveOutWires();
 	m_conductor_arrange_folio->setEnabled(!ro && !diagram_->conductors().isEmpty());
 		//The whole project, and not this folio: its folio may hold no
 		//conductor while the others do (T70)
