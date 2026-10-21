@@ -149,6 +149,16 @@ void PropertiesEditorDockWidget::growToContent()
 	auto scroll_area = qobject_cast<QScrollArea *>(widget());
 	if (!scroll_area)
 		return;
+		//The dock may have just been given its editors back, after it
+		//shrank to its title while empty (fitToEditors()): its layout and
+		//the window's are done again first. Else the window still holds
+		//the dock to the height it could have while empty, the resizing
+		//below is lost, and the window sizes the dock later from the size
+		//hints - measured, 39 px short of what the editor asks for
+	if (layout())
+		layout()->activate();
+	if (main_window->layout())
+		main_window->layout()->activate();
 	const int frame = height() - scroll_area->viewport()->height();
 		//A content wider than the dock brings the horizontal bar, and the
 		//bar takes its height from the view: measured, 14 px short
