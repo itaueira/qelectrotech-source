@@ -105,7 +105,6 @@ class ProjectPrintWindow : public QMainWindow
 		QETProject *m_project = nullptr;
 		QPrinter *m_printer = nullptr;
 		QPrintPreviewWidget *m_preview=nullptr;
-		QColor m_backup_diagram_background_color;
 		QHash<Diagram *, QCheckBox *> m_diagram_list_hash;
 		QList<PdfLinks::ComponentInfo> m_componentInfoList;
 		/// One bookmark per selected sheet, rebuilt on every preview repaint.

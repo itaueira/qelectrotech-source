@@ -355,6 +355,26 @@ namespace
 
 	/// What another library may round a gray to when it rasterises a PDF.
 	const int pdf_tolerance = 2;
+
+	/// Pixels of @a image within @a tolerance of @a colour on every channel.
+	int pixelsOf(const QImage &image, const QColor &colour, int tolerance)
+	{
+		int count = 0;
+		for (int y = 0 ; y < image.height() ; ++y)
+		{
+			for (int x = 0 ; x < image.width() ; ++x)
+			{
+				const QRgb pixel = image.pixel(x, y);
+				if (qAbs(qRed(pixel) - colour.red()) <= tolerance
+				    && qAbs(qGreen(pixel) - colour.green()) <= tolerance
+				    && qAbs(qBlue(pixel) - colour.blue()) <= tolerance)
+				{
+					++count;
+				}
+			}
+		}
+		return count;
+	}
 #endif
 
 	/**
@@ -706,4 +726,70 @@ TEST_CASE("T37 — o preto e branco é gravado com as outras opções de exporta
 	old.monochrome = true;
 	old.fromSettings(settings, QStringLiteral("nothing/here"));
 	CHECK_FALSE(old.monochrome);
+}
+
+TEST_CASE("T37 — exportar o PDF não muda a cor da folha na tela",
+	  "[uibench][impressao]")
+{
+	const KeepPrintSettings keep;
+	// The color of the sheets is one for the whole program: put it back.
+	struct KeepSheetColor
+	{
+		const QColor kept = Diagram::background_color;
+		~KeepSheetColor() { Diagram::background_color = kept; }
+	} keep_sheet_color;
+	const QColor sheet_color(60, 60, 60);
+	Diagram::background_color = sheet_color;
+
+	UiBench::ScratchProject scratch(projectXml());
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+	REQUIRE(scratch.diagram(0) != nullptr);
+
+	QTemporaryDir work;
+	REQUIRE(work.isValid());
+	const QString path = work.filePath(QStringLiteral("sheet-color.pdf"));
+
+	auto *printer = new QPrinter();
+	printer->setOutputFormat(QPrinter::PdfFormat);
+	printer->setOutputFileName(path);
+	{
+		ProjectPrintWindow window(scratch.project(), printer);
+		// Open, the sheets behind it keep their color.
+		CHECK(Diagram::background_color.name() == sheet_color.name());
+
+		QMetaObject::invokeMethod(&window, "print");
+		// The PDF is post-processed, and the window closed, on the next turn
+		// of the event loop.
+		QCoreApplication::processEvents();
+
+		// Closed and not destroyed, as in the editor, where closing only
+		// hides it: the color is still the one the sheets had.
+		CHECK(Diagram::background_color.name() == sheet_color.name());
+	}
+	CHECK(Diagram::background_color.name() == sheet_color.name());
+	REQUIRE(QFile::exists(path));
+
+#ifdef QET_HAS_QTPDF
+	// And the paper of the PDF is white. Measured against the same sheet
+	// drawn without the window, on its color: the count sees that color, so
+	// a count near zero is the white paper and not a count that sees nothing.
+	const QString direct_path = work.filePath(QStringLiteral("sheet-color-direct.pdf"));
+	REQUIRE(writePdf(scratch.diagram(0), direct_path));
+	const QImage direct = rasterise(direct_path);
+	const QImage printed = rasterise(path);
+	REQUIRE_FALSE(direct.isNull());
+	REQUIRE_FALSE(printed.isNull());
+
+	const int direct_pixels = direct.width() * direct.height();
+	const int printed_pixels = printed.width() * printed.height();
+	const int direct_sheet = pixelsOf(direct, sheet_color, pdf_tolerance);
+	const int printed_sheet = pixelsOf(printed, sheet_color, pdf_tolerance);
+	INFO("pixels of the sheet color, drawn on it: " << direct_sheet << " of " << direct_pixels);
+	INFO("pixels of the sheet color, printed: " << printed_sheet << " of " << printed_pixels);
+	REQUIRE(direct_sheet > direct_pixels / 2);
+	CHECK(printed_sheet < printed_pixels / 100);
+#else
+	SUCCEED("built without QtPdf: no library here reads the page of a PDF back as pixels");
+#endif
 }

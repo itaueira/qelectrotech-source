@@ -170,9 +170,6 @@ ProjectPrintWindow::ProjectPrintWindow(QETProject *project, QPrinter *printer, Q
 		ui->m_page_setup->setText(tr("Layout (not available on Windows for PDF export)"));
 	}
 #endif
-
-	m_backup_diagram_background_color = Diagram::background_color;
-	Diagram::background_color = Qt::white;
 }
 
 /**
@@ -182,7 +179,6 @@ ProjectPrintWindow::~ProjectPrintWindow()
 {
 	delete ui;
 	delete m_printer;
-	Diagram::background_color = m_backup_diagram_background_color;
 }
 
 /**
@@ -339,6 +335,12 @@ void ProjectPrintWindow::printDiagram(Diagram *diagram, bool fit_page, QPainter 
 	for (auto view : diagram->views()) {
 		view->setInteractive(false);
 	}
+	// Print on white paper, whatever color the sheets are shown in. Only
+	// while the folio is drawn: the color is one for every folio, and the
+	// editor keeps drawing with it behind this window, which is hidden and
+	// not destroyed when it closes.
+	const QColor sheet_color = Diagram::background_color;
+	Diagram::background_color = Qt::white;
 	auto option = exportProperties();
 	saveReloadDiagramParameters(diagram, option, true);
 	////Prepare end////
@@ -520,6 +522,7 @@ void ProjectPrintWindow::printDiagram(Diagram *diagram, bool fit_page, QPainter 
 		qgi->setFlag(QGraphicsItem::ItemIsFocusable, true);
 	}
 	saveReloadDiagramParameters(diagram, option, false);
+	Diagram::background_color = sheet_color;
 }
 
 /**
