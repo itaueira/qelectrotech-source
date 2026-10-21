@@ -141,6 +141,9 @@ bool QPropertyUndoCommand::mergeWith(const QUndoCommand *other)
 	// that isn't actually a continuation of the same action.
 	if (text() != other->text()) return false;
 	m_new_value = undo->m_new_value;
+		//Back where it started - a slider dragged and brought back -: the
+		//stack drops it (QUndoStack::push())
+	setObsolete(childCount() == 0 && m_old_value == m_new_value);
 	return true;
 }
 
@@ -167,6 +170,12 @@ void QPropertyUndoCommand::redo()
 	}
 
 	QUndoCommand::redo();
+		//A step that changes nothing is not kept: the stack deletes a
+		//command obsolete after its redo (QUndoStack::push()). A handle
+		//clicked without a drag pushed one, and the Ctrl+Z after it did
+		//nothing to see (T75). Not a command holding others, which may
+		//be the whole step
+	setObsolete(childCount() == 0 && m_old_value == m_new_value);
 }
 
 /**

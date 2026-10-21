@@ -154,6 +154,19 @@ int ElementsMover::beginMovement(Diagram *diagram, QGraphicsItem *driver_item)
 {
 	m_driver_held = false;
 
+		//A movement still running when a gesture starts is one whose end
+		//never came: a release lost to a menu, a dialog or another window.
+		//Ended here, as if it had come, so that what it moved is a step of
+		//its own. Left running, the new gesture moved without a step, and
+		//its release wrote the old one with the new movement: undo moved
+		//back the item moved before, and left the last one where it was
+		//(T75). Only for a gesture with a driver - the mouse, a cable
+		//line -: the keys ask again at every repeat of a key held down,
+		//which is the same gesture (Diagram::keyPressEvent()).
+	if (m_movement_running && driver_item) {
+		endMovement();
+	}
+
 		// They must be no movement in progress
 	if (m_movement_running) return(-1);
 

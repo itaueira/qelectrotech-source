@@ -1206,6 +1206,9 @@ if(TARGET qelectrotech_objects)
         # T74: a mirrored symbol turned keeps its wire on its terminal, and a
         # text turned about its centre opens where it was saved.
         src/ui/mirroredturn_test.cpp
+        # T75: undo takes back the last move, after a release lost to a
+        # menu or a dialog, and in the symbol editor.
+        src/ui/undomove_test.cpp
         # T61: a symbol dropped on a folio of a project numbered 10 or more
         # becomes an element; one that cannot become one says why.
         src/ui/insertsymbolprojectid_test.cpp)

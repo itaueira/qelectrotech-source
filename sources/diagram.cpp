@@ -744,6 +744,11 @@ void Diagram::keyPressEvent(QKeyEvent *event)
 
 		if (!movement.isNull() && !focusItem())
 		{
+				//A key pressed, and not repeated, is a gesture of its own:
+				//a movement still running is one whose end never came
+				//(ElementsMover::beginMovement(), T75)
+			if (!event->isAutoRepeat() && !m_elements_mover.isReady())
+				m_elements_mover.endMovement();
 			m_elements_mover.beginMovement(this);
 			m_elements_mover.continueMovement(movement);
 			event->accept();
@@ -798,6 +803,11 @@ void Diagram::keyPressEvent(QKeyEvent *event)
 
 		if (!movement.isNull() && !focusItem())
 		{
+				//A key pressed, and not repeated, is a gesture of its own:
+				//a movement still running is one whose end never came
+				//(ElementsMover::beginMovement(), T75)
+			if (!event->isAutoRepeat() && !m_elements_mover.isReady())
+				m_elements_mover.endMovement();
 			m_elements_mover.beginMovement(this);
 			m_elements_mover.continueMovement(movement);
 			event->accept();
@@ -874,7 +884,11 @@ void Diagram::keyReleaseEvent(QKeyEvent *e)
 				|| e -> key() == Qt::Key_Down
 			) && !e -> isAutoRepeat()
 		   ) {
-			m_elements_mover.endMovement();
+				//Not while the mouse drags: the movement is then the
+				//drag's, and ended here the rest of the drag moved with
+				//no undo step (T75)
+			if (!mouseGrabberItem())
+				m_elements_mover.endMovement();
 			e -> accept();
 			transmit_event = false;
 		}
