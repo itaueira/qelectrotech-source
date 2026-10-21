@@ -171,6 +171,34 @@ namespace WireNames
 			@return how many conductors changed
 		*/
 	int convertProject(QETProject *project, Diagram *shown = nullptr);
+
+		/**
+			Number the wires of @p folios again from their place on the
+			folio, from 1 on each folio, in reading order (T78), and name
+			them as convertProject() does - it is that conversion, with
+			the numbers worked out of the place instead of read from the
+			text. One undo step.
+
+			The place of a point is the place of its name: the first, in
+			reading order, of the names of its wires on the folio it is
+			named on. Left alone: a wire left out of the numbering, which
+			does not count either; a point of a panel marked as built,
+			whose number the others on its folio skip; the earth; and a
+			point named on a folio out of @p folios. The count of a folio
+			renumbered is its highest number, even when that is lower than
+			the count was, so that the next wire drawn takes the number
+			after the last.
+
+			@param folios : the folios whose points are numbered again
+			@param columns_first : false for top to bottom then left to
+			right, true for left to right then top to bottom - the reading
+			order of the renumbering of components
+			(Renumberer::readingOrderLessThan())
+			@param shown : the folio on screen, as for convertProject()
+			@return how many conductors changed
+		*/
+	int renumberProject(QETProject *project, const QList<Diagram *> &folios,
+			    bool columns_first, Diagram *shown = nullptr);
 }
 
 #endif // WIRENAMES_H

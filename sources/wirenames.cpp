@@ -20,9 +20,11 @@
 #include "QPropertyUndoCommand/qpropertyundocommand.h"
 #include "autoNum/assignvariables.h"
 #include "autoNum/autonumschemecommand.h"
+#include "autoNum/renumberplan.h"
 #include "conductorautonumerotation.h"
 #include "diagram.h"
 #include "qetgraphicsitem/conductor.h"
+#include "qetgraphicsitem/conductortextitem.h"
 #include "qetproject.h"
 #include "undocommand/groupedupdatecommand.h"
 #include "undocommand/setautonumcontextcommand.h"
@@ -48,6 +50,11 @@ namespace
 	QString undoCaption()
 	{
 		return QObject::tr("Convert the wire names", "undo caption");
+	}
+
+	QString renumberCaption()
+	{
+		return QObject::tr("Renumber the wires", "undo caption");
 	}
 
 		/**
@@ -789,7 +796,103 @@ QString WireNames::schemeOf(const QETProject *project)
 	@brief WireNames::convertProject
 	See the header.
 */
-int WireNames::convertProject(QETProject *project, Diagram *shown)
+namespace
+{
+		/// What a renumbering asks of the conversion (T78)
+	struct Renumbering
+	{
+		QSet<Diagram *> folios;
+		bool columns_first = false;
+	};
+
+		/**
+			Give the points of @p points named on a folio of @p renumbering
+			their numbers again, from their place, before namePoints()
+			names them.
+		*/
+	void renumberPoints(QList<Point> &points, const QList<Diagram *> &diagrams,
+			    const Renumbering &renumbering)
+	{
+		QHash<const Diagram *, int> index;
+		for (int i = 0 ; i < diagrams.size() ; ++i) {
+			index.insert(diagrams.at(i), i);
+		}
+
+			//The numbers of a panel built stay, and the others skip them
+		QHash<const Diagram *, QSet<int>> taken;
+		QList<std::pair<RenumberInput, int>> places;
+		for (int i = 0 ; i < points.size() ; ++i)
+		{
+			Point &point = points[i];
+				//Named on a folio out of the renumbering: left alone, as
+				//a point of a panel built is
+			if (point.home && !renumbering.folios.contains(point.home)) {
+				point.frozen = true;
+				continue;
+			}
+			if (!point.home || point.naming == Naming::Earth) {
+				continue;
+			}
+			if (point.frozen)
+			{
+				if (point.number >= 0) {
+					taken[point.home].insert(point.number);
+				}
+				continue;
+			}
+				//The place of its name: the first of the names of its
+				//wires on the folio it is named on
+			bool found = false;
+			RenumberInput first;
+			for (Conductor *wire : std::as_const(point.wires))
+			{
+				if (wire->diagram() != point.home) {
+					continue;
+				}
+				RenumberInput place;
+				place.uuid = wire->uuid().toString();
+				place.folio_index = index.value(point.home);
+				place.position = wire->textItem()
+						? wire->textItem()->sceneBoundingRect().center()
+						: wire->sceneBoundingRect().center();
+				if (!found || Renumberer::readingOrderLessThan(place, first,
+										 renumbering.columns_first)) {
+					first = place;
+					found = true;
+				}
+			}
+			if (found) {
+				places.append({first, i});
+			}
+		}
+
+		const bool columns_first = renumbering.columns_first;
+		std::sort(places.begin(), places.end(),
+			  [columns_first](const std::pair<RenumberInput, int> &a,
+					  const std::pair<RenumberInput, int> &b) {
+			return Renumberer::readingOrderLessThan(a.first, b.first, columns_first);
+		});
+
+		QHash<const Diagram *, int> next;
+		for (const auto &place : std::as_const(places))
+		{
+			Point &point = points[place.second];
+			int number = next.value(point.home, 0) + 1;
+			while (taken.value(point.home).contains(number)) {
+				++number;
+			}
+			next[point.home] = number;
+			point.number = number;
+		}
+	}
+}
+
+/**
+	The conversion, and the renumbering when @p renumbering is given: see
+	WireNames::convertProject() and WireNames::renumberProject().
+*/
+static int convertOrRenumber(QETProject *project, Diagram *shown,
+			     const Renumbering *renumbering)
 {
 	if (!project || project->isReadOnly()) {
 		return 0;
@@ -802,13 +905,13 @@ int WireNames::convertProject(QETProject *project, Diagram *shown)
 
 		//The scheme, made the one new conductors take: the project's own
 		//when it has one writing the formula, a new one otherwise
-	QString title = schemeOf(project);
+	QString title = WireNames::schemeOf(project);
 	NumerotationContext context;
 	AutoNumSchemeCommand *scheme_command = nullptr;
 	if (title.isEmpty())
 	{
 		title = newSchemeTitle(project);
-		context = scheme();
+		context = WireNames::scheme();
 		scheme_command = AutoNumSchemeCommand::create(project, kind, title, context, true);
 		if (!scheme_command) {
 			return 0;
@@ -824,8 +927,12 @@ int WireNames::convertProject(QETProject *project, Diagram *shown)
 	}
 
 		//One gesture for the data base, every folio in it
-	auto *conversion = new GroupedUpdateCommand(project, undoCaption());
+	const QString caption = renumbering ? renumberCaption() : undoCaption();
+	auto *conversion = new GroupedUpdateCommand(project, caption);
 	QList<Point> points = pointsOf(diagrams);
+	if (renumbering) {
+		renumberPoints(points, diagrams, *renumbering);
+	}
 		//The highest number the typed names carry on each folio: the
 		//numbers of the points named on it
 	QHash<Diagram *, int> highest;
@@ -838,12 +945,20 @@ int WireNames::convertProject(QETProject *project, Diagram *shown)
 	const int changed = namePoints(points, highest, conversion);
 
 		//The count of each folio goes on after its highest number, and
-		//never back below a number the scheme has given there already
+		//never back below a number the scheme has given there already -
+		//unless the folio was numbered again, from 1: its count is then
+		//its highest number
 	int shown_highest = -1;
 	for (Diagram *diagram : diagrams)
 	{
-		const int folio_highest = qMax(highest.value(diagram),
-					       diagram->m_cnd_unitfolio_max.value(title).value(0).toInt());
+			//A folio out of the renumbering keeps its count
+		if (renumbering && !renumbering->folios.contains(diagram)) {
+			continue;
+		}
+		const int folio_highest = renumbering
+				? highest.value(diagram)
+				: qMax(highest.value(diagram),
+				       diagram->m_cnd_unitfolio_max.value(title).value(0).toInt());
 		const QStringList count {QString::number(folio_highest)};
 		if (FolioCountCommand::changes(diagram, title, count)) {
 			new FolioCountCommand(diagram, title, count, conversion);
@@ -879,7 +994,7 @@ int WireNames::convertProject(QETProject *project, Diagram *shown)
 		//One undo step: the scheme, which cannot be a child of another
 		//command, and the rest
 	QUndoStack *stack = project->undoStack();
-	stack->beginMacro(undoCaption());
+	stack->beginMacro(caption);
 	if (scheme_command) {
 		stack->push(scheme_command);
 	}
@@ -890,4 +1005,22 @@ int WireNames::convertProject(QETProject *project, Diagram *shown)
 	}
 	stack->endMacro();
 	return changed;
+}
+
+int WireNames::convertProject(QETProject *project, Diagram *shown)
+{
+	return convertOrRenumber(project, shown, nullptr);
+}
+
+int WireNames::renumberProject(QETProject *project, const QList<Diagram *> &folios,
+			       bool columns_first, Diagram *shown)
+{
+	Renumbering renumbering;
+	for (Diagram *folio : folios) {
+		if (folio) {
+			renumbering.folios.insert(folio);
+		}
+	}
+	renumbering.columns_first = columns_first;
+	return convertOrRenumber(project, shown, &renumbering);
 }

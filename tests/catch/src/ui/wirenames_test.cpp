@@ -1242,3 +1242,177 @@ TEST_CASE("CU-77.6 — The panel box marks the selected wires in one step", "[T7
 	QCoreApplication::processEvents();
 	CHECK(box->checkState() == Qt::Unchecked);
 }
+
+/*
+	The wires numbered again from their place on the folio (T78): the
+	conversion of the names, with the numbers worked out of the place of
+	each name instead of read from it.
+*/
+namespace
+{
+		/**
+			Two folios alike: a pair of components high on the right and
+			one low on the left, wired, typed F<folio>-5 and F<folio>-9.
+			Parts 0 to 3 on the first folio, 4 to 7 on the second; wires 0
+			and 1 on the first, 2 and 3 on the second.
+		*/
+	QList<Folio> highRightLowLeft()
+	{
+		QList<Folio> folios;
+		for (int f = 1 ; f <= 2 ; ++f)
+		{
+			const int base = (f - 1) * 4;
+			folios << Folio{{{Kind::Sensor, 500, 100, ""},
+					 {Kind::Relay, 650, 100, ""},
+					 {Kind::Sensor, 100, 300, ""},
+					 {Kind::Relay, 250, 300, ""}},
+					{{base, base + 1, typedName(f, 5, "1")},
+					 {base + 2, base + 3, typedName(f, 9, "1")}}};
+		}
+		return folios;
+	}
+}
+
+TEST_CASE("CU-78.1 — Numbered again from 1, in reading order", "[T78][wirenames]")
+{
+	Bench bench(drawnByHand());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *fifth = bench.project.diagram(4);
+	Conductor *first = bench.wire(0);
+	Conductor *first_on = bench.wire(1);
+	Conductor *second = bench.wire(2);
+	Conductor *third = bench.wire(3);
+	REQUIRE((first && first_on && second && third));
+
+		//F5-2, F5-7 and a wire with no number, one under the other
+	CHECK(WireNames::renumberProject(project, {fifth}, false, fifth) == 4);
+	CHECK(textOf(first) == wireName(5, 1));
+	CHECK(textOf(first_on) == wireName(5, 1));
+	CHECK(textOf(second) == wireName(5, 2));
+	CHECK(textOf(third) == wireName(5, 3));
+
+	SECTION("the next wire goes on after the last")
+	{
+		Conductor *added = drawBetween(bench, 7, 8);
+		REQUIRE(added != nullptr);
+		CHECK(textOf(added) == wireName(5, 4));
+	}
+
+	SECTION("numbered again in the same order, nothing changes")
+	{
+		CHECK(WireNames::renumberProject(project, {fifth}, false, fifth) == 0);
+	}
+}
+
+TEST_CASE("T78 — The count of a folio renumbered goes down", "[T78][wirenames]")
+{
+	Bench bench(drawnByHand());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *fifth = bench.project.diagram(4);
+
+		//The conversion keeps F5-2 and F5-7 and gives F5-8: the count of
+		//the folio is 8
+	REQUIRE(WireNames::convertProject(project, fifth) == 4);
+	REQUIRE(textOf(bench.wire(3)) == wireName(5, 8));
+
+	REQUIRE(WireNames::renumberProject(project, {fifth}, false, fifth) == 4);
+	REQUIRE(textOf(bench.wire(3)) == wireName(5, 3));
+	Conductor *added = drawBetween(bench, 7, 8);
+	REQUIRE(added != nullptr);
+	CHECK(textOf(added) == wireName(5, 4));
+}
+
+TEST_CASE("CU-78.2 — Top to bottom, or left to right", "[T78][wirenames]")
+{
+	Bench bench(highRightLowLeft());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *one = bench.project.diagram(0);
+	Conductor *high_right = bench.wire(0);
+	Conductor *low_left = bench.wire(1);
+	REQUIRE((high_right && low_left));
+
+	WireNames::renumberProject(project, {one}, false, one);
+	CHECK(textOf(high_right) == wireName(1, 1));
+	CHECK(textOf(low_left) == wireName(1, 2));
+
+	WireNames::renumberProject(project, {one}, true, one);
+	CHECK(textOf(low_left) == wireName(1, 1));
+	CHECK(textOf(high_right) == wireName(1, 2));
+}
+
+TEST_CASE("CU-78.3 — A wire left out and a panel built keep their numbers", "[T78][wirenames]")
+{
+	Bench bench(drawnByHand());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *fifth = bench.project.diagram(4);
+	Conductor *built = bench.wire(0);
+	Conductor *built_on = bench.wire(1);
+	Conductor *left_out = bench.wire(2);
+	Conductor *low = bench.wire(3);
+	REQUIRE((built && built_on && left_out && low));
+		//On the row of the wire left out, further right
+	Conductor *drawn = drawBetween(bench, 7, 8);
+	REQUIRE(drawn != nullptr);
+
+		//The point typed F5-2 is on the panel; F5-7 is left out
+	AssemblyState state;
+	state.stage = AssemblyStage::Assembled;
+	state.conductors.insert(built->uuid().toString(), textOf(built));
+	state.conductors.insert(built_on->uuid().toString(), textOf(built_on));
+	bench.stack().push(new AssemblyStateCommand(project, state));
+	leaveOut(bench.stack(), {left_out});
+
+	WireNames::renumberProject(project, {fifth}, false, fifth);
+	CHECK(textOf(built) == typedName(5, 2, "1"));
+	CHECK(textOf(left_out) == typedName(5, 7, "1,5"));
+		//The first in reading order takes 1, the next skips the 2 of the
+		//panel built
+	CHECK(textOf(drawn) == wireName(5, 1));
+	CHECK(textOf(low) == wireName(5, 3));
+}
+
+TEST_CASE("CU-78.4 — This folio only", "[T78][wirenames]")
+{
+	Bench bench(highRightLowLeft());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *two = bench.project.diagram(1);
+
+	CHECK(WireNames::renumberProject(project, {two}, false, two) == 2);
+	CHECK(textOf(bench.wire(2)) == wireName(2, 1));
+	CHECK(textOf(bench.wire(3)) == wireName(2, 2));
+		//The first folio as it was: not even converted
+	CHECK(textOf(bench.wire(0)) == typedName(1, 5, "1"));
+	CHECK(textOf(bench.wire(1)) == typedName(1, 9, "1"));
+}
+
+TEST_CASE("CU-78.5 — One undo puts every name back", "[T78][wirenames]")
+{
+	Bench bench(drawnByHand());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *fifth = bench.project.diagram(4);
+	QUndoStack &stack = bench.stack();
+	const int index = stack.index();
+
+	REQUIRE(WireNames::renumberProject(project, project->diagrams(), false, fifth) == 4);
+	CHECK(stack.index() == index + 1);
+	CHECK(textOf(bench.wire(0)) == wireName(5, 1));
+
+	stack.undo();
+	CHECK(stack.index() == index);
+	CHECK(textOf(bench.wire(0)) == typedName(5, 2, "1"));
+	CHECK(textOf(bench.wire(1)) == typedName(5, 2, "1"));
+	CHECK(textOf(bench.wire(2)) == typedName(5, 7, "1,5"));
+	CHECK(textOf(bench.wire(3)).isEmpty());
+}

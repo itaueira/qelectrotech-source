@@ -179,6 +179,8 @@
 #include <QVBoxLayout>
 #include <QListWidget>
 #include <QCheckBox>
+#include <QComboBox>
+#include <QFormLayout>
 #include <QDockWidget>
 #include <QJsonObject>
 #include <QTime>
@@ -624,6 +626,10 @@ void QETDiagramEditor::setUpActions()
 	ShortcutManager::instance().registerAction(m_convert_wire_names, "diagrameditor.convert_wire_names", tr("Diagram editors"), QKeySequence());
 	m_convert_wire_names->setStatusTip(tr("Name every wire of the project F<folio>-<number> (colour cross-section), keeping the number it has", "status bar tip"));
 	connect(m_convert_wire_names, &QAction::triggered, this, &QETDiagramEditor::convertWireNames);
+	m_renumber_wires = new QAction(QET::Icons::ConductorSettings, tr("Renumber the wires…"), this);
+	ShortcutManager::instance().registerAction(m_renumber_wires, "diagrameditor.renumber_wires", tr("Diagram editors"), QKeySequence());
+	m_renumber_wires->setStatusTip(tr("Number the wires again from their place on the folio, from 1 on each folio", "status bar tip"));
+	connect(m_renumber_wires, &QAction::triggered, this, &QETDiagramEditor::renumberWires);
 
 		//AutoConductor
 	m_auto_conductor = new QAction   (QET::Icons::Autoconnect, tr("Automatic creation conductor (s)","Tool tip of auto conductor"), this);
@@ -3652,6 +3658,66 @@ void QETDiagramEditor::convertWireNames()
 }
 
 /**
+	@brief QETDiagramEditor::renumberWires
+	Ask for the scope and the reading order, and number the wires again
+	from their place on the folio (T78) - one undo step - saying in the
+	status bar how many changed. The reading order is the setting the
+	renumbering of components keeps, so that both read a folio alike.
+*/
+void QETDiagramEditor::renumberWires()
+{
+	ProjectView *project_view = currentProjectView();
+	QETProject *project = project_view ? project_view->project() : nullptr;
+	if (!project || project->isReadOnly()) {
+		return;
+	}
+	DiagramView *view = currentDiagramView();
+	Diagram *shown = view ? view->diagram() : nullptr;
+	const QString order_key = QStringLiteral("renumbering/columns-first");
+
+	QDialog dialog(this);
+	dialog.setWindowTitle(tr("Renumber the wires"));
+	auto *scope = new QComboBox(&dialog);
+	scope->addItem(tr("Whole project"), true);
+	if (shown) {
+		scope->addItem(tr("This folio only"), false);
+	}
+	auto *order = new QComboBox(&dialog);
+	order->addItem(tr("Top to bottom, then left to right"), false);
+	order->addItem(tr("Left to right, then top to bottom"), true);
+	QSettings settings;
+	order->setCurrentIndex(settings.value(order_key, false).toBool() ? 1 : 0);
+	auto *note = new QLabel(tr("Every wire gets a new number from its place, from 1 on each folio. "
+				   "Wires left out of automatic numbering, and those of a panel marked as built, keep theirs."),
+				&dialog);
+	note->setWordWrap(true);
+	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+	buttons->button(QDialogButtonBox::Ok)->setText(tr("Renumber"));
+	connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+	connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+	auto *form = new QFormLayout(&dialog);
+	form->addRow(tr("Scope"), scope);
+	form->addRow(tr("Reading order"), order);
+	form->addRow(note);
+	form->addRow(buttons);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+	const bool columns_first = order->currentData().toBool();
+	settings.setValue(order_key, columns_first);
+	const QList<Diagram *> folios = scope->currentData().toBool()
+			? project->diagrams() : QList<Diagram *>{shown};
+	const int changed = WireNames::renumberProject(project, folios, columns_first, shown);
+	const QString message = changed
+			? tr("%n wire(s) renumbered", "status bar message", changed)
+			: tr("The wires are already numbered in this order", "status bar message");
+	QTimer::singleShot(0, this, [this, message]() {
+		statusBar()->showMessage(message, 8000);
+	});
+}
+
+/**
 	@brief QETDiagramEditor::exchangeSelectedElements
 	Put each of the two selected elements in the place of the other, in one
 	undoable step (T66). The wires stay where they are and each element takes
@@ -4000,6 +4066,7 @@ void QETDiagramEditor::setUpMenu()
 	conductor_menu -> addAction(m_conductor_arrange_folio);
 	conductor_menu -> addAction(m_update_wire_sections);
 	conductor_menu -> addAction(m_convert_wire_names);
+	conductor_menu -> addAction(m_renumber_wires);
 	conductor_menu -> addSeparator();
 	conductor_menu -> addAction(m_show_conductor_text);
 	conductor_menu -> addAction(m_hide_conductor_text);
@@ -5748,6 +5815,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_hide_conductor_text         -> setEnabled(editable_project);
 	m_align_conductor_text        -> setEnabled(editable_project);
 	m_convert_wire_names          -> setEnabled(editable_project);
+	m_renumber_wires              -> setEnabled(editable_project);
 	m_replace_part                -> setEnabled(editable_project);
 	m_save_group                  -> setEnabled(editable_project);
 	m_insert_group                -> setEnabled(editable_project);
