@@ -183,6 +183,8 @@ class DynamicElementTextItem : public DiagramTextItem
 		void addResizeHandles();
 		void removeResizeHandles();
 		void updateResizeHandlesPos();
+		QPointF resizeAnchor() const;
+		qreal minimumTextWidth() const;
 		void fitAutoTextWidth();
 		void handlerMousePressEvent(QetGraphicsHandlerItem *handle, QGraphicsSceneMouseEvent *event);
 		void handlerMouseMoveEvent(QetGraphicsHandlerItem *handle, QGraphicsSceneMouseEvent *event);
@@ -231,6 +233,9 @@ class DynamicElementTextItem : public DiagramTextItem
 		qreal m_resize_original_width = -1;
 		qreal m_resize_baseline_width = -1;
 		qreal m_resize_start_local_x = 0;
+		QPointF m_resize_start_pos,
+				m_resize_fixed_parent;
+		QTransform m_resize_scene_to_local;
 		QMetaObject::Connection m_resize_handles_con;
 };
 

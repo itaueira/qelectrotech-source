@@ -122,6 +122,15 @@ if(Python3_Interpreter_FOUND AND CMAKE_GENERATOR STREQUAL "Ninja")
       --fixture ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/linked_reports.qet)
   set_tests_properties(tst_reportjumpintegration PROPERTIES TIMEOUT 300 RUN_SERIAL TRUE
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+  # "Place symbol texts": label and notes as one block at one of nine
+  # points beside the drawing, aligned to hang on it; one undo step.
+  add_test(NAME tst_symboltextplacementintegration
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/run_symbol_text_placement_probe.py
+      --build ${CMAKE_BINARY_DIR} --binary $<TARGET_FILE:qelectrotech>
+      --source ${CMAKE_CURRENT_SOURCE_DIR}/symbol_text_placement_probe.cpp
+      --fixture ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/unlinked_contact_label.qet)
+  set_tests_properties(tst_symboltextplacementintegration PROPERTIES TIMEOUT 300 RUN_SERIAL TRUE
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
 if(Python3_Interpreter_FOUND AND CMAKE_GENERATOR STREQUAL "Ninja")
   add_test(NAME tst_darkimageintegration
@@ -130,6 +139,15 @@ if(Python3_Interpreter_FOUND AND CMAKE_GENERATOR STREQUAL "Ninja")
       --source ${CMAKE_CURRENT_SOURCE_DIR}/image_dark_integration_probe.cpp
       --fixture ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/unlinked_contact_label.qet)
   set_tests_properties(tst_darkimageintegration PROPERTIES TIMEOUT 300 RUN_SERIAL TRUE)
+  # Dragging the left width handle of a symbol's text keeps its right
+  # edge in place, the right handle its left edge; undo restores both.
+  add_test(NAME tst_elementtextresizeintegration
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/run_element_text_resize_probe.py
+      --build ${CMAKE_BINARY_DIR} --binary $<TARGET_FILE:qelectrotech>
+      --source ${CMAKE_CURRENT_SOURCE_DIR}/element_text_resize_probe.cpp
+      --fixture ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/unlinked_contact_label.qet)
+  set_tests_properties(tst_elementtextresizeintegration PROPERTIES TIMEOUT 300 RUN_SERIAL TRUE
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
 
 add_executable(${PROJECT_NAME} tst_mytest.cpp)
@@ -308,9 +326,13 @@ qet_add_app_test(tst_imagehandleescape tst_imagehandleescape.cpp)
 # pixels and position; an <image> with no picture does not stop the others.
 qet_add_app_test(tst_folioimageload tst_folioimageload.cpp)
 
-# The Selection properties panel keeps the height the user gave it when the
-# selection has nothing to edit for a moment (#1439).
+# The Selection properties panel shrinks while the selection has nothing to
+# edit (#1566) and gets back the height the user gave it (#1439).
 qet_add_app_test(tst_selectionpanelheight tst_selectionpanelheight.cpp)
+
+# The Auto numbering panel's Increment spin boxes get the width their style
+# asks for; a fixed 55 px cut the number off on Windows (#1566).
+qet_add_app_test(tst_autonumincrementwidth tst_autonumincrementwidth.cpp)
 
 # Opening a project before the elements panel's first reload() left its tree
 # item detached, and selecting the item's first child crashed in QTreeModel
@@ -1479,3 +1501,7 @@ qet_add_app_test(tst_elementspanelclosedproject tst_elementspanelclosedproject.c
 # A project closed before the element collection panel's first load, or during
 # a load, stayed in the collection and the next reload read the freed project.
 qet_add_app_test(tst_collectionclosedproject tst_collectionclosedproject.cpp)
+
+# A second QElectroTech writes to the shared element cache at once instead of
+# waiting for the first to close (#1571).
+qet_add_app_test(tst_elementcachelock tst_elementcachelock.cpp)

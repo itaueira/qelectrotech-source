@@ -17,6 +17,9 @@
 */
 #include "diagramtoolbarsettings.h"
 
+#include <QMenu>
+#include <QToolButton>
+
 #include "shortcutmanager.h"
 
 #include <QApplication>
@@ -200,7 +203,8 @@ QStringList DiagramToolbarSettings::defaultIds(const QString &name)
 			QStringLiteral("diagrameditor.add_cable"),
 			QStringLiteral("widget:conductor_color"),
 			sep,
-			QStringLiteral("diagrameditor.reload_element_drawings")};
+			QStringLiteral("diagrameditor.reload_element_drawings"),
+			QStringLiteral("diagrameditor.place_symbol_texts")};
 	}
 	if (name == QLatin1String("adding")) {
 			//add_pdf is skipped when built without QtPdf, as before
@@ -333,6 +337,11 @@ void DiagramToolbarSettings::fill(QToolBar *toolbar, const QStringList &ids,
 			pending_separator = false;
 		}
 		toolbar->addAction(action);
+			//A command with a menu of choices: a click does it again,
+			//the arrow beside it opens the choices
+		if (action->menu())
+			if (auto *button = qobject_cast<QToolButton *>(toolbar->widgetForAction(action)))
+				button->setPopupMode(QToolButton::MenuButtonPopup);
 	}
 }
 
