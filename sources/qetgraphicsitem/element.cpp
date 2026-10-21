@@ -172,13 +172,17 @@ Element::Element(
 				t->updateConductor();
 		}
 	};
+		//The mirror is about the element's own axis, so it follows the
+		//rotation, see applyMirrorTransform(). Connected before the
+		//conductors, and on purpose: the slots of a signal run in the
+		//order they were connected, and conductors brought up to date
+		//with the mirror of the turn before leave from the point opposite
+		//their terminal (T74)
+	connect(this, &Element::rotationChanged, this, &Element::applyMirrorTransform);
 	connect(this, &Element::rotationChanged, update_docked_conductors);
 	connect(this, &Element::xChanged, update_docked_conductors);
 	connect(this, &Element::yChanged, update_docked_conductors);
 	connect(this, &Element::mirrorChanged, update_docked_conductors);
-		//The mirror is about the element's own axis, so it follows the
-		//rotation, see applyMirrorTransform()
-	connect(this, &Element::rotationChanged, this, &Element::applyMirrorTransform);
 		//Texts kept horizontal in a turned symbol depend on the turn
 	connect(this, &Element::rotationChanged, this, [this]() {updateSymbolPictures();});
 }

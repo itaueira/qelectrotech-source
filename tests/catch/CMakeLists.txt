@@ -1203,6 +1203,9 @@ if(TARGET qelectrotech_objects)
         src/ui/wiremagnet_test.cpp
         # CU-72.5: the symbol editor keeps a terminal on whole numbers.
         src/ui/editorterminal_test.cpp
+        # T74: a mirrored symbol turned keeps its wire on its terminal, and a
+        # text turned about its centre opens where it was saved.
+        src/ui/mirroredturn_test.cpp
         # T61: a symbol dropped on a folio of a project numbered 10 or more
         # becomes an element; one that cannot become one says why.
         src/ui/insertsymbolprojectid_test.cpp)

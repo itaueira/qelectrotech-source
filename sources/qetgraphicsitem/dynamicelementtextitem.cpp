@@ -170,6 +170,19 @@ DynamicElementTextItem::DynamicElementTextItem(Element *parent_element) :
 		fitAutoTextWidth();
 		finishAlignment();
 	});
+		//A text turned about its own centre turns about the centre of the
+		//text it shows now. Set once from the text it had then - an empty
+		//one, for a text read from a file before its value is - the centre
+		//left the text turned away from where it was saved (T74).
+		//Connected here, before the element that takes the text keeps it
+		//readable from the same signal (Element::keepReadable()), which
+		//reads this centre.
+	connect(document()->documentLayout(), &QAbstractTextDocumentLayout::documentSizeChanged,
+		this, [this]()
+	{
+		if (m_keep_visual_rotation && m_rotation_point_center)
+			setTransformOriginPoint(boundingRect().center());
+	});
 }
 
 DynamicElementTextItem::~DynamicElementTextItem()
