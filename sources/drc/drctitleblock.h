@@ -77,6 +77,19 @@ namespace DrcTitleBlock
 	bool isBlank(const QVariant &value);
 
 	/**
+		The fields of @a required a folio prints: those its title block
+		template has a cell for (P139). A field the template does not show
+		comes out blank on no printed sheet, and is not asked for.
+
+		@param required the fields that must be filled in
+		@param template_variables the variables of the template of the
+		folio, as TitleBlockTemplate::listOfVariables() gives them
+		@return the ones printed, in the order of @a required
+	*/
+	QStringList printedKeys(const QStringList &required,
+				const QStringList &template_variables);
+
+	/**
 		The fields of @a required that are blank in @a context.
 
 		@param context what the title block of one folio is drawn from

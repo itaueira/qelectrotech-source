@@ -234,3 +234,23 @@ TEST_CASE("T24 — a frase nomeia os campos em branco da folha, um ou vários, e
 		      == QStringLiteral("Empty title block fields: %1, Title"));
 	}
 }
+
+TEST_CASE("T24 — só se pede o campo que o modelo de carimbo da folha mostra (P139)",
+	  "[drc][t24]")
+{
+	const QStringList factory = DrcTitleBlock::factoryRequiredKeys();
+
+		//A template with the title and no author: the author is not asked for
+	CHECK(DrcTitleBlock::printedKeys(factory,
+					 {QStringLiteral("folio"), QStringLiteral("title"),
+					  QStringLiteral("date")})
+	      == QStringList{QStringLiteral("title")});
+		//Both shown, in the order of the fields asked for, whatever the
+		//order of the cells
+	CHECK(DrcTitleBlock::printedKeys(factory,
+					 {QStringLiteral("author"), QStringLiteral("title")})
+	      == factory);
+		//A template showing none of them asks for nothing
+	CHECK(DrcTitleBlock::printedKeys(factory, {QStringLiteral("folio")}).isEmpty());
+	CHECK(DrcTitleBlock::printedKeys(factory, {}).isEmpty());
+}

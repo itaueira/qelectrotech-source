@@ -23,6 +23,7 @@
 #include "../diagram.h"
 #include "../diagramcontext.h"
 #include "../qetproject.h"
+#include "../titleblocktemplate.h"
 
 #include <QCoreApplication>
 
@@ -65,9 +66,21 @@ QList<DrcFinding> DrcTitleBlockRules::emptyFields(QETProject *project,
 	const QList<Diagram *> diagrams = project->diagrams();
 	for (Diagram *diagram : diagrams)
 	{
+			//Only what the printed sheet shows (P139): nothing on a folio
+			//whose title block is not drawn, and on the others only the
+			//fields its template has a cell for. A folio whose template
+			//cannot be read is asked for every field, as before
+		BorderTitleBlock &border = diagram->border_and_titleblock;
+		if (!border.titleBlockIsDisplayed()) {
+			continue;
+		}
+		const TitleBlockTemplate *tbt = border.titleBlockTemplate();
+		const QStringList asked = tbt
+				? DrcTitleBlock::printedKeys(required, tbt->listOfVariables())
+				: required;
 		const QStringList empty = DrcTitleBlock::emptyKeys(
-				diagram->border_and_titleblock.titleblockInformation(),
-				required);
+				border.titleblockInformation(),
+				asked);
 		const QString sentence = DrcTitleBlock::emptyFieldsText(empty);
 		if (sentence.isEmpty()) {
 			continue;

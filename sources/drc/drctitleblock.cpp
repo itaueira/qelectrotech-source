@@ -54,6 +54,23 @@ bool DrcTitleBlock::isBlank(const QVariant &value)
 }
 
 /**
+	@brief DrcTitleBlock::printedKeys
+	See the header.
+*/
+QStringList DrcTitleBlock::printedKeys(const QStringList &required,
+				       const QStringList &template_variables)
+{
+	QStringList printed;
+	for (const QString &key : required)
+	{
+		if (template_variables.contains(key)) {
+			printed << key;
+		}
+	}
+	return printed;
+}
+
+/**
 	@brief DrcTitleBlock::emptyKeys
 	@param context : what the title block of one folio is drawn from
 	@param required : the fields that must be filled in

@@ -371,6 +371,40 @@ TEST_CASE("T24 — folha com título ou autor em branco: um achado por folha, na
 	}
 }
 
+TEST_CASE("T24 — a folha cujo carimbo não é desenhado não é acusada (P139)",
+	  "[uibench][drc][t24]")
+{
+	UiBench::ScratchProject bench(fixtureXml(),
+				      QStringLiteral("drctitleblockhidden.qet"));
+	INFO(bench.error().toStdString());
+	REQUIRE(bench.isOpen());
+	REQUIRE(bench.diagramCount() == 4);
+	QETProject *project = bench.project();
+	Diagram *untitled = bench.diagram(1);
+	REQUIRE(untitled != nullptr);
+	REQUIRE(drawn(untitled, "title").isEmpty());
+
+	DrcRuleSet rules;
+	DrcScanEngine scan;
+	REQUIRE(DrcTitleBlockRules::registerRules(rules, scan) == 1);
+	const QString rule = DrcTitleBlockRules::emptyFieldIdentifier();
+
+		//Shown, the folio without a title is one of the three
+	QList<DrcFinding> findings = scan.run(project, rules).findingsOf(rule);
+	INFO(described(findings));
+	REQUIRE(findings.count() == 3);
+	CHECK(findings.first().diagram() == untitled);
+
+		//Its title block not drawn, it prints no blank cell, and is left out
+	untitled->border_and_titleblock.displayTitleBlock(false);
+	findings = scan.run(project, rules).findingsOf(rule);
+	INFO(described(findings));
+	CHECK(findings.count() == 2);
+	for (const DrcFinding &finding : std::as_const(findings)) {
+		CHECK(finding.diagram() != untitled);
+	}
+}
+
 TEST_CASE("T24 — pelo perfil de fábrica: a regra do carimbo está lá, ligada e de aviso, e o painel abre a folha",
 	  "[uibench][drc][t24]")
 {
