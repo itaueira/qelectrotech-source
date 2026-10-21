@@ -240,6 +240,51 @@ TEST_CASE("T21 — an item kept out of the parts list is still collected",
 	CHECK(excluded_labels == 1);
 }
 
+TEST_CASE("T21 — a component without a location takes its folio's", "[t21][label]")
+{
+		//The folio is in UV1; K1 has no location of its own, 7 has X9. The
+		//rule came with the upstream (the plant and the location of an
+		//element are its own, else its folio's), and was kept for the labels
+		//and the parts list too by decision of 20/10/2026: before, the
+		//column of a label stayed empty beside a tag that said +UV1
+	const QString content = iecFixtureXml()
+			.replace(QStringLiteral("<diagram title=\"Bench\""),
+				 QStringLiteral("<diagram locmach=\"UV1\" title=\"Bench\""))
+			.replace(QStringLiteral("name=\"label\">7</elementInformation>"),
+				 QStringLiteral("name=\"label\">7</elementInformation>"
+						"<elementInformation show=\"1\" name=\"location\">X9"
+						"</elementInformation>"));
+	UiBench::ScratchProject scratch(content, QStringLiteral("folio-location.qet"));
+	INFO(scratch.error().toStdString());
+	REQUIRE(scratch.isOpen());
+
+	ComponentLabelCollector collector(scratch.project());
+	const LabelEntryList entries = collector.collect();
+	INFO("collector said: " << collector.error().toStdString());
+	REQUIRE(collector.error().isEmpty());
+	REQUIRE(entries.count() == 2);
+	for (const LabelEntry &entry : entries)
+	{
+		CAPTURE(entry.primary_text);
+		if (entry.primary_text.contains(QStringLiteral("K1"))) {
+			CHECK(entry.location == QStringLiteral("UV1"));
+		} else {
+			CHECK(entry.location == QStringLiteral("X9"));
+		}
+	}
+
+		//And the parts list says the same place
+	QSqlQuery query = scratch.project()->dataBase()->newQuery(
+			QStringLiteral("SELECT label, location FROM element_nomenclature_view"
+				       " ORDER BY label"));
+	REQUIRE(query.exec());
+	QStringList rows;
+	while (query.next()) {
+		rows << query.value(0).toString() + QStringLiteral(" ") + query.value(1).toString();
+	}
+	CHECK(rows == QStringList{QStringLiteral("7 X9"), QStringLiteral("K1 UV1")});
+}
+
 TEST_CASE("T21 — one run carries the revision of each sheet it read",
 	  "[t21][label]")
 {
