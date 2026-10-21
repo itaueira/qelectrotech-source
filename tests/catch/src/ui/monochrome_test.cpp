@@ -20,6 +20,7 @@
 
 #include "../qt_catch_tostring.h"
 
+#include "../../../../sources/cli_export.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/exportproperties.h"
 #include "../../../../sources/print/projectprintwindow.h"
@@ -789,6 +790,63 @@ TEST_CASE("T37 — exportar o PDF não muda a cor da folha na tela",
 	INFO("pixels of the sheet color, printed: " << printed_sheet << " of " << printed_pixels);
 	REQUIRE(direct_sheet > direct_pixels / 2);
 	CHECK(printed_sheet < printed_pixels / 100);
+#else
+	SUCCEED("built without QtPdf: no library here reads the page of a PDF back as pixels");
+#endif
+}
+
+TEST_CASE("T37 — a linha de comando desenha em preto e branco quando pedida",
+	  "[uibench][impressao]")
+{
+	QTemporaryDir work;
+	REQUIRE(work.isValid());
+	const QString project_path = work.filePath(QStringLiteral("cli.qet"));
+	{
+		QFile file(project_path);
+		REQUIRE(file.open(QIODevice::WriteOnly | QIODevice::Text));
+		file.write(projectXml().toUtf8());
+	}
+	const QString colour_path = work.filePath(QStringLiteral("cli-colour.pdf"));
+	const QString mono_path = work.filePath(QStringLiteral("cli-mono.pdf"));
+	const QString pdf_verb = QStringLiteral("--export-pdf");
+
+		//Without the option, as before; with it, the box of the window
+	CHECK(CLIExport::run({pdf_verb, project_path, colour_path}) == 0);
+	CHECK(CLIExport::run({pdf_verb, project_path, mono_path,
+			      QStringLiteral("monochrome=true")}) == 0);
+	REQUIRE(QFile::exists(colour_path));
+	REQUIRE(QFile::exists(mono_path));
+
+	SECTION("a value other than true or false, or the option twice, writes nothing")
+	{
+		const QString bad = work.filePath(QStringLiteral("cli-bad.pdf"));
+		CHECK(CLIExport::run({pdf_verb, project_path, bad,
+				      QStringLiteral("monochrome=yes")}) != 0);
+		CHECK(CLIExport::run({pdf_verb, project_path, bad,
+				      QStringLiteral("monochrome=true"),
+				      QStringLiteral("monochrome=false")}) != 0);
+		CHECK_FALSE(QFile::exists(bad));
+	}
+
+	SECTION("with folios= beside it")
+	{
+		const QString both = work.filePath(QStringLiteral("cli-both.pdf"));
+		CHECK(CLIExport::run({pdf_verb, project_path, both,
+				      QStringLiteral("folios=1"),
+				      QStringLiteral("monochrome=true")}) == 0);
+		CHECK(QFile::exists(both));
+	}
+
+#ifdef QET_HAS_QTPDF
+		//The red symbol of the fixture has a hue in colour, and none in
+		//black and white
+	const QImage colour = rasterise(colour_path);
+	const QImage mono = rasterise(mono_path);
+	REQUIRE_FALSE(colour.isNull());
+	REQUIRE_FALSE(mono.isNull());
+	INFO("pixels with a hue, colour PDF: " << pixelsWithHue(colour, pdf_tolerance));
+	CHECK(pixelsWithHue(colour, pdf_tolerance) > 0);
+	CHECK(pixelsWithHue(mono, pdf_tolerance) == 0);
 #else
 	SUCCEED("built without QtPdf: no library here reads the page of a PDF back as pixels");
 #endif

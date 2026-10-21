@@ -175,6 +175,49 @@ void renderDiagram(Diagram *diagram, QPainter &painter, const QRectF &target,
 	diagram->setDrawTerminalNames(was_drawing_terminal_names);
 }
 
+/// Option that draws an export in black and white: "monochrome=true".
+const QLatin1String monochrome_option("monochrome=");
+
+/**
+	Take out of @p options the "monochrome=" option, and say in
+	@p monochrome what it asks for; false without one.
+
+	It is an option of the command, and not the choice the print window
+	saves, on purpose: the same script gives the same file on every machine
+	it runs on, whatever was last ticked there. As for folios=, nothing is
+	guessed: a value other than true or false, and the option given twice,
+	fail before a byte is written.
+
+	@return false, having already said why, when the option is malformed
+*/
+bool takeMonochrome(QStringList &options, bool &monochrome)
+{
+	monochrome = false;
+	bool given = false;
+	for (auto it = options.begin() ; it != options.end() ; )
+	{
+		if (!it->startsWith(monochrome_option)) {
+			++it;
+			continue;
+		}
+		if (given) {
+			err << "Option 'monochrome' given more than once.\n";
+			return false;
+		}
+		const QString value = it->mid(monochrome_option.size());
+		if (value == QLatin1String("true")) {
+			monochrome = true;
+		} else if (value != QLatin1String("false")) {
+			err << "Bad option '" << *it
+				<< "' (expected monochrome=true or monochrome=false).\n";
+			return false;
+		}
+		given = true;
+		it = options.erase(it);
+	}
+	return true;
+}
+
 /// Option that narrows an export to a few sheets: "folios=12,13,40".
 const QLatin1String folio_option("folios=");
 
@@ -282,10 +325,18 @@ int exportPdf(QETProject &project, const QString &output,
 		return 1;
 	}
 
+	// "monochrome=true" draws every sheet in black and white (T37), the way
+	// the print window does when its box is ticked
+	QStringList rest = options;
+	bool monochrome = false;
+	if (!takeMonochrome(rest, monochrome)) {
+		return 2;
+	}
+
 	// A "folios=" option cuts the document down to a few sheets, in the
 	// order it asks for; without it every sheet goes out, in project order.
 	QList<Diagram *> diagrams;
-	if (!selectFolios(all_diagrams, options, diagrams)) {
+	if (!selectFolios(all_diagrams, rest, diagrams)) {
 		return 2;
 	}
 
@@ -351,7 +402,10 @@ int exportPdf(QETProject &project, const QString &output,
 		}
 		const QRectF target(0, 0,
 							writer.width(), writer.height());
+		const bool was_monochrome = diagram->monochrome();
+		diagram->setMonochrome(monochrome);
 		renderDiagram(diagram, painter, target, showTerminals);
+		diagram->setMonochrome(was_monochrome);
 
 		// Collected here, and not while the page map was being built, because
 		// the fallback reads the folio string the title block resolves - which

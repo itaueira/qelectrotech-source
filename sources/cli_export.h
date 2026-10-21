@@ -42,7 +42,7 @@ namespace CLIExport {
 		@return process exit code (0 on success).
 
 		Usage:
-		  qelectrotech --export-pdf     <project.qet> <output.pdf> [folios=N,N] [--show-terminals]
+		  qelectrotech --export-pdf     <project.qet> <output.pdf> [folios=N,N] [monochrome=true] [--show-terminals]
 		  qelectrotech --export-png     <project.qet> <output_dir> [--show-terminals]
 		  qelectrotech --export-svg     <project.qet> <output_dir> [--show-terminals] [--svg-small-pictures]
 		  qelectrotech --export-dxf     <project.qet> <output_dir> [--show-terminals] [--dxf-blocks] [--dxf-attributes]
@@ -67,7 +67,10 @@ namespace CLIExport {
 		     folios=N[,N...] narrows it to those folios and to that order
 		     (1-based, as the sheet list numbers them); a folio outside
 		     the project, a repeated one or a misspelled option is
-		     refused rather than quietly ignored.
+		     refused rather than quietly ignored.  monochrome=true draws
+		     it in black and white, as the print window does with its box
+		     ticked; the choice saved by that window is not read, so that
+		     a script gives the same file on every machine.
 		PNG/SVG/DXF: one file per diagram, named <output_dir>/<NN>_<title>.<ext>.
 		DXF: the same file the export dialog writes with its default options
 		      (the export settings of the preferences).
