@@ -29,6 +29,8 @@
 
 #include <QCoreApplication>
 
+#include <algorithm>
+
 /**
 	@brief DrcTerminalRules::unconnectedTerminalIdentifier
 	@return the machine key of the rule. Never translated: the project
@@ -65,7 +67,8 @@ bool DrcTerminalRules::isJudged(const Element *element)
 	@brief DrcTerminalRules::unconnectedTerminals
 	@param project : the project to walk
 	@param rule : the rule as it stands
-	@return one finding per terminal of a component with no conductor
+	@return one finding per terminal with no conductor, of a component
+	that has a conductor on another terminal
 */
 QList<DrcFinding> DrcTerminalRules::unconnectedTerminals(QETProject *project,
 							 const DrcRule &rule)
@@ -85,8 +88,21 @@ QList<DrcFinding> DrcTerminalRules::unconnectedTerminals(QETProject *project,
 				continue;
 			}
 
-			const QString label = DrcLinkRules::labelOf(element);
 			const QList<Terminal *> terminals = element->terminals();
+				//A component with no wire at all is not judged: the
+				//folio draws no wire there - a strip drawn as blocks,
+				//its destinations written beside it - or it is not
+				//wired yet. A wire forgotten shows on a component that
+				//has the others.
+			const bool wired = std::any_of(terminals.cbegin(), terminals.cend(),
+						       [](const Terminal *terminal) {
+				return terminal && terminal->conductorsCount() > 0;
+			});
+			if (!wired) {
+				continue;
+			}
+
+			const QString label = DrcLinkRules::labelOf(element);
 			for (Terminal *terminal : terminals)
 			{
 				if (!terminal || terminal->conductorsCount() > 0) {

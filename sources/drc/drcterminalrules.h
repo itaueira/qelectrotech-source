@@ -39,7 +39,15 @@ class QETProject;
 	from a rule that never looked.
 
 	@par Which terminals
-	The terminals of a component: a plain element, a master and a slave.
+	The terminals of a component: a plain element, a master and a slave -
+	and only of a component that has a wire on another of its terminals.
+	A component with no wire at all is left out: on a folio that draws a
+	strip as blocks, with the destination of each terminal written beside
+	it, nothing is wired by construction, and every terminal of the folio
+	would be reported; and a component not wired yet is not a wire
+	forgotten. Measured on a real project: 358 findings without this, 338
+	of them on components with no wire, 20 with it.
+
 	The terminal of a terminal strip is left out, because the rule that
 	judges it is "a terminal with no field destination", and that one waits
 	for the data of the field side. A folio report is left out as well: it
@@ -69,12 +77,14 @@ namespace DrcTerminalRules
 	bool isJudged(const Element *element);
 
 	/**
-		Every terminal of a component of @a project with no conductor.
+		Every terminal with no conductor of a component of @a project
+		that has a conductor on another terminal.
 		@param project the project to walk
 		@param rule the rule as it stands, whose current severity every
 		finding copies
-		@return one finding per terminal, on the component that carries
-		it, with the position of the terminal already filled in
+		@return one finding per terminal with no conductor, of a component
+		that has one on another terminal, with the position of the
+		terminal already filled in
 	*/
 	QList<DrcFinding> unconnectedTerminals(QETProject *project,
 					       const DrcRule &rule);

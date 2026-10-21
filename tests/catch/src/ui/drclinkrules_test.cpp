@@ -360,11 +360,11 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 		REQUIRE(strip->addTerminal(terminal_in_strip));
 		REQUIRE(strip->addTerminal(terminal_loose));
 
-			//Correto para o perfil inteiro, e ele tem também a regra do
-			//terminal de componente sem ligação (T24, passo 8): cada
-			//bobina e cada contato tem um terminal, e um fio entre a
-			//bobina e o contato dela os liga. Os bornes ficam de fora
-			//daquela regra, e por isso continuam sem fio.
+			//Correto para o perfil inteiro também com fios: a regra do
+			//terminal de componente sem ligação (T24, passo 8) só julga
+			//componente que já tem algum fio, e um fio entre a bobina e o
+			//contato dela liga o único terminal de cada um. Os bornes ficam
+			//de fora daquela regra, e por isso continuam sem fio.
 		for (const QPair<Element *, Element *> &pair : {
 			     qMakePair(coil_linked, contact_linked),
 			     qMakePair(coil_loose, contact_loose)})
@@ -458,10 +458,10 @@ TEST_CASE("T23 — o painel leva da linha ao componente na folha",
 
 	const DrcProjectActions::CheckOutcome outcome =
 			DrcProjectActions::runCheck(bench.project());
-		//Seis das três regras de vínculo, e quatro da regra do terminal
-		//sem ligação (T24, passo 8): as duas bobinas e os dois contatos,
-		//um terminal cada, nada ligado; os dois bornes ficam de fora dela.
-	REQUIRE(outcome.findings.count() == 10);
+		//Os seis das três regras de vínculo. A regra do terminal sem
+		//ligação (T24, passo 8) se cala: nenhum componente desta folha tem
+		//fio, e ela só julga componente que já tem algum.
+	REQUIRE(outcome.findings.count() == 6);
 	const int rows = outcome.findings.count();
 
 	DrcPanel panel;

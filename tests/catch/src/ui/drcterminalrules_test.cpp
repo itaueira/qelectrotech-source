@@ -38,14 +38,19 @@
 	The rule of a component terminal nothing is wired to (T24, step 8).
 
 	Two folios. On the first, two placings of one relay symbol - K1 and
-	K2 - with three terminals each: A1, A2 and one with no name; a terminal
-	of a strip, X1; and a folio report. On the second, a contact KA1 with
-	terminals 13 and 14. Nothing is wired when the project opens.
+	K2 - with three terminals each: A1, A2 and one with no name, and a
+	folio report. On the second, a contact KA1 with terminals 13 and 14,
+	and a terminal of a strip, X1. The case wires K1:A1 to the report and
+	KA1:13 to X1:1, and leaves K2 with no wire at all.
 
-	Two of one symbol and not one, because the finding has to say which of
-	two identical terminals it means; a strip terminal and a report,
-	because the rule leaves both out on purpose and a rule that named every
-	terminal of the folio would pass a fixture without them.
+	Only a component that has a wire is judged: a component with no wire
+	is a strip drawn as blocks, its destinations written, or one not wired
+	yet - and not a wire forgotten. So K2 says nothing until a wire reaches
+	it, and then its other terminals speak. Two of one symbol and not one,
+	because the finding has to say which of two identical terminals it
+	means; a strip terminal with a wire and a free terminal, because the
+	rule leaves the strip out on purpose and a rule that named every free
+	terminal would pass a fixture without it.
 */
 namespace
 {
@@ -112,9 +117,9 @@ namespace
 
 		const QString first = instance(0, QStringLiteral("relay.elmt"), 145, 200, QStringLiteral("K1"))
 				+ instance(1, QStringLiteral("relay.elmt"), 445, 200, QStringLiteral("K2"))
-				+ instance(2, QStringLiteral("strip.elmt"), 645, 200, QStringLiteral("X1"))
 				+ instance(3, QStringLiteral("going.elmt"), 845, 200, QString());
-		const QString second = instance(4, QStringLiteral("contact.elmt"), 245, 200, QStringLiteral("KA1"));
+		const QString second = instance(4, QStringLiteral("contact.elmt"), 245, 200, QStringLiteral("KA1"))
+				+ instance(2, QStringLiteral("strip.elmt"), 645, 200, QStringLiteral("X1"));
 
 		const QString sheet = QStringLiteral(
 				"<diagram title=\"Bench %1\" order=\"%1\" folio=\"%1\""
@@ -213,6 +218,25 @@ TEST_CASE("T24 — a component terminal with nothing wired to it",
 	REQUIRE(k1->terminals().size() == 3);
 	REQUIRE(x1->terminals().size() == 2);
 
+	Element *report = nullptr;
+	for (Element *element : k1->diagram()->elements()) {
+		if (element->linkType() & Element::AllReport) {
+			report = element;
+		}
+	}
+	REQUIRE(report);
+	REQUIRE(report->terminals().size() == 1);
+
+	auto wire = [](Terminal *from, Terminal *to) {
+		REQUIRE(from);
+		REQUIRE(to);
+		auto *conductor = new Conductor(from, to);
+		from->diagram()->addItem(conductor);
+		REQUIRE(from->conductorsCount() == 1);
+	};
+	wire(terminalOf(k1, QStringLiteral("A1")), report->terminals().first());
+	wire(terminalOf(ka1, QStringLiteral("13")), terminalOf(x1, QStringLiteral("1")));
+
 	DrcRuleSet rules;
 	DrcScanEngine scan;
 	REQUIRE(DrcTerminalRules::registerRules(rules, scan) == 1);
@@ -227,13 +251,17 @@ TEST_CASE("T24 — a component terminal with nothing wired to it",
 		CHECK(rules.count() == 1);
 	}
 
-	SECTION("every terminal of a component, and none of a strip or a report")
+	SECTION("the free terminals of a wired component, and of nothing else")
 	{
+			//K2 has no wire, and the free terminal of X1 is a strip's
 		const QList<DrcFinding> findings = scan.run(project, rules).findings();
 		CHECK(named(findings) == QStringList({
-			QStringLiteral("K1 ?"), QStringLiteral("K1 A1"), QStringLiteral("K1 A2"),
-			QStringLiteral("K2 ?"), QStringLiteral("K2 A1"), QStringLiteral("K2 A2"),
-			QStringLiteral("KA1 13"), QStringLiteral("KA1 14")}));
+			QStringLiteral("K1 ?"), QStringLiteral("K1 A2"),
+			QStringLiteral("KA1 14")}));
+		CHECK(DrcTerminalRules::isJudged(k1));
+		CHECK(DrcTerminalRules::isJudged(ka1));
+		CHECK_FALSE(DrcTerminalRules::isJudged(x1));
+		CHECK_FALSE(DrcTerminalRules::isJudged(report));
 
 		for (const DrcFinding &finding : findings)
 		{
@@ -245,22 +273,21 @@ TEST_CASE("T24 — a component terminal with nothing wired to it",
 		}
 	}
 
-	SECTION("a wire takes the finding off its two ends, and only them")
+	SECTION("a wire clears its ends, and wakes the component it reaches")
 	{
-		auto *wire = new Conductor(terminalOf(k1, QStringLiteral("A1")),
-					   terminalOf(k2, QStringLiteral("A2")));
-		k1->diagram()->addItem(wire);
-		REQUIRE(terminalOf(k1, QStringLiteral("A1"))->conductorsCount() == 1);
+		wire(terminalOf(k1, QStringLiteral("A2")), terminalOf(k2, QStringLiteral("A1")));
 
 		const QList<DrcFinding> findings = scan.run(project, rules).findings();
 		CHECK(named(findings) == QStringList({
-			QStringLiteral("K1 ?"), QStringLiteral("K1 A2"),
-			QStringLiteral("K2 ?"), QStringLiteral("K2 A1"),
-			QStringLiteral("KA1 13"), QStringLiteral("KA1 14")}));
+			QStringLiteral("K1 ?"),
+			QStringLiteral("K2 ?"), QStringLiteral("K2 A2"),
+			QStringLiteral("KA1 14")}));
 	}
 
 	SECTION("the finding points at the symbol it is on, and at the terminal's cell")
 	{
+		wire(terminalOf(k1, QStringLiteral("A2")), terminalOf(k2, QStringLiteral("A1")));
+
 			//The terminal with no name sits 40 to the right of the
 			//insertion point, in the next column of the border: a rule
 			//that left the position to the engine would write the cell of
@@ -294,7 +321,7 @@ TEST_CASE("T24 — a component terminal with nothing wired to it",
 				CHECK(finding.position() == terminal_cell);
 			}
 		}
-		CHECK(on_k2 == 3);
+		CHECK(on_k2 == 2);
 		CHECK(far_found);
 	}
 
@@ -303,6 +330,6 @@ TEST_CASE("T24 — a component terminal with nothing wired to it",
 		const DrcProjectActions::CheckOutcome outcome =
 				DrcProjectActions::runCheck(project);
 		CHECK(outcome.scan_rules_run == 10);
-		CHECK(named(outcome.findings).size() == 8);
+		CHECK(named(outcome.findings).size() == 3);
 	}
 }
