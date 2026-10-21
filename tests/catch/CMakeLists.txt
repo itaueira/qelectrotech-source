@@ -1209,6 +1209,9 @@ if(TARGET qelectrotech_objects)
         # T75: undo takes back the last move, after a release lost to a
         # menu or a dialog, and in the symbol editor.
         src/ui/undomove_test.cpp
+        # T73: align, distribute and centre on the axis in the symbol
+        # editor, a text by its letters, on a grid of 1.
+        src/ui/editoralign_test.cpp
         # T61: a symbol dropped on a folio of a project numbered 10 or more
         # becomes an element; one that cannot become one says why.
         src/ui/insertsymbolprojectid_test.cpp)

@@ -6466,7 +6466,7 @@ Continuar?</translation>
 <context>
     <name>Diagram</name>
     <message>
-        <location filename="../sources/diagram.cpp" line="3368"/>
+        <location filename="../sources/diagram.cpp" line="3382"/>
         <source>Change the depth</source>
         <translation>Modificar a profundidade</translation>
     </message>
@@ -8014,12 +8014,12 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>DynamicElementTextItem</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="914"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="927"/>
         <source>texte</source>
         <translation>texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1108"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1121"/>
         <source>Déplacer la référence croisée</source>
         <translation>Mover a referência cruzada</translation>
     </message>
@@ -8034,7 +8034,7 @@ Hold Shift and drag to move this text on its own</source>
         <translation>Editar texto do elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1300"/>
+        <location filename="../sources/qetgraphicsitem/dynamicelementtextitem.cpp" line="1313"/>
         <source>Resize an element text</source>
         <translation>Redimensionar um texto de elemento</translation>
     </message>
@@ -8555,7 +8555,7 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>Element</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="2687"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="2691"/>
         <source>Automatically number an element</source>
         <comment>undo caption</comment>
         <translation>Numerar automaticamente um elemento</translation>
@@ -23702,13 +23702,13 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <translation>Inverter</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="946"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="947"/>
         <source>[Modifié]</source>
         <comment>window title tag</comment>
         <translation>[Modificado]</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1360"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1361"/>
         <source>&lt;br&gt;%n borne(s) sans nom : la liste de câblage ne pourra pas les désigner.</source>
         <translation>
             <numerusform>&lt;br&gt;%n terminal sem nome: a lista de fiação não vai poder identificá-lo.</numerusform>
@@ -23716,125 +23716,125 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         </translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1390"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1391"/>
         <source>&lt;b&gt;%1&lt;/b&gt; : %2</source>
         <comment>warning title: warning description</comment>
         <translation>&lt;b&gt;%1&lt;/b&gt;: %2</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="440"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="441"/>
         <source>Éléments déjà posés</source>
         <translation>Elementos já posicionados</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="442"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="443"/>
         <source>Recharger maintenant</source>
         <translation>Renderizar agora</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="443"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="444"/>
         <source>Plus tard</source>
         <translation>Depois</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="600"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="733"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="601"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="734"/>
         <source> mm</source>
         <translation> mm</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="632"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="648"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="676"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="687"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1705"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="633"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="649"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="677"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="688"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1752"/>
         <source>Insérer une image</source>
         <translation>Inserir uma imagem</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="649"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="650"/>
         <source>Images (*.png *.jpg *.jpeg *.svg)</source>
         <translation>Imagens (*.png *.jpg *.jpeg *.svg)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="677"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="678"/>
         <source>Impossible de lire l&apos;image %1.</source>
         <translation>Não é possível ler a imagem %1.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="688"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="689"/>
         <source>L&apos;image pèse %1 Mo, et une copie sera gardée dans chaque projet qui utilise ce symbole. L&apos;insérer quand même ?</source>
         <translation>A imagem pesa %1 MB, e uma cópia será mantida em cada projeto que usa este símbolo. Inserir mesmo assim?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="720"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="721"/>
         <source>Dimensions de l&apos;image</source>
         <translation>Dimensões da imagem</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="722"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="723"/>
         <source>La taille réelle de la pièce, en millimètre. L&apos;image est étirée à ces dimensions, qui restent modifiables ensuite.</source>
         <translation>O tamanho real da peça, em milímetros. A imagem é esticada para essas dimensões, que continuam editáveis depois.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="740"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="741"/>
         <source>Largeur :</source>
         <translation>Largura:</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="741"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="742"/>
         <source>Hauteur :</source>
         <translation>Altura:</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="744"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="745"/>
         <source>Garder les proportions du fichier</source>
         <translation>Manter as proporções do arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="816"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="817"/>
         <source>Dessin 2D de la pièce, en millimètres</source>
         <translation>Desenho 2D da peça, em milímetros</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="942"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="943"/>
         <source>Dessin 2D — %1</source>
         <translation>Desenho 2D — %1</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="943"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="944"/>
         <source>nouvelle pièce</source>
         <translation>nova peça</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1498"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1499"/>
         <source>Enregistrer le dessin 2D ?</source>
         <comment>dialog title</comment>
         <translation>Salvar o desenho 2D?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1499"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1500"/>
         <source>Voulez-vous enregistrer le dessin 2D de la pièce %1 ?</source>
         <translation>Deseja salvar o desenho 2D da peça %1?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1706"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1753"/>
         <source>Insérer la photo de la pièce, ou le dessin de sa fiche technique, dans le dessin 2D, aux dimensions réelles</source>
         <translation>Inserir a foto da peça, ou o desenho da sua folha de dados, no desenho 2D, nas dimensões reais</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1732"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1738"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1779"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1785"/>
         <source> px</source>
         <translation> px</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1940"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1992"/>
         <source>X: %1  Y: %2</source>
         <translation>X: %1  Y: %2</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1946"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1998"/>
         <source>X: %1 mm  Y: %2 mm</source>
         <translation>X: %1 mm  Y: %2 mm</translation>
     </message>
@@ -23864,7 +23864,7 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <translation>Salvar como</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2110"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2162"/>
         <source>Save as</source>
         <comment>dialog title</comment>
         <translation>Salvar como</translation>
@@ -23905,7 +23905,7 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <translation>Partes</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1697"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1744"/>
         <source>Parts</source>
         <comment>toolbar title</comment>
         <translation>Partes</translation>
@@ -23936,7 +23936,7 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <translation>Exportar em SVG</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2174"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2226"/>
         <source>Export as SVG</source>
         <comment>dialog title</comment>
         <translation>Exportar em SVG</translation>
@@ -24083,18 +24083,18 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <translation>Editar as propriedades do elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1593"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1594"/>
         <source>Undo</source>
         <comment>fr: Annuler</comment>
         <translation>Desfazer</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1594"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1595"/>
         <source>Redo</source>
         <translation>Refazer</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1632"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1633"/>
         <source>Depth</source>
         <comment>toolbar title</comment>
         <translation>Profundidade</translation>
@@ -24115,47 +24115,47 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <translation>Restaurar zoom</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1669"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1716"/>
         <source>Add a line</source>
         <translation>Adicionar uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1670"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1717"/>
         <source>Add a rectangle</source>
         <translation>Adicionar um retângulo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1671"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1718"/>
         <source>Add an ellipse</source>
         <translation>Adicionar uma elipse</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1672"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1719"/>
         <source>Add a polygon</source>
         <translation>Adicionar um polígono</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1673"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1720"/>
         <source>Add text</source>
         <translation>Adicionar texto</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1674"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1721"/>
         <source>Add an arc</source>
         <translation>Adicionar um arco</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1675"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1722"/>
         <source>Add a terminal</source>
         <translation>Adicionar um terminal</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1676"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1723"/>
         <source>Add a dynamic text field</source>
         <translation>Adicione um campo de texto dinâmico</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1693"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1740"/>
         <source>Double-click to finish the shape, Right click to cancel the last point</source>
         <translation>Clique duas vezes para completar a forma, clique com o botão direito para cancelar o último ponto</translation>
     </message>
@@ -24180,171 +24180,170 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <translation>Colar a partir de...</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="956"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="957"/>
         <source>[Changed]</source>
         <comment>window title tag</comment>
         <translation>[Modificado]</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="960"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="961"/>
         <source> [Read only]</source>
         <comment>window title tag</comment>
         <translation> [somente leitura]</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1906"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1958"/>
         <source>No modification</source>
         <translation>Sem modificações</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1951"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2003"/>
         <source>Elements Editor</source>
         <comment>status bar message</comment>
         <translation>Editor de elementos</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1273"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1274"/>
         <source>Missing terminal</source>
         <comment>warning title</comment>
         <translation>Sem terminais</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1295"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1296"/>
         <source>Missing terminal</source>
         <translation>Sem terminais</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1274"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1275"/>
         <source>&lt;br&gt;Without terminal, the element can not be connected to other elements via conductors.</source>
         <comment>warning description</comment>
         <translation>&lt;br&gt;Na ausência de terminais, o elemento não poderá ser conectado a outros elementos por meio de fios.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1296"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1297"/>
         <source>&lt;br&gt;&lt;b&gt;Error&lt;/b&gt;:&lt;br&gt;Sheet references must have a single terminal.&lt;br&gt;&lt;b&gt;Solution&lt;/b&gt;:&lt;br&gt;Check that the element has only one terminal</source>
         <translation>&lt;br&gt;&lt;b&gt;Erro&lt;/b&gt;:&lt;br&gt;Os relatórios de folha devem ter um único terminal.&lt;br&gt;&lt;b&gt;Solução&lt;/b&gt;:&lt;br&gt;Verifique se o elemento tem somente um único terminal</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1370"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1371"/>
         <source>The verification of this element generated</source>
         <comment>message box content</comment>
         <translation>A verificação deste elemento gerou</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1378"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1379"/>
         <source> and</source>
         <translation> e</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1397"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1398"/>
         <source>Errors</source>
         <translation>Erros</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1400"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1401"/>
         <source>Warnings</source>
         <translation>Avisos</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="262"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="263"/>
         <source>The file %1 does not exist.</source>
         <comment>message box content</comment>
         <translation>O arquivo %1 não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="101"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="102"/>
         <source>Display</source>
         <comment>menu entry</comment>
         <translation>Exibir</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="268"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2281"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="269"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2333"/>
         <source>Unable to open the file %1.</source>
         <comment>message box content</comment>
         <translation>Não é possível abrir o arquivo %1.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="275"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2286"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="276"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2338"/>
         <source>This file is not a valid XML document</source>
         <comment>message box content</comment>
         <translation>Este arquivo não é um documento XML válido</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="281"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2292"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="282"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2344"/>
         <source>Error</source>
         <comment>toolbar title</comment>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="330"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="396"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="331"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="397"/>
         <source>Error</source>
         <comment>message box title</comment>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="292"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="368"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="293"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="369"/>
         <source>Read only edition</source>
         <comment>message box title</comment>
         <translation>Edição em modo somente de leitura</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="293"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="369"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="294"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="370"/>
         <source>You are not allowed to modify this element. Thus it will be edited read-only.</source>
         <comment>message box content</comment>
         <translation>Você não tem as permissões necessárias para editar este elemento. Portanto ele será aberto em modo somente de leitura.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="331"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="332"/>
         <source>Unable to write to this file</source>
         <comment>message box content</comment>
         <translation>Não é possível escrever neste arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="397"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="398"/>
         <source>Unable to save the element</source>
         <comment>message box content</comment>
         <translation>Não é possível salvar o elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1003"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1004"/>
         <source>Too many primitives, list not generated: %1</source>
         <translation>Primitivas em excesso, lista não gerada: %1</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1315"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1316"/>
         <source>Incorrect number of terminals</source>
         <translation>Número de terminais incorreto</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1316"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1317"/>
         <source>&lt;br&gt;&lt;b&gt;Error&lt;/b&gt;:&lt;br&gt;Conductor definitions can only have one terminal.&lt;br&gt;&lt;b&gt;Solution&lt;/b&gt;:&lt;br&gt;Verify that the element has only one terminal</source>
         <translation>&lt;br&gt;&lt;b&gt;Erro&lt;/b&gt;:&lt;br&gt;Definição de condutor só pode ter um terminal.&lt;br&gt;&lt;b&gt;Solução&lt;/b&gt;:&lt;br&gt;Confira se o elemento tem só um terminal</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1337"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1338"/>
         <source>Duplicate terminal names</source>
         <translation>Nomes de bornes duplicados</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1338"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1339"/>
         <source>&lt;br&gt;&lt;b&gt;Error&lt;/b&gt;:&lt;br&gt;Several terminals have the same name: %1.&lt;br&gt;&lt;b&gt;Solution&lt;/b&gt;:&lt;br&gt;Give each terminal a unique name, for example N.1 and N.2. The terminals concerned are selected.</source>
         <translation>&lt;br&gt;&lt;b&gt;Erro&lt;/b&gt;:&lt;br&gt;Vários bornes têm o mesmo nome: %1.&lt;br&gt;&lt;b&gt;Solução&lt;/b&gt;:&lt;br&gt;Dê um nome único a cada borne, por exemplo N.1 e N.2. Os bornes em questão estão selecionados.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1359"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1360"/>
         <source>Terminals without a name</source>
         <translation>Terminais sem nome</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1597"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1598"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1602"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1599"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1603"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1604"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1605"/>
@@ -24358,197 +24357,314 @@ Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1613"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1614"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1615"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1618"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1616"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1619"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1621"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1620"/>
         <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1622"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1638"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1642"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1646"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1650"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1656"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1661"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1662"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1663"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1664"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1720"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1751"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1623"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1639"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1643"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1647"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1651"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1657"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1691"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1708"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1709"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1710"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1711"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1767"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1798"/>
         <source>Element editors</source>
         <translation>Editor de elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1654"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1655"/>
         <source>Scale the element...</source>
         <translation>Escalar o elemento...</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1694"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1663"/>
+        <source>Align</source>
+        <translation>Alinhar</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1671"/>
+        <source>Align left</source>
+        <translation>Alinhar à esquerda</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1671"/>
+        <source>Aligns the left edges of the selected parts, a text by its first letter</source>
+        <comment>status bar tip</comment>
+        <translation>Alinha as bordas esquerdas das partes selecionadas; um texto, pela primeira letra</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1672"/>
+        <source>Centre horizontally</source>
+        <translation>Centralizar horizontalmente</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1672"/>
+        <source>Aligns the selected parts on one vertical line, a text by the middle of its letters</source>
+        <comment>status bar tip</comment>
+        <translation>Alinha as partes selecionadas em uma mesma vertical; um texto, pelo meio das letras</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1673"/>
+        <source>Align right</source>
+        <translation>Alinhar à direita</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1673"/>
+        <source>Aligns the right edges of the selected parts, a text by its last letter</source>
+        <comment>status bar tip</comment>
+        <translation>Alinha as bordas direitas das partes selecionadas; um texto, pela última letra</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1674"/>
+        <source>Align top</source>
+        <translation>Alinhar ao topo</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1674"/>
+        <source>Aligns the top edges of the selected parts, a text by the top of its capitals</source>
+        <comment>status bar tip</comment>
+        <translation>Alinha as bordas superiores das partes selecionadas; um texto, pelo topo das maiúsculas</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1675"/>
+        <source>Centre vertically</source>
+        <translation>Centralizar verticalmente</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1675"/>
+        <source>Aligns the selected parts on one horizontal line, a text by the middle of its letters</source>
+        <comment>status bar tip</comment>
+        <translation>Alinha as partes selecionadas em uma mesma horizontal; um texto, pelo meio das letras</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1676"/>
+        <source>Align bottom</source>
+        <translation>Alinhar embaixo</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1676"/>
+        <source>Aligns the bottom edges of the selected parts, a text by the line its letters stand on</source>
+        <comment>status bar tip</comment>
+        <translation>Alinha as bordas inferiores das partes selecionadas; um texto, pela linha de base das letras</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1677"/>
+        <source>Distribute vertically</source>
+        <translation>Distribuir na vertical</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1677"/>
+        <source>Spaces the selected parts evenly downwards, the top one staying in place</source>
+        <comment>status bar tip</comment>
+        <translation>Espaça as partes selecionadas por igual para baixo; a de cima fica no lugar</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1678"/>
+        <source>Distribute horizontally</source>
+        <translation>Distribuir na horizontal</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1678"/>
+        <source>Spaces the selected parts evenly to the right, the left one staying in place</source>
+        <comment>status bar tip</comment>
+        <translation>Espaça as partes selecionadas por igual para a direita; a da esquerda fica no lugar</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1679"/>
+        <source>Centre on the vertical axis</source>
+        <translation>Centralizar no eixo vertical</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1679"/>
+        <source>Puts the middle of the selection on the vertical line of the insertion point</source>
+        <comment>status bar tip</comment>
+        <translation>Põe o meio da seleção na vertical do ponto de inserção</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1680"/>
+        <source>Centre on the horizontal axis</source>
+        <translation>Centralizar no eixo horizontal</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1680"/>
+        <source>Puts the middle of the selection on the horizontal line of the insertion point</source>
+        <comment>status bar tip</comment>
+        <translation>Põe o meio da seleção na horizontal do ponto de inserção</translation>
+    </message>
+    <message>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1741"/>
         <source>Add non-editable element text in diagrams</source>
         <translation>Adicionar texto de elemento não editável em diagramas</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1695"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1742"/>
         <source>Add element text that can be edited in diagrams</source>
         <translation>Adicione texto do elemento que pode ser editado em diagramas</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1716"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1763"/>
         <source>Show the background frame</source>
         <translation>Exibir o quadro de fundo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1724"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1771"/>
         <source>Background frame size...</source>
         <translation>Tamanho do quadro de fundo...</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1727"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1774"/>
         <source>Background frame size</source>
         <translation>Tamanho do quadro de fundo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1734"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1781"/>
         <source>Width</source>
         <translation>Largura</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1740"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1787"/>
         <source>Height</source>
         <translation>Altura</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2176"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2228"/>
         <source>SVG image (*.svg)</source>
         <comment>filetypes allowed when exporting an element to SVG</comment>
         <translation>Imagem SVG (*.svg)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2187"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2239"/>
         <source>Export failed</source>
         <translation>Falha na exportação</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2188"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2240"/>
         <source>Unable to write to the file « %1 ».</source>
         <translation>Não foi possível gravar no arquivo « %1 ».</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2373"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2425"/>
         <source>Warning</source>
         <translation>Aviso</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2373"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2425"/>
         <source>Importing a large dxf can take time 
 please wait while importing...</source>
         <translation>A importação de um dxf grande pode levar tempo
 aguarde enquanto importa...</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2415"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2467"/>
         <source>Import an element to resize</source>
         <translation>Importar um elemento para redimensionar</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2417"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2469"/>
         <source>QElectroTech elements (*.elmt)</source>
         <translation>Elementos QElectroTech (*.elmt)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2112"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2164"/>
         <source>QElectroTech elements (*.elmt)</source>
         <comment>filetypes allowed when saving an element file</comment>
         <translation>Elementos QElectroTech (*.elmt)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1440"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1441"/>
         <source>Unable to open file</source>
         <comment>message box title</comment>
         <translation>Não é possível abrir o arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1442"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1443"/>
         <source>It appears the %1 file which you are trying to open does not exist or does not exist anymore.</source>
         <translation>Aparentemente o arquivo %1 que você está tentando abrir não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2237"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2289"/>
         <source>Reload element</source>
         <comment>dialog title</comment>
         <translation>Recarregar o elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2238"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2290"/>
         <source>This element has been modified since last save. If you reload it, these changes will be lost. Do you really want to reload this element?</source>
         <comment>dialog content</comment>
         <translation>Este elemento foi alterado desde que foi salvo pela última vez. Se você recarregar, essas alterações serão perdidas. Você realmente quer recarregar o elemento?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2041"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2071"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2140"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2093"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2123"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2192"/>
         <source>Registration failed</source>
         <translation>Falha ao salvar</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2041"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2071"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2140"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2093"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2123"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2192"/>
         <source>The recording failed,
 the conditions are not valid</source>
         <translation>Falha ao salvar,
 as condições não são válidas</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1511"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1512"/>
         <source>Save current element?</source>
         <comment>dialog title</comment>
         <translation>Salvar o elemento atual?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1513"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1514"/>
         <source>Do you wish to save the element %1?</source>
         <comment>dialog content - %1 is an element name</comment>
         <translation>Deseja salvar o elemento %1?</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="922"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="923"/>
         <source>Open a file</source>
         <comment>dialog title</comment>
         <translation>Abrir um arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="924"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="925"/>
         <source>QElectroTech elements (*.elmt);;XML files (*.xml);;All files (*)</source>
         <comment>filetypes allowed when opening an element file</comment>
         <translation>Elementos QElectroTech (*.elmt);;Arquivos XML (*.xml);;Todos arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="345"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="351"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2307"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2313"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="346"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="352"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2359"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2365"/>
         <source>Non-existent element.</source>
         <comment>message box title</comment>
         <translation>Elemento inexistente.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="352"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2314"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="353"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2366"/>
         <source>The element does not exist.</source>
         <comment>message box content</comment>
         <translation>Este elemento não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="346"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2308"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="347"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2360"/>
         <source>The chosen virtual path does not match an element.</source>
         <comment>message box content</comment>
         <translation>O caminho virtual escolhido não corresponde a um elemento.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1041"/>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1197"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1042"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1198"/>
         <source>%n selected parts.</source>
         <translation>
             <numerusform>%n parte selecionada.</numerusform>
@@ -24556,7 +24672,7 @@ as condições não são válidas</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1373"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1374"/>
         <source> %n errors</source>
         <comment>errors</comment>
         <translation>
@@ -24565,7 +24681,7 @@ as condições não são válidas</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1380"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="1381"/>
         <source> %n Warnings</source>
         <comment>warnings</comment>
         <translation>
@@ -25452,8 +25568,8 @@ O que você deseja fazer?</translation>
         <translation>Coleção</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="511"/>
-        <location filename="../sources/elementsmover.cpp" line="514"/>
+        <location filename="../sources/elementsmover.cpp" line="524"/>
+        <location filename="../sources/elementsmover.cpp" line="527"/>
         <source>Affecter les composants d&apos;une zone</source>
         <translation>Atribuir os componentes de uma zona</translation>
     </message>
@@ -25482,7 +25598,7 @@ O que você deseja fazer?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="209"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1604"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2044"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3382"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3386"/>
         <source>Type</source>
         <translation>Tipo</translation>
     </message>
@@ -26639,7 +26755,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
     </message>
     <message>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="316"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="793"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="797"/>
         <source>Warning: the element has been saved with a more recent version of QElectroTech.</source>
         <translation>Aviso: o elemento foi salvo por uma versão mais recente do QElectroTech.</translation>
     </message>
@@ -26798,7 +26914,7 @@ the translated name of this folder could not be read, so its folder name is disp
         <translation>Projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="188"/>
+        <location filename="../sources/elementsmover.cpp" line="201"/>
         <source>This group cannot be moved: the position of one of its elements is locked.</source>
         <translation>Este grupo não pode ser movido: a posição de um de seus elementos está travada.</translation>
     </message>
@@ -27023,7 +27139,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="210"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1605"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2045"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3383"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3387"/>
         <source>Address</source>
         <translation>Endereço</translation>
     </message>
@@ -27031,7 +27147,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="212"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1607"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2047"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3385"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3389"/>
         <location filename="../sources/qetinformation.cpp" line="460"/>
         <source>Annotation</source>
         <translation>Comentário</translation>
@@ -27040,7 +27156,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="213"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1608"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2048"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3386"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3390"/>
         <location filename="../sources/qetinformation.cpp" line="527"/>
         <source>Cross-reference</source>
         <translation>Ref. cruzada</translation>
@@ -27049,7 +27165,7 @@ Deseja substituí-lo?</translation>
         <location filename="../sources/editor/graphicspart/partplctable.cpp" line="211"/>
         <location filename="../sources/factory/elementpicturefactory.cpp" line="1606"/>
         <location filename="../sources/qetgraphicsitem/crossrefitem.cpp" line="2046"/>
-        <location filename="../sources/qetgraphicsitem/element.cpp" line="3384"/>
+        <location filename="../sources/qetgraphicsitem/element.cpp" line="3388"/>
         <location filename="../sources/qetinformation.cpp" line="461"/>
         <location filename="../sources/qetinformation.cpp" line="478"/>
         <source>Function</source>
@@ -27482,7 +27598,7 @@ Deseja substituí-lo?</translation>
         <translation>Abra um elemento</translation>
     </message>
     <message>
-        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2366"/>
+        <location filename="../sources/editor/ui/qetelementeditor.cpp" line="2418"/>
         <source>Import a dxf file</source>
         <translation>Importar um arquivo dxf</translation>
     </message>
@@ -27737,6 +27853,15 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>Modificar o borne de reserva %1</translation>
     </message>
     <message numerus="yes">
+        <location filename="../sources/editor/UndoCommand/alignpartscommand.cpp" line="186"/>
+        <source>Centre %n items on the axis of the symbol</source>
+        <translation>
+            <numerusform>Centralizar %n objeto no eixo do símbolo</numerusform>
+            <numerusform>Centralizar %n objetos no eixo do símbolo</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../sources/editor/UndoCommand/alignpartscommand.cpp" line="188"/>
         <location filename="../sources/undocommand/alignselectioncommand.cpp" line="270"/>
         <source>Distribute %n items</source>
         <translation>
@@ -27745,6 +27870,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         </translation>
     </message>
     <message numerus="yes">
+        <location filename="../sources/editor/UndoCommand/alignpartscommand.cpp" line="190"/>
         <location filename="../sources/undocommand/alignselectioncommand.cpp" line="307"/>
         <source>Align %n items</source>
         <translation>
@@ -27991,7 +28117,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Coleção da empresa</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/elementsmover.cpp" line="453"/>
+        <location filename="../sources/elementsmover.cpp" line="466"/>
         <source>Add %n conductors</source>
         <comment>add a numbers of conductor one or more</comment>
         <translation>

@@ -782,6 +782,10 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/editor/ui/qetelementeditor.h
   ${QET_DIR}/sources/editor/ui/qetelementeditor.cpp
 
+  ${QET_DIR}/sources/editor/UndoCommand/alignpartscommand.cpp
+  ${QET_DIR}/sources/editor/UndoCommand/alignpartscommand.h
+  ${QET_DIR}/sources/editor/partletters.cpp
+  ${QET_DIR}/sources/editor/partletters.h
   ${QET_DIR}/sources/editor/UndoCommand/pastepartscommand.cpp
   ${QET_DIR}/sources/editor/UndoCommand/pastepartscommand.h
   ${QET_DIR}/sources/editor/UndoCommand/openelmtcommand.cpp

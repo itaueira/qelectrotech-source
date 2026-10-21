@@ -43,6 +43,7 @@
 #include "../esevent/eseventaddterminal.h"
 #include "../esevent/eseventadddynamictextfield.h"
 #include "../../elementdialog.h"
+#include "../UndoCommand/alignpartscommand.h"
 #include "../graphicspart/partterminal.h"
 #include "../graphicspart/partimage.h"
 #include "../terminalnamecheck.h"
@@ -1656,6 +1657,52 @@ void QETElementEditor::setupActions()
 	ShortcutManager::instance().registerAction(m_scale_element_action, "elementeditor.scale_element", tr("Element editors"), QKeySequence());
 	connect(m_scale_element_action, &QAction::triggered, this, &QETElementEditor::scaleElement);
 
+		//Align, distribute and centre on the axis of the symbol (T73), with
+		//the names the folio gives the first two. A text lines up by its
+		//letters, and not by its box (AlignPartsCommand)
+	QMenu *align_menu = ui->m_edit_menu->addMenu(tr("Align"));
+	const struct {
+		AlignPartsCommand::Mode mode;
+		const char *id;
+		const QIcon *icon;
+		QString text;
+		QString tip;
+	} align_actions[] = {
+		{AlignPartsCommand::AlignLeft,    "align_left",    &QET::Icons::AlignLeft,    tr("Align left"),          tr("Aligns the left edges of the selected parts, a text by its first letter", "status bar tip")},
+		{AlignPartsCommand::AlignHCenter, "align_hcenter", &QET::Icons::AlignHCenter, tr("Centre horizontally"), tr("Aligns the selected parts on one vertical line, a text by the middle of its letters", "status bar tip")},
+		{AlignPartsCommand::AlignRight,   "align_right",   &QET::Icons::AlignRight,   tr("Align right"),         tr("Aligns the right edges of the selected parts, a text by its last letter", "status bar tip")},
+		{AlignPartsCommand::AlignTop,     "align_top",     &QET::Icons::AlignTop,     tr("Align top"),           tr("Aligns the top edges of the selected parts, a text by the top of its capitals", "status bar tip")},
+		{AlignPartsCommand::AlignVCenter, "align_vcenter", &QET::Icons::AlignVCenter, tr("Centre vertically"),   tr("Aligns the selected parts on one horizontal line, a text by the middle of its letters", "status bar tip")},
+		{AlignPartsCommand::AlignBottom,  "align_bottom",  &QET::Icons::AlignBottom,  tr("Align bottom"),        tr("Aligns the bottom edges of the selected parts, a text by the line its letters stand on", "status bar tip")},
+		{AlignPartsCommand::DistributeVertical,   "distribute_vertical",   nullptr, tr("Distribute vertically"),   tr("Spaces the selected parts evenly downwards, the top one staying in place", "status bar tip")},
+		{AlignPartsCommand::DistributeHorizontal, "distribute_horizontal", nullptr, tr("Distribute horizontally"), tr("Spaces the selected parts evenly to the right, the left one staying in place", "status bar tip")},
+		{AlignPartsCommand::CentreOnVerticalAxis,   "centre_vertical_axis",   nullptr, tr("Centre on the vertical axis"),   tr("Puts the middle of the selection on the vertical line of the insertion point", "status bar tip")},
+		{AlignPartsCommand::CentreOnHorizontalAxis, "centre_horizontal_axis", nullptr, tr("Centre on the horizontal axis"), tr("Puts the middle of the selection on the horizontal line of the insertion point", "status bar tip")}
+	};
+	for (const auto &a : align_actions)
+	{
+		if (a.mode == AlignPartsCommand::DistributeVertical
+			|| a.mode == AlignPartsCommand::CentreOnVerticalAxis) {
+			align_menu->addSeparator();
+		}
+		QAction *action = a.icon ? new QAction(*a.icon, a.text, this) : new QAction(a.text, this);
+		action->setStatusTip(a.tip);
+		ShortcutManager::instance().registerAction(action, QStringLiteral("elementeditor.") + QLatin1String(a.id),
+							   tr("Element editors"), QKeySequence());
+		align_menu->addAction(action);
+		m_align_actions << qMakePair(action, AlignPartsCommand::partsNeeded(a.mode));
+		const AlignPartsCommand::Mode mode = a.mode;
+		connect(action, &QAction::triggered, this, [this, mode]() {
+				//One step, and none when nothing moves
+			auto *command = new AlignPartsCommand(elementScene(), mode);
+			if (command->childCount()) {
+				elementScene()->undoStack().push(command);
+			} else {
+				delete command;
+			}
+		});
+	}
+
 
 		//Zoom action
 	ShortcutManager::instance().registerAction(ui->m_zoom_in_action, "elementeditor.zoom_in", tr("Element editors"), QKeySequence::ZoomIn);
@@ -1789,6 +1836,11 @@ void QETElementEditor::updateAction()
 	auto items_selected = !m_read_only && has_selection && !adding_part;
 	for (auto action : std::as_const(select_list)) {
 		action->setEnabled(items_selected);
+	}
+		//Aligning and distributing take two parts, centring one (T73)
+	const int align_parts = AlignPartsCommand::partCount(m_active_scene);
+	for (const auto &align : std::as_const(m_align_actions)) {
+		align.first->setEnabled(!m_read_only && !adding_part && align_parts >= align.second);
 	}
 
 		//Copying only reads the element -- ElementScene::copy() serialises the

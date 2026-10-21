@@ -201,6 +201,10 @@ class QETElementEditor : public QMainWindow
 			*m_undo_action = nullptr,
 			*m_redo_action = nullptr;
 
+			/// Align, distribute and centre on the axis (T73), each with
+			/// how many parts it needs to be enabled
+		QList<QPair<QAction *, int>> m_align_actions;
+
 
 			/// Hash associating primitive names with their matching edition widget
 		QHash<QString, ElementItemEditor *> m_editors;

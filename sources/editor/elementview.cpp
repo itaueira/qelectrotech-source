@@ -553,7 +553,10 @@ void ElementView::drawBackground(QPainter *p, const QRectF &r) {
 	const bool draw_grid = grid.draw_grid;
 	const bool draw_cross = grid.draw_cross;
 
-	m_scene->setGrid(grid_step, grid_step);
+		//The step drawn follows the zoom; the step parts land on does not,
+		//and stays at the 1 the scene starts with (T73). Snapped to the
+		//step drawn, nothing came closer than 10 at the usual zoom, and a
+		//text was never centred on the symbol.
 
 	if (draw_grid) {
 		// draw the dots of the grid
