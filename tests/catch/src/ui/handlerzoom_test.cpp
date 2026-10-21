@@ -60,28 +60,34 @@ namespace
 
 TEST_CASE("CU-76.1 — A handle is drawn smaller when zoomed out", "[T76][handle]")
 {
-	const int full = greenPixels(1.0);
+		//Its full size, at 300%: where the person who asked found it right
+	const int full = greenPixels(3.0);
 	CAPTURE(full);
 		//The fixture is what it says: the handle is drawn at all
 	REQUIRE(full > 30);
 
-	SECTION("at 50%, about a quarter of its surface")
+	SECTION("at 100%, the zoom one works at, much smaller")
 	{
-		const int half = greenPixels(0.5);
-		CAPTURE(half);
-		CHECK(half < full * 0.5);
-		CHECK(half > 0);
+			//The first version shrank it only below 100%, and at the
+			//zoom of the report, about 95%, nothing was seen to change
+		const int usual = greenPixels(1.0);
+		CAPTURE(usual);
+		CHECK(usual < full * 0.35);
+		CHECK(usual > 0);
 	}
-	SECTION("at 20%, no smaller than at 40%: still seen")
+	SECTION("between, in proportion")
 	{
-		const int fifth = greenPixels(0.2);
-		const int two_fifths = greenPixels(0.4);
-		CAPTURE(fifth, two_fifths);
-		CHECK(fifth > 0);
-		CHECK(fifth == two_fifths);
+		const int between = greenPixels(1.75);
+		CAPTURE(between, greenPixels(1.0));
+		CHECK(between < full);
+		CHECK(between > greenPixels(1.0));
 	}
-	SECTION("zoomed in, as it always was")
+	SECTION("further out, no smaller than at 100%: still seen")
 	{
-		CHECK(greenPixels(3.0) == full);
+		CHECK(greenPixels(0.3) == greenPixels(1.0));
+	}
+	SECTION("from 250% up, as it always was")
+	{
+		CHECK(greenPixels(2.5) == full);
 	}
 }

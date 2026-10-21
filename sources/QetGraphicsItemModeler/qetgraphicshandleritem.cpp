@@ -81,13 +81,16 @@ void QetGraphicsHandlerItem::paint(QPainter *painter,
 	painter->save();
 		//Smaller with the drawing when it is zoomed out: at a fixed size on
 		//screen, a handle covered a symbol drawn smaller than itself
-		//(decision of 20/10/2026). Down to 40%, so that it is still seen;
-		//never larger than it was. Only what is drawn: the place to take it
-		//(boundingRect()) keeps its size, as easy to take as before.
+		//(decision of 20/10/2026). Its full size at 250% and up, where a
+		//text of the usual size 5 is tall enough beside it; in proportion
+		//below, down to 40%, reached at 100%, so that it is still seen.
+		//Shrinking only below 100% left it whole at the zoom one works at,
+		//and nothing was seen to change. Only what is drawn: the place to
+		//take it (boundingRect()) keeps its size, as easy to take as before.
 	if (const auto *view = widget ? qobject_cast<const QGraphicsView *>(widget->parentWidget())
 				       : nullptr) {
-		const qreal zoom = qBound(0.4, view->transform().m11(), 1.0);
-		painter->scale(zoom, zoom);
+		const qreal scale = qBound(0.4, view->transform().m11() / 2.5, 1.0);
+		painter->scale(scale, scale);
 	}
 	painter->setBrush(QBrush(m_color));
 	QPen pen(QBrush(m_color),
