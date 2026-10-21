@@ -316,7 +316,7 @@ TEST_CASE("T24 — folha com título ou autor em branco: um achado por folha, na
 		}
 	}
 
-	SECTION("a lista é configuração: pedir também a revisão e um campo do usuário acusa a revisão, e não o campo que o projeto preenche")
+	SECTION("a lista é configuração: a revisão que o carimbo não mostra não é acusada")
 	{
 		DrcRuleSet custom_rules;
 		DrcScanEngine custom_scan;
@@ -329,6 +329,11 @@ TEST_CASE("T24 — folha com título ou autor em branco: um achado por folha, na
 			//Folio 2 carries its own client field, blank; the project's
 			//value shows through it, and that is what the sheet prints.
 		REQUIRE(drawn(untitled, "client") == QStringLiteral("Customer A"));
+			//And the revision index is blank on three folios, but the
+			//title block of all four has no cell for it: no printed sheet
+			//shows it empty, and it is not asked for (P139). The list
+			//asks, the template of each folio decides.
+		REQUIRE(drawn(untitled, "indexrev").isEmpty());
 
 		const DrcScanReport report = custom_scan.run(project, custom_rules);
 		const QList<DrcFinding> findings = report.findingsOf(rule);
@@ -337,17 +342,14 @@ TEST_CASE("T24 — folha com título ou autor em branco: um achado por folha, na
 
 		CHECK(findings.at(0).diagram() == untitled);
 		CHECK(findings.at(0).text()
-		      == DrcTitleBlock::emptyFieldsText(
-			      {QStringLiteral("title"), QStringLiteral("indexrev")}));
+		      == DrcTitleBlock::emptyFieldsText({QStringLiteral("title")}));
 		CHECK(findings.at(1).diagram() == unsigned_sheet);
 		CHECK(findings.at(1).text()
-		      == DrcTitleBlock::emptyFieldsText(
-			      {QStringLiteral("author"), QStringLiteral("indexrev")}));
+		      == DrcTitleBlock::emptyFieldsText({QStringLiteral("author")}));
 		CHECK(findings.at(2).diagram() == blank);
 		CHECK(findings.at(2).text()
 		      == DrcTitleBlock::emptyFieldsText(
-			      {QStringLiteral("title"), QStringLiteral("author"),
-			       QStringLiteral("indexrev")}));
+			      {QStringLiteral("title"), QStringLiteral("author")}));
 
 			//Folio 1 has a revision index and the project's client: the
 			//longer list finds nothing more on it than the factory one.
