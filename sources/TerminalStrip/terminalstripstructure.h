@@ -162,6 +162,10 @@ int maximumLevelCount(const TerminalStripStructure &structure);
 	costs somebody a bridge they can still make by hand, while bridging
 	automatically across a diode asserts a connection nobody asked for and
 	that the schematic then shows as fact.
+
+	The five types added later - anti-parallel diodes, resistor, varistor,
+	test socket and reversed diode - are not through either, by the same
+	asymmetry, the test socket included: decided, and written one case each.
 */
 bool isThroughTerminalType(ElementData::TerminalType type);
 

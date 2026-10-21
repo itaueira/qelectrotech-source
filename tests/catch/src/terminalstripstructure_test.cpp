@@ -115,6 +115,15 @@ TEST_CASE("T33 — o que interrompe o borne por dentro decide se ele é passante
 		CHECK_FALSE(isThroughTerminalType(ElementData::TTSectional));
 		CHECK_FALSE(isThroughTerminalType(ElementData::TTDiode));
 	}
+
+	SECTION("os cinco tipos do upstream não são ponteados, por decisão (P138)")
+	{
+		CHECK_FALSE(isThroughTerminalType(ElementData::TTAntiParallelDiodes));
+		CHECK_FALSE(isThroughTerminalType(ElementData::TTResistor));
+		CHECK_FALSE(isThroughTerminalType(ElementData::TTVaristor));
+		CHECK_FALSE(isThroughTerminalType(ElementData::TTTestSocket));
+		CHECK_FALSE(isThroughTerminalType(ElementData::TTDiodeReversed));
+	}
 }
 
 TEST_CASE("T33 — bornes vizinhos no mesmo fio viram uma ponte só",

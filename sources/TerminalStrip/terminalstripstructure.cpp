@@ -87,8 +87,8 @@ int maximumLevelCount(const TerminalStripStructure &structure)
 	@sa the declaration, for what each type does to the wire crossing it.
 
 	Written as a switch over every value with no default branch, so that a
-	terminal type added later fails to compile here instead of quietly
-	inheriting the answer given to the generic one.
+	terminal type added later is warned about here (-Wswitch) instead of
+	quietly inheriting the answer given to the generic one.
 */
 bool isThroughTerminalType(ElementData::TerminalType type)
 {
@@ -103,6 +103,21 @@ bool isThroughTerminalType(ElementData::TerminalType type)
 		case ElementData::TTSectional:
 			return false;
 		case ElementData::TTDiode:
+			return false;
+			//Decided, and not fallen into: none of the five is bridged.
+			//Four have a part in the way of the current - diodes, a
+			//resistor, a varistor - as the diode above; and a test socket
+			//is not bridged either, as a refused bridge is still made by
+			//hand, while a bridge drawn says a link nobody asked for
+		case ElementData::TTAntiParallelDiodes:
+			return false;
+		case ElementData::TTResistor:
+			return false;
+		case ElementData::TTVaristor:
+			return false;
+		case ElementData::TTTestSocket:
+			return false;
+		case ElementData::TTDiodeReversed:
 			return false;
 	}
 
