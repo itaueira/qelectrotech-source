@@ -13794,9 +13794,9 @@ Por favor, use o editor avançado para isso.</translation>
     </message>
     <message>
         <location filename="../sources/ui/inditextpropertieswidget.ui" line="192"/>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="421"/>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="460"/>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="509"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="441"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="480"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="529"/>
         <source>Font</source>
         <translation>Fonte</translation>
     </message>
@@ -13806,58 +13806,58 @@ Por favor, use o editor avançado para isso.</translation>
         <translation>Clique aqui para cancelar a formatação html</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="197"/>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="202"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="217"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="222"/>
         <source>Move a text field</source>
         <translation>Mover um campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="207"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="227"/>
         <source>Rotate a text field</source>
         <translation>Girar um campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="211"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="231"/>
         <source>Edit the text field</source>
         <translation>Editar um campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="217"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="237"/>
         <source>Change the size of a text field</source>
         <translation>Alterar o tamanho de um campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="222"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="242"/>
         <source>Change the font of a text field</source>
         <translation>Alterar a fonte de um campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="226"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="246"/>
         <source>Change the width of a text field</source>
         <translation>Modificar a largura de um campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="266"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="286"/>
         <source>Rotate multiple text fields</source>
         <translation>Girar vários campos de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="281"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="301"/>
         <source>Change the size of multiple text fields</source>
         <translation>Alterar o tamanho de vários campos de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="297"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="317"/>
         <source>Change the font of several text fields</source>
         <translation>Alterar a fonte de vários campos de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="311"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="331"/>
         <source>Change the width of several text fields</source>
         <translation>Modificar a largura de vários campos de texto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="323"/>
+        <location filename="../sources/ui/inditextpropertieswidget.cpp" line="343"/>
         <source>Modify the properties of a text</source>
         <translation>Editar as propriedades de um texto</translation>
     </message>
@@ -17613,6 +17613,25 @@ Deseja vincular este contato escravo mesmo assim?</translation>
         <location filename="../sources/newelementwizard.cpp" line="235"/>
         <source>An element with the same name already exists</source>
         <translation>Um elemento com o mesmo nome já existe</translation>
+    </message>
+</context>
+<context>
+    <name>NoPrintBox</name>
+    <message>
+        <location filename="../sources/ui/noprintbox.cpp" line="36"/>
+        <location filename="../sources/ui/noprintbox.cpp" line="78"/>
+        <source>Do not print</source>
+        <translation>Não imprimir</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/noprintbox.cpp" line="38"/>
+        <source>On screen only: left out of print, PDF and export.</source>
+        <translation>Só na tela: fica fora da impressão, do PDF e da exportação.</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/noprintbox.cpp" line="77"/>
+        <source>Print</source>
+        <translation>Imprimir</translation>
     </message>
 </context>
 <context>
@@ -28436,7 +28455,7 @@ nada foi modificado.</translation>
     <name>QetShapeItem</name>
     <message>
         <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="74"/>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1124"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1128"/>
         <source>Add a point</source>
         <translation>Adicionar um ponto</translation>
     </message>
@@ -28446,343 +28465,343 @@ nada foi modificado.</translation>
         <translation>Excluir este ponto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1815"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1819"/>
         <source>Add a point to a polygon</source>
         <translation>Adicionar um ponto a um polígono</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1849"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1853"/>
         <source>Delete a point from a polygon</source>
         <translation>Excluir um ponto de um polígono</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3018"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3022"/>
         <source>Edit %1</source>
         <translation>Editar %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3385"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3409"/>
         <source>a line</source>
         <translation>uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3386"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3410"/>
         <source>rectangle</source>
         <translation>um retângulo</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3387"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3411"/>
         <source>an ellipse</source>
         <translation>uma elipse</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3388"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3412"/>
         <source>polyline</source>
         <translation>uma linha poligonal</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3390"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3414"/>
         <source>an shape</source>
         <translation>uma forma</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="923"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="927"/>
         <source>Deform a curve</source>
         <translation>Deformar uma curva</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1128"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1132"/>
         <source>Nearest node</source>
         <translation>Nó mais próximo</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1129"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1133"/>
         <source>Smooth</source>
         <translation>Suave</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1130"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1134"/>
         <source>Symmetric</source>
         <translation>Simétrico</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1131"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1135"/>
         <source>Corner</source>
         <translation>Anguloso</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1150"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1154"/>
         <source>Delete the nearest node</source>
         <translation>Excluir o nó mais próximo</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1167"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1171"/>
         <source>Convert to polyline</source>
         <translation>Converter em polilinha</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1167"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1171"/>
         <source>Convert to Bézier curve</source>
         <translation>Converter em curva de Bézier</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1180"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1184"/>
         <source>Horizontal mirror</source>
         <translation>Espelhar horizontalmente</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1182"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1186"/>
         <source>Vertical mirror</source>
         <translation>Espelhar verticalmente</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1257"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1261"/>
         <source>Size</source>
         <translation>Tamanho</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1258"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1262"/>
         <source>Rounded corners</source>
         <translation>Cantos arredondados</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1259"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1263"/>
         <source>Node editing</source>
         <translation>Edição de nós</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1260"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1264"/>
         <source>Rotation/Skew</source>
         <translation>Rotação/Inclinação</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1278"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1282"/>
         <source>Click: mode %1</source>
         <translation>Clique: modo %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1358"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1362"/>
         <source>Drag a corner/edge: resize (Ctrl = from center, Shift = proportions, Alt = detach into a polyline)</source>
         <translation>Arraste um canto/borda: redimensionar (Ctrl = a partir do centro, Shift = proporções, Alt = separar em polilinha)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1361"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1365"/>
         <source> ; turquoise point: arc</source>
         <translation> ; ponto turquesa: arco</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1365"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1369"/>
         <source>Drag an endpoint: move it</source>
         <translation>Arraste uma extremidade: movê-la</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1369"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1373"/>
         <source>Drag a point: move it</source>
         <translation>Arraste um ponto: movê-lo</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1374"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1378"/>
         <source>Drag the purple point: round the corners</source>
         <translation>Arraste o ponto roxo: arredondar os cantos</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1378"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1382"/>
         <source>Drag a handle or the curve: deform (Alt = break the tangent); Alt+drag a corner point: create handles; right click: nearest node menu</source>
         <translation>Arraste uma alça ou a curva: deformar (Alt = quebrar a tangente); Alt+arrastar um ponto anguloso: criar alças; clique direito: menu do nó mais próximo</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1388"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1392"/>
         <source>an endpoint</source>
         <translation>uma extremidade</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1389"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1393"/>
         <source>a corner</source>
         <translation>um canto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1390"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1394"/>
         <source>a point</source>
         <translation>um ponto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1391"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1395"/>
         <source>Drag %1: rotation (Shift = 15°)</source>
         <translation>Arrastar %1: rotação (Shift = 15°)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1393"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1397"/>
         <source> ; an edge: skew</source>
         <translation> ; uma borda: inclinação</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1394"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1398"/>
         <source> ; red point: drag to reposition the rotation center</source>
         <translation> ; ponto vermelho: arraste para reposicionar o centro de rotação</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1406"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1410"/>
         <source> (Ctrl while dragging = free position, no grid snapping)</source>
         <translation> (Ctrl durante o arraste = posição livre, sem ajuste à grade)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1407"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1411"/>
         <source> — Click: mode %1</source>
         <translation> — Clique: modo %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1437"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1441"/>
         <source>Drag: move this point</source>
         <translation>Arraste: mover este ponto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1438"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1442"/>
         <source>Drag: resize (Ctrl = from center + free position, Shift = proportions</source>
         <translation>Arraste: redimensionar (Ctrl = a partir do centro + posição livre, Shift = proporções</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1440"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1444"/>
         <source>, Alt = detach into a polyline</source>
         <translation>, Alt = separar em polilinha</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1445"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1449"/>
         <source>Drag: rotation (Ctrl = free position, Shift = 15°)</source>
         <translation>Arraste: rotação (Ctrl = posição livre, Shift = 15°)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1447"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1451"/>
         <source>Drag: skew (Ctrl = free position, Shift = 15°)</source>
         <translation>Arraste: inclinação (Ctrl = posição livre, Shift = 15°)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1449"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1453"/>
         <source>Drag: reposition the rotation center (Ctrl = free position)</source>
         <translation>Arraste: reposicionar o centro de rotação (Ctrl = posição livre)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1451"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1455"/>
         <source>Drag: round the corners (Ctrl = free position)</source>
         <translation>Arraste: arredondar os cantos (Ctrl = posição livre)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1453"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1457"/>
         <source>Drag: adjust the arc (Ctrl = free position, Shift = 15°)</source>
         <translation>Arraste: ajustar o arco (Ctrl = posição livre, Shift = 15°)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1455"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1459"/>
         <source>Drag: deepen or flatten the arc, its ends stay in place (Ctrl = free position)</source>
         <translation>Arraste: aprofundar ou achatar o arco, as extremidades ficam no lugar (Ctrl = posição livre)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1458"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1462"/>
         <source>Drag: move the point (Ctrl = free position</source>
         <translation>Arraste: mover o ponto (Ctrl = posição livre</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1460"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1464"/>
         <source>, Alt = create handles</source>
         <translation>, Alt = criar alças</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1466"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="1470"/>
         <source>Drag: deform the curve (Ctrl = free position, Alt = break the tangent)</source>
         <translation>Arraste: deformar a curva (Ctrl = posição livre, Alt = quebrar a tangente)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2017"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2021"/>
         <source>Add a point to a curve</source>
         <translation>Adicionar um ponto a uma curva</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2046"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2050"/>
         <source>Delete a point from a curve</source>
         <translation>Excluir um ponto de uma curva</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2137"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2141"/>
         <source>Convert %1 to a Bézier curve</source>
         <translation>Converter %1 em curva de Bézier</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2138"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2142"/>
         <source>Convert %1 to a polyline</source>
         <translation>Converter %1 em polilinha</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2325"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2329"/>
         <source>Mirror not possible: skew too extreme for this shape</source>
         <translation>Espelhamento impossível: inclinação extrema demais para esta forma</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2340"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2344"/>
         <source>Horizontal mirror of %1</source>
         <translation>Espelhamento horizontal de %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2340"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2344"/>
         <source>Vertical mirror of %1</source>
         <translation>Espelhamento vertical de %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2413"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2417"/>
         <source>Change the type of a node</source>
         <translation>Alterar o tipo de um nó</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2895"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2899"/>
         <source>Resize %1</source>
         <translation>Redimensionar %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2902"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2906"/>
         <source>Rotate %1</source>
         <translation>Girar %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2912"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2916"/>
         <source>Skew %1</source>
         <translation>Inclinar %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2918"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2922"/>
         <source>Move the rotation center</source>
         <translation>Mover o centro de rotação</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2934"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2938"/>
         <source>Round the corners of %1</source>
         <translation>Arredondar os cantos de %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2957"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2961"/>
         <source>Change the angle of an arc</source>
         <translation>Alterar o ângulo de um arco</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2963"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2967"/>
         <source>Change the curve of an arc</source>
         <translation>Alterar a curvatura de um arco</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2974"/>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2989"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2978"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="2993"/>
         <source>Change the shape of %1</source>
         <translation>Alterar a forma de %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3003"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3007"/>
         <source>Change the curvature of %1</source>
         <translation>Alterar a curvatura de %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3387"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3411"/>
         <source>an arc</source>
         <translation>um arco</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3389"/>
+        <location filename="../sources/qetgraphicsitem/qetshapeitem.cpp" line="3413"/>
         <source>a curve</source>
         <translation>uma curva</translation>
     </message>
@@ -30464,33 +30483,33 @@ Os outros campos não são utilizados.</translation>
         <translation>Travar a posição</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.h" line="50"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.h" line="51"/>
         <source>Edit the properties of a primitive </source>
         <translation>Editar as propriedades de uma primitiva </translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="236"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="244"/>
         <source>Edit line of a form</source>
         <translation>Editar a linha de um formulário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="252"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="260"/>
         <source>Edit filling a form</source>
         <translation>Editar o preenchimento de um formulário</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="264"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="272"/>
         <source>Close the polygon</source>
         <translation>Fechar o polígono</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="320"/>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="352"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="328"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="360"/>
         <source>Modify a simple form</source>
         <translation>Edite uma forma simples</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="364"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="372"/>
         <source>Modify the properties of a simple form</source>
         <translation>Modifica as propriedades de uma forma simples</translation>
     </message>
@@ -30501,13 +30520,13 @@ Os outros campos não são utilizados.</translation>
     </message>
     <message>
         <location filename="../sources/ui/shapegraphicsitempropertieswidget.ui" line="26"/>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="442"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="450"/>
         <source>Width</source>
         <translation>Largura</translation>
     </message>
     <message>
         <location filename="../sources/ui/shapegraphicsitempropertieswidget.ui" line="46"/>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="443"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="451"/>
         <source>Height</source>
         <translation>Altura</translation>
     </message>
@@ -30517,32 +30536,32 @@ Os outros campos não são utilizados.</translation>
         <translation>Forma fechada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="183"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="191"/>
         <source>Change the length of a line</source>
         <translation>Alterar o comprimento de uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="202"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="210"/>
         <source>Change the size of a shape</source>
         <translation>Alterar o tamanho de uma forma</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="215"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="223"/>
         <source>Change the angle of a shape</source>
         <translation>Alterar o ângulo de uma forma</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="433"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="441"/>
         <source>Length</source>
         <translation>Comprimento</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="442"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="450"/>
         <source>X radius</source>
         <translation>Raio X</translation>
     </message>
     <message>
-        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="443"/>
+        <location filename="../sources/ui/shapegraphicsitempropertieswidget.cpp" line="451"/>
         <source>Y radius</source>
         <translation>Raio Y</translation>
     </message>

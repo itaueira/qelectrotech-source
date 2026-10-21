@@ -762,6 +762,9 @@ if(TARGET qelectrotech_objects)
         src/ui/pdfoutline_test.cpp
         # Printing and PDF in black and white (T37).
         src/ui/monochrome_test.cpp
+        # A free shape or text marked not to print: on screen, and not on the
+        # paper, in the PDF or in the DXF (T37, step 5).
+        src/ui/noprint_test.cpp
         # T63, step 1: a dark sheet color of the user's own makes the ink
         # light on screen; the PDF of the print window does not change.
         src/ui/darksheet_test.cpp

@@ -24,6 +24,7 @@ namespace Ui {
 	class ShapeGraphicsItemPropertiesWidget;
 }
 
+class NoPrintBox;
 class QetShapeItem;
 
 /**
@@ -54,6 +55,7 @@ class ShapeGraphicsItemPropertiesWidget : public PropertiesEditorWidget
 	private:
 		void setUpEditConnection();
 		void clearEditConnection();
+		void addNoPrintBox();
 
 	private slots:
 		void on_m_lock_pos_cb_clicked();
@@ -61,6 +63,7 @@ class ShapeGraphicsItemPropertiesWidget : public PropertiesEditorWidget
 	private:
 		Ui::ShapeGraphicsItemPropertiesWidget *ui;
 		QetShapeItem *m_shape;
+		NoPrintBox *m_no_print = nullptr;
 		QList <QPointer<QetShapeItem>> m_shapes_list;
 		QList <QMetaObject::Connection> m_connect_list,
 										m_edit_connection;

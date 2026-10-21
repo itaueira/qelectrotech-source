@@ -23,6 +23,7 @@
 #include "../lastusedstyle.h"
 #include "../qetgraphicsitem/independenttextitem.h"
 #include "../ui_inditextpropertieswidget.h"
+#include "noprintbox.h"
 
 #include <QLineEdit>
 #include <QtGlobal>
@@ -48,6 +49,7 @@ IndiTextPropertiesWidget::IndiTextPropertiesWidget(IndependentTextItem *text, QW
 	ui(new Ui::IndiTextPropertiesWidget)
 {
 	ui->setupUi(this);
+	addNoPrintBox();
 	if (text) {
 		setText(text);
 	}
@@ -65,7 +67,20 @@ IndiTextPropertiesWidget::IndiTextPropertiesWidget(
 	ui(new Ui::IndiTextPropertiesWidget)
 {
 	ui->setupUi(this);
+	addNoPrintBox();
 	setText(text_list);
+}
+
+/**
+	@brief IndiTextPropertiesWidget::addNoPrintBox
+	The "Do not print" box, on a row of its own under the others. It writes
+	its own step to the undo stack when clicked.
+*/
+void IndiTextPropertiesWidget::addNoPrintBox()
+{
+	m_no_print = new NoPrintBox(this);
+	ui->gridLayout->addWidget(m_no_print, ui->gridLayout->rowCount(), 0,
+				  1, ui->gridLayout->columnCount());
 }
 
 /**
@@ -96,6 +111,7 @@ void IndiTextPropertiesWidget::setText(IndependentTextItem *text)
 	m_connect_list << connect(m_text.data(), &IndependentTextItem::fontChanged, this, &IndiTextPropertiesWidget::updateUi);
 	m_connect_list << connect(m_text.data(), &IndependentTextItem::textEdited, this, &IndiTextPropertiesWidget::updateUi);
 	m_connect_list << connect(m_text.data(), &IndependentTextItem::textWidthChanged, this, &IndiTextPropertiesWidget::updateUi);
+	m_no_print->setItems({m_text.data()});
 
 	updateUi();
 }
@@ -110,6 +126,7 @@ void IndiTextPropertiesWidget::setText(QList<IndependentTextItem *> text_list)
 	m_text = nullptr;
 	
 	if (text_list.size() == 0) {
+		m_no_print->setItems({});
 		updateUi();
 	}
 	else if (text_list.size() == 1) 
@@ -119,9 +136,12 @@ void IndiTextPropertiesWidget::setText(QList<IndependentTextItem *> text_list)
 	}
 	else
 	{
+		QList<QGraphicsObject *> marked;
 		for (IndependentTextItem *iti : text_list) {
 			m_text_list.append(QPointer<IndependentTextItem>(iti));
+			marked << iti;
 		}
+		m_no_print->setItems(marked);
 		updateUi();
 	}
 }

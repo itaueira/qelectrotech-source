@@ -684,7 +684,11 @@ void QetShapeItem::paint(
 		QWidget *widget)
 {
 	Q_UNUSED(option)
-	Q_UNUSED(widget)
+
+		//Printed or exported, the folio is drawn with no widget
+	if (!widget && !m_printable) {
+		return;
+	}
 
 	painter->save();
 	painter->setRenderHint(QPainter::Antialiasing, true);
@@ -3042,6 +3046,21 @@ void QetShapeItem::handlerMouseReleaseEvent(int handlerIndex)
 	@param e element where is stored this item
 	@return true if load success
 */
+/**
+	@brief QetShapeItem::setPrintable
+	@param printable : false to show the shape on screen only, and leave
+	it out of print, PDF and export
+*/
+void QetShapeItem::setPrintable(bool printable)
+{
+	if (printable == m_printable) {
+		return;
+	}
+	m_printable = printable;
+	update();
+	emit printableChanged();
+}
+
 bool QetShapeItem::fromXml(const QDomElement &e)
 {
 	if (e.tagName() != "shape") return (false);
@@ -3061,6 +3080,7 @@ bool QetShapeItem::fromXml(const QDomElement &e)
 
 	is_movable_ = (e.attribute("is_movable").toInt());
 	m_closed = e.attribute("closed", "0").toInt();
+	setPrintable(e.attribute(QStringLiteral("printable")) != QLatin1String("false"));
 	m_pen = QETXML::penFromXml(e.firstChildElement("pen"));
 	m_brush = QETXML::brushFromXml(e.firstChildElement("brush"));
 
@@ -3185,6 +3205,10 @@ QDomElement QetShapeItem::toXml(QDomDocument &document) const
 	result.appendChild(QETXML::brushToXml(document, m_brush));
 	result.setAttribute("is_movable", bool(is_movable_));
 	result.setAttribute("closed", bool(m_closed));
+		//Only when false, so a shape that prints is saved as before
+	if (!m_printable) {
+		result.setAttribute(QStringLiteral("printable"), QStringLiteral("false"));
+	}
 
 	if (m_shapeType != Polygon && m_shapeType != Path)
 	{

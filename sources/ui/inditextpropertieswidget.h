@@ -22,6 +22,7 @@
 
 #include <QPointer>
 class IndependentTextItem;
+class NoPrintBox;
 
 namespace Ui {
 	class IndiTextPropertiesWidget;
@@ -54,10 +55,12 @@ class IndiTextPropertiesWidget : public PropertiesEditorWidget
 		private:
 		void setUpEditConnection();
 		void updateUi() override;
+		void addNoPrintBox();
 		
 	private:
 		Ui::IndiTextPropertiesWidget *ui;
 		QPointer <IndependentTextItem> m_text;
+		NoPrintBox *m_no_print = nullptr;
 		QList <QPointer<IndependentTextItem>> m_text_list;
 		QList <QMetaObject::Connection> m_connect_list,
 										m_edit_connection;

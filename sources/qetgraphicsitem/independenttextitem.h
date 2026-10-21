@@ -31,11 +31,15 @@ class IndependentTextItem : public DiagramTextItem
 	Q_OBJECT
 
 	Q_PROPERTY(qreal textWidth READ textWidth WRITE setTextWidth NOTIFY textWidthChanged)
+	// False for a note of the drawing office: shown on screen, left out of
+	// print, PDF and export. Saved with the text, only when false.
+	Q_PROPERTY(bool printable READ isPrintable WRITE setPrintable NOTIFY printableChanged)
 		
 		// constructors, destructor
 	signals:
 		void uuidChanged();
 		void textWidthChanged(qreal width);
+		void printableChanged();
 
 	public:
 		IndependentTextItem();
@@ -60,6 +64,13 @@ class IndependentTextItem : public DiagramTextItem
 			//"textWidth" property.
 		qreal textWidth() const {return m_text_width;}
 		void setTextWidth(qreal width);
+
+		bool isPrintable() const {return m_printable;}
+		void setPrintable(bool printable);
+
+		void paint(QPainter *painter,
+			   const QStyleOptionGraphicsItem *option,
+			   QWidget *widget) override;
 		
 	protected:
 		void focusOutEvent(QFocusEvent *event) override;
@@ -71,5 +82,6 @@ class IndependentTextItem : public DiagramTextItem
 
 		QUuid m_uuid = QUuid::createUuid();
 		qreal m_text_width = -1;
+		bool m_printable = true;
 };
 #endif

@@ -103,6 +103,7 @@ void IndependentTextItem::fromXml(const QDomElement &e) {
 		//kind older versions know (they show such a text unwrapped).
 		//Read after the text, setHtml() sets a width of its own.
 	setTextWidth(e.attribute(QStringLiteral("text_width"), QStringLiteral("-1")).toDouble());
+	setPrintable(e.attribute(QStringLiteral("printable")) != QLatin1String("false"));
 }
 
 /**
@@ -121,8 +122,41 @@ QDomElement IndependentTextItem::toXml(QDomDocument &document) const
 		//Only when set, so a text with the automatic width is saved as before
 	if (m_text_width > 0)
 		result.setAttribute("text_width", QString::number(m_text_width));
+		//Only when false, so a text that prints is saved as before
+	if (!m_printable)
+		result.setAttribute(QStringLiteral("printable"), QStringLiteral("false"));
 	
 	return(result);
+}
+
+/**
+	@brief IndependentTextItem::setPrintable
+	@param printable : false to show the text on screen only, and leave it
+	out of print, PDF and export
+*/
+void IndependentTextItem::setPrintable(bool printable)
+{
+	if (printable == m_printable) {
+		return;
+	}
+	m_printable = printable;
+	update();
+	emit printableChanged();
+}
+
+/**
+	@brief IndependentTextItem::paint
+	As any text, but not at all on a folio printed or exported - drawn with
+	no widget - when the text is marked not to print.
+*/
+void IndependentTextItem::paint(QPainter *painter,
+				const QStyleOptionGraphicsItem *option,
+				QWidget *widget)
+{
+	if (!widget && !m_printable) {
+		return;
+	}
+	DiagramTextItem::paint(painter, option, widget);
 }
 
 /**

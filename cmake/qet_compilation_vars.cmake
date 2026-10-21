@@ -1200,6 +1200,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ui/jumptoelementdialog.h
   ${QET_DIR}/sources/ui/navigatechoicedialog.cpp
   ${QET_DIR}/sources/ui/navigatechoicedialog.h
+  ${QET_DIR}/sources/ui/noprintbox.cpp
+  ${QET_DIR}/sources/ui/noprintbox.h
   ${QET_DIR}/sources/ui/assemblychangemarks.cpp
   ${QET_DIR}/sources/ui/assemblychangemarks.h
   ${QET_DIR}/sources/ui/assemblywalk.cpp

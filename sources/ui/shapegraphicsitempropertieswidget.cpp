@@ -23,6 +23,7 @@
 #include "../lastusedstyle.h"
 #include "../qetgraphicsitem/qetshapeitem.h"
 #include "../ui_shapegraphicsitempropertieswidget.h"
+#include "noprintbox.h"
 
 #include <QHash>
 
@@ -38,6 +39,7 @@ ShapeGraphicsItemPropertiesWidget::ShapeGraphicsItemPropertiesWidget(QetShapeIte
 	m_shape(nullptr)
 {
 	ui->setupUi(this);
+	addNoPrintBox();
 	setItem(item);
 }
 
@@ -46,6 +48,7 @@ ShapeGraphicsItemPropertiesWidget::ShapeGraphicsItemPropertiesWidget(QList<QetSh
 	ui(new Ui::ShapeGraphicsItemPropertiesWidget)
 {
 	ui->setupUi(this);
+	addNoPrintBox();
 	setItems(items_list);
 }
 
@@ -73,6 +76,7 @@ void ShapeGraphicsItemPropertiesWidget::setItem(QetShapeItem *shape)
 	}
 
 	m_shape = shape;
+	m_no_print->setItems({shape});
 	ui->m_close_polygon->setVisible(m_shape->shapeType() == QetShapeItem::Polygon
 			|| m_shape->shapeType() == QetShapeItem::Path);
 	ui->m_filling_gb->setHidden(m_shape->shapeType() == QetShapeItem::Line);
@@ -93,6 +97,7 @@ void ShapeGraphicsItemPropertiesWidget::setItems(QList<QetShapeItem *> shapes_li
 	m_shape = nullptr;
 
 	if (shapes_list.isEmpty()) {
+		m_no_print->setItems({});
 		updateUi();
 	}
 	else if (shapes_list.size() == 1)
@@ -101,9 +106,12 @@ void ShapeGraphicsItemPropertiesWidget::setItems(QList<QetShapeItem *> shapes_li
 	}
 	else
 	{
+		QList<QGraphicsObject *> marked;
 		for (QetShapeItem *shape : shapes_list) {
 			m_shapes_list.append(QPointer<QetShapeItem>(shape));
+			marked << shape;
 		}
+		m_no_print->setItems(marked);
 		updateUi();
 	}
 	setUpEditConnection();
@@ -614,6 +622,19 @@ void ShapeGraphicsItemPropertiesWidget::clearEditConnection()
 		disconnect(c);
 	}
 	m_edit_connection.clear();
+}
+
+/**
+	@brief ShapeGraphicsItemPropertiesWidget::addNoPrintBox
+	The "Do not print" box, under the other two boxes. It writes its own
+	step to the undo stack when clicked, as the lock box acts at once.
+*/
+void ShapeGraphicsItemPropertiesWidget::addNoPrintBox()
+{
+	m_no_print = new NoPrintBox(this);
+	ui->verticalLayout->insertWidget(
+				ui->verticalLayout->indexOf(ui->m_close_polygon) + 1,
+				m_no_print);
 }
 
 void ShapeGraphicsItemPropertiesWidget::on_m_lock_pos_cb_clicked()

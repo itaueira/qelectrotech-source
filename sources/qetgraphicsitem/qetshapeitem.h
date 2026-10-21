@@ -69,6 +69,9 @@ class QetShapeItem : public QetGraphicsItem
 
 	Q_PROPERTY(qreal startAngle READ startAngle WRITE setStartAngle NOTIFY arcChanged)
 	Q_PROPERTY(qreal endAngle READ endAngle WRITE setEndAngle NOTIFY arcChanged)
+	// False for a note of the drawing office: shown on screen, left out of
+	// print, PDF and export. Saved with the shape, only when false.
+	Q_PROPERTY(bool printable READ isPrintable WRITE setPrintable NOTIFY printableChanged)
 
 	signals:
 		void penChanged();
@@ -78,6 +81,7 @@ class QetShapeItem : public QetGraphicsItem
 		void YRadiusChanged();
 		void transformChanged();
 		void arcChanged();
+		void printableChanged();
 		void geometryChanged();
 		void uuidChanged();   // P1/P2, polygon points, or path nodes changed -- lets the properties panel stay in sync while a handle is dragged, not just when it's typed into
 
@@ -157,6 +161,8 @@ class QetShapeItem : public QetGraphicsItem
 		void setPen(const QPen &pen);
 		QBrush brush() const {return m_brush;}
 		void setBrush(const QBrush &brush);
+		bool isPrintable() const {return m_printable;}
+		void setPrintable(bool printable);
 		ShapeType shapeType() const {return m_shapeType;}
 
 		virtual bool	    fromXml (const QDomElement &);
@@ -327,6 +333,7 @@ class QetShapeItem : public QetGraphicsItem
 		QPolygonF	 m_polygon, m_old_polygon;
 		bool		 m_hovered;
 		int		 m_vector_index;
+		bool		 m_printable = true;
 		bool		 m_closed = false,
 				 m_modifie_radius_equaly = false;
 		QVector<QetGraphicsHandlerItem *> m_handler_vector;

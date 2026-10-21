@@ -360,6 +360,12 @@ void DxfExport::write(Diagram *diagram, int width, int height,
 		if (ShownKinds::isHidden(qgi)) {
 			continue;
 		}
+			//Left out like in print: a free shape or text marked not to print
+		if (const QVariant printable = qgi->toGraphicsObject()
+				? qgi->toGraphicsObject()->property("printable") : QVariant();
+		    printable.isValid() && !printable.toBool()) {
+			continue;
+		}
 		if (Element *elmt = qgraphicsitem_cast<Element *>(qgi)) {
 			list_elements << elmt;
 		} else if (Conductor *f = qgraphicsitem_cast<Conductor *>(qgi)) {
