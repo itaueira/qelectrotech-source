@@ -159,8 +159,14 @@ QString IecStructure::toFullTag() const
 	if (!plant.isEmpty()) {
 		tag += QLatin1Char('=') + plant;
 	}
-	if (!location.isEmpty()) {
-		tag += QLatin1Char('+') + location;
+	if (!location.isEmpty())
+	{
+		// The same for the location: one typed as "+QCM" in the free
+		// field the project calls its location must not become "++QCM",
+		// on the label nor on the folio
+		tag += location.startsWith(QLatin1Char('+'))
+		       ? location
+		       : QLatin1Char('+') + location;
 	}
 	if (!product.isEmpty())
 	{

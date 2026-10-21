@@ -115,6 +115,12 @@ TEST_CASE("CU-10.4 — court ou complet change l'affichage, pas la donnée", "[i
 				     QStringLiteral("-K3"));
 	CHECK(with_dash.toFullTag() == QStringLiteral("=CT1+A1-K3"));
 	CHECK(with_dash.toShortTag() == QStringLiteral("-K3"));
+
+	// Nor a location already carrying its plus a second one (P141).
+	const IecStructure with_plus(QStringLiteral("CT1"),
+				     QStringLiteral("+QCM"),
+				     QStringLiteral("K3"));
+	CHECK(with_plus.toFullTag() == QStringLiteral("=CT1+QCM-K3"));
 }
 
 TEST_CASE("CU-10.5 — allumer la structure en cours de route ne perd aucun repère", "[iec]")
