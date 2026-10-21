@@ -589,3 +589,49 @@ TEST_CASE("T43 — the properties dock grows to its editors when the window has 
 	QApplication::processEvents();
 	CHECK(dock->height() == kept);
 }
+
+TEST_CASE("T43 — the empty properties dock shrinks to its title, and gets its height back",
+	  "[t43][xref]")
+{
+		//Asked by the designer on 2026-10-21 (P151), as the upstream does
+		//since #1566: nothing selected, the room goes to the docks around;
+		//something selected again, the dock has the height it was given.
+		//The scroll area of the dock must not stand in the way
+	Bench bench;
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.prepare());
+	MasterElement *k1 = coil(bench.project.diagram(0));
+	REQUIRE(k1 != nullptr);
+
+	QMainWindow window;
+	window.setCentralWidget(new QWidget);
+	auto dock = new PropertiesEditorDockWidget(&window);
+	auto below = new QDockWidget(QStringLiteral("below"), &window);
+	auto filler = new QWidget;
+	filler->setMinimumHeight(150);
+	below->setWidget(filler);
+	window.addDockWidget(Qt::RightDockWidgetArea, dock);
+	window.addDockWidget(Qt::RightDockWidgetArea, below);
+	window.resize(900, 900);
+	window.show();
+	QApplication::processEvents();
+
+	REQUIRE(dock->addEditor(new ElementPropertiesWidget(k1)));
+	QApplication::processEvents();
+	QApplication::processEvents();
+	const int with_editor = dock->height();
+	REQUIRE(with_editor > 200);
+
+	dock->clear();
+	QApplication::processEvents();
+	QApplication::processEvents();
+	INFO("with an editor " << with_editor << ", empty " << dock->height());
+	CHECK(dock->height() < with_editor / 4);
+	CHECK(below->height() > filler->minimumHeight());
+
+	REQUIRE(dock->addEditor(new ElementPropertiesWidget(k1)));
+	QApplication::processEvents();
+	QApplication::processEvents();
+	INFO("back " << dock->height());
+	CHECK(qAbs(dock->height() - with_editor) <= 2);
+}

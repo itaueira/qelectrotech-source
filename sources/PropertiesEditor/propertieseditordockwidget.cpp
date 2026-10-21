@@ -47,6 +47,7 @@ PropertiesEditorDockWidget::PropertiesEditorDockWidget(QWidget *parent) :
 	scroll_area->setWidgetResizable(true);
 	scroll_area->setWidget(ui->dockWidgetContents);
 	setWidget(scroll_area);
+	fitToEditors();
 }
 
 /**
@@ -77,6 +78,7 @@ void PropertiesEditorDockWidget::clear()
 	}
 
 	m_editor_list.clear();
+	fitToEditors();
 }
 
 /**
@@ -118,6 +120,7 @@ bool PropertiesEditorDockWidget::addEditor(PropertiesEditorWidget *editor,
 	const bool was_empty = m_editor_list.isEmpty();
 	ui -> m_main_vlayout -> insertWidget(index, editor);
 	m_editor_list << editor;
+	fitToEditors();
 	if (was_empty)
 		restoreHeight();
 		//Once the editor is laid out, what it asks for is known; after the
@@ -225,8 +228,26 @@ bool PropertiesEditorDockWidget::removeEditor(PropertiesEditorWidget *editor)
 	bool result = m_editor_list.removeOne(editor);
 	if (result)
 		ui -> m_main_vlayout -> removeWidget(editor);
+	fitToEditors();
 
 	return result;
+}
+
+/**
+	@brief PropertiesEditorDockWidget::fitToEditors
+	Let the dock shrink to its title bar while it has no editor, so that
+	the other docks of its area take the room (#1566). The upstream does it
+	with the maximum size of the layout of the editors; here they are in a
+	scroll area, which has a height of its own whatever it holds, so the
+	scroll area is the one given no height while it is empty - and any
+	height again when an editor comes, before restoreHeight() gives the
+	docks of the area the heights they had.
+*/
+void PropertiesEditorDockWidget::fitToEditors()
+{
+	if (QWidget *area = widget()) {
+		area->setMaximumHeight(m_editor_list.isEmpty() ? 0 : QWIDGETSIZE_MAX);
+	}
 }
 
 /**
