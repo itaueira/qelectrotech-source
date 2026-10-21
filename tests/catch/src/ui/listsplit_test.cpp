@@ -300,7 +300,7 @@ TEST_CASE("T16 — apagar a primeira ou a última divisão também junta a lista
 	}
 }
 
-TEST_CASE("T16 — a lista que perdeu uma divisão continua inteira depois de gravar e reabrir",
+TEST_CASE("T16 — a lista sem uma divisão continua inteira ao reabrir",
 	  "[uibench][t16][listsplit]")
 {
 	UiBench::ScratchProject bench(fixtureXml(), QStringLiteral("listsave.qet"));
@@ -309,6 +309,10 @@ TEST_CASE("T16 — a lista que perdeu uma divisão continua inteira depois de gr
 
 	const SplitList list = splitList(bench);
 	deleteTheWayTheFolioDoes(list.parts.at(1));
+		//Whole before it is saved: a list that does not fit its parts
+		//raises a modal warning when the project opens, and with no
+		//screen nobody answers it - the case would hang instead of failing
+	REQUIRE(shown(list.parts.at(0)) + shown(list.parts.at(2)) == everyLabel());
 	REQUIRE(bench.saveAndReopen());
 
 	QList<QetGraphicsTableItem *> parts;
