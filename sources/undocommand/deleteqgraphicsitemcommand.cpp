@@ -86,23 +86,23 @@ DeleteQGraphicsItemCommand::DeleteQGraphicsItemCommand(
 	m_removed_contents.m_texts_groups.clear();
 	setPotentialsOfRemovedElements();
 
-		//Get all linkeds table of removed table.
+		//A table on its own goes as it is. A part of a list split over
+		//several folios goes alone: the parts before and after it are
+		//joined, and one of them takes over its rows, so that the list
+		//still shows every row - instead of the whole list leaving every
+		//folio, which is what deleting one part used to do.
 	for (auto table : m_removed_contents.m_tables)
 	{
-			//Table is already managed, jump to next loop
-		if (m_table_scene_hash.contains(table))
+		if (!table) {
 			continue;
-
-		auto first_table  = table; //The first table if the table is linked to another
-		while(first_table->previousTable())
-			first_table = first_table->previousTable();
-		auto current_table = first_table;
-
-		m_table_scene_hash.insert(first_table, first_table->scene());
-		while (current_table->nextTable())
-		{
-			current_table = current_table->nextTable();
-			m_table_scene_hash.insert(current_table, current_table->scene());
+		}
+		if (table->previousTable() || table->nextTable()) {
+			TableCut cut;
+			cut.table = table;
+			cut.scene = table->scene();
+			m_table_cuts << cut;
+		} else {
+			m_table_scene_hash.insert(table, table->scene());
 		}
 	}
 
@@ -353,6 +353,16 @@ void DeleteQGraphicsItemCommand::undo()
 			m_table_scene_hash.value(table)->addItem(table);
 		}
 	}
+		//In the reverse order of redo(): each part back between the
+		//neighbours it had when it was taken out
+	for (int i = m_table_cuts.size() - 1 ; i >= 0 ; --i)
+	{
+		const TableCut &cut = m_table_cuts.at(i);
+		if (!cut.scene.isNull()) {
+			cut.scene->addItem(cut.table);
+		}
+		cut.table->putBackIntoChain(cut.place);
+	}
 
 		//Back on the sheet and linked again: the cables which run over
 		//this report claim their wire on the other side once more.
@@ -410,6 +420,13 @@ void DeleteQGraphicsItemCommand::redo()
 	{
 		if (!m_table_scene_hash.value(table).isNull()) {
 			m_table_scene_hash.value(table)->removeItem(table);
+		}
+	}
+	for (TableCut &cut : m_table_cuts)
+	{
+		cut.place = cut.table->takeOutOfChain();
+		if (!cut.scene.isNull()) {
+			cut.scene->removeItem(cut.table);
 		}
 	}
 

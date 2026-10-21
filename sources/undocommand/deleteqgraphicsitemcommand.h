@@ -19,6 +19,7 @@
 #define DELETEQGRAPHICSITEMCOMMAND_H
 
 #include "../diagramcontent.h"
+#include "../qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
 
 #include <QHash>
 #include <QUndoCommand>
@@ -26,7 +27,6 @@
 class Diagram;
 class ElementTextItemGroup;
 class Terminal;
-class QetGraphicsTableItem;
 class QGraphicsScene;
 
 class DeleteQGraphicsItemCommand : public QUndoCommand
@@ -54,6 +54,15 @@ class DeleteQGraphicsItemCommand : public QUndoCommand
 		QHash <DynamicElementTextItem *, ElementTextItemGroup *> m_grp_texts_hash; ///Keep the parent group of each deleted element text item
 		QList <std::pair<Terminal *, Terminal *>> m_connected_terminals;
 		QHash <QetGraphicsTableItem *, QPointer<QGraphicsScene>> m_table_scene_hash;
+			/// A part of a list split over several folios: taken out of the
+			/// list, its neighbours joined and its rows handed over
+		struct TableCut
+		{
+			QetGraphicsTableItem *table = nullptr;
+			QPointer<QGraphicsScene> scene;
+			QetGraphicsTableItem::ChainPlace place;
+		};
+		QList<TableCut> m_table_cuts;
 		bool m_remove_linked_table = false;
 };
 

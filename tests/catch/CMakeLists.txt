@@ -1189,6 +1189,9 @@ if(TARGET qelectrotech_objects)
         # CU-16.13: undoing the deletion of a component brings it back to the
         # list on the folio, in one step.
         src/ui/listundo_test.cpp
+        # A list split over three folios, one part deleted and undone: the
+        # neighbours joined and the list whole (T16, step 10).
+        src/ui/listsplit_test.cpp
         # CU-31.6: the cross references follow a contact moved to another folio,
         # and folios renumbered.
         src/ui/xreffollow_test.cpp

@@ -82,6 +82,23 @@ class QetGraphicsTableItem : public QetGraphicsItem
 		int displayedRowCount() const;
 		QPointer<QetGraphicsTableItem> previousTable() const;
 		QPointer<QetGraphicsTableItem> nextTable() const;
+
+			/**
+				Where a table stood in a list split over several folios,
+				and what taking it out changed: putBackIntoChain() needs
+				it to put everything back as it was.
+			*/
+		struct ChainPlace
+		{
+			QPointer<QetGraphicsTableItem> previous;
+			QPointer<QetGraphicsTableItem> next;
+				/// The neighbour that took over the rows, and its count before
+			QPointer<QetGraphicsTableItem> receiver;
+			int receiver_rows = 0;
+		};
+		ChainPlace takeOutOfChain();
+		void putBackIntoChain(const ChainPlace &place);
+
 		void setToMinimumHeight();
 		void initLink();
 		bool hasPendingLink() const {return !m_pending_previous_table_uuid.isNull();}

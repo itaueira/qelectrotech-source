@@ -611,6 +611,80 @@ QPointer<QetGraphicsTableItem> QetGraphicsTableItem::nextTable() const
 }
 
 /**
+	@brief QetGraphicsTableItem::takeOutOfChain
+	Take this table out of the list it is a part of: the tables before and
+	after it are joined to each other, and the rows it showed are handed
+	to a neighbour, so that the list still shows every row it showed.
+	The neighbour is the table before it, or the one after it when this
+	one was the first. A last table that showed all the rest leaves the
+	one before it showing all the rest.
+
+	The links are set directly, and not through setPreviousTable() and
+	setNextTable(): those copy the model into a table left without a
+	previous one, and the table taken out keeps the model of the list,
+	which the project owns.
+	@return what putBackIntoChain() needs to undo it
+*/
+QetGraphicsTableItem::ChainPlace QetGraphicsTableItem::takeOutOfChain()
+{
+	ChainPlace place;
+	place.previous = m_previous_table;
+	place.next = m_next_table;
+	place.receiver = m_previous_table ? m_previous_table : m_next_table;
+	if (!place.receiver) {
+		return place;
+	}
+	place.receiver_rows = place.receiver->m_number_of_row_to_display;
+
+	int rows = place.receiver_rows;
+	if (m_number_of_row_to_display <= 0 && !m_next_table) {
+		rows = 0;
+	} else if (rows > 0 && m_number_of_row_to_display > 0) {
+		rows += m_number_of_row_to_display;
+	}
+
+	QetGraphicsTableItem *previous = m_previous_table.data();
+	QetGraphicsTableItem *next = m_next_table.data();
+	m_previous_table.clear();
+	m_next_table.clear();
+	if (previous) {
+		previous->m_next_table = next;
+	}
+	if (next) {
+		next->m_previous_table = previous;
+	}
+
+		//Sizes the receiver and every table after it
+	place.receiver->setDisplayNRow(rows);
+	return place;
+}
+
+/**
+	@brief QetGraphicsTableItem::putBackIntoChain
+	Undo takeOutOfChain(): the table between the same two neighbours, and
+	the rows of the one that took them over as they were.
+	@param place : what takeOutOfChain() returned
+*/
+void QetGraphicsTableItem::putBackIntoChain(const ChainPlace &place)
+{
+	m_previous_table = place.previous;
+	m_next_table = place.next;
+	if (place.previous) {
+		place.previous->m_next_table = this;
+	}
+	if (place.next) {
+		place.next->m_previous_table = this;
+	}
+	if (place.receiver) {
+		place.receiver->m_number_of_row_to_display = place.receiver_rows;
+	}
+
+		//From the first table it touches, every height again
+	QetGraphicsTableItem *first = place.previous ? place.previous.data() : this;
+	first->previousTableDisplayRowChanged();
+}
+
+/**
 	@brief QetGraphicsTableItem::setToMinimumHeight
 	Set the height to the the minimum.
 	The width stay unchanged.
