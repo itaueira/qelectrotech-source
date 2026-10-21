@@ -210,6 +210,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/wiresections.cpp
   ${QET_DIR}/sources/wirenames.h
   ${QET_DIR}/sources/wirenames.cpp
+  ${QET_DIR}/sources/wireremoval.h
+  ${QET_DIR}/sources/wireremoval.cpp
   ${QET_DIR}/sources/symbolterminals.h
   ${QET_DIR}/sources/symbolterminals.cpp
   ${QET_DIR}/sources/conductortextfit.h

@@ -37,6 +37,7 @@
 #include "../../../../sources/ui/conductorpropertieseditorwidget.h"
 #include "../../../../sources/wirecolorname.h"
 #include "../../../../sources/wirenames.h"
+#include "../../../../sources/wireremoval.h"
 
 #include <catch2/catch.hpp>
 
@@ -1616,4 +1617,162 @@ TEST_CASE("CU-78.7 — A name typed on a wire left out stays", "[T78][wirenames]
 	CHECK(textOf(a) == wireName(1, 1, "1"));
 	CHECK(textOf(c) == wireName(1, 2));
 	CHECK(countOf(one) == QLatin1String("2"));
+}
+
+/*
+	The wires of the project, or of a folio, removed at once to draw them
+	again (T79): every wire but the ones left out of the numbering and those
+	of a panel marked as built, in one undo step.
+*/
+namespace
+{
+		/// The wires of twoFolios(): three on the first folio, one on the second
+	struct FourWires
+	{
+		QList<Conductor *> first;
+		Conductor *second = nullptr;
+	};
+
+	FourWires fourWires(Bench &bench)
+	{
+		FourWires wires;
+		wires.first = threeNamed(bench);
+		wires.second = drawBetween(bench, 6, 7);
+		return wires;
+	}
+
+	int elementsOf(const Bench &bench)
+	{
+		int count = 0;
+		for (Diagram *folio : bench.project.diagrams()) {
+			count += folio->elements().size();
+		}
+		return count;
+	}
+}
+
+TEST_CASE("CU-79.1 — The wires of the whole project go", "[T79][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	const FourWires wires = fourWires(bench);
+	REQUIRE(wires.first.size() == 3);
+	REQUIRE(wires.second != nullptr);
+	const int elements = elementsOf(bench);
+	REQUIRE(elements > 0);
+
+	const WireRemoval::Count count = WireRemoval::removeWires(project, project->diagrams());
+	CHECK(count.removed == 4);
+	CHECK(count.left_out == 0);
+	CHECK(count.frozen == 0);
+	CHECK(bench.project.diagram(0)->conductors().isEmpty());
+	CHECK(bench.project.diagram(1)->conductors().isEmpty());
+	CHECK(elementsOf(bench) == elements);
+}
+
+TEST_CASE("CU-79.2 — The wires of this folio only", "[T79][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	const FourWires wires = fourWires(bench);
+	REQUIRE(wires.second != nullptr);
+
+	const WireRemoval::Count count = WireRemoval::removeWires(project, {bench.project.diagram(0)});
+	CHECK(count.removed == 3);
+	CHECK(bench.project.diagram(0)->conductors().isEmpty());
+	CHECK(bench.project.diagram(1)->conductors().size() == 1);
+}
+
+TEST_CASE("CU-79.3 — A wire left out and a wire of a panel built stay", "[T79][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *one = bench.project.diagram(0);
+	const QList<Conductor *> wires = threeNamed(bench);
+	Conductor *built = wires.value(0);
+	Conductor *left_out = wires.value(1);
+	REQUIRE((built && left_out && wires.value(2)));
+
+	AssemblyState state;
+	state.stage = AssemblyStage::Assembled;
+	state.conductors.insert(built->uuid().toString(), textOf(built));
+	bench.stack().push(new AssemblyStateCommand(project, state));
+	leaveOut(bench.stack(), {left_out});
+
+	const WireRemoval::Count count = WireRemoval::removeWires(project, {one});
+	CHECK(count.removed == 1);
+	CHECK(count.left_out == 1);
+	CHECK(count.frozen == 1);
+	const QList<Conductor *> kept = one->conductors();
+	CHECK(kept.size() == 2);
+	CHECK(kept.contains(built));
+	CHECK(kept.contains(left_out));
+}
+
+TEST_CASE("CU-79.4 — One undo puts every wire back", "[T79][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	const FourWires wires = fourWires(bench);
+	REQUIRE(wires.second != nullptr);
+		//The names to come back, kept before they go
+	QStringList names;
+	for (Conductor *wire : wires.first) {
+		names << textOf(wire);
+	}
+	names << textOf(wires.second);
+	names.sort();
+	REQUIRE(names.size() == 4);
+	REQUIRE_FALSE(names.contains(QString()));
+	QUndoStack &stack = bench.stack();
+	const int index = stack.index();
+
+	REQUIRE(WireRemoval::removeWires(project, project->diagrams()).removed == 4);
+	CHECK(stack.index() == index + 1);
+
+	stack.undo();
+	CHECK(stack.index() == index);
+	QStringList back;
+	for (Diagram *folio : project->diagrams()) {
+		for (Conductor *wire : folio->conductors()) {
+			back << textOf(wire);
+		}
+	}
+	back.sort();
+	CHECK(back == names);
+	CHECK(bench.project.diagram(0)->conductors().size() == 3);
+	CHECK(bench.project.diagram(1)->conductors().size() == 1);
+}
+
+TEST_CASE("T79 — The count says it before, and removes nothing", "[T79][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	const FourWires wires = fourWires(bench);
+	REQUIRE(wires.second != nullptr);
+	leaveOut(bench.stack(), {wires.first.value(1)});
+	const int index = bench.stack().index();
+
+	const WireRemoval::Count all = WireRemoval::count(project->diagrams());
+	CHECK(all.removed == 3);
+	CHECK(all.left_out == 1);
+	const WireRemoval::Count first = WireRemoval::count({bench.project.diagram(0)});
+	CHECK(first.removed == 2);
+	CHECK(bench.stack().index() == index);
+	CHECK(bench.project.diagram(0)->conductors().size() == 3);
+
+		//And nothing to remove is no step at all
+	const WireRemoval::Count none = WireRemoval::removeWires(project, {});
+	CHECK(none.removed == 0);
+	CHECK(bench.stack().index() == index);
 }

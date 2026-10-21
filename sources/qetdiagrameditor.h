@@ -201,6 +201,7 @@ class QETDiagramEditor : public QETMainWindow
 		void updateWireSections();
 		void convertWireNames();
 		void renumberWires();
+		void removeWires();
 		void leaveOutSelectedWires(bool ignored);
 		void updateLeaveOutWires();
 		void resetSymbolTexts();
@@ -316,7 +317,14 @@ class QETDiagramEditor : public QETMainWindow
 		*m_insert_last_element = nullptr, ///< Place the last placed element again
 		*m_copy_text_format = nullptr,  ///< Copy label/text formatting template
 		*m_apply_text_format = nullptr, ///< Apply label/text formatting template
-		*m_place_texts = nullptr;	///< Place the texts of the selected symbols at one of nine points
+		*m_place_texts = nullptr,	///< Place the texts of the selected symbols at one of nine points
+			//And these, for every command that works on the selection is
+			//offered on the folio too (T80)
+		*m_duplicate = nullptr,		///< Copy selection, offset by the configured step (#991)
+		*m_catalog_register = nullptr,  ///< Action to save the selected components as a catalog part
+		*m_show_conductor_text = nullptr,///< Action to show the number of the selected conductors
+		*m_hide_conductor_text = nullptr,///< Action to hide it
+		*m_align_conductor_text = nullptr;///< Action to line the conductor numbers up on one axis
 		
 		QActionGroup
 		m_row_column_actions_group, /// Action related to add/remove rows/column in diagram
@@ -351,7 +359,6 @@ class QETDiagramEditor : public QETMainWindow
 		*redo,				///< Redo the latest cancelled operation
 		*m_paste,			///< Paste clipboard content on the current diagram
 		*m_paste_origin,		///< Same, at the copied position, cursor warped to the origin (Ctrl+Shift+V)
-		*m_duplicate,			///< Copy selection, offset by the configured step (#991)
 		*m_configure_duplicate,		///< Reopen the duplicate offset/direction dialog (#991)
 		*m_auto_conductor,		///< Enable/Disable the use of auto conductor
 		*m_auto_break_conductor,	///< Enable/Disable the use of auto break conductor
@@ -376,7 +383,6 @@ class QETDiagramEditor : public QETMainWindow
 		*m_terminal_numbering,         ///< Action to launch terminal numbering
 		*m_catalog_manager = nullptr,   ///< Action to open the catalog classes and properties
 		*m_catalog_browse = nullptr,    ///< Action to browse the catalog parts
-		*m_catalog_register = nullptr,  ///< Action to save the selected components as a catalog part
 		*m_catalog_missing = nullptr,   ///< Action to report the components with no part
 		*m_catalog_no_physical_view = nullptr, ///< Action to report the parts nobody measured
 		*m_connector_check = nullptr,   ///< Action to check the connectors of the project
@@ -407,11 +413,9 @@ class QETDiagramEditor : public QETMainWindow
 		*m_show_fine_grid = nullptr,    ///< Action to draw the finer grid
 		*m_show_terminals = nullptr,    ///< Action to keep the connection points visible
 		*m_show_empty_fields = nullptr, ///< Action to show the text fields that have no value
-		*m_show_conductor_text = nullptr,///< Action to show the number of the selected conductors
-		*m_hide_conductor_text = nullptr,///< Action to hide it
-		*m_align_conductor_text = nullptr,///< Action to line the conductor numbers up on one axis
 		*m_convert_wire_names = nullptr,///< Action to name the wires F<folio>-<number> (colour cross-section) (T70)
 		*m_renumber_wires = nullptr,///< Action to number the wires again from their place on the folio (T78)
+		*m_remove_wires = nullptr,///< Action to remove the wires of the project or of the folio (T79)
 		*m_link_accessory = nullptr,    ///< Action to say which component an accessory belongs to
 		*m_cable_numbering,            ///< Action to open the cable numbering window (rule + numbering of every cable)
 		*m_add_cable_list,             ///< Add a cable list graphics item

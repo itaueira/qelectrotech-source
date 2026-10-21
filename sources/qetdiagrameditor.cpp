@@ -159,6 +159,7 @@
 #include "wirearrangement.h"
 #include "wirecolorname.h"
 #include "wirenames.h"
+#include "wireremoval.h"
 #include "wiresections.h"
 #include <QDateTime>
 #include <QDebug>
@@ -689,6 +690,10 @@ void QETDiagramEditor::setUpActions()
 	ShortcutManager::instance().registerAction(m_renumber_wires, "diagrameditor.renumber_wires", tr("Diagram editors"), QKeySequence());
 	m_renumber_wires->setStatusTip(tr("Number the wires again from their place on the folio, from 1 on each folio", "status bar tip"));
 	connect(m_renumber_wires, &QAction::triggered, this, &QETDiagramEditor::renumberWires);
+	m_remove_wires = new QAction(QET::Icons::EditDelete, tr("Remove the wires…"), this);
+	ShortcutManager::instance().registerAction(m_remove_wires, "diagrameditor.remove_wires", tr("Diagram editors"), QKeySequence());
+	m_remove_wires->setStatusTip(tr("Remove every wire of the project or of this folio, but those left out of automatic numbering and those of a panel marked as built", "status bar tip"));
+	connect(m_remove_wires, &QAction::triggered, this, &QETDiagramEditor::removeWires);
 		//The box of the wire panel, for every selected wire at once (T77):
 		//ticked when they all are left out
 	m_leave_out_wires = new QAction(tr("Leave out of automatic numbering"), this);
@@ -3785,6 +3790,62 @@ void QETDiagramEditor::renumberWires()
 }
 
 /**
+	@brief QETDiagramEditor::removeWires
+	Ask for the scope, say how many wires go and how many stay before any
+	goes, and remove them in one undo step (T79), saying in the status bar
+	how many went.
+*/
+void QETDiagramEditor::removeWires()
+{
+	ProjectView *project_view = currentProjectView();
+	QETProject *project = project_view ? project_view->project() : nullptr;
+	if (!project || project->isReadOnly()) {
+		return;
+	}
+	DiagramView *view = currentDiagramView();
+	Diagram *shown = view ? view->diagram() : nullptr;
+
+	QDialog dialog(this);
+	dialog.setWindowTitle(tr("Remove the wires"));
+	auto *scope = new QComboBox(&dialog);
+	scope->addItem(tr("Whole project"), true);
+	if (shown) {
+		scope->addItem(tr("This folio only"), false);
+	}
+	auto *note = new QLabel(&dialog);
+	note->setWordWrap(true);
+	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+	buttons->button(QDialogButtonBox::Ok)->setText(tr("Remove"));
+	const auto folios = [project, shown, scope]() {
+		return scope->currentData().toBool() ? project->diagrams() : QList<Diagram *>{shown};
+	};
+	const auto update = [folios, note, buttons]() {
+		const WireRemoval::Count count = WireRemoval::count(folios());
+		note->setText(tr("%1 wire(s) will be removed. Kept: %2 left out of automatic numbering, "
+				 "%3 of a panel marked as built. One undo puts them all back.")
+			      .arg(count.removed).arg(count.left_out).arg(count.frozen));
+		buttons->button(QDialogButtonBox::Ok)->setEnabled(count.removed > 0);
+	};
+	connect(scope, QOverload<int>::of(&QComboBox::currentIndexChanged), &dialog, update);
+	update();
+	connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+	connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+	auto *form = new QFormLayout(&dialog);
+	form->addRow(tr("Scope"), scope);
+	form->addRow(note);
+	form->addRow(buttons);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+
+	const WireRemoval::Count count = WireRemoval::removeWires(project, folios());
+	const QString message = tr("%n wire(s) removed", "status bar message", count.removed);
+	QTimer::singleShot(0, this, [this, message]() {
+		statusBar()->showMessage(message, 8000);
+	});
+}
+
+/**
 	@brief QETDiagramEditor::leaveOutSelectedWires
 	Leave the selected wires out of the automatic numbering, or bring them
 	back, in one undo step: the step the box of the wire panel pushes (T77).
@@ -4176,6 +4237,7 @@ void QETDiagramEditor::setUpMenu()
 	conductor_menu -> addAction(m_convert_wire_names);
 	conductor_menu -> addAction(m_renumber_wires);
 	conductor_menu -> addAction(m_leave_out_wires);
+	conductor_menu -> addAction(m_remove_wires);
 	conductor_menu -> addSeparator();
 	conductor_menu -> addAction(m_show_conductor_text);
 	conductor_menu -> addAction(m_hide_conductor_text);
@@ -5925,6 +5987,7 @@ void QETDiagramEditor::slot_updateActions()
 	m_align_conductor_text        -> setEnabled(editable_project);
 	m_convert_wire_names          -> setEnabled(editable_project);
 	m_renumber_wires              -> setEnabled(editable_project);
+	m_remove_wires                -> setEnabled(editable_project);
 	m_replace_part                -> setEnabled(editable_project);
 	m_save_group                  -> setEnabled(editable_project);
 	m_insert_group                -> setEnabled(editable_project);

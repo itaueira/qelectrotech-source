@@ -167,6 +167,8 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 
 		//Filled each time the context menu opens, see updateFolioReportMenu()
 	m_folio_report_menu = new QMenu(tr("Sheet reference"), this);
+		//Filled each time the context menu opens, see contextMenuActions()
+	m_conductor_menu = new QMenu(tr("Conductors"), this);
 
 		//setup three separators, to be use in context menu
 	for(int i=0 ; i<3 ; ++i)
@@ -2318,6 +2320,9 @@ QList<QAction *> DiagramView::contextMenuActions() const
 			list << qde->m_cut;
 			list << qde->m_copy;
 			list << m_multi_paste;
+				//Disabled, and so left out below, unless the selection can
+				//be copied (T80)
+			list << qde->m_duplicate;
 			list << qde->m_copy_text_format;
 			list << qde->m_apply_text_format;
 			list << qde->m_paste_element_info;
@@ -2349,13 +2354,25 @@ QList<QAction *> DiagramView::contextMenuActions() const
 					return element && hasCabinetInfo(element->elementInformations());
 				}));
 			list << m_generate_cabinet_thumbnail;
-			list << qde->m_conductor_reset;
-			list << qde->m_conductor_arrange;
-				//Disabled, and so left out below, unless wires are selected;
-				//ticked from what they are now, which the panel may have
-				//changed since the selection did (T77)
-			qde->updateLeaveOutWires();
-			list << qde->m_leave_out_wires;
+				//What works on the selected wires, in one submenu named as
+				//the one of the Edit menu (T80), and only with a wire
+				//selected: the three of the number are enabled whatever is
+				//selected, and would answer « select a wire » in a box
+			if (!m_diagram->selectedConductors().isEmpty())
+			{
+				m_conductor_menu->clear();
+				m_conductor_menu->addAction(qde->m_conductor_reset);
+				m_conductor_menu->addAction(qde->m_conductor_arrange);
+					//Ticked from what the wires are now, which the panel may
+					//have changed since the selection did (T77)
+				qde->updateLeaveOutWires();
+				m_conductor_menu->addAction(qde->m_leave_out_wires);
+				m_conductor_menu->addSeparator();
+				m_conductor_menu->addAction(qde->m_show_conductor_text);
+				m_conductor_menu->addAction(qde->m_hide_conductor_text);
+				m_conductor_menu->addAction(qde->m_align_conductor_text);
+				list << m_conductor_menu->menuAction();
+			}
 				//Assigning a catalog part is offered here, and not only in the
 				//Catalog menu, because the component is already under the
 				//cursor: going up to a menu and coming back is the long way
@@ -2368,6 +2385,9 @@ QList<QAction *> DiagramView::contextMenuActions() const
 				//asks for.
 			if (selectionHasElement()) {
 				list << qde->m_catalog_assign;
+					//Its sibling: the part made from the selected component
+					//(T80), enabled whatever is selected
+				list << qde->m_catalog_register;
 					//Alt+Q: another element in the place of this one,
 					//with its wires (T54)
 				list << qde->m_replace_element;
@@ -2375,6 +2395,9 @@ QList<QAction *> DiagramView::contextMenuActions() const
 				list << qde->m_exchange_elements;
 					//The texts as the symbol has them (T58)
 				list << qde->m_reset_symbol_texts;
+					//The texts as one block at one of nine points, with the
+					//grid of the nine as its submenu (T80)
+				list << qde->m_place_texts;
 			}
 				//Only for one element, and one mounted on a plate: an entry
 				//for a component that is on no plate would open a window to

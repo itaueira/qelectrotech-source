@@ -61,6 +61,7 @@ class DiagramView : public PaletteGraphicsView
 		QAction          *m_reset_xref_placement = nullptr;
 		QAction          *m_generate_cabinet_thumbnail = nullptr;
 		QMenu            *m_folio_report_menu = nullptr;
+		QMenu            *m_conductor_menu = nullptr; ///< The commands of the selected wires, in the context menu (T80)
 		QPoint            m_paste_here_pos;
 		QPoint            m_press_pos;
 		DiagramContextToolbar *m_context_toolbar = nullptr;
