@@ -33,8 +33,9 @@ class QETProject;
 	deleted by hand. The commands of every folio go under one, so that one
 	undo puts every wire back.
 
-	Two wires stay. One left out of the automatic numbering (T77) was left
-	out on purpose, nearly always because its name is another one; one on a
+	Two wires stay. One marked out of the automatic numbering (T77) was left
+	out on purpose - the mark, and not a wire out of the numbering because
+	of its component (T81) -, nearly always because its name is another one; one on a
 	panel marked as built (T29) is in the panel already. The other wires of
 	their points go.
 */

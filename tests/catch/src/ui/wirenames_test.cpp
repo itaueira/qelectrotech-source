@@ -1776,3 +1776,105 @@ TEST_CASE("T79 — The count says it before, and removes nothing", "[T79][wirena
 	CHECK(none.removed == 0);
 	CHECK(bench.stack().index() == index);
 }
+
+/*
+	A wire with one end on a component kept out of the bill of materials
+	is out of the automatic numbering (T81): by the rule, read from the
+	component each time, and with nothing written on the wire.
+*/
+namespace
+{
+		/// What the information panel of the component pushes when its
+		/// box "out of the list" is ticked or cleared
+	void keepOutOfList(QUndoStack &stack, Element *element, bool out)
+	{
+		const DiagramContext old_info = element->elementInformations();
+		DiagramContext new_info = old_info;
+		if (out) {
+			new_info.addValue(QStringLiteral("exclude_from_bom"), QStringLiteral("true"));
+		} else {
+			new_info.remove(QStringLiteral("exclude_from_bom"));
+		}
+		stack.push(new ChangeElementInformationCommand(element, old_info, new_info));
+	}
+}
+
+TEST_CASE("CU-81.1 — A new wire of a component out of the list takes no number", "[T81][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+	showFolio(one);
+	Element *point = bench.part(0);
+	REQUIRE(point != nullptr);
+	keepOutOfList(bench.stack(), point, true);
+	REQUIRE(ConductorAutoNumerotation::isOutOfBom(point));
+
+	Conductor *out = drawBetween(bench, 0, 1);
+	REQUIRE(out != nullptr);
+	CHECK(ConductorAutoNumerotation::isIgnored(out));
+	CHECK_FALSE(out->isFreezeLabel());
+	CHECK(textOf(out) != wireName(1, 1, "1"));
+		//It did not take the 1: the next wire does
+	Conductor *next = drawBetween(bench, 2, 3);
+	REQUIRE(next != nullptr);
+	CHECK_FALSE(ConductorAutoNumerotation::isIgnored(next));
+	CHECK(textOf(next) == wireName(1, 1, "1,5"));
+}
+
+TEST_CASE("CU-81.2 — Renumbered, the wire of a component out of the list loses its number, and comes back with it",
+	  "[T81][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *one = bench.project.diagram(0);
+	const QList<Conductor *> wires = threeNamed(bench);
+	Conductor *a = wires.value(0);
+	Conductor *b = wires.value(1);
+	Conductor *c = wires.value(2);
+	REQUIRE((a && b && c));
+	REQUIRE(textOf(b) == wireName(1, 2, "1,5"));
+	QUndoStack &stack = bench.stack();
+
+		//The component of b, out of the list
+	keepOutOfList(stack, bench.part(2), true);
+	REQUIRE(ConductorAutoNumerotation::isIgnored(b));
+	WireNames::renumberProject(project, {one}, false, one);
+	CHECK(textOf(b).isEmpty());
+	CHECK(textOf(a) == wireName(1, 1, "1"));
+	CHECK(textOf(c) == wireName(1, 2));
+	CHECK_FALSE(b->isFreezeLabel());
+
+		//Back on the list: renumbered, it counts again, in its place
+	keepOutOfList(stack, bench.part(2), false);
+	CHECK_FALSE(ConductorAutoNumerotation::isIgnored(b));
+	WireNames::renumberProject(project, {one}, false, one);
+	CHECK(textOf(a) == wireName(1, 1, "1"));
+	CHECK(textOf(b) == wireName(1, 2, "1,5"));
+	CHECK(textOf(c) == wireName(1, 3));
+}
+
+TEST_CASE("T81 — Removing the wires keeps the marked wire, and not the one of a component out of the list",
+	  "[T81][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *one = bench.project.diagram(0);
+	const QList<Conductor *> wires = threeNamed(bench);
+	REQUIRE(wires.size() == 3);
+	keepOutOfList(bench.stack(), bench.part(0), true);
+	leaveOut(bench.stack(), {wires.value(1)});
+
+	const WireRemoval::Count count = WireRemoval::removeWires(project, {one});
+	CHECK(count.removed == 2);
+	CHECK(count.left_out == 1);
+	const QList<Conductor *> kept = one->conductors();
+	CHECK(kept.size() == 1);
+	CHECK(kept.contains(wires.value(1)));
+}

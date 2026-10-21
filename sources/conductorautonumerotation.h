@@ -26,6 +26,7 @@
 
 class AssemblyState;
 class Diagram;
+class Element;
 class QUndoCommand;
 class ConductorProperties;
 
@@ -93,9 +94,20 @@ class ConductorAutoNumerotation
 		*/
 		static bool isFrozen(const Conductor *conductor,
 				     const AssemblyState &state);
-		/// Whether @a conductor is left out of the automatic numbering (T77)
-		static bool isIgnored(const Conductor *conductor)
-		{return conductor && conductor->isFreezeLabel();}
+		/**
+			@return whether @a conductor is left out of the automatic
+			numbering: marked so (T77), or with one end on a component
+			kept out of the bill of materials (T81). The second is read
+			from the component each time, and nothing is written on the
+			wire: the component back on the list brings its wires back.
+		*/
+		static bool isIgnored(const Conductor *conductor);
+		/**
+			@return whether @a element is kept out of the bill of
+			materials: its exclude_from_bom information, read as the list
+			reads it (QET::infoFlagIsTrue())
+		*/
+		static bool isOutOfBom(const Element *element);
 		/// @a conductors without the ones left out of the numbering
 		template <typename Container>
 		static Container counted(Container conductors)

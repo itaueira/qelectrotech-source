@@ -39,7 +39,9 @@ namespace
 		{
 			if (ConductorAutoNumerotation::isFrozen(wire)) {
 				++count.frozen;
-			} else if (ConductorAutoNumerotation::isIgnored(wire)) {
+				//The mark the user put, and not the rule of a component out
+				//of the list (T81): what stays is what was chosen to stay
+			} else if (wire->isFreezeLabel()) {
 				++count.left_out;
 			} else {
 				going << wire;

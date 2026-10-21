@@ -23,6 +23,8 @@
 #include "autoNum/numerotationcontextcommands.h"
 #include "diagram.h"
 #include "qet.h"
+#include "qetgraphicsitem/element.h"
+#include "qetgraphicsitem/terminal.h"
 #include "qetdiagrameditor.h"
 #include "ui/potentialselectordialog.h"
 #include "undocommand/setautonumcontextcommand.h"
@@ -537,6 +539,40 @@ bool ConductorAutoNumerotation::potentialIsFrozen() const
 		}
 	}
 	return false;
+}
+
+/**
+	@brief ConductorAutoNumerotation::isIgnored
+	See the header. A point, a reference drawn to say where something goes,
+	a part nobody buys: what is kept out of the list names no wire, and the
+	wire it sends out does not take a number of the folio (T81).
+*/
+bool ConductorAutoNumerotation::isIgnored(const Conductor *conductor)
+{
+	if (!conductor) {
+		return false;
+	}
+	if (conductor->isFreezeLabel()) {
+		return true;
+	}
+	for (const Terminal *end : {conductor->terminal1, conductor->terminal2})
+	{
+		if (end && isOutOfBom(end->parentElement())) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+	@brief ConductorAutoNumerotation::isOutOfBom
+	See the header.
+*/
+bool ConductorAutoNumerotation::isOutOfBom(const Element *element)
+{
+	return element
+		&& QET::infoFlagIsTrue(element->elementInformations()
+				       .value(QStringLiteral("exclude_from_bom")).toString());
 }
 
 /**
