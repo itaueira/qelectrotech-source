@@ -7702,12 +7702,12 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>DrcTitleBlock</name>
     <message>
-        <location filename="../sources/drc/drctitleblock.cpp" line="123"/>
+        <location filename="../sources/drc/drctitleblock.cpp" line="140"/>
         <source>Empty title block field: %1</source>
         <translation>Campo vazio no bloco de legenda: %1</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drctitleblock.cpp" line="127"/>
+        <location filename="../sources/drc/drctitleblock.cpp" line="144"/>
         <source>Empty title block fields: %1</source>
         <translation>Campos vazios no bloco de legenda: %1</translation>
     </message>
@@ -7715,7 +7715,7 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>DrcTitleBlockRules</name>
     <message>
-        <location filename="../sources/drc/drctitleblockrules.cpp" line="120"/>
+        <location filename="../sources/drc/drctitleblockrules.cpp" line="133"/>
         <source>Folio with an empty title block field</source>
         <translation>Folha com campo vazio no bloco de legenda</translation>
     </message>
@@ -8908,12 +8908,12 @@ O nome exibido do elemento é alterado separadamente nas propriedades do element
         <translation>Ir ver o outro, ou manter a tag repetida?</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1015"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1030"/>
         <source>…</source>
         <translation>…</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1125"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1140"/>
         <source>%1  →  %2</source>
         <translation>%1  →  %2</translation>
     </message>
@@ -8969,73 +8969,78 @@ Criar?</translation>
 %2</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1008"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="889"/>
+        <source>From the catalog part: assign another part to change it</source>
+        <translation>Vem da peça do catálogo: atribua outra peça para mudar</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1023"/>
         <source>Automatic numbering</source>
         <translation>Numeração automática</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1016"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1031"/>
         <source>Open the project&apos;s element numberings</source>
         <translation>Abrir as numerações de elementos do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1044"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1059"/>
         <source>Freeze name</source>
         <translation>Congelar o nome</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1045"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1060"/>
         <source>A frozen name is not changed by automatic numbering, and its number is not given to another element.</source>
         <translation>Um nome congelado não é alterado pela numeração automática, e o número dele não é dado a outro elemento.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1081"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1096"/>
         <source>Number</source>
         <translation>Número</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1085"/>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1149"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1100"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1164"/>
         <source>Only free numbers are offered: an element that must keep its real number can get it back if nobody else has it.</source>
         <translation>Só os números livres são oferecidos: um elemento que deve manter seu número real pode recuperá-lo se ninguém o tiver.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1119"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1134"/>
         <source>%1  (current)</source>
         <translation>%1  (atual)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1121"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1136"/>
         <source>— (unknown number)</source>
         <translation>— (número desconhecido)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1147"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1162"/>
         <source>The name is frozen: unfreeze it to change its number.</source>
         <translation>O nome está congelado: descongele-o para mudar o número.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1148"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1163"/>
         <source>The number can be chosen when the element keeps its numbering.</source>
         <translation>O número só pode ser escolhido quando o elemento mantém sua numeração.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1213"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1228"/>
         <source>None (name entered by hand)</source>
         <translation>Nenhuma (nome digitado à mão)</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1232"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1247"/>
         <source>Custom formula: %1</source>
         <translation>Fórmula própria: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1272"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1287"/>
         <source>Frozen name</source>
         <translation>Nome congelado</translation>
     </message>
     <message>
-        <location filename="../sources/ui/elementinfowidget.cpp" line="1273"/>
+        <location filename="../sources/ui/elementinfowidget.cpp" line="1288"/>
         <source>This element&apos;s name is frozen.
 Changing its numbering will replace or erase it.
 
@@ -11046,8 +11051,8 @@ Ao importar este arquivo, você confirma que:
         <translation>Dimensões</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="800"/>
-        <location filename="../sources/exportdialog.cpp" line="805"/>
+        <location filename="../sources/exportdialog.cpp" line="823"/>
+        <location filename="../sources/exportdialog.cpp" line="828"/>
         <source>px</source>
         <translation>px</translation>
     </message>
@@ -11088,54 +11093,54 @@ Ao importar este arquivo, você confirma que:
         <translation>Nome do arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="465"/>
+        <location filename="../sources/exportdialog.cpp" line="488"/>
         <source>Target files names</source>
         <comment>message box title</comment>
         <translation>Nomes dos arquivos de destino</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="466"/>
+        <location filename="../sources/exportdialog.cpp" line="489"/>
         <source>You must enter a non-empty, unique filename for each sheet to export.</source>
         <comment>message box content</comment>
         <translation>Você deve digitar um nome de arquivo não nulo e único para cada folha a ser exportada.</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="481"/>
+        <location filename="../sources/exportdialog.cpp" line="504"/>
         <source>Directory missing</source>
         <comment>message box title</comment>
         <translation>Pasta não especificada</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="482"/>
+        <location filename="../sources/exportdialog.cpp" line="505"/>
         <source>You must specify the path of the directory in which the images files will be saved.</source>
         <comment>message box content</comment>
         <translation>Você deve especificar o caminho da pasta onde os arquivos de imagem serão salvos.</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="561"/>
+        <location filename="../sources/exportdialog.cpp" line="584"/>
         <source>Can not write to this file</source>
         <comment>message box title</comment>
         <translation>Não é possível escrever neste arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="563"/>
+        <location filename="../sources/exportdialog.cpp" line="586"/>
         <source>It appears you do not have the required permissions to write the file %1.</source>
         <comment>message box content</comment>
         <translation>Aparentemente você não tem as permissões necessárias para gravar o arquivo %1.</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="696"/>
+        <location filename="../sources/exportdialog.cpp" line="719"/>
         <source>Preview</source>
         <translation>Visualização</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="517"/>
+        <location filename="../sources/exportdialog.cpp" line="540"/>
         <source>Images not included in the DXF export</source>
         <comment>message box title</comment>
         <translation>Imagens não incluídas na exportação DXF</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="518"/>
+        <location filename="../sources/exportdialog.cpp" line="541"/>
         <source>The DXF format used here (AC1006) cannot embed images. Images will only be represented by an outline rectangle (position, size, rotation and skew are preserved), without the image content.</source>
         <comment>message box content</comment>
         <translation>O formato DXF usado aqui (AC1006) não permite incluir imagens. As imagens serão representadas apenas por um retângulo de contorno (posição, tamanho, rotação e inclinação preservadas), sem o conteúdo da imagem.</translation>
@@ -11236,47 +11241,52 @@ Ao importar este arquivo, você confirma que:
         <translation>Manter as cores dos condutores</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="230"/>
-        <source>SVG-background transparent</source>
-        <translation>SVG: Fundo transparente</translation>
+        <location filename="../sources/exportpropertieswidget.cpp" line="233"/>
+        <source>White background</source>
+        <translation>Fundo branco</translation>
     </message>
     <message>
         <location filename="../sources/exportpropertieswidget.cpp" line="234"/>
+        <source>PNG and SVG: draw the sheet on white. Unticked, what is not drawn stays transparent.</source>
+        <translation>PNG e SVG: desenha a folha sobre branco. Desmarcado, o que não é desenho fica transparente.</translation>
+    </message>
+    <message>
+        <location filename="../sources/exportpropertieswidget.cpp" line="238"/>
         <source>DXF: symbols as blocks</source>
         <translation>DXF: símbolos em blocos</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="235"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="239"/>
         <source>Each symbol becomes a DXF block, selectable with one click in CAD software</source>
         <translation>Cada símbolo vira um bloco DXF, selecionável com um clique em um programa de CAD</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="239"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="243"/>
         <source>DXF: symbol texts as attributes</source>
         <translation>DXF: textos dos símbolos em atributos</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="240"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="244"/>
         <source>A symbol&apos;s texts (label, function...) become attributes of its block. LibreCAD does not show attributes.</source>
         <translation>Os textos de um símbolo (tag, função...) viram atributos do bloco dele. O LibreCAD não exibe atributos.</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="245"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="249"/>
         <source>SVG: smaller pictures</source>
         <translation>SVG: imagens menores</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="246"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="250"/>
         <source>Pictures are stored at four times the size they have on the folio instead of their full resolution: a much smaller file, still sharp when printed</source>
         <translation>As imagens são gravadas com quatro vezes o tamanho que têm na folha, em vez da resolução completa: um arquivo bem menor, ainda nítido quando impresso</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="250"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="254"/>
         <source>Black and white</source>
         <translation>Preto e branco</translation>
     </message>
     <message>
-        <location filename="../sources/exportpropertieswidget.cpp" line="251"/>
+        <location filename="../sources/exportpropertieswidget.cpp" line="255"/>
         <source>Lines and texts in black, pictures in shades of gray (not for DXF)</source>
         <translation>Linhas e textos em preto, imagens em tons de cinza (exceto DXF)</translation>
     </message>
@@ -13435,17 +13445,17 @@ O campo do componente continua « %1 » nos dois casos.</translation>
 <context>
     <name>IecStructureSettings</name>
     <message>
-        <location filename="../sources/autoNum/iecstructure.cpp" line="518"/>
+        <location filename="../sources/autoNum/iecstructure.cpp" line="524"/>
         <source>Courte : -K3</source>
         <translation>Curta: -K3</translation>
     </message>
     <message>
-        <location filename="../sources/autoNum/iecstructure.cpp" line="521"/>
+        <location filename="../sources/autoNum/iecstructure.cpp" line="527"/>
         <source>Selon le contexte : -K3, +QCM2-K3 pour ce qui diffère</source>
         <translation>Conforme o contexto: -K3, e +QCM2-K3 para o que difere</translation>
     </message>
     <message>
-        <location filename="../sources/autoNum/iecstructure.cpp" line="524"/>
+        <location filename="../sources/autoNum/iecstructure.cpp" line="530"/>
         <source>Complète : =CT1+A1-K3</source>
         <translation>Completa: =CT1+A1-K3</translation>
     </message>
@@ -26870,32 +26880,32 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>texto</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="787"/>
+        <location filename="../sources/exportdialog.cpp" line="810"/>
         <source>Untitled sheet</source>
         <translation>Folha sem título</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="789"/>
+        <location filename="../sources/exportdialog.cpp" line="812"/>
         <source>diagram</source>
         <translation>esquema</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="814"/>
+        <location filename="../sources/exportdialog.cpp" line="837"/>
         <source>Keep aspect ratio</source>
         <translation>Conservar proporções</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="818"/>
+        <location filename="../sources/exportdialog.cpp" line="841"/>
         <source>Reset size</source>
         <translation>Reinicializar dimensões</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="822"/>
+        <location filename="../sources/exportdialog.cpp" line="845"/>
         <source>Preview</source>
         <translation>Visualização</translation>
     </message>
     <message>
-        <location filename="../sources/exportdialog.cpp" line="826"/>
+        <location filename="../sources/exportdialog.cpp" line="849"/>
         <source>Export to clipboard</source>
         <translation>Exportar para a área de transferência</translation>
     </message>
