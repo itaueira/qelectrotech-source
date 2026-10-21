@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "qetgraphicshandleritem.h"
+#include <QGraphicsView>
 #include <QPainter>
 #include <QDebug>
 #include <utility>
@@ -76,9 +77,18 @@ void QetGraphicsHandlerItem::paint(QPainter *painter,
 				   QWidget *widget)
 {
 	Q_UNUSED(option)
-	Q_UNUSED(widget)
 
 	painter->save();
+		//Smaller with the drawing when it is zoomed out: at a fixed size on
+		//screen, a handle covered a symbol drawn smaller than itself
+		//(decision of 20/10/2026). Down to 40%, so that it is still seen;
+		//never larger than it was. Only what is drawn: the place to take it
+		//(boundingRect()) keeps its size, as easy to take as before.
+	if (const auto *view = widget ? qobject_cast<const QGraphicsView *>(widget->parentWidget())
+				       : nullptr) {
+		const qreal zoom = qBound(0.4, view->transform().m11(), 1.0);
+		painter->scale(zoom, zoom);
+	}
 	painter->setBrush(QBrush(m_color));
 	QPen pen(QBrush(m_color),
 		 2,

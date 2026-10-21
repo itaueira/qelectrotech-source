@@ -1212,6 +1212,8 @@ if(TARGET qelectrotech_objects)
         # T73: align, distribute and centre on the axis in the symbol
         # editor, a text by its letters, on a grid of 1.
         src/ui/editoralign_test.cpp
+        # T76: a handle drawn smaller when the drawing is zoomed out.
+        src/ui/handlerzoom_test.cpp
         # T61: a symbol dropped on a folio of a project numbered 10 or more
         # becomes an element; one that cannot become one says why.
         src/ui/insertsymbolprojectid_test.cpp)
