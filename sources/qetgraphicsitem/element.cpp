@@ -56,6 +56,7 @@
 #include <QTimer>
 #include <QPointer>
 #include "../diagramview.h"
+#include "../ui/assemblychangemarks.h"
 
 static const QString plcTerminalKeys[] = {
 	QETInformation::ELMT_PLC_T1,
@@ -576,10 +577,15 @@ void Element::keepChildrenReadable() const
 void Element::paint(
 		QPainter *painter,
 		const QStyleOptionGraphicsItem *options,
-		QWidget *)
+		QWidget *widget)
 {
 	if (m_must_highlight || m_jump_highlight > 0) {
 		drawHighlight(painter, options);
+	}
+		//What changed since the panel was wired, on the screen only: a
+		//folio printed or exported is painted with no widget (T29)
+	if (widget && AssemblyChangeMarks::isMarked(this)) {
+		AssemblyChangeMarks::drawAround(painter, boundingRect());
 	}
 
 		//Set default pen and brush to QPainter to avoid a strange bug when

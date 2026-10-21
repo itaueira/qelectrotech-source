@@ -1214,6 +1214,8 @@ if(TARGET qelectrotech_objects)
         src/ui/editoralign_test.cpp
         # T76: a handle drawn smaller when the drawing is zoomed out.
         src/ui/handlerzoom_test.cpp
+        # T29: what changed since the assembly, marked on the folio.
+        src/ui/assemblymarks_test.cpp
         # T61: a symbol dropped on a folio of a project numbered 10 or more
         # becomes an element; one that cannot become one says why.
         src/ui/insertsymbolprojectid_test.cpp)

@@ -16,6 +16,7 @@
 	along with QElectroTech.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "projectview.h"
+#include "ui/assemblychangemarks.h"
 
 #include "ElementsCollection/xmlelementcollection.h"
 #include "autoNum/assignvariables.h"
@@ -96,6 +97,9 @@ void ProjectView::setProject(QETProject *project)
 
 		adjustReadOnlyState();
 		loadDiagrams();
+			//What changed since the panel was wired, marked on its folios
+			//while the project is marked so (T29)
+		AssemblyChangeMarks::of(m_project);
 	}
 }
 

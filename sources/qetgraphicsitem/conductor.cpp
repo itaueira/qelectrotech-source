@@ -17,6 +17,7 @@
 */
 #include "../qetgraphicsitem/conductor.h"
 #include "../shownkinds.h"
+#include "../ui/assemblychangemarks.h"
 #include "../lastusedstyle.h"
 #include "../qetproject.h"
 #include "../QPropertyUndoCommand/qpropertyundocommand.h"
@@ -1045,7 +1046,12 @@ QPointF Conductor::extendTerminal(const QPointF &terminal, Qet::Orientation term
 */
 void Conductor::paint(QPainter *painter, const QStyleOptionGraphicsItem *options, QWidget *qw)
 {
-	Q_UNUSED(qw);
+		//What changed since the panel was wired, under the wire, on the
+		//screen only: a folio printed or exported is painted with no
+		//widget (T29)
+	if (qw && AssemblyChangeMarks::isMarked(this)) {
+		AssemblyChangeMarks::drawAlong(painter, path());
+	}
 	painter -> save();
 	painter -> setRenderHint(QPainter::Antialiasing, false);
 
