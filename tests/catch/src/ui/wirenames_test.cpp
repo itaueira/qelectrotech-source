@@ -1824,7 +1824,7 @@ TEST_CASE("CU-81.1 — A new wire of a component out of the list takes no number
 	CHECK(textOf(next) == wireName(1, 1, "1,5"));
 }
 
-TEST_CASE("CU-81.2 — Renumbered, the wire of a component out of the list loses its number, and comes back with it",
+TEST_CASE("CU-81.2 — Renumbered: off the list, no number; back on it, its number again",
 	  "[T81][wirenames]")
 {
 	Bench bench(twoFolios());
@@ -1858,7 +1858,7 @@ TEST_CASE("CU-81.2 — Renumbered, the wire of a component out of the list loses
 	CHECK(textOf(c) == wireName(1, 3));
 }
 
-TEST_CASE("T81 — Removing the wires keeps the marked wire, and not the one of a component out of the list",
+TEST_CASE("T81 — Removing the wires keeps the marked wire, not the off-list one",
 	  "[T81][wirenames]")
 {
 	Bench bench(twoFolios());

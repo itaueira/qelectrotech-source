@@ -180,7 +180,7 @@ TEST_CASE("T20 — on a terminal the size of the part has its own field, as on a
 	CHECK(applied.value(QStringLiteral("insertion_x")) == before.value(QStringLiteral("insertion_x")));
 }
 
-TEST_CASE("T20 — the measures of an element with a catalog part are shown and not typed (P128)",
+TEST_CASE("T20 — the measures of an element with a catalog part are locked (P128)",
 	  "[t20][elementinfo]")
 {
 	UiBench::Project project(QStringLiteral("industrial.qet"));

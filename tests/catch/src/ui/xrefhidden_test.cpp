@@ -590,7 +590,7 @@ TEST_CASE("T43 — the properties dock grows to its editors when the window has 
 	CHECK(dock->height() == kept);
 }
 
-TEST_CASE("T43 — the empty properties dock shrinks to its title, and gets its height back",
+TEST_CASE("T43 — the empty properties dock shrinks to its title, then grows back",
 	  "[t43][xref]")
 {
 		//Asked by the designer on 2026-10-21 (P151), as the upstream does

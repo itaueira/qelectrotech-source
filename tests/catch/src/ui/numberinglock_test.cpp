@@ -1080,7 +1080,7 @@ TEST_CASE("T29 — ligar duas setas de folha em quadro montado: o fio do quadro 
 		CHECK(textOf(wire_101) == textOf(wire_102));
 	}
 
-	SECTION("só duas setas perguntam: um elemento que não é seta não, com fio e tudo (P130)")
+	SECTION("só duas setas perguntam, e não um contato com fio (P130)")
 	{
 		/*
 			The question asked of a script before a link is the one the
