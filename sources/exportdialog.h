@@ -91,6 +91,7 @@ class ExportDialog : public QDialog {
 	void saveReloadDiagramParameters(Diagram *, bool = true);
 	void generateSvg(Diagram *, int, int, bool, QIODevice &);
 	QImage generateImage(Diagram *, int, int, bool);
+	static QColor paperColor(bool transparent);
 	void exportDiagram(ExportDiagramLine *);
 	qreal diagramRatio(Diagram *);
 	QSize diagramSize(Diagram *);

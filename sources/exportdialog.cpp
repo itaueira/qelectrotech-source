@@ -359,18 +359,40 @@ QImage ExportDialog::generateImage(
 		bool keep_aspect_ratio)
 {
 	saveReloadDiagramParameters(diagram, true);
-	
-	QImage image(width, height, QImage::Format_RGB32);
+
+		//A PNG keeps what is not drawn transparent, unless a white sheet is
+		//asked for; JPEG and BMP have no transparency, and are white
+	const ExportProperties properties = epw -> exportProperties();
+	const bool transparent = properties.format == QLatin1String("PNG")
+			&& !properties.draw_white_background;
+	const QColor sheet_color = Diagram::background_color;
+	Diagram::background_color = paperColor(transparent);
+	QImage image(width, height, QImage::Format_ARGB32);
+	image.fill(transparent ? QColor(Qt::transparent) : QColor(Qt::white));
 	diagram -> toPaintDevice(
 		image,
 		width,
 		height,
 		keep_aspect_ratio ? Qt::KeepAspectRatio : Qt::IgnoreAspectRatio
 	);
-	
+	Diagram::background_color = sheet_color;
+
 	saveReloadDiagramParameters(diagram, false);
-	
+
 	return(image);
+}
+
+/**
+	@brief ExportDialog::paperColor
+	The colour a sheet is exported on: white, or none at all when
+	@p transparent - and never the colour chosen for the screen, which is
+	one for the whole program and stays the editor's. A transparent white,
+	and not a transparent black: the border and the title block take their
+	ink from the lightness of the sheet, and are black on white paper.
+*/
+QColor ExportDialog::paperColor(bool transparent)
+{
+	return transparent ? QColor(255, 255, 255, 0) : QColor(Qt::white);
 }
 
 /**
@@ -408,13 +430,13 @@ void ExportDialog::generateSvg(
 {
 	saveReloadDiagramParameters(diagram, true);
 
-	// set the transparency for the SVG-Background:
-	if (epw->exportProperties().draw_bg_transparent == true) {
-		diagram->background_color.setAlpha(0);
-		} else {
-		diagram->background_color.setAlpha(255);
-		}
-	
+		//The sheet transparent unless a white one is asked for, and given
+		//its colour back once drawn: it used to lose its opacity for good
+		//when an SVG was exported transparent, and to carry the colour of
+		//the screen otherwise
+	const QColor sheet_color = Diagram::background_color;
+	Diagram::background_color = paperColor(!epw -> exportProperties().draw_white_background);
+
 	// genere une QPicture a partir du schema
 	QPicture picture;
 	diagram -> setSmallPictures(epw -> exportProperties().svg_small_pictures);
@@ -425,7 +447,8 @@ void ExportDialog::generateSvg(
 		keep_aspect_ratio ? Qt::KeepAspectRatio : Qt::IgnoreAspectRatio
 	);
 	diagram -> setSmallPictures(false);
-	
+	Diagram::background_color = sheet_color;
+
 	// "joue" la QPicture sur un QSvgGenerator
 	QSvgGenerator svg_engine;
 	svg_engine.setSize(QSize(width, height));

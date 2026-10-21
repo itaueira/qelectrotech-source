@@ -729,6 +729,42 @@ TEST_CASE("T37 — o preto e branco é gravado com as outras opções de exporta
 	CHECK_FALSE(old.monochrome);
 }
 
+TEST_CASE("T37 — o fundo branco é desligado por padrão, e gravado com chave própria",
+	  "[uibench][impressao]")
+{
+	QTemporaryDir dir;
+	REQUIRE(dir.isValid());
+	const QString path = dir.filePath(QStringLiteral("settings.ini"));
+
+	// Without a choice, a PNG or an SVG keeps no sheet (P154).
+	CHECK_FALSE(ExportProperties().draw_white_background);
+
+	{
+		QSettings settings(path, QSettings::IniFormat);
+		ExportProperties properties;
+		properties.draw_white_background = true;
+		properties.toSettings(settings, QStringLiteral("export/default"));
+	}
+	{
+		QSettings settings(path, QSettings::IniFormat);
+		CHECK(settings.contains(QStringLiteral("export/defaultwhitebackground")));
+		ExportProperties read;
+		read.fromSettings(settings, QStringLiteral("export/default"));
+		CHECK(read.draw_white_background);
+	}
+
+	// The transparency of the SVG, which every export saved false until now,
+	// does not turn the white sheet on: the key is another one.
+	{
+		QSettings settings(path, QSettings::IniFormat);
+		settings.setValue(QStringLiteral("before/drawbgtransparent"), false);
+	}
+	QSettings settings(path, QSettings::IniFormat);
+	ExportProperties before;
+	before.fromSettings(settings, QStringLiteral("before/"));
+	CHECK_FALSE(before.draw_white_background);
+}
+
 TEST_CASE("T37 — exportar o PDF não muda a cor da folha na tela",
 	  "[uibench][impressao]")
 {

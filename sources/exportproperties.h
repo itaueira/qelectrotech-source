@@ -49,6 +49,7 @@ class ExportProperties {
 	bool draw_terminals;            ///< Whether to render terminals
 	bool draw_terminal_names;       ///< Whether to render terminal names/labels
 	bool draw_bg_transparent;       ///< Whether to use transparency for SVG-Export
+	bool draw_white_background;     ///< PNG and SVG: a white sheet; without it the sheet is transparent, and never the colour chosen for the screen
 	bool draw_colored_conductors;   ///< Whether to render conductors colors
 	bool dxf_blocks;                ///< DXF: each symbol as a block, placed with an INSERT
 	bool dxf_attributes;            ///< DXF, with dxf_blocks: a symbol's texts as attributes of its INSERT

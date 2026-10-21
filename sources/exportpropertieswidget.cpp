@@ -64,7 +64,7 @@ ExportProperties ExportPropertiesWidget::exportProperties() const
 	export_properties.draw_titleblock         = draw_titleblock     -> isChecked();
 	export_properties.draw_terminals          = draw_terminals -> isChecked();
 	export_properties.draw_terminal_names     = draw_terminal_names -> isChecked();
-	export_properties.draw_bg_transparent     = draw_bg_transparent -> isChecked();
+	export_properties.draw_white_background   = draw_bg_transparent -> isChecked();
 	export_properties.draw_colored_conductors = draw_colored_conductors -> isChecked();
 	export_properties.dxf_blocks              = dxf_blocks -> isChecked();
 	export_properties.dxf_attributes          = dxf_attributes -> isChecked();
@@ -91,7 +91,7 @@ void ExportPropertiesWidget::setExportProperties(const ExportProperties &export_
 	draw_titleblock         -> setChecked(export_properties.draw_titleblock);
 	draw_terminals          -> setChecked(export_properties.draw_terminals);
 	draw_terminal_names     -> setChecked(export_properties.draw_terminal_names);
-	draw_bg_transparent     -> setChecked(export_properties.draw_bg_transparent);
+	draw_bg_transparent     -> setChecked(export_properties.draw_white_background);
 	draw_colored_conductors -> setChecked(export_properties.draw_colored_conductors);
 	dxf_blocks              -> setChecked(export_properties.dxf_blocks);
 	dxf_attributes          -> setChecked(export_properties.dxf_attributes);
@@ -226,8 +226,12 @@ void ExportPropertiesWidget::build()
 	draw_colored_conductors = new QCheckBox(tr("Keep conductors colors"), groupbox_options);
 	optionshlayout -> addWidget(draw_colored_conductors, 3, 1);
 	
-	// use transparent background for SVG-Export
-	draw_bg_transparent = new QCheckBox(tr("SVG-background transparent"), groupbox_options);
+	// A white sheet in PNG and SVG; without it the sheet is transparent, and
+	// never the colour chosen for the screen. JPEG and BMP have no
+	// transparency, and are always white. The box kept the name of the one
+	// it replaces, the SVG transparency, to keep this file close to upstream
+	draw_bg_transparent = new QCheckBox(tr("White background"), groupbox_options);
+	draw_bg_transparent -> setToolTip(tr("PNG and SVG: draw the sheet on white. Unticked, what is not drawn stays transparent."));
 	optionshlayout -> addWidget(draw_bg_transparent, 4, 0);
 
 	// each symbol as a DXF block (issue #1339)

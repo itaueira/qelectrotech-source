@@ -36,6 +36,7 @@ ExportProperties::ExportProperties() :
 	draw_terminals(false),
 	draw_terminal_names(false),
 	draw_bg_transparent(false),
+	draw_white_background(false),
 	draw_colored_conductors(true),
 	dxf_blocks(false),
 	dxf_attributes(false),
@@ -79,6 +80,11 @@ void ExportProperties::toSettings(QSettings &settings,
 			  draw_terminal_names);
 	settings.setValue(prefix % "drawbgtransparent",
 			  draw_bg_transparent);
+		//A key of its own, and not the transparency above read upside
+		//down: that one was saved false by every export before, and the
+		//sheet would have kept a white background nobody chose
+	settings.setValue(prefix % "whitebackground",
+			  draw_white_background);
 	settings.setValue(prefix % "drawcoloredconductors",
 			  draw_colored_conductors);
 	settings.setValue(prefix % "dxfblocks",
@@ -123,6 +129,8 @@ void ExportProperties::fromSettings(QSettings &settings,
 	draw_terminal_names = settings.value(prefix % "drawterminalnames",
 					false).toBool();
 	draw_bg_transparent = settings.value(prefix % "drawbgtransparent",
+					false).toBool();
+	draw_white_background = settings.value(prefix % "whitebackground",
 					false).toBool();
 	draw_colored_conductors = settings.value(
 				prefix % "drawcoloredconductors",
