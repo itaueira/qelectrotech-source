@@ -113,6 +113,10 @@ namespace ConductorMultiEdit
 			const QSet<T *> potential = conductor->relatedPotentialConductors();
 			for (T *other : potential)
 			{
+					//A wire left out of the numbering is changed only when
+					//it is one of the selected (T77)
+				if (other->isFreezeLabel() && !chosen.contains(other))
+					continue;
 				potential_reached.insert(other);
 				if (!seen.contains(other))
 				{

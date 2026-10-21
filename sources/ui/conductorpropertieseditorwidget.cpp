@@ -22,6 +22,7 @@
 #include "../qetgraphicsitem/conductor.h"
 #include "conductorpropertieswidget.h"
 #include "../qtextorientationspinboxwidget.h"
+#include "../QPropertyUndoCommand/qpropertyundocommand.h"
 
 #ifdef BUILD_WITHOUT_KF
 #	include "nokde/kcolorbutton.h"
@@ -107,8 +108,43 @@ ConductorPropertiesEditorWidget::ConductorPropertiesEditorWidget(
 		if (gb->isCheckable())
 			gb->installEventFilter(this);
 
+		//Left out of the numbering (T77): a state of each conductor, not one
+		//of the properties, so it is applied on its own, at once, as the
+		//lock box of a shape is - and kept out of the live-edit wiring
+	m_cpw->setIgnoreBoxShown(true);
+	connect(m_cpw->ignoreBox(), &QCheckBox::clicked,
+		this, &ConductorPropertiesEditorWidget::applyIgnored);
+
 	setDisabled(true);
 	setConductors(conductors);
+}
+
+/**
+	@brief ConductorPropertiesEditorWidget::applyIgnored
+	Leave the selected conductors out of the automatic numbering, or bring
+	them back, in one undo step. Only the selected ones: "apply to all"
+	does not reach their potential, a wire is left out on its own.
+	@param ignored : the state the box was clicked to
+*/
+void ConductorPropertiesEditorWidget::applyIgnored(bool ignored)
+{
+	Conductor *first = firstConductor();
+	if (!first || !first->diagram()) return;
+
+	auto *undo = new QUndoCommand(ignored ? tr("Leave out of automatic numbering")
+					      : tr("Bring back into automatic numbering"));
+	for (const QPointer<Conductor> &c : std::as_const(m_conductors))
+	{
+		if (c && c->isFreezeLabel() != ignored) {
+			new QPropertyUndoCommand(c.data(), "freezeLabel", c->isFreezeLabel(), ignored, undo);
+		}
+	}
+	if (undo->childCount()) {
+		first->diagram()->undoStack().push(undo);
+	} else {
+		delete undo;
+	}
+	updateUi();
 }
 
 /**
@@ -142,8 +178,12 @@ void ConductorPropertiesEditorWidget::setConductors(
 
 	for (const QPointer<Conductor> &c : std::as_const(m_conductors))
 		if (c)
+		{
 			disconnect(c, &Conductor::propertiesChange,
 					   this, &ConductorPropertiesEditorWidget::scheduleUpdateUi);
+			disconnect(c, &Conductor::freezeLabelChanged,
+					   this, &ConductorPropertiesEditorWidget::scheduleUpdateUi);
+		}
 	m_conductors.clear();
 
 		//The scene gives no order for its selection: sort, so the same
@@ -162,6 +202,9 @@ void ConductorPropertiesEditorWidget::setConductors(
 			//change (issue #500). One edit of N conductors emits N signals:
 			//they are gathered into one reload.
 		connect(c, &Conductor::propertiesChange,
+				this, &ConductorPropertiesEditorWidget::scheduleUpdateUi,
+				Qt::UniqueConnection);
+		connect(c, &Conductor::freezeLabelChanged,
 				this, &ConductorPropertiesEditorWidget::scheduleUpdateUi,
 				Qt::UniqueConnection);
 	}
@@ -277,7 +320,7 @@ void ConductorPropertiesEditorWidget::connectChangeSignals()
 					this, &ConductorPropertiesEditorWidget::apply));
 	// Checkboxes and the checkable group boxes (single/multi wire, bicolor…).
 	for (auto *w : m_cpw->findChildren<QAbstractButton *>())
-		if (w->isCheckable())
+		if (w->isCheckable() && w != m_cpw->ignoreBox())
 			add(connect(w, &QAbstractButton::toggled,
 						this, &ConductorPropertiesEditorWidget::apply));
 	for (auto *w : m_cpw->findChildren<QGroupBox *>())
@@ -329,6 +372,13 @@ void ConductorPropertiesEditorWidget::updateUi()
 	m_cpw->setProperties(ConductorMultiEdit::shown(list, mixed));
 	m_cpw->setMixedTextFields(mixed);
 	m_cpw->setTextLocked(list.size() > 1);
+	int ignored = 0;
+	for (const QPointer<Conductor> &c : std::as_const(m_conductors))
+		if (c && c->isFreezeLabel())
+			++ignored;
+	m_cpw->setIgnoredInNumbering(ignored == 0 ? Qt::Unchecked
+				     : ignored == list.size() ? Qt::Checked
+							      : Qt::PartiallyChecked);
 		//Read back rather than keep the conductor's own values: a value the
 		//widget cannot show exactly must not count as an edit.
 	m_shown = m_cpw->properties();

@@ -29,6 +29,7 @@ class FakeWire : public QObject
 		ConductorProperties properties() const { return m_properties; }
 		void setProperties(const ConductorProperties &p) { m_properties = p; }
 		QSet<FakeWire *> relatedPotentialConductors() const { return m_potential; }
+		bool isFreezeLabel() const { return false; }
 			// The wires of the other side of a function separated terminal
 			// element: same electrical node, but only the voltage /
 			// protocol crosses.

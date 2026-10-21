@@ -26,6 +26,8 @@
 #include "conductorpropertieswidget.h"
 #include "ui_conductorpropertiesdialog.h"
 
+#include <QCheckBox>
+
 #include "../qet.h"
 /**
 	@brief ConductorPropertiesDialog::ConductorPropertiesDialog
@@ -43,6 +45,8 @@ ConductorPropertiesDialog::ConductorPropertiesDialog(
 	m_cpw = new ConductorPropertiesWidget(conductor->properties());
 	m_cpw -> setHiddenOneTextPerFolio(true);
 	m_cpw->setHiddenAvailableAutonum(true);
+	m_cpw->setIgnoreBoxShown(true);
+	m_cpw->setIgnoredInNumbering(conductor->isFreezeLabel() ? Qt::Checked : Qt::Unchecked);
 	if (conductor -> diagram() -> defaultConductorProperties.m_one_text_per_folio == true &&
 		conductor -> relatedPotentialConductors().size()) {
 		m_cpw->setDisabledShowText();
@@ -69,8 +73,29 @@ void ConductorPropertiesDialog::PropertiesDialog(Conductor *conductor,
 {
 	ConductorPropertiesDialog cpd (conductor, parent);
 
-	if (cpd.exec() == QDialog::Rejected
-			|| cpd.properties() == conductor->properties()) return;
+	if (cpd.exec() == QDialog::Rejected) return;
+	const bool ignore_changed = cpd.ignoredInNumbering() != conductor->isFreezeLabel();
+	const bool properties_changed = !(cpd.properties() == conductor->properties());
+	if (!ignore_changed && !properties_changed) return;
+
+		//Left out of the numbering, or back in it (T77), before the
+		//properties: a text typed together with the tick is kept, not worked
+		//out again from the formula
+	QUndoStack &stack = conductor->diagram()->undoStack();
+	if (ignore_changed)
+	{
+		auto *ignore = new QPropertyUndoCommand(conductor, "freezeLabel",
+							conductor->isFreezeLabel(),
+							cpd.ignoredInNumbering());
+		ignore->setText(cpd.ignoredInNumbering() ? tr("Leave out of automatic numbering")
+							 : tr("Bring back into automatic numbering"));
+		if (!properties_changed) {
+			stack.push(ignore);
+			return;
+		}
+		stack.beginMacro(tr("Edit conductor properties", "undo caption"));
+		stack.push(ignore);
+	}
 
 	QVariant old_value, new_value;
 	old_value.setValue(conductor->properties());
@@ -95,6 +120,9 @@ void ConductorPropertiesDialog::PropertiesDialog(Conductor *conductor,
 
 		for (Conductor *potential_conductor : potential)
 		{
+				//A wire left out of the numbering keeps its own (T77)
+			if (potential_conductor->isFreezeLabel())
+				continue;
 			old_value.setValue(potential_conductor->properties());
 			new QPropertyUndoCommand (potential_conductor, "properties", old_value, new_value, group);
 		}
@@ -138,7 +166,19 @@ void ConductorPropertiesDialog::PropertiesDialog(Conductor *conductor,
 		}
 	}
 
-	conductor->diagram()->undoStack().push(undo);
+	stack.push(undo);
+	if (ignore_changed) {
+		stack.endMacro();
+	}
+}
+
+/**
+	@brief ConductorPropertiesDialog::ignoredInNumbering
+	@return whether the box "Leave out of automatic numbering" is ticked
+*/
+bool ConductorPropertiesDialog::ignoredInNumbering() const
+{
+	return m_cpw->ignoreBox()->isChecked();
 }
 
 /**

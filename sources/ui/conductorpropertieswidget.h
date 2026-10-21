@@ -22,6 +22,7 @@
 #include "../conductorproperties.h"
 
 #include <QWidget>
+class QCheckBox;
 class QTextOrientationSpinBoxWidget;
 class QComboBox;
 class QPushButton;
@@ -52,11 +53,22 @@ class ConductorPropertiesWidget : public QWidget
 		void setHiddenAvailableAutonum (const bool &hide);
 		void setMixedTextFields(const QList<ConductorMultiEdit::TextField> &mixed);
 		void setTextLocked(bool locked);
+			/**
+				The box "Leave out of automatic numbering" (T77). Hidden
+				unless a conductor editor asks for it: the defaults of a
+				folio or a project edit no conductor. Its state is the
+				conductor's (Conductor::isFreezeLabel()), not one of the
+				properties, so the editor showing it reads and applies it.
+			*/
+		void setIgnoreBoxShown(bool shown);
+		void setIgnoredInNumbering(Qt::CheckState state);
+		QCheckBox *ignoreBox() const {return m_ignore_cb;}
 		QComboBox *autonumComboBox() const;
 		QPushButton *editAutonumPushButton() const;
 
 	private:
 		void initWidget();
+		void updateTextEnabled();
 		void setConductorType(ConductorProperties::ConductorType type);
 
 	protected:
@@ -76,6 +88,7 @@ class ConductorPropertiesWidget : public QWidget
 		ConductorProperties m_properties;
 		QTextOrientationSpinBoxWidget *m_verti_select, *m_horiz_select;
 		bool m_text_locked = false;
+		QCheckBox *m_ignore_cb = nullptr;
 };
 
 #endif // CONDUCTORPROPERTIESWIDGET_H

@@ -51,9 +51,13 @@ class Conductor : public QGraphicsObject
 	Q_PROPERTY(int animPath READ fakePath WRITE updatePathAnimate)
 	Q_PROPERTY(ConductorProperties properties READ properties WRITE setProperties)
 	Q_PROPERTY(autonum::sequentialNumbers sequenceNum READ sequenceNum WRITE setSequenceNum)
+	// True: left out of the automatic numbering - no routine writes its
+	// text, and its number is not counted (see isFreezeLabel()).
+	Q_PROPERTY(bool freezeLabel READ isFreezeLabel WRITE setFreezeLabel NOTIFY freezeLabelChanged)
 
 	signals:
 		void propertiesChange();
+		void freezeLabelChanged();
 	
 	public:
 		Conductor(Terminal *, Terminal *);
@@ -211,6 +215,13 @@ class Conductor : public QGraphicsObject
 
 	public:
 		void setFreezeLabel(bool freeze);
+			/**
+				Whether the wire is left out of the automatic numbering: the
+				text it has stays - its formula is not worked out - and the
+				routines that number, name or count wires pass it by. The
+				one the user types in its own panel still reaches it.
+			*/
+		bool isFreezeLabel() const {return m_freeze_label;}
 
 	private:
 		/**

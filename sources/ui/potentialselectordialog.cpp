@@ -21,6 +21,7 @@
 #include "../QPropertyUndoCommand/qpropertyundocommand.h"
 #include "../qet.h"
 #include "../autoNum/assignvariables.h"
+#include "../conductorautonumerotation.h"
 #include "../diagram.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
@@ -129,6 +130,8 @@ class NewConductorPotentialSelector : public AbstractPotentialSelector
 
 			c_list = conductor_in_potential->relatedPotentialConductors().values();
 			c_list.append(conductor_in_potential);
+				//A wire left out of the numbering is no choice (T77)
+			c_list = ConductorAutoNumerotation::counted(c_list);
 			foreach(Conductor *c, c_list)
 				properties_list.append(c->properties());
 		}
@@ -162,6 +165,9 @@ class LinkReportPotentialSelector : public AbstractPotentialSelector
 				m_seq_num_1 = report->conductors().first()->sequenceNum();
 				m_conductors_list_1.append(report->conductors().first()->relatedPotentialConductors().values());
 				m_conductors_list_1.append(report->conductors().first());
+					//A wire left out of the numbering is neither a choice
+					//nor written over (T77)
+				m_conductors_list_1 = ConductorAutoNumerotation::counted(m_conductors_list_1);
 				foreach(Conductor *c, m_conductors_list_1)
 					m_properties_list_1 << c->properties();
 
@@ -169,6 +175,7 @@ class LinkReportPotentialSelector : public AbstractPotentialSelector
 				m_seq_num_2 = other_report->conductors().first()->sequenceNum();
 				m_conductors_list_2.append(other_report->conductors().first()->relatedPotentialConductors().values());
 				m_conductors_list_2.append(other_report->conductors().first());
+				m_conductors_list_2 = ConductorAutoNumerotation::counted(m_conductors_list_2);
 				foreach(Conductor *c, m_conductors_list_2)
 					m_properties_list_2 << c->properties();
 
@@ -499,7 +506,7 @@ void PotentialSelectorDialog::on_buttonBox_accepted()
 					QString new_formula = fag.formula();
 					QSet <Conductor *> c_list = m_report->conductors().first()->relatedPotentialConductors();
 					c_list.insert(m_report->conductors().first());
-					foreach(Conductor *cond, c_list)
+					foreach(Conductor *cond, ConductorAutoNumerotation::counted(c_list))
 					{
 						old_value.setValue(cond->properties());
 						ConductorProperties new_properties = cond->properties();
@@ -546,7 +553,7 @@ void PotentialSelectorDialog::on_buttonBox_accepted()
 					 undo);
 
 			//Set the new properties for each conductors of the new potential
-		foreach(Conductor *cond, m_conductor->relatedPotentialConductors())
+		foreach(Conductor *cond, ConductorAutoNumerotation::counted(m_conductor->relatedPotentialConductors()))
 		{
 			new_properties = cond->properties();
 			new_properties.applyForEqualAttributes(m_properties_list);

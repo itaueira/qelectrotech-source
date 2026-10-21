@@ -22,6 +22,9 @@
 #include "../qtextorientationspinboxwidget.h"
 #include "ui_conductorpropertieswidget.h"
 
+#include <QCheckBox>
+#include <QGridLayout>
+
 /**
 	@brief ConductorPropertiesWidget::ConductorPropertiesWidget
 	Constructor
@@ -232,11 +235,47 @@ void ConductorPropertiesWidget::setMixedTextFields(
 void ConductorPropertiesWidget::setTextLocked(bool locked)
 {
 	m_text_locked = locked;
-	ui->m_text_le->setEnabled(!locked && ui->m_formula_le->text().isEmpty());
+	updateTextEnabled();
 	ui->m_text_le->setToolTip(locked
 		? tr("Several conductors selected: the text is changed on one "
 		     "conductor at a time.")
 		: tr("Text"));
+}
+
+/**
+	@brief ConductorPropertiesWidget::updateTextEnabled
+	The text is typed when there is no formula to work it out, or when the
+	wire is left out of the numbering: its formula is then not worked out,
+	and the text typed is the text shown.
+*/
+void ConductorPropertiesWidget::updateTextEnabled()
+{
+	const bool ignored = m_ignore_cb && !m_ignore_cb->isHidden()
+			&& m_ignore_cb->checkState() == Qt::Checked;
+	ui->m_text_le->setEnabled(!m_text_locked
+				  && (ui->m_formula_le->text().isEmpty() || ignored));
+}
+
+/**
+	@brief ConductorPropertiesWidget::setIgnoreBoxShown
+	@param shown : true in an editor of conductors
+*/
+void ConductorPropertiesWidget::setIgnoreBoxShown(bool shown)
+{
+	m_ignore_cb->setVisible(shown);
+	updateTextEnabled();
+}
+
+/**
+	@brief ConductorPropertiesWidget::setIgnoredInNumbering
+	@param state : checked when every conductor edited is left out of the
+	numbering, partly checked when only some are
+*/
+void ConductorPropertiesWidget::setIgnoredInNumbering(Qt::CheckState state)
+{
+	const QSignalBlocker blocker(m_ignore_cb);
+	m_ignore_cb->setCheckState(state);
+	updateTextEnabled();
 }
 
 /**
@@ -293,7 +332,18 @@ void ConductorPropertiesWidget::initWidget()
 
 	connect(ui->m_multiwires_gb, &QGroupBox::toggled, [this](bool toggle) {this->ui->m_singlewire_gb->setChecked(!toggle);});
 	connect(ui->m_singlewire_gb, &QGroupBox::toggled, [this](bool toggle) {this->ui->m_multiwires_gb->setChecked(!toggle);});
-	connect(ui->m_formula_le, &QLineEdit::textChanged, [this](QString text) {this->ui->m_text_le->setEnabled(!m_text_locked && text.isEmpty());});
+	connect(ui->m_formula_le, &QLineEdit::textChanged, this, [this]() {updateTextEnabled();});
+
+		//Under the formula and the text it governs (T77)
+	m_ignore_cb = new QCheckBox(tr("Leave out of automatic numbering"), this);
+	m_ignore_cb->setToolTip(tr("Automatic numbering does not change this wire, and does not count its number."));
+	m_ignore_cb->setVisible(false);
+	if (auto *grid = qobject_cast<QGridLayout *>(ui->m_formula_le->parentWidget()->layout())) {
+		grid->addWidget(m_ignore_cb, grid->rowCount(), 0, 1, grid->columnCount());
+	} else if (ui->m_formula_le->parentWidget()->layout()) {
+		ui->m_formula_le->parentWidget()->layout()->addWidget(m_ignore_cb);
+	}
+	connect(m_ignore_cb, &QCheckBox::toggled, this, [this]() {updateTextEnabled();});
 	ui->m_multiwires_gb->setChecked(true);
 	ui->m_singlewire_gb->setChecked(true);
 #if TODO_LIST

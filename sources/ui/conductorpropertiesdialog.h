@@ -43,6 +43,7 @@ class ConductorPropertiesDialog : public QDialog
 
 		ConductorProperties properties() const;
 		bool applyAll() const;
+		bool ignoredInNumbering() const;
 
 	private:
 		Ui::ConductorPropertiesDialog *ui;

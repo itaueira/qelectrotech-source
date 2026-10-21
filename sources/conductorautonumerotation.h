@@ -45,6 +45,15 @@ class ConductorProperties;
 	A new conductor is not the only thing that joins two potentials: linking
 	two folio reports does too. LinkElementCommand answers that question by
 	the same rule, through settleFrozenPotential().
+
+	@par A wire left out of the numbering (T77)
+
+	Not the same as frozen, and the difference is the point. A frozen wire
+	keeps its number and gives it to its potential: whoever joins it takes
+	that number. A wire left out (Conductor::isFreezeLabel()) keeps its text
+	and gives nothing: the other wires of its potential are numbered as if
+	it were not there, nobody takes its name, and its number is not
+	counted. counted() is the potential the numbering sees.
 */
 class ConductorAutoNumerotation
 {
@@ -84,6 +93,22 @@ class ConductorAutoNumerotation
 		*/
 		static bool isFrozen(const Conductor *conductor,
 				     const AssemblyState &state);
+		/// Whether @a conductor is left out of the automatic numbering (T77)
+		static bool isIgnored(const Conductor *conductor)
+		{return conductor && conductor->isFreezeLabel();}
+		/// @a conductors without the ones left out of the numbering
+		template <typename Container>
+		static Container counted(Container conductors)
+		{
+			for (auto it = conductors.begin() ; it != conductors.end() ; ) {
+				if (isIgnored(*it)) {
+					it = conductors.erase(it);
+				} else {
+					++it;
+				}
+			}
+			return conductors;
+		}
 		/**
 			@param potential : every conductor of the potential two
 			potentials are being joined into, whatever joins them - a new

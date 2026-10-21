@@ -301,7 +301,13 @@ QList<Conductor *> ConductorCreator::existingPotential(const QList<Terminal *> &
 		QSet<Conductor *> potential = seed->relatedPotentialConductors(true);
 		potential.insert(seed);
 		potentials.append(potential);
-		c_list.append(seed);
+			//The name comes from a wire that is numbered: one left out of
+			//the numbering gives none, and a potential of those alone is
+			//no potential to take a name from (T77)
+		const QSet<Conductor *> numbered = ConductorAutoNumerotation::counted(potential);
+		if (!numbered.isEmpty()) {
+			c_list.append(numbered.contains(seed) ? seed : *numbered.cbegin());
+		}
 	}
 
 	return c_list;

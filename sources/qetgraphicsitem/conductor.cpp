@@ -2454,14 +2454,19 @@ void Conductor::setProperties(const ConductorProperties &property)
 
 	if (!m_properties.m_formula.isEmpty())
 	{
-		if (diagram())
+			//Left out of the numbering: the text given is the text shown,
+			//and the formula is not worked out
+		if (!m_freeze_label)
 		{
-			QString text = autonum::AssignVariables::formulaToLabel(m_properties.m_formula, m_autoNum_seq, diagram(), nullptr, this);
-			m_properties.text = text;
-		}
-		else if (m_properties.text.isEmpty())
-		{
-			m_properties.text = m_properties.m_formula;
+			if (diagram())
+			{
+				QString text = autonum::AssignVariables::formulaToLabel(m_properties.m_formula, m_autoNum_seq, diagram(), nullptr, this);
+				m_properties.text = text;
+			}
+			else if (m_properties.text.isEmpty())
+			{
+				m_properties.text = m_properties.m_formula;
+			}
 		}
 
 		setUpConnectionForFormula(formula, m_properties.m_formula);
@@ -2628,6 +2633,10 @@ void Conductor::displayedTextChanged()
 
 		foreach (Conductor *potential_conductor, relatedPotentialConductors())
 		{
+				//A wire left out of the numbering keeps its own text
+			if (potential_conductor->isFreezeLabel()) {
+				continue;
+			}
 			old_value.setValue(potential_conductor->properties());
 			ConductorProperties new_properties = potential_conductor->properties();
 			new_properties.m_formula = m_text_item->toPlainText();
@@ -3253,12 +3262,16 @@ QList <Conductor *> relatedConductors(const Conductor *conductor) {
 */
 void Conductor::setFreezeLabel(bool freeze)
 {
-	m_freeze_label = freeze;
-
-	if (m_freeze_label != freeze)
-	{
-		m_freeze_label = freeze;
-		QString f = m_properties.m_formula;
-		setUpConnectionForFormula(f,f);
+		//The comparison came after the assignment, and the body never ran
+	if (m_freeze_label == freeze) {
+		return;
 	}
+	m_freeze_label = freeze;
+	const QString formula = m_properties.m_formula;
+	setUpConnectionForFormula(formula, formula);
+		//Back in the numbering: the name its formula gives
+	if (!m_freeze_label) {
+		refreshText();
+	}
+	emit freezeLabelChanged();
 }

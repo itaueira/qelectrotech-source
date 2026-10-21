@@ -466,7 +466,9 @@ void ElementsMover::endMovement()
 					undo_object->setText(QObject::tr("Add %n conductors", "add a numbers of conductor one or more", acc));
 
 					//Get all conductors at the same potential of conductor
-				const auto conductors_list{conductor->relatedPotentialConductors()};
+					//Not a wire left out of the numbering (T77)
+				const auto conductors_list{ConductorAutoNumerotation::counted(
+						conductor->relatedPotentialConductors())};
 
 					//Compare the properties of every conductors stored in conductors_list,
 					//if every conductors properties is equal, we use this properties for conductor.

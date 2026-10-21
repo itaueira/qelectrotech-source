@@ -5514,13 +5514,13 @@ Continuar?</translation>
 <context>
     <name>Conductor</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2622"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2627"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2627"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2632"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
@@ -5622,13 +5622,24 @@ Continuar?</translation>
         <translation>Aplicar as propriedades em todos os condutores deste potencial</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertiesdialog.cpp" line="106"/>
+        <location filename="../sources/ui/conductorpropertiesdialog.cpp" line="90"/>
+        <source>Leave out of automatic numbering</source>
+        <translation>Ignorar na numeração automática</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/conductorpropertiesdialog.cpp" line="91"/>
+        <source>Bring back into automatic numbering</source>
+        <translation>Voltar para a numeração automática</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/conductorpropertiesdialog.cpp" line="96"/>
+        <location filename="../sources/ui/conductorpropertiesdialog.cpp" line="134"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertiesdialog.cpp" line="93"/>
+        <location filename="../sources/ui/conductorpropertiesdialog.cpp" line="118"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
@@ -5637,12 +5648,22 @@ Continuar?</translation>
 <context>
     <name>ConductorPropertiesEditorWidget</name>
     <message>
-        <location filename="../sources/ui/conductorpropertieseditorwidget.cpp" line="71"/>
+        <location filename="../sources/ui/conductorpropertieseditorwidget.cpp" line="72"/>
         <source>Apply properties to all conductors of this potential</source>
         <translation>Aplicar as propriedades em todos os condutores deste potencial</translation>
     </message>
+    <message>
+        <location filename="../sources/ui/conductorpropertieseditorwidget.cpp" line="134"/>
+        <source>Leave out of automatic numbering</source>
+        <translation>Ignorar na numeração automática</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/conductorpropertieseditorwidget.cpp" line="135"/>
+        <source>Bring back into automatic numbering</source>
+        <translation>Voltar para a numeração automática</translation>
+    </message>
     <message numerus="yes">
-        <location filename="../sources/ui/conductorpropertieseditorwidget.cpp" line="171"/>
+        <location filename="../sources/ui/conductorpropertieseditorwidget.cpp" line="214"/>
         <source>%n conductors selected: only the fields you change are applied to them.</source>
         <comment>selection properties panel</comment>
         <translation>
@@ -5651,19 +5672,19 @@ Continuar?</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/conductormultiedit.h" line="189"/>
+        <location filename="../sources/conductormultiedit.h" line="193"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/conductormultiedit.h" line="191"/>
+        <location filename="../sources/conductormultiedit.h" line="195"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertieseditorwidget.cpp" line="380"/>
+        <location filename="../sources/ui/conductorpropertieseditorwidget.cpp" line="430"/>
         <source>Conductor</source>
         <translation>Condutor</translation>
     </message>
@@ -5747,13 +5768,13 @@ Continuar?</translation>
     </message>
     <message>
         <location filename="../sources/ui/conductorpropertieswidget.ui" line="75"/>
-        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="239"/>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="242"/>
         <source>Text</source>
         <translation>Texto</translation>
     </message>
     <message>
         <location filename="../sources/ui/conductorpropertieswidget.ui" line="138"/>
-        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="253"/>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="292"/>
         <source>Visible text</source>
         <translation>Texto visível</translation>
     </message>
@@ -5899,40 +5920,50 @@ Continuar?</translation>
         <translation>Tamanho da linha:</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="222"/>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="225"/>
         <source>Several values</source>
         <comment>several conductors, different values</comment>
         <translation>Vários valores</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="237"/>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="240"/>
         <source>Several conductors selected: the text is changed on one conductor at a time.</source>
         <translation>Vários condutores selecionados: o texto só pode ser modificado em um condutor por vez.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="250"/>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="289"/>
         <source>Visible text
 Locked by this sheet&apos;s “Show one potential text per sheet” option, in Sheet properties.</source>
         <translation>Texto visível
 Travado pela opção «Exibir um texto de potencial por folha» desta folha, em Propriedades da folha.</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="288"/>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="327"/>
         <source>Solid line</source>
         <comment>conductor style: solid line</comment>
         <translation>Linha contínua</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="289"/>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="328"/>
         <source>Dashed line</source>
         <comment>conductor style: dashed line</comment>
         <translation>Linha pontilhada</translation>
     </message>
     <message>
-        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="290"/>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="329"/>
         <source>Dots and dashes</source>
         <comment>conductor style: dashed and dotted line</comment>
         <translation>Pontos e traços</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="338"/>
+        <source>Leave out of automatic numbering</source>
+        <translation>Ignorar na numeração automática</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/conductorpropertieswidget.cpp" line="339"/>
+        <source>Automatic numbering does not change this wire, and does not count its number.</source>
+        <translation>A numeração automática não muda este fio e não conta o número dele.</translation>
     </message>
 </context>
 <context>
@@ -7648,17 +7679,17 @@ Hold Shift and drag to move this text on its own</source>
 <context>
     <name>DrcTerminalRules</name>
     <message>
-        <location filename="../sources/drc/drcterminalrules.cpp" line="98"/>
+        <location filename="../sources/drc/drcterminalrules.cpp" line="114"/>
         <source>A terminal of %1, with no name, is not connected.</source>
         <translation>Terminal sem nome de %1 sem ligação.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcterminalrules.cpp" line="102"/>
+        <location filename="../sources/drc/drcterminalrules.cpp" line="118"/>
         <source>Terminal %1 of %2 is not connected.</source>
         <translation>Terminal %1 de %2 sem ligação.</translation>
     </message>
     <message>
-        <location filename="../sources/drc/drcterminalrules.cpp" line="139"/>
+        <location filename="../sources/drc/drcterminalrules.cpp" line="155"/>
         <source>Component terminal with nothing wired to it</source>
         <translation>Terminal de componente sem ligação</translation>
     </message>
@@ -18628,8 +18659,8 @@ Please select the properties to be applied to new potential.</source>
 Por favor, selecione as propriedades a serem aplicadas ao novo potencial.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="314"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="336"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="321"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="343"/>
         <source>%n conductors make up the following potential :</source>
         <translation>
             <numerusform>%n condutor compõe o seguinte potencial:</numerusform>
@@ -18637,75 +18668,75 @@ Por favor, selecione as propriedades a serem aplicadas ao novo potencial.</trans
         </translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="215"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="323"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="344"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="222"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="330"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="351"/>
         <source>
 Number: %1</source>
         <translation>
 Número: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="206"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="213"/>
         <source>Please select an electrical potential from the list 
 to use for the new potential</source>
         <translation>Por favor, escolha um potencial elétrico da lista 
 usar para um novo potencial</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="217"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="325"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="346"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="224"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="332"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="353"/>
         <source>
 Function : %1</source>
         <translation>
 Função: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="219"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="327"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="348"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="226"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="334"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="355"/>
         <source>
 Voltage / Protocol : %1</source>
         <translation>
 Tensão/Protocolo: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="221"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="330"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="351"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="228"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="337"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="358"/>
         <source>
 Conductor color : %1</source>
         <translation>
 Cor do condutor: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="223"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="333"/>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="354"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="230"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="340"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="361"/>
         <source>
 Conductor section : %1</source>
         <translation>
 Seção do condutor: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="361"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="368"/>
         <source>Add to cable: %1</source>
         <translation>Adicionar ao cabo: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="364"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="371"/>
         <source>Add to bus: %1</source>
         <translation>Adicionar ao barramento: %1</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="436"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="443"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
     </message>
     <message>
-        <location filename="../sources/ui/potentialselectordialog.cpp" line="489"/>
+        <location filename="../sources/ui/potentialselectordialog.cpp" line="496"/>
         <source>The new potential formula contains variables incompatible with sheet references.
 Please enter a compatible formula for this potential.
 The following variables are incompatible:
@@ -25605,8 +25636,8 @@ O que você deseja fazer?</translation>
         <translation>Coleção</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="524"/>
-        <location filename="../sources/elementsmover.cpp" line="527"/>
+        <location filename="../sources/elementsmover.cpp" line="526"/>
+        <location filename="../sources/elementsmover.cpp" line="529"/>
         <source>Affecter les composants d&apos;une zone</source>
         <translation>Atribuir os componentes de uma zona</translation>
     </message>
@@ -26380,21 +26411,21 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Formatar as tags das referências de folha</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="197"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="199"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="206"/>
-        <location filename="../sources/conductorautonumerotation.cpp" line="470"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="208"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="473"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="263"/>
-        <location filename="../sources/conductorautonumerotation.cpp" line="374"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="265"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="376"/>
         <source>Automatically number a conductor</source>
         <comment>undo caption</comment>
         <translation>Numerar automaticamente um condutor</translation>
@@ -27501,7 +27532,7 @@ Deseja substituí-lo?</translation>
     </message>
     <message>
         <location filename="../sources/utils/conductorcreator.cpp" line="86"/>
-        <location filename="../sources/wiresections.cpp" line="105"/>
+        <location filename="../sources/wiresections.cpp" line="108"/>
         <source>Update the wire cross-sections</source>
         <comment>undo caption</comment>
         <translation>Atualizar a bitola dos fios</translation>
@@ -28344,7 +28375,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Nome do fio por folha, com cor e bitola</translation>
     </message>
     <message>
-        <location filename="../sources/wirenames.cpp" line="750"/>
+        <location filename="../sources/wirenames.cpp" line="761"/>
         <source>Name the wire as its point</source>
         <comment>undo caption</comment>
         <translation>Dar ao fio o nome do ponto</translation>
@@ -28388,7 +28419,7 @@ Adicione uma nova tabela ou ajuste a tabela existente para exibir todas as infor
         <translation>Limitação de tabela</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/ViewItem/qetgraphicstableitem.cpp" line="1228"/>
+        <location filename="../sources/qetgraphicsitem/ViewItem/qetgraphicstableitem.cpp" line="1302"/>
         <source>Modify the geometry of a table</source>
         <translation>Modifique a geometria de uma tabela</translation>
     </message>

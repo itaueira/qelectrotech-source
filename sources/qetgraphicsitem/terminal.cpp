@@ -704,7 +704,9 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 	Conductor *new_conductor = new Conductor(this, other_terminal);
 
 	//Get all conductors at the same potential of new conductors
-	QSet <Conductor *> conductors_list = new_conductor->relatedPotentialConductors();
+		//Not a wire left out of the numbering: nobody takes its name (T77)
+	QSet <Conductor *> conductors_list = ConductorAutoNumerotation::counted(
+				new_conductor->relatedPotentialConductors());
 
 	//Compare the properties of every conductors stored in conductors_list,
 	//if every conductors properties is equal, we use this properties for the new conductor.

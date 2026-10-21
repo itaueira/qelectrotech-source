@@ -53,7 +53,9 @@ namespace
 		/// @p section on @p conductor at once, with no undo command
 	void setSection(Conductor *conductor, const QString &section)
 	{
-		if (!conductor || section.isEmpty()) {
+			//Left out of the numbering: not written (T77)
+		if (!conductor || section.isEmpty()
+		    || ConductorAutoNumerotation::isIgnored(conductor)) {
 			return;
 		}
 		ConductorProperties properties = conductor->properties();
@@ -83,7 +85,8 @@ namespace
 		}
 		for (Conductor *conductor : potential)
 		{
-			if (!conductor) {
+				//Left out of the numbering: not written (T77)
+			if (!conductor || ConductorAutoNumerotation::isIgnored(conductor)) {
 				continue;
 			}
 			const ConductorProperties before = conductor->properties();

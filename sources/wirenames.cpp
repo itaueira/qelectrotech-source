@@ -429,6 +429,12 @@ namespace
 				for (Conductor *member : std::as_const(point.wires)) {
 					seen.insert(member);
 				}
+					//A wire left out of the numbering is not named, and
+					//its number is not counted in its folio (T77)
+				point.wires = ConductorAutoNumerotation::counted(point.wires);
+				if (point.wires.isEmpty()) {
+					continue;
+				}
 				std::sort(point.wires.begin(), point.wires.end(), before);
 
 				int typed_folio = -1;
@@ -685,7 +691,12 @@ int WireNames::keepFolioOfPoint(Conductor *conductor, Diagram *diagram, QUndoCom
 	if (!own.m_formula.startsWith(QStringLiteral("F%id")) || !isNameFormula(own.m_formula)) {
 		return 0;
 	}
-	const QList<Conductor *> point = WireSections::potentialOf(conductor);
+		//The wires left out of the numbering keep their formula (T77)
+	if (ConductorAutoNumerotation::isIgnored(conductor)) {
+		return 0;
+	}
+	const QList<Conductor *> point = ConductorAutoNumerotation::counted(
+				WireSections::potentialOf(conductor));
 	if (holdsFrozen(point)) {
 		return 0;
 	}

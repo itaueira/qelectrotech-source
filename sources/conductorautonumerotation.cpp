@@ -112,7 +112,7 @@ ConductorAutoNumerotation::ConductorAutoNumerotation(
 		QUndoCommand *parent_undo) :
 	m_diagram      (diagram),
 	m_conductor     (conductor),
-	conductor_list (conductor -> relatedPotentialConductors().values()),
+	conductor_list (counted(conductor -> relatedPotentialConductors().values())),
 	m_parent_undo  (parent_undo)
 {}
 
@@ -123,6 +123,8 @@ ConductorAutoNumerotation::ConductorAutoNumerotation(
 void ConductorAutoNumerotation::numerate()
 {
 	if (!m_conductor) return;
+		//Left out of the numbering: its text is not written (T77)
+	if (isIgnored(m_conductor.data())) return;
 		//A wire of a panel already built keeps its number, whoever asks
 		//(T29). Every caller today hands in a conductor it has just
 		//created, which is never in the photograph; this is what keeps it
@@ -440,6 +442,7 @@ bool ConductorAutoNumerotation::settleFrozenPotential(
 	for (Conductor *conductor : potential)
 	{
 		if (!conductor
+		    || isIgnored(conductor)
 		    || frozen.contains(conductor)
 		    || to_change.contains(conductor)) {
 			continue;

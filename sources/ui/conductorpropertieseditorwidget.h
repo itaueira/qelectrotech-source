@@ -67,6 +67,7 @@ class ConductorPropertiesEditorWidget : public PropertiesEditorWidget
 		void disconnectChangeSignals();
 		void scheduleUpdateUi();
 		Conductor *firstConductor() const;
+		void applyIgnored(bool ignored);
 
 	private:
 		ConductorPropertiesWidget *m_cpw = nullptr;

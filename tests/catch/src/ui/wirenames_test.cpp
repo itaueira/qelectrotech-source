@@ -23,6 +23,7 @@
 #include "../../../../sources/autoNum/assignvariables.h"
 #include "../../../../sources/autoNum/numerotationcontext.h"
 #include "../../../../sources/conductorautonumerotation.h"
+#include "../../../../sources/QPropertyUndoCommand/qpropertyundocommand.h"
 #include "../../../../sources/conductorproperties.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontext.h"
@@ -33,12 +34,15 @@
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/undocommand/assemblystatecommand.h"
 #include "../../../../sources/undocommand/changeelementinformationcommand.h"
+#include "../../../../sources/ui/conductorpropertieseditorwidget.h"
 #include "../../../../sources/wirecolorname.h"
 #include "../../../../sources/wirenames.h"
 
 #include <catch2/catch.hpp>
 
 #include <QChar>
+#include <QCheckBox>
+#include <QCoreApplication>
 #include <QGraphicsSceneMouseEvent>
 #include <QLatin1String>
 #include <QSet>
@@ -1026,4 +1030,215 @@ TEST_CASE("T70 — A formula pinned to a folio", "[T70][wirenames]")
 	CHECK(WireNames::typedFolio(QStringLiteral("F12 PE (2,5mm2)")) == 12);
 	CHECK(WireNames::typedFolio(QStringLiteral("PE (2,5mm2)")) == -1);
 	CHECK(WireNames::typedFolio(QStringLiteral("F (2,5mm2)")) == -1);
+}
+
+/*
+	A wire left out of the automatic numbering (T77): its text stays, no
+	routine writes it, nobody takes its name, and its number is not counted.
+*/
+namespace
+{
+		/// What the box of the wire panel pushes: one step for @a wires
+	void leaveOut(QUndoStack &stack, const QList<Conductor *> &wires, bool ignored = true)
+	{
+		auto *undo = new QUndoCommand(QStringLiteral("ignore"));
+		for (Conductor *wire : wires) {
+			new QPropertyUndoCommand(wire, "freezeLabel", wire->isFreezeLabel(), ignored, undo);
+		}
+		stack.push(undo);
+	}
+
+	QCheckBox *ignoreBoxOf(QWidget *panel)
+	{
+		const QList<QCheckBox *> boxes = panel->findChildren<QCheckBox *>();
+		for (QCheckBox *box : boxes) {
+			if (box->text() == QLatin1String("Leave out of automatic numbering")) {
+				return box;
+			}
+		}
+		return nullptr;
+	}
+}
+
+TEST_CASE("CU-77.1 — Leaving a wire out and bringing it back", "[T77][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+	showFolio(one);
+	Conductor *wire = drawBetween(bench, 0, 1);
+	REQUIRE(wire != nullptr);
+	REQUIRE(textOf(wire) == wireName(1, 1, "1"));
+	QUndoStack &stack = bench.stack();
+
+	leaveOut(stack, {wire});
+	CHECK(wire->isFreezeLabel());
+	CHECK(textOf(wire) == wireName(1, 1, "1"));
+
+	SECTION("undone, it is back in the numbering")
+	{
+		stack.undo();
+		CHECK_FALSE(wire->isFreezeLabel());
+		CHECK(textOf(wire) == wireName(1, 1, "1"));
+	}
+
+	SECTION("a text typed while it is left out is kept, and the formula gives its name back")
+	{
+		ConductorProperties typed = wire->properties();
+		typed.text = QStringLiteral("JUMPER");
+		stack.push(new QPropertyUndoCommand(wire, "properties",
+						    QVariant::fromValue(wire->properties()),
+						    QVariant::fromValue(typed)));
+		CHECK(textOf(wire) == QLatin1String("JUMPER"));
+		CHECK_FALSE(wire->properties().m_formula.isEmpty());
+
+		leaveOut(stack, {wire}, false);
+		CHECK_FALSE(wire->isFreezeLabel());
+		CHECK(textOf(wire) == wireName(1, 1, "1"));
+	}
+}
+
+TEST_CASE("CU-77.2 — The cross-section does not rewrite a wire left out", "[T77][wirenames]")
+{
+	Bench bench(drawnByHand());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *fifth = bench.project.diagram(4);
+	REQUIRE(WireNames::convertProject(project, fifth) == 4);
+	Conductor *first = bench.wire(0);
+	Conductor *first_on = bench.wire(1);
+	REQUIRE((first && first_on));
+	REQUIRE(textOf(first) == wireName(5, 2));
+	REQUIRE(textOf(first_on) == wireName(5, 2));
+
+		//The two wires of the point through the strip: one left out
+	leaveOut(bench.stack(), {first_on});
+	setComponentSection(bench.stack(), bench.part(0), QStringLiteral("2,5"));
+	CHECK(textOf(first) == wireName(5, 2, "2,5"));
+	CHECK(textOf(first_on) == wireName(5, 2));
+	CHECK(first_on->properties().m_wire_section.isEmpty());
+}
+
+TEST_CASE("CU-77.3 — A new wire does not take the name of a wire left out", "[T77][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+	showFolio(one);
+	Conductor *left_out = drawBetween(bench, 0, 1);
+	REQUIRE(left_out != nullptr);
+	REQUIRE(textOf(left_out) == wireName(1, 1, "1"));
+	leaveOut(bench.stack(), {left_out});
+
+		//From the terminal whose only wire is left out: a new wire, numbered
+		//as one, and not a copy of its name
+	Conductor *added = drawBetween(bench, 0, 3);
+	REQUIRE(added != nullptr);
+	CHECK(textOf(added) == wireName(1, 2, "1"));
+	CHECK(textOf(left_out) == wireName(1, 1, "1"));
+	CHECK_FALSE(added->isFreezeLabel());
+}
+
+TEST_CASE("CU-77.4 — The conversion does not count a wire left out", "[T77][wirenames]")
+{
+	Bench bench(drawnByHand());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	QETProject *project = bench.project.project();
+	Diagram *fifth = bench.project.diagram(4);
+	Conductor *first = bench.wire(0);
+	Conductor *first_on = bench.wire(1);
+	Conductor *seventh = bench.wire(2);
+	Conductor *bare = bench.wire(3);
+	REQUIRE((first && first_on && seventh && bare));
+	REQUIRE(textOf(seventh) == typedName(5, 7, "1,5"));
+	REQUIRE(textOf(bare).isEmpty());
+
+	leaveOut(bench.stack(), {seventh});
+	CHECK(WireNames::convertProject(project, fifth) == 3);
+		//F5-7 is left as it was typed, and does not count: the wire with no
+		//number takes the one after F5-2
+	CHECK(textOf(seventh) == typedName(5, 7, "1,5"));
+	CHECK(textOf(first) == wireName(5, 2));
+	CHECK(textOf(bare) == wireName(5, 3));
+
+	SECTION("a wire drawn afterwards goes on from there")
+	{
+		Conductor *added = drawBetween(bench, 7, 8);
+		REQUIRE(added != nullptr);
+		CHECK(textOf(added) == wireName(5, 4));
+	}
+}
+
+TEST_CASE("CU-77.5 — A wire left out stays so when reopened", "[T77][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+	showFolio(one);
+	Conductor *left_out = drawBetween(bench, 0, 1);
+	Conductor *numbered = drawBetween(bench, 2, 3);
+	REQUIRE((left_out && numbered));
+	const QUuid left_uuid = left_out->uuid();
+	leaveOut(bench.stack(), {left_out});
+
+	REQUIRE(bench.project.saveAndReopen());
+	int marked = 0;
+	bool found = false;
+	const QList<Conductor *> wires = bench.project.diagram(0)->conductors();
+	for (Conductor *wire : wires)
+	{
+		if (wire->isFreezeLabel()) {
+			++marked;
+		}
+		if (wire->uuid() == left_uuid) {
+			found = true;
+			CHECK(wire->isFreezeLabel());
+			CHECK(textOf(wire) == wireName(1, 1, "1"));
+		}
+	}
+	CHECK(found);
+	CHECK(marked == 1);
+}
+
+TEST_CASE("CU-77.6 — The panel box marks the selected wires in one step", "[T77][wirenames]")
+{
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+	showFolio(one);
+	Conductor *a = drawBetween(bench, 0, 1);
+	Conductor *b = drawBetween(bench, 2, 3);
+	Conductor *c = drawBetween(bench, 4, 5);
+	REQUIRE((a && b && c));
+	QUndoStack &stack = bench.stack();
+
+	ConductorPropertiesEditorWidget panel({a, b});
+	QCheckBox *box = ignoreBoxOf(&panel);
+	REQUIRE(box != nullptr);
+	CHECK_FALSE(box->isHidden());
+	CHECK(box->checkState() == Qt::Unchecked);
+
+	const int before = stack.index();
+	box->click();
+	CHECK(a->isFreezeLabel());
+	CHECK(b->isFreezeLabel());
+	CHECK_FALSE(c->isFreezeLabel());
+	CHECK(stack.index() == before + 1);
+	CHECK(box->checkState() == Qt::Checked);
+
+	stack.undo();
+	CHECK_FALSE(a->isFreezeLabel());
+	CHECK_FALSE(b->isFreezeLabel());
+	QCoreApplication::processEvents();
+	CHECK(box->checkState() == Qt::Unchecked);
 }
