@@ -2987,8 +2987,21 @@ void QETDiagramEditor::navigateToReference()
 		return;
 	}
 
+		//The other end of a folio report is shown as a double click on the
+		//arrow shows it (Element::jumpTo()): the whole folio, the arrow
+		//shaded for a moment and the pointer on it - one framing for one
+		//destination, whichever gesture asked (decision of 20/10/2026).
+		//Any other destination is zoomed onto, as before.
+	const auto show = [](Element *target) {
+		if (target->linkType() & Element::AllReport) {
+			Element::jumpTo(target);
+		} else {
+			QetGraphicsItem::showItem(target);
+		}
+	};
+
 	if (targets.count() == 1) {
-		QetGraphicsItem::showItem(targets.first());
+		show(targets.first());
 		return;
 	}
 
@@ -3000,7 +3013,7 @@ void QETDiagramEditor::navigateToReference()
 	}
 
 	if (Element *chosen = dialog.chosenTarget()) {
-		QetGraphicsItem::showItem(chosen);
+		show(chosen);
 	}
 }
 
