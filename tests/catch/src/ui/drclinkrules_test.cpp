@@ -26,12 +26,14 @@
 #include "../../../../sources/drc/drcscanengine.h"
 #include "../../../../sources/drc/ui/drcpanel.h"
 #include "../../../../sources/drc/ui/drcprojectactions.h"
+#include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/terminalelement.h"
 #include "../../../../sources/qetproject.h"
 
 #include <catch2/catch.hpp>
 
+#include <QPair>
 #include <QString>
 #include <QStringList>
 #include <QTableWidget>
@@ -292,7 +294,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 		const DrcProjectActions::CheckOutcome outcome =
 				DrcProjectActions::runCheck(bench.project());
 
-		CHECK(outcome.scan_rules_run == 9);
+		CHECK(outcome.scan_rules_run == 10);
 		CHECK_FALSE(outcome.isClean());
 
 		CHECK(taggedBy(outcome.findings, master_rule)
@@ -336,7 +338,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 		const DrcProjectActions::CheckOutcome outcome =
 				DrcProjectActions::runCheck(bench.project());
 
-		CHECK(outcome.scan_rules_run == 9);
+		CHECK(outcome.scan_rules_run == 10);
 		CHECK(taggedBy(outcome.findings, master_rule)
 		      == QStringList({QStringLiteral("KM2")}));
 		CHECK(taggedBy(outcome.findings, slave_rule)
@@ -358,6 +360,20 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 		REQUIRE(strip->addTerminal(terminal_in_strip));
 		REQUIRE(strip->addTerminal(terminal_loose));
 
+			//Correto para o perfil inteiro, e ele tem também a regra do
+			//terminal de componente sem ligação (T24, passo 8): cada
+			//bobina e cada contato tem um terminal, e um fio entre a
+			//bobina e o contato dela os liga. Os bornes ficam de fora
+			//daquela regra, e por isso continuam sem fio.
+		for (const QPair<Element *, Element *> &pair : {
+			     qMakePair(coil_linked, contact_linked),
+			     qMakePair(coil_loose, contact_loose)})
+		{
+			auto *wire = new Conductor(pair.first->terminals().first(),
+						   pair.second->terminals().first());
+			sheet->addItem(wire);
+		}
+
 		const DrcProjectActions::CheckOutcome outcome =
 				DrcProjectActions::runCheck(bench.project());
 
@@ -366,7 +382,7 @@ TEST_CASE("T24 — as três regras de vínculo acusam o que está solto, e só i
 
 			//E "limpo" exige que alguma regra tenha rodado: lista vazia
 			//sozinha é o que uma rodada sem regra nenhuma também devolve.
-		CHECK(outcome.scan_rules_run == 9);
+		CHECK(outcome.scan_rules_run == 10);
 		CHECK(outcome.isClean());
 	}
 }
@@ -442,14 +458,18 @@ TEST_CASE("T23 — o painel leva da linha ao componente na folha",
 
 	const DrcProjectActions::CheckOutcome outcome =
 			DrcProjectActions::runCheck(bench.project());
-	REQUIRE(outcome.findings.count() == 6);
+		//Seis das três regras de vínculo, e quatro da regra do terminal
+		//sem ligação (T24, passo 8): as duas bobinas e os dois contatos,
+		//um terminal cada, nada ligado; os dois bornes ficam de fora dela.
+	REQUIRE(outcome.findings.count() == 10);
+	const int rows = outcome.findings.count();
 
 	DrcPanel panel;
 	panel.setFindings(outcome.findings);
 	panel.setSummary(outcome.summary());
 
 	REQUIRE(panel.table() != nullptr);
-	REQUIRE(panel.table()->rowCount() == 6);
+	REQUIRE(panel.table()->rowCount() == rows);
 	CHECK(panel.table()->columnCount() == 4);
 
 	SECTION("ativar a linha seleciona o componente que ela nomeia")
@@ -467,7 +487,7 @@ TEST_CASE("T23 — o painel leva da linha ao componente na folha",
 			//E a lista continua de pé: é a linha que o relatório do
 			//catálogo copia e esta **não** copia -- fechar a janela ao
 			//navegar faria a lista sumir no primeiro achado.
-		CHECK(panel.table()->rowCount() == 6);
+		CHECK(panel.table()->rowCount() == rows);
 
 		SECTION("e ativar a linha seguinte troca a seleção")
 		{
@@ -495,13 +515,13 @@ TEST_CASE("T23 — o painel leva da linha ao componente na folha",
 				QStringLiteral("Le projet n'a pas de cartouche."));
 
 		panel.setFindings(findings);
-		REQUIRE(panel.table()->rowCount() == 7);
+		REQUIRE(panel.table()->rowCount() == rows + 1);
 
 			//A célula de folha fica vazia, e ativar não vai a lugar
 			//nenhum. Um 1 ali levaria o leitor a uma folha que o
 			//achado nunca citou.
-		CHECK(panel.table()->item(6, 1)->text().isEmpty());
-		CHECK_FALSE(panel.activateFinding(6));
+		CHECK(panel.table()->item(rows, 1)->text().isEmpty());
+		CHECK_FALSE(panel.activateFinding(rows));
 	}
 
 	SECTION("linha fora da tabela não faz nada")

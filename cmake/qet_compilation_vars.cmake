@@ -498,6 +498,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/drc/drcstriprules.h
   ${QET_DIR}/sources/drc/drctagrules.cpp
   ${QET_DIR}/sources/drc/drctagrules.h
+  ${QET_DIR}/sources/drc/drcterminalrules.cpp
+  ${QET_DIR}/sources/drc/drcterminalrules.h
   ${QET_DIR}/sources/drc/drctitleblock.cpp
   ${QET_DIR}/sources/drc/drctitleblock.h
   ${QET_DIR}/sources/drc/drctitleblockrules.cpp

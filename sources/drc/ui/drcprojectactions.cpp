@@ -30,6 +30,7 @@
 #include "../drcscanengine.h"
 #include "../drcstriprules.h"
 #include "../drctagrules.h"
+#include "../drcterminalrules.h"
 #include "../drctitleblockrules.h"
 
 #include <QCoreApplication>
@@ -203,6 +204,7 @@ int DrcProjectActions::buildFactoryCheck(DrcRuleSet &rules,
 	taken += DrcTagRules::registerRules(rules, scan);
 	taken += DrcTitleBlockRules::registerRules(rules, scan);
 	taken += DrcStripRules::registerRules(rules, scan);
+	taken += DrcTerminalRules::registerRules(rules, scan);
 	taken += DrcFieldRules::registerRules(rules, sql);
 	return taken;
 }

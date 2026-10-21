@@ -1045,6 +1045,8 @@ if(TARGET qelectrotech_objects)
         src/ui/drctagrules_test.cpp
         src/ui/drctitleblockrules_test.cpp
         src/ui/drcstriprules_test.cpp
+        # The rule of a component terminal nothing is wired to (T24, step 8).
+        src/ui/drcterminalrules_test.cpp
         # The check of a project from the command line (--check-project): the
         # exit code and the lines of the report. Needs a project because what
         # is proven is the whole way - the file the verb opens, the factory
