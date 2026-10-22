@@ -54,6 +54,7 @@ class Element : public QetGraphicsItem
 	Q_OBJECT
 	Q_PROPERTY(bool horizontalMirror READ hasHorizontalMirror WRITE setHorizontalMirror NOTIFY mirrorChanged)
 	Q_PROPERTY(bool verticalMirror READ hasVerticalMirror WRITE setVerticalMirror NOTIFY mirrorChanged)
+	Q_PROPERTY(qreal symbolScale READ symbolScale WRITE setSymbolScale NOTIFY symbolScaleChanged)
 
 	public:
 			/**
@@ -125,6 +126,7 @@ class Element : public QetGraphicsItem
 				DynamicElementTextItem *text,
 				ElementTextItemGroup *group);
 		void mirrorChanged();
+		void symbolScaleChanged();
 
 	public slots:
 		void updateConductorTexts();
@@ -235,6 +237,12 @@ class Element : public QetGraphicsItem
 		void setHorizontalMirror(bool mirror);
 		void setVerticalMirror(bool mirror);
 		QTransform mirrorTransform() const;
+			/// The scale this element is drawn at on the folio, 1 as the
+			/// symbol is drawn (T83)
+		qreal symbolScale() const {return m_symbol_scale;}
+		void setSymbolScale(qreal scale);
+		static QList<qreal> symbolScaleChoices();
+		QList<qreal> symbolScalesOnGrid() const;
 		bool hasUprightSymbolTexts() const;
 		QTransform symbolTextsTransform() const;
 		void updateSymbolPictures(bool force = false);
@@ -412,6 +420,7 @@ class Element : public QetGraphicsItem
 		bool m_mouse_over = false;
 		bool m_horizontal_mirror = false;
 		bool m_vertical_mirror = false;
+		qreal m_symbol_scale = 1;
 		QString m_prefix;
 		QList <DynamicElementTextItem *> m_dynamic_text_list;
 		QList <ElementTextItemGroup *> m_texts_group;

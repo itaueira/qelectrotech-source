@@ -29,6 +29,7 @@
 #include "undocommand/addgraphicsobjectcommand.h"
 #include "undocommand/explodeelementcommand.h"
 #include "undocommand/swapelementcommand.h"
+#include "undocommand/scaleelementscommand.h"
 #include "undocommand/exchangeelementscommand.h"
 #include "undocommand/syncsymboltextscommand.h"
 #include "undocommand/conductortextcommand.h"
@@ -611,6 +612,51 @@ void QETDiagramEditor::setUpActions()
 	connect(m_place_texts, &QAction::triggered, this, [this, chosen_point]() {
 		placeSymbolTexts(chosen_point());
 	});
+
+		//The scale of the selected elements on the folio, these elements
+		//only and not their symbol (T83): the scales that leave every
+		//terminal of every one of them on the grid, the one they all have
+		//checked
+	m_element_scale = new QAction(tr("Element scale"), this);
+	m_element_scale->setStatusTip(tr("Draw the selected elements smaller or larger on the folio, without changing their symbol", "status bar tip"));
+	{
+		auto *menu = new QMenu(this);
+		m_element_scale->setMenu(menu);
+		connect(menu, &QMenu::aboutToShow, this, [this, menu]() {
+			menu->clear();
+			QList<Element *> elements;
+			if (DiagramView *view = currentDiagramView(); view && view->diagram())
+			{
+				const QList<QGraphicsItem *> items = view->diagram()->selectedItems();
+				for (QGraphicsItem *item : items) {
+					if (auto *element = qgraphicsitem_cast<Element *>(item)) elements << element;
+				}
+			}
+			for (const qreal scale : Element::symbolScaleChoices())
+			{
+				QAction *action = menu->addAction(QStringLiteral("%1 %").arg(qRound(scale * 100)));
+				action->setCheckable(true);
+				bool fits = !elements.isEmpty();
+				bool all_at = !elements.isEmpty();
+				for (const Element *element : std::as_const(elements))
+				{
+					if (!element->symbolScalesOnGrid().contains(scale)) fits = false;
+					if (!qFuzzyCompare(element->symbolScale(), scale)) all_at = false;
+				}
+				action->setEnabled(fits);
+				action->setChecked(all_at);
+				QList<QPointer<Element>> kept;
+				for (Element *element : std::as_const(elements)) kept << element;
+				connect(action, &QAction::triggered, this, [this, kept, scale]() {
+					QList<Element *> alive;
+					for (const QPointer<Element> &element : kept) {
+						if (element) alive << element.data();
+					}
+					scaleElements(alive, scale);
+				});
+			}
+		});
+	}
 
 		//Duplicate: copy the selection and place it at a configured,
 		//grid-step offset immediately -- no interactive follow-the-
@@ -4220,6 +4266,7 @@ void QETDiagramEditor::setUpMenu()
 	arrange_menu -> addAction(m_place_texts);
 	arrange_menu -> addAction(m_mirror_horizontal);
 	arrange_menu -> addAction(m_mirror_vertical);
+	arrange_menu -> addAction(m_element_scale);
 	arrange_menu -> addSeparator();
 	QMenu *group_menu = arrange_menu -> addMenu(QET::Icons::textGroup, tr("Group", "fr: Grouper"));
 	group_menu -> addAction(m_group_selection);
@@ -6113,6 +6160,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 			    << m_rotate_group_selection
 			    << m_mirror_horizontal
 			    << m_mirror_vertical
+			    << m_element_scale
 			    << m_replace_element
 			    << m_exchange_elements
 			    << m_reset_symbol_texts
@@ -6148,6 +6196,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 	m_copy_text_format->setEnabled(selected_elements_count >= 1);
 	m_apply_text_format->setEnabled(!ro && selected_elements_count >= 1 && ElementTextFormatPattern::hasPattern());
 	m_place_texts->setEnabled(!ro && selected_elements_count >= 1);
+	m_element_scale->setEnabled(!ro && selected_elements_count >= 1);
 	m_mirror_horizontal->setEnabled(!ro && selected_elements_count);
 	m_mirror_vertical->setEnabled(!ro && selected_elements_count);
 	m_replace_element->setEnabled(!ro && selected_elements_count);
@@ -8420,6 +8469,26 @@ void QETDiagramEditor::placeSymbolTexts(Qt::Alignment where)
 
 	if (QUndoCommand *undo = SymbolTextPlacement::place(elements, where))
 		dv->diagram()->undoStack().push(undo);
+}
+
+/**
+	@brief QETDiagramEditor::scaleElements
+	Draw @a elements at @a scale on the folio, their symbol as it is, in
+	one undo step (T83). See ScaleElementsCommand.
+	@param elements : elements of the current folio
+	@param scale : 1 for the symbol as it is drawn
+*/
+void QETDiagramEditor::scaleElements(const QList<Element *> &elements, qreal scale)
+{
+	DiagramView *dv = currentDiagramView();
+	if (!dv || !dv->diagram() || dv->diagram()->isReadOnly() || elements.isEmpty()) return;
+
+	auto *undo = new ScaleElementsCommand(elements, scale);
+	if (undo->isValid()) {
+		dv->diagram()->undoStack().push(undo);
+	} else {
+		delete undo;
+	}
 }
 
 void QETDiagramEditor::applyTextFormat()

@@ -262,6 +262,7 @@ class QETDiagramEditor : public QETMainWindow
 		void copyTextFormat();
 		void applyTextFormat();
 		void placeSymbolTexts(Qt::Alignment where);
+		void scaleElements(const QList<Element *> &elements, qreal scale);
 
 	private slots:
 		void updateTextGridButton();
@@ -318,6 +319,7 @@ class QETDiagramEditor : public QETMainWindow
 		*m_copy_text_format = nullptr,  ///< Copy label/text formatting template
 		*m_apply_text_format = nullptr, ///< Apply label/text formatting template
 		*m_place_texts = nullptr,	///< Place the texts of the selected symbols at one of nine points
+		*m_element_scale = nullptr,	///< Draw the selected elements at another scale on the folio (T83)
 			//And these, for every command that works on the selection is
 			//offered on the folio too (T80)
 		*m_duplicate = nullptr,		///< Copy selection, offset by the configured step (#991)

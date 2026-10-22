@@ -1173,6 +1173,8 @@ if(TARGET qelectrotech_objects)
         src/ui/distribute_test.cpp
         src/ui/exchangeelements_test.cpp
         src/ui/wirearrangement_test.cpp
+        # T83: an element drawn at another scale on the folio.
+        src/ui/elementscale_test.cpp
         # T70: the cross-section of a point, from its components, on its
         # wires - drawn, changed with the component, and updated at once.
         src/ui/wiregauge_ui_test.cpp

@@ -27,6 +27,7 @@
 #include "../autoNum/elementautonumschemecommand.h"
 #include "../autoNum/numerotationcontextcommands.h"
 #include "../diagram.h"
+#include "../foliogrid.h"
 #include "../diagramcommands.h"
 #include "../diagramcontext.h"
 #include "../diagramposition.h"
@@ -55,6 +56,7 @@
 #include <QScreen>
 #include <QTimer>
 #include <QPointer>
+#include <QSettings>
 #include "../diagramview.h"
 #include "../ui/assemblychangemarks.h"
 
@@ -184,6 +186,7 @@ Element::Element(
 	connect(this, &Element::xChanged, update_docked_conductors);
 	connect(this, &Element::yChanged, update_docked_conductors);
 	connect(this, &Element::mirrorChanged, update_docked_conductors);
+	connect(this, &Element::symbolScaleChanged, update_docked_conductors);
 		//Texts kept horizontal in a turned symbol depend on the turn
 	connect(this, &Element::rotationChanged, this, [this]() {updateSymbolPictures();});
 }
@@ -419,6 +422,79 @@ void Element::setMirror(bool horizontal, bool vertical)
 }
 
 /**
+	@brief Element::setSymbolScale
+	Draw this element at @p scale on the folio, about its hotspot (T83):
+	this placed element only, not its symbol nor the other elements of
+	it. Its terminals go with the drawing, so its conductors follow; its
+	texts, groups of texts and cross reference keep their size
+	(keepReadable()).
+	@param scale : 1 for the symbol as it is drawn; ignored unless more
+	than 0
+*/
+void Element::setSymbolScale(qreal scale)
+{
+	if (!(scale > 0) || qFuzzyCompare(scale, m_symbol_scale))
+		return;
+
+	m_symbol_scale = scale;
+	applyMirrorTransform();
+	keepChildrenReadable();
+	update();
+	emit symbolScaleChanged();
+}
+
+/**
+	@brief Element::symbolScaleChoices
+	@return the scales an element can be drawn at on the folio (T83), from
+	the smallest
+*/
+QList<qreal> Element::symbolScaleChoices()
+{
+	return {0.25, 0.5, 0.75, 1.0, 1.5, 2.0};
+}
+
+/**
+	@brief Element::symbolScalesOnGrid
+	@return the scales of symbolScaleChoices() that leave every terminal of
+	this element on the grid of the folio, turned and mirrored as it is,
+	so that its conductors stay straight (T83); all of them for an element
+	with no terminal. The element's hotspot sits on the grid, and the
+	element is scaled about it: a scale fits when every terminal's end,
+	measured from the hotspot at the scale of the symbol, times it, is a
+	multiple of the step. The scale 1 is always one of them: the way back
+	to the symbol as it is drawn, whatever the grid of its terminals.
+*/
+QList<qreal> Element::symbolScalesOnGrid() const
+{
+	QSettings settings;
+	const qreal x_step = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
+	const qreal y_step = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
+	const auto onGrid = [](qreal value, qreal step) {
+		const qreal steps = value / step;
+		return qAbs(steps - qRound(steps)) * step < 0.005;
+	};
+	QList<qreal> scales;
+	for (const qreal scale : symbolScaleChoices())
+	{
+		bool fits = true;
+		if (qFuzzyCompare(scale, 1.0)) {
+			scales << scale;
+			continue;
+		}
+		for (const Terminal *terminal : m_terminals)
+		{
+			const QPointF end = (terminal->dockConductor() - pos()) / m_symbol_scale * scale;
+			if (!onGrid(end.x(), x_step) || !onGrid(end.y(), y_step)) {
+				fits = false;
+				break;
+			}
+		}
+		if (fits) scales << scale;
+	}
+	return scales;
+}
+
+/**
 	@brief Element::mirrorTransform
 	@return the mirrors of this element, about its own axes
 */
@@ -500,16 +576,20 @@ void Element::updateSymbolPictures(bool force)
 */
 void Element::applyMirrorTransform()
 {
-	if (!isMirrored())
+	const bool scaled = !qFuzzyCompare(m_symbol_scale, 1.0);
+	if (!isMirrored() && !scaled)
 	{
 		if (!transform().isIdentity())
 			setTransform(QTransform());
 		return;
 	}
 
-		//QTransform's product applies its left operand first
+		//QTransform's product applies its left operand first. The scale
+		//of the element on the folio (T83) is the same both ways, so it
+		//goes about the hotspot with the mirrors, whatever the turn
 	setTransform(QTransform().rotate(-rotation())
 				 * mirrorTransform()
+				 * QTransform::fromScale(m_symbol_scale, m_symbol_scale)
 				 * QTransform().rotate(rotation()));
 }
 
@@ -529,7 +609,8 @@ void Element::keepReadable(QGraphicsItem *child) const
 	if (!child || child->parentItem() != this)
 		return;
 
-	if (!isMirrored())
+	const bool scaled = !qFuzzyCompare(m_symbol_scale, 1.0);
+	if (!isMirrored() && !scaled)
 	{
 		if (!child->transform().isIdentity())
 			child->resetTransform();
@@ -543,13 +624,40 @@ void Element::keepReadable(QGraphicsItem *child) const
 	rotation.translate(origin.x(), origin.y());
 	rotation.rotate(child->rotation());
 	rotation.translate(-origin.x(), -origin.y());
-	const QPointF centre = rotation.mapRect(child->boundingRect()).center();
+	const QRectF box = rotation.mapRect(child->boundingRect());
+	const QPointF centre = box.center();
 
-	const QTransform mirror = QTransform::fromTranslate(-centre.x(), -centre.y())
-							  * mirrorTransform()
-							  * QTransform::fromTranslate(centre.x(), centre.y());
-	if (child->transform() != mirror)
-		child->setTransform(mirror);
+	QTransform readable = QTransform::fromTranslate(-centre.x(), -centre.y())
+						  * mirrorTransform()
+						  * QTransform::fromTranslate(centre.x(), centre.y());
+	if (scaled)
+	{
+			//The element drawn at another scale (T83): the child keeps its
+			//size, scaled back about the side of its box towards the
+			//drawing of the symbol - the side that stays where the scale
+			//puts it, so that the child neither runs into a smaller
+			//drawing nor leaves a larger one. The box is the same once
+			//mirrored back about its centre, and the element mirrors the
+			//drawing with it, so the side towards the drawing is too.
+		const QRectF drawn = drawnRect();
+		const QPointF towards = (drawn.isValid() ? drawn : boundingRect()).center();
+		const QRectF in_element = box.translated(child->pos());
+		QPointF anchor = centre;
+		if (in_element.right() <= towards.x())
+			anchor.setX(box.right());
+		else if (in_element.left() >= towards.x())
+			anchor.setX(box.left());
+		if (in_element.bottom() <= towards.y())
+			anchor.setY(box.bottom());
+		else if (in_element.top() >= towards.y())
+			anchor.setY(box.top());
+		readable = readable
+				   * QTransform::fromTranslate(-anchor.x(), -anchor.y())
+				   * QTransform::fromScale(1 / m_symbol_scale, 1 / m_symbol_scale)
+				   * QTransform::fromTranslate(anchor.x(), anchor.y());
+	}
+	if (child->transform() != readable)
+		child->setTransform(readable);
 }
 
 /**
@@ -1506,6 +1614,12 @@ bool Element::fromXml(QDomElement &e,
 	const QString mirror = e.attribute(QStringLiteral("mirror"));
 	setMirror(mirror == QLatin1String("horizontal") || mirror == QLatin1String("both"),
 			  mirror == QLatin1String("vertical") || mirror == QLatin1String("both"));
+		//The scale of this element on the folio (T83), written only when
+		//it is not 1
+	bool scale_ok = false;
+	const qreal scale = e.attribute(QStringLiteral("scale")).toDouble(&scale_ok);
+	if (scale_ok && scale > 0)
+		setSymbolScale(scale);
 
 	m_state = QET::GIOK;
 	return(true);
@@ -1563,6 +1677,10 @@ QDomElement Element::toXml(
 							 !m_vertical_mirror ? QStringLiteral("horizontal")
 							 : !m_horizontal_mirror ? QStringLiteral("vertical")
 							 : QStringLiteral("both"));
+		//Written only when not 1, as the mirror: a project with no scaled
+		//element saves exactly as before (T83)
+	if (!qFuzzyCompare(m_symbol_scale, 1.0))
+		element.setAttribute(QStringLiteral("scale"), QString::number(m_symbol_scale));
 	element.setAttribute(QStringLiteral("is_movable"), bool(is_movable_));
 
 	/* get the first id to use for the bounds of this element

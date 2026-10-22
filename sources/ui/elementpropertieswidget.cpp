@@ -410,6 +410,8 @@ QWidget *ElementPropertiesWidget::generalWidget()
 	description_string += QString(tr("Sub-type : %1\n")).arg(m_element ->kindInformations()["type"].toString());
 	description_string += QString(tr("Position : %1\n")).arg(m_diagram -> convertPosition(m_element -> scenePos()).toString());
 	description_string += QString(tr("Rotation : %1°\n")).arg(m_element.data()->rotation());
+		//The scale it is drawn at on the folio, its symbol as it is (T83)
+	description_string += QString(tr("Scale : %1 %\n")).arg(qRound(m_element->symbolScale() * 100));
 	description_string += QString(tr("Dimensions : %1*%2\n")).arg(m_element -> size().width()).arg(m_element -> size().height());
 	description_string += QString(tr("Terminals : %1\n")).arg(m_element -> terminals().count());
 	if (m_element->linkType() == Element::Master)

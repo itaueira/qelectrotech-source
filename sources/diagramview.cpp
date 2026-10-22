@@ -2409,6 +2409,9 @@ QList<QAction *> DiagramView::contextMenuActions() const
 					//The texts as one block at one of nine points, with the
 					//grid of the nine as its submenu (T80)
 				list << qde->m_place_texts;
+					//The elements drawn smaller or larger on the folio,
+					//their symbol as it is (T83)
+				list << qde->m_element_scale;
 			}
 				//Only for one element, and one mounted on a plate: an entry
 				//for a component that is on no plate would open a window to

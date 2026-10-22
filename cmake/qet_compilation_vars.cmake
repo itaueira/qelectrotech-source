@@ -1328,6 +1328,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/undocommand/alignselectioncommand.h
   ${QET_DIR}/sources/undocommand/mirrorselectioncommand.cpp
   ${QET_DIR}/sources/undocommand/mirrorselectioncommand.h
+  ${QET_DIR}/sources/undocommand/scaleelementscommand.cpp
+  ${QET_DIR}/sources/undocommand/scaleelementscommand.h
   ${QET_DIR}/sources/undocommand/rotateselectioncommand.cpp
   ${QET_DIR}/sources/undocommand/rotateselectioncommand.h
   ${QET_DIR}/sources/undocommand/promoteshapecommand.cpp

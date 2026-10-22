@@ -122,6 +122,8 @@ SwapElementCommand::Plan SwapElementCommand::plan(
 	new_element->setRotation(old_element->rotation());
 	new_element->setHorizontalMirror(old_element->hasHorizontalMirror());
 	new_element->setVerticalMirror(old_element->hasVerticalMirror());
+		//And the scale it is drawn at on the folio (T83)
+	new_element->setSymbolScale(old_element->symbolScale());
 
 	QDomDocument &document = plan.state;
 	QHash<Terminal *, int> terminal_ids;
