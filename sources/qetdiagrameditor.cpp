@@ -6500,6 +6500,12 @@ void QETDiagramEditor::addProjectView(ProjectView *project_view)
 
 	//Highlight the current page
 	connect(project_view, &ProjectView::diagramActivated, this, [this](DiagramView *dv) {
+			//The actions that depend on the folio, for the folio now shown:
+			//going to another folio of the same project changes no
+			//selection, and "Arrange the folio's conductors" kept the state
+			//of the folio left - disabled on a folio full of wires, coming
+			//from one with none (T80, step 2)
+		slot_updateComplexActions();
 		if (dv && dv->diagram() && pa) {
 			// 1. Find the item in the tree that corresponds to this diagram
 			QTreeWidgetItem *item = pa->elementsPanel().getItemForDiagram(dv->diagram());
