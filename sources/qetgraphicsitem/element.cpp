@@ -27,7 +27,6 @@
 #include "../autoNum/elementautonumschemecommand.h"
 #include "../autoNum/numerotationcontextcommands.h"
 #include "../diagram.h"
-#include "../foliogrid.h"
 #include "../diagramcommands.h"
 #include "../diagramcontext.h"
 #include "../diagramposition.h"
@@ -56,7 +55,6 @@
 #include <QScreen>
 #include <QTimer>
 #include <QPointer>
-#include <QSettings>
 #include "../diagramview.h"
 #include "../ui/assemblychangemarks.h"
 
@@ -446,52 +444,15 @@ void Element::setSymbolScale(qreal scale)
 /**
 	@brief Element::symbolScaleChoices
 	@return the scales an element can be drawn at on the folio (T83), from
-	the smallest
+	the smallest - all of them for every element: a symbol whose
+	terminals are at odd places from its hotspot has no smaller scale
+	that keeps them on the grid, and an element drawn only to show what
+	the project meets is drawn smaller all the same, its wires with a
+	step at the terminal
 */
 QList<qreal> Element::symbolScaleChoices()
 {
-	return {0.25, 0.5, 0.75, 1.0, 1.5, 2.0};
-}
-
-/**
-	@brief Element::symbolScalesOnGrid
-	@return the scales of symbolScaleChoices() that leave every terminal of
-	this element on the grid of the folio, turned and mirrored as it is,
-	so that its conductors stay straight (T83); all of them for an element
-	with no terminal. The element's hotspot sits on the grid, and the
-	element is scaled about it: a scale fits when every terminal's end,
-	measured from the hotspot at the scale of the symbol, times it, is a
-	multiple of the step. The scale 1 is always one of them: the way back
-	to the symbol as it is drawn, whatever the grid of its terminals.
-*/
-QList<qreal> Element::symbolScalesOnGrid() const
-{
-	QSettings settings;
-	const qreal x_step = FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid);
-	const qreal y_step = FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid);
-	const auto onGrid = [](qreal value, qreal step) {
-		const qreal steps = value / step;
-		return qAbs(steps - qRound(steps)) * step < 0.005;
-	};
-	QList<qreal> scales;
-	for (const qreal scale : symbolScaleChoices())
-	{
-		bool fits = true;
-		if (qFuzzyCompare(scale, 1.0)) {
-			scales << scale;
-			continue;
-		}
-		for (const Terminal *terminal : m_terminals)
-		{
-			const QPointF end = (terminal->dockConductor() - pos()) / m_symbol_scale * scale;
-			if (!onGrid(end.x(), x_step) || !onGrid(end.y(), y_step)) {
-				fits = false;
-				break;
-			}
-		}
-		if (fits) scales << scale;
-	}
-	return scales;
+	return {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0};
 }
 
 /**

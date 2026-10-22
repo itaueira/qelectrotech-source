@@ -23,9 +23,8 @@
 /**
 	@brief ScaleElementsCommand::ScaleElementsCommand
 	Each element of @p elements drawn at @p scale, about its hotspot: the
-	hotspot stays where it is, on the grid, and so do the terminals the
-	scale was chosen for (Element::symbolScalesOnGrid()). An element
-	already at that scale is left out.
+	hotspot stays where it is, on the grid. An element already at that
+	scale is left out.
 	@param elements : the elements to scale
 	@param scale : 1 for the symbol as it is drawn
 	@param parent : parent undo command

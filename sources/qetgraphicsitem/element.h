@@ -242,7 +242,6 @@ class Element : public QetGraphicsItem
 		qreal symbolScale() const {return m_symbol_scale;}
 		void setSymbolScale(qreal scale);
 		static QList<qreal> symbolScaleChoices();
-		QList<qreal> symbolScalesOnGrid() const;
 		bool hasUprightSymbolTexts() const;
 		QTransform symbolTextsTransform() const;
 		void updateSymbolPictures(bool force = false);

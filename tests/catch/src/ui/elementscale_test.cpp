@@ -21,7 +21,6 @@
 
 #include "../../../../sources/conductorsegment.h"
 #include "../../../../sources/diagram.h"
-#include "../../../../sources/foliogrid.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
@@ -33,7 +32,6 @@
 
 #include <QDomDocument>
 #include <QGraphicsSceneMouseEvent>
-#include <QSettings>
 #include <QUndoStack>
 
 #include <cmath>
@@ -261,24 +259,35 @@ TEST_CASE("CU-83.3 — The texts keep their size", "[T83][elementscale]")
 	CHECK(after.right() < a->sceneBoundingRect().left() + 0.01);
 }
 
-TEST_CASE("CU-83.4 — Only the scales that leave the terminals on the grid", "[T83][elementscale]")
+TEST_CASE("CU-83.4 — Terminals off the grid, smaller all the same", "[T83][elementscale]")
 {
-	const qreal step = FolioGrid::step(QSettings().value(FolioGrid::x_key), Diagram::xGrid);
-	INFO("the grid of the folio the bench reads: " << step);
-	REQUIRE(step == Approx(10));
-	UiBench::ScratchProject project(fixtureXml({{"comp.elmt", 200, 200, "A", ""},
-						    {"odd.elmt", 400, 200, "O", ""}}));
+	/*
+		The request: a symbol whose terminals are at odd places from its
+		hotspot - here 15 - has no smaller scale that keeps them on the
+		grid, and an element drawn only to show what the project meets is
+		drawn smaller all the same. Every scale is offered.
+	*/
+	CHECK(Element::symbolScaleChoices()
+	      == QList<qreal>{0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.5, 2.0});
+	UiBench::ScratchProject project(fixtureXml({{"odd.elmt", 200, 200, "O", ""},
+						    {"comp.elmt", 200, 400, "C", ""}}));
 	REQUIRE(project.isOpen());
 	Diagram *sheet = project.diagram(0);
-	Element *a = tagged(sheet, "A");
 	Element *odd = tagged(sheet, "O");
-	REQUIRE((a && odd));
+	Element *c = tagged(sheet, "C");
+	REQUIRE((odd && c));
+	Conductor *wire = draw(odd->terminals().at(1), c->terminals().at(0));
+	REQUIRE(wire != nullptr);
 
-		//Terminals 20 from the hotspot: 10, 20, 30 and 40 on the grid
-	CHECK(a->symbolScalesOnGrid() == QList<qreal>{0.5, 1.0, 1.5, 2.0});
-		//Terminals 15 from it: only twice, and the symbol as it is, the
-		//way back
-	CHECK(odd->symbolScalesOnGrid() == QList<qreal>{1.0, 2.0});
+	scale(sheet, odd, 0.5);
+
+		//Between two points of the grid, and the wire on it
+	CHECK(near(ends(odd).at(1), QPointF(0, 7.5)));
+	const QPointF end = odd->terminals().at(1)->dockConductor();
+	const QPointF first = wire->mapToScene(wire->segmentsList().first()->firstPoint());
+	const QPointF last = wire->mapToScene(wire->segmentsList().last()->secondPoint());
+	CAPTURE(end, first, last);
+	CHECK((near(first, end) || near(last, end)));
 }
 
 TEST_CASE("CU-83.5 — The scale is in the file, and undo takes it off", "[T83][elementscale]")

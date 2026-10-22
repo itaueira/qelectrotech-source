@@ -614,9 +614,8 @@ void QETDiagramEditor::setUpActions()
 	});
 
 		//The scale of the selected elements on the folio, these elements
-		//only and not their symbol (T83): the scales that leave every
-		//terminal of every one of them on the grid, the one they all have
-		//checked
+		//only and not their symbol (T83): every scale, the one they all
+		//have checked
 	m_element_scale = new QAction(tr("Element scale"), this);
 	m_element_scale->setStatusTip(tr("Draw the selected elements smaller or larger on the folio, without changing their symbol", "status bar tip"));
 	{
@@ -636,14 +635,12 @@ void QETDiagramEditor::setUpActions()
 			{
 				QAction *action = menu->addAction(QStringLiteral("%1 %").arg(qRound(scale * 100)));
 				action->setCheckable(true);
-				bool fits = !elements.isEmpty();
 				bool all_at = !elements.isEmpty();
 				for (const Element *element : std::as_const(elements))
 				{
-					if (!element->symbolScalesOnGrid().contains(scale)) fits = false;
 					if (!qFuzzyCompare(element->symbolScale(), scale)) all_at = false;
 				}
-				action->setEnabled(fits);
+				action->setEnabled(!elements.isEmpty());
 				action->setChecked(all_at);
 				QList<QPointer<Element>> kept;
 				for (Element *element : std::as_const(elements)) kept << element;
