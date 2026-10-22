@@ -38,6 +38,7 @@
 #include "../ui/conductorpropertiesdialog.h"
 #include "../undocommand/groupedupdatecommand.h"
 #include "conductortextitem.h"
+#include "dynamicelementtextitem.h"
 #include "element.h"
 #include "qetshapeitem.h"
 #include "../QetGraphicsItemModeler/qetgraphicshandleritem.h"
@@ -254,7 +255,8 @@ namespace
 	/**
 		@brief Whether the letters of @a text, the name of @a own, touch
 		what a name keeps clear of on @a scene: another conductor, the
-		name of another conductor, the side of a shape (T71). Asked of the
+		name of another conductor, the side of a shape (T71), a component
+		and a text of one (T67). Asked of the
 		items in the box only, through the index of the scene, so that it
 		costs nothing to the drag of a wire.
 	*/
@@ -285,6 +287,25 @@ namespace
 				const QPainterPath outline = outlineOf(shape);
 				if (!outline.isEmpty()
 				    && strokeInScene(shape, outline, qMax<qreal>(1, shape->pen().widthF()))
+						.intersects(around)) {
+					return true;
+				}
+			}
+				//Nor a component, nor a text of one (T67, seventh
+				//adjustment): what the symbol draws, and not the larger box
+				//its definition declares, which leaves blank room a name may
+				//take
+			else if (const auto *element = qgraphicsitem_cast<const Element *>(item))
+			{
+				if (element->mapRectToScene(element->drawnRect()).intersects(around)) {
+					return true;
+				}
+			}
+			else if (const auto *label = qgraphicsitem_cast<const DynamicElementTextItem *>(item))
+			{
+				const qreal margin = label->document()->documentMargin();
+				if (!label->toPlainText().trimmed().isEmpty()
+				    && label->sceneBoundingRect().adjusted(margin, margin, -margin, -margin)
 						.intersects(around)) {
 					return true;
 				}
@@ -2258,15 +2279,55 @@ void Conductor::calculateTextItemPosition()
 			places << NamePlace{run.middle, run.along, run.length};
 		}
 		const QVector<NamePlace> free = freePlaces(this, places, relatedPotentialConductors(false));
+			//The other side of a run, when the side the name is written on
+			//touches something (T67, seventh adjustment): a wire that goes
+			//round a component above it has its name under the run, on the
+			//component, and nothing above it
+		const auto otherSideIsClear = [this](const TextRun &run) {
+			const Qt::Alignment horizontal = m_properties.m_horizontal_alignment;
+			const Qt::Alignment vertical = m_properties.m_vertical_alignment;
+			m_properties.m_horizontal_alignment = horizontal == Qt::AlignTop ? Qt::AlignBottom
+					: horizontal == Qt::AlignBottom ? Qt::AlignTop : horizontal;
+			m_properties.m_vertical_alignment = vertical == Qt::AlignLeft ? Qt::AlignRight
+					: vertical == Qt::AlignRight ? Qt::AlignLeft : vertical;
+			const bool moved = m_properties.m_horizontal_alignment != horizontal
+					|| m_properties.m_vertical_alignment != vertical;
+			bool clear = false;
+			if (moved) {
+				placeTextOn(run);
+				clear = !nameTouches(this, m_text_item, diagram());
+			}
+			m_properties.m_horizontal_alignment = horizontal;
+			m_properties.m_vertical_alignment = vertical;
+			if (moved && !clear) {
+				placeTextOn(run);
+			}
+			return clear;
+		};
+			//The side the name is written on first, on every run it fits,
+			//and only then the other side: a name leaves a run for another
+			//one before it changes sides (T71, CU-71.1)
+		const auto otherSideOfOne = [&otherSideIsClear](const QVector<TextRun> &fitting) {
+			for (const TextRun &run : fitting) {
+				if (otherSideIsClear(run)) return true;
+			}
+			return false;
+		};
+		QVector<TextRun> fitting;
 		for (const NamePlace &place : free)
 		{
-			if (!placeTextOn(TextRun{place.middle, place.along, place.length})) {
+			const TextRun run{place.middle, place.along, place.length};
+			if (!placeTextOn(run)) {
 				break;
 			}
+			fitting << run;
 			if (!nameTouches(this, m_text_item, diagram())) {
 				placed = true;
 				break;
 			}
+		}
+		if (!placed) {
+			placed = otherSideOfOne(fitting);
 		}
 			//None of its own pieces takes the name: the longest of them,
 			//the name drawn smaller - and not the line it shares
@@ -2276,15 +2337,20 @@ void Conductor::calculateTextItemPosition()
 			placeTextOn(TextRun{longest.middle, longest.along, longest.length});
 			placed = true;
 		}
+		fitting.clear();
 		for (int i = 0 ; !placed && i < runs.size() ; ++i)
 		{
 				//A run the name does not fit: the shorter ones do not either
 			if (!placeTextOn(runs.at(i))) {
 				break;
 			}
+			fitting << runs.at(i);
 			if (runs.size() == 1 || !nameTouches(this, m_text_item, diagram())) {
 				placed = true;
 			}
+		}
+		if (!placed) {
+			placed = otherSideOfOne(fitting);
 		}
 		if (!placed && !runs.isEmpty()) {
 			placeTextOn(runs.first());

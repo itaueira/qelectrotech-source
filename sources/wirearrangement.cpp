@@ -114,6 +114,24 @@ namespace
 			/// then in the swapped frame, and a path is swapped back before
 			/// it goes to the folio.
 		bool transposed = false;
+			/// A wire whose terminal points away from the other goes round
+			/// its own component first (seventh adjustment): the points from
+			/// that terminal to where it is a wire like any other, which
+			/// automatic then starts at - on the folio, and in the order from
+			/// that terminal
+		QList<QPointF> lead;
+			/// That terminal is terminal1
+		bool lead_first = true;
+	};
+
+		/// What a wire with a lead goes round: its two terminals, and the frame
+		/// in which they point to the side
+	struct Detour
+	{
+		Conductor *conductor = nullptr;
+		Terminal *away = nullptr;
+		Terminal *toward = nullptr;
+		bool transposed = false;
 	};
 
 	bool near(double a, double b) { return std::abs(a - b) < 0.01; }
@@ -341,9 +359,8 @@ namespace
 		/// The automatic path of @a c is: terminal, its end, the two ends
 		/// of the bridge, the other terminal's end, the other terminal.
 		/// The two runs join the terminal ends to the bridge.
-	bool describe(Conductor *c, Described &out)
+	bool describeFrom(Conductor *c, const QList<QPointF> &p, Described &out)
 	{
-		const QList<QPointF> p = c->automaticPathPoints();
 		if (p.size() != 6) return false;
 		const QPointF a = p.at(1), b1 = p.at(2), b2 = p.at(3), z = p.at(4);
 		out.conductor = c;
@@ -369,6 +386,49 @@ namespace
 			return true;
 		}
 		return false;
+	}
+
+	bool describe(Conductor *c, Described &out)
+	{
+		return describeFrom(c, c->automaticPathPoints(), out);
+	}
+
+		/// Whether @a c joins two terminals that point the same way, one of
+		/// them away from the other - the one behind it (seventh adjustment).
+		/// The way they point is to the side in the frame, turned for two
+		/// terminals that point up or down.
+	bool detourOf(Conductor *c, Detour &out)
+	{
+		Terminal *t1 = c->terminal1;
+		Terminal *t2 = c->terminal2;
+		if (!t1 || !t2 || t1->orientation() != t2->orientation()) return false;
+		const bool transposed = pointsUpOrDown(t1);
+		const QPointF p1 = transposed ? swapped(t1->dockConductor()) : t1->dockConductor();
+		const QPointF p2 = transposed ? swapped(t2->dockConductor()) : t2->dockConductor();
+		const Qet::Orientation way = t1->orientation();
+		const double s = (way == Qet::East || way == Qet::South) ? 1 : -1;
+		if ((p2.x() - p1.x()) * s < -0.5) {
+			out = Detour{c, t1, t2, transposed};
+		} else if ((p1.x() - p2.x()) * s < -0.5) {
+			out = Detour{c, t2, t1, transposed};
+		} else {
+			return false;
+		}
+		return true;
+	}
+
+		/// The path of @a bridge_path - from where a wire with a lead is a
+		/// wire like any other, to its other terminal - with the lead before
+		/// it, from terminal1 to terminal2
+	QList<QPointF> withLead(const Described &d, const QList<QPointF> &bridge_path)
+	{
+		if (d.lead.isEmpty()) return bridge_path;
+		QList<QPointF> path;
+		for (const QPointF &q : d.lead + bridge_path) {
+			if (path.isEmpty() || (path.last() - q).manhattanLength() > 0.01) path << q;
+		}
+		if (!d.lead_first) std::reverse(path.begin(), path.end());
+		return path;
 	}
 
 	QList<QPointF> withBridgeAt(const Described &d, double at)
@@ -556,6 +616,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 	}
 
 	QList<Described> vertical_wires, horizontal_wires, shaped;
+	QList<Detour> detours;
 	for (Conductor *c : all)
 	{
 		if (in_point.contains(c)) continue;
@@ -574,6 +635,12 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			}
 			continue;
 		}
+		Detour detour;
+		if (movable.contains(c) && detourOf(c, detour))
+		{
+			detours << detour;
+			continue;
+		}
 		const QList<QPointF> path = currentPoints(c);
 		addInTheWay(path, vertical, horizontal);
 		scene.addPath(path, c);
@@ -587,7 +654,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		if (shaped.at(i).shape.around) around.prepend(shaped.takeAt(i));
 	}
 	if (vertical_wires.isEmpty() && horizontal_wires.isEmpty() && shaped.isEmpty()
-		&& around.isEmpty() && points.isEmpty()) return changes;
+		&& around.isEmpty() && points.isEmpty() && detours.isEmpty()) return changes;
 
 	const QList<Element *> elements = diagram->elements();
 	QList<QRectF> text_boxes;
@@ -646,6 +713,80 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 				       << WireLanes::Line{r.bottom(), r.left(), r.right()};
 		scene.frame_vertical << WireLanes::Line{r.left(), r.top(), r.bottom()}
 				     << WireLanes::Line{r.right(), r.top(), r.bottom()};
+	}
+
+		//The wires whose terminal points away from the other go round their
+		//own component first (seventh adjustment): out of the terminal, along
+		//the side of the component to the first line clear of it - below or
+		//above, the nearer to the other terminal first -, and from there they
+		//are wires between two terminals that face each other, their bridge
+		//in the room between the component and the other terminal. With no
+		//way round clear, a wire stays as it is
+	for (const Detour &t : std::as_const(detours))
+	{
+		const bool tr = t.transposed;
+		const auto frame = [tr](const QPointF &q) { return tr ? swapped(q) : q; };
+		const double unit = unitIn(tr);
+		const QPointF a = frame(t.away->dockConductor());
+		const QPointF b = frame(t.toward->dockConductor());
+		const Qet::Orientation way = t.away->orientation();
+		const double s = (way == Qet::East || way == Qet::South) ? 1 : -1;
+		Element *component = t.away->parentElement();
+		QRectF body = component->mapRectToScene(component->boundingRect())
+				.adjusted(-symbol_margin, -symbol_margin, symbol_margin, symbol_margin);
+		if (tr) body = QRectF(body.top(), body.left(), body.height(), body.width());
+			//The other terminal's own piece, as the automatic path has it
+		const QList<QPointF> automatic = t.conductor->automaticPathPoints();
+		if (automatic.size() < 3) continue;
+		const QPointF stub = frame(t.toward == t.conductor->terminal1 ? automatic.at(1)
+									       : automatic.at(automatic.size() - 2));
+		const double out_x = s > 0 ? std::ceil(std::max(a.x(), body.right()) / unit) * unit
+					   : std::floor(std::min(a.x(), body.left()) / unit) * unit;
+		const double near_side = s > 0 ? body.left() : body.right();
+			//Room for a bridge between the other terminal and the component
+		if ((near_side - stub.x()) * s < 2 * unit) continue;
+
+		const QSet<const void *> own{t.conductor, t.away, t.toward, t.toward->parentElement()};
+		const WireLanes::Clearance across = scene.clearanceIn(tr, own, false);
+		const WireLanes::Clearance upright = scene.clearanceIn(tr, own, true);
+		const double below = std::ceil(body.bottom() / unit) * unit;
+		const double above = std::floor(body.top() / unit) * unit;
+		const bool below_first = std::abs(b.y() - below) <= std::abs(b.y() - above);
+		bool placed = false;
+		for (double line : below_first ? QList<double>{below, above} : QList<double>{above, below})
+		{
+			if (!WireLanes::isClear(out_x, a.y(), line, upright)
+			    || !WireLanes::isClear(line, near_side, out_x, across)) {
+				continue;
+			}
+			const double middle = (stub.x() + near_side) / 2;
+			QList<QPointF> bridge{QPointF(out_x, line), QPointF(out_x, line), QPointF(middle, line),
+					      QPointF(middle, b.y()), stub, b};
+			QList<QPointF> lead{a, QPointF(out_x, a.y())};
+			if (tr) {
+				bridge = swapped(bridge);
+				lead = swapped(lead);
+			}
+			Described d;
+			if (!describeFrom(t.conductor, bridge, d)) continue;
+			d.lead = lead;
+			d.lead_first = t.away == t.conductor->terminal1;
+			addInTheWay(lead + QList<QPointF>{bridge.first()}, vertical, horizontal);
+			scene.addPath(lead + QList<QPointF>{bridge.first()}, t.conductor);
+			if (d.vertical) {
+				vertical_wires << d;
+			} else {
+				horizontal_wires << d;
+			}
+			placed = true;
+			break;
+		}
+		if (!placed)
+		{
+			const QList<QPointF> path = currentPoints(t.conductor);
+			addInTheWay(path, vertical, horizontal);
+			scene.addPath(path, t.conductor);
+		}
 	}
 
 		//The runs of the bridges, and the lines on which the shaped
@@ -1020,7 +1161,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			for (int i = 0 ; i < n ; ++i)
 			{
 				const Described &d = described.at(i);
-				if (d.shaped || std::abs(d.wire.to - d.wire.from) < 1) continue;
+				if (d.shaped || !d.lead.isEmpty() || std::abs(d.wire.to - d.wire.from) < 1) continue;
 				const QPointF a = d.automatic.at(1), z = d.automatic.at(4);
 				const bool first_low = d.vertical ? a.x() <= z.x() : a.y() <= z.y();
 				const Terminal *low = first_low ? d.conductor->terminal1 : d.conductor->terminal2;
@@ -1091,7 +1232,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			if (only_their_groups && !wanted.contains(result.group.at(slot.at(i)))) continue;
 			const Described &d = described.at(i);
 			const QList<QPointF> path = d.shaped ? onFolio(d, shapedPath(d.shape, at))
-							     : withBridgeAt(d, at);
+							     : withLead(d, withBridgeAt(d, at));
 			if (!samePath(path, currentPoints(d.conductor))) {
 				changes << Change{d.conductor, path};
 			}

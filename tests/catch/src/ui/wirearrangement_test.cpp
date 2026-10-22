@@ -89,6 +89,25 @@ namespace
 			.arg(x).arg(y);
 	}
 
+		/// A component 60 wide and 80 high, its terminal @a terminal
+	QString wideDefinition(const char *name, const QString &terminal)
+	{
+		return QStringLiteral(
+			"<element name=\"%1\">"
+			"<definition type=\"element\" version=\"0.80\""
+			" width=\"60\" height=\"80\" hotspot_x=\"30\" hotspot_y=\"40\""
+			" orientation=\"dnnn\" link_type=\"simple\">"
+			"<names><name lang=\"en\">%1</name></names>"
+			"<description>"
+			"<rect x=\"-28\" y=\"-38\" width=\"56\" height=\"76\" antialias=\"false\""
+			" style=\"line-style:normal;line-weight:normal;filling:none;color:black\"/>"
+			"%2"
+			"</description>"
+			"</definition>"
+			"</element>")
+			.arg(QLatin1String(name), terminal);
+	}
+
 	QString definitions()
 	{
 		return definition("sensor.elmt",
@@ -116,7 +135,13 @@ namespace
 				//and a component with no terminal that draws its label there
 			+ definition("valve.elmt",
 				     QStringLiteral("<terminal x=\"0\" y=\"10\" orientation=\"s\"/>") + labelAt(-130, 52), 20)
-			+ definition("note.elmt", labelAt(-130, 92), 20);
+			+ definition("note.elmt", labelAt(-130, 92), 20)
+				//A component as wide as the signal of the request, its
+				//terminal on its edge pointing out: to the right, to the
+				//left, and up
+			+ wideDefinition("wide_e.elmt", QStringLiteral("<terminal x=\"30\" y=\"-20\" orientation=\"e\"/>"))
+			+ wideDefinition("wide_w.elmt", QStringLiteral("<terminal x=\"-30\" y=\"-20\" orientation=\"w\"/>"))
+			+ wideDefinition("wide_n.elmt", QStringLiteral("<terminal x=\"10\" y=\"-40\" orientation=\"n\"/>"));
 	}
 
 	struct Instance
@@ -1846,4 +1871,75 @@ TEST_CASE("CU-67.26 — The wire does not run over the text of a component", "[T
 	CHECK(over == 0);
 	CHECK((p.first() == QPointF(300, 300) || p.last() == QPointF(300, 300)));
 	CHECK((p.first() == QPointF(100, 350) || p.last() == QPointF(100, 350)));
+}
+
+TEST_CASE("CU-67.27 — The wire goes round its own component", "[T67][wirearrangement]")
+{
+	/*
+		The signal of the request: a component whose terminal, on its edge,
+		points away from the strip it is wired to, the strip's terminal on
+		the line of the component's body and pointing at it. Drawn as the
+		program draws it, the wire comes back through the component. To the
+		right, to the left, and up.
+	*/
+	struct Way67
+	{
+		const char *component;
+		int x;
+		int y;
+		const char *strip;
+		int strip_x;
+		int strip_y;
+	};
+		//The fourth as on the folio of the request: the strip's terminal near
+		//the top of the component, so that the wire goes round it above,
+		//where its name, drawn under the run, would lie on the component
+	const Way67 way = GENERATE(Way67{"wide_e.elmt", 900, 330, "east.elmt", 785, 352},
+				   Way67{"wide_e.elmt", 900, 330, "east.elmt", 785, 300},
+				   Way67{"wide_w.elmt", 500, 330, "terminal.elmt", 615, 352},
+				   Way67{"wide_n.elmt", 600, 600, "north.elmt", 620, 760});
+	CAPTURE(way.component, way.strip_y);
+	Setup setup(1, false);
+	UiBench::ScratchProject project(fixtureXml({{way.component, way.x, way.y, "C"},
+						    {way.strip, way.strip_x, way.strip_y, "X"}}, QString()));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Element *component = tagged(sheet, "C");
+	Element *strip = tagged(sheet, "X");
+	REQUIRE((component && strip));
+	const QRectF body = component->sceneBoundingRect().adjusted(0.5, 0.5, -0.5, -0.5);
+	Conductor *wire = draw(sheet, component->terminals().at(0), strip->terminals().at(0));
+	REQUIRE(wire != nullptr);
+		//A name as long as those of the request, which a run along the
+		//component could take
+	ConductorProperties properties = wire->properties();
+	properties.text = QStringLiteral("F5-4 (X 1mm2)");
+	wire->setProperties(properties);
+
+	const auto inside = [&body](const QList<QPointF> &p) {
+		int n = 0;
+		for (int i = 0 ; i + 1 < p.size() ; ++i) {
+			if (QRectF(p.at(i), p.at(i + 1)).normalized().adjusted(-0.01, -0.01, 0.01, 0.01).intersects(body)) ++n;
+		}
+		return n;
+	};
+		//As the program draws it, through the component
+	CAPTURE(text(points(wire)));
+	REQUIRE(inside(points(wire)) > 0);
+
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+	const QList<QPointF> p = points(wire);
+	CAPTURE(text(p), body);
+	CHECK(inside(p) == 0);
+	const QPointF from = component->terminals().at(0)->dockConductor();
+	const QPointF to = strip->terminals().at(0)->dockConductor();
+	CHECK(((p.first() == from && p.last() == to) || (p.first() == to && p.last() == from)));
+		//Nor its name on the component
+	const qreal margin = wire->textItem()->document()->documentMargin();
+	const QRectF letters = wire->textItem()->sceneBoundingRect().adjusted(margin, margin, -margin, -margin);
+	const QRectF drawn = component->mapRectToScene(component->drawnRect());
+	INFO("letters " << letters.left() << ".." << letters.right() << " x " << letters.top() << ".." << letters.bottom()
+	     << ", component " << drawn.left() << ".." << drawn.right() << " x " << drawn.top() << ".." << drawn.bottom()
+	     << ", size " << wire->textItem()->font().pointSize());
+	CHECK_FALSE(letters.intersects(drawn));
 }
