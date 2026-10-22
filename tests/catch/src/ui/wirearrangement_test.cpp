@@ -1712,7 +1712,7 @@ TEST_CASE("CU-67.25 — Turned, the same common line", "[T67][wirearrangement]")
 	}
 }
 
-TEST_CASE("CU-67.21 — Side to side, the wires of a point share one bridge", "[T67][wirearrangement]")
+TEST_CASE("T67 — Side to side, the wires of a point share one bridge", "[T67][wirearrangement]")
 {
 	/*
 		The same rule between two columns: a terminal pointing right, as
