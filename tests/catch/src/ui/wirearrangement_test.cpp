@@ -25,6 +25,7 @@
 #include "../../../../sources/foliogrid.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/qetgraphicsitem/conductortextitem.h"
+#include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
 #include "../../../../sources/QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/qetshapeitem.h"
@@ -76,6 +77,18 @@ namespace
 			.arg(height).arg(height / 2).arg(height / 2 - 2).arg(height - 4);
 	}
 
+		/// The label of the element, drawn from (@a x, @a y) of the symbol
+	QString labelAt(int x, int y)
+	{
+		return QStringLiteral(
+			"<dynamic_text text_from=\"ElementInfo\" x=\"%1\" y=\"%2\" z=\"3\" rotation=\"0\""
+			" frame=\"false\" text_width=\"-1\" font=\"Sans Serif,9,-1,5,50,0,0,0,0,0\""
+			" uuid=\"{67000000-0000-4000-8000-0000000000aa}\" Halignment=\"AlignLeft\""
+			" Valignment=\"AlignTop\" keep_visual_rotation=\"false\""
+			" rotation_point_center=\"false\"><text/><info_name>label</info_name></dynamic_text>")
+			.arg(x).arg(y);
+	}
+
 	QString definitions()
 	{
 		return definition("sensor.elmt",
@@ -97,7 +110,13 @@ namespace
 			+ definition("door.elmt",
 				     QStringLiteral("<terminal x=\"0\" y=\"-30\" orientation=\"n\"/>"
 						    "<terminal x=\"0\" y=\"30\" orientation=\"s\"/>"), 60)
-			+ definition("block.elmt", QString(), 20);
+			+ definition("block.elmt", QString(), 20)
+				//A component pointing down whose label is drawn beside it,
+				//down to the left, as the valves of the request show theirs;
+				//and a component with no terminal that draws its label there
+			+ definition("valve.elmt",
+				     QStringLiteral("<terminal x=\"0\" y=\"10\" orientation=\"s\"/>") + labelAt(-130, 52), 20)
+			+ definition("note.elmt", labelAt(-130, 92), 20);
 	}
 
 	struct Instance
@@ -1762,4 +1781,69 @@ TEST_CASE("T67 — Side to side, the wires of a point share one bridge", "[T67][
 	for (double x : std::as_const(turns)) {
 		CHECK(x == Approx(turns.first()));
 	}
+}
+
+TEST_CASE("CU-67.26 — The wire does not run over the text of a component", "[T67][wirearrangement]")
+{
+	/*
+		A terminal pointing down at (300, 300), wired to the terminal of a
+		strip on the left, lower, pointing right, at (100, 350); and a label
+		on the line of the strip's terminal, between the two - of the
+		component of the wire, as on the folio of the request, or of
+		another. Straight down and across, as the reset draws it, the wire
+		would run over it.
+	*/
+	const bool own = GENERATE(true, false);
+	CAPTURE(own);
+	Setup setup(1, false);
+	QList<Instance> instances{{"east.elmt", 90, 350, "X"}};
+	if (own) {
+		instances << Instance{"valve.elmt", 300, 290, "LAMINA LONGA"};
+	} else {
+		instances << Instance{"south.elmt", 300, 290, "V"} << Instance{"note.elmt", 300, 250, "LAMINA LONGA"};
+	}
+	UiBench::ScratchProject project(fixtureXml(instances, QString()));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Element *component = tagged(sheet, own ? "LAMINA LONGA" : "V");
+	Element *strip = tagged(sheet, "X");
+	Element *labelled = tagged(sheet, "LAMINA LONGA");
+	REQUIRE((component && strip && labelled));
+	REQUIRE(component->terminals().at(0)->dockConductor() == QPointF(300, 300));
+	REQUIRE(strip->terminals().at(0)->dockConductor() == QPointF(100, 350));
+		//A folio keeps the texts of its elements, and the bench's has none:
+		//the label is given the way the folio gives it, from the symbol's
+		//place for it
+	auto *given = new DynamicElementTextItem(labelled);
+	given->setTextFrom(DynamicElementTextItem::ElementInfo);
+	given->setInfoName(QStringLiteral("label"));
+	labelled->addDynamicTextItem(given);
+		//Nearer the strip than the component: the widest room for the bridge
+		//is between the label and the component, where the wire would run
+		//over the label to reach the strip
+	given->setPos(-140, own ? 52 : 92);
+	REQUIRE(given->toPlainText() == QStringLiteral("LAMINA LONGA"));
+	const QRectF label = given->sceneBoundingRect();
+	CAPTURE(label);
+		//The label is on the line of the strip's terminal, between the two
+	REQUIRE(label.top() < 350);
+	REQUIRE(label.bottom() > 350);
+	REQUIRE(label.left() > 110);
+	REQUIRE(label.right() < 300);
+
+	Conductor *wire = draw(sheet, component->terminals().at(0), strip->terminals().at(0));
+	REQUIRE(wire != nullptr);
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+
+	const QList<QPointF> p = points(wire);
+	CAPTURE(text(p));
+	int over = 0;
+	for (int i = 0 ; i + 1 < p.size() ; ++i)
+	{
+		const QRectF piece = QRectF(p.at(i), p.at(i + 1)).normalized().adjusted(-0.5, -0.5, 0.5, 0.5);
+		if (piece.intersects(label)) ++over;
+	}
+	CHECK(over == 0);
+	CHECK((p.first() == QPointF(300, 300) || p.last() == QPointF(300, 300)));
+	CHECK((p.first() == QPointF(100, 350) || p.last() == QPointF(100, 350)));
 }

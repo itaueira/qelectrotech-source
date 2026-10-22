@@ -23,6 +23,7 @@
 #include "foliogrid.h"
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/conductortextitem.h"
+#include "qetgraphicsitem/dynamicelementtextitem.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/qetshapeitem.h"
 #include "qetgraphicsitem/terminal.h"
@@ -57,6 +58,8 @@ namespace
 	constexpr double around_pitch = 15.0;
 		/// The runs of two such conductors of one column, one from the other
 	constexpr double around_run_gap = 10.0;
+		/// Kept clear around a text of a component (sixth adjustment)
+	constexpr double text_margin = 1.0;
 		/// How far the common line of a point of several conductors may go
 		/// out of the line of their terminal, to give the arms room for
 		/// their names (T67, fifth adjustment)
@@ -587,6 +590,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		&& around.isEmpty() && points.isEmpty()) return changes;
 
 	const QList<Element *> elements = diagram->elements();
+	QList<QRectF> text_boxes;
 	for (Element *e : elements)
 	{
 		const QRectF r = e->mapRectToScene(e->boundingRect())
@@ -594,6 +598,21 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		vertical.blocks << WireLanes::Block{r.left(), r.right(), r.top(), r.bottom()};
 		horizontal.blocks << WireLanes::Block{r.top(), r.bottom(), r.left(), r.right()};
 		scene.bodies << qMakePair(r, static_cast<const void *>(e));
+			//Its texts too, which lie beside the drawing of the symbol, and
+			//which a wire must not cover any more than the drawing (sixth
+			//adjustment) - the texts of the wire's own component too: each
+			//is in the way of every wire
+		const QList<DynamicElementTextItem *> texts = e->allDynamicTextItems();
+		for (DynamicElementTextItem *text : texts)
+		{
+			if (!text->isVisible() || text->toPlainText().trimmed().isEmpty()) continue;
+			const QRectF box = text->sceneBoundingRect()
+					.adjusted(-text_margin, -text_margin, text_margin, text_margin);
+			vertical.blocks << WireLanes::Block{box.left(), box.right(), box.top(), box.bottom()};
+			horizontal.blocks << WireLanes::Block{box.top(), box.bottom(), box.left(), box.right()};
+			scene.bodies << qMakePair(box, static_cast<const void *>(text));
+			text_boxes << box;
+		}
 		const QList<Terminal *> terminals = e->terminals();
 		for (Terminal *t : terminals)
 		{
@@ -1078,6 +1097,35 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			}
 		}
 	};
+		//The runs of a bridge keep off the texts of the components (sixth
+		//adjustment): a run that would go along a text, from the end of its
+		//terminal towards the bridge, ends its room before the text - as the
+		//run along an arm of a point does. A text right at the terminal,
+		//which no place of the bridge avoids, leaves the wire as it was
+	const auto offTexts = [&](QList<Described> &wires, bool up_and_down, double unit) {
+		for (Described &o : wires)
+		{
+			for (const QRectF &box : std::as_const(text_boxes))
+			{
+				const double low = up_and_down ? box.left() : box.top();
+				const double high = up_and_down ? box.right() : box.bottom();
+				const double across_low = up_and_down ? box.top() : box.left();
+				const double across_high = up_and_down ? box.bottom() : box.right();
+				WireLanes::Wire w = o.wire;
+				if (o.wire.from > across_low && o.wire.from < across_high
+				    && low > o.wire.low && low < o.wire.high) {
+					w.high = std::min(w.high, low);
+				}
+				if (o.wire.to > across_low && o.wire.to < across_high
+				    && high < o.wire.high && high > o.wire.low) {
+					w.low = std::max(w.low, high);
+				}
+				if (w.high - w.low >= 2 * unit) o.wire = w;
+			}
+		}
+	};
+	offTexts(vertical_wires, true, vertical.unit);
+	offTexts(horizontal_wires, false, horizontal.unit);
 	collect(vertical_wires, vertical);
 	collect(horizontal_wires, horizontal);
 	return changes;
