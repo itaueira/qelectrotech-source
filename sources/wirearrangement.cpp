@@ -233,6 +233,52 @@ namespace
 		return d.shape.start.y() + d.shape.outward * 10;
 	}
 
+		/// Whether the strip's own piece of @a d, as the automatic path has
+		/// it, passes the end of a terminal of @a elements other than its two
+		/// - or comes to it as close as a wire may pass it, or closer
+	bool stubPassesTerminal(const Described &d, const QList<Element *> &elements)
+	{
+		const Shaped &s = d.shape;
+		const double spot = WireLanes::Clearance().spot;
+		const double lo = std::min(s.end.x(), s.stub.x());
+		const double hi = std::max(s.end.x(), s.stub.x());
+		for (const Element *e : elements)
+		{
+			const QList<Terminal *> terminals = e->terminals();
+			for (const Terminal *t : terminals)
+			{
+				if (t == s.component || t == s.strip) continue;
+				const QPointF p = d.transposed ? swapped(t->dockConductor()) : t->dockConductor();
+				if (std::abs(p.y() - s.end.y()) < spot && p.x() > lo - spot - 0.01 && p.x() < hi + spot + 0.01
+				    && (p - s.end).manhattanLength() > 0.5) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+		/// The shape of @a c, as it is or turned: a conductor between a
+		/// terminal that points up or down and one that points to the side
+		/// is a shape both ways, the run chosen from the one and the other's
+		/// own piece kept as the automatic path has it. The way whose kept
+		/// piece passes no other terminal (ninth adjustment): kept, the piece
+		/// of a terminal of two components stacked side by side went past
+		/// the terminal of the other. Else as it is, as before.
+	bool describeShapedEitherWay(Conductor *c, Described &out, const QList<Element *> &elements)
+	{
+		Described as_is;
+		if (!describeShaped(c, as_is)) return describeShaped(c, out, true);
+		Described turned;
+		if (stubPassesTerminal(as_is, elements) && describeShaped(c, turned, true)
+		    && !stubPassesTerminal(turned, elements)) {
+			out = turned;
+		} else {
+			out = as_is;
+		}
+		return true;
+	}
+
 		/// The path of @a s with its bridge at @a lane, or with one bend
 		/// when @a lane is NaN, from terminal1 to terminal2
 	QList<QPointF> shapedPath(const Shaped &s, double lane)
@@ -623,11 +669,12 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 
 	QList<Described> vertical_wires, horizontal_wires, shaped;
 	QList<Detour> detours;
+	const QList<Element *> folio_elements = diagram->elements();
 	for (Conductor *c : all)
 	{
 		if (in_point.contains(c)) continue;
 		Described d;
-		if (movable.contains(c) && (describeShaped(c, d) || describeShaped(c, d, true)))
+		if (movable.contains(c) && describeShapedEitherWay(c, d, folio_elements))
 		{
 			shaped << d;
 			continue;
@@ -1108,8 +1155,19 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			bendOnce();
 			continue;
 		}
+			//A body at the far end of its room, round the strip's own piece,
+			//is not in the way of the run (ninth adjustment): the run goes
+			//only as far as the bridge, which keeps out of bodies, so that
+			//body is always beyond it. Counted, it took the height of the
+			//terminal's own end from two components stacked without a gap,
+			//and the run went past the terminal of the other
+		WireLanes::Clearance run_clearance = across;
+		run_clearance.bodies.erase(std::remove_if(run_clearance.bodies.begin(), run_clearance.bodies.end(),
+							  [&s](const WireLanes::Block &b) {
+			return std::min(b.low, b.high) <= s.stub.x() + 0.01 && std::max(b.low, b.high) >= s.stub.x() - 0.01;
+		}), run_clearance.bodies.end());
 		const double run = WireLanes::runAt(s.start.y(), s.outward, s.start.x(), s.stub.x(),
-						    across, longest_stub, unitIn(tr));
+						    run_clearance, longest_stub, unitIn(tr));
 		s.run = std::isnan(run) ? automaticRun(d) : run;
 		if (towards && std::abs(s.run - s.end.y()) < 1)
 		{

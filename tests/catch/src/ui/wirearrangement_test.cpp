@@ -108,6 +108,60 @@ namespace
 			.arg(QLatin1String(name), terminal);
 	}
 
+		/// A component 50 long with a terminal at each end, 5 inside its
+		/// box, as the valves of the request: standing, its terminals
+		/// pointing up and down, or lying, pointing left and right
+	QString stackDefinition(const char *name, bool lying)
+	{
+		return QStringLiteral(
+			"<element name=\"%1\">"
+			"<definition type=\"element\" version=\"0.80\""
+			" width=\"%2\" height=\"%3\" hotspot_x=\"%4\" hotspot_y=\"%5\""
+			" orientation=\"dnnn\" link_type=\"simple\">"
+			"<names><name lang=\"en\">%1</name></names>"
+			"<description>"
+			"<rect x=\"%6\" y=\"%7\" width=\"%8\" height=\"%9\" antialias=\"false\""
+			" style=\"line-style:normal;line-weight:normal;filling:none;color:black\"/>"
+			"%10"
+			"</description>"
+			"</definition>"
+			"</element>")
+			.arg(QLatin1String(name))
+			.arg(lying ? 50 : 20).arg(lying ? 20 : 50).arg(lying ? 25 : 10).arg(lying ? 10 : 25)
+			.arg(lying ? -15 : -8).arg(lying ? -8 : -15).arg(lying ? 30 : 16).arg(lying ? 16 : 30)
+			.arg(lying ? QStringLiteral("<terminal x=\"-20\" y=\"0\" orientation=\"w\"/>"
+						   "<terminal x=\"20\" y=\"0\" orientation=\"e\"/>")
+				   : QStringLiteral("<terminal x=\"0\" y=\"-20\" orientation=\"n\"/>"
+						   "<terminal x=\"0\" y=\"20\" orientation=\"s\"/>"));
+	}
+
+		/// A terminal of a strip 40 long whose end is 8 from its middle,
+		/// pointing @a way (e, w, n or s): the body goes 12 past the end,
+		/// as the body of a terminal of a strip on the folio goes past it
+	QString deepDefinition(const char *name, char way)
+	{
+		const bool lying = way == 'e' || way == 'w';
+		const int x = way == 'e' ? 8 : way == 'w' ? -8 : 0;
+		const int y = way == 's' ? 8 : way == 'n' ? -8 : 0;
+		return QStringLiteral(
+			"<element name=\"%1\">"
+			"<definition type=\"element\" version=\"0.80\""
+			" width=\"%2\" height=\"%3\" hotspot_x=\"%4\" hotspot_y=\"%5\""
+			" orientation=\"dnnn\" link_type=\"simple\">"
+			"<names><name lang=\"en\">%1</name></names>"
+			"<description>"
+			"<rect x=\"%6\" y=\"%7\" width=\"%8\" height=\"%9\" antialias=\"false\""
+			" style=\"line-style:normal;line-weight:normal;filling:none;color:black\"/>"
+			"<terminal x=\"%10\" y=\"%11\" orientation=\"%12\"/>"
+			"</description>"
+			"</definition>"
+			"</element>")
+			.arg(QLatin1String(name))
+			.arg(lying ? 40 : 20).arg(lying ? 20 : 40).arg(lying ? 20 : 10).arg(lying ? 10 : 20)
+			.arg(lying ? -18 : -8).arg(lying ? -8 : -18).arg(lying ? 36 : 16).arg(lying ? 16 : 36)
+			.arg(x).arg(y).arg(QLatin1Char(way));
+	}
+
 	QString definitions()
 	{
 		return definition("sensor.elmt",
@@ -141,7 +195,13 @@ namespace
 				//left, and up
 			+ wideDefinition("wide_e.elmt", QStringLiteral("<terminal x=\"30\" y=\"-20\" orientation=\"e\"/>"))
 			+ wideDefinition("wide_w.elmt", QStringLiteral("<terminal x=\"-30\" y=\"-20\" orientation=\"w\"/>"))
-			+ wideDefinition("wide_n.elmt", QStringLiteral("<terminal x=\"10\" y=\"-40\" orientation=\"n\"/>"));
+			+ wideDefinition("wide_n.elmt", QStringLiteral("<terminal x=\"10\" y=\"-40\" orientation=\"n\"/>"))
+			+ stackDefinition("stack_v.elmt", false)
+			+ stackDefinition("stack_h.elmt", true)
+			+ deepDefinition("deep_e.elmt", 'e')
+			+ deepDefinition("deep_w.elmt", 'w')
+			+ deepDefinition("deep_n.elmt", 'n')
+			+ deepDefinition("deep_s.elmt", 's');
 	}
 
 	struct Instance
@@ -2076,4 +2136,108 @@ TEST_CASE("CU-67.29 — Bridges of other points past the common line", "[T67][wi
 		CHECK(p.first() == QPointF(left_x, 345 + 46 * k));
 		CHECK(p.last() == QPointF(775, 375 + 46 * k));
 	}
+}
+
+TEST_CASE("CU-67.30 — Components stacked without a gap", "[T67][wirearrangement]")
+{
+	/*
+		The folio of the request: two components stacked without a gap,
+		each with a terminal on top and one below, 5 inside its box; the
+		strip on the left, its terminals pointing right. As drawn: the
+		components at x 900, from y 380 to 430 and from 430 to 480, their
+		terminals at 385, 425, 435 and 475; the ends of the strip at x 760,
+		at 421, 444, 467 and 490, as on the folio. The bodies of the strip
+		took the height of the ends of the terminals, and the wires went
+		past the terminal of the other component.
+	*/
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(way);
+	Setup setup(1, false);
+	const Point layout(0, 0, false, way);
+	const auto stack = [&](double y, const char *label) {
+		const QPointF p = layout.place(QPointF(900, y));
+		return Instance{way.turned ? "stack_h.elmt" : "stack_v.elmt", qRound(p.x()), qRound(p.y()), label};
+	};
+		//The terminals of the strip 8 inside a body 40 long, as a terminal
+		//of a strip on the folio, so that its body reaches past the end of
+		//the strip's own piece in every way
+	const auto deep = [&](double y, const char *label) {
+		const QPointF end = layout.place(QPointF(760, y));
+		const QPointF towards = layout.turn(QPointF(1, 0));
+		const char *definition = towards.y() > 0 ? "deep_s.elmt"
+				       : towards.y() < 0 ? "deep_n.elmt"
+				       : towards.x() > 0 ? "deep_e.elmt" : "deep_w.elmt";
+		return Instance{definition, qRound(end.x() - 8 * towards.x()), qRound(end.y() - 8 * towards.y()), label};
+	};
+	const double rows[] = {421, 444, 467, 490};
+	const double tips[] = {385, 425, 435, 475};
+	const char *owners[] = {"V0", "V0", "V1", "V1"};
+	QList<Instance> instances{stack(405, "V0"), stack(455, "V1")};
+	for (int i = 0 ; i < 4 ; ++i) instances << deep(rows[i], Point::arm_labels[i]);
+	UiBench::ScratchProject project(fixtureXml(instances, QString()));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	QList<Conductor *> wires;
+	for (int i = 0 ; i < 4 ; ++i)
+	{
+		Terminal *from = nullptr;
+		for (Terminal *t : tagged(sheet, owners[i])->terminals()) {
+			if ((layout.drawn(t->dockConductor()) - QPointF(900, tips[i])).manhattanLength() < 0.5) from = t;
+		}
+		REQUIRE(from != nullptr);
+		Conductor *c = draw(sheet, from, tagged(sheet, Point::arm_labels[i])->terminals().at(0));
+		REQUIRE(c != nullptr);
+		wires << c;
+	}
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+
+	QList<QList<QPointF>> paths;
+	for (int i = 0 ; i < 4 ; ++i)
+	{
+		QList<QPointF> p = points(wires.at(i));
+		for (QPointF &q : p) q = layout.drawn(q);
+		if ((p.first() - QPointF(900, tips[i])).manhattanLength() > 0.5) std::reverse(p.begin(), p.end());
+		paths << p;
+		CAPTURE(i, text(p));
+		REQUIRE(p.size() >= 3);
+		CHECK(p.last() == QPointF(760, rows[i]));
+			//No piece of it on the line of the terminals passes the end of
+			//another one: out of its own to the side, or straight on to its
+			//row of the strip when no other is in between
+		for (int k = 0 ; k + 1 < p.size() ; ++k)
+		{
+			if (std::abs(p.at(k).x() - 900) > 0.5 || std::abs(p.at(k + 1).x() - 900) > 0.5) continue;
+			const double low = std::min(p.at(k).y(), p.at(k + 1).y());
+			const double high = std::max(p.at(k).y(), p.at(k + 1).y());
+			for (int o = 0 ; o < 4 ; ++o) {
+				if (o != i) CHECK_FALSE((tips[o] > low - 0.5 && tips[o] < high + 0.5));
+			}
+		}
+			//The two that face each other between the components, out of
+			//the very end of their terminals
+		if (i == 1 || i == 2)
+		{
+			CHECK(p.at(1).y() == Approx(tips[i]));
+			CHECK(p.at(1).x() < 899.5);
+		}
+	}
+		//No two of them cross
+	int crossed = 0;
+	for (int i = 0 ; i < 4 ; ++i) for (int j = 0 ; j < 4 ; ++j)
+	{
+		if (i == j) continue;
+		const QList<QPointF> &h = paths.at(i);
+		const QList<QPointF> &v = paths.at(j);
+		for (int a = 0 ; a + 1 < h.size() ; ++a) for (int b = 0 ; b + 1 < v.size() ; ++b)
+		{
+			if (std::abs(h.at(a).y() - h.at(a + 1).y()) > 0.01 || std::abs(v.at(b).x() - v.at(b + 1).x()) > 0.01) continue;
+			const double x = v.at(b).x(), y = h.at(a).y();
+			if (x > std::min(h.at(a).x(), h.at(a + 1).x()) + 0.5 && x < std::max(h.at(a).x(), h.at(a + 1).x()) - 0.5
+			    && y > std::min(v.at(b).y(), v.at(b + 1).y()) + 0.5 && y < std::max(v.at(b).y(), v.at(b + 1).y()) - 0.5) {
+				++crossed;
+			}
+		}
+	}
+	CAPTURE(text(paths.at(0)), text(paths.at(1)), text(paths.at(2)), text(paths.at(3)));
+	CHECK(crossed == 0);
 }
