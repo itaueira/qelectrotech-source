@@ -1500,12 +1500,12 @@ Nota: Estas opções NÃO permitem ou bloqueiam a autonumeração, apenas a sua 
     <name>CableCopy</name>
     <message>
         <location filename="../sources/diagramevent/diagrameventaddpaste.cpp" line="433"/>
-        <location filename="../sources/diagramview.cpp" line="769"/>
+        <location filename="../sources/diagramview.cpp" line="771"/>
         <source>Paste a cable</source>
         <translation>Colar um cabo</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="893"/>
+        <location filename="../sources/diagramview.cpp" line="895"/>
         <source>Duplicate a cable</source>
         <translation>Duplicar um cabo</translation>
     </message>
@@ -5514,13 +5514,13 @@ Continuar?</translation>
 <context>
     <name>Conductor</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2627"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2777"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2632"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="2782"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
@@ -7203,7 +7203,7 @@ Hold Shift and drag to move this text on its own</source>
         <translation>Reposicionar a referência cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="1058"/>
+        <location filename="../sources/diagramview.cpp" line="1060"/>
         <source>X: %1 Y: %2</source>
         <translation>X: %1 Y: %2</translation>
     </message>
@@ -7248,45 +7248,50 @@ Hold Shift and drag to move this text on its own</source>
         <translation>Condutores</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="1208"/>
+        <location filename="../sources/diagramview.cpp" line="173"/>
+        <source>Folio wires</source>
+        <translation>Fios da folha</translation>
+    </message>
+    <message>
+        <location filename="../sources/diagramview.cpp" line="1210"/>
         <source>Connect the selected terminals</source>
         <translation>Conectar os terminais selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="1651"/>
+        <location filename="../sources/diagramview.cpp" line="1653"/>
         <source>Untitled</source>
         <comment>what to display for untitled diagrams</comment>
         <translation>Sem título</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2797"/>
+        <location filename="../sources/diagramview.cpp" line="2808"/>
         <source>Registered template</source>
         <translation>Modelo salvo</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2798"/>
+        <location filename="../sources/diagramview.cpp" line="2809"/>
         <source>The template has been successfully saved as :
 %1</source>
         <translation>O modelo foi salvo com sucesso em:
 %1</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2801"/>
+        <location filename="../sources/diagramview.cpp" line="2812"/>
         <source>Error</source>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2801"/>
+        <location filename="../sources/diagramview.cpp" line="2812"/>
         <source>The file could not be written.</source>
         <translation>Não foi possível gravar o arquivo.</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="227"/>
+        <location filename="../sources/diagramview.cpp" line="229"/>
         <source>Choose the new color for this conductor</source>
         <translation>Escolha a nova cor do condutor</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="250"/>
+        <location filename="../sources/diagramview.cpp" line="252"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
@@ -7297,17 +7302,17 @@ Hold Shift and drag to move this text on its own</source>
         <translation>Referência cruzada</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="503"/>
+        <location filename="../sources/diagramview.cpp" line="505"/>
         <source>%1: %2</source>
         <translation>%1: %2</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="544"/>
+        <location filename="../sources/diagramview.cpp" line="546"/>
         <source>Add an image</source>
         <translation>Adicionar uma imagem</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/diagramview.cpp" line="545"/>
+        <location filename="../sources/diagramview.cpp" line="547"/>
         <source>Add %n image(s)</source>
         <translation>
             <numerusform>Adicionar %n imagem</numerusform>
@@ -7315,17 +7320,17 @@ Hold Shift and drag to move this text on its own</source>
         </translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="552"/>
+        <location filename="../sources/diagramview.cpp" line="554"/>
         <source>Images not added</source>
         <translation>Imagens não adicionadas</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="553"/>
+        <location filename="../sources/diagramview.cpp" line="555"/>
         <source>These files could not be added:</source>
         <translation>Não foi possível adicionar estes arquivos:</translation>
     </message>
     <message>
-        <location filename="../sources/diagramview.cpp" line="2502"/>
+        <location filename="../sources/diagramview.cpp" line="2513"/>
         <source>Remove this core from the line</source>
         <translation>Remover esta veia da linha</translation>
     </message>
@@ -10082,29 +10087,29 @@ Continuar?</translation>
 <context>
     <name>ElementScene</name>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="442"/>
+        <location filename="../sources/editor/elementscene.cpp" line="443"/>
         <source>Move a primitive</source>
         <translation>Move um primitivo</translation>
     </message>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="1079"/>
+        <location filename="../sources/editor/elementscene.cpp" line="1106"/>
         <source>Edit author information</source>
         <comment>window title</comment>
         <translation>Editar as informações sobre o autor</translation>
     </message>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="1084"/>
+        <location filename="../sources/editor/elementscene.cpp" line="1111"/>
         <source>You can use this field to specify the authors of this element, its license, or any other information you may find useful.</source>
         <translation>Você pode utilizar este campo para indicar os autores do elemento, a licença do mesmo, ou qualquer outra informação que considere útil.</translation>
     </message>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="1180"/>
+        <location filename="../sources/editor/elementscene.cpp" line="1207"/>
         <source>Edit names</source>
         <comment>window title</comment>
         <translation>Editar nomes</translation>
     </message>
     <message>
-        <location filename="../sources/editor/elementscene.cpp" line="1182"/>
+        <location filename="../sources/editor/elementscene.cpp" line="1209"/>
         <source>You may enter the element name in several languages.</source>
         <translation>Você pode especificar o nome do elemento em diversos idiomas.</translation>
     </message>
@@ -26525,7 +26530,7 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Observações</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="5811"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="5848"/>
         <location filename="../sources/scripting/qetscripting.cpp" line="147"/>
         <location filename="../sources/scripting/qetscripting.cpp" line="232"/>
         <source>Script</source>
@@ -26605,21 +26610,21 @@ Erro: Certifique-se de que o arquivo %1 é um arquivo .dxf válido</translation>
         <translation>Formatar as tags das referências de folha</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="199"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="201"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="208"/>
-        <location filename="../sources/conductorautonumerotation.cpp" line="473"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="210"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="475"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
     </message>
     <message>
-        <location filename="../sources/conductorautonumerotation.cpp" line="265"/>
-        <location filename="../sources/conductorautonumerotation.cpp" line="376"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="267"/>
+        <location filename="../sources/conductorautonumerotation.cpp" line="378"/>
         <source>Automatically number a conductor</source>
         <comment>undo caption</comment>
         <translation>Numerar automaticamente um condutor</translation>
@@ -28218,7 +28223,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
         <translation>Renumerar os elementos (%1)</translation>
     </message>
     <message>
-        <location filename="../sources/scripting/qetscriptapi.cpp" line="5520"/>
+        <location filename="../sources/scripting/qetscriptapi.cpp" line="5557"/>
         <source>Search and replace</source>
         <translation>Localizar e substituir</translation>
     </message>
@@ -35914,7 +35919,7 @@ associar o nome &quot;variável_personalizada&quot; e o valor &quot;1745&quot; v
 <context>
     <name>WireRemoval</name>
     <message>
-        <location filename="../sources/wireremoval.cpp" line="74"/>
+        <location filename="../sources/wireremoval.cpp" line="76"/>
         <source>Remove the wires</source>
         <translation>Apagar os fios</translation>
     </message>

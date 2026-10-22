@@ -169,6 +169,8 @@ DiagramView::DiagramView(Diagram *diagram, QWidget *parent) :
 	m_folio_report_menu = new QMenu(tr("Sheet reference"), this);
 		//Filled each time the context menu opens, see contextMenuActions()
 	m_conductor_menu = new QMenu(tr("Conductors"), this);
+		//The commands of the wires of the whole folio, see contextMenuActions()
+	m_folio_wires_menu = new QMenu(tr("Folio wires"), this);
 
 		//setup three separators, to be use in context menu
 	for(int i=0 ; i<3 ; ++i)
@@ -2313,6 +2315,15 @@ QList<QAction *> DiagramView::contextMenuActions() const
 			list << qde->m_add_item_menu->menuAction();
 			list << m_separators.at(1);
 			list << qde->m_edit_diagram_properties;
+				//The click on the folio with nothing under it is a click on
+				//the folio: the commands that work on its wires (T80, step 2).
+				//Removing them is not one of them, being the one that
+				//destroys, and stays in the Edit menu
+			m_folio_wires_menu->clear();
+			m_folio_wires_menu->addAction(qde->m_conductor_arrange_folio);
+			m_folio_wires_menu->addAction(qde->m_renumber_wires);
+			m_folio_wires_menu->addAction(qde->m_convert_wire_names);
+			list << m_folio_wires_menu->menuAction();
 			list << qde->m_row_column_menu->menuAction();
 		}
 		else

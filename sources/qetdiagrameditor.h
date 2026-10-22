@@ -324,7 +324,11 @@ class QETDiagramEditor : public QETMainWindow
 		*m_catalog_register = nullptr,  ///< Action to save the selected components as a catalog part
 		*m_show_conductor_text = nullptr,///< Action to show the number of the selected conductors
 		*m_hide_conductor_text = nullptr,///< Action to hide it
-		*m_align_conductor_text = nullptr;///< Action to line the conductor numbers up on one axis
+		*m_align_conductor_text = nullptr,///< Action to line the conductor numbers up on one axis
+			//And these, which work on the folio, offered where the folio
+			//is clicked with nothing under the click (T80, step 2)
+		*m_convert_wire_names = nullptr,///< Action to name the wires F<folio>-<number> (colour cross-section) (T70)
+		*m_renumber_wires = nullptr;///< Action to number the wires again from their place on the folio (T78)
 		
 		QActionGroup
 		m_row_column_actions_group, /// Action related to add/remove rows/column in diagram
@@ -413,8 +417,6 @@ class QETDiagramEditor : public QETMainWindow
 		*m_show_fine_grid = nullptr,    ///< Action to draw the finer grid
 		*m_show_terminals = nullptr,    ///< Action to keep the connection points visible
 		*m_show_empty_fields = nullptr, ///< Action to show the text fields that have no value
-		*m_convert_wire_names = nullptr,///< Action to name the wires F<folio>-<number> (colour cross-section) (T70)
-		*m_renumber_wires = nullptr,///< Action to number the wires again from their place on the folio (T78)
 		*m_remove_wires = nullptr,///< Action to remove the wires of the project or of the folio (T79)
 		*m_link_accessory = nullptr,    ///< Action to say which component an accessory belongs to
 		*m_cable_numbering,            ///< Action to open the cable numbering window (rule + numbering of every cable)
