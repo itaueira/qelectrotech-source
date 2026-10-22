@@ -177,18 +177,45 @@ Element *detached(const QDomElement &definition, Element *placed)
 	return element;
 }
 
+	//What a text is for: where it comes from, and which information or
+	//composite text it shows - whatever it says, and wherever it is
+QString roleOf(const DynamicElementTextItem *text)
+{
+	const QDomDocument document = xmlOf(text);
+	const QDomElement xml = document.documentElement();
+	return xml.attribute(QStringLiteral("text_from")) + QLatin1Char('|')
+			+ childText(xml, QStringLiteral("info_name")) + QLatin1Char('|')
+			+ childText(xml, QStringLiteral("composite_text"));
+}
+
 	//The texts of @p element made from a text of its symbol, in the order
-	//of the symbol
+	//of the symbol. A uuid two texts of the symbol have - a text copied
+	//and pasted in the symbol editor kept the uuid of the one copied -
+	//identifies neither of them (T82): each is given one made from it and
+	//from what the text is for, the same in the symbol before a change and
+	//after it, and different for each
 QList<QPair<QUuid, DynamicElementTextItem *>> symbolTexts(const Element *element)
 {
 	QList<QPair<QUuid, DynamicElementTextItem *>> texts;
 	if (!element) {
 		return texts;
 	}
+	QHash<QUuid, int> count;
 	for (DynamicElementTextItem *text : element->allDynamicTextItems()) {
 		if (!text->symbolTextUuid().isNull()) {
 			texts << qMakePair(text->symbolTextUuid(), text);
+			++count[text->symbolTextUuid()];
 		}
+	}
+	QHash<QString, int> seen;
+	for (auto &text : texts)
+	{
+		if (count.value(text.first) < 2) {
+			continue;
+		}
+		const QString role = roleOf(text.second);
+		const int rank = seen[text.first.toString() + role]++;
+		text.first = QUuid::createUuidV5(text.first, role + QLatin1Char('#') + QString::number(rank));
 	}
 	return texts;
 }
@@ -384,10 +411,17 @@ Links linksOf(Element *element,
 		known.insert(text.first);
 	}
 	const QList<DynamicElementTextItem *> placed_texts = linkableTexts(element);
+		//A uuid two texts of the element remember says which of them it is
+		//for neither (T82): they are guessed, as the texts of an element
+		//saved before the link are
+	QHash<QUuid, int> remembered;
+	for (DynamicElementTextItem *text : placed_texts) {
+		++remembered[text->symbolTextUuid()];
+	}
 	for (DynamicElementTextItem *text : placed_texts)
 	{
 		const QUuid uuid = text->symbolTextUuid();
-		if (!uuid.isNull() && !links.linked.contains(uuid)
+		if (!uuid.isNull() && remembered.value(uuid) < 2 && !links.linked.contains(uuid)
 				&& (known.contains(uuid) || also.contains(uuid))) {
 			links.link.insert(text, uuid);
 			links.linked.insert(uuid);
@@ -737,6 +771,8 @@ SymbolTextSync::Plan SymbolTextSync::plan(Element *element,
 			//then turned has it
 		QDomDocument added = xmlOf(now_text.second);
 		QDomElement added_text = added.documentElement();
+			//The text of the symbol it is made from, as symbolTexts() tells it
+		added_text.setAttribute(QStringLiteral("symbol_text_uuid"), now_text.first.toString());
 		added_text.setAttribute(QStringLiteral("rotation"), QString::number(
 				placedRotation(now_text.second->rotation(),
 							   now_text.second->keepVisualRotation(), element)));

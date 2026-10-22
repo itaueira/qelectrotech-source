@@ -1161,6 +1161,8 @@ if(TARGET qelectrotech_objects)
         # Os elementos do projeto acompanham o simbolo: textos, terminais,
         # tipo, e as versoes que a T45 nao alcancava.
         src/ui/symboltextsync_test.cpp
+        # A text of a symbol has a uuid of its own, pasted or opened (T82).
+        src/ui/symboltextuuid_test.cpp
         # A coluna de paginas das janelas de configuracao: icones e nomes
         # num eixo so, qualquer que seja o tamanho do nome.
         src/ui/configdialog_test.cpp

@@ -43,6 +43,7 @@
 #include "ui/elementpropertieseditorwidget.h"
 #include "../qetversion.h"
 
+#include <QSet>
 #include <QKeyEvent>
 #include <algorithm>
 #include <cmath>
@@ -782,6 +783,32 @@ void ElementScene::fromXml(
 	if (state)
 	{
 		ElementContent loaded_content = loadContent(xml_document);
+
+			//A text whose uuid another text of the symbol already has gets
+			//one of its own - pasted from a copy of a text of this symbol, or
+			//saved so by the copy and paste of an earlier editor. The uuid is
+			//what links the texts of the elements placed on folios to the
+			//texts of their symbol, and two texts sharing one swapped their
+			//contents on every placed element (T82)
+		QSet<QUuid> taken;
+		const QList<QGraphicsItem *> present = items();
+		for (QGraphicsItem *item : present) {
+			if (auto *text = dynamic_cast<PartDynamicTextField *>(item)) {
+				taken.insert(text->uuid());
+			}
+		}
+		for (QGraphicsItem *item : std::as_const(loaded_content))
+		{
+			auto *text = dynamic_cast<PartDynamicTextField *>(item);
+			if (!text) {
+				continue;
+			}
+			if (taken.contains(text->uuid())) {
+				text->setNewUuid();
+			}
+			taken.insert(text->uuid());
+		}
+
 		if (position != QPointF())
 			addContentAtPos(loaded_content, position);
 		else

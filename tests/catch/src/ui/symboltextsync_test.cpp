@@ -986,3 +986,201 @@ TEST_CASE("CU-58.14 — A copy placed on no folio is brought too",
 	CHECK(ElementOrigin::contentHash(copyAt(project, unplaced).documentElement())
 		  == ElementOrigin::contentHash(new_version.documentElement()));
 }
+
+namespace
+{
+		/// The uuid the three texts of the cases of T82 share
+	const QUuid repeated_text("{a1a1a1a1-0000-4000-8000-0000000000dd}");
+
+		/// The copy of the bench's symbol with three texts of informations -
+		/// the function, the description and the label - sharing one uuid, as
+		/// a text copied and pasted in the symbol editor left them (T82)
+	QDomDocument withRepeatedTexts(const Bench &bench)
+	{
+		QDomDocument definition = copyAt(bench.get(), bench.path);
+		addText(definition, repeated_text, QStringLiteral("ElementInfo"), QStringLiteral("function"), -40, 2);
+		addText(definition, repeated_text, QStringLiteral("ElementInfo"), QStringLiteral("description"), 10, 10);
+		addText(definition, repeated_text, QStringLiteral("ElementInfo"), QStringLiteral("label"), -40, -19);
+		newRevision(definition);
+		return definition;
+	}
+
+		/// The texts of the symbol with the uuid of the cases, in order
+	QList<QDomElement> repeatedTexts(const QDomDocument &definition)
+	{
+		QList<QDomElement> texts;
+		for (QDomElement text = descriptionOf(definition).firstChildElement(QStringLiteral("dynamic_text"));
+			 !text.isNull();
+			 text = text.nextSiblingElement(QStringLiteral("dynamic_text"))) {
+			if (QUuid(text.attribute(QStringLiteral("uuid"))) == repeated_text) {
+				texts << text;
+			}
+		}
+		return texts;
+	}
+
+		/// What each placed element shows: its own function, description and
+		/// label, so that a text showing another's is seen
+	void giveInformations(const QList<Element *> &placed)
+	{
+		for (int i = 0 ; i < placed.size() ; ++i)
+		{
+			DiagramContext informations = placed.at(i)->elementInformations();
+			informations.remove(QStringLiteral("formula"));
+			informations.addValue(QStringLiteral("function"), QStringLiteral("SOPRO%1").arg(i));
+			informations.addValue(QStringLiteral("description"), QStringLiteral("DESC%1").arg(i));
+			informations.addValue(QStringLiteral("label"), QStringLiteral("TAG%1").arg(i));
+			placed.at(i)->setElementInformations(informations);
+		}
+	}
+
+	int textsSaying(const Element *element, const QString &value)
+	{
+		int count = 0;
+		for (DynamicElementTextItem *text : element->allDynamicTextItems()) {
+			if (text->toPlainText() == value) ++count;
+		}
+		return count;
+	}
+
+		/// The three texts placed from the symbol, as the elements placed by
+		/// an earlier program kept them: all remembering the repeated uuid
+	void rememberRepeated(const QList<Element *> &placed, int i)
+	{
+		for (const QString &value : {QStringLiteral("SOPRO%1"), QStringLiteral("DESC%1"),
+					     QStringLiteral("TAG%1")}) {
+			if (DynamicElementTextItem *text = textSaying(placed.at(i), value.arg(i))) {
+				text->setSymbolTextUuid(repeated_text);
+			}
+		}
+	}
+}
+
+TEST_CASE("CU-82.1 — Texts sharing a uuid keep what they show on the elements",
+		  "[t82][symboltextsync]")
+{
+	Bench bench(GENERATE(from_range(examples)));
+	const bool reset = GENERATE(false, true);
+	CAPTURE(reset);
+	REQUIRE_FALSE(bench.path.isEmpty());
+	QETProject *project = bench.get();
+	const QList<Element *> placed = bench.placed();
+	REQUIRE(placed.size() >= 2);
+	giveInformations(placed);
+
+	const QDomDocument first = withRepeatedTexts(bench);
+	REQUIRE(writeFile(bench.company.path(), bench.relative(), first));
+	REQUIRE(update(project, bench.dirs()).brought_symbols == 1);
+	for (int i = 0 ; i < placed.size() ; ++i)
+	{
+		CAPTURE(i);
+		REQUIRE(textsSaying(placed.at(i), QStringLiteral("SOPRO%1").arg(i)) == 1);
+		REQUIRE(textsSaying(placed.at(i), QStringLiteral("TAG%1").arg(i)) == 1);
+		rememberRepeated(placed, i);
+	}
+
+		//The symbol changed: its label drawn larger
+	QDomDocument second = documentOf(first.documentElement());
+	const QList<QDomElement> texts = repeatedTexts(second);
+	REQUIRE(texts.size() == 3);
+	QDomElement(texts.at(2)).setAttribute(QStringLiteral("font"), QStringLiteral("Sans Serif,12,-1,5,50,0,0,0,0,0"));
+	newRevision(second);
+	if (reset) {
+		REQUIRE(saveOverCopy(project, bench.path, second));
+		sync(project, placed, second, SymbolTextSync::Mode::Reset);
+	} else {
+		REQUIRE(writeFile(bench.company.path(), bench.relative(), second));
+		update(project, bench.dirs());
+	}
+
+	for (int i = 0 ; i < placed.size() ; ++i)
+	{
+		const Element *element = placed.at(i);
+		CAPTURE(i);
+			//Each text still shows its own information, once
+		CHECK(textsSaying(element, QStringLiteral("SOPRO%1").arg(i)) == 1);
+		CHECK(textsSaying(element, QStringLiteral("DESC%1").arg(i)) == 1);
+		CHECK(textsSaying(element, QStringLiteral("TAG%1").arg(i)) == 1);
+			//The label took the change, and the function did not
+		DynamicElementTextItem *label = textSaying(element, QStringLiteral("TAG%1").arg(i));
+		DynamicElementTextItem *function = textSaying(element, QStringLiteral("SOPRO%1").arg(i));
+		REQUIRE((label && function));
+		CHECK(label->font().pointSize() == 12);
+		CHECK(function->font().pointSize() == 9);
+			//And each remembers a symbol text of its own
+		DynamicElementTextItem *description = textSaying(element, QStringLiteral("DESC%1").arg(i));
+		REQUIRE(description);
+		CHECK(label->symbolTextUuid() != function->symbolTextUuid());
+		CHECK(label->symbolTextUuid() != description->symbolTextUuid());
+		CHECK(function->symbolTextUuid() != description->symbolTextUuid());
+	}
+}
+
+TEST_CASE("CU-82.2 — The symbol given a uuid per text keeps the elements placed before",
+		  "[t82][symboltextsync]")
+{
+	Bench bench(GENERATE(from_range(examples)));
+	REQUIRE_FALSE(bench.path.isEmpty());
+	QETProject *project = bench.get();
+	const QList<Element *> placed = bench.placed();
+	REQUIRE(placed.size() >= 2);
+	giveInformations(placed);
+
+	const QDomDocument first = withRepeatedTexts(bench);
+	REQUIRE(writeFile(bench.company.path(), bench.relative(), first));
+	REQUIRE(update(project, bench.dirs()).brought_symbols == 1);
+	QList<int> before;
+	for (int i = 0 ; i < placed.size() ; ++i)
+	{
+		rememberRepeated(placed, i);
+		before << placed.at(i)->allDynamicTextItems().size();
+	}
+
+		//The symbol mended: the function and the description a uuid of their
+		//own, and the label keeping the one they shared - which every text
+		//of the elements still remembers, the function first
+	QDomDocument mended = documentOf(first.documentElement());
+	const QList<QDomElement> texts = repeatedTexts(mended);
+	REQUIRE(texts.size() == 3);
+	QDomElement(texts.at(0)).setAttribute(QStringLiteral("uuid"), QUuid::createUuid().toString());
+	QDomElement(texts.at(1)).setAttribute(QStringLiteral("uuid"), QUuid::createUuid().toString());
+		//And something else changed with it, as when the symbol is edited
+		//and saved: uuids alone are no change of the symbol, and would not
+		//be brought to the project at all
+	QDomElement(texts.at(1)).setAttribute(QStringLiteral("x"), 12);
+	newRevision(mended);
+	REQUIRE(writeFile(bench.company.path(), bench.relative(), mended));
+	update(project, bench.dirs());
+
+	for (int i = 0 ; i < placed.size() ; ++i)
+	{
+		const Element *element = placed.at(i);
+		CAPTURE(i);
+		CHECK(element->allDynamicTextItems().size() == before.at(i));
+		CHECK(textsSaying(element, QStringLiteral("SOPRO%1").arg(i)) == 1);
+		CHECK(textsSaying(element, QStringLiteral("DESC%1").arg(i)) == 1);
+		CHECK(textsSaying(element, QStringLiteral("TAG%1").arg(i)) == 1);
+	}
+
+		//And the next change of the symbol reaches the right text: a text
+		//linked to the wrong one of the symbol would take its change - the
+		//function drawn as large as the label
+	QDomDocument larger = documentOf(mended.documentElement());
+	const QList<QDomElement> label = repeatedTexts(larger);
+	REQUIRE(label.size() == 1);
+	QDomElement(label.first()).setAttribute(QStringLiteral("font"),
+						QStringLiteral("Sans Serif,12,-1,5,50,0,0,0,0,0"));
+	newRevision(larger);
+	REQUIRE(writeFile(bench.company.path(), bench.relative(), larger));
+	update(project, bench.dirs());
+	for (int i = 0 ; i < placed.size() ; ++i)
+	{
+		const Element *element = placed.at(i);
+		CAPTURE(i);
+		DynamicElementTextItem *tag = textSaying(element, QStringLiteral("TAG%1").arg(i));
+		DynamicElementTextItem *function = textSaying(element, QStringLiteral("SOPRO%1").arg(i));
+		REQUIRE((tag && function));
+		CHECK(tag->font().pointSize() == 12);
+		CHECK(function->font().pointSize() == 9);
+	}
+}
