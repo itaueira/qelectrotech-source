@@ -2384,13 +2384,41 @@ QVector<Conductor::TextRun> Conductor::textRuns()
 	}
 	bool all_vertical = true;
 	bool all_horizontal = true;
+		//The two ends of each run: a segment in line with the one before it
+		//goes on the same run (T71, 22/10/2026) - the straight line the eye
+		//sees, and not the pieces the path is drawn in. The end of a
+		//terminal's own piece is such a point, and the name went in the
+		//middle of the longer piece, against the bend at its other end
+	QVector<QPair<QPointF, QPointF>> lines;
 	for (ConductorSegment *s = segment ; s ; s = s->hasNextSegment() ? s->nextSegment() : nullptr)
 	{
-		if (s->firstPoint().x() != s->secondPoint().x()) all_vertical = false;
-		if (s->firstPoint().y() != s->secondPoint().y()) all_horizontal = false;
-		runs << TextRun{s->middle(),
-				s->isHorizontal() ? Qt::Horizontal : Qt::Vertical,
-				qAbs(s->length())};
+		const QPointF a = s->firstPoint();
+		const QPointF b = s->secondPoint();
+		if (a.x() != b.x()) all_vertical = false;
+		if (a.y() != b.y()) all_horizontal = false;
+		if (!lines.isEmpty())
+		{
+			const QPointF from = lines.last().first;
+			const QPointF to = lines.last().second;
+			const bool in_line = s->isHorizontal()
+					? (qAbs(from.y() - to.y()) < 0.01 && qAbs(a.y() - to.y()) < 0.01)
+					: (qAbs(from.x() - to.x()) < 0.01 && qAbs(a.x() - to.x()) < 0.01);
+			const bool same_way = (b - a).x() * (to - from).x() >= 0 && (b - a).y() * (to - from).y() >= 0;
+			if (in_line && same_way && (a - to).manhattanLength() < 0.01)
+			{
+				lines.last().second = b;
+				continue;
+			}
+		}
+		lines << qMakePair(a, b);
+	}
+	for (const auto &line : std::as_const(lines))
+	{
+		const QPointF a = line.first;
+		const QPointF b = line.second;
+		runs << TextRun{(a + b) / 2,
+				qAbs(a.y() - b.y()) < 0.01 ? Qt::Horizontal : Qt::Vertical,
+				(b - a).manhattanLength()};
 	}
 	if (all_vertical || all_horizontal) {
 		runs = {TextRun{middle, along, run_length}};

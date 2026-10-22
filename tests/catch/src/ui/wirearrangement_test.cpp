@@ -1721,10 +1721,12 @@ TEST_CASE("CU-67.23 — The name on the piece no other wire crosses", "[T67][wir
 		CAPTURE(i, trunk, stub, box, text(p));
 		CHECK(bench.point.at(i)->textItem()->rotation() == Approx(along_the_arm));
 			//Beside its arm, nearer it than any other line of the strip,
-			//its letters 3 from each end of the arm
+			//its letters 3 from each end of the arm - the line as it is
+			//seen, up to the terminal, the strip's own piece in line with it
+			//(CU-71.7)
 		CHECK(std::abs(box.center().y() - bench.arm_y.at(i)) < 15);
 		CHECK(box.left() >= trunk + 2.5);
-		CHECK(box.right() <= stub - 2.5);
+		CHECK(box.right() <= p.last().x() - 2.5);
 	}
 		//The letters of no name on a line of another wire: not on the
 		//common line, and not on a wire that crosses it - each name on a
@@ -1779,7 +1781,8 @@ TEST_CASE("CU-67.24 — The common line moves away when a name does not fit", "[
 			CAPTURE(text(p), arm, box);
 			CHECK(arm >= WireArrangement::nameLength(c, bench.armRun()) + 6 - 0.01);
 			CHECK(box.left() >= trunk + 2.5);
-			CHECK(box.right() <= p.at(p.size() - 2).x() - 2.5);
+				//On the line as it is seen, up to the terminal (CU-71.7)
+			CHECK(box.right() <= p.last().x() - 2.5);
 		}
 	}
 	else
@@ -2240,4 +2243,36 @@ TEST_CASE("CU-67.30 — Components stacked without a gap", "[T67][wirearrangemen
 	}
 	CAPTURE(text(paths.at(0)), text(paths.at(1)), text(paths.at(2)), text(paths.at(3)));
 	CHECK(crossed == 0);
+}
+
+TEST_CASE("CU-71.7 — The name in the middle of the whole straight line", "[T71][wirearrangement]")
+{
+	/*
+		The request: each arm of a point ends in the strip's own piece, in
+		line with it - two segments of the path, one straight line to the
+		eye. The name went in the middle of the longer segment, against the
+		common line, with the room by the strip left empty. As drawn: the
+		point of CU-67.21, its arms from the common line at 735 to the
+		strip at 775; in the eight ways it can lie.
+	*/
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(way);
+	Setup setup(1, false);
+	Point bench(3, 46, false, way);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	for (Conductor *c : std::as_const(bench.point)) Point::name(c, QStringLiteral("F5-9"), 5);
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+	REQUIRE(bench.trunk() == Approx(735));
+
+	for (int i = 0 ; i < bench.point.size() ; ++i)
+	{
+		const QList<QPointF> p = bench.path(bench.point.at(i), bench.terminal("C"));
+		const QRectF letters = bench.letters(bench.point.at(i));
+		CAPTURE(i, text(p), letters);
+			//The arm is one straight line, drawn in more than one piece
+		REQUIRE(p.size() >= 4);
+			//On it, as far from the common line as from the strip
+		CHECK(std::abs((letters.left() - 735) - (775 - letters.right())) < 1);
+	}
 }
