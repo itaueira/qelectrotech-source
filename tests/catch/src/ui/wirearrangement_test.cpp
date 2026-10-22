@@ -36,6 +36,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <QElapsedTimer>
 #include <QGraphicsSceneMouseEvent>
 #include <QSettings>
 #include <QTextDocument>
@@ -2465,6 +2466,40 @@ TEST_CASE("CU-67.33 — The trunk moved away, a name on each arm", "[T67][wirear
 	for (int i = 0 ; i < bench.point.size() ; ++i) {
 		CHECK(laneAndRun(bench.path(bench.point.at(i), bench.terminal("C"))).x() == Approx(lane));
 	}
+	CHECK(shown(bench.point).size() == 1);
+}
+
+TEST_CASE("T67 — Moving a point decides its name once, at the end", "[T67][wirearrangement]")
+{
+	/*
+		The request: dragging the common terminal of six wires had become
+		slow - deciding at each step which wire shows the name of the point
+		cost 330 ms a step on the folio. In a live move the names are
+		decided once, at its end; and the point still shows its name once.
+	*/
+	Setup setup(1, false);
+	Point bench(5, 46, false, Way{false, false, false}, 900);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	for (Conductor *c : std::as_const(bench.point)) Point::name(c, QStringLiteral("F5-9 (■ 1mm²)"), 5);
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+	REQUIRE(shown(bench.point).size() == 1);
+
+	bench.sheet->clearSelection();
+	bench.terminal("C")->parentElement()->setSelected(true);
+	ElementsMover &mover = bench.sheet->elementsMover();
+	REQUIRE(mover.beginMovement(bench.sheet) > 0);
+	QElapsedTimer clock;
+	clock.start();
+	for (int i = 0 ; i < 40 ; ++i) {
+		mover.continueMovement(QPointF(i % 2 ? -10 : 10, 0));
+	}
+	const qint64 steps = clock.elapsed();
+		//During the move, nothing decided again: still one name
+	CHECK(shown(bench.point).size() == 1);
+	mover.endMovement();
+	WARN("40 steps of a live move: " << steps << " ms");
+
 	CHECK(shown(bench.point).size() == 1);
 }
 

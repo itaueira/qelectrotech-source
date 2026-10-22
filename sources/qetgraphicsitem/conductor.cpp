@@ -517,6 +517,41 @@ namespace
 }
 
 bool Conductor::pen_and_brush_initialized = false;
+int Conductor::s_live_moves = 0;
+QList<QPointer<Conductor>> Conductor::s_live_touched;
+
+void Conductor::beginLiveMove()
+{
+	++s_live_moves;
+}
+
+/**
+	@brief Conductor::endLiveMove
+	The end of a live move: the names of the conductors placed during it are
+	placed once more, and their points decide which shows the name. Each
+	point once, by the first of its conductors placed again.
+*/
+void Conductor::endLiveMove()
+{
+	if (s_live_moves > 0) --s_live_moves;
+	if (s_live_moves > 0) {
+		return;
+	}
+	const QList<QPointer<Conductor>> touched = s_live_touched;
+	s_live_touched.clear();
+	QSet<const Conductor *> done;
+	for (const QPointer<Conductor> &c : touched)
+	{
+		if (!c || done.contains(c)) {
+			continue;
+		}
+		c->calculateTextItemPosition();
+		done << c;
+		for (const QPointer<Conductor> &o : std::as_const(c->m_point_group)) {
+			if (o) done << o;
+		}
+	}
+}
 QPen Conductor::conductor_pen = QPen();
 QBrush Conductor::conductor_brush = QBrush();
 
@@ -1623,6 +1658,11 @@ void Conductor::handlerMousePressEvent(QetGraphicsHandlerItem *qghi, QGraphicsSc
 		m_drag_segment = m_vector_index + 1;
 		m_drag_middle = segmentsList().at(m_drag_segment)->middle();
 		before_mov_text_pos_ = m_text_item -> pos();
+		if (!m_live_drag)
+		{
+			m_live_drag = true;
+			beginLiveMove();
+		}
 
 			//The conductors of the potential that run along this segment go
 			//with it (T67, tenth adjustment): dragging the line a point
@@ -1741,6 +1781,11 @@ void Conductor::handlerMouseReleaseEvent(QetGraphicsHandlerItem *qghi, QGraphics
 		}
 	}
 	m_drag_partners.clear();
+	if (m_live_drag)
+	{
+		m_live_drag = false;
+		endLiveMove();
+	}
 		//When handler is released, the conductor can have more segment than before the handler was moved
 		//then we remove all handles and new ones are added
 	removeHandler();
@@ -2501,12 +2546,44 @@ void Conductor::calculateTextItemPosition()
 			//when the line does not hold it either: then each its own,
 			//smaller, as before
 		const bool one_per_folio = diagram()->defaultConductorProperties.m_one_text_per_folio;
+			//In a live move, what was decided stays, and is decided again
+			//once at its end (beginLiveMove()): a hidden name stays hidden,
+			//the one that shows the name of the point keeps showing it, on
+			//the line of the group it had. Deciding at each step cost a
+			//drag of the common terminal of six wires 330 ms a step
+		const bool live = s_live_moves > 0;
+		if (live)
+		{
+			bool known = false;
+			for (const QPointer<Conductor> &c : std::as_const(s_live_touched)) {
+				if (c == this) known = true;
+			}
+			if (!known) s_live_touched << this;
+		}
 		QList<Conductor *> group;
-		if (!one_per_folio && (any_shared || !m_point_group.isEmpty())) {
+		if (live)
+		{
+			if (!one_per_folio && !placed && fitting.isEmpty())
+			{
+				if (m_name_in_point) {
+					placed = true;
+				}
+				else if (m_shows_point_name)
+				{
+					QList<Conductor *> known{this};
+					for (const QPointer<Conductor> &c : std::as_const(m_point_group)) {
+						if (c) known << c;
+					}
+					placed = placeNameOnSharedLine(known);
+				}
+			}
+		}
+		else if (!one_per_folio && (any_shared || !m_point_group.isEmpty())) {
 			group = pointGroup();
 		}
 		bool in_point = false;
-		if (!placed && fitting.isEmpty() && group.size() > 1)
+		bool shows = false;
+		if (!live && !placed && fitting.isEmpty() && group.size() > 1)
 		{
 			Conductor *shower = this;
 			qreal shower_piece = longestSharedPiece();
@@ -2526,16 +2603,20 @@ void Conductor::calculateTextItemPosition()
 				}
 			}
 			if (shower == this) {
-				placed = placeNameOnSharedLine();
+				placed = placeNameOnSharedLine(group);
+				shows = placed;
 			} else if (shower->sharedLineHoldsName()) {
 				in_point = true;
 				placed = true;
 			}
 		}
-		if (!one_per_folio && in_point != m_name_in_point)
+		if (!live && !one_per_folio && in_point != m_name_in_point)
 		{
 			m_name_in_point = in_point;
 			updateTextVisibility();
+		}
+		if (!live) {
+			m_shows_point_name = shows;
 		}
 			//None of its own pieces takes the name: the longest of them,
 			//the name drawn smaller - and not the line it shares
@@ -2567,7 +2648,10 @@ void Conductor::calculateTextItemPosition()
 			//The others of the point, those of before and those of now,
 			//placed again with this one: which of them shows the name
 			//depends on all of them. Then this one again, the others in
-			//their places
+			//their places. Not in a live move: its end does it
+		if (live) {
+			return;
+		}
 		QList<QPointer<Conductor>> again = m_point_group;
 		m_point_group.clear();
 		for (Conductor *c : std::as_const(group)) {
@@ -2754,7 +2838,7 @@ bool Conductor::sharedLineHoldsName()
 	nothing, else the first that holds it (T67, tenth adjustment).
 	@return false when no piece of that line holds it
 */
-bool Conductor::placeNameOnSharedLine()
+bool Conductor::placeNameOnSharedLine(const QList<Conductor *> &group)
 {
 	QVector<NamePlace> places;
 	const QVector<TextRun> runs = textRuns();
@@ -2765,7 +2849,6 @@ bool Conductor::placeNameOnSharedLine()
 	if (shared.isEmpty()) {
 		return false;
 	}
-	const QList<Conductor *> group = pointGroup();
 		//In tenths, so that the order is a strict one
 	QVector<int> by_all;
 	for (int i = 0 ; i < shared.size() ; ++i) {

@@ -141,9 +141,15 @@ class Conductor : public QGraphicsObject
 		bool nameHoldsOnOwnPiece();
 		qreal longestSharedPiece();
 		bool sharedLineHoldsName();
-		bool placeNameOnSharedLine();
+		bool placeNameOnSharedLine(const QList<Conductor *> &group);
 
 	public:
+			/// A live move - a drag of components or of a segment - begins
+			/// and ends: in between, the names of a point are not decided
+			/// again at each step, only once at its end (T67, tenth
+			/// adjustment). Nested calls count.
+		static void beginLiveMove();
+		static void endLiveMove();
 		static bool valideXml (QDomElement &);
 		bool fromXml (QDomElement &);
 		QDomElement toXml (
@@ -309,13 +315,22 @@ class Conductor : public QGraphicsObject
 			int segment = -1;
 		};
 		QList<DragPartner> m_drag_partners;
+			/// The drag of a segment is a live move (beginLiveMove())
+		bool m_live_drag = false;
 			/// The name of this conductor is shown once for its point, on
 			/// the line the point shares, by another conductor of it - none
 			/// of its own pieces holds it (T67, tenth adjustment)
 		bool m_name_in_point = false;
+			/// This conductor shows the name of its point, on the line the
+			/// point shares
+		bool m_shows_point_name = false;
 			/// The conductors this one shared a line with the last time its
 			/// name was placed: their names are placed again with it
 		QList<QPointer<Conductor>> m_point_group;
+			/// See beginLiveMove(): how many are running, and the conductors
+			/// whose names were placed during them
+		static int s_live_moves;
+		static QList<QPointer<Conductor>> s_live_touched;
 			/// Whether the conductor was manually modified by users
 		bool modified_path;
 			/// Whether the current profile should be saved as soon as possible

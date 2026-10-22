@@ -270,6 +270,9 @@ int ElementsMover::beginMovement(Diagram *diagram, QGraphicsItem *driver_item)
 	/* At this point, we've got all info to manage movement.
 	 * There is now a move in progress */
 	m_movement_running = true;
+		//The names of the points of the wires decided at its end, and not
+		//at each step (T67, tenth adjustment)
+	Conductor::beginLiveMove();
 
 	return(m_moved_content.count());
 }
@@ -569,6 +572,7 @@ void ElementsMover::endMovement()
 	m_moved_content.clear();
 	m_moved_cables.clear();
 	m_start_positions.clear();
+	Conductor::endLiveMove();
 
 		//Keep saying why a held group did not move
 	if (m_status_bar && !m_driver_held) {
@@ -641,6 +645,7 @@ void ElementsMover::cancelMovement()
 	m_current_movement -= m_current_movement;
 	m_movement_running = false;
 	m_moved_content.clear();
+	Conductor::endLiveMove();
 
 	if (m_status_bar && !m_driver_held) {
 		m_status_bar->clearMessage();
