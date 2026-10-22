@@ -20,6 +20,7 @@
 
 #include <QList>
 #include <QPointF>
+#include <QtCore/qnamespace.h>
 
 class Conductor;
 class Diagram;
@@ -77,6 +78,10 @@ namespace WireArrangement
 					   QUndoCommand *parent = nullptr);
 	QUndoCommand *arrangeMovedConductors(Diagram *diagram, const QList<Element *> &elements,
 					     QUndoCommand *parent = nullptr);
+
+		/// The length the name of @a conductor takes along a run going
+		/// @a run, at the size its properties hold (T67)
+	qreal nameLength(const Conductor *conductor, Qt::Orientations run);
 }
 
 #endif // WIREARRANGEMENT_H

@@ -18,22 +18,27 @@
 #include "wirearrangement.h"
 
 #include "conductorsegment.h"
+#include "conductortextfit.h"
 #include "diagram.h"
 #include "foliogrid.h"
 #include "qetgraphicsitem/conductor.h"
+#include "qetgraphicsitem/conductortextitem.h"
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/qetshapeitem.h"
 #include "qetgraphicsitem/terminal.h"
 #include "undocommand/arrangeconductorscommand.h"
 #include "wirelanes.h"
 
+#include <QHash>
 #include <QMap>
 #include <QPair>
 #include <QSet>
 #include <QSettings>
+#include <QFontMetricsF>
 
 #include <algorithm>
 #include <cmath>
+#include <tuple>
 #include <utility>
 
 namespace
@@ -52,6 +57,10 @@ namespace
 	constexpr double around_pitch = 15.0;
 		/// The runs of two such conductors of one column, one from the other
 	constexpr double around_run_gap = 10.0;
+		/// How far the common line of a point of several conductors may go
+		/// out of the line of their terminal, to give the arms room for
+		/// their names (T67, fifth adjustment)
+	constexpr double longest_trunk_shift = 100.0;
 
 	const char *setting_key = "diagrameditor/arrange_conductors";
 
@@ -79,6 +88,8 @@ namespace
 			/// The component is on this side of the strip's own piece:
 			/// the conductor turns round its end, in a lane beyond it
 		bool around = false;
+			/// The way the other terminal points, along x: -1 or 1
+		double side = -1;
 	};
 
 		/// A conductor whose automatic path has a bridge, in the terms of
@@ -94,9 +105,29 @@ namespace
 		WireLanes::Wire wire;
 		bool shaped = false;
 		Shaped shape;
+			/// Described with x and y swapped (fifth adjustment): the same
+			/// shape turned, a component's terminal that points to the side
+			/// and a strip's that points up or down. Everything above is
+			/// then in the swapped frame, and a path is swapped back before
+			/// it goes to the folio.
+		bool transposed = false;
 	};
 
 	bool near(double a, double b) { return std::abs(a - b) < 0.01; }
+
+	QPointF swapped(const QPointF &p) { return QPointF(p.y(), p.x()); }
+
+	QList<QPointF> swapped(QList<QPointF> points)
+	{
+		for (QPointF &p : points) p = swapped(p);
+		return points;
+	}
+
+		/// @a points, in the frame of @a d, as they go on the folio
+	QList<QPointF> onFolio(const Described &d, const QList<QPointF> &points)
+	{
+		return d.transposed ? swapped(points) : points;
+	}
 
 	bool pointsUpOrDown(const Terminal *t)
 	{
@@ -115,30 +146,38 @@ namespace
 		d.wire.to = start_low ? s.end.y() : s.run;
 	}
 
-		/// Whether @a c is a conductor whose shape is chosen here (Shaped)
-	bool describeShaped(Conductor *c, Described &out)
+		/// Whether @a c is a conductor whose shape is chosen here (Shaped),
+		/// described as it is or, with @a transposed, turned (fifth
+		/// adjustment): the terminal that points to the side is then the
+		/// component's
+	bool describeShaped(Conductor *c, Described &out, bool transposed = false)
 	{
 		Terminal *v = c->terminal1;
 		Terminal *h = c->terminal2;
 		if (!v || !h) return false;
-		if (!pointsUpOrDown(v)) std::swap(v, h);
-		if (!pointsUpOrDown(v) || pointsUpOrDown(h)) return false;
+		const auto upOrDown = [transposed](const Terminal *t) {
+			return pointsUpOrDown(t) != transposed;
+		};
+		if (!upOrDown(v)) std::swap(v, h);
+		if (!upOrDown(v) || upOrDown(h)) return false;
 
-		const QList<QPointF> p = c->automaticPathPoints();
+		QList<QPointF> p = c->automaticPathPoints();
 		if (p.size() < 3) return false;
+		if (transposed) p = swapped(p);
 		const bool h_first = h == c->terminal1;
 		Shaped s;
 		s.component = v;
 		s.strip = h;
-		s.start = v->dockConductor();
-		s.end = h->dockConductor();
+		s.start = transposed ? swapped(v->dockConductor()) : v->dockConductor();
+		s.end = transposed ? swapped(h->dockConductor()) : h->dockConductor();
 		s.stub = h_first ? p.at(1) : p.at(p.size() - 2);
-		s.outward = v->orientation() == Qet::South ? 1 : -1;
+		s.outward = v->orientation() == (transposed ? Qet::East : Qet::South) ? 1 : -1;
+		s.side = h->orientation() == (transposed ? Qet::North : Qet::West) ? -1 : 1;
 		s.reversed = h_first;
 		s.run = s.start.y();
 			//The strip's own piece points towards the component, which is
 			//beyond it, at another height
-		const double side = h->orientation() == Qet::West ? -1 : 1;
+		const double side = s.side;
 		if (!near(s.stub.y(), s.end.y()) || (s.stub.x() - s.end.x()) * side < 0.5
 			|| std::abs(s.start.y() - s.end.y()) < 1) {
 			return false;
@@ -146,10 +185,10 @@ namespace
 			//The component on this side of the strip's own piece: the
 			//conductor goes past it and turns round it - when the
 			//component's terminal points towards the line of the strip's
-			//(fourth adjustment)
+			//(fourth adjustment). Not turned.
 		if ((s.start.x() - s.stub.x()) * side < 1)
 		{
-			if ((s.end.y() - s.start.y()) * s.outward <= 0) return false;
+			if (transposed || (s.end.y() - s.start.y()) * s.outward <= 0) return false;
 			s.around = true;
 		}
 		out.conductor = c;
@@ -157,6 +196,7 @@ namespace
 		out.vertical = true;
 		out.shaped = true;
 		out.shape = s;
+		out.transposed = transposed;
 		shapeWire(out);
 		return true;
 	}
@@ -247,6 +287,23 @@ namespace
 							 : WireLanes::Block{r.left(), r.right(), r.top(), r.bottom()});
 			}
 			return c;
+		}
+
+			/// The same, in the frame of a shape described turned when
+			/// @a transposed: what runs left and right there runs up and
+			/// down on the folio
+		WireLanes::Clearance clearanceIn(bool transposed, const QSet<const void *> &own,
+						 bool up_and_down) const
+		{
+			return clearance(own, up_and_down != transposed);
+		}
+
+			/// A line of a shape, in its frame: one running left and right
+			/// there when @a left_and_right, the other way otherwise
+		void addLineIn(bool transposed, bool left_and_right, const WireLanes::Line &line,
+			       const void *owner)
+		{
+			((left_and_right != transposed) ? horizontal : vertical) << Owned{line, owner};
 		}
 	};
 
@@ -413,20 +470,94 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		}
 	}
 
+		//The potential of each conductor (fifth adjustment): two conductors
+		//of one potential are one point, and a piece of the one is not in
+		//the way of the other - they may share it
+	QHash<const Conductor *, int> net;
+	int next_net = 0;
+	for (Conductor *c : std::as_const(all))
+	{
+		if (net.contains(c)) continue;
+		const int id = next_net++;
+		net.insert(c, id);
+		const QSet<Conductor *> same = c->relatedPotentialConductors(false);
+		for (Conductor *o : same) net.insert(o, id);
+	}
+	const auto sameNet = [&net](const Conductor *a, const Conductor *b) {
+		return a == b || (net.contains(a) && net.value(a) == net.value(b, -1));
+	};
+		//What the shape of @a d does not keep clear of: itself, its two
+		//terminals and their components, and the conductors of its point
+	const auto ownOf = [&](const Described &d) {
+		const Shaped &s = d.shape;
+		QSet<const void *> own{d.conductor, s.component, s.strip,
+				       s.component->parentElement(), s.strip->parentElement()};
+		for (const Conductor *o : std::as_const(all)) {
+			if (o != d.conductor && sameNet(o, d.conductor)) own << o;
+		}
+		return own;
+	};
+
 	WireLanes::Request vertical, horizontal;
 		//The lanes on whole units, or on the grid when the person set it
 		//finer than that
 	QSettings settings;
 	vertical.unit = FolioGrid::freeStep(FolioGrid::step(settings.value(FolioGrid::x_key), Diagram::xGrid));
 	horizontal.unit = FolioGrid::freeStep(FolioGrid::step(settings.value(FolioGrid::y_key), Diagram::yGrid));
+	const auto unitIn = [&](bool transposed) {
+		return transposed ? horizontal.unit : vertical.unit;
+	};
 	Scene scene;
 	const bool only_their_groups = scope == Scope::NewConductors || scope == Scope::Moved;
+
+		//The points of several conductors (fifth adjustment): the conductors
+		//of the shape that leave one terminal, all to one side and the same
+		//way, described in the frame in which that terminal is the
+		//component's - as they are when it points up or down, turned when it
+		//points to the side. A conductor of two such points goes with the
+		//larger.
+	QList<QList<Described>> points;
+	QSet<Conductor *> in_point;
+	{
+		QHash<QString, QList<Described>> by_terminal;
+		for (Conductor *c : std::as_const(all))
+		{
+			if (!movable.contains(c)) continue;
+			for (bool transposed : {false, true})
+			{
+				Described d;
+				if (!describeShaped(c, d, transposed) || d.shape.around) continue;
+				const Shaped &s = d.shape;
+				if ((s.end.y() - s.start.y()) * s.outward <= 0) continue;
+				by_terminal[QStringLiteral("%1/%2/%3/%4")
+						.arg(quintptr(s.component)).arg(transposed)
+						.arg(s.side).arg(s.outward)] << d;
+			}
+		}
+		QList<QList<Described>> candidates = by_terminal.values();
+		std::stable_sort(candidates.begin(), candidates.end(),
+				 [](const QList<Described> &a, const QList<Described> &b) {
+			if (a.size() != b.size()) return a.size() > b.size();
+			return !a.first().transposed && b.first().transposed;
+		});
+		for (const QList<Described> &candidate : std::as_const(candidates))
+		{
+			QList<Described> point;
+			for (const Described &d : candidate) {
+				if (!in_point.contains(d.conductor)) point << d;
+			}
+			if (point.size() < 2) continue;
+			for (const Described &d : std::as_const(point)) in_point << d.conductor;
+			points << point;
+		}
+	}
 
 	QList<Described> vertical_wires, horizontal_wires, shaped;
 	for (Conductor *c : all)
 	{
+		if (in_point.contains(c)) continue;
 		Described d;
-		if (movable.contains(c) && describeShaped(c, d))
+		if (movable.contains(c) && (describeShaped(c, d) || describeShaped(c, d, true)))
 		{
 			shaped << d;
 			continue;
@@ -435,16 +566,14 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		{
 			if (d.vertical) {
 				vertical_wires << d;
-				vertical.wires << d.wire;
 			} else {
 				horizontal_wires << d;
-				horizontal.wires << d.wire;
 			}
 			continue;
 		}
-		const QList<QPointF> points = currentPoints(c);
-		addInTheWay(points, vertical, horizontal);
-		scene.addPath(points, c);
+		const QList<QPointF> path = currentPoints(c);
+		addInTheWay(path, vertical, horizontal);
+		scene.addPath(path, c);
 	}
 		//The ones that turn round the end of a strip's terminal take their
 		//own way (fourth adjustment): the lanes of the others do not fit
@@ -455,7 +584,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		if (shaped.at(i).shape.around) around.prepend(shaped.takeAt(i));
 	}
 	if (vertical_wires.isEmpty() && horizontal_wires.isEmpty() && shaped.isEmpty()
-		&& around.isEmpty()) return changes;
+		&& around.isEmpty() && points.isEmpty()) return changes;
 
 	const QList<Element *> elements = diagram->elements();
 	for (Element *e : elements)
@@ -512,21 +641,31 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			       << Scene::Owned{{d.wire.to, d.wire.low, d.wire.high}, d.conductor};
 	}
 	for (const Described &d : shaped) {
-		scene.horizontal << Scene::Owned{{d.shape.end.y(), d.wire.low, d.wire.high}, d.conductor};
+		scene.addLineIn(d.transposed, true, {d.shape.end.y(), d.wire.low, d.wire.high}, d.conductor);
+	}
+	for (const QList<Described> &point : std::as_const(points)) {
+		for (const Described &d : point) {
+			scene.addLineIn(d.transposed, true, {d.shape.end.y(), d.wire.low, d.wire.high}, d.conductor);
+		}
 	}
 
-		//Whether a wire still to be arranged would cross the line at @a y
-		//from @a lo to @a hi on its way up or down
+		//Whether a wire still to be arranged, of another point, would cross
+		//the line at @a y from @a lo to @a hi on its way up or down - in the
+		//frame of a shape described turned when @a transposed
 	const double line_margin = WireLanes::Clearance().line;
-	const auto lineCrossed = [&](double y, double lo, double hi, const Conductor *self) {
+	const auto lineCrossed = [&](bool transposed, double y, double lo, double hi, const Conductor *self) {
 		const auto spans = [&](const Described &o) {
-			return o.conductor != self
+			return !sameNet(o.conductor, self)
 				&& std::min(hi, o.wire.high) - std::max(lo, o.wire.low) > 0.01
 				&& y > std::min(o.wire.from, o.wire.to) - line_margin
 				&& y < std::max(o.wire.from, o.wire.to) + line_margin;
 		};
-		return std::any_of(vertical_wires.cbegin(), vertical_wires.cend(), spans)
-			|| std::any_of(shaped.cbegin(), shaped.cend(), spans);
+		const auto shapedSpans = [&](const Described &o) {
+			return o.transposed == transposed && spans(o);
+		};
+		const QList<Described> &bridges = transposed ? horizontal_wires : vertical_wires;
+		return std::any_of(bridges.cbegin(), bridges.cend(), spans)
+			|| std::any_of(shaped.cbegin(), shaped.cend(), shapedSpans);
 	};
 
 		//The conductors that turn round the end of a strip's terminal, one
@@ -543,13 +682,12 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		for (const Described &d : std::as_const(around))
 		{
 			const Shaped &s = d.shape;
-			const int side = s.strip->orientation() == Qet::West ? -1 : 1;
-			columns[QStringLiteral("%1/%2/%3").arg(side).arg(s.outward).arg(qRound(s.stub.x()))] << d;
+			columns[QStringLiteral("%1/%2/%3").arg(s.side).arg(s.outward).arg(qRound(s.stub.x()))] << d;
 		}
 		for (auto column = columns.begin() ; column != columns.end() ; ++column)
 		{
 			QList<Described> &wires = column.value();
-			const double side = wires.first().shape.strip->orientation() == Qet::West ? -1 : 1;
+			const double side = wires.first().shape.side;
 			std::stable_sort(wires.begin(), wires.end(), [side](const Described &a, const Described &b) {
 				return (a.shape.start.x() - a.shape.stub.x()) * -side
 						< (b.shape.start.x() - b.shape.stub.x()) * -side;
@@ -560,8 +698,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			{
 				Described &d = wires[k];
 				Shaped &s = d.shape;
-				const QSet<const void *> own{d.conductor, s.component, s.strip,
-							     s.component->parentElement(), s.strip->parentElement()};
+				const QSet<const void *> own = ownOf(d);
 				double lane = s.stub.x() + side * around_pitch * (n - k);
 				lane = std::round(lane / vertical.unit) * vertical.unit;
 
@@ -587,13 +724,147 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 					lane += side * vertical.unit;
 				}
 
-				const QList<QPointF> points = shapedPath(s, lane);
+				const QList<QPointF> path = shapedPath(s, lane);
 				if ((!only_their_groups || conductors.contains(d.conductor))
-					&& !samePath(points, currentPoints(d.conductor))) {
-					changes << Change{d.conductor, points};
+					&& !samePath(path, currentPoints(d.conductor))) {
+					changes << Change{d.conductor, path};
 				}
-				addInTheWay(points, vertical, horizontal);
-				scene.addPath(points, d.conductor);
+				addInTheWay(path, vertical, horizontal);
+				scene.addPath(path, d.conductor);
+			}
+		}
+	}
+
+		//The points of several conductors (fifth adjustment): one common
+		//line for all, straight out of their terminal as the reset of the
+		//folio draws it, and each conductor's arm from it to its own
+		//terminal - the name of each on its arm. A conductor of another
+		//point may cross the common line, with the arc of a jump; nothing
+		//may run along it, nor end next to it. When the shortest arm is too
+		//short for the name of its conductor, the common line goes further
+		//out, away from the strips, a unit at a time, as long as the way is
+		//clear - and stops before what is in it, the name then drawn
+		//smaller. A point with no clear way is arranged a conductor at a
+		//time, as before.
+	for (QList<Described> &point : points)
+	{
+		const Described &first = point.first();
+		const bool tr = first.transposed;
+		const Shaped &s0 = first.shape;
+		const QPointF start = s0.start;
+		const double side = s0.side;
+		const double outward = s0.outward;
+		const double unit = unitIn(tr);
+		QSet<const void *> own;
+		bool wanted = !only_their_groups;
+		double far_y = start.y();
+		double near_y = std::nan("");
+		for (const Described &d : std::as_const(point))
+		{
+			own += ownOf(d);
+			if (conductors.contains(d.conductor)) wanted = true;
+			const double y = d.shape.end.y();
+			if ((y - far_y) * outward > 0) far_y = y;
+			if (std::isnan(near_y) || (y - near_y) * outward < 0) near_y = y;
+		}
+			//The runs of the bridges still to be placed in this frame are
+			//over their whole room, and not where they will be: they are
+			//not in the way here, and keep clear of the arms afterwards
+		QList<Described> &bridges = tr ? horizontal_wires : vertical_wires;
+		for (const Described &o : std::as_const(bridges)) own << o.conductor;
+		const WireLanes::Clearance across = scene.clearanceIn(tr, own, false);
+		const WireLanes::Clearance upright = scene.clearanceIn(tr, own, true);
+		const auto trunkClear = [&](double lane, double from) {
+			WireLanes::Clearance c = upright;
+			c.crossing.erase(std::remove_if(c.crossing.begin(), c.crossing.end(),
+							[&](const WireLanes::Line &l) {
+				return std::min(l.a, l.b) < lane - c.line && std::max(l.a, l.b) > lane + c.line;
+			}), c.crossing.end());
+			return WireLanes::isClear(lane, from, far_y, c);
+		};
+		const auto armsClear = [&](double lane) {
+			for (const Described &d : std::as_const(point)) {
+				if (!WireLanes::isClear(d.shape.end.y(), lane, d.shape.stub.x(), across)) return false;
+			}
+			return true;
+		};
+		const Qt::Orientations arm_run = tr ? Qt::Vertical : Qt::Horizontal;
+		const auto namesFit = [&](double lane) {
+			for (const Described &d : std::as_const(point))
+			{
+				if (nameLength(d.conductor, arm_run)
+				    > ConductorTextFit::room(std::abs(d.shape.stub.x() - lane)) + 0.01) {
+					return false;
+				}
+			}
+			return true;
+		};
+
+		bool reached = false;
+		double lane_at = start.x();
+		double run_at = start.y();
+		for (int k = 0 ; k * unit <= longest_trunk_shift + 1e-6 ; ++k)
+		{
+			const double lane = start.x() + side * k * unit;
+			double run = start.y();
+			bool clear = false;
+			if (k == 0) {
+				clear = trunkClear(lane, start.y()) && armsClear(lane);
+			} else {
+				run = WireLanes::runAt(start.y(), outward, start.x(), lane, across,
+						       longest_stub, unit);
+				clear = !std::isnan(run) && (near_y - run) * outward >= 1
+					&& (near(run, start.y())
+					    || WireLanes::isClear(start.x(), start.y(), run, upright))
+					&& trunkClear(lane, run) && armsClear(lane);
+			}
+			if (!clear)
+			{
+				if (reached) break;
+				continue;
+			}
+			reached = true;
+			lane_at = lane;
+			run_at = run;
+			if (namesFit(lane)) break;
+		}
+		if (!reached)
+		{
+			for (const Described &d : std::as_const(point)) shaped << d;
+			continue;
+		}
+		for (Described &d : point)
+		{
+			d.shape.run = run_at;
+			const QList<QPointF> path = onFolio(d, near(lane_at, start.x())
+							       ? shapedPath(d.shape, std::nan(""))
+							       : shapedPath(d.shape, lane_at));
+			if (wanted && !samePath(path, currentPoints(d.conductor))) {
+				changes << Change{d.conductor, path};
+			}
+			addInTheWay(path, vertical, horizontal);
+			scene.addPath(path, d.conductor);
+
+				//A bridge of another point whose run would go along the arm,
+				//closer than a line, keeps to the side of it its run comes
+				//from: the room of its bridge ends before the arm
+			const double arm_y = d.shape.end.y();
+			const double arm_low = std::min(lane_at, d.shape.stub.x());
+			const double arm_high = std::max(lane_at, d.shape.stub.x());
+			for (Described &o : bridges)
+			{
+				if (sameNet(o.conductor, d.conductor)
+				    || std::min(arm_high, o.wire.high) - std::max(arm_low, o.wire.low) <= 0.01) {
+					continue;
+				}
+				const double low = o.wire.low;
+				const double high = o.wire.high;
+				if (std::abs(o.wire.from - arm_y) < line_margin && arm_low > low) {
+					o.wire.high = std::min(o.wire.high, arm_low - line_margin);
+				}
+				if (std::abs(o.wire.to - arm_y) < line_margin && arm_high < high) {
+					o.wire.low = std::max(o.wire.low, arm_high + line_margin);
+				}
 			}
 		}
 	}
@@ -607,29 +878,29 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 	for (Described &d : shaped)
 	{
 		Shaped &s = d.shape;
-		const QSet<const void *> own{d.conductor, s.component, s.strip,
-					     s.component->parentElement(), s.strip->parentElement()};
-		const WireLanes::Clearance across = scene.clearance(own, false);
+		const bool tr = d.transposed;
+		const QSet<const void *> own = ownOf(d);
+		const WireLanes::Clearance across = scene.clearanceIn(tr, own, false);
 		const bool towards = (s.end.y() - s.start.y()) * s.outward > 0;
 		const auto bendOnce = [&]() {
-			const QList<QPointF> points = shapedPath(s, std::nan(""));
+			const QList<QPointF> path = onFolio(d, shapedPath(s, std::nan("")));
 			if ((!only_their_groups || conductors.contains(d.conductor))
-				&& !samePath(points, currentPoints(d.conductor))) {
-				changes << Change{d.conductor, points};
+				&& !samePath(path, currentPoints(d.conductor))) {
+				changes << Change{d.conductor, path};
 			}
-			addInTheWay(points, vertical, horizontal);
-			scene.addPath(points, d.conductor);
+			addInTheWay(path, vertical, horizontal);
+			scene.addPath(path, d.conductor);
 		};
 		if (towards
-			&& WireLanes::isClear(s.start.x(), s.start.y(), s.end.y(), scene.clearance(own, true))
+			&& WireLanes::isClear(s.start.x(), s.start.y(), s.end.y(), scene.clearanceIn(tr, own, true))
 			&& WireLanes::isClear(s.end.y(), s.start.x(), s.stub.x(), across)
-			&& !lineCrossed(s.end.y(), d.wire.low, d.wire.high, d.conductor))
+			&& !lineCrossed(tr, s.end.y(), d.wire.low, d.wire.high, d.conductor))
 		{
 			bendOnce();
 			continue;
 		}
 		const double run = WireLanes::runAt(s.start.y(), s.outward, s.start.x(), s.stub.x(),
-						    across, longest_stub, vertical.unit);
+						    across, longest_stub, unitIn(tr));
 		s.run = std::isnan(run) ? automaticRun(d) : run;
 		if (towards && std::abs(s.run - s.end.y()) < 1)
 		{
@@ -637,39 +908,216 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			continue;
 		}
 		shapeWire(d);
-		scene.horizontal << Scene::Owned{{s.run, d.wire.low, d.wire.high}, d.conductor};
+		scene.addLineIn(tr, true, {s.run, d.wire.low, d.wire.high}, d.conductor);
 		if (!near(s.run, s.start.y())) {
-			scene.vertical << Scene::Owned{{s.start.x(), s.start.y(), s.run}, d.conductor};
+			scene.addLineIn(tr, false, {s.start.x(), s.start.y(), s.run}, d.conductor);
 		}
-		vertical_wires << d;
-		vertical.wires << d.wire;
+		if (tr) {
+			horizontal_wires << d;
+		} else {
+			vertical_wires << d;
+		}
 	}
 
-	const auto collect = [&](const QList<Described> &described, const WireLanes::Request &request) {
-		const WireLanes::Result result = WireLanes::arrange(request);
-		QSet<int> wanted;
-		if (only_their_groups) {
-			for (int i = 0 ; i < described.size() ; ++i) {
-				if (conductors.contains(described.at(i).conductor) && result.group.at(i) >= 0) {
-					wanted << result.group.at(i);
+		//A bridge alone in its group (fifth adjustment) stays in the middle
+		//of its room, as before, unless no run of its wire would then hold
+		//its name - a run cut where a line of another point crosses it, as
+		//the name is (Conductor::calculateTextItemPosition()). It then
+		//moves, without leaving the piece of room it was given, the least
+		//that makes one run long enough: the wires that cross the common
+		//line of a point keep their names off it
+	const auto roomForName = [&](const Described &d, double at, const WireLanes::Request &request) {
+		const qreal needed = nameLength(d.conductor, d.vertical ? Qt::Horizontal : Qt::Vertical)
+				+ 2 * ConductorTextFit::end_clearance;
+		if (needed <= 2 * ConductorTextFit::end_clearance + 0.01) return at;
+		const WireLanes::Wire &w = d.wire;
+		const double span_low = std::min(w.from, w.to);
+		const double span_high = std::max(w.from, w.to);
+			//The lines across the runs: pieces of the conductors of other
+			//points, and the sides of the shapes
+		QVector<WireLanes::Line> across;
+		for (const Scene::Owned &o : (d.vertical ? scene.vertical : scene.horizontal)) {
+			if (!sameNet(static_cast<const Conductor *>(o.owner), d.conductor)) across << o.line;
+		}
+		across << (d.vertical ? scene.frame_vertical : scene.frame_horizontal);
+		const auto longest = [&](double bridge) {
+			double best = 0;
+			for (const auto &run : {std::make_tuple(w.from, w.low, bridge),
+						std::make_tuple(w.to, bridge, w.high)})
+			{
+				const double y = std::get<0>(run);
+				QVector<double> cuts{std::get<1>(run), std::get<2>(run)};
+				for (const WireLanes::Line &l : std::as_const(across)) {
+					if (l.at > std::get<1>(run) + 0.5 && l.at < std::get<2>(run) - 0.5
+					    && y > std::min(l.a, l.b) - 0.5 && y < std::max(l.a, l.b) + 0.5) {
+						cuts << l.at;
+					}
+				}
+				std::sort(cuts.begin(), cuts.end());
+				for (int k = 0 ; k + 1 < cuts.size() ; ++k) best = std::max(best, cuts.at(k + 1) - cuts.at(k));
+			}
+			return best;
+		};
+		if (longest(at) >= needed) return at;
+			//Inside the piece of room it was given: no block, and no side
+			//of a frame between it and where it was put
+		const auto allowed = [&](double x) {
+			if (x <= w.low + request.unit - 1e-6 || x >= w.high - request.unit + 1e-6) return false;
+			for (const WireLanes::Block &b : request.blocks) {
+				if (x > std::min(b.low, b.high) && x < std::max(b.low, b.high)
+				    && std::min(span_high, std::max(b.from, b.to)) - std::max(span_low, std::min(b.from, b.to)) > 0) {
+					return false;
+				}
+			}
+			for (const WireLanes::Frame &f : request.frames) {
+				for (double side : {f.low, f.high}) {
+					if (side > std::min(at, x) && side < std::max(at, x)
+					    && std::min(span_high, std::max(f.from, f.to)) - std::max(span_low, std::min(f.from, f.to)) > 0) {
+						return false;
+					}
+				}
+			}
+			return true;
+		};
+		for (int k = 1 ; k * request.unit < w.high - w.low ; ++k)
+		{
+			for (double x : {at - k * request.unit, at + k * request.unit}) {
+				if (allowed(x) && longest(x) >= needed) return x;
+			}
+		}
+		return at;
+	};
+
+	const auto collect = [&](const QList<Described> &described, const WireLanes::Request &base) {
+			//A point of several conductors between two columns (fifth
+			//adjustment): the conductors that leave one terminal, to one
+			//side and the same way, are one wire to WireLanes - they share
+			//its bridge, their common line - in the room all of them have
+		const int n = described.size();
+		QVector<QString> key(n);
+		{
+			QVector<QPair<QString, QString>> ends(n);
+			QHash<QString, int> count;
+			for (int i = 0 ; i < n ; ++i)
+			{
+				const Described &d = described.at(i);
+				if (d.shaped || std::abs(d.wire.to - d.wire.from) < 1) continue;
+				const QPointF a = d.automatic.at(1), z = d.automatic.at(4);
+				const bool first_low = d.vertical ? a.x() <= z.x() : a.y() <= z.y();
+				const Terminal *low = first_low ? d.conductor->terminal1 : d.conductor->terminal2;
+				const Terminal *high = first_low ? d.conductor->terminal2 : d.conductor->terminal1;
+				const int way = d.wire.to > d.wire.from ? 1 : -1;
+				ends[i] = qMakePair(QStringLiteral("L%1/%2").arg(quintptr(low)).arg(way),
+						    QStringLiteral("H%1/%2").arg(quintptr(high)).arg(way));
+				++count[ends.at(i).first];
+				++count[ends.at(i).second];
+			}
+			for (int i = 0 ; i < n ; ++i)
+			{
+				if (ends.at(i).first.isEmpty()) continue;
+				if (count.value(ends.at(i).first) > 1) {
+					key[i] = ends.at(i).first;
+				} else if (count.value(ends.at(i).second) > 1) {
+					key[i] = ends.at(i).second;
 				}
 			}
 		}
-		for (int i = 0 ; i < described.size() ; ++i)
+		WireLanes::Request request = base;
+		request.wires.clear();
+		QVector<int> slot(n, -1);
+		QHash<QString, int> slot_of;
+		for (int i = 0 ; i < n ; ++i)
 		{
-			if (std::isnan(result.at.at(i))) continue;
-			if (only_their_groups && !wanted.contains(result.group.at(i))) continue;
+			const WireLanes::Wire &w = described.at(i).wire;
+			const QString &k = key.at(i);
+			if (!k.isEmpty() && slot_of.contains(k))
+			{
+				WireLanes::Wire &m = request.wires[slot_of.value(k)];
+				const bool longer = std::abs(w.to - w.from) > std::abs(m.to - m.from);
+				if (k.startsWith(QLatin1Char('L'))) {
+					m.high = std::min(m.high, w.high);
+					if (longer) m.to = w.to;
+				} else {
+					m.low = std::max(m.low, w.low);
+					if (longer) m.from = w.from;
+				}
+				slot[i] = slot_of.value(k);
+				continue;
+			}
+			slot[i] = request.wires.size();
+			request.wires << w;
+			if (!k.isEmpty()) slot_of.insert(k, slot.at(i));
+		}
+
+		const WireLanes::Result result = WireLanes::arrange(request);
+		QSet<int> wanted;
+		if (only_their_groups) {
+			for (int i = 0 ; i < n ; ++i) {
+				if (conductors.contains(described.at(i).conductor) && result.group.at(slot.at(i)) >= 0) {
+					wanted << result.group.at(slot.at(i));
+				}
+			}
+		}
+		QHash<int, int> group_size;
+		for (int i = 0 ; i < n ; ++i) {
+			if (result.group.at(slot.at(i)) >= 0) ++group_size[result.group.at(slot.at(i))];
+		}
+		for (int i = 0 ; i < n ; ++i)
+		{
+			double at = result.at.at(slot.at(i));
+			if (std::isnan(at)) continue;
+			if (!described.at(i).shaped && group_size.value(result.group.at(slot.at(i))) == 1) {
+				at = roomForName(described.at(i), at, request);
+			}
+			if (only_their_groups && !wanted.contains(result.group.at(slot.at(i)))) continue;
 			const Described &d = described.at(i);
-			const QList<QPointF> points = d.shaped ? shapedPath(d.shape, result.at.at(i))
-							       : withBridgeAt(d, result.at.at(i));
-			if (!samePath(points, currentPoints(d.conductor))) {
-				changes << Change{d.conductor, points};
+			const QList<QPointF> path = d.shaped ? onFolio(d, shapedPath(d.shape, at))
+							     : withBridgeAt(d, at);
+			if (!samePath(path, currentPoints(d.conductor))) {
+				changes << Change{d.conductor, path};
 			}
 		}
 	};
 	collect(vertical_wires, vertical);
 	collect(horizontal_wires, horizontal);
 	return changes;
+}
+
+/**
+	@brief WireArrangement::nameLength
+	@return the length the letters of the name of @a conductor take along a
+	run going @a run, drawn at the size its properties hold - not the
+	smaller one they may be drawn at to fit - and turned as they would be
+	on that run; 0 when it has no name drawn. The letters, and not the box
+	of the text, which carries a blank margin: the name fits a run with 3
+	to spare at each end of its letters (T67, fifth adjustment), as on the
+	drawing the person approved, an arm of 35 for a name of 28.
+*/
+qreal WireArrangement::nameLength(const Conductor *conductor, Qt::Orientations run)
+{
+	const ConductorTextItem *text = conductor ? conductor->textItem() : nullptr;
+	const ConductorProperties properties = conductor ? conductor->properties()
+							  : ConductorProperties();
+	if (!text || properties.type != ConductorProperties::Multi || !text->isVisible()
+	    || text->toPlainText().isEmpty()) {
+		return 0;
+	}
+	QFont font = text->font();
+	font.setPointSize(properties.text_size);
+	const QFontMetricsF metrics(font);
+	qreal widest = 0;
+	const QStringList lines = text->toPlainText().split(QLatin1Char('\n'));
+	for (const QString &line : lines) {
+		widest = std::max(widest, metrics.tightBoundingRect(line).width());
+	}
+	const qreal rotation = text->wasRotatedByUser()
+			? text->rotation()
+			: (run == Qt::Vertical ? properties.verti_rotate_text
+					       : properties.horiz_rotate_text);
+		//Written along the run, the letters take their width; across it,
+		//the height of their lines
+	const bool along = std::abs(std::remainder(rotation - (run == Qt::Vertical ? 90 : 0), 180)) < 45;
+	return along ? widest : lines.size() * metrics.height();
 }
 
 /**

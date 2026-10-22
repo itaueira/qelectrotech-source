@@ -294,6 +294,119 @@ namespace
 	}
 }
 
+namespace
+{
+	/// A place the name of a conductor may be written along, as
+	/// Conductor::TextRun has it
+	struct NamePlace
+	{
+		QPointF middle;
+		Qt::Orientations along;
+		qreal length;
+	};
+
+	/**
+		@brief The places of @a runs, in the coordinates of @a own, cut
+		where a conductor of another potential crosses or meets them, and
+		without those a conductor of @a same - the potential of @a own -
+		runs along for some length: the line several conductors of one
+		point share is no one's to carry a name, and the name of each goes
+		on its own arm (T67, fifth adjustment). The longest first. Empty
+		when nothing cuts nor shares any of them: @a runs are then the
+		places, as they always were.
+	*/
+	QVector<NamePlace> freePlaces(const Conductor *own, const QVector<NamePlace> &runs,
+					      const QSet<Conductor *> &same)
+	{
+		const QGraphicsScene *on = own->scene();
+		if (!on) {
+			return {};
+		}
+		QVector<NamePlace> free;
+		bool changed = false;
+		for (const NamePlace &run : runs)
+		{
+			const bool horizontal = run.along == Qt::Horizontal;
+			const qreal at = horizontal ? run.middle.y() : run.middle.x();
+			const qreal middle = horizontal ? run.middle.x() : run.middle.y();
+			const qreal low = middle - run.length / 2;
+			const qreal high = middle + run.length / 2;
+			const QRectF box = own->mapRectToScene(horizontal ? QRectF(low, at, run.length, 0)
+								     : QRectF(at, low, 0, run.length))
+					.adjusted(-1, -1, 1, 1);
+			bool shared = false;
+			QVector<qreal> cuts;
+			const QList<QGraphicsItem *> near = on->items(box, Qt::IntersectsItemBoundingRect);
+			for (QGraphicsItem *item : near)
+			{
+				auto *other = qgraphicsitem_cast<Conductor *>(item);
+				if (!other || other == own || !other->isVisible()) {
+					continue;
+				}
+				const bool of_point = same.contains(other);
+				const QList<ConductorSegment *> pieces = other->segmentsList();
+				for (const ConductorSegment *piece : pieces)
+				{
+					const QPointF p = own->mapFromScene(other->mapToScene(piece->firstPoint()));
+					const QPointF q = own->mapFromScene(other->mapToScene(piece->secondPoint()));
+					const qreal p_at = horizontal ? p.y() : p.x();
+					const qreal q_at = horizontal ? q.y() : q.x();
+					const qreal p_along = horizontal ? p.x() : p.y();
+					const qreal q_along = horizontal ? q.x() : q.y();
+					if (std::abs(p_at - q_at) < 0.5)
+					{
+							//Along the run: the line of a point
+						if (of_point && std::abs(p_at - at) < 0.5
+						    && std::min(high, std::max(p_along, q_along))
+						       - std::max(low, std::min(p_along, q_along)) > 0.5) {
+							shared = true;
+						}
+					}
+					else if (std::abs(p_along - q_along) < 0.5)
+					{
+							//Across it: the run is cut where the other meets it
+						if (!of_point && p_along > low + 0.5 && p_along < high - 0.5
+						    && at > std::min(p_at, q_at) - 0.5 && at < std::max(p_at, q_at) + 0.5) {
+							cuts << p_along;
+						}
+					}
+				}
+				if (shared) {
+					break;
+				}
+			}
+			if (shared) {
+				changed = true;
+				continue;
+			}
+			if (cuts.isEmpty()) {
+				free << run;
+				continue;
+			}
+			changed = true;
+			std::sort(cuts.begin(), cuts.end());
+			cuts << high;
+			qreal from = low;
+			for (qreal cut : std::as_const(cuts))
+			{
+				if (cut - from >= 1)
+				{
+					const qreal centre = (from + cut) / 2;
+					free << NamePlace{horizontal ? QPointF(centre, at) : QPointF(at, centre),
+							run.along, cut - from};
+				}
+				from = std::max(from, cut);
+			}
+		}
+		if (!changed) {
+			return {};
+		}
+		std::stable_sort(free.begin(), free.end(),
+				 [](const NamePlace &a, const NamePlace &b) {return a.length > b.length;});
+		return free;
+	}
+}
+
 bool Conductor::pen_and_brush_initialized = false;
 QPen Conductor::conductor_pen = QPen();
 QBrush Conductor::conductor_brush = QBrush();
@@ -2137,15 +2250,40 @@ void Conductor::calculateTextItemPosition()
 			//at the cost of one look at the scene.
 		const QVector<TextRun> runs = textRuns();
 		bool placed = false;
-		for (const TextRun &run : runs)
+			//First the pieces of runs no conductor of another potential
+			//crosses, and not the line a point of several conductors
+			//shares (T67, fifth adjustment); then the runs, as before
+		QVector<NamePlace> places;
+		for (const TextRun &run : runs) {
+			places << NamePlace{run.middle, run.along, run.length};
+		}
+		const QVector<NamePlace> free = freePlaces(this, places, relatedPotentialConductors(false));
+		for (const NamePlace &place : free)
+		{
+			if (!placeTextOn(TextRun{place.middle, place.along, place.length})) {
+				break;
+			}
+			if (!nameTouches(this, m_text_item, diagram())) {
+				placed = true;
+				break;
+			}
+		}
+			//None of its own pieces takes the name: the longest of them,
+			//the name drawn smaller - and not the line it shares
+		if (!placed && !free.isEmpty())
+		{
+			const NamePlace &longest = free.first();
+			placeTextOn(TextRun{longest.middle, longest.along, longest.length});
+			placed = true;
+		}
+		for (int i = 0 ; !placed && i < runs.size() ; ++i)
 		{
 				//A run the name does not fit: the shorter ones do not either
-			if (!placeTextOn(run)) {
+			if (!placeTextOn(runs.at(i))) {
 				break;
 			}
 			if (runs.size() == 1 || !nameTouches(this, m_text_item, diagram())) {
 				placed = true;
-				break;
 			}
 		}
 		if (!placed && !runs.isEmpty()) {
@@ -2153,6 +2291,7 @@ void Conductor::calculateTextItemPosition()
 		}
 	}
 }
+
 
 /**
 	@brief Conductor::textRuns
@@ -2238,8 +2377,19 @@ bool Conductor::placeTextOn(const TextRun &run)
 
 	m_text_item -> setPos(text_pos);
 
-		//Ensure text item does not collide with this conductor
-	while (m_text_item->collidesWithItem(this))
+		//Ensure text item does not collide with the run it is written
+		//along. The run, and not the whole conductor: a name a little
+		//longer than its run reaches the corner, and pushed off the whole
+		//conductor it went along the next segment, as far as that one
+		//goes - off its arm and onto the common line of a point, seen on
+		//a point of several conductors (T67, fifth adjustment)
+	const qreal half = (m_mouse_over ? 5 : 1) / 2.0;
+	const QRectF run_line = rotation == Qt::Horizontal
+			? QRectF(run.middle.x() - run.length / 2, run.middle.y() - half,
+				 run.length, 2 * half)
+			: QRectF(run.middle.x() - half, run.middle.y() - run.length / 2,
+				 2 * half, run.length);
+	while (m_text_item->mapToParent(m_text_item->shape()).intersects(run_line))
 	{
 		if(rotation == Qt::Vertical)
 		{

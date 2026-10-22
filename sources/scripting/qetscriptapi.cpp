@@ -5178,6 +5178,43 @@ QVariantList QetScriptApi::conductorPath(int folioIndex, const QString &conducto
 }
 
 /**
+	@brief QetScriptApi::conductorTextGeometry
+	Where the name of the conductor carrying @p conductorUuid on the folio
+	is drawn: the box of its text item on the folio (left, top, right,
+	bottom), its rotation, the size it is drawn at and the size its
+	properties hold, the text, and whether it is shown. Empty if there is
+	no such conductor.
+*/
+QVariantMap QetScriptApi::conductorTextGeometry(int folioIndex, const QString &conductorUuid) const
+{
+	if (!m_project) return {};
+	const QList<Diagram *> diagrams = m_project->folios();
+	if (folioIndex < 0 || folioIndex >= diagrams.count()) return {};
+	const QUuid wanted(conductorUuid);
+	if (wanted.isNull()) return {};
+
+	DiagramContent content(built(diagrams.at(folioIndex)), false);
+	for (Conductor *c : content.conductors(DiagramContent::AnyConductor)) {
+		if (c->uuid() != wanted) continue;
+		ConductorTextItem *text = c->textItem();
+		if (!text) return {};
+		const QRectF box = text->sceneBoundingRect();
+		QVariantMap m;
+		m.insert(QStringLiteral("left"), box.left());
+		m.insert(QStringLiteral("top"), box.top());
+		m.insert(QStringLiteral("right"), box.right());
+		m.insert(QStringLiteral("bottom"), box.bottom());
+		m.insert(QStringLiteral("rotation"), text->rotation());
+		m.insert(QStringLiteral("size"), text->font().pointSizeF());
+		m.insert(QStringLiteral("recorded_size"), c->properties().text_size);
+		m.insert(QStringLiteral("text"), text->toPlainText());
+		m.insert(QStringLiteral("visible"), text->isVisible());
+		return m;
+	}
+	return {};
+}
+
+/**
 	@brief QetScriptApi::insertFolio
 	Add a folio at a position (0 is first, folioCount() is last) through
 	QETProject::addNewDiagram(pos) -- undoable. The position is checked

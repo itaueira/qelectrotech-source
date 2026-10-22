@@ -305,6 +305,8 @@ class QetGraphicsTableItem;
 	  terminal exactly in line with another one before any wire exists;
 	  conductorPath() is a wire's drawn path by its uuid, for any wire,
 	  where conductorSegments() needs a terminal carrying only that one.
+	  conductorTextGeometry() is where the name of a wire is drawn, and how
+	  large, so a script can check that it landed on the run it should.
 	  insertFolio() puts a new folio at a position
 	  instead of at the end, which is what reordering is mostly for while
 	  moving an existing folio still needs the application's project view.
@@ -624,6 +626,7 @@ class QetScriptApi : public QObject
 		Q_INVOKABLE QVariantMap terminalPosition(int folioIndex, const QString &elementUuid,
 												 int terminalIndex) const;
 		Q_INVOKABLE QVariantList conductorPath(int folioIndex, const QString &conductorUuid) const;
+		Q_INVOKABLE QVariantMap conductorTextGeometry(int folioIndex, const QString &conductorUuid) const;
 
 		// -- folios --
 		Q_INVOKABLE int addFolio();

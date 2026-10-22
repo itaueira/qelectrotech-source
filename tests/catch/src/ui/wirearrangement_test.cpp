@@ -24,6 +24,7 @@
 #include "../../../../sources/elementsmover.h"
 #include "../../../../sources/foliogrid.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
+#include "../../../../sources/qetgraphicsitem/conductortextitem.h"
 #include "../../../../sources/QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/qetshapeitem.h"
@@ -36,6 +37,7 @@
 
 #include <QGraphicsSceneMouseEvent>
 #include <QSettings>
+#include <QTextDocument>
 #include <QUndoStack>
 
 #include <algorithm>
@@ -1245,4 +1247,519 @@ TEST_CASE("CU-67.20 — Two wires turn round a column of terminals", "[T67][wire
 		//Each into its terminal, from its lane
 	CHECK(o.last() == QPointF(499, 183));
 	CHECK(i.last() == QPointF(499, 172));
+}
+
+namespace
+{
+		/// One of the eight ways a drawing can lie on the folio
+	struct Way
+	{
+		bool mirrored;
+		bool upside_down;
+		bool turned;
+	};
+
+	std::ostream &operator<<(std::ostream &out, const Way &way)
+	{
+		return out << (way.mirrored ? "mirrored " : "") << (way.upside_down ? "upside down " : "")
+			   << (way.turned ? "turned" : "as drawn");
+	}
+
+	QList<Way> eightWays()
+	{
+		QList<Way> ways;
+		for (bool turned : {false, true}) {
+			for (bool mirrored : {false, true}) {
+				for (bool upside_down : {false, true}) ways << Way{mirrored, upside_down, turned};
+			}
+		}
+		return ways;
+	}
+
+	/*
+		A point of several wires (T67, fifth adjustment), in any of the
+		eight ways it can lie on the folio: as drawn, mirrored left to right (about x 700),
+		upside down, x and y swapped, and their combinations. The checks are
+		made on the drawing as drawn - every point of the folio taken back
+		to it -, so that one rule is asked of all eight.
+
+		As drawn: the common terminal points down, at (common_x, 321);
+		@a arms terminals of a strip on its right point left, their ends at
+		x 775, the first at y 352 and the next ones every @a step. With
+		others, the wires of other points come from terminals on the left,
+		at x 635, to terminals of the strip between the arms - the folio of
+		the request, whose arms are 352, 421, 467, 513 and 559.
+	*/
+	struct Point
+	{
+		static constexpr int request_arms[] = {352, 421, 467, 513, 559};
+
+		Point(int arms, int step, bool others, Way way, int common_x = 735,
+		      const QList<QPointF> &blocks = {}, int left_x = 635,
+		      const QList<Instance> &more = {}) :
+			way(way),
+			project(fixtureXml(instances(arms, step, others, common_x, blocks, left_x) + more, QString()))
+		{
+			for (int i = 0 ; i < arms ; ++i) arm_y << armY(i, step);
+		}
+
+		static double armY(int i, int step)
+		{
+			return step > 0 ? 352 + i * step : request_arms[i];
+		}
+
+			/// A point as drawn, where it lies on the folio
+		QPointF place(QPointF p) const
+		{
+			if (way.mirrored) p.setX(1400 - p.x());
+			if (way.upside_down) p.setY(880 - p.y());
+			if (way.turned) p = QPointF(p.y(), p.x());
+			return p;
+		}
+			/// A point of the folio, back where it is as drawn
+		QPointF drawn(QPointF p) const
+		{
+			if (way.turned) p = QPointF(p.y(), p.x());
+			if (way.upside_down) p.setY(880 - p.y());
+			if (way.mirrored) p.setX(1400 - p.x());
+			return p;
+		}
+		QPointF turn(QPointF towards) const
+		{
+			if (way.mirrored) towards.setX(-towards.x());
+			if (way.upside_down) towards.setY(-towards.y());
+			if (way.turned) towards = QPointF(towards.y(), towards.x());
+			return towards;
+		}
+			/// The component whose terminal ends at @a end, pointing
+			/// @a towards, as drawn
+		Instance component(QPointF end, QPointF towards, const char *label) const
+		{
+			end = place(end);
+			towards = turn(towards);
+			const char *definition = towards.y() > 0 ? "south.elmt"
+					       : towards.y() < 0 ? "north.elmt"
+					       : towards.x() > 0 ? "east.elmt" : "terminal.elmt";
+			return Instance{definition, qRound(end.x() - 10 * towards.x()),
+					qRound(end.y() - 10 * towards.y()), label};
+		}
+
+		QList<Instance> instances(int arms, int step, bool others, int common_x,
+					  const QList<QPointF> &blocks, int left_x) const
+		{
+			const int left_y[] = {375, 420, 465, 510, 555, 600};
+			const int other_y[] = {375, 398, 444, 490, 536, 582};
+			const QPointF down(0, 1), left(-1, 0), right(1, 0);
+			QList<Instance> out;
+			out << component(QPointF(common_x, 321), down, "C");
+			for (int i = 0 ; i < arms ; ++i) {
+				out << component(QPointF(775, armY(i, step)), left, arm_labels[i]);
+			}
+			for (int i = 0 ; others && i < 6 ; ++i)
+			{
+				out << component(QPointF(left_x, left_y[i]), right, left_labels[i]);
+				out << component(QPointF(775, other_y[i]), left, other_labels[i]);
+			}
+			for (int i = 0 ; i < blocks.size() ; ++i)
+			{
+				const QPointF p = place(blocks.at(i));
+				out << Instance{"block.elmt", qRound(p.x()), qRound(p.y()), block_labels[i]};
+			}
+			return out;
+		}
+
+		bool open()
+		{
+			if (!project.isOpen()) return false;
+			sheet = project.diagram(0);
+			return terminal("C") != nullptr;
+		}
+		Terminal *terminal(const char *label) const
+		{
+			Element *e = tagged(sheet, label);
+			return e ? e->terminals().at(0) : nullptr;
+		}
+			/// The wires of the point, then the others, drawn
+		bool drawAll(bool others)
+		{
+			for (int i = 0 ; i < arm_y.size() ; ++i)
+			{
+				Conductor *c = draw(sheet, terminal("C"), terminal(arm_labels[i]));
+				if (!c) return false;
+				point << c;
+			}
+			for (int i = 0 ; others && i < 6 ; ++i)
+			{
+				Conductor *c = draw(sheet, terminal(left_labels[i]), terminal(other_labels[i]));
+				if (!c) return false;
+				rest << c;
+			}
+			return true;
+		}
+			/// The path of @a c as drawn, from its end on @a from
+		QList<QPointF> path(const Conductor *c, Terminal *from) const
+		{
+			QList<QPointF> p = points(c);
+			if (!p.isEmpty() && (p.first() - from->dockConductor()).manhattanLength() > 0.5) {
+				std::reverse(p.begin(), p.end());
+			}
+			for (QPointF &q : p) q = drawn(q);
+			return p;
+		}
+			/// The x of the common line, as drawn: the leftmost piece running
+			/// up or down of the wires of the point
+		double trunk() const
+		{
+			double x = std::nan("");
+			for (const Conductor *c : point)
+			{
+				const QList<QPointF> p = path(c, terminal("C"));
+				for (int i = 0 ; i + 1 < p.size() ; ++i)
+				{
+					if (std::abs(p.at(i).x() - p.at(i + 1).x()) < 0.01
+					    && std::abs(p.at(i).y() - p.at(i + 1).y()) > 0.01
+					    && (std::isnan(x) || p.at(i).x() < x)) {
+						x = p.at(i).x();
+					}
+				}
+			}
+			return x;
+		}
+		static void name(Conductor *c, const QString &text, int size = 0)
+		{
+			ConductorProperties properties = c->properties();
+			properties.text = text;
+			if (size > 0) properties.text_size = size;
+			c->setProperties(properties);
+		}
+			/// The box of the name of @a c, as drawn
+		QRectF nameBox(const Conductor *c) const
+		{
+			const QRectF r = c->textItem()->sceneBoundingRect();
+			return QRectF(drawn(r.topLeft()), drawn(r.bottomRight())).normalized();
+		}
+			/// The box of the letters of the name of @a c, as drawn: its box
+			/// less the blank margin of the text
+		QRectF letters(const Conductor *c) const
+		{
+			const qreal m = c->textItem()->document()->documentMargin();
+			return nameBox(c).adjusted(m, m, -m, -m);
+		}
+			/// The run of a wire as drawn, on the folio
+		Qt::Orientations armRun() const { return way.turned ? Qt::Vertical : Qt::Horizontal; }
+
+		static constexpr const char *arm_labels[] = {"A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7"};
+		static constexpr const char *left_labels[] = {"L0", "L1", "L2", "L3", "L4", "L5"};
+		static constexpr const char *other_labels[] = {"B0", "B1", "B2", "B3", "B4", "B5"};
+		static constexpr const char *block_labels[] = {"K0", "K1"};
+
+		Way way;
+		UiBench::ScratchProject project;
+		QList<double> arm_y;
+		Diagram *sheet = nullptr;
+		QList<Conductor *> point;
+		QList<Conductor *> rest;
+	};
+}
+
+TEST_CASE("CU-67.21 — A point of N wires becomes one common line", "[T67][wirearrangement]")
+{
+	const int arms = GENERATE(2, 3, 5, 8);
+	const int step = GENERATE(23, 46);
+	const bool wire_by_wire = GENERATE(false, true);
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(arms, step, wire_by_wire, way);
+	Setup setup(1, wire_by_wire);
+	Point bench(arms, step, false, way);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	if (!wire_by_wire) {
+		WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+	}
+
+		//Each wire straight on from the common terminal, on one line, to
+		//the height of its own terminal: no lane of its own
+	for (int i = 0 ; i < arms ; ++i)
+	{
+		const QList<QPointF> p = bench.path(bench.point.at(i), bench.terminal("C"));
+		CAPTURE(i, text(p));
+		REQUIRE(p.size() >= 3);
+		CHECK(p.at(0) == QPointF(735, 321));
+		CHECK(p.at(1) == QPointF(735, bench.arm_y.at(i)));
+		CHECK(p.last() == QPointF(775, bench.arm_y.at(i)));
+	}
+}
+
+TEST_CASE("CU-67.22 — The wires of other points around the common line", "[T67][wirearrangement]")
+{
+		//The other points from far on the left, as on the folio of the
+		//request, and from near the common line - where the widest room for
+		//their bridges is between it and the strip, along the arms; and a
+		//wire placed by hand straight across the common line, which stays
+	const int left_x = GENERATE(635, 705);
+	const bool by_hand = GENERATE(false, true);
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(left_x, by_hand, way);
+	Setup setup(1, false);
+	QList<Instance> more;
+	if (by_hand)
+	{
+		const Point layout(0, 0, false, way);
+		more << layout.component(QPointF(605, 440), QPointF(1, 0), "H0")
+		     << layout.component(QPointF(750, 440), QPointF(-1, 0), "H1");
+	}
+	Point bench(5, 0, true, way, 735, {}, left_x, more);
+	REQUIRE(bench.open());
+		//Drawn first, on the empty folio, where nothing lies over its ends
+	if (by_hand)
+	{
+		Conductor *across = draw(bench.sheet, bench.terminal("H0"), bench.terminal("H1"));
+		REQUIRE(across != nullptr);
+		REQUIRE(across->setArrangedPath(points(across)));
+		across->setAutoArranged(false);
+	}
+	REQUIRE(bench.drawAll(true));
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+
+	const double trunk = bench.trunk();
+	CAPTURE(trunk);
+	CHECK(trunk == Approx(735));
+	for (int i = 0 ; i < 5 ; ++i)
+	{
+		const QList<QPointF> p = bench.path(bench.point.at(i), bench.terminal("C"));
+		CAPTURE(i, text(p));
+		REQUIRE(p.size() >= 2);
+		CHECK(p.at(1).x() == Approx(trunk));
+	}
+
+		//The pieces of the other wires, as drawn
+	QList<Piece> others;
+	for (int k = 0 ; k < bench.rest.size() ; ++k)
+	{
+		const QList<QPointF> p = bench.path(bench.rest.at(k), bench.terminal(Point::left_labels[k]));
+		UNSCOPED_INFO(text(p).toStdString());
+		for (int i = 0 ; i + 1 < p.size() ; ++i) others << Piece{p.at(i), p.at(i + 1), bench.rest.at(k)};
+	}
+		//No two of them cross
+	int crossed = 0;
+	for (const Piece &h : std::as_const(others))
+	{
+		if (!runsAcross(h)) continue;
+		for (const Piece &v : std::as_const(others))
+		{
+			if (v.owner == h.owner || runsAcross(v)) continue;
+			const double x = v.a.x(), y = h.a.y();
+			if (x > std::min(h.a.x(), h.b.x()) + 0.5 && x < std::max(h.a.x(), h.b.x()) - 0.5
+			    && y > std::min(v.a.y(), v.b.y()) + 0.5 && y < std::max(v.a.y(), v.b.y()) - 0.5) {
+				++crossed;
+			}
+		}
+	}
+	CHECK(crossed == 0);
+		//Each crosses the common line once at most, and none runs closer
+		//than 3 to an arm of the point
+	for (const Conductor *owner : std::as_const(bench.rest))
+	{
+		int through = 0;
+		int along_an_arm = 0;
+		for (const Piece &piece : std::as_const(others))
+		{
+			if (piece.owner != owner || !runsAcross(piece)) continue;
+			const double lo = std::min(piece.a.x(), piece.b.x());
+			const double hi = std::max(piece.a.x(), piece.b.x());
+			if (lo < trunk - 0.5 && hi > trunk + 0.5 && piece.a.y() > 321 && piece.a.y() < 559) ++through;
+			for (double y : bench.arm_y)
+			{
+				if (std::abs(piece.a.y() - y) < 3 && std::min(hi, 765.0) - std::max(lo, trunk) > 0.5) {
+					++along_an_arm;
+				}
+			}
+		}
+		CHECK(through <= 1);
+		CHECK(along_an_arm == 0);
+	}
+}
+
+TEST_CASE("CU-67.23 — The name on the piece no other wire crosses", "[T67][wirearrangement]")
+{
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(way);
+	Setup setup(1, false);
+	Point bench(5, 0, true, way);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(true));
+		//Names of the folio of the request, at its size, the smallest one:
+		//they cannot be drawn smaller to fit. Those of the other points
+		//longer, so that, as on that folio, none of their runs holds them
+		//while their bridge is in the middle of its room
+	for (Conductor *c : std::as_const(bench.point)) Point::name(c, QStringLiteral("F5-21 (■)"), 5);
+	for (int i = 0 ; i < bench.rest.size() ; ++i) {
+		Point::name(bench.rest.at(i), QStringLiteral("F5-1%1 (■ 1mm²) X4:2.2 A").arg(i + 3), 5);
+	}
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+	const double trunk = bench.trunk();
+	REQUIRE(!std::isnan(trunk));
+
+		//The name of each wire of the point lies along its arm, between the
+		//common line and the strip
+	const double along_the_arm = bench.armRun() == Qt::Vertical ? 270 : 0;
+	for (int i = 0 ; i < 5 ; ++i)
+	{
+		const QList<QPointF> p = bench.path(bench.point.at(i), bench.terminal("C"));
+		const double stub = p.at(p.size() - 2).x();
+		const QRectF box = bench.letters(bench.point.at(i));
+		CAPTURE(i, trunk, stub, box, text(p));
+		CHECK(bench.point.at(i)->textItem()->rotation() == Approx(along_the_arm));
+			//Beside its arm, nearer it than any other line of the strip,
+			//its letters 3 from each end of the arm
+		CHECK(std::abs(box.center().y() - bench.arm_y.at(i)) < 15);
+		CHECK(box.left() >= trunk + 2.5);
+		CHECK(box.right() <= stub - 2.5);
+	}
+		//The letters of no name on a line of another wire: not on the
+		//common line, and not on a wire that crosses it - each name on a
+		//piece of its own wire that holds it
+	const QList<Piece> all = pieces(bench.sheet);
+	QList<Conductor *> named = bench.point;
+	named << bench.rest;
+	for (const Conductor *c : std::as_const(named))
+	{
+		const QRectF box = bench.letters(c);
+		int touched = 0;
+		for (const Piece &piece : all)
+		{
+			if (piece.owner == c) continue;
+			const QRectF line = QRectF(bench.drawn(piece.a), bench.drawn(piece.b))
+					.normalized().adjusted(-0.5, -0.5, 0.5, 0.5);
+			if (line.intersects(box)) ++touched;
+		}
+		CAPTURE(box, text(bench.path(c, c->terminal1)));
+		CHECK(touched == 0);
+	}
+}
+
+TEST_CASE("CU-67.24 — The common line moves away when a name does not fit", "[T67][wirearrangement]")
+{
+	const bool in_the_way = GENERATE(false, true);
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(in_the_way, way);
+	Setup setup(1, false);
+	QList<QPointF> blocks;
+	if (in_the_way) blocks << QPointF(735, 390);
+	Point bench(2, 0, false, way, 755, blocks);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	for (Conductor *c : std::as_const(bench.point)) Point::name(c, QStringLiteral("LONG-NAME-0001"));
+	REQUIRE(WireArrangement::nameLength(bench.point.first(), bench.armRun()) > 30);
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+
+	const double trunk = bench.trunk();
+	CAPTURE(trunk, text(bench.path(bench.point.at(0), bench.terminal("C"))),
+		text(bench.path(bench.point.at(1), bench.terminal("C"))));
+	CHECK(trunk < 755);
+	if (!in_the_way)
+	{
+			//Far enough for the letters of the name, at its own size, with
+			//3 to spare at each end of the arm - and the name on it
+		for (Conductor *c : std::as_const(bench.point))
+		{
+			const QList<QPointF> p = bench.path(c, bench.terminal("C"));
+			const double arm = p.at(p.size() - 2).x() - trunk;
+			const QRectF box = bench.letters(c);
+			CAPTURE(text(p), arm, box);
+			CHECK(arm >= WireArrangement::nameLength(c, bench.armRun()) + 6 - 0.01);
+			CHECK(box.left() >= trunk + 2.5);
+			CHECK(box.right() <= p.at(p.size() - 2).x() - 2.5);
+		}
+	}
+	else
+	{
+			//Stopped before the component in its way, the name smaller
+		const QRectF body = tagged(bench.sheet, "K0")->sceneBoundingRect();
+		const double body_right = QRectF(bench.drawn(body.topLeft()),
+						 bench.drawn(body.bottomRight())).normalized().right();
+		CAPTURE(body_right);
+		CHECK(trunk > body_right);
+		for (Conductor *c : std::as_const(bench.point)) {
+			CHECK(c->textItem()->font().pointSize() < c->properties().text_size);
+		}
+	}
+}
+
+TEST_CASE("CU-67.25 — Turned, the same common line", "[T67][wirearrangement]")
+{
+		//CU-67.21 asks every way of the eight; this one the way of the
+		//request turned: the common terminal pointing right, the strip
+		//below with its terminals pointing up
+	Setup setup(1, false);
+	Point bench(5, 0, false, Way{false, false, true});
+	REQUIRE(bench.open());
+	REQUIRE(bench.terminal("C")->dockConductor() == QPointF(321, 735));
+	REQUIRE(bench.terminal("A0")->orientation() == Qet::North);
+	REQUIRE(bench.drawAll(false));
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+
+		//On the folio: out of the common terminal to the right on one line,
+		//and straight down from it into each terminal of the strip
+	for (int i = 0 ; i < 5 ; ++i)
+	{
+		QList<QPointF> p = points(bench.point.at(i));
+		if ((p.first() - QPointF(321, 735)).manhattanLength() > 0.5) std::reverse(p.begin(), p.end());
+		CAPTURE(i, text(p));
+		REQUIRE(p.size() >= 3);
+		CHECK(p.at(1) == QPointF(bench.arm_y.at(i), 735));
+		CHECK(p.last() == QPointF(bench.arm_y.at(i), 775));
+	}
+}
+
+TEST_CASE("CU-67.21 — Side to side, the wires of a point share one bridge", "[T67][wirearrangement]")
+{
+	/*
+		The same rule between two columns: a terminal pointing right, as
+		drawn at (635, 400), wired to @a arms terminals of a strip on the
+		right pointing left, at x 775, below it. Each wire would get a lane
+		of its own; the point gets one bridge for all, in each of the eight
+		ways the drawing can lie.
+	*/
+	const int arms = GENERATE(2, 4);
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(arms, way);
+	Setup setup(1, false);
+	Point layout(0, 0, false, way);
+	QList<Instance> instances{layout.component(QPointF(635, 400), QPointF(1, 0), "C")};
+	for (int i = 0 ; i < arms ; ++i) {
+		instances << layout.component(QPointF(775, 430 + 46 * i), QPointF(-1, 0), Point::arm_labels[i]);
+	}
+	UiBench::ScratchProject project(fixtureXml(instances, QString()));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	QList<Conductor *> wires;
+	for (int i = 0 ; i < arms ; ++i)
+	{
+		Conductor *c = draw(sheet, tagged(sheet, "C")->terminals().at(0),
+				    tagged(sheet, Point::arm_labels[i])->terminals().at(0));
+		REQUIRE(c != nullptr);
+		wires << c;
+	}
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+
+		//One bridge: every wire goes across from the common terminal on
+		//one line, and turns at the same place
+	QList<double> turns;
+	for (const Conductor *c : std::as_const(wires))
+	{
+		QList<QPointF> p = points(c);
+		if ((p.first() - tagged(sheet, "C")->terminals().at(0)->dockConductor()).manhattanLength() > 0.5) {
+			std::reverse(p.begin(), p.end());
+		}
+		for (QPointF &q : p) q = layout.drawn(q);
+		CAPTURE(text(p));
+		REQUIRE(p.size() >= 4);
+		CHECK(p.at(0) == QPointF(635, 400));
+		turns << p.at(2).x();
+		CHECK(p.at(2).y() == Approx(400));
+	}
+	for (double x : std::as_const(turns)) {
+		CHECK(x == Approx(turns.first()));
+	}
 }
