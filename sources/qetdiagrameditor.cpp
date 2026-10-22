@@ -621,8 +621,7 @@ void QETDiagramEditor::setUpActions()
 	{
 		auto *menu = new QMenu(this);
 		m_element_scale->setMenu(menu);
-		connect(menu, &QMenu::aboutToShow, this, [this, menu]() {
-			menu->clear();
+		const auto selected = [this]() {
 			QList<Element *> elements;
 			if (DiagramView *view = currentDiagramView(); view && view->diagram())
 			{
@@ -631,26 +630,33 @@ void QETDiagramEditor::setUpActions()
 					if (auto *element = qgraphicsitem_cast<Element *>(item)) elements << element;
 				}
 			}
-			for (const qreal scale : Element::symbolScaleChoices())
+			return elements;
+		};
+			//The entries are made here, once, and not when the submenu
+			//opens: the folio's context menu leaves out a submenu with no
+			//enabled entry (DiagramView::contextMenuActions()), and one
+			//still empty when that menu is built was always left out of it.
+			//Each entry scales what is selected when it is chosen
+		for (const qreal scale : Element::symbolScaleChoices())
+		{
+			QAction *action = menu->addAction(QStringLiteral("%1 %").arg(qRound(scale * 100)));
+			action->setCheckable(true);
+			action->setData(scale);
+			connect(action, &QAction::triggered, this, [this, selected, scale]() {
+				scaleElements(selected(), scale);
+			});
+		}
+		connect(menu, &QMenu::aboutToShow, this, [menu, selected]() {
+			const QList<Element *> elements = selected();
+			const QList<QAction *> actions = menu->actions();
+			for (QAction *action : actions)
 			{
-				QAction *action = menu->addAction(QStringLiteral("%1 %").arg(qRound(scale * 100)));
-				action->setCheckable(true);
 				bool all_at = !elements.isEmpty();
-				for (const Element *element : std::as_const(elements))
+				for (const Element *element : elements)
 				{
-					if (!qFuzzyCompare(element->symbolScale(), scale)) all_at = false;
+					if (!qFuzzyCompare(element->symbolScale(), action->data().toReal())) all_at = false;
 				}
-				action->setEnabled(!elements.isEmpty());
 				action->setChecked(all_at);
-				QList<QPointer<Element>> kept;
-				for (Element *element : std::as_const(elements)) kept << element;
-				connect(action, &QAction::triggered, this, [this, kept, scale]() {
-					QList<Element *> alive;
-					for (const QPointer<Element> &element : kept) {
-						if (element) alive << element.data();
-					}
-					scaleElements(alive, scale);
-				});
 			}
 		});
 	}
