@@ -1787,15 +1787,14 @@ TEST_CASE("CU-67.24 — The common line moves away when a name does not fit", "[
 	}
 	else
 	{
-			//Stopped before the component in its way, the name smaller
+			//Stopped before the component in its way. The name is then shown
+			//once, on the line the point shares (CU-67.34): it was drawn
+			//smaller on each arm, until the tenth adjustment
 		const QRectF body = tagged(bench.sheet, "K0")->sceneBoundingRect();
 		const double body_right = QRectF(bench.drawn(body.topLeft()),
 						 bench.drawn(body.bottomRight())).normalized().right();
 		CAPTURE(body_right);
 		CHECK(trunk > body_right);
-		for (Conductor *c : std::as_const(bench.point)) {
-			CHECK(c->textItem()->font().pointSize() < c->properties().text_size);
-		}
 	}
 }
 
@@ -2275,4 +2274,234 @@ TEST_CASE("CU-71.7 — The name in the middle of the whole straight line", "[T71
 			//On it, as far from the common line as from the strip
 		CHECK(std::abs((letters.left() - 735) - (775 - letters.right())) < 1);
 	}
+}
+
+namespace
+{
+		/// The four ways of a point that turns round its strip: as drawn,
+		/// mirrored, upside down and both - the shape that turns round is
+		/// never described turned (fourth adjustment)
+	QList<Way> fourWays()
+	{
+		QList<Way> ways;
+		const QList<Way> all = eightWays();
+		for (const Way &way : all) {
+			if (!way.turned) ways << way;
+		}
+		return ways;
+	}
+
+		/// Whether the piece from @a a to @a b runs into @a body
+	bool runsInto(const QPointF &a, const QPointF &b, const QRectF &body)
+	{
+		const qreal left = std::min(a.x(), b.x()), right = std::max(a.x(), b.x());
+		const qreal top = std::min(a.y(), b.y()), bottom = std::max(a.y(), b.y());
+		return left < body.right() && right > body.left() && top < body.bottom() && bottom > body.top();
+	}
+
+		/// The wires of @a wires whose name is visible
+	QList<Conductor *> shown(const QList<Conductor *> &wires)
+	{
+		QList<Conductor *> out;
+		for (Conductor *c : wires) {
+			if (c->textItem()->isVisible()) out << c;
+		}
+		return out;
+	}
+}
+
+TEST_CASE("CU-67.31 — Round the strip, one trunk", "[T67][wirearrangement]")
+{
+	/*
+		The request: the common terminal on the right of the strip, whose
+		terminals point left, away from it - each wire goes down, past the
+		strip, down to its terminal and into it from the left. Each took a
+		lane of its own, and five lanes went over the component between the
+		strip and the next column. As drawn: the common terminal at 900,
+		the strip's ends at 775, a component at 720 with the variant.
+	*/
+	const int arms = GENERATE(2, 5);
+	const bool in_the_way = GENERATE(false, true);
+	const Way way = GENERATE(from_range(fourWays()));
+	CAPTURE(arms, in_the_way, way);
+	Setup setup(1, false);
+	QList<QPointF> blocks;
+	if (in_the_way) blocks << QPointF(720, 375);
+	Point bench(arms, 46, false, way, 900, blocks);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+
+	QList<QPointF> ways;
+	for (int i = 0 ; i < arms ; ++i)
+	{
+		const QList<QPointF> p = bench.path(bench.point.at(i), bench.terminal("C"));
+		CAPTURE(i, text(p));
+		ways << laneAndRun(p);
+			//Into its own terminal, from the left of the strip
+		CHECK(p.last() == QPointF(775, bench.arm_y.at(i)));
+		CHECK(p.at(p.size() - 2).x() < 775);
+	}
+		//One lane and one run for all of them
+	for (int i = 1 ; i < arms ; ++i)
+	{
+		CAPTURE(i, ways);
+		CHECK(ways.at(i).x() == Approx(ways.first().x()));
+		CHECK(ways.at(i).y() == Approx(ways.first().y()));
+	}
+	CHECK(ways.first().x() < 775);
+	if (in_the_way)
+	{
+			//And none of them over the component
+		Element *block = tagged(bench.sheet, "K0");
+		REQUIRE(block);
+		const QRectF r = block->mapRectToScene(block->drawnRect());
+		const QRectF body = QRectF(bench.drawn(r.topLeft()), bench.drawn(r.bottomRight())).normalized();
+		for (const Conductor *c : std::as_const(bench.point))
+		{
+			const QList<QPointF> p = bench.path(c, bench.terminal("C"));
+			CAPTURE(body, text(p));
+			for (int i = 0 ; i + 1 < p.size() ; ++i) {
+				CHECK_FALSE(runsInto(p.at(i), p.at(i + 1), body));
+			}
+		}
+	}
+}
+
+TEST_CASE("CU-67.32 — One name when no arm holds it", "[T67][wirearrangement]")
+{
+	const Way way = GENERATE(from_range(fourWays()));
+	CAPTURE(way);
+	Setup setup(1, false);
+	Point bench(5, 46, false, way, 900);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	for (Conductor *c : std::as_const(bench.point)) Point::name(c, QStringLiteral("F5-9 (■ 1mm²)"), 5);
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+
+	const QPointF way0 = laneAndRun(bench.path(bench.point.first(), bench.terminal("C")));
+	const double arm = 775 - way0.x();
+	CAPTURE(way0, arm);
+		//The case: the name does not fit the arm, at the smallest size
+	REQUIRE(WireArrangement::nameLength(bench.point.first(), Qt::Horizontal) > arm - 6);
+
+	const QList<Conductor *> names = shown(bench.point);
+	REQUIRE(names.size() == 1);
+		//Lying on the common line, between the trunk and the common terminal
+	const QRectF box = bench.letters(names.first());
+	CAPTURE(box);
+	CHECK(names.first()->textItem()->rotation() == Approx(0));
+	CHECK(std::abs(box.center().y() - way0.y()) < 15);
+	CHECK(box.left() >= way0.x());
+	CHECK(box.right() <= 900);
+}
+
+TEST_CASE("CU-67.33 — The trunk moved away, a name on each arm", "[T67][wirearrangement]")
+{
+	const Way way = GENERATE(from_range(fourWays()));
+	CAPTURE(way);
+	Setup setup(1, false);
+	Point bench(5, 46, false, way, 900);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	for (Conductor *c : std::as_const(bench.point)) Point::name(c, QStringLiteral("F5-9 (■ 1mm²)"), 5);
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+	const double lane = laneAndRun(bench.path(bench.point.first(), bench.terminal("C"))).x();
+	REQUIRE(shown(bench.point).size() == 1);
+
+		//The trunk of the wire to the farthest terminal, by its handle: its
+		//longest piece running up or down, on the folio
+	Conductor *c = bench.point.last();
+	const QList<QPointF> p = points(c);
+	QPointF middle;
+	qreal longest = -1;
+	for (int i = 0 ; i + 1 < p.size() ; ++i)
+	{
+		const QPointF a = p.at(i), b = p.at(i + 1);
+		if (std::abs(a.x() - b.x()) < 0.01 && std::abs(a.y() - b.y()) > longest) {
+			longest = std::abs(a.y() - b.y());
+			middle = (a + b) / 2;
+		}
+	}
+	c->setSelected(true);
+	QetGraphicsHandlerItem *handle = nullptr;
+	const auto items = bench.sheet->items(middle);
+	for (QGraphicsItem *item : items) {
+		if (item->type() == QetGraphicsHandlerItem::Type) {
+			handle = qgraphicsitem_cast<QetGraphicsHandlerItem *>(item);
+		}
+	}
+	REQUIRE(handle);
+	const auto send = [&](QEvent::Type type, const QPointF &at) {
+		QGraphicsSceneMouseEvent event(type);
+		event.setScenePos(at);
+		event.setButton(Qt::LeftButton);
+		event.setButtons(type == QEvent::GraphicsSceneMouseRelease ? Qt::NoButton : Qt::LeftButton);
+		bench.sheet->sendEvent(handle, &event);
+	};
+	const QPointF away = middle + bench.turn(QPointF(-40, 0));
+	send(QEvent::GraphicsSceneMousePress, middle);
+	send(QEvent::GraphicsSceneMouseMove, (middle + away) / 2);
+	send(QEvent::GraphicsSceneMouseMove, away);
+	send(QEvent::GraphicsSceneMouseRelease, away);
+
+		//The trunk of every wire of the point went with it, and each name
+		//is on its own arm
+	for (int i = 0 ; i < bench.point.size() ; ++i)
+	{
+		const QList<QPointF> q = bench.path(bench.point.at(i), bench.terminal("C"));
+		CAPTURE(i, text(q));
+		CHECK(laneAndRun(q).x() == Approx(lane - 40));
+		CHECK(bench.point.at(i)->textItem()->isVisible());
+		const QRectF box = bench.letters(bench.point.at(i));
+		CAPTURE(box);
+		CHECK(std::abs(box.center().y() - bench.arm_y.at(i)) < 15);
+		CHECK(box.left() >= lane - 40 + 2.5);
+		CHECK(box.right() <= 775 - 2.5);
+	}
+
+		//One undo for the whole drag: the trunk back, one name again
+	bench.sheet->undoStack().undo();
+	for (int i = 0 ; i < bench.point.size() ; ++i) {
+		CHECK(laneAndRun(bench.path(bench.point.at(i), bench.terminal("C"))).x() == Approx(lane));
+	}
+	CHECK(shown(bench.point).size() == 1);
+}
+
+TEST_CASE("CU-67.34 — One name also where it does not turn round", "[T67][wirearrangement]")
+{
+	/*
+		The point of CU-67.24 with a component in the way of its common
+		line: the line stops before it, and no arm holds the name. The
+		name was drawn smaller on each arm; it is shown once, on the line
+		the point shares.
+	*/
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(way);
+	Setup setup(1, false);
+	Point bench(2, 0, false, way, 755, {QPointF(735, 390)});
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	for (Conductor *c : std::as_const(bench.point)) Point::name(c, QStringLiteral("LONG-NAME-0001"));
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+	const double trunk = bench.trunk();
+	CAPTURE(trunk);
+
+	const QList<Conductor *> names = shown(bench.point);
+	REQUIRE(names.size() == 1);
+		//Not on an arm, which runs across: along the common line, beside
+		//it and within it, at its own size
+	const QRectF box = bench.letters(names.first());
+	CAPTURE(box);
+	CHECK(box.height() > box.width());
+	CHECK(std::abs(box.center().x() - trunk) < 15);
+	CHECK(box.top() >= 321 - 3);
+	CHECK(box.bottom() <= Point::armY(1, 0) + 3);
+	CHECK(names.first()->textItem()->font().pointSize() == names.first()->properties().text_size);
+
+		//Arranged again, the name of the other one hidden: the common line
+		//asks for the room of the names all the same, and stays
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+	CHECK(bench.trunk() == Approx(trunk));
+	CHECK(shown(bench.point).size() == 1);
 }

@@ -905,12 +905,35 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 				return (a.shape.start.x() - a.shape.stub.x()) * -side
 						< (b.shape.start.x() - b.shape.stub.x()) * -side;
 			});
-			const int n = wires.size();
+				//The wires of one point - one terminal, one potential - are one
+				//wire here (tenth adjustment): one lane and one run for all of
+				//them, the trunk, each going down it to its own terminal. Else
+				//each took a lane of its own, a pitch from the next, and a
+				//point of five wires needed five lanes where there was room
+				//for three, and went over the component in the way
+			QList<QList<int>> groups;
+			for (int k = 0 ; k < wires.size() ; ++k)
+			{
+				bool joined = false;
+				for (QList<int> &group : groups)
+				{
+					const Described &first = wires.at(group.first());
+					if (first.shape.component == wires.at(k).shape.component
+					    && sameNet(first.conductor, wires.at(k).conductor)) {
+						group << k;
+						joined = true;
+						break;
+					}
+				}
+				if (!joined) groups << QList<int>{k};
+			}
+			const int n = groups.size();
 			double previous_run = std::nan("");
 			for (int k = 0 ; k < n ; ++k)
 			{
-				Described &d = wires[k];
-				Shaped &s = d.shape;
+				const QList<int> &group = groups.at(k);
+				Described &d = wires[group.first()];
+				const Shaped &s = d.shape;
 				const QSet<const void *> own = ownOf(d);
 				double lane = s.stub.x() + side * around_pitch * (n - k);
 				lane = std::round(lane / vertical.unit) * vertical.unit;
@@ -923,27 +946,48 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 					run = previous_run + s.outward * around_run_gap;
 				}
 					//Past the line of the strip's terminal, this is not the
-					//shape to take: the conductor is left as it is
-				if ((s.end.y() - run) * s.outward < 1) continue;
-				s.run = run;
+					//shape to take: a conductor so is left as it is
+				QList<int> going;
+				double low_end = run;
+				double high_end = run;
+				for (int i : group)
+				{
+					const Shaped &m = wires.at(i).shape;
+					if ((m.end.y() - run) * m.outward < 1) continue;
+					going << i;
+					low_end = std::min(low_end, m.end.y());
+					high_end = std::max(high_end, m.end.y());
+				}
+				if (going.isEmpty()) continue;
 				previous_run = run;
 
 					//The lane further out, within the pitch that is its own,
-					//while its piece up or down is not clear
+					//while its piece up or down is not clear - down to the
+					//farthest terminal of the point
 				const WireLanes::Clearance upright = scene.clearance(own, true);
 				for (int t = 0 ; (t + 1) * vertical.unit < around_pitch
-					     && !WireLanes::isClear(lane, std::min(run, s.end.y()),
-								    std::max(run, s.end.y()), upright) ; ++t) {
+					     && !WireLanes::isClear(lane, low_end, high_end, upright) ; ++t) {
 					lane += side * vertical.unit;
 				}
 
-				const QList<QPointF> path = shapedPath(s, lane);
-				if ((!only_their_groups || conductors.contains(d.conductor))
-					&& !samePath(path, currentPoints(d.conductor))) {
-					changes << Change{d.conductor, path};
+					//The whole point when one of its wires is wanted, as for a
+					//point of the fifth adjustment: a trunk changed for one
+					//wire alone would no longer be one
+				bool wanted = !only_their_groups;
+				for (int i : std::as_const(going)) {
+					if (conductors.contains(wires.at(i).conductor)) wanted = true;
 				}
-				addInTheWay(path, vertical, horizontal);
-				scene.addPath(path, d.conductor);
+				for (int i : std::as_const(going))
+				{
+					Described &m = wires[i];
+					m.shape.run = run;
+					const QList<QPointF> path = shapedPath(m.shape, lane);
+					if (wanted && !samePath(path, currentPoints(m.conductor))) {
+						changes << Change{m.conductor, path};
+					}
+					addInTheWay(path, vertical, horizontal);
+					scene.addPath(path, m.conductor);
+				}
 			}
 		}
 	}
@@ -1394,7 +1438,11 @@ qreal WireArrangement::nameLength(const Conductor *conductor, Qt::Orientations r
 	const ConductorTextItem *text = conductor ? conductor->textItem() : nullptr;
 	const ConductorProperties properties = conductor ? conductor->properties()
 							  : ConductorProperties();
-	if (!text || properties.type != ConductorProperties::Multi || !text->isVisible()
+		//Shown by the properties, and not by the item: the name of a
+		//conductor whose point shows it on the line it shares is hidden
+		//only for as long as no arm holds it (T67, tenth adjustment), and
+		//the room it asks for must not depend on that
+	if (!text || properties.type != ConductorProperties::Multi || !properties.m_show_text
 	    || text->toPlainText().isEmpty()) {
 		return 0;
 	}

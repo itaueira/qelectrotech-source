@@ -327,6 +327,82 @@ namespace
 	};
 
 	/**
+		@brief Whether the piece from @a a to @a b and the one from @a p to
+		@a q, in scene coordinates, lie along one line for some length: both
+		horizontal at one height, or both vertical at one x, overlapping -
+		the line two conductors of a point share (T67, tenth adjustment)
+	*/
+	bool alongOneLine(const QPointF &a, const QPointF &b, const QPointF &p, const QPointF &q)
+	{
+		const auto overlap = [](qreal a1, qreal a2, qreal b1, qreal b2) {
+			return std::min(std::max(a1, a2), std::max(b1, b2)) - std::max(std::min(a1, a2), std::min(b1, b2));
+		};
+		const bool first_across = std::abs(a.y() - b.y()) < 0.01 && std::abs(a.x() - b.x()) > 0.5;
+		const bool second_across = std::abs(p.y() - q.y()) < 0.01 && std::abs(p.x() - q.x()) > 0.5;
+		if (first_across && second_across) {
+			return std::abs(a.y() - p.y()) < 0.5 && overlap(a.x(), b.x(), p.x(), q.x()) > 0.5;
+		}
+		const bool first_up = std::abs(a.x() - b.x()) < 0.01 && std::abs(a.y() - b.y()) > 0.5;
+		const bool second_up = std::abs(p.x() - q.x()) < 0.01 && std::abs(p.y() - q.y()) > 0.5;
+		if (first_up && second_up) {
+			return std::abs(a.x() - p.x()) < 0.5 && overlap(a.y(), b.y(), p.y(), q.y()) > 0.5;
+		}
+		return false;
+	}
+
+	/**
+		@brief The length of @a place, a piece of @a own, that every
+		conductor of @a group runs along: the line the whole point shares,
+		as the line from its common terminal to the first arm, and not the
+		part of a trunk only the farther arms go down (T67, tenth
+		adjustment). 0 when one of them does not run along it.
+	*/
+	qreal sharedByAll(const Conductor *own, const NamePlace &place, const QList<Conductor *> &group)
+	{
+		const bool horizontal = place.along == Qt::Horizontal;
+		const QPointF half = horizontal ? QPointF(place.length / 2, 0) : QPointF(0, place.length / 2);
+		const QPointF a = own->mapToScene(place.middle - half);
+		const QPointF b = own->mapToScene(place.middle + half);
+		qreal low = horizontal ? std::min(a.x(), b.x()) : std::min(a.y(), b.y());
+		qreal high = horizontal ? std::max(a.x(), b.x()) : std::max(a.y(), b.y());
+		const qreal at = horizontal ? a.y() : a.x();
+		for (const Conductor *c : group)
+		{
+			qreal from = high;
+			qreal to = low;
+			const QList<ConductorSegment *> pieces = c->segmentsList();
+			for (const ConductorSegment *piece : pieces)
+			{
+				const QPointF p = c->mapToScene(piece->firstPoint());
+				const QPointF q = c->mapToScene(piece->secondPoint());
+				const qreal p_at = horizontal ? p.y() : p.x();
+				const qreal q_at = horizontal ? q.y() : q.x();
+				if (std::abs(p_at - q_at) > 0.01 || std::abs(p_at - at) > 0.5) {
+					continue;
+				}
+				const qreal p_along = horizontal ? p.x() : p.y();
+				const qreal q_along = horizontal ? q.x() : q.y();
+				const qreal lo = std::max(low, std::min(p_along, q_along));
+				const qreal hi = std::min(high, std::max(p_along, q_along));
+				if (hi - lo > 0.5)
+				{
+					from = std::min(from, lo);
+					to = std::max(to, hi);
+				}
+			}
+			if (to - from <= 0.5) {
+				return 0;
+			}
+			low = std::max(low, from);
+			high = std::min(high, to);
+			if (high - low <= 0.5) {
+				return 0;
+			}
+		}
+		return high - low;
+	}
+
+	/**
 		@brief The places of @a runs, in the coordinates of @a own, cut
 		where a conductor of another potential crosses or meets them, and
 		without those a conductor of @a same - the potential of @a own -
@@ -335,10 +411,18 @@ namespace
 		on its own arm (T67, fifth adjustment). The longest first. Empty
 		when nothing cuts nor shares any of them: @a runs are then the
 		places, as they always were.
+		With @a shared_ones, the other way round: only the runs a
+		conductor of @a same runs along, cut where a conductor of another
+		potential crosses them - where the one name of a point goes when
+		no arm holds it (T67, tenth adjustment).
 	*/
 	QVector<NamePlace> freePlaces(const Conductor *own, const QVector<NamePlace> &runs,
-					      const QSet<Conductor *> &same)
+					      const QSet<Conductor *> &same, bool shared_ones = false,
+					      bool *any_shared = nullptr)
 	{
+		if (any_shared) {
+			*any_shared = false;
+		}
 		const QGraphicsScene *on = own->scene();
 		if (!on) {
 			return {};
@@ -392,11 +476,15 @@ namespace
 						}
 					}
 				}
-				if (shared) {
+					//Every cut is wanted of a shared run
+				if (shared && !shared_ones) {
 					break;
 				}
 			}
-			if (shared) {
+			if (shared && any_shared) {
+				*any_shared = true;
+			}
+			if (shared != shared_ones) {
 				changed = true;
 				continue;
 			}
@@ -419,7 +507,7 @@ namespace
 				from = std::max(from, cut);
 			}
 		}
-		if (!changed) {
+		if (!changed && !shared_ones) {
 			return {};
 		}
 		std::stable_sort(free.begin(), free.end(),
@@ -1536,6 +1624,32 @@ void Conductor::handlerMousePressEvent(QetGraphicsHandlerItem *qghi, QGraphicsSc
 		m_drag_middle = segmentsList().at(m_drag_segment)->middle();
 		before_mov_text_pos_ = m_text_item -> pos();
 
+			//The conductors of the potential that run along this segment go
+			//with it (T67, tenth adjustment): dragging the line a point
+			//shares drags it for all of its conductors
+		m_drag_partners.clear();
+		const ConductorSegment *grabbed = segmentsList().at(m_drag_segment);
+		const QPointF a = mapToScene(grabbed->firstPoint());
+		const QPointF b = mapToScene(grabbed->secondPoint());
+		const QSet<Conductor *> same = relatedPotentialConductors(false);
+		for (Conductor *other : same)
+		{
+			if (other == this || other->scene() != scene()) {
+				continue;
+			}
+			const QList<ConductorSegment *> theirs = other->segmentsList();
+			for (int i = 0 ; i < theirs.size() ; ++i)
+			{
+				if (alongOneLine(a, b, other->mapToScene(theirs.at(i)->firstPoint()),
+						 other->mapToScene(theirs.at(i)->secondPoint())))
+				{
+					m_drag_partners << DragPartner{other, other->segmentsToPoints(), i};
+					other->before_mov_text_pos_ = other->m_text_item->pos();
+					break;
+				}
+			}
+		}
+
 		for(QetGraphicsHandlerItem *handler : m_handler_vector)
 			if(handler != qghi)
 				handler->hide();
@@ -1565,6 +1679,24 @@ void Conductor::handlerMouseMoveEvent(QetGraphicsHandlerItem *qghi, QGraphicsSce
 		modified_path = true;
 		has_to_save_profile = true;
 		segmentsToPath();
+
+			//The same movement for the conductors that share the line
+			//(T67, tenth adjustment), each in its own coordinates
+		const QPointF from = mapToScene(m_drag_middle);
+		const QPointF to = mapToScene(pos_);
+		for (const DragPartner &partner : std::as_const(m_drag_partners))
+		{
+			Conductor *c = partner.conductor;
+			if (!c) {
+				continue;
+			}
+			c->pointsToSegments(WirePath::dragged(partner.points, partner.segment,
+							      c->mapFromScene(to) - c->mapFromScene(from)));
+			c->modified_path = true;
+			c->has_to_save_profile = true;
+			c->segmentsToPath();
+			c->calculateTextItemPosition();
+		}
 		calculateTextItemPosition();
 		qghi->setPos(mapToScene(middle));
 	}
@@ -1586,9 +1718,29 @@ void Conductor::handlerMouseReleaseEvent(QetGraphicsHandlerItem *qghi, QGraphics
 	m_drag_points.clear();
 	if (has_to_save_profile)
 	{
+			//With the conductors that share the line, one undo step for
+			//all of them (T67, tenth adjustment)
+		QList<Conductor *> partners;
+		for (const DragPartner &partner : std::as_const(m_drag_partners)) {
+			if (partner.conductor && partner.conductor->has_to_save_profile) partners << partner.conductor;
+		}
+		Diagram *dia = diagram();
+		const bool together = !partners.isEmpty() && dia;
+		if (together) {
+			dia->undoStack().beginMacro(tr("move the line a point shares", "undo caption"));
+		}
 		saveProfile();
 		has_to_save_profile = false;
+		for (Conductor *c : std::as_const(partners))
+		{
+			c->saveProfile();
+			c->has_to_save_profile = false;
+		}
+		if (together) {
+			dia->undoStack().endMacro();
+		}
 	}
+	m_drag_partners.clear();
 		//When handler is released, the conductor can have more segment than before the handler was moved
 		//then we remove all handles and new ones are added
 	removeHandler();
@@ -2199,9 +2351,12 @@ QPointF Conductor::posForText(Qt::Orientations &flag, qreal *run_length)
 */
 void Conductor::updateTextVisibility()
 {
+		//Not when another conductor of its point shows the name for it
+		//(T67, tenth adjustment)
 	ShownKinds::setVisible(m_text_item,
 						   m_properties.type == ConductorProperties::Multi
-						   && m_properties.m_show_text);
+						   && m_properties.m_show_text
+						   && !m_name_in_point);
 }
 
 /**
@@ -2245,6 +2400,12 @@ void Conductor::calculateTextItemPosition()
 		//position
 	if (m_text_item -> wasMovedByUser())
 	{
+			//The user's own place: never one name for the point
+		if (m_name_in_point)
+		{
+			m_name_in_point = false;
+			updateTextVisibility();
+		}
 			//Placed by the user: still drawn at the size that fits the
 			//run the application centres it on, so that a drag never
 			//makes it jump to another size the next time the conductor
@@ -2278,7 +2439,9 @@ void Conductor::calculateTextItemPosition()
 		for (const TextRun &run : runs) {
 			places << NamePlace{run.middle, run.along, run.length};
 		}
-		const QVector<NamePlace> free = freePlaces(this, places, relatedPotentialConductors(false));
+		bool any_shared = false;
+		const QVector<NamePlace> free = freePlaces(this, places, relatedPotentialConductors(false),
+							   false, &any_shared);
 			//The other side of a run, when the side the name is written on
 			//touches something (T67, seventh adjustment): a wire that goes
 			//round a component above it has its name under the run, on the
@@ -2329,6 +2492,51 @@ void Conductor::calculateTextItemPosition()
 		if (!placed) {
 			placed = otherSideOfOne(fitting);
 		}
+			//None of its own pieces holds the name, and the conductor shares
+			//a line with others of its potential: the point shows its name
+			//once, on that line, by one of them - of those no piece of their
+			//own holds it for, the one with the longest piece of the line,
+			//then the first by uuid -, and the others hide theirs; each one
+			//an arm holds it for shows it there (T67, tenth adjustment). Not
+			//when the line does not hold it either: then each its own,
+			//smaller, as before
+		const bool one_per_folio = diagram()->defaultConductorProperties.m_one_text_per_folio;
+		QList<Conductor *> group;
+		if (!one_per_folio && (any_shared || !m_point_group.isEmpty())) {
+			group = pointGroup();
+		}
+		bool in_point = false;
+		if (!placed && fitting.isEmpty() && group.size() > 1)
+		{
+			Conductor *shower = this;
+			qreal shower_piece = longestSharedPiece();
+			for (Conductor *c : std::as_const(group))
+			{
+				if (c == this || !c->m_text_item || c->m_text_item->wasMovedByUser()
+				    || c->nameHoldsOnOwnPiece()) {
+					continue;
+				}
+				const qreal piece = c->longestSharedPiece();
+				if (piece > shower_piece + 0.01
+				    || (std::abs(piece - shower_piece) <= 0.01
+					&& c->uuid().toString() < shower->uuid().toString()))
+				{
+					shower = c;
+					shower_piece = piece;
+				}
+			}
+			if (shower == this) {
+				placed = placeNameOnSharedLine();
+			} else if (shower->sharedLineHoldsName()) {
+				in_point = true;
+				placed = true;
+			}
+		}
+		if (!one_per_folio && in_point != m_name_in_point)
+		{
+			m_name_in_point = in_point;
+			updateTextVisibility();
+		}
 			//None of its own pieces takes the name: the longest of them,
 			//the name drawn smaller - and not the line it shares
 		if (!placed && !free.isEmpty())
@@ -2355,7 +2563,239 @@ void Conductor::calculateTextItemPosition()
 		if (!placed && !runs.isEmpty()) {
 			placeTextOn(runs.first());
 		}
+
+			//The others of the point, those of before and those of now,
+			//placed again with this one: which of them shows the name
+			//depends on all of them. Then this one again, the others in
+			//their places
+		QList<QPointer<Conductor>> again = m_point_group;
+		m_point_group.clear();
+		for (Conductor *c : std::as_const(group)) {
+			if (c != this) m_point_group << c;
+		}
+		static bool regrouping = false;
+		if (!regrouping && (!again.isEmpty() || !m_point_group.isEmpty()))
+		{
+			regrouping = true;
+			for (const QPointer<Conductor> &c : std::as_const(m_point_group)) {
+				if (!again.contains(c)) again << c;
+			}
+			for (const QPointer<Conductor> &c : std::as_const(again)) {
+				if (c && c != this) c->calculateTextItemPosition();
+			}
+			calculateTextItemPosition();
+			regrouping = false;
+		}
 	}
+}
+
+/**
+	@brief Conductor::pointPartners
+	@return the conductors of the potential of this one, on its folio, that
+	run along a line of it for some length - the conductors of its point
+	that share a trunk with it (T67, tenth adjustment)
+*/
+QList<Conductor *> Conductor::pointPartners()
+{
+	QList<Conductor *> partners;
+	if (!scene()) {
+		return partners;
+	}
+	const QList<ConductorSegment *> mine = segmentsList();
+	const QSet<Conductor *> same = relatedPotentialConductors(false);
+	for (Conductor *other : same)
+	{
+		if (other == this || !other->scene() || other->scene() != scene()) {
+			continue;
+		}
+		const QList<ConductorSegment *> theirs = other->segmentsList();
+		bool shares = false;
+		for (const ConductorSegment *a : mine)
+		{
+			for (const ConductorSegment *b : theirs)
+			{
+				if (alongOneLine(mapToScene(a->firstPoint()), mapToScene(a->secondPoint()),
+						 other->mapToScene(b->firstPoint()), other->mapToScene(b->secondPoint()))) {
+					shares = true;
+					break;
+				}
+			}
+			if (shares) {
+				break;
+			}
+		}
+		if (shares) {
+			partners << other;
+		}
+	}
+	return partners;
+}
+
+/**
+	@brief Conductor::pointGroup
+	@return this conductor and those that share a line with it, or with
+	one that does, and so on: the conductors whose names are one name when
+	no arm holds it (T67, tenth adjustment)
+*/
+QList<Conductor *> Conductor::pointGroup()
+{
+	QList<Conductor *> group{this};
+	for (int i = 0 ; i < group.size() ; ++i)
+	{
+		const QList<Conductor *> partners = group.at(i)->pointPartners();
+		for (Conductor *c : partners) {
+			if (!group.contains(c)) group << c;
+		}
+	}
+	return group;
+}
+
+/**
+	@brief Conductor::nameHoldsOnOwnPiece
+	@return whether a piece of this conductor of its own - one no conductor
+	of its potential runs along - holds its name, at a size it may be drawn
+	at. Asked of the others of a point, and so the text is left as it was
+	(T67, tenth adjustment).
+*/
+bool Conductor::nameHoldsOnOwnPiece()
+{
+	if (!m_text_item || !diagram()) {
+		return true;
+	}
+	QVector<NamePlace> places;
+	const QVector<TextRun> runs = textRuns();
+	for (const TextRun &run : runs) {
+		places << NamePlace{run.middle, run.along, run.length};
+	}
+	bool any_shared = false;
+	QVector<NamePlace> own = freePlaces(this, places, relatedPotentialConductors(false),
+					    false, &any_shared);
+	if (own.isEmpty() && !any_shared) {
+		own = places;
+	}
+	if (own.isEmpty()) {
+		return false;
+	}
+	const QFont font = m_text_item->font();
+	const qreal rotation = m_text_item->rotation();
+	const QPointF pos = m_text_item->pos();
+	const bool holds = placeTextOn(TextRun{own.first().middle, own.first().along, own.first().length});
+	m_text_item->setFont(font);
+	m_text_item->setRotation(rotation);
+	m_text_item->setPos(pos);
+	return holds;
+}
+
+/**
+	@brief Conductor::longestSharedPiece
+	@return the length of the longest piece of the line this conductor
+	shares with others of its potential that no conductor of another
+	potential crosses; 0 when it shares none (T67, tenth adjustment)
+*/
+qreal Conductor::longestSharedPiece()
+{
+	if (!diagram()) {
+		return 0;
+	}
+	QVector<NamePlace> places;
+	const QVector<TextRun> runs = textRuns();
+	for (const TextRun &run : runs) {
+		places << NamePlace{run.middle, run.along, run.length};
+	}
+	const QVector<NamePlace> shared = freePlaces(this, places, relatedPotentialConductors(false), true);
+	return shared.isEmpty() ? 0 : shared.first().length;
+}
+
+/**
+	@brief Conductor::sharedLineHoldsName
+	@return whether the line this conductor shares with others of its
+	potential holds its name, on its longest piece no conductor of another
+	potential crosses. The text is left as it was (T67, tenth adjustment).
+*/
+bool Conductor::sharedLineHoldsName()
+{
+	if (!m_text_item || !diagram()) {
+		return false;
+	}
+	QVector<NamePlace> places;
+	const QVector<TextRun> runs = textRuns();
+	for (const TextRun &run : runs) {
+		places << NamePlace{run.middle, run.along, run.length};
+	}
+	const QVector<NamePlace> shared = freePlaces(this, places, relatedPotentialConductors(false), true);
+	if (shared.isEmpty()) {
+		return false;
+	}
+	const QFont font = m_text_item->font();
+	const qreal rotation = m_text_item->rotation();
+	const QPointF pos = m_text_item->pos();
+	bool holds = false;
+	for (const NamePlace &place : shared)
+	{
+		if (placeTextOn(TextRun{place.middle, place.along, place.length}))
+		{
+			holds = true;
+			break;
+		}
+	}
+	m_text_item->setFont(font);
+	m_text_item->setRotation(rotation);
+	m_text_item->setPos(pos);
+	return holds;
+}
+
+/**
+	@brief Conductor::placeNameOnSharedLine
+	Put the name of this conductor on the line it shares with others of its
+	potential, for all of them: on a piece no conductor of another potential
+	crosses, the one most of which the whole point runs along first - the
+	line from the common terminal, and not a trunk only the farther arms go
+	down -, then the longest; the first that holds the name and touches
+	nothing, else the first that holds it (T67, tenth adjustment).
+	@return false when no piece of that line holds it
+*/
+bool Conductor::placeNameOnSharedLine()
+{
+	QVector<NamePlace> places;
+	const QVector<TextRun> runs = textRuns();
+	for (const TextRun &run : runs) {
+		places << NamePlace{run.middle, run.along, run.length};
+	}
+	QVector<NamePlace> shared = freePlaces(this, places, relatedPotentialConductors(false), true);
+	if (shared.isEmpty()) {
+		return false;
+	}
+	const QList<Conductor *> group = pointGroup();
+		//In tenths, so that the order is a strict one
+	QVector<int> by_all;
+	for (int i = 0 ; i < shared.size() ; ++i) {
+		by_all << qRound(sharedByAll(this, shared.at(i), group) * 10);
+	}
+	QVector<int> order;
+	for (int i = 0 ; i < shared.size() ; ++i) order << i;
+	std::stable_sort(order.begin(), order.end(), [&by_all](int a, int b) {
+		return by_all.at(a) > by_all.at(b);
+	});
+	int holding = -1;
+	for (int i : std::as_const(order))
+	{
+		const NamePlace &place = shared.at(i);
+		if (!placeTextOn(TextRun{place.middle, place.along, place.length})) {
+			continue;
+		}
+		if (holding < 0) {
+			holding = i;
+		}
+		if (!nameTouches(this, m_text_item, diagram())) {
+			return true;
+		}
+	}
+	if (holding < 0) {
+		return false;
+	}
+	const NamePlace &place = shared.at(holding);
+	placeTextOn(TextRun{place.middle, place.along, place.length});
+	return true;
 }
 
 
@@ -2569,7 +3009,11 @@ void Conductor::setProfile(const ConductorProfile &cp, Qt::Corner path_type) {
 			updateConductorPath(terminal1 -> dockConductor(), terminal1 -> orientation(), terminal2 -> dockConductor(), terminal2 -> orientation());
 			modified_path = true;
 		}
-		if (type() == ConductorProperties::Multi) {
+			//The kind of conductor, and not type(), the kind of graphics
+			//item, which was never Multi: the name was never placed again
+			//when an undo put a path back - and a point whose names are one
+			//name kept the names of the path undone (T67, tenth adjustment)
+		if (m_properties.type == ConductorProperties::Multi) {
 			calculateTextItemPosition();
 		}
 	}

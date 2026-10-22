@@ -21,6 +21,7 @@
 #include "../conductorproperties.h"
 
 #include <QGraphicsPathItem>
+#include <QPointer>
 #include <QSet>
 #include <QUuid>
 
@@ -135,6 +136,12 @@ class Conductor : public QGraphicsObject
 		};
 		QVector<TextRun> textRuns();
 		bool placeTextOn(const TextRun &run);
+		QList<Conductor *> pointPartners();
+		QList<Conductor *> pointGroup();
+		bool nameHoldsOnOwnPiece();
+		qreal longestSharedPiece();
+		bool sharedLineHoldsName();
+		bool placeNameOnSharedLine();
 
 	public:
 		static bool valideXml (QDomElement &);
@@ -292,6 +299,23 @@ class Conductor : public QGraphicsObject
 		int m_drag_segment = -1;
 		QPointF m_drag_middle;
 		QPointF before_mov_text_pos_;
+			/// The conductors of the potential that run along the dragged
+			/// segment, dragged with it (T67, tenth adjustment): each with
+			/// its path when the drag started and its segment in line
+		struct DragPartner
+		{
+			QPointer<Conductor> conductor;
+			QList<QPointF> points;
+			int segment = -1;
+		};
+		QList<DragPartner> m_drag_partners;
+			/// The name of this conductor is shown once for its point, on
+			/// the line the point shares, by another conductor of it - none
+			/// of its own pieces holds it (T67, tenth adjustment)
+		bool m_name_in_point = false;
+			/// The conductors this one shared a line with the last time its
+			/// name was placed: their names are placed again with it
+		QList<QPointer<Conductor>> m_point_group;
 			/// Whether the conductor was manually modified by users
 		bool modified_path;
 			/// Whether the current profile should be saved as soon as possible
