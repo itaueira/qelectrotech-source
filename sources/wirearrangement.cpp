@@ -31,6 +31,7 @@
 #include "wirelanes.h"
 
 #include <QHash>
+#include <QLineF>
 #include <QMap>
 #include <QPair>
 #include <QSet>
@@ -526,8 +527,12 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		const bool given = conductors.contains(c);
 		switch (scope)
 		{
-			case Scope::NewConductors: if (given || !placedByHand(c)) movable << c; break;
-			case Scope::Selection:     if (given) movable << c; break;
+				//A selection is arranged with its groups, as a new conductor
+				//is (T67, eighth adjustment): with the others in the way,
+				//a selected conductor went into what room they left, close
+				//against them
+			case Scope::NewConductors:
+			case Scope::Selection:     if (given || !placedByHand(c)) movable << c; break;
 			case Scope::Folio:
 			case Scope::Moved:         if (!placedByHand(c)) movable << c; break;
 		}
@@ -571,7 +576,8 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		return transposed ? horizontal.unit : vertical.unit;
 	};
 	Scene scene;
-	const bool only_their_groups = scope == Scope::NewConductors || scope == Scope::Moved;
+	const bool only_their_groups = scope == Scope::NewConductors || scope == Scope::Selection
+			|| scope == Scope::Moved;
 
 		//The points of several conductors (fifth adjustment): the conductors
 		//of the shape that leave one terminal, all to one side and the same
@@ -906,6 +912,24 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 		//clear - and stops before what is in it, the name then drawn
 		//smaller. A point with no clear way is arranged a conductor at a
 		//time, as before.
+		//The common lines placed, on the folio: the arm of another point may
+		//cross them too (eighth adjustment) - else, of two points whose arms
+		//take turns on one strip, the one farther from it found no way when
+		//it was the smaller, and went a conductor at a time
+	QList<QLineF> common_lines;
+	const auto onCommonLine = [&common_lines](bool transposed, const WireLanes::Line &l) {
+		for (const QLineF &line : std::as_const(common_lines))
+		{
+			const QPointF a = transposed ? swapped(line.p1()) : line.p1();
+			const QPointF b = transposed ? swapped(line.p2()) : line.p2();
+			if (std::abs(a.x() - b.x()) < 0.01 && std::abs(l.at - a.x()) < 0.01
+			    && std::min(l.a, l.b) > std::min(a.y(), b.y()) - 0.01
+			    && std::max(l.a, l.b) < std::max(a.y(), b.y()) + 0.01) {
+				return true;
+			}
+		}
+		return false;
+	};
 	for (QList<Described> &point : points)
 	{
 		const Described &first = point.first();
@@ -943,8 +967,16 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			return WireLanes::isClear(lane, from, far_y, c);
 		};
 		const auto armsClear = [&](double lane) {
-			for (const Described &d : std::as_const(point)) {
-				if (!WireLanes::isClear(d.shape.end.y(), lane, d.shape.stub.x(), across)) return false;
+			for (const Described &d : std::as_const(point))
+			{
+				const double y = d.shape.end.y();
+				WireLanes::Clearance c = across;
+				c.crossing.erase(std::remove_if(c.crossing.begin(), c.crossing.end(),
+								[&](const WireLanes::Line &l) {
+					return std::min(l.a, l.b) < y - c.line && std::max(l.a, l.b) > y + c.line
+						&& onCommonLine(tr, l);
+				}), c.crossing.end());
+				if (!WireLanes::isClear(y, lane, d.shape.stub.x(), c)) return false;
 			}
 			return true;
 		};
@@ -1027,6 +1059,23 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 				}
 			}
 		}
+		const QLineF common(QPointF(lane_at, run_at), QPointF(lane_at, far_y));
+		common_lines << (tr ? QLineF(swapped(common.p1()), swapped(common.p2())) : common);
+
+			//The room of its arms is a frame to the bridges of the other
+			//points (eighth adjustment): a bridge in it crosses arms and
+			//runs along them, where their names go; past the common line it
+			//crosses none. The bridges take the room outside it when there
+			//is enough of it, as they do the room outside a drawn frame
+		double arms_low = lane_at;
+		double arms_high = lane_at;
+		for (const Described &d : std::as_const(point))
+		{
+			arms_low = std::min(arms_low, d.shape.stub.x());
+			arms_high = std::max(arms_high, d.shape.stub.x());
+		}
+		(tr ? horizontal : vertical).frames
+				<< WireLanes::Frame{arms_low, arms_high, std::min(near_y, far_y), std::max(near_y, far_y)};
 	}
 
 		//The shapes, the narrowest room first: with one bend when the

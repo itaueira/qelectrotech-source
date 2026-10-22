@@ -485,15 +485,20 @@ TEST_CASE("CU-67.9 — Arrange the selected conductors, even one dragged by hand
 	for (int i = 0 ; i < 6 ; ++i) drawn << bench.draw(i);
 	for (int i = 1 ; i < 6 ; ++i) REQUIRE(bridge(drawn.at(i)) == Approx(225));
 	REQUIRE(drawn.at(3)->moveSegment(2, 5, 0));
+	REQUIRE(drawn.at(5)->moveSegment(2, -5, 0));
 
-		//The four from 1 selected; the last one stays at 225, in the way
-	const QList<Conductor *> selected = drawn.mid(1, 4);
+		//Three from 1 selected, the one dragged by hand among them. The
+		//fourth, in their group, is arranged with them (eighth adjustment);
+		//the last one, dragged by hand and not selected, stays where it was
+		//dragged, in the way
+	const QList<Conductor *> selected = drawn.mid(1, 3);
 	CHECK(WireArrangement::arrange(bench.sheet, selected, WireArrangement::Scope::Selection) == 4);
-	CHECK(bridge(drawn.at(5)) == Approx(225));
+	CHECK(bridge(drawn.at(5)) == Approx(220));
 	CHECK(bridge(drawn.at(3)) != Approx(230));
+	CHECK(bridge(drawn.at(4)) != Approx(225));
 	for (int i = 1 ; i < 5 ; ++i)
 	{
-		CHECK(std::abs(bridge(drawn.at(i)) - 225) >= 4);
+		CHECK(std::abs(bridge(drawn.at(i)) - 220) >= 4);
 		for (int j = i + 1 ; j < 5 ; ++j) {
 			CHECK(std::abs(bridge(drawn.at(i)) - bridge(drawn.at(j))) >= 4);
 		}
@@ -504,6 +509,7 @@ TEST_CASE("CU-67.9 — Arrange the selected conductors, even one dragged by hand
 	CHECK(bridge(drawn.at(2)) == Approx(225));
 	CHECK(bridge(drawn.at(3)) == Approx(230));
 	CHECK(bridge(drawn.at(4)) == Approx(225));
+	CHECK(bridge(drawn.at(5)) == Approx(220));
 }
 
 TEST_CASE("CU-67.10 — Arrange the conductors of the folio, but not those dragged by hand", "[T67][wirearrangement]")
@@ -1942,4 +1948,132 @@ TEST_CASE("CU-67.27 — The wire goes round its own component", "[T67][wirearran
 	     << ", component " << drawn.left() << ".." << drawn.right() << " x " << drawn.top() << ".." << drawn.bottom()
 	     << ", size " << wire->textItem()->font().pointSize());
 	CHECK_FALSE(letters.intersects(drawn));
+}
+
+TEST_CASE("CU-67.28 — Two points side by side", "[T67][wirearrangement]")
+{
+	/*
+		The folio of the request: two common terminals side by side over
+		one strip, their arms taking turns on its terminals - the arms of
+		the one farther from the strip cross the common line of the nearer.
+		As drawn: C at (735, 321) and D at (712, 321), both pointing down;
+		the strip on the right, its terminals at x 775 pointing left, every
+		23 from y 352. The larger point is arranged first: once the nearer,
+		once the farther.
+	*/
+	const bool nearer_larger = GENERATE(true, false);
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(nearer_larger, way);
+	Setup setup(1, false);
+	const Point layout(0, 0, false, way);
+	const int arms = 7;
+	QList<Instance> instances{layout.component(QPointF(735, 321), QPointF(0, 1), "C"),
+				  layout.component(QPointF(712, 321), QPointF(0, 1), "D")};
+	for (int i = 0 ; i < arms ; ++i) {
+		instances << layout.component(QPointF(775, 352 + 23 * i), QPointF(-1, 0), Point::arm_labels[i]);
+	}
+	UiBench::ScratchProject project(fixtureXml(instances, QString()));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+		//Four arms for the larger point, on the even terminals; three for
+		//the other, on the odd ones
+	const char *larger = nearer_larger ? "C" : "D";
+	const char *smaller = nearer_larger ? "D" : "C";
+	struct Arm
+	{
+		Conductor *wire;
+		const char *common;
+		double x;
+		double y;
+	};
+	QList<Arm> wires;
+	for (int i = 0 ; i < arms ; ++i)
+	{
+		const bool of_larger = i % 2 == 0;
+		const char *common = of_larger ? larger : smaller;
+		Conductor *c = draw(sheet, tagged(sheet, common)->terminals().at(0),
+				    tagged(sheet, Point::arm_labels[i])->terminals().at(0));
+		REQUIRE(c != nullptr);
+		wires << Arm{c, common, of_larger == nearer_larger ? 735.0 : 712.0, 352.0 + 23 * i};
+	}
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+
+		//Each wire straight on from its common terminal, on the one line of
+		//its point, to the height of its own terminal of the strip
+	for (const Arm &arm : std::as_const(wires))
+	{
+		const QPointF from = tagged(sheet, arm.common)->terminals().at(0)->dockConductor();
+		QList<QPointF> p = points(arm.wire);
+		if ((p.first() - from).manhattanLength() > 0.5) std::reverse(p.begin(), p.end());
+		for (QPointF &q : p) q = layout.drawn(q);
+		CAPTURE(arm.common, arm.y, text(p));
+		REQUIRE(p.size() >= 3);
+		CHECK(p.at(0) == QPointF(arm.x, 321));
+		CHECK(p.at(1) == QPointF(arm.x, arm.y));
+		CHECK(p.last() == QPointF(775, arm.y));
+	}
+}
+
+TEST_CASE("CU-67.29 — Bridges of other points past the common line", "[T67][wirearrangement]")
+{
+	/*
+		The folio of the request: the wires of other points come from a
+		column on the left, near the common line, to the terminals of the
+		strip between the arms - each bridge across the height of one arm,
+		and far enough from the next one to be alone in its room. Between
+		the common line and the strip there is more room than on its left,
+		but a bridge there crosses an arm. As drawn: the point of CU-67.21,
+		5 arms every 46 from 352; the others from x 695, 30 above the
+		terminal of the strip they go to. From x 721 the room left of the
+		common line is too narrow for a bridge, and it stays between the
+		common line and the strip, as before. (The automatic path gives the
+		terminal on the left of the folio a longer stub than the one on the
+		right: mirrored, the room on the left is 10 wider, and both rooms
+		are chosen to hold that.)
+	*/
+	const int left_x = GENERATE(695, 721);
+	const Way way = GENERATE(from_range(eightWays()));
+	CAPTURE(left_x, way);
+	Setup setup(1, false);
+	const Point layout(0, 0, false, way);
+	QList<Instance> more;
+	for (int k = 0 ; k < 4 ; ++k)
+	{
+		more << layout.component(QPointF(left_x, 345 + 46 * k), QPointF(1, 0), Point::left_labels[k])
+		     << layout.component(QPointF(775, 375 + 46 * k), QPointF(-1, 0), Point::other_labels[k]);
+	}
+	Point bench(5, 46, false, way, 735, {}, 635, more);
+	REQUIRE(bench.open());
+	REQUIRE(bench.drawAll(false));
+	for (int k = 0 ; k < 4 ; ++k)
+	{
+		Conductor *c = draw(bench.sheet, bench.terminal(Point::left_labels[k]),
+				    bench.terminal(Point::other_labels[k]));
+		REQUIRE(c != nullptr);
+		bench.rest << c;
+	}
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+
+	CHECK(bench.trunk() == Approx(735));
+	for (int k = 0 ; k < 4 ; ++k)
+	{
+		const QList<QPointF> p = bench.path(bench.rest.at(k), bench.terminal(Point::left_labels[k]));
+		CAPTURE(k, text(p));
+		double bridge = std::nan("");
+		for (int i = 0 ; i + 1 < p.size() ; ++i)
+		{
+			if (std::abs(p.at(i).x() - p.at(i + 1).x()) < 0.01 && std::abs(p.at(i).y() - p.at(i + 1).y()) > 0.01) {
+				bridge = p.at(i).x();
+			}
+		}
+		REQUIRE_FALSE(std::isnan(bridge));
+		if (left_x == 695) {
+				//Past the common line, where it crosses no arm
+			CHECK(bridge < 735);
+		} else {
+			CHECK((bridge > 735 && bridge < 775));
+		}
+		CHECK(p.first() == QPointF(left_x, 345 + 46 * k));
+		CHECK(p.last() == QPointF(775, 375 + 46 * k));
+	}
 }

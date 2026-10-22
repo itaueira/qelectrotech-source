@@ -52,7 +52,8 @@ namespace WireArrangement
 			/// the conductors given, just drawn, and those placed by the
 			/// application that share a group with one of them
 		NewConductors,
-			/// the conductors given, whoever placed them
+			/// the conductors given, whoever placed them, and the others
+			/// of their groups, all but those placed by hand
 		Selection,
 			/// every conductor of the folio the user did not place by hand
 		Folio,
