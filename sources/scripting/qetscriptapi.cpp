@@ -5089,7 +5089,10 @@ bool QetScriptApi::setConductorDefault(int folioIndex, const QString &property, 
 	sets), rotation is in degrees, and left/top/right/bottom are the box it
 	occupies on the folio, its drawn extent rather than its origin -- which
 	differs from it by the hotspot and, for a rotated element, is the
-	rotated extent. Empty if the element is not found.
+	rotated extent. drawn_left/drawn_top/drawn_right/drawn_bottom are what
+	the symbol draws, without the blank room its definition declares around
+	it: whether a wire runs over the component is asked of this box (T84).
+	Empty if the element is not found.
 */
 QVariantMap QetScriptApi::elementGeometry(int folioIndex, const QString &elementUuid) const
 {
@@ -5104,6 +5107,11 @@ QVariantMap QetScriptApi::elementGeometry(int folioIndex, const QString &element
 	g.insert(QStringLiteral("top"), box.top());
 	g.insert(QStringLiteral("right"), box.right());
 	g.insert(QStringLiteral("bottom"), box.bottom());
+	const QRectF drawn = element->mapRectToScene(element->drawnRect());
+	g.insert(QStringLiteral("drawn_left"), drawn.left());
+	g.insert(QStringLiteral("drawn_top"), drawn.top());
+	g.insert(QStringLiteral("drawn_right"), drawn.right());
+	g.insert(QStringLiteral("drawn_bottom"), drawn.bottom());
 	return g;
 }
 
