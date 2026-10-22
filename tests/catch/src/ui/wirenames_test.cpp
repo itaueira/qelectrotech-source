@@ -35,6 +35,7 @@
 #include "../../../../sources/undocommand/assemblystatecommand.h"
 #include "../../../../sources/undocommand/changeelementinformationcommand.h"
 #include "../../../../sources/ui/conductorpropertieseditorwidget.h"
+#include "../../../../sources/utils/conductorcreator.h"
 #include "../../../../sources/wirecolorname.h"
 #include "../../../../sources/wirenames.h"
 #include "../../../../sources/wireremoval.h"
@@ -1822,6 +1823,69 @@ TEST_CASE("CU-81.1 — A new wire of a component out of the list takes no number
 	REQUIRE(next != nullptr);
 	CHECK_FALSE(ConductorAutoNumerotation::isIgnored(next));
 	CHECK(textOf(next) == wireName(1, 1, "1,5"));
+}
+
+TEST_CASE("CU-81.1 — Joining a numbered point, it takes no number", "[T81][wirenames]")
+{
+	/*
+		The request: a wire drawn from a component kept out of the list to
+		a terminal whose point is numbered took the name of the point, and
+		lost it only when the folio was renumbered. Drawn by hand, and with
+		the line tool, which names the wires it makes the same way.
+	*/
+	const bool by_line = GENERATE(false, true);
+	CAPTURE(by_line);
+	Bench bench(twoFolios());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+	showFolio(one);
+		//A numbered point: the wire from part 2 to part 3
+	Conductor *numbered = drawBetween(bench, 2, 3);
+	REQUIRE(numbered != nullptr);
+	const QString name = textOf(numbered);
+	REQUIRE_FALSE(name.isEmpty());
+		//Part 4 out of the list, wired to the same terminal of part 3
+	keepOutOfList(bench.stack(), bench.part(4), true);
+	Terminal *from = bench.side(4, Qet::East);
+	Terminal *to = bench.side(3, Qet::West);
+	REQUIRE((from && to));
+	Conductor *joined = nullptr;
+	if (by_line)
+	{
+		const QList<Conductor *> before = one->conductors();
+		ConductorCreator creator(one, {from, to}, false);
+		for (Conductor *c : one->conductors()) {
+			if (!before.contains(c)) joined = c;
+		}
+	}
+	else
+	{
+			//Let go on the body of the terminal, as a hand does: on its
+			//very end, the wire already there is the item on top, and the
+			//drag ends on no terminal
+		const QList<Conductor *> before = one->conductors();
+		QGraphicsSceneMouseEvent press(QEvent::GraphicsSceneMousePress);
+		press.setScenePos(from->dockConductor());
+		press.setButton(Qt::LeftButton);
+		press.setButtons(Qt::LeftButton);
+		one->sendEvent(from, &press);
+		QGraphicsSceneMouseEvent release(QEvent::GraphicsSceneMouseRelease);
+		release.setScenePos(to->sceneBoundingRect().center());
+		release.setButton(Qt::LeftButton);
+		one->sendEvent(from, &release);
+		for (Conductor *c : one->conductors()) {
+			if (!before.contains(c)) joined = c;
+		}
+	}
+	REQUIRE(joined != nullptr);
+	REQUIRE(joined->relatedPotentialConductors().contains(numbered));
+	CHECK(ConductorAutoNumerotation::isIgnored(joined));
+	CHECK(textOf(joined).isEmpty());
+	CHECK(joined->properties().m_formula.isEmpty());
+		//The point keeps its name
+	CHECK(textOf(numbered) == name);
 }
 
 TEST_CASE("CU-81.2 — Renumbered: off the list, no number; back on it, its number again",

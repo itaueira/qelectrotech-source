@@ -727,11 +727,24 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 	QUndoCommand *aic = new AddGraphicsObjectCommand(new_conductor, diagram(), QPointF(), undo);
 	undo->setText(aic->text());
 
+		//A wire left out of the numbering - one end on a component kept
+		//out of the bill of materials (T81) - takes from the point all but
+		//its name, as the renumbering leaves it: the text and the formula
+	const bool left_out = ConductorAutoNumerotation::isIgnored(new_conductor);
+	const auto ownProperties = [left_out](ConductorProperties properties) {
+		if (left_out) {
+			properties.text.clear();
+			properties.m_formula.clear();
+		}
+		return properties;
+	};
 	if (use_properties)
 	{
 		Conductor *other = conductors_list.values().first();
-		new_conductor->rSequenceNum() = other->sequenceNum();
-		new_conductor->setProperties(others_properties);
+		if (!left_out) {
+			new_conductor->rSequenceNum() = other->sequenceNum();
+		}
+		new_conductor->setProperties(ownProperties(others_properties));
 			//A point across a folio report keeps the one name it has
 			//(T70): %id would read the folio of the new conductor
 		WireNames::keepFolioOfPoint(new_conductor, diagram(), undo);
@@ -756,7 +769,7 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 	if (use_properties)
 	{
 		Conductor *other = conductors_list.values().first();
-		new_conductor->setProperties(other->properties());
+		new_conductor->setProperties(ownProperties(other->properties()));
 	}
 }
 

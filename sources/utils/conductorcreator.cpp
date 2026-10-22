@@ -68,8 +68,21 @@ ConductorCreator::ConductorCreator(Diagram *d, QList<Terminal *> terminals_list,
 			continue;
 		}
 		Conductor *cond = new Conductor(pair.first, pair.second);
-		cond->setProperties(m_properties);
-		cond->setSequenceNum(m_sequential_number);
+			//One left out of the numbering - an end on a component kept
+			//out of the bill of materials (T81) - takes all but the name,
+			//as the renumbering leaves it: the text and the formula
+		if (ConductorAutoNumerotation::isIgnored(cond))
+		{
+			ConductorProperties own = m_properties;
+			own.text.clear();
+			own.m_formula.clear();
+			cond->setProperties(own);
+		}
+		else
+		{
+			cond->setProperties(m_properties);
+			cond->setSequenceNum(m_sequential_number);
+		}
 		d->undoStack().push(new AddGraphicsObjectCommand(cond, d));
 		
 		c_list.append(cond);
