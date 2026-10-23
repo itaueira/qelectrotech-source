@@ -20,6 +20,8 @@
 #include "../diagram.h"
 #include "../qetgraphicsitem/conductortextitem.h"
 
+#include <algorithm>
+
 /**
 	@brief ArrangeConductorsCommand::ArrangeConductorsCommand
 	@param diagram : the folio of the conductors
@@ -43,8 +45,17 @@ ArrangeConductorsCommand::ArrangeConductorsCommand(Diagram *diagram,
 		entry.arranged = change.conductor->isAutoArranged();
 		entry.text_pos = change.conductor->textItem()->pos();
 		entry.points = change.points;
+		entry.branch = change.conductor->arm() != nullptr;
+		entry.arm_point = change.conductor->armPoint();
+		entry.own_shape = change.conductor->ownShape();
 		m_entries << entry;
 	}
+		//The branches after the arms (T86): a branch takes its place on its
+		//arm, which has to be where the arrangement puts it first; and undo,
+		//going backwards, gives a branch back its shape before its arm goes
+		//back, which it then follows
+	std::stable_partition(m_entries.begin(), m_entries.end(),
+			      [](const Entry &entry) { return !entry.branch; });
 }
 
 /**
@@ -57,6 +68,13 @@ void ArrangeConductorsCommand::undo()
 	{
 		const Entry &entry = m_entries.at(i);
 		if (!entry.conductor) continue;
+		if (entry.branch)
+		{
+			entry.conductor->setBranchShape(entry.arm_point, entry.own_shape);
+			entry.conductor->setAutoArranged(entry.arranged);
+			entry.conductor->textItem()->setPos(entry.text_pos);
+			continue;
+		}
 		entry.conductor->setProfiles(entry.profiles);
 		entry.conductor->setAutoArranged(entry.arranged);
 		entry.conductor->textItem()->setPos(entry.text_pos);
@@ -72,7 +90,16 @@ void ArrangeConductorsCommand::redo()
 	if (m_diagram) m_diagram->showMe();
 	for (const Entry &entry : std::as_const(m_entries))
 	{
-		if (entry.conductor) entry.conductor->setArrangedPath(entry.points);
+		if (!entry.conductor) continue;
+		if (entry.branch)
+		{
+			if (!entry.points.isEmpty()) {
+				entry.conductor->setBranchShape(entry.points.first(), {});
+			}
+			entry.conductor->setAutoArranged(true);
+			continue;
+		}
+		entry.conductor->setArrangedPath(entry.points);
 	}
 	placeNames();
 }

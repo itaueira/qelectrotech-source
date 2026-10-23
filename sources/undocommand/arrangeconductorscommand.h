@@ -53,6 +53,12 @@ class ArrangeConductorsCommand : public QUndoCommand
 			bool arranged = false;
 			QPointF text_pos;
 			QList<QPointF> points;
+				/// A branch (T86): its new place on the arm is the one point
+				/// of points, and it leaves its terminal straight; what it had
+				/// is kept for undo
+			bool branch = false;
+			QPointF arm_point;
+			QList<QPointF> own_shape;
 		};
 
 		QPointer<Diagram> m_diagram;

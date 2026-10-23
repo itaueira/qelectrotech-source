@@ -564,7 +564,7 @@ TEST_CASE("T86 - Undoing the shape of a branch straightens it again", "[T86][bra
 	CHECK_FALSE(one->ownShape().isEmpty());
 }
 
-TEST_CASE("T86 - Arranging the folio leaves an arm with branches where it is", "[T86][branch]")
+TEST_CASE("T86 - An arm the arrangement cannot place stays as a wire alone", "[T86][branch]")
 {
 	Setup setup;
 	Bench bench;
@@ -589,9 +589,11 @@ TEST_CASE("T86 - Arranging the folio leaves an arm with branches where it is", "
 	};
 	REQUIRE(planned(arm));
 
-		//With branches, it is the arm the person built, where they put it
-		//(23/10/2026: arranged alone, it went to the middle of the corridor
-		//and its branches crossed every wire on the way to it)
+		//With branches, it is never arranged as a wire alone (23/10/2026:
+		//so arranged, it went to the middle of the corridor and its branches
+		//crossed every wire on the way to it). Between two terminals that
+		//point to the side, it is no arm the arrangement places next to a
+		//column either: it stays where it is
 	Conductor *one = drawTo(bench.sheet, bench.s1, QPointF(151, 160));
 	REQUIRE(one);
 	REQUIRE(one->arm() == arm);
@@ -600,4 +602,165 @@ TEST_CASE("T86 - Arranging the folio leaves an arm with branches where it is", "
 	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
 	CHECK(arm->scenePathPoints() == path);
 	CHECK(sharesThePathOf(one, arm));
+}
+
+namespace
+{
+		/// Two components at the top, their terminal pointing down, at x 480
+		/// and 520; a column of eight terminals of a strip pointing right, at
+		/// x 350, from y 200 to 480 - the corridor of a folio of a panel
+	QString columnFixture()
+	{
+		const QString definitions =
+			definition("south.elmt", QStringLiteral("<terminal x=\"0\" y=\"10\" orientation=\"s\"/>"))
+			+ definition("east.elmt", QStringLiteral("<terminal x=\"10\" y=\"0\" orientation=\"e\"/>"));
+		QString xml;
+		const auto add = [&xml](const char *def, int x, int y, const QString &label, int n) {
+			xml += QStringLiteral(
+				"<element x=\"%1\" y=\"%2\" z=\"10\" prefix=\"\" freezeLabel=\"false\""
+				" orientation=\"0\" type=\"embed://bench/%3\""
+				" uuid=\"{86100000-0000-4000-8000-0000000000%4}\">"
+				"<terminals/><inputs/>"
+				"<elementInformations>"
+				"<elementInformation show=\"1\" name=\"label\">%5</elementInformation>"
+				"</elementInformations>"
+				"<dynamic_texts/><texts_groups/>"
+				"</element>")
+				.arg(x).arg(y).arg(QLatin1String(def)).arg(n, 2, 10, QLatin1Char('0')).arg(label);
+		};
+		add("south.elmt", 480, 100, QStringLiteral("T1"), 0);
+		add("south.elmt", 520, 100, QStringLiteral("T2"), 1);
+		for (int i = 0 ; i < 8 ; ++i) {
+			add("east.elmt", 350, 200 + 40 * i, QStringLiteral("X%1").arg(i + 1), 10 + i);
+		}
+		return QStringLiteral(
+			"<project title=\"bench\" version=\"0.80\">"
+			"<collection><category name=\"bench\">%1</category></collection>"
+			"<diagram title=\"Bench\" order=\"1\" height=\"800\" folio=\"1\""
+			" cols=\"17\" colsize=\"60\" rows=\"10\" rowsize=\"80\""
+			" displaycols=\"true\" displayrows=\"true\">"
+			"<elements>%2</elements><inputs/><conductors/>"
+			"</diagram>"
+			"</project>")
+			.arg(definitions, xml);
+	}
+
+	Terminal *terminalOf(Diagram *sheet, const QString &label)
+	{
+		for (Element *e : sheet->elements()) {
+			if (e->actualLabel() == label) return e->terminals().value(0);
+		}
+		return nullptr;
+	}
+
+		/// The x of the run of @a arm that goes down, the longest one
+	qreal laneOf(const Conductor *arm)
+	{
+		const QList<QPointF> path = arm->scenePathPoints();
+		qreal lane = std::nan("");
+		qreal longest = 0;
+		for (int i = 0 ; i + 1 < path.size() ; ++i)
+		{
+			const qreal length = qAbs(path.at(i + 1).y() - path.at(i).y());
+			if (qAbs(path.at(i + 1).x() - path.at(i).x()) < 0.01 && length > longest)
+			{
+				longest = length;
+				lane = path.at(i).x();
+			}
+		}
+		return lane;
+	}
+}
+
+TEST_CASE("T86 - Arranging puts each arm next to the column of its branches", "[T86][branch]")
+{
+	Setup setup;
+	UiBench::ScratchProject project(columnFixture());
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Terminal *t1 = terminalOf(sheet, QStringLiteral("T1"));
+	Terminal *t2 = terminalOf(sheet, QStringLiteral("T2"));
+	QList<Terminal *> x;
+	for (int i = 1 ; i <= 8 ; ++i) x << terminalOf(sheet, QStringLiteral("X%1").arg(i));
+	REQUIRE(t1);
+	REQUIRE(t2);
+	REQUIRE_FALSE(x.contains(nullptr));
+
+		//Two arms down the middle of the corridor, as drawing them gives,
+		//and their branches off them
+	Conductor *arm1 = drawTo(sheet, t1, x.at(3)->dockConductor());
+	Conductor *arm2 = drawTo(sheet, t2, x.at(7)->dockConductor());
+	REQUIRE(arm1);
+	REQUIRE(arm2);
+	QList<Conductor *> branches1, branches2;
+	for (int i : {0, 1, 2}) {
+		branches1 << drawTo(sheet, x.at(i), QPointF(laneOf(arm1) + 1, x.at(i)->dockConductor().y()));
+	}
+	for (int i : {4, 5, 6}) {
+		branches2 << drawTo(sheet, x.at(i), QPointF(laneOf(arm2) + 1, x.at(i)->dockConductor().y()));
+	}
+	for (Conductor *b : branches1) {
+		REQUIRE(b);
+		REQUIRE(b->arm() == arm1);
+	}
+	for (Conductor *b : branches2) {
+		REQUIRE(b);
+		REQUIRE(b->arm() == arm2);
+	}
+	const qreal column = x.at(0)->dockConductor().x();
+	REQUIRE(laneOf(arm1) > column + 100);
+
+	const int steps = sheet->undoStack().count();
+	WireArrangement::arrange(sheet, {}, WireArrangement::Scope::Folio);
+	CHECK(sheet->undoStack().count() == steps + 1);
+
+		//Each arm next to the column, beyond the room of a name, and a pitch
+		//from the other one
+	const qreal lane1 = laneOf(arm1);
+	const qreal lane2 = laneOf(arm2);
+	CHECK(lane1 > column + 20);
+	CHECK(lane1 < column + 100);
+	CHECK(lane2 > column + 20);
+	CHECK(lane2 < column + 100);
+	CHECK(qAbs(lane1 - lane2) >= 15 - 0.01);
+		//Nowhere one over the other: from terminals at one height, their
+		//runs to their lanes were on one line (23/10/2026)
+	const QList<QPointF> p1 = arm1->scenePathPoints();
+	const QList<QPointF> p2 = arm2->scenePathPoints();
+	for (int i = 0 ; i + 1 < p1.size() ; ++i)
+	{
+		for (int j = 0 ; j + 1 < p2.size() ; ++j)
+		{
+			const QPointF a = p1.at(i), b = p1.at(i + 1), c = p2.at(j), d = p2.at(j + 1);
+			if (qAbs(a.y() - b.y()) < 0.01 && qAbs(c.y() - d.y()) < 0.01 && qAbs(a.y() - c.y()) < 2)
+			{
+				const qreal lo = std::max(std::min(a.x(), b.x()), std::min(c.x(), d.x()));
+				const qreal hi = std::min(std::max(a.x(), b.x()), std::max(c.x(), d.x()));
+				CHECK(hi - lo <= 1);
+			}
+			if (qAbs(a.x() - b.x()) < 0.01 && qAbs(c.x() - d.x()) < 0.01 && qAbs(a.x() - c.x()) < 2)
+			{
+				const qreal lo = std::max(std::min(a.y(), b.y()), std::min(c.y(), d.y()));
+				const qreal hi = std::min(std::max(a.y(), b.y()), std::max(c.y(), d.y()));
+				CHECK(hi - lo <= 1);
+			}
+		}
+	}
+
+		//And every branch straight from its terminal to its arm
+	for (Conductor *b : branches1 + branches2)
+	{
+		const QList<QPointF> own = b->ownPiecePoints();
+		REQUIRE(own.size() >= 2);
+		const qreal lane = b->arm() == arm1 ? lane1 : lane2;
+		CHECK(qAbs(own.first().x() - lane) < 0.01);
+		for (const QPointF &p : own) {
+			CHECK(qAbs(p.y() - own.last().y()) < 0.01);
+		}
+		CHECK(b->ownShape().isEmpty());
+	}
+
+		//One undo puts it all back
+	sheet->undoStack().undo();
+	CHECK(laneOf(arm1) > column + 100);
 }

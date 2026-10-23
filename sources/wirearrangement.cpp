@@ -40,6 +40,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <numeric>
 #include <tuple>
 #include <utility>
 
@@ -380,6 +382,10 @@ namespace
 		/// whose segments are not built yet
 	QList<QPointF> currentPoints(const Conductor *c)
 	{
+			//A branch is drawn along its arm and off it (T86), which no
+			//automatic path between its terminals is: the conductors kept
+			//clear of a phantom and ran over the branch (23/10/2026)
+		if (c->arm()) return c->scenePathPoints();
 		if (!c->hasSavedPath()) return c->automaticPathPoints();
 		QList<QPointF> points;
 		const QList<ConductorSegment *> segments = c->segmentsList();
@@ -519,6 +525,44 @@ namespace
 		return c->hasSavedPath() && !c->isAutoArranged();
 	}
 
+		/// Whether two paths run along each other somewhere, closer than
+		/// @a gap, over more than a point: what reads as one wire
+	bool runAlong(const QList<QPointF> &a, const QList<QPointF> &b, double gap = 2.0)
+	{
+		for (int i = 0 ; i + 1 < a.size() ; ++i)
+		{
+			const QPointF p = a.at(i), q = a.at(i + 1);
+			const bool a_flat = std::abs(p.y() - q.y()) < 0.5;
+			const bool a_upright = std::abs(p.x() - q.x()) < 0.5;
+			if (a_flat == a_upright) continue;
+			for (int j = 0 ; j + 1 < b.size() ; ++j)
+			{
+				const QPointF r = b.at(j), s = b.at(j + 1);
+				if (a_flat && std::abs(r.y() - s.y()) < 0.5 && std::abs(r.y() - p.y()) < gap)
+				{
+					const double lo = std::max(std::min(p.x(), q.x()), std::min(r.x(), s.x()));
+					const double hi = std::min(std::max(p.x(), q.x()), std::max(r.x(), s.x()));
+					if (hi - lo > 1) return true;
+				}
+				else if (a_upright && std::abs(r.x() - s.x()) < 0.5 && std::abs(r.x() - p.x()) < gap)
+				{
+					const double lo = std::max(std::min(p.y(), q.y()), std::min(r.y(), s.y()));
+					const double hi = std::min(std::max(p.y(), q.y()), std::max(r.y(), s.y()));
+					if (hi - lo > 1) return true;
+				}
+			}
+		}
+		return false;
+	}
+
+		/// Whether the piece from @a a to @a b, running along x or along y,
+		/// goes through @a box
+	bool crossesBox(const QPointF &a, const QPointF &b, const QRectF &box)
+	{
+		const QRectF piece = QRectF(a, b).normalized().adjusted(-0.01, -0.01, 0.01, 0.01);
+		return piece.intersects(box);
+	}
+
 		/// The segments of a conductor that stays, in the way of the
 		/// bridges that would run along them or end next to them
 	void addInTheWay(const QList<QPointF> &points, WireLanes::Request &vertical,
@@ -631,6 +675,238 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 	const auto unitIn = [&](bool transposed) {
 		return transposed ? horizontal.unit : vertical.unit;
 	};
+
+		//Each arm with branches is placed first (T86, 23/10/2026): left where
+		//it was, an arm drawn anywhere stayed in the middle of the corridor,
+		//and the person wanted the arrangement to move it too. It goes to the
+		//lane next to the column its branches come from - the terminals of a
+		//strip -, with room for their names; the arms of one column a pitch
+		//apart, in the order that crosses the least; and its branches leave
+		//their terminals straight to it. The other conductors are then
+		//arranged round the arms and the branches, which are in their way
+		//where they are going to be (placed_paths).
+	QHash<const Conductor *, QList<QPointF>> placed_paths;
+	{
+		const QList<Element *> elements_here = diagram->elements();
+		struct ArmPlan
+		{
+			Conductor *arm = nullptr;
+			Described d;
+			QList<Conductor *> branches;
+			QList<QPointF> docks;	///< of its branches, in its frame
+			double column = 0;
+			double offset = 0;
+			double run = 0;
+			double lane = 0;
+		};
+		QMap<QString, QList<ArmPlan>> columns;
+		for (Conductor *c : std::as_const(all))
+		{
+			const QList<Conductor *> branches = c->branches();
+			if (branches.isEmpty() || c->arm()) continue;
+			const bool involved = scope == Scope::Folio || conductors.contains(c)
+					|| std::any_of(branches.cbegin(), branches.cend(),
+						       [&](Conductor *b) { return conductors.contains(b); });
+			if (!involved || (scope != Scope::Folio && placedByHand(c))) continue;
+			ArmPlan plan;
+			if (!describeShapedEitherWay(c, plan.d, elements_here) || plan.d.shape.around) continue;
+			const Shaped &s = plan.d.shape;
+			const bool tr = plan.d.transposed;
+			plan.arm = c;
+			plan.branches = branches;
+			plan.column = s.end.x();
+			const Qt::Orientations along = tr ? Qt::Vertical : Qt::Horizontal;
+			double name = WireArrangement::nameLength(c, along);
+			bool fits = true;
+			for (Conductor *b : branches)
+			{
+				Terminal *shared = Conductor::sharedTerminal(b, c);
+				Terminal *own = b->terminal1 == shared ? b->terminal2 : b->terminal1;
+				if (!own || own->orientation() != s.strip->orientation()) {
+					fits = false;
+					break;
+				}
+				const QPointF p = tr ? swapped(own->dockConductor()) : own->dockConductor();
+				plan.docks << p;
+				plan.column = s.side > 0 ? std::max(plan.column, p.x()) : std::min(plan.column, p.x());
+				name = std::max(name, WireArrangement::nameLength(b, along));
+			}
+			if (!fits) continue;
+			const double unit = unitIn(tr);
+				//Room for the name on the piece of each branch, from its
+				//terminal to the arm, with some to spare at each end
+			plan.offset = std::max(30.0, std::ceil((name + 16) / unit) * unit);
+			plan.run = automaticRun(plan.d);
+			columns[QStringLiteral("%1/%2/%3").arg(qRound(plan.column)).arg(s.side).arg(tr)] << plan;
+		}
+
+		for (QList<ArmPlan> &arms : columns)
+		{
+			const double side = arms.first().d.shape.side;
+			const bool tr = arms.first().d.transposed;
+			const double unit = unitIn(tr);
+			double column = arms.first().column;
+			double offset = 0;
+			for (const ArmPlan &a : std::as_const(arms))
+			{
+				column = side > 0 ? std::max(column, a.column) : std::min(column, a.column);
+				offset = std::max(offset, a.offset);
+			}
+			const auto spanOf = [](const ArmPlan &a, double run) {
+				return qMakePair(std::min(run, a.d.shape.end.y()), std::max(run, a.d.shape.end.y()));
+			};
+				//The runs from their terminals to their lanes, one under the
+				//other in the order of the lanes (23/10/2026): from terminals
+				//at one height, the runs of two arms were on one line, one
+				//drawn over the other. The arm nearest the column the nearest
+				//its terminal, so that no run crosses the lane of an arm
+				//beyond it, and each next one a gap further
+			const auto runsFor = [&arms](const QVector<int> &order) {
+				QVector<double> runs(order.size());
+				for (const double outward : {1.0, -1.0})
+				{
+					double base = std::nan("");
+					for (int place = 0 ; place < order.size() ; ++place)
+					{
+						const ArmPlan &a = arms.at(order.at(place));
+						if (a.d.shape.outward != outward) continue;
+						if (std::isnan(base) || (a.run - base) * outward < 0) base = a.run;
+					}
+					int seen = 0;
+					for (int place = 0 ; place < order.size() ; ++place)
+					{
+						const ArmPlan &a = arms.at(order.at(place));
+						if (a.d.shape.outward != outward) continue;
+						runs[place] = base + outward * around_run_gap * seen++;
+					}
+				}
+				return runs;
+			};
+				//The order of the arms from the column out: the one in which
+				//the fewest branches and runs cross another arm
+			QVector<int> order(arms.size());
+			std::iota(order.begin(), order.end(), 0);
+			QVector<int> best = order;
+			int best_cost = std::numeric_limits<int>::max();
+			const auto laneAt = [&](int place) {
+				return column + side * (offset + place * around_pitch);
+			};
+			do
+			{
+				int cost = 0;
+				const QVector<double> runs = runsFor(order);
+				for (int i = 0 ; i < order.size() ; ++i)
+				{
+					const ArmPlan &near_arm = arms.at(order.at(i));
+					const auto span = spanOf(near_arm, runs.at(i));
+					const double near_lane = laneAt(i);
+					for (int k = i + 1 ; k < order.size() ; ++k)
+					{
+						const ArmPlan &far_arm = arms.at(order.at(k));
+						const double far_lane = laneAt(k);
+						for (const QPointF &dock : far_arm.docks) {
+							if (dock.y() > span.first + 0.5 && dock.y() < span.second - 0.5) ++cost;
+						}
+						const auto far_span = spanOf(far_arm, runs.at(k));
+						const double far_x = far_arm.d.shape.start.x();
+						if ((near_lane - far_lane) * (near_lane - far_x) < 0
+						    && runs.at(k) > span.first && runs.at(k) < span.second) ++cost;
+						const double near_x = near_arm.d.shape.start.x();
+						if ((far_lane - near_lane) * (far_lane - near_x) < 0
+						    && runs.at(i) > far_span.first && runs.at(i) < far_span.second) ++cost;
+							//The terminal of one arm under the run of the
+							//other: its piece from the terminal down crosses it
+						if (std::min(near_x, near_lane) < far_x && far_x < std::max(near_x, near_lane)
+						    && (runs.at(i) - far_arm.d.shape.start.y()) * (runs.at(i) - runs.at(k)) < 0) ++cost;
+						if (std::min(far_x, far_lane) < near_x && near_x < std::max(far_x, far_lane)
+						    && (runs.at(k) - near_arm.d.shape.start.y()) * (runs.at(k) - runs.at(i)) < 0) ++cost;
+					}
+				}
+				if (cost < best_cost)
+				{
+					best_cost = cost;
+					best = order;
+				}
+				if (arms.size() > 6) break;
+			} while (std::next_permutation(order.begin(), order.end()));
+
+			const QVector<double> best_runs = runsFor(best);
+			for (int place = 0 ; place < best.size() ; ++place)
+			{
+				ArmPlan &a = arms[best.at(place)];
+				a.run = best_runs.at(place);
+				const Shaped &s = a.d.shape;
+				const auto frame = [tr](const QPointF &p) { return tr ? swapped(p) : p; };
+				const auto span = spanOf(a, a.run);
+				double lane = std::round(laneAt(place) / unit) * unit;
+					//Off the components it would run through, further out
+				for (int step = 0 ; step < 10 ; ++step)
+				{
+					bool clear = true;
+					for (const Element *e : std::as_const(elements_here))
+					{
+						QRectF body = e->mapRectToScene(e->boundingRect())
+								.adjusted(-symbol_margin, -symbol_margin, symbol_margin, symbol_margin);
+						if (tr) body = QRectF(body.top(), body.left(), body.height(), body.width());
+						if (crossesBox(QPointF(lane, span.first), QPointF(lane, span.second), body)) {
+							clear = false;
+							break;
+						}
+					}
+					if (clear) break;
+					lane += side * unit;
+				}
+				a.lane = lane;
+				Shaped shape = s;
+				shape.run = a.run;
+				const QList<QPointF> path = onFolio(a.d, shapedPath(shape, lane));
+				placed_paths.insert(a.arm, path);
+				if (!samePath(path, currentPoints(a.arm))) {
+					changes << Change{a.arm, path};
+				}
+					//Its branches straight from their terminals to it: a
+					//branch shaped before - by hand or by an arrangement -
+					//is shaped no more
+				for (int b = 0 ; b < a.branches.size() ; ++b)
+				{
+					Conductor *branch = a.branches.at(b);
+					const QPointF dock = a.docks.at(b);
+					const QPointF junction = frame(QPointF(lane, dock.y()));
+					placed_paths.insert(branch, {junction, frame(dock)});
+					if (!branch->ownShape().isEmpty() || !samePath({junction}, {branch->armPoint()})) {
+						changes << Change{branch, {junction}};
+					}
+				}
+			}
+		}
+	}
+
+		//And a conductor placed by hand that runs along another of another
+		//potential is arranged too, on the whole folio (23/10/2026: the
+		//person wants every wire that reads as two drawn over each other
+		//sorted out, placed by hand or not)
+	if (scope == Scope::Folio)
+	{
+		QHash<const Conductor *, QList<QPointF>> paths_now;
+		for (const Conductor *c : std::as_const(all)) {
+			paths_now.insert(c, placed_paths.value(c, currentPoints(c)));
+		}
+		for (Conductor *c : std::as_const(all))
+		{
+			if (movable.contains(c) || c->arm() || !c->branches().isEmpty()) continue;
+			const QList<QPointF> &mine = paths_now[c];
+			for (auto it = paths_now.cbegin() ; it != paths_now.cend() ; ++it)
+			{
+				if (it.key() == c || sameNet(it.key(), c)) continue;
+				if (runAlong(mine, it.value()))
+				{
+					movable << c;
+					break;
+				}
+			}
+		}
+	}
+
 	Scene scene;
 	const bool only_their_groups = scope == Scope::NewConductors || scope == Scope::Selection
 			|| scope == Scope::Moved;
@@ -704,7 +980,7 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			detours << detour;
 			continue;
 		}
-		const QList<QPointF> path = currentPoints(c);
+		const QList<QPointF> path = placed_paths.value(c, currentPoints(c));
 		addInTheWay(path, vertical, horizontal);
 		scene.addPath(path, c);
 	}
