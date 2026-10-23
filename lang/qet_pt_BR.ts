@@ -31207,49 +31207,92 @@ Os outros campos não são utilizados.</translation>
 <context>
     <name>StripFrameItem</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="177"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="186"/>
         <source>a drawn terminal strip</source>
         <translation>uma régua desenhada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="448"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="354"/>
+        <source>Space the terminals of the strip %1</source>
+        <translation>Espaçar os bornes da régua %1</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="651"/>
         <source>Rename the terminal strip %1</source>
         <translation>Renomear a régua %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="467"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="670"/>
         <source>Delete the drawn terminal strip %1</source>
         <translation>Apagar a régua desenhada %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="501"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="704"/>
         <source>Rename the strip...</source>
         <translation>Renomear a régua...</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="502"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="705"/>
         <source>Delete the drawn strip</source>
         <translation>Apagar a régua desenhada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="655"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="858"/>
         <source>Drawn terminal strip</source>
         <translation>Régua desenhada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="655"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="858"/>
         <source>Name of the strip:</source>
         <translation>Nome da régua:</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="702"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="905"/>
         <source>Draw the terminal strip %1</source>
         <translation>Desenhar a régua %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="757"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="960"/>
         <source>Take terminals out of their drawn strip</source>
         <translation>Tirar bornes da régua desenhada</translation>
+    </message>
+</context>
+<context>
+    <name>StripFramePropertiesWidget</name>
+    <message>
+        <location filename="../sources/ui/stripframepropertieswidget.cpp" line="38"/>
+        <source>From one terminal to the next, along the strip</source>
+        <translation>De um borne ao seguinte, ao longo da régua</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/stripframepropertieswidget.cpp" line="40"/>
+        <source>Click a terminal to select it on the folio</source>
+        <translation>Clique num borne para selecioná-lo na folha</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/stripframepropertieswidget.cpp" line="43"/>
+        <source>Name:</source>
+        <translation>Nome:</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/stripframepropertieswidget.cpp" line="44"/>
+        <source>Spacing:</source>
+        <translation>Espaçamento:</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/stripframepropertieswidget.cpp" line="47"/>
+        <source>Terminals:</source>
+        <translation>Bornes:</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/stripframepropertieswidget.cpp" line="73"/>
+        <source>Drawn terminal strip</source>
+        <translation>Régua desenhada</translation>
+    </message>
+    <message>
+        <location filename="../sources/ui/stripframepropertieswidget.cpp" line="105"/>
+        <source>(no label)</source>
+        <translation>(sem rótulo)</translation>
     </message>
 </context>
 <context>

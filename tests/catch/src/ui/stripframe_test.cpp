@@ -21,6 +21,8 @@
 
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontent.h"
+#include "../../../../sources/factory/propertieseditorfactory.h"
+#include "../../../../sources/ui/stripframepropertieswidget.h"
 #include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/stripframeitem.h"
@@ -31,6 +33,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <QListWidget>
 #include <QUndoStack>
 
 /*
@@ -305,4 +308,92 @@ TEST_CASE("T85 - A terminal taken out of its strip", "[T85][stripframe]")
 	frame->rename(QStringLiteral("X9"));
 	CHECK(frame->stripName() == QStringLiteral("X9"));
 	CHECK(comment(bench.terminals.at(0)) == QStringLiteral("X9"));
+}
+
+TEST_CASE("T85 - The frame selected and dragged takes its terminals", "[T85][stripframe]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+	StripFrameItem::drawAround(bench.sheet, bench.first(4), QStringLiteral("X1"));
+	REQUIRE(bench.frames().size() == 1);
+	StripFrameItem *frame = bench.frames().first();
+
+		//Selected by a click on its border, as asked on 23/10/2026
+	CHECK(frame->flags() & QGraphicsItem::ItemIsSelectable);
+	frame->setSelected(true);
+	CHECK(bench.sheet->selectedItems() == QList<QGraphicsItem *>{frame});
+
+	const QRectF before = frame->frameRect();
+	const int steps = bench.sheet->undoStack().count();
+	frame->moveTerminals(QPointF(40, 20));
+	CHECK(bench.sheet->undoStack().count() == steps + 1);
+	const QList<int> xs {200, 230, 260, 290};
+	for (int i = 0 ; i < 4 ; ++i) {
+		CHECK(bench.terminals.at(i)->pos() == QPointF(xs.at(i) + 40, 320));
+	}
+		//The two left out of the frame do not move
+	CHECK(bench.terminals.at(4)->pos() == QPointF(500, 300));
+	CHECK(frame->frameRect() == before.translated(40, 20));
+		//And the frame is what stays selected
+	CHECK(bench.sheet->selectedItems() == QList<QGraphicsItem *>{frame});
+
+	bench.sheet->undoStack().undo();
+	CHECK(bench.terminals.at(0)->pos() == QPointF(200, 300));
+	CHECK(frame->frameRect() == before);
+}
+
+TEST_CASE("T85 - The terminals of a frame put apart", "[T85][stripframe]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+	StripFrameItem::drawAround(bench.sheet, bench.first(4), QStringLiteral("X1"));
+	StripFrameItem *frame = bench.frames().first();
+	CHECK(frame->lies());
+	CHECK(frame->spacing() == 30);
+
+	const qreal width = frame->frameRect().width();
+	const int steps = bench.sheet->undoStack().count();
+	frame->setSpacing(40);
+	CHECK(bench.sheet->undoStack().count() == steps + 1);
+	const QList<int> xs {200, 240, 280, 320};
+	for (int i = 0 ; i < 4 ; ++i) {
+		CHECK(bench.terminals.at(i)->pos() == QPointF(xs.at(i), 300));
+	}
+	CHECK(frame->spacing() == 40);
+	CHECK(frame->frameRect().width() == Approx(width + 30));
+		//Moved one by one, and still not wired to each other
+	for (Element *e : bench.first(4)) {
+		CHECK(e->conductors().isEmpty());
+	}
+
+	bench.sheet->undoStack().undo();
+	for (int i = 0 ; i < 4 ; ++i) {
+		CHECK(bench.terminals.at(i)->pos() == QPointF(200 + 30 * i, 300));
+	}
+	bench.sheet->undoStack().redo();
+	CHECK(bench.terminals.at(3)->pos() == QPointF(320, 300));
+}
+
+TEST_CASE("T85 - The frame in the properties dock", "[T85][stripframe]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+	StripFrameItem::drawAround(bench.sheet, bench.first(4), QStringLiteral("X1"));
+	StripFrameItem *frame = bench.frames().first();
+	frame->setSelected(true);
+
+	PropertiesEditorWidget *editor = PropertiesEditorFactory::propertiesEditor(
+			bench.sheet->selectedItems(), nullptr, nullptr);
+	auto *widget = qobject_cast<StripFramePropertiesWidget *>(editor);
+	REQUIRE(widget != nullptr);
+	CHECK(widget->frame() == frame);
+	auto *list = widget->findChild<QListWidget *>();
+	REQUIRE(list != nullptr);
+	CHECK(list->count() == 4);
+	CHECK(list->item(2)->text() == QStringLiteral("3"));
+
+		//A terminal picked in the list is the one selected on the folio
+	widget->pick(2);
+	CHECK(bench.sheet->selectedItems() == QList<QGraphicsItem *>{bench.terminals.at(2)});
+	delete editor;
 }

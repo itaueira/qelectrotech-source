@@ -45,12 +45,16 @@ class QWidget;
 	list of its own, and the name, which the terminals carry too in their
 	comment, is not what puts a terminal in a frame.
 
-	@par It is no part of the selection
-	A frame is not selected with a rectangle, moved, copied or deleted with
-	the components: it is notation round them. Its border and its name
-	answer the mouse, a double click to rename it and the right button for
-	a menu of its own - rename, delete. The cost: a frame cannot be removed
-	with the Delete key.
+	@par It is selected by its border, and dragging it moves its terminals
+	A click on its border or its name selects the frame - and the
+	properties dock shows its name, the spacing of its terminals and the
+	list of them, where one is picked without hitting it on the folio,
+	the terminals of a strip standing too close for the mouse. Dragging
+	it moves its terminals with their wires, in one undo step; the frame
+	follows them. It is not copied or deleted with the components: it is
+	notation round them. A double click renames it, and the right button
+	has a menu of its own - rename, delete. The cost: a frame cannot be
+	removed with the Delete key.
 */
 class StripFrameItem : public QetGraphicsItem
 {
@@ -72,6 +76,11 @@ class StripFrameItem : public QetGraphicsItem
 		void setTerminals(const QList<Element *> &terminals);
 		QRectF frameRect() const;
 		void terminalsChanged();
+		QList<Element *> orderedTerminals() const;
+		bool lies() const;
+		qreal spacing() const;
+		void setSpacing(qreal pitch);
+		void moveTerminals(const QPointF &movement);
 
 		QRectF boundingRect() const override;
 		QPainterPath shape() const override;
@@ -95,14 +104,23 @@ class StripFrameItem : public QetGraphicsItem
 		static void drawAround(Diagram *diagram, const QList<Element *> &terminals, const QString &strip_name);
 		static void takeOut(Diagram *diagram, const QList<Element *> &terminals);
 
+	signals:
+			/// Its name, its terminals or where they are changed
+		void frameChanged();
+
 	protected:
 		void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
 		QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+		void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+		void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+		void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 
 	private:
 		void computeGeometry() const;
 		void hideComments();
 		void showComments();
+		void selectTerminals();
+		void selectSelf();
 
 		QString m_name;
 		QList<QPointer<Element>> m_terminals;
@@ -112,6 +130,12 @@ class StripFrameItem : public QetGraphicsItem
 		mutable QRectF m_frame;
 		mutable QRectF m_caption;
 		mutable bool m_dirty = true;
+			/// A drag of the frame: where it started, and the terminal whose
+			/// place on the grid the others keep their distance from
+		bool m_dragging = false;
+		QPointF m_drag_from;
+		QPointer<Element> m_anchor;
+		QPointF m_anchor_from;
 };
 
 #endif // STRIPFRAMEITEM_H

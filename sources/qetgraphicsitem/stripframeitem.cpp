@@ -18,14 +18,20 @@
 #include "stripframeitem.h"
 
 #include "../diagram.h"
+#include "../diagramcontent.h"
+#include "../elementsmover.h"
 #include "../properties/elementdata.h"
 #include "../qetinformation.h"
 #include "../undocommand/changeelementinformationcommand.h"
+#include "../undocommand/movegraphicsitemcommand.h"
+#include "conductor.h"
 #include "dynamicelementtextitem.h"
 #include "element.h"
 #include "terminal.h"
 
+#include <QApplication>
 #include <QDomDocument>
+#include <QGraphicsSceneMouseEvent>
 #include <QHash>
 #include <QFontMetricsF>
 #include <QGraphicsSceneContextMenuEvent>
@@ -168,7 +174,10 @@ StripFrameItem::StripFrameItem(const QString &strip_name, QGraphicsItem *parent)
 	QetGraphicsItem(parent),
 	m_name(strip_name)
 {
+		//Selected by its border, never moved itself: dragging it moves its
+		//terminals, and it follows them (mouseMoveEvent())
 	setMovable(false);
+	setFlag(QGraphicsItem::ItemIsSelectable, true);
 	setZValue(5);
 }
 
@@ -186,6 +195,7 @@ void StripFrameItem::setStripName(const QString &strip_name)
 	m_name = strip_name;
 	m_dirty = true;
 	update();
+	emit frameChanged();
 }
 
 /**
@@ -272,6 +282,199 @@ void StripFrameItem::terminalsChanged()
 	prepareGeometryChange();
 	m_dirty = true;
 	update();
+	emit frameChanged();
+}
+
+/**
+	@brief StripFrameItem::lies
+	@return true when the terminals are in a row, false when they stand in a
+	column: their places spread wider than tall
+*/
+bool StripFrameItem::lies() const
+{
+	QRectF spread;
+	const QList<Element *> list = terminals();
+	for (const Element *terminal : list) {
+		spread |= QRectF(terminal->pos(), QSizeF(0.001, 0.001));
+	}
+	return spread.width() >= spread.height();
+}
+
+/**
+	@brief StripFrameItem::orderedTerminals
+	@return its terminals in the order they stand on the folio: from the
+	left in a row, from the top in a column
+*/
+QList<Element *> StripFrameItem::orderedTerminals() const
+{
+	QList<Element *> list = terminals();
+	const bool row = lies();
+	std::stable_sort(list.begin(), list.end(), [row](const Element *a, const Element *b) {
+		return row ? a->pos().x() < b->pos().x() : a->pos().y() < b->pos().y();
+	});
+	return list;
+}
+
+/**
+	@brief StripFrameItem::spacing
+	@return the distance from one terminal to the next along the strip, the
+	mean of them when they are not even, 0 with fewer than two
+*/
+qreal StripFrameItem::spacing() const
+{
+	const QList<Element *> list = orderedTerminals();
+	if (list.size() < 2) {
+		return 0;
+	}
+	const QPointF span = list.last()->pos() - list.first()->pos();
+	return (lies() ? span.x() : span.y()) / (list.size() - 1);
+}
+
+/**
+	@brief StripFrameItem::setSpacing
+	The terminals of the frame put @a pitch apart along the strip, the first
+	where it is and the order kept, each at its own height across the strip
+	(T85, asked by the Renan on 23/10/2026: the terminals of a strip stand
+	too close to pick one by hand). One undo step, the wires following.
+
+	Each terminal is moved on its own, and not by the drag of the folio: the
+	drag of a single component joins it to any free terminal it comes in
+	line with (ElementsMover::endMovement()), and spacing a strip one
+	terminal at a time would wire them to each other.
+*/
+void StripFrameItem::setSpacing(qreal pitch)
+{
+	Diagram *folio = diagram();
+	const QList<Element *> list = orderedTerminals();
+	if (!folio || folio->isReadOnly() || pitch <= 0 || list.size() < 2) {
+		return;
+	}
+	const bool row = lies();
+	const QPointF first = list.first()->pos();
+	auto *undo = new QUndoCommand(tr("Space the terminals of the strip %1").arg(m_name));
+	for (int i = 1 ; i < list.size() ; ++i)
+	{
+		Element *terminal = list.at(i);
+		const QPointF at = terminal->pos();
+		const QPointF target = row ? QPointF(first.x() + i * pitch, at.y())
+					   : QPointF(at.x(), first.y() + i * pitch);
+		const QPointF movement = target - at;
+		if (movement.manhattanLength() < 0.001) continue;
+			//The command finds it moved, and keeps the way back
+		terminal->setPos(target);
+		DiagramContent content;
+		content.m_elements << terminal;
+		for (Conductor *conductor : terminal->conductors()) {
+			conductor->updatePath();
+			content.m_conductors_to_update << conductor;
+		}
+		new MoveGraphicsItemCommand(folio, content, terminal->pos() - at, undo);
+	}
+	if (undo->childCount()) {
+		folio->undoStack().push(undo);
+	} else {
+		delete undo;
+	}
+}
+
+/**
+	@brief StripFrameItem::moveTerminals
+	Its terminals moved by @a movement, with their wires, in one undo step:
+	what dragging the frame does, in one go
+*/
+void StripFrameItem::moveTerminals(const QPointF &movement)
+{
+	Diagram *folio = diagram();
+	if (!folio || folio->isReadOnly() || terminals().isEmpty()) {
+		return;
+	}
+	selectTerminals();
+	folio->elementsMover().beginMovement(folio);
+	folio->elementsMover().continueMovement(movement);
+	folio->elementsMover().endMovement();
+	selectSelf();
+}
+
+	/// Only its terminals selected: what the drag of the folio moves
+void StripFrameItem::selectTerminals()
+{
+	if (Diagram *folio = diagram())
+	{
+		folio->clearSelection();
+		const QList<Element *> list = terminals();
+		for (Element *terminal : list) {
+			terminal->setSelected(true);
+		}
+	}
+}
+
+	/// Only the frame selected, as after a click on it
+void StripFrameItem::selectSelf()
+{
+	if (Diagram *folio = diagram()) {
+		folio->clearSelection();
+	}
+	setSelected(true);
+}
+
+void StripFrameItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (event->button() != Qt::LeftButton) {
+		QetGraphicsItem::mousePressEvent(event);
+		return;
+	}
+	if (event->modifiers() & Qt::ControlModifier) {
+		setSelected(!isSelected());
+	} else {
+		selectSelf();
+	}
+	m_dragging = false;
+	m_drag_from = event->scenePos();
+	event->accept();
+}
+
+	/// The drag of the frame is the drag of its terminals: they are what
+	/// the folio moves, the first of them keeping to the grid
+void StripFrameItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+	Diagram *folio = diagram();
+	if (!(event->buttons() & Qt::LeftButton) || !folio || folio->isReadOnly()) {
+		event->ignore();
+		return;
+	}
+	event->accept();
+	if (!m_dragging)
+	{
+		const QList<Element *> list = orderedTerminals();
+		if (list.isEmpty()
+		    || (event->scenePos() - m_drag_from).manhattanLength() < QApplication::startDragDistance()) {
+			return;
+		}
+		m_dragging = true;
+		m_anchor = list.first();
+		m_anchor_from = m_anchor->pos();
+		selectTerminals();
+		folio->elementsMover().beginMovement(folio);
+	}
+	if (!m_anchor) {
+		return;
+	}
+	const QPointF wanted = Diagram::snapToGrid(m_anchor_from + event->scenePos() - m_drag_from);
+	folio->elementsMover().continueMovement(wanted - m_anchor->pos());
+}
+
+void StripFrameItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (m_dragging)
+	{
+		if (Diagram *folio = diagram()) {
+			folio->elementsMover().endMovement();
+		}
+		selectSelf();
+	}
+	m_dragging = false;
+	m_anchor.clear();
+	event->accept();
 }
 
 /**
@@ -402,9 +605,9 @@ void StripFrameItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
 		return;
 	}
 	painter->save();
-	QPen pen(Qt::black);
+	QPen pen(isSelected() ? QColor(Qt::blue) : QColor(Qt::black));
 	pen.setStyle(Qt::DashLine);
-	pen.setWidthF(isHovered() ? 2.0 : 1.0);
+	pen.setWidthF(isHovered() || isSelected() ? 2.0 : 1.0);
 	painter->setPen(pen);
 	painter->setBrush(Qt::NoBrush);
 	painter->drawRect(m_frame);

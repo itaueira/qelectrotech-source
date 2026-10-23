@@ -34,6 +34,7 @@
 #include "../qetgraphicsitem/elementtextitemgroup.h"
 #include "../qetgraphicsitem/independenttextitem.h"
 #include "../qetgraphicsitem/qetshapeitem.h"
+#include "../qetgraphicsitem/stripframeitem.h"
 #include "../ui/dynamicelementtextitemeditor.h"
 #include "../ui/elementpropertieswidget.h"
 #include "../ui/conductorpropertieseditorwidget.h"
@@ -41,6 +42,7 @@
 #include "../ui/inditextpropertieswidget.h"
 #include "../ui/multielementinfowidget.h"
 #include "../ui/shapegraphicsitempropertieswidget.h"
+#include "../ui/stripframepropertieswidget.h"
 
 #include <QGraphicsItem>
 #include <QSet>
@@ -310,7 +312,22 @@ PropertiesEditorWidget *PropertiesEditorFactory::propertiesEditor(
 			}
 			return new GraphicsTablePropertiesEditor(table, parent);
 		}
-		case CablePart::Type: //1012
+		case StripFrameItem::Type:
+		{
+				//The frame of a strip drawn round its terminals (T85): its
+				//name, their spacing, and the list to pick one of them from
+			if (count_ > 1) {
+				return nullptr;
+			}
+			auto frame = static_cast<StripFrameItem *>(item);
+			if (class_name == StripFramePropertiesWidget::staticMetaObject.className())
+			{
+				static_cast<StripFramePropertiesWidget *>(editor)->setFrame(frame);
+				return editor;
+			}
+			return new StripFramePropertiesWidget(frame, parent);
+		}
+		case CablePart::Type:
 		{
 			if (count_ > 1) {
 				return nullptr;

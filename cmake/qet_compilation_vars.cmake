@@ -1240,6 +1240,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/ui/reportpropertiewidget.h
   ${QET_DIR}/sources/ui/shapegraphicsitempropertieswidget.cpp
   ${QET_DIR}/sources/ui/shapegraphicsitempropertieswidget.h
+  ${QET_DIR}/sources/ui/stripframepropertieswidget.cpp
+  ${QET_DIR}/sources/ui/stripframepropertieswidget.h
   ${QET_DIR}/sources/ui/thirdpartybinaryinstalldialog.cpp
   ${QET_DIR}/sources/ui/thirdpartybinaryinstalldialog.h
   ${QET_DIR}/sources/ui/titleblockpropertieswidget.cpp
