@@ -209,6 +209,7 @@ QList<Element *> StripFrameItem::terminals() const
 */
 void StripFrameItem::setTerminals(const QList<Element *> &terminals)
 {
+	showComments();
 	for (const QMetaObject::Connection &connection : std::as_const(m_connections)) {
 		disconnect(connection);
 	}
@@ -223,7 +224,42 @@ void StripFrameItem::setTerminals(const QList<Element *> &terminals)
 		m_connections << connect(terminal, &QGraphicsObject::rotationChanged, this, &StripFrameItem::terminalsChanged);
 		m_connections << connect(terminal, &QObject::destroyed, this, &StripFrameItem::terminalsChanged);
 	}
+	if (scene()) {
+		hideComments();
+	}
 	terminalsChanged();
+}
+
+/**
+	@brief StripFrameItem::hideComments
+	The texts that show the comment of its terminals hidden: the name of
+	the strip is written there, and the frame already says it - the symbol
+	of a terminal that shows its comment wrote it beside every terminal
+	(T85, the Renan's choice). Only those it hides are shown again, so that
+	a text hidden for another reason stays hidden
+*/
+void StripFrameItem::hideComments()
+{
+	for (const QPointer<Element> &terminal : std::as_const(m_terminals))
+	{
+		if (!terminal) continue;
+		const QList<DynamicElementTextItem *> texts = terminal->dynamicTextItems();
+		for (DynamicElementTextItem *text : texts)
+		{
+			if (text->textFrom() != DynamicElementTextItem::ElementInfo
+			    || text->infoName() != QETInformation::ELMT_COMMENT || !text->isVisible()) continue;
+			text->setVisible(false);
+			m_hidden << text;
+		}
+	}
+}
+
+void StripFrameItem::showComments()
+{
+	for (const QPointer<DynamicElementTextItem> &text : std::as_const(m_hidden)) {
+		if (text) text->setVisible(true);
+	}
+	m_hidden.clear();
 }
 
 /**
@@ -442,10 +478,13 @@ QVariant StripFrameItem::itemChange(GraphicsItemChange change, const QVariant &v
 		QList<QPointer<StripFrameItem>> &list = framesOn()[scene()];
 		list.removeAll(this);
 		if (list.isEmpty()) framesOn().remove(scene());
+			//Off the folio, the texts of the comment show again
+		showComments();
 	}
 	else if (change == QGraphicsItem::ItemSceneHasChanged && scene())
 	{
 		framesOn()[scene()] << this;
+		hideComments();
 		terminalsChanged();
 	}
 	return QetGraphicsItem::itemChange(change, value);

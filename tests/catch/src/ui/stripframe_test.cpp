@@ -21,6 +21,7 @@
 
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontent.h"
+#include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/stripframeitem.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
@@ -71,7 +72,16 @@ namespace
 				"<elementInformations>"
 				"<elementInformation show=\"1\" name=\"label\">%3</elementInformation>"
 				"</elementInformations>"
-				"<dynamic_texts/><texts_groups/>"
+					//A text that shows the comment, beside the terminal, as
+					//the symbol of a strip of the request does
+				"<dynamic_texts>"
+				"<dynamic_elmt_text Halignment=\"AlignLeft\" Valignment=\"AlignTop\""
+				" font=\"Sans Serif,6,-1,5,50,0,0,0,0,0\" frame=\"false\""
+				" keep_visual_rotation=\"false\" rotation=\"0\" rotation_point_center=\"false\""
+				" text_from=\"ElementInfo\" text_width=\"-1\""
+				" uuid=\"{85000000-0000-4000-8000-0000000001%2}\" x=\"8\" y=\"-4\">"
+				"<text/><info_name>comment</info_name></dynamic_elmt_text>"
+				"</dynamic_texts><texts_groups/>"
 				"</element>")
 				.arg(xs.at(i))
 				.arg(i, 2, 10, QLatin1Char('0'))
@@ -125,6 +135,15 @@ namespace
 		return e->elementInformations().value(QETInformation::ELMT_COMMENT).toString();
 	}
 
+		/// The text of the symbol that shows its comment
+	DynamicElementTextItem *commentText(const Element *e)
+	{
+		for (DynamicElementTextItem *text : e->dynamicTextItems()) {
+			if (text->infoName() == QETInformation::ELMT_COMMENT) return text;
+		}
+		return nullptr;
+	}
+
 	void erase(Diagram *sheet, const QList<Element *> &elements)
 	{
 		sheet->clearSelection();
@@ -160,6 +179,9 @@ TEST_CASE("CU-85.1 - The strip drawn round its terminals", "[T85][stripframe]")
 			CHECK_FALSE(rect.contains(t->dockConductor()));
 		}
 		CHECK(comment(e) == QStringLiteral("X1"));
+			//Written in the comment, and its text hidden: the frame says it
+		REQUIRE(commentText(e));
+		CHECK_FALSE(commentText(e)->isVisible());
 	}
 		//The name at the left of a strip that lies
 	CHECK(rect.left() < bench.terminals.at(0)->mapRectToScene(bench.terminals.at(0)->drawnRect()).left() - 4);
@@ -170,6 +192,7 @@ TEST_CASE("CU-85.1 - The strip drawn round its terminals", "[T85][stripframe]")
 	CHECK(bench.frames().isEmpty());
 	for (Element *e : bench.first(4)) {
 		CHECK(comment(e).isEmpty());
+		CHECK(commentText(e)->isVisible());
 	}
 	bench.sheet->undoStack().redo();
 	CHECK(bench.frames().size() == 1);

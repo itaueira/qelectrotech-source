@@ -24,6 +24,7 @@
 #include <QUuid>
 
 class Diagram;
+class DynamicElementTextItem;
 class Element;
 class QDomDocument;
 class QDomElement;
@@ -99,10 +100,14 @@ class StripFrameItem : public QetGraphicsItem
 
 	private:
 		void computeGeometry() const;
+		void hideComments();
+		void showComments();
 
 		QString m_name;
 		QList<QPointer<Element>> m_terminals;
 		QList<QMetaObject::Connection> m_connections;
+			/// The texts of the comment of its terminals this frame hides
+		QList<QPointer<DynamicElementTextItem>> m_hidden;
 		mutable QRectF m_frame;
 		mutable QRectF m_caption;
 		mutable bool m_dirty = true;
