@@ -23,6 +23,7 @@
 #include "../../../../sources/diagramcontent.h"
 #include "../../../../sources/factory/propertieseditorfactory.h"
 #include "../../../../sources/ui/stripframepropertieswidget.h"
+#include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/stripframeitem.h"
@@ -34,7 +35,10 @@
 #include <catch2/catch.hpp>
 
 #include <QListWidget>
+#include <QPainterPath>
 #include <QUndoStack>
+
+#include <cmath>
 
 /*
 	The frame of a strip drawn round its terminals (T85): chosen, not drawn
@@ -154,6 +158,27 @@ namespace
 		DiagramContent selection(sheet);
 		sheet->clearSelection();
 		sheet->undoStack().push(new DeleteQGraphicsItemCommand(sheet, selection));
+	}
+
+		/// What the Delete key of the editor pushes for the selection of
+		/// @a sheet that holds a frame (QETDiagramEditor::selectionGroupTriggered())
+	void deleteSelection(Diagram *sheet)
+	{
+		DiagramContent content(sheet);
+		const QList<StripFrameItem *> frames = StripFrameItem::stripFrames(sheet->selectedItems());
+		sheet->clearSelection();
+		QList<QUndoCommand *> others;
+		if (content.hasDeletableItems()) {
+			others << new DeleteQGraphicsItemCommand(sheet, content);
+		}
+		if (QUndoCommand *step = StripFrameItem::deleteCommand(frames, others)) {
+			sheet->undoStack().push(step);
+		}
+	}
+
+	bool samePoint(const QPointF &a, const QPointF &b)
+	{
+		return std::abs(a.x() - b.x()) < 0.01 && std::abs(a.y() - b.y()) < 0.01;
 	}
 }
 
@@ -396,4 +421,226 @@ TEST_CASE("T85 - The frame in the properties dock", "[T85][stripframe]")
 	widget->pick(2);
 	CHECK(bench.sheet->selectedItems() == QList<QGraphicsItem *>{bench.terminals.at(2)});
 	delete editor;
+}
+
+TEST_CASE("T85 - The frame selected turns its strip as one piece", "[T85][stripframe]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+		//A long name: it makes the frame far wider at its side
+	StripFrameItem::drawAround(bench.sheet, bench.first(4), QStringLiteral("X1 - Control terminals"));
+	REQUIRE(bench.frames().size() == 1);
+	StripFrameItem *frame = bench.frames().first();
+		//The middle of what the four draw
+	auto middle = [&bench]() {
+		QRectF drawn;
+		for (Element *e : bench.first(4)) {
+			drawn |= e->mapRectToScene(e->drawnRect());
+		}
+		return drawn.center();
+	};
+		//A wire from the first of the strip to a terminal out of it
+	Terminal *own = bench.terminals.at(0)->terminals().last();
+	auto *wire = new Conductor(own, bench.terminals.at(4)->terminals().last());
+	bench.sheet->addItem(wire);
+
+		//Terminals selected without their frame are not its business
+	bench.terminals.at(0)->setSelected(true);
+	const int untouched = bench.sheet->undoStack().count();
+	CHECK_FALSE(StripFrameItem::rotateSelection(bench.sheet));
+	CHECK(bench.sheet->undoStack().count() == untouched);
+	bench.sheet->clearSelection();
+
+	frame->setSelected(true);
+	REQUIRE(bench.sheet->selectedItems() == QList<QGraphicsItem *>{frame});
+	REQUIRE(frame->lies());
+	const QRectF before = frame->frameRect();
+	const QRectF caption = frame->captionRect();
+	REQUIRE(caption.width() > 40);
+	const QRectF first_body = bench.terminals.at(0)->mapRectToScene(bench.terminals.at(0)->drawnRect());
+		//The name at the left of the strip lying
+	CHECK(caption.right() <= first_body.left());
+	const QPointF was = middle();
+	const QPointF pivot = Diagram::snapToGrid(was);
+	QList<QPointF> from;
+	for (Element *e : bench.first(4)) {
+		from << e->pos();
+	}
+
+	const int steps = bench.sheet->undoStack().count();
+	CHECK(StripFrameItem::rotateSelection(bench.sheet));
+	CHECK(bench.sheet->undoStack().count() == steps + 1);
+
+		//A quarter turn round the middle of the strip, all together: each
+		//turned in place, and the distances between them turned with them
+	for (int i = 0 ; i < 4 ; ++i)
+	{
+		CAPTURE(i);
+		Element *e = bench.terminals.at(i);
+		const QPointF d = from.at(i) - pivot;
+		CHECK(e->rotation() == Approx(90));
+		CHECK(e->pos() == pivot + QPointF(-d.y(), d.x()));
+		const QPointF apart = from.at(i) - from.at(0);
+		CHECK(e->pos() - bench.terminals.at(0)->pos() == QPointF(-apart.y(), apart.x()));
+	}
+		//Round the middle of the strip, and not of the frame, which the
+		//name makes wider at the left: the strip stays where it was, to a
+		//grid step, and is not carried half the width of its name away
+	const QPointF moved = middle() - was;
+	CHECK(std::abs(moved.x()) <= 10);
+	CHECK(std::abs(moved.y()) <= 10);
+		//The ones out of the frame do not move
+	CHECK(bench.terminals.at(4)->pos() == QPointF(500, 300));
+	CHECK(bench.terminals.at(4)->rotation() == Approx(0));
+		//The wire stays on its terminal
+	const QPainterPath path = wire->mapToScene(wire->path());
+	REQUIRE(path.elementCount() >= 2);
+	const QPointF dock = own->dockConductor();
+	CHECK((samePoint(path.elementAt(0), dock)
+	       || samePoint(path.elementAt(path.elementCount() - 1), dock)));
+
+		//The frame stands round them, and its name stays upright, the same
+		//box, now at the top
+	const QRectF after = frame->frameRect();
+	CHECK_FALSE(frame->lies());
+	CHECK(after.height() > after.width());
+	for (Element *e : bench.first(4)) {
+		CHECK(after.contains(e->mapRectToScene(e->drawnRect())));
+	}
+	CHECK(frame->sceneTransform().isIdentity());
+	const QRectF name = frame->captionRect();
+	CHECK(name.width() == Approx(caption.width()));
+	CHECK(name.height() == Approx(caption.height()));
+	CHECK(name.bottom() <= bench.terminals.at(0)->mapRectToScene(bench.terminals.at(0)->drawnRect()).top());
+	CHECK(name.center().x() == Approx(after.center().x()));
+		//And the frame is what stays selected
+	CHECK(bench.sheet->selectedItems() == QList<QGraphicsItem *>{frame});
+
+		//One undo puts the strip back as it was
+	bench.sheet->undoStack().undo();
+	for (int i = 0 ; i < 4 ; ++i)
+	{
+		CAPTURE(i);
+		CHECK(bench.terminals.at(i)->pos() == from.at(i));
+		CHECK(bench.terminals.at(i)->rotation() == Approx(0));
+	}
+	CHECK(frame->lies());
+	CHECK(frame->frameRect() == before);
+	CHECK(frame->captionRect() == caption);
+
+		//Four turns bring it back where it was, to the pixel: the middle
+		//of four terminals three steps apart is half a step off the grid,
+		//and each turn goes round the point the one before went round
+	for (int turn = 0 ; turn < 4 ; ++turn) {
+		CHECK(StripFrameItem::rotateSelection(bench.sheet));
+	}
+	for (int i = 0 ; i < 4 ; ++i)
+	{
+		CAPTURE(i);
+		CHECK(bench.terminals.at(i)->pos() == from.at(i));
+		CHECK(bench.terminals.at(i)->rotation() == Approx(360));
+	}
+	CHECK(frame->frameRect() == before);
+}
+
+TEST_CASE("T85 - Turned with its frame, a terminal turns once", "[T85][stripframe]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+	StripFrameItem::drawAround(bench.sheet, bench.first(4), QStringLiteral("X1"));
+	REQUIRE(bench.frames().size() == 1);
+	StripFrameItem *frame = bench.frames().first();
+
+		//The frame, one of its terminals, and one out of it, as a rubber
+		//band takes them
+	frame->setSelected(true);
+	bench.terminals.at(1)->setSelected(true);
+	bench.terminals.at(4)->setSelected(true);
+	const QList<QGraphicsItem *> selection = bench.sheet->selectedItems();
+	const int steps = bench.sheet->undoStack().count();
+	CHECK(StripFrameItem::rotateSelection(bench.sheet));
+	CHECK(bench.sheet->undoStack().count() == steps + 1);
+
+		//The terminal of the frame turns with the frame, and not once more
+		//in place; the one out of it turns in place, as the folio turns it
+	for (Element *e : bench.first(4)) {
+		CHECK(e->rotation() == Approx(90));
+	}
+	CHECK(bench.terminals.at(4)->rotation() == Approx(90));
+	CHECK(bench.terminals.at(4)->pos() == QPointF(500, 300));
+	CHECK_FALSE(frame->lies());
+		//The selection is what it was
+	CHECK(bench.sheet->selectedItems().size() == selection.size());
+	for (QGraphicsItem *item : selection) {
+		CHECK(item->isSelected());
+	}
+
+	bench.sheet->undoStack().undo();
+	for (int i = 0 ; i < 5 ; ++i)
+	{
+		CAPTURE(i);
+		CHECK(bench.terminals.at(i)->rotation() == Approx(0));
+	}
+	CHECK(bench.terminals.at(0)->pos() == QPointF(200, 300));
+	CHECK(frame->lies());
+}
+
+TEST_CASE("T85 - Delete takes the frame off and leaves its terminals", "[T85][stripframe]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+	StripFrameItem::drawAround(bench.sheet, bench.first(4), QStringLiteral("X1"));
+	REQUIRE(bench.frames().size() == 1);
+	StripFrameItem *frame = bench.frames().first();
+	const QRectF rect = frame->frameRect();
+
+		//Only the frame selected
+	frame->setSelected(true);
+	int steps = bench.sheet->undoStack().count();
+	deleteSelection(bench.sheet);
+	CHECK(bench.sheet->undoStack().count() == steps + 1);
+	CHECK(bench.frames().isEmpty());
+	for (Element *e : bench.first(4))
+	{
+		CHECK(e->scene() == bench.sheet);
+		CHECK(StripFrameItem::frameOf(e) == nullptr);
+			//Still of that strip, and the text that says so shows again
+		CHECK(comment(e) == QStringLiteral("X1"));
+		CHECK(commentText(e)->isVisible());
+	}
+	bench.sheet->undoStack().undo();
+	REQUIRE(bench.frames().size() == 1);
+	CHECK(frame->terminals().size() == 4);
+	CHECK(StripFrameItem::frameOf(bench.terminals.at(0)) == frame);
+	CHECK_FALSE(commentText(bench.terminals.at(0))->isVisible());
+	CHECK(frame->frameRect() == rect);
+
+		//With a component out of it: both go in one step, and come back
+	frame->setSelected(true);
+	bench.terminals.at(4)->setSelected(true);
+		//The place in the stack, and not the count: the step undone above
+		//is dropped when this one is pushed
+	steps = bench.sheet->undoStack().index();
+	deleteSelection(bench.sheet);
+	CHECK(bench.sheet->undoStack().index() == steps + 1);
+	CHECK(bench.frames().isEmpty());
+	CHECK(bench.terminals.at(4)->scene() == nullptr);
+	CHECK(bench.terminals.at(0)->scene() == bench.sheet);
+	bench.sheet->undoStack().undo();
+	CHECK(bench.frames().size() == 1);
+	CHECK(bench.terminals.at(4)->scene() == bench.sheet);
+	CHECK(frame->terminals().size() == 4);
+
+		//With its own terminals: all of it goes, and comes back whole
+	frame->setSelected(true);
+	for (Element *e : bench.first(4)) {
+		e->setSelected(true);
+	}
+	deleteSelection(bench.sheet);
+	CHECK(bench.frames().isEmpty());
+	CHECK(bench.terminals.at(0)->scene() == nullptr);
+	bench.sheet->undoStack().undo();
+	REQUIRE(bench.frames().size() == 1);
+	CHECK(frame->terminals().size() == 4);
+	CHECK(frame->frameRect() == rect);
 }

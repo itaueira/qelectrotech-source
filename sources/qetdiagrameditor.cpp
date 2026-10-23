@@ -5790,10 +5790,25 @@ void QETDiagramEditor::selectionGroupTriggered(QAction *action)
 					}
 				}
 				const bool other_items = dc.hasDeletableItems();
+					//Nor is the frame drawn round a strip: Delete takes it
+					//off the folio and leaves its terminals on it (T85)
+				const QList<StripFrameItem *> strip_frames =
+						StripFrameItem::stripFrames(diagram->selectedItems());
 
                 diagram->clearSelection();
 
-				if (cable_parts.isEmpty()) {
+				if (!strip_frames.isEmpty()) {
+					QList<QUndoCommand *> others;
+					if (other_items) {
+						others << new DeleteQGraphicsItemCommand(diagram, dc);
+					}
+					if (!cable_parts.isEmpty()) {
+						others << new RemoveCableCommand(diagram, cable_parts);
+					}
+					if (QUndoCommand *step = StripFrameItem::deleteCommand(strip_frames, others)) {
+						diagram->undoStack().push(step);
+					}
+				} else if (cable_parts.isEmpty()) {
 					diagram->undoStack().push(new DeleteQGraphicsItemCommand(diagram, dc));
 				} else if (!other_items) {
 					diagram->undoStack().push(new RemoveCableCommand(diagram, cable_parts));
@@ -5809,6 +5824,10 @@ void QETDiagramEditor::selectionGroupTriggered(QAction *action)
         }
 	else if (value == "rotate_selection")
 	{
+			//The frame drawn round a strip turns as one piece, its
+			//terminals round their middle and its name upright (T85)
+		if (StripFrameItem::rotateSelection(diagram, 90))
+			return;
 			//A selection that is exactly one whole group turns as one piece,
 			//as "Pivoter le groupe" does, rather than each member in place
 			//(discussion #1070). Wires follow their symbols either way.
@@ -6308,12 +6327,15 @@ void QETDiagramEditor::slot_updateComplexActions()
 		//folio and DiagramContent never sees it.
 	bool copiable_items  = dc.hasCopiableItems() || selected_cables > 0;
 	bool deletable_items = dc.hasDeletableItems() || selected_cables > 0;
+		//The frame drawn round a strip is not copied, but Delete takes it
+		//off and Rotate turns it with its terminals (T85)
+	const bool strip_frames = !StripFrameItem::stripFrames(diagram_->selectedItems()).isEmpty();
 	m_cut              -> setEnabled(!ro && copiable_items);
 	m_copy             -> setEnabled(copiable_items);
 	m_duplicate        -> setEnabled(!ro && copiable_items);
 	updatePasteElementInfoAction();
-	m_delete_selection -> setEnabled(!ro && deletable_items);
-	m_rotate_selection -> setEnabled(!ro && diagram_->canRotateSelection());
+	m_delete_selection -> setEnabled(!ro && (deletable_items || strip_frames));
+	m_rotate_selection -> setEnabled(!ro && (diagram_->canRotateSelection() || strip_frames));
 	m_rotate_group_selection -> setEnabled(!ro && diagram_->canRotateSelection());
 
 		//Action that need selected texts or texts group

@@ -28,6 +28,7 @@ class DynamicElementTextItem;
 class Element;
 class QDomDocument;
 class QDomElement;
+class QUndoCommand;
 class QWidget;
 
 /**
@@ -51,10 +52,19 @@ class QWidget;
 	list of them, where one is picked without hitting it on the folio,
 	the terminals of a strip standing too close for the mouse. Dragging
 	it moves its terminals with their wires, in one undo step; the frame
-	follows them. It is not copied or deleted with the components: it is
-	notation round them. A double click renames it, and the right button
-	has a menu of its own - rename, delete. The cost: a frame cannot be
-	removed with the Delete key.
+	follows them. It is not copied with the components: it is notation
+	round them. A double click renames it, and the right button has a menu
+	of its own - rename, rotate, delete.
+
+	@par Turned and deleted as one piece
+	Selected, the frame is what the Rotate command turns: its terminals
+	turn round their middle, together, with their wires - the strip as one
+	piece -, and the frame is worked out again round them, its name
+	upright, at the left of a strip that lies and at the top of one that
+	stands. The Delete key takes the frame off the folio and leaves its
+	terminals on it, so that a strip drawn the wrong way round is drawn
+	again without placing its terminals again (asked on 23/10/2026).
+	Terminals selected without their frame turn and go as they always did.
 */
 class StripFrameItem : public QetGraphicsItem
 {
@@ -75,6 +85,7 @@ class StripFrameItem : public QetGraphicsItem
 		QList<Element *> terminals() const;
 		void setTerminals(const QList<Element *> &terminals);
 		QRectF frameRect() const;
+		QRectF captionRect() const;
 		void terminalsChanged();
 		QList<Element *> orderedTerminals() const;
 		bool lies() const;
@@ -88,7 +99,9 @@ class StripFrameItem : public QetGraphicsItem
 			   QWidget *widget) override;
 		void editProperty() override;
 		void rename(const QString &strip_name);
+		void rotate(qreal angle = 90);
 		void remove();
+		QUndoCommand *removeCommand();
 
 		QDomElement toXml(QDomDocument &document) const;
 		static StripFrameItem *fromXml(const QDomElement &e, const QList<Element *> &elements);
@@ -103,6 +116,10 @@ class StripFrameItem : public QetGraphicsItem
 		static QString askName(QWidget *parent, const QString &suggestion, bool *ok);
 		static void drawAround(Diagram *diagram, const QList<Element *> &terminals, const QString &strip_name);
 		static void takeOut(Diagram *diagram, const QList<Element *> &terminals);
+		static QList<StripFrameItem *> stripFrames(const QList<QGraphicsItem *> &items);
+		static bool rotateSelection(Diagram *diagram, qreal angle = 90);
+		static QUndoCommand *deleteCommand(const QList<StripFrameItem *> &frames,
+						   const QList<QUndoCommand *> &others);
 
 	signals:
 			/// Its name, its terminals or where they are changed
@@ -117,6 +134,7 @@ class StripFrameItem : public QetGraphicsItem
 
 	private:
 		void computeGeometry() const;
+		void turnTerminals(qreal angle, QUndoCommand *undo);
 		void hideComments();
 		void showComments();
 		void selectTerminals();
@@ -136,6 +154,11 @@ class StripFrameItem : public QetGraphicsItem
 		QPointF m_drag_from;
 		QPointer<Element> m_anchor;
 		QPointF m_anchor_from;
+			/// The point the last turn went round, and where it left the
+			/// terminals: turned again with none of them moved in between,
+			/// the strip turns round that same point (turnTerminals())
+		QPointF m_turn_pivot;
+		QList<QPointF> m_turned_to;
 };
 
 #endif // STRIPFRAMEITEM_H

@@ -17,6 +17,8 @@
 */
 #include "stripframeitem.h"
 
+#include "../QPropertyUndoCommand/qpropertyundocommand.h"
+#include "../cable/editcablecommand.h"
 #include "../diagram.h"
 #include "../diagramcontent.h"
 #include "../elementsmover.h"
@@ -24,6 +26,7 @@
 #include "../qetinformation.h"
 #include "../undocommand/changeelementinformationcommand.h"
 #include "../undocommand/movegraphicsitemcommand.h"
+#include "../undocommand/rotateselectioncommand.h"
 #include "conductor.h"
 #include "dynamicelementtextitem.h"
 #include "element.h"
@@ -42,8 +45,10 @@
 #include <QPainterPathStroker>
 #include <QTextDocument>
 #include <QSet>
+#include <QSignalBlocker>
 #include <QUndoCommand>
 #include <QUndoStack>
+#include <QtMath>
 
 namespace
 {
@@ -159,6 +164,28 @@ namespace
 		if (!changes.isEmpty()) {
 			new ChangeElementInformationCommand(changes, undo);
 		}
+	}
+
+		/// @a delta turned by @a angle degrees, the way
+		/// QGraphicsItem::setRotation() turns - clockwise on the folio -;
+		/// exact for the right angles, which the Rotate command only gives,
+		/// as RotateSelectionCommand::addGroupPositionUndo() does
+	QPointF turned(const QPointF &delta, qreal angle)
+	{
+		const int quadrant = qRound(angle / 90.0);
+		if (qFuzzyCompare(angle, quadrant * 90.0))
+		{
+			switch (((quadrant % 4) + 4) % 4)
+			{
+				case 1:  return QPointF(-delta.y(),  delta.x());
+				case 2:  return QPointF(-delta.x(), -delta.y());
+				case 3:  return QPointF( delta.y(), -delta.x());
+				default: return delta;
+			}
+		}
+		const qreal radians = qDegreesToRadians(angle);
+		return QPointF(delta.x() * qCos(radians) - delta.y() * qSin(radians),
+			       delta.x() * qSin(radians) + delta.y() * qCos(radians));
 	}
 }
 
@@ -489,6 +516,18 @@ QRectF StripFrameItem::frameRect() const
 }
 
 /**
+	@brief StripFrameItem::captionRect
+	@return the rectangle the name is written in, in scene coordinates:
+	always upright - the frame itself never turns, its terminals do -, at
+	the left of a strip that lies, at the top of one that stands
+*/
+QRectF StripFrameItem::captionRect() const
+{
+	computeGeometry();
+	return m_caption;
+}
+
+/**
 	@brief StripFrameItem::computeGeometry
 	Round what the terminals draw, short of the end of each terminal - the
 	frame of a strip crosses the line of a terminal and leaves its end, where
@@ -657,21 +696,106 @@ void StripFrameItem::rename(const QString &strip_name)
 }
 
 /**
+	@brief StripFrameItem::rotate
+	Its terminals turned by @a angle round their middle, with their wires,
+	in one undo step: the strip turned as one piece, see turnTerminals().
+	The frame follows them, and its name stays upright
+*/
+void StripFrameItem::rotate(qreal angle)
+{
+	Diagram *folio = diagram();
+	if (!folio || folio->isReadOnly() || terminals().isEmpty()) {
+		return;
+	}
+	auto *undo = new QUndoCommand(tr("Rotate the drawn terminal strip %1").arg(m_name));
+	turnTerminals(angle, undo);
+	if (undo->childCount()) {
+		folio->undoStack().push(undo);
+	} else {
+		delete undo;
+	}
+}
+
+/**
+	@brief StripFrameItem::turnTerminals
+	Into @a undo, the steps that turn each terminal by @a angle and carry
+	it round the middle of what the terminals draw - snapped to the grid,
+	as the group rotation of the folio does with its pivot, so that a strip
+	on the grid stays on it. Each terminal turns round its own origin, the
+	point its place is, so turning it there and carrying that point round
+	the middle turns the strip as one piece; the wires follow their
+	terminals by themselves (Element::Element()), and the frame too
+	(terminalsChanged()). Not animated: the place of a terminal would go
+	in a straight line while it turns.
+
+	The middle of the terminals, and not of the frame: the name makes the
+	frame wider on one side, at the left of a strip that lies and at the
+	top of one that stands, and turning round the middle of the frame would
+	carry the strip half the width of its name away at each turn. And
+	round the point of the turn before when none of the terminals moved
+	since: the middle of four terminals three steps apart is half a step
+	off the grid, snapped one way before a turn and the other way after
+	it, and four turns bring the strip back where it was only when they
+	all go round one point
+*/
+void StripFrameItem::turnTerminals(qreal angle, QUndoCommand *undo)
+{
+	const QList<Element *> list = terminals();
+	if (list.isEmpty()) {
+		return;
+	}
+	QList<QPointF> at;
+	QRectF drawn;
+	for (const Element *terminal : list)
+	{
+		at << terminal->pos();
+		drawn |= terminal->mapRectToScene(terminal->drawnRect());
+	}
+	const QPointF pivot = at == m_turned_to ? m_turn_pivot : Diagram::snapToGrid(drawn.center());
+	QList<QPointF> to;
+	for (int i = 0 ; i < list.size() ; ++i)
+	{
+		Element *terminal = list.at(i);
+		const QPointF from = at.at(i);
+		to << Diagram::snapToGrid(pivot + turned(from - pivot, angle));
+		new QPropertyUndoCommand(terminal, "rotation", QVariant(terminal->rotation()),
+					 QVariant(terminal->rotation() + angle), undo);
+		if (to.last() != from) {
+			new QPropertyUndoCommand(terminal, "pos", QVariant(from), QVariant(to.last()), undo);
+		}
+	}
+	m_turn_pivot = pivot;
+	m_turned_to = to;
+}
+
+/**
 	@brief StripFrameItem::remove
 	The frame off the folio, in one undo step. The terminals keep the name
 	in their comment: they are still of that strip
 */
 void StripFrameItem::remove()
 {
+	if (QUndoCommand *undo = removeCommand()) {
+		diagram()->undoStack().push(undo);
+	}
+}
+
+/**
+	@brief StripFrameItem::removeCommand
+	@return the undo step that takes the frame off the folio and leaves its
+	terminals, not yet run; nullptr when it cannot be taken off
+*/
+QUndoCommand *StripFrameItem::removeCommand()
+{
 	Diagram *folio = diagram();
 	if (!folio || folio->isReadOnly()) {
-		return;
+		return nullptr;
 	}
 	auto *undo = new QUndoCommand(tr("Delete the drawn terminal strip %1").arg(m_name));
 	FrameState after = stateOf(this);
 	after.on_folio = false;
 	new StripFrameChange(this, folio, stateOf(this), after, undo);
-	folio->undoStack().push(undo);
+	return undo;
 }
 
 QVariant StripFrameItem::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -702,10 +826,13 @@ void StripFrameItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 	}
 	QMenu menu;
 	QAction *rename = menu.addAction(tr("Rename the strip..."));
+	QAction *turn = menu.addAction(tr("Rotate the strip"));
 	QAction *erase = menu.addAction(tr("Delete the drawn strip"));
 	QAction *chosen = menu.exec(event->screenPos());
 	if (chosen == rename) {
 		editProperty();
+	} else if (chosen == turn) {
+		rotate();
 	} else if (chosen == erase) {
 		remove();
 	}
@@ -986,4 +1113,118 @@ void StripFrameItem::takeOut(Diagram *diagram, const QList<Element *> &terminals
 		new ChangeElementInformationCommand(comments, undo);
 	}
 	diagram->undoStack().push(undo);
+}
+
+/**
+	@brief StripFrameItem::stripFrames
+	@return the frames among @a items, in their order
+*/
+QList<StripFrameItem *> StripFrameItem::stripFrames(const QList<QGraphicsItem *> &items)
+{
+	QList<StripFrameItem *> list;
+	for (QGraphicsItem *item : items)
+	{
+		auto *frame = qgraphicsitem_cast<StripFrameItem *>(item);
+		if (frame && !list.contains(frame)) list << frame;
+	}
+	return list;
+}
+
+/**
+	@brief StripFrameItem::rotateSelection
+	The Rotate command of @a diagram when its selection holds the frame of
+	a drawn strip (asked on 23/10/2026: a strip drawn lying could not be
+	stood up as one piece). Each frame selected turns its terminals by
+	@a angle round their middle, see turnTerminals(), and the rest of the
+	selection turns as the folio turns it, each item in place - all in one
+	undo step. The terminals a selected frame holds, and what they carry,
+	turn with their frame only, and not once more in place.
+	@return false when no frame is selected, and nothing is done: the
+	selection turns as it always did
+*/
+bool StripFrameItem::rotateSelection(Diagram *diagram, qreal angle)
+{
+	if (!diagram || diagram->isReadOnly()) {
+		return false;
+	}
+	const QList<QGraphicsItem *> selection = diagram->selectedItems();
+	const QList<StripFrameItem *> frames = stripFrames(selection);
+	if (frames.isEmpty()) {
+		return false;
+	}
+
+	QSet<const QGraphicsItem *> held;
+	for (StripFrameItem *frame : frames)
+	{
+		const QList<Element *> list = frame->terminals();
+		for (const Element *terminal : list) {
+			held << terminal;
+		}
+	}
+	QList<QGraphicsItem *> rest;
+	for (QGraphicsItem *item : selection)
+	{
+		if (item->type() == Type) continue;
+		bool carried = false;
+		for (const QGraphicsItem *up = item ; up && !carried ; up = up->parentItem()) {
+			carried = held.contains(up);
+		}
+		if (!carried) rest << item;
+	}
+
+	auto *undo = new QUndoCommand(frames.size() == 1 && rest.isEmpty()
+				      ? tr("Rotate the drawn terminal strip %1").arg(frames.first()->stripName())
+				      : tr("Rotate the selection"));
+	for (StripFrameItem *frame : frames) {
+		frame->turnTerminals(angle, undo);
+	}
+	if (!rest.isEmpty())
+	{
+			//RotateSelectionCommand turns the selection of the folio: while
+			//it is built, only the rest is selected - quietly, the
+			//selection being the same once it is
+		const QSignalBlocker blocker(diagram);
+		diagram->clearSelection();
+		for (QGraphicsItem *item : std::as_const(rest)) {
+			item->setSelected(true);
+		}
+		new RotateSelectionCommand(diagram, angle, undo);
+		diagram->clearSelection();
+		for (QGraphicsItem *item : selection) {
+			item->setSelected(true);
+		}
+	}
+	if (undo->childCount()) {
+		diagram->undoStack().push(undo);
+	} else {
+		delete undo;
+	}
+	return true;
+}
+
+/**
+	@brief StripFrameItem::deleteCommand
+	@return the one undo step of the Delete command when the selection
+	holds @a frames (asked on 23/10/2026: the frame of a strip could not be
+	taken off without its terminals): @a others first - what the rest of
+	the selection deletes, the components, the cable lines -, then the
+	frames off the folio, their terminals left on it unless @a others takes
+	them too; nullptr when there is nothing to do. The step owns @a others
+*/
+QUndoCommand *StripFrameItem::deleteCommand(const QList<StripFrameItem *> &frames,
+					    const QList<QUndoCommand *> &others)
+{
+	QList<QUndoCommand *> steps;
+	for (QUndoCommand *step : others) {
+		if (step) steps << step;
+	}
+	for (StripFrameItem *frame : frames)
+	{
+		if (QUndoCommand *step = frame ? frame->removeCommand() : nullptr) steps << step;
+	}
+	if (steps.size() < 2) {
+		return steps.isEmpty() ? nullptr : steps.first();
+	}
+		//One step, so that one undo brings the frames and the rest back
+	return new BatchCommand(steps, tr("Delete"));
 }
