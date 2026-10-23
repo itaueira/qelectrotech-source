@@ -1184,6 +1184,8 @@ if(TARGET qelectrotech_objects)
         src/ui/stripframe_test.cpp
         # T85: the field region, a grey mask, and what sits in it out of every list.
         src/ui/fieldregion_test.cpp
+        # T85: the location area dragged with what is in it, or edited alone.
+        src/ui/locationareadrag_test.cpp
         # T87: the bus bar, a bridge of a strip drawn on the folio and fed by one wire.
         src/ui/terminalbus_test.cpp
         # The stall sampler of the watchdog: a stall made on purpose, named.

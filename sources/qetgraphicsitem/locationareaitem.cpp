@@ -18,13 +18,21 @@
 #include "locationareaitem.h"
 
 #include "../QPropertyUndoCommand/qpropertyundocommand.h"
+#include "../TerminalStrip/GraphicsItem/terminalstripitem.h"
 #include "../diagram.h"
+#include "../diagramview.h"
+#include "../elementsmover.h"
 #include "../location/locatableelement.h"
 #include "../location/locationtree.h"
 #include "../qetinformation.h"
 #include "../qetproject.h"
+#include "ViewItem/mountinglayoutviewitem.h"
+#include "ViewItem/qetgraphicstableitem.h"
+#include "diagramimageitem.h"
 #include "element.h"
+#include "independenttextitem.h"
 
+#include <QApplication>
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDialog>
@@ -32,15 +40,18 @@
 #include <QDomDocument>
 #include <QFontMetrics>
 #include <QFormLayout>
+#include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
 #include <QHBoxLayout>
 #include <QInputDialog>
+#include <QMenu>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
 #include <QPushButton>
+#include <QSet>
 #include <QUndoStack>
 
 namespace
@@ -276,10 +287,12 @@ QString LocationAreaItem::name() const
 	@brief LocationAreaItem::editProperty
 	Ask which location this area stands for, and follow through.
 
-	Reached by a double click, which the base class wires to this method, and
-	it is the only way in: an area is not a shape to the editor, so the shape
-	properties action stays switched off for it and there is no docked editor
-	that knows about one.
+	Reached by the context menu of the area, and it is the only way in. Not by
+	the double click any more, which the base class wires to this method:
+	since T85 the double click puts the area in edition
+	(mouseDoubleClickEvent()). An area is not a shape to the editor, so the
+	shape properties action stays switched off for it and there is no docked
+	editor that knows about one.
 
 	It has to do two things at once - write the new path onto the area, and
 	move the components that were inside it onto that path - and they go into
@@ -890,10 +903,545 @@ void LocationAreaItem::paint(QPainter *painter,
 
 	The price is that an area resizes by its corners and edges only, the
 	first mode: no mirror resize, no rounded corner.
+
+	Where the press was, and where the area stood, are kept for the drag
+	that may follow, in either way of dragging it (mouseMoveEvent()).
 */
 void LocationAreaItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
+	m_carrying = false;
+	m_press_scene_pos = event->scenePos();
+	m_pos_from = pos();
 	QetGraphicsItem::mousePressEvent(event);
+}
+
+/**
+	@brief LocationAreaItem::mouseMoveEvent
+	@param event the move
+
+	The drag of an area is the drag of what is in it (T85, asked by the
+	Renan on 23/10/2026): the components, with their wires, the texts, the
+	shapes, the tables and the areas inside it go with the rectangle, by the
+	movement of the folio - the very one a selection dragged by hand goes
+	through, which stretches a wire that leaves the area and carries whole
+	the one whose two ends move. In edition (setEditing()) the area goes
+	alone, as a drag of any item does.
+
+	Nothing moves before the hand has gone the distance a drag starts at:
+	the press of a double click must not shake the content.
+*/
+void LocationAreaItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (m_editing)
+	{
+		QetShapeItem::mouseMoveEvent(event);
+		return;
+	}
+
+	Diagram *folio = diagram();
+	if (!(event->buttons() & Qt::LeftButton) || !folio || folio->isReadOnly()
+	    || !isMovable() || !isSelected())
+	{
+		event->ignore();
+		return;
+	}
+	event->accept();
+
+	if (!m_carrying)
+	{
+		if ((event->scenePos() - m_press_scene_pos).manhattanLength()
+		    < QApplication::startDragDistance()) {
+			return;
+		}
+		if (!beginCarry()) {
+			return;
+		}
+		m_carrying = true;
+	}
+	carryTo(event->scenePos());
+}
+
+/**
+	@brief LocationAreaItem::mouseReleaseEvent
+	@param event the release
+
+	The end of a drag with the content is one undo step (endCarry()). The end
+	of a drag in edition is the end of the movement of the folio, with a step
+	of its own for the position of the area handed to it: that movement does
+	not take an area back, and before T85 undoing such a drag put the
+	components back on their old location while leaving the rectangle where
+	it had been dragged.
+*/
+void LocationAreaItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (m_carrying)
+	{
+		m_carrying = false;
+		endCarry();
+		event->accept();
+		return;
+	}
+
+	Diagram *folio = diagram();
+	if (m_editing && folio && !folio->elementsMover().isReady()
+	    && pos() != m_pos_from)
+	{
+			//A parent with no text of its own, so that it is never merged
+			//with another step; the movement names the whole step
+		auto *step = new QUndoCommand();
+		new QPropertyUndoCommand(this, "pos", m_pos_from, pos(), step);
+		folio->elementsMover().addExtraCommands({step});
+	}
+	QetShapeItem::mouseReleaseEvent(event);
+}
+
+/**
+	@brief LocationAreaItem::mouseDoubleClickEvent
+	@param event the double click
+
+	Puts the area in edition, where its handles show and a drag moves it
+	alone. It used to open the properties of the area, which are in its
+	context menu since: the drag with the content became the drag of an
+	area, and the drag of the rectangle alone needed a way in that a hand
+	finds without a menu.
+*/
+void LocationAreaItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+	if (event->button() == Qt::LeftButton)
+	{
+		setEditing(true);
+			//A drag that follows the second press moves the area alone,
+			//from where it stands now
+		m_first_move = true;
+		m_carrying = false;
+		m_press_scene_pos = event->scenePos();
+		m_pos_from = pos();
+	}
+	event->accept();
+}
+
+/**
+	@brief LocationAreaItem::setEditing
+	@param editing true to edit the area alone, false to leave the edition
+
+	In edition the area is selected and shows the handles of the shapes it
+	is built on; out of it, selected or not, it shows none, and a drag takes
+	its content along. Leaving the selection leaves the edition
+	(itemChange()), which is what a click elsewhere on the folio and Escape
+	do. A folio that cannot be changed has no edition to offer.
+
+	The handles are made by QetShapeItem when it is selected. An area already
+	selected is told it was selected again, which builds them, and told it
+	was deselected to take them off while it stays selected.
+*/
+void LocationAreaItem::setEditing(bool editing)
+{
+	if (editing == m_editing) {
+		return;
+	}
+
+	if (editing)
+	{
+		const Diagram *folio = diagram();
+		if (!folio || folio->isReadOnly()) {
+			return;
+		}
+		m_editing = true;
+		if (isSelected()) {
+			QetShapeItem::itemChange(ItemSelectedHasChanged, true);
+		} else {
+			setSelected(true);
+		}
+	}
+	else
+	{
+		m_editing = false;
+		if (isSelected()) {
+			QetShapeItem::itemChange(ItemSelectedHasChanged, false);
+		}
+	}
+
+	updateToolTip();
+	update();
+}
+
+/**
+	@brief LocationAreaItem::itemChange
+	@param change what changed
+	@param value its new value
+	@return what QGraphicsItem::itemChange returns
+
+	Selected out of edition, the area skips what the shapes do when they are
+	selected - build their handles -: its handles are those of the edition.
+	Deselected, it leaves the edition, and the shapes take the handles off.
+*/
+QVariant LocationAreaItem::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+	if (change == ItemSelectedHasChanged)
+	{
+		if (value.toBool() && !m_editing)
+		{
+			updateToolTip();
+			return QGraphicsItem::itemChange(change, value);
+		}
+		if (!value.toBool()) {
+			m_editing = false;
+		}
+		const QVariant result{QetShapeItem::itemChange(change, value)};
+		updateToolTip();
+		return result;
+	}
+	return QetShapeItem::itemChange(change, value);
+}
+
+/**
+	@brief LocationAreaItem::hoverEnterEvent
+	@param event the hover
+	Skips the shapes, whose hints tell of a click cycling the modes of the
+	handles, which an area does not do (mousePressEvent()). Its own hint is
+	its tooltip (updateToolTip()). Leaving it goes through the shapes still,
+	which clear the hint a handle put on the status bar.
+*/
+void LocationAreaItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
+{
+	QetGraphicsItem::hoverEnterEvent(event);
+}
+
+/**
+	@brief LocationAreaItem::updateToolTip
+	What a drag of the area does, once it is selected: with its content, or
+	alone in edition. Nothing while it is not selected, as the shapes.
+*/
+void LocationAreaItem::updateToolTip()
+{
+	if (!isSelected()) {
+		setToolTip(QString());
+	} else if (m_editing) {
+		setToolTip(tr("Drag the border to move the area alone, a handle to resize it"));
+	} else {
+		setToolTip(tr("Drag to move the area with what is in it, double-click to edit it alone"));
+	}
+}
+
+/**
+	@brief LocationAreaItem::contextMenuEvent
+	@param event the request of the menu
+
+	The properties of the area - its location and its mask -, which the
+	double click opened before T85, the edition of the area alone, and the
+	commands of the folio on the selection, as the shapes give them. Not the
+	conversion to a polyline and the mirrors the menu of the shapes offered
+	an area: a converted area is no longer a rectangle, and toXml() writes
+	one.
+*/
+void LocationAreaItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
+{
+	Diagram *folio = diagram();
+	if (!folio)
+	{
+		event->ignore();
+		return;
+	}
+
+	if (!isSelected())
+	{
+		folio->clearSelection();
+		setSelected(true);
+	}
+
+	QMenu menu;
+	QAction *properties = menu.addAction(tr("Area properties..."));
+	QAction *edit = menu.addAction(tr("Edit the area alone"));
+	properties->setEnabled(!folio->isReadOnly());
+	edit->setEnabled(!folio->isReadOnly() && !m_editing);
+
+	QWidget *viewport = event->widget();
+	auto *view = viewport ? qobject_cast<DiagramView *>(viewport->parentWidget())
+			      : nullptr;
+	if (view)
+	{
+		menu.addSeparator();
+		menu.addActions(view->contextMenuActions());
+	}
+
+	QAction *chosen = menu.exec(event->screenPos());
+	if (chosen == properties) {
+		editProperty();
+	} else if (chosen == edit) {
+		setEditing(true);
+	}
+	event->accept();
+}
+
+/**
+	@brief LocationAreaItem::carriedItems
+	@return what a drag of this area takes along with it
+
+	Inside means what it means for a location: the centre inside the
+	rectangle, by the rule of locationcontainment. Carrying by another rule
+	would let a drag leave behind a component the area holds, and the
+	component would lose its location for having stayed where it was.
+	Another area goes along when it lies wholly inside this one - a
+	sub-plate in its enclosure -, and not by its centre: two areas drawn
+	across each other are two places, not one in the other.
+
+	The items of the folio itself only - a text of a component goes with its
+	component -, and those that can move: a locked one stays, and is not
+	handed to the movement, whose undo would otherwise move what never
+	moved. No wire in the list: the movement takes those whose two ends
+	move, and stretches those with an end left behind.
+*/
+QList<QGraphicsItem *> LocationAreaItem::carriedItems() const
+{
+	QList<QGraphicsItem *> carried;
+	const Diagram *folio = diagram();
+	if (!folio) {
+		return carried;
+	}
+
+	const QRectF area{sceneRect()};
+	const QList<QGraphicsItem *> candidates{
+		folio->items(area, Qt::IntersectsItemBoundingRect)};
+	for (QGraphicsItem *item : candidates)
+	{
+		if (item == this || item->parentItem()) {
+			continue;
+		}
+
+		switch (item->type())
+		{
+			case LocationAreaItem::Type:
+			{
+				const auto *inner = qgraphicsitem_cast<LocationAreaItem *>(item);
+				const QRectF inner_rect{inner->sceneRect()};
+				if (inner->isMovable() && inner_rect != area
+				    && area.contains(inner_rect)) {
+					carried << item;
+				}
+				break;
+			}
+			case Element::Type:
+			case DiagramImageItem::Type:
+			case QetShapeItem::Type:
+			case QetGraphicsTableItem::Type:
+			case TerminalStripItem::Type:
+			case MountingLayoutViewItem::Type:
+			{
+				const auto *movable = dynamic_cast<const QetGraphicsItem *>(item);
+				if (movable && movable->isMovable()
+				    && area.contains(item->sceneBoundingRect().center())) {
+					carried << item;
+				}
+				break;
+			}
+			case IndependentTextItem::Type:
+				if ((item->flags() & QGraphicsItem::ItemIsMovable)
+				    && area.contains(item->sceneBoundingRect().center())) {
+					carried << item;
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	return carried;
+}
+
+/**
+	@brief LocationAreaItem::selectOnly
+	@param items what is selected with this area
+
+	This area and @a items selected, and nothing else: the movement of the
+	folio moves the selection. In one change of the selection, as
+	Diagram::completeGroupSelection() does it: the properties dock rebuilds
+	itself on each, and an enclosure can hold a hundred components.
+*/
+void LocationAreaItem::selectOnly(const QList<QGraphicsItem *> &items)
+{
+	Diagram *folio = diagram();
+	if (!folio) {
+		return;
+	}
+
+	const QSet<QGraphicsItem *> kept(items.cbegin(), items.cend());
+	const QList<QGraphicsItem *> selected{folio->selectedItems()};
+	const bool was_blocked{folio->blockSignals(true)};
+	for (QGraphicsItem *item : selected)
+	{
+		if (item != this && !kept.contains(item)) {
+			item->setSelected(false);
+		}
+	}
+	setSelected(true);
+	for (QGraphicsItem *item : items) {
+		item->setSelected(true);
+	}
+	folio->blockSignals(was_blocked);
+	if (!was_blocked) {
+		emit folio->selectionChanged();
+	}
+}
+
+/**
+	@brief LocationAreaItem::beginCarry
+	@return false when the movement of the folio could not begin
+
+	The content selected with the area, and the movement of the folio begun
+	on it, the area driving it as any item dragged by hand does.
+
+	The movement moves the components, the texts, the shapes and the
+	pictures, and not the areas, the tables, the drawn strips and the views
+	of a plate: those are moved here by the same amount (carryTo()). The
+	tables, the strips and the views are taken back by the step of the
+	movement, which counts them; the areas by a step of their own (endCarry()).
+
+	The first component found is the one the others keep their distance
+	from on the grid, as the first terminal of a strip frame is
+	(StripFrameItem::mouseMoveEvent()).
+*/
+bool LocationAreaItem::beginCarry()
+{
+	Diagram *folio = diagram();
+	if (!folio) {
+		return false;
+	}
+
+	const QList<QGraphicsItem *> carried{carriedItems()};
+	m_anchor.clear();
+	m_followers.clear();
+	for (QGraphicsItem *item : carried)
+	{
+		if (!m_anchor)
+		{
+			if (Element *element = qgraphicsitem_cast<Element *>(item))
+			{
+				m_anchor = element;
+				m_anchor_from = element->pos();
+			}
+		}
+
+		switch (item->type())
+		{
+			case LocationAreaItem::Type:
+			case QetGraphicsTableItem::Type:
+			case TerminalStripItem::Type:
+			case MountingLayoutViewItem::Type:
+				m_followers.append(Follower{item->toGraphicsObject(), item->pos()});
+				break;
+			default:
+				break;
+		}
+	}
+	m_pos_from = pos();
+
+	selectOnly(carried);
+	if (folio->elementsMover().beginMovement(folio, this) < 0)
+	{
+		selectOnly({});
+		m_anchor.clear();
+		m_followers.clear();
+		return false;
+	}
+	return true;
+}
+
+/**
+	@brief LocationAreaItem::carryTo
+	@param scene_pos where the mouse is
+
+	The first component, or the area when it holds none, put on the grid
+	where the mouse took it, and the rest of the content by the same: the
+	movement of the folio moves what it moves, and the area and the items it
+	leaves alone go by what the first component went by - the pull of a
+	terminal onto the line of its wire included
+	(ElementsMover::continueMovement()), or the area would leave its content
+	a fraction of a step behind.
+
+	The positions are written past QetGraphicsItem::setPos(), which puts
+	each on the grid by itself: what is written here is an amount the
+	content already went by, and must not be rounded again.
+*/
+void LocationAreaItem::carryTo(const QPointF &scene_pos)
+{
+	Diagram *folio = diagram();
+	if (!folio) {
+		return;
+	}
+
+	const QPointF reference_from{m_anchor ? m_anchor_from : m_pos_from};
+	const QPointF reference_now{m_anchor ? m_anchor->pos() : pos()};
+	const QPointF wanted{Diagram::snapToGrid(reference_from + scene_pos - m_press_scene_pos)};
+	folio->elementsMover().continueMovement(wanted - reference_now);
+
+	const QPointF moved{m_anchor ? m_anchor->pos() - m_anchor_from
+				     : wanted - m_pos_from};
+	QGraphicsItem::setPos(m_pos_from + moved);
+	for (const Follower &follower : std::as_const(m_followers))
+	{
+		if (follower.item) {
+			follower.item->setPos(follower.from + moved);
+		}
+	}
+}
+
+/**
+	@brief LocationAreaItem::endCarry
+	The end of a drag with the content: one undo step for all of it, and the
+	area alone selected again, as after a click on it.
+
+	The areas moved - this one and those inside it - are written in a step
+	handed to the movement of the folio, which ends it with its own: one
+	undo takes back the rectangles, the content and the locations the drag
+	changed together.
+
+	The project is told to make no wire while the movement ends. A movement
+	of one component alone joins it to any free terminal it lands in line
+	with (ElementsMover::endMovement()); an area holding one component is
+	no component placed by hand, and a wire drawn by moving a rectangle
+	would be a wire nobody asked for.
+*/
+void LocationAreaItem::endCarry()
+{
+	Diagram *folio = diagram();
+	if (!folio) {
+		return;
+	}
+
+		//A parent with no text of its own, so that it is never merged with
+		//another step; the movement names the whole step
+	auto *areas_step = new QUndoCommand();
+	if (pos() != m_pos_from) {
+		new QPropertyUndoCommand(this, "pos", m_pos_from, pos(), areas_step);
+	}
+	for (const Follower &follower : std::as_const(m_followers))
+	{
+		if (follower.item && follower.item->type() == LocationAreaItem::Type
+		    && follower.item->pos() != follower.from)
+		{
+			new QPropertyUndoCommand(follower.item.data(), "pos", follower.from,
+						 follower.item->pos(), areas_step);
+		}
+	}
+	if (areas_step->childCount()) {
+		folio->elementsMover().addExtraCommands({areas_step});
+	} else {
+		delete areas_step;
+	}
+
+	QETProject *project = folio->project();
+	const bool auto_conductor{project && project->autoConductor()};
+	if (auto_conductor) {
+		project->setAutoConductor(false);
+	}
+	folio->elementsMover().endMovement();
+	if (auto_conductor) {
+		project->setAutoConductor(true);
+	}
+
+	selectOnly({});
+	m_anchor.clear();
+	m_followers.clear();
 }
 
 /**

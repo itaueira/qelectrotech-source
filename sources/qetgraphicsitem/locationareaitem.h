@@ -22,7 +22,10 @@
 #include "../undocommand/assignlocationcommand.h"
 #include "qetshapeitem.h"
 
+#include <QPointer>
+
 class Diagram;
+class Element;
 class LocationTree;
 class QWidget;
 
@@ -60,6 +63,15 @@ class QWidget;
 	query. A stored list would be a second answer to the same question, and
 	it would go stale in silence the first time somebody dragged a component
 	one millimetre.
+
+	@par Dragged, it takes what is in it; edited, it goes alone
+	A drag of its border moves the area and everything it holds - the
+	components, their wires, the free texts, the shapes, the tables, the
+	areas drawn inside it -, in one undo step (carriedItems()). A double
+	click puts it in edition: its handles show, and a drag of its border
+	moves the rectangle alone, as every drag did before. Clicking anywhere
+	else, or Escape, takes it out of edition. The properties - the location
+	and the mask - moved from the double click to the context menu.
 */
 class LocationAreaItem : public QetShapeItem
 {
@@ -105,6 +117,11 @@ class LocationAreaItem : public QetShapeItem
 		QString name() const override;
 		void editProperty() override;
 		void applyProperties(const QString &path, const QColor &mask);
+			/// Whether the area is edited alone: its handles shown, and a
+			/// drag of its border moving the rectangle without its content
+		bool isEditing() const { return m_editing; }
+		void setEditing(bool editing);
+		QList<QGraphicsItem *> carriedItems() const;
 		static void refreshAll(Diagram *diagram);
 			/// What the corner of the area says
 		QString captionText() const;
@@ -136,17 +153,47 @@ class LocationAreaItem : public QetShapeItem
 			   const QStyleOptionGraphicsItem *option,
 			   QWidget *widget) override;
 		void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+		void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+		void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+		void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
+		void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
+		void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
+		QVariant itemChange(GraphicsItemChange change,
+				    const QVariant &value) override;
 
 	private:
 		QRectF captionRect() const;
 		static void locationChoices(const LocationTree &tree,
 					    QStringList *labels,
 					    QStringList *paths);
+		bool beginCarry();
+		void carryTo(const QPointF &scene_pos);
+		void endCarry();
+		void selectOnly(const QList<QGraphicsItem *> &items);
+		void updateToolTip();
+
+			/// An item the movement of the folio does not move, moved by
+			/// this area during a drag, and where it stood when it began
+		struct Follower
+		{
+			QPointer<QGraphicsObject> item;
+			QPointF from;
+		};
 
 		///ATTRIBUTES
 	private:
 		QString m_location_path;
 		QColor m_mask_color;
+		bool m_editing = false;
+			/// A drag of the area with its content, and what it needs: where
+			/// the press was, where the area and the component the others
+			/// keep their distance from stood, and the items moved here
+		bool m_carrying = false;
+		QPointF m_press_scene_pos;
+		QPointF m_pos_from;
+		QPointer<Element> m_anchor;
+		QPointF m_anchor_from;
+		QList<Follower> m_followers;
 };
 
 #endif // LOCATIONAREAITEM_H
