@@ -43,6 +43,7 @@
 #include "../TerminalStrip/terminalstrip.h"
 #include "../TerminalStrip/physicalterminal.h"
 #include "../TerminalStrip/realterminal.h"
+#include "../TerminalStrip/terminalstripbridge.h"
 #include "../wirecolorname.h"
 
 #include <QLocale>
@@ -134,6 +135,7 @@ void projectDataBase::updateDB()
 		//the database is made (and updateDB() called) by the constructor of the
 		//project, before its terminal strips exist. It is filled when a strip
 		//is added to the project or changed (spareTerminalsChanged()).
+		//Nor the terminal_bridge table, for the same reason (T87).
 	populateConductorTable();
 	populateLinkTable();
 	populateDrawingItemTables();
@@ -1883,11 +1885,31 @@ void projectDataBase::elementInfoChanged(QList<Element *> elements)
 	@brief projectDataBase::spareTerminalsChanged
 	The spare terminals of a terminal strip (on no folio) were added, removed
 	or changed : fill the spare_terminal table again.
+
+	The terminal_bridge table too (T87): it is called when a strip comes
+	into the project or leaves it, is renamed, or loses terminals, and each
+	of those changes the lines of its bridges as well - their strip, or the
+	number of terminals they join. A change of a bridge alone goes through
+	terminalBridgesChanged().
 */
 void projectDataBase::spareTerminalsChanged()
 {
 	populateSpareTerminalTable();
+	populateTerminalBridgeTable();
 	emit dataBaseUpdated();
+}
+
+/**
+	@brief projectDataBase::terminalBridgesChanged
+	A bridge of a terminal strip was made, extended, shortened, undone or
+	given another colour: fill the terminal_bridge table again (T87).
+*/
+void projectDataBase::terminalBridgesChanged()
+{
+	populateTerminalBridgeTable();
+		//Through the gesture coalescer, as locationTreeChanged(): inside
+		//an open operation the lists are told once, when it closes
+	notifyUpdated();
 }
 
 /**
@@ -1938,6 +1960,107 @@ void projectDataBase::populateSpareTerminalTable()
 				if (!query_.exec()) {
 					qDebug() << "projectDataBase::populateSpareTerminalTable insert error : " << query_.lastError();
 				}
+			}
+		}
+	}
+}
+
+/**
+	@brief projectDataBase::populateTerminalBridgeTable
+	Fill the terminal_bridge table with the bridges of the terminal strips
+	of the project (T87): the comb or the jumper the fitter puts on the
+	terminals, bought apart and drawn on no folio, one line of the
+	nomenclature each, after the folios like the spare terminals.
+
+	A line says what the part is and how many terminals it joins - the
+	number of poles a comb is ordered by -, counted on the terminals the
+	strip still holds. A bridge joining fewer than two of them joins
+	nothing (what an undone bridge leaves in its strip) and has no line.
+
+	What the strip knows goes where the lists read it: the name of the
+	strip as the label, its installation and location as the plant and
+	location of the line. The colour of the bridge goes in the description,
+	the one free text column a list shows beside the designation. Nothing
+	tells which product a bridge is - no manufacturer, reference or part
+	code -, so those columns stay empty.
+*/
+void projectDataBase::populateTerminalBridgeTable()
+{
+	QSqlQuery query_(m_data_base);
+	query_.exec(QStringLiteral("DELETE FROM terminal_bridge"));
+	if (!m_project) {
+		return;
+	}
+
+	const auto keys_ = QETInformation::elementInfoKeys();
+	QString insert_(QStringLiteral("INSERT INTO terminal_bridge (uuid, diagram_position, title, folio, position"));
+	QString values_(QStringLiteral(" VALUES (:uuid, :diagram_position, :title, :folio, :position"));
+	for (const auto &key_ : keys_) {
+		insert_ += QStringLiteral(", ") + key_;
+		values_ += QStringLiteral(", :") + key_;
+	}
+	query_.prepare(insert_ + QStringLiteral(")") + values_ + QStringLiteral(")"));
+
+	struct BridgeLine
+	{
+		QSharedPointer<TerminalStripBridge> bridge;
+		int position = 0;	//of its first terminal in the strip
+		int poles = 0;
+	};
+
+		//Strip by strip, as the spare terminals, and in each strip in the
+		//order of its terminals
+	int strip_index_ = 0;
+	for (const auto &strip_ : m_project->terminalStrip())
+	{
+		++strip_index_;
+		QVector<BridgeLine> lines_;
+		const auto physical_ = strip_->physicalTerminal();
+		for (int pos_ = 0 ; pos_ < physical_.size() ; ++pos_)
+		{
+			for (const auto &real_t : physical_.at(pos_)->realTerminals())
+			{
+				const auto bridge_ = strip_->isBridged(real_t);
+				if (!bridge_) {
+					continue;
+				}
+				auto line_ = std::find_if(lines_.begin(), lines_.end(),
+							  [&bridge_](const BridgeLine &line) {return line.bridge == bridge_;});
+				if (line_ == lines_.end()) {
+					lines_.append(BridgeLine{bridge_, pos_, 1});
+				} else {
+					++line_->poles;
+				}
+			}
+		}
+
+		for (const auto &line_ : std::as_const(lines_))
+		{
+			if (line_.poles < 2) {
+				continue;
+			}
+				//Every column bound again: a prepared query keeps the
+				//values of the previous line
+			for (const auto &key_ : keys_) {
+				query_.bindValue(QStringLiteral(":") + key_, QString());
+			}
+			query_.bindValue(QStringLiteral(":uuid"), line_.bridge->uuid().toString());
+			query_.bindValue(QStringLiteral(":diagram_position"), 1000000 + strip_index_);
+			query_.bindValue(QStringLiteral(":title"), QVariant());
+			query_.bindValue(QStringLiteral(":folio"), QVariant());
+			query_.bindValue(QStringLiteral(":position"), line_.position);
+			query_.bindValue(QStringLiteral(":") + QETInformation::ELMT_LABEL, strip_->name());
+			query_.bindValue(QStringLiteral(":") + QETInformation::ELMT_PLANT, strip_->installation());
+			query_.bindValue(QStringLiteral(":") + QETInformation::ELMT_LOCATION, strip_->location());
+			query_.bindValue(QStringLiteral(":") + QETInformation::ELMT_DESIGNATION,
+					 tr("Bridge, %1 poles",
+					    "bill of materials: the comb or jumper joining %1 terminals of a strip")
+						 .arg(line_.poles));
+			query_.bindValue(QStringLiteral(":") + QETInformation::ELMT_QUANTITY, QStringLiteral("1"));
+			query_.bindValue(QStringLiteral(":") + QETInformation::ELMT_DESCRIPTION,
+					 WireColorName::name(line_.bridge->color()));
+			if (!query_.exec()) {
+				qDebug() << "projectDataBase::populateTerminalBridgeTable insert error : " << query_.lastError();
 			}
 		}
 	}
@@ -3185,6 +3308,16 @@ bool projectDataBase::createDataBase()
 		qDebug() << " spare_terminal_table query : " << query_.lastError();
 	}
 
+		//The bridges of the terminal strips (T87), lines of the nomenclature
+		//on no folio as well: the same columns, made from the same text so
+		//that the two cannot differ (populateTerminalBridgeTable())
+	QString terminal_bridge_table(spare_terminal_table);
+	terminal_bridge_table.replace(QStringLiteral("CREATE TABLE spare_terminal("),
+				      QStringLiteral("CREATE TABLE terminal_bridge("));
+	if (!query_.exec(terminal_bridge_table)) {
+		qDebug() << " terminal_bridge_table query : " << query_.lastError();
+	}
+
 		//The paths of the locations out of the project (T85), before the
 		//views that read it
 	if (!query_.exec(QStringLiteral("CREATE TABLE ") + QETBom::outsideLocationTable()
@@ -3456,6 +3589,17 @@ void projectDataBase::createElementNomenclatureView()
 		create_view += QStringLiteral(" UNION ALL SELECT ") + columns_ +
 					   QStringLiteral(" FROM spare_terminal st"
 									  " WHERE COALESCE(LOWER(TRIM(st.exclude_from_bom)), '') NOT IN ('true', '1', 'yes', 'on')");
+
+			//The bridges of the strips (T87) the same way, from a table of
+			//their own: a comb or a jumper is bought with the terminals and
+			//listed among them - wherever a list takes the terminals, it
+			//takes the bridges -, and 'bridge' tells them apart
+		QString bridge_columns_ = columns_;
+		bridge_columns_.replace(QStringLiteral("NULL AS element_sub_type"),
+					QStringLiteral("'bridge' AS element_sub_type"));
+		create_view += QStringLiteral(" UNION ALL SELECT ") + bridge_columns_ +
+			       QStringLiteral(" FROM terminal_bridge st"
+					      " WHERE COALESCE(LOWER(TRIM(st.exclude_from_bom)), '') NOT IN ('true', '1', 'yes', 'on')");
 	}
 
 	QSqlQuery query(m_data_base);

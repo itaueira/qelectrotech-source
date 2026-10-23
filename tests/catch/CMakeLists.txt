@@ -1188,6 +1188,8 @@ if(TARGET qelectrotech_objects)
         src/ui/locationareadrag_test.cpp
         # T87: the bus bar, a bridge of a strip drawn on the folio and fed by one wire.
         src/ui/terminalbus_test.cpp
+        # T87: each bridge of a strip, a line of the bill of materials.
+        src/ui/busbom_test.cpp
         # The stall sampler of the watchdog: a stall made on purpose, named.
         src/ui/stallsampler_test.cpp
         # T83: an element drawn at another scale on the folio.

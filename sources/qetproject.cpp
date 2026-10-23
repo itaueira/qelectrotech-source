@@ -5334,6 +5334,11 @@ void QETProject::watchTerminalStrip(TerminalStrip *strip, bool watch)
 	if (watch) {
 		connect(strip, &TerminalStrip::orderChanged, &m_data_base, &projectDataBase::spareTerminalsChanged);
 		connect(strip, &TerminalStrip::dataChanged, &m_data_base, &projectDataBase::spareTerminalsChanged);
+			//Its bridges are lines of the nomenclature too, bought apart
+			//(T87): a bridge made, changed, recoloured or undone written
+			//again. The order and the data above write them as well
+		connect(strip, &TerminalStrip::bridgeChanged, &m_data_base, &projectDataBase::terminalBridgesChanged);
+		connect(strip, &TerminalStrip::bridgeColorChanged, &m_data_base, &projectDataBase::terminalBridgesChanged);
 			//A bridge made, changed or undone, in the strip manager or on
 			//a folio: the bus bars of the folios drawn again (T87). On the
 			//database as the context, so that the disconnect above stops

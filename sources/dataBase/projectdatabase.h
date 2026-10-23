@@ -406,6 +406,10 @@ class projectDataBase : public QObject
 		static QString elementTypeClause(ElementData::Types types,
 						 const QString &column);
 		void spareTerminalsChanged();
+			/// A bridge of a terminal strip made, changed or undone: the
+			/// lines of the bridges are written again, and the lists are
+			/// told (T87)
+		void terminalBridgesChanged();
 			/// The tree of locations changed: what is out of the project
 			/// is read again from it, and the lists are told (T85)
 		void locationTreeChanged();
@@ -430,6 +434,7 @@ class projectDataBase : public QObject
 		void populateElementInfoTable();
 		void populateElementInfoTableFromFolios();
 		void populateSpareTerminalTable();
+		void populateTerminalBridgeTable();
 		void populateOutsideLocationTable();
 		void populateDiagramInfoTable();
 		void populateConductorTable();
