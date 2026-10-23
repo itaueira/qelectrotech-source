@@ -71,6 +71,9 @@
 #include "../qetgraphicsitem/independenttextitem.h"
 #include "../qetgraphicsitem/qetshapeitem.h"
 #include "../qetgraphicsitem/stripframeitem.h"
+#include "../qetgraphicsitem/terminalbusitem.h"
+#include "../TerminalStrip/terminalstripbridge.h"
+#include "../TerminalStrip/GraphicsItem/terminalstripitem.h"
 #include "../qetgraphicsitem/locationareaitem.h"
 #include "../undocommand/addgraphicsobjectcommand.h"
 #include "../undocommand/assignlocationcommand.h"
@@ -1251,6 +1254,77 @@ bool QetScriptApi::drawStripFrame(int folioIndex, const QStringList &elementUuid
 	const int steps = diagram->undoStack().count();
 	StripFrameItem::drawAround(diagram, terminals, name);
 	return diagram->undoStack().count() > steps;
+}
+
+/**
+	@brief QetScriptApi::joinBus
+	The terminals @a elementUuids of the folio joined into a bus bar, as
+	"Join into a bus bar" does with them selected (T87); @a newStripName
+	names the strip made when none of them is in one and their drawn strip
+	gives no name. One undo step.
+	@return true when they were joined; why not, in the log
+*/
+bool QetScriptApi::joinBus(int folioIndex, const QStringList &elementUuids, const QString &newStripName)
+{
+	if (!m_project || m_project->isReadOnly()) return false;
+	QList<Element *> terminals;
+	for (const QString &uuid : elementUuids) {
+		if (Element *element = findElement(folioIndex, uuid)) terminals << element;
+	}
+	QString why;
+	if (!TerminalBusItem::join(built(m_project->folios().at(folioIndex)), terminals, newStripName, &why))
+	{
+		log(QStringLiteral("qet.joinBus: %1").arg(why));
+		return false;
+	}
+	return true;
+}
+
+/**
+	@brief QetScriptApi::buses
+	The bus bars of the folio (T87): for each, the uuids of its "terminals",
+	its "feed" wire, empty for none, its "side", and its "trunk" as x1, y1,
+	x2, y2
+*/
+QVariantList QetScriptApi::buses(int folioIndex) const
+{
+	QVariantList list;
+	if (!m_project || folioIndex < 0 || folioIndex >= m_project->folios().count()) return list;
+	const QList<TerminalBusItem *> items = TerminalBusItem::busesOn(m_project->folios().at(folioIndex));
+	for (const TerminalBusItem *bus : items)
+	{
+		QStringList terminals;
+		const QList<Element *> elements = bus->terminals();
+		for (const Element *element : elements) terminals << element->uuid().toString();
+		const QLineF trunk = bus->trunk();
+		const QSharedPointer<TerminalStripBridge> bridge = bus->bridge();
+		list << QVariantMap{
+			{QStringLiteral("terminals"), terminals},
+			{QStringLiteral("feed"), bridge && !bridge->feed().isNull() ? bridge->feed().toString() : QString()},
+			{QStringLiteral("side"), bus->side()},
+			{QStringLiteral("trunk"), QVariantList{trunk.x1(), trunk.y1(), trunk.x2(), trunk.y2()}}};
+	}
+	return list;
+}
+
+/**
+	@brief QetScriptApi::addTerminalStripItem
+	The strip @a stripIndex of the strip manager drawn on the folio at
+	(@a x, @a y), as "Add a terminal strip" does, in the default style:
+	the strip the manager generates, with its bridges. One undo step.
+*/
+bool QetScriptApi::addTerminalStripItem(int folioIndex, int stripIndex, double x, double y)
+{
+	if (!m_project || m_project->isReadOnly()) return false;
+	const QVector<TerminalStrip *> strips = m_project->terminalStrip();
+	if (folioIndex < 0 || folioIndex >= m_project->folios().count()
+	    || stripIndex < 0 || stripIndex >= strips.count()) return false;
+	Diagram *diagram = built(m_project->folios().at(folioIndex));
+	auto *item = new TerminalStripItem(strips.at(stripIndex));
+	diagram->addItem(item);
+	item->setPos(x, y);
+	m_project->undoStack()->push(new AddGraphicsObjectCommand(item, diagram, QPointF(x, y)));
+	return true;
 }
 
 /**

@@ -246,6 +246,9 @@ class Conductor : public QGraphicsObject
 		static QPointF nearestOnPath(const QList<QPointF> &points, const QPointF &point,
 					     int *segment = nullptr);
 		static void linkArms(const QList<Conductor *> &conductors);
+			/// Something the wires hop over changed shape - the trunk of a
+			/// bus bar (T87): every wire works its hops out again
+		static void othersChangedShape();
 
 		/**
 			@brief While one of these lives, a conductor asked to place its

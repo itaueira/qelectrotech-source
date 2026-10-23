@@ -140,6 +140,18 @@ DynamicElementTextItem::DynamicElementTextItem(Element *parent_element) :
 	setRotation(settings.value("dynamic_text_rotation", 0).toInt());
 	setKeepVisualRotation(true);
 	setTextWidth(settings.value("dynamic_text_width", -1).toInt());
+		//A text of a terminal of a strip answers no mouse: it is neither
+		//selected nor dragged on the folio, and a click on it reaches what
+		//is under it - the terminals of a strip stand close together, and
+		//the text of one lay over its neighbour (T87, asked by the Renan).
+		//It is changed in the properties of the terminal
+	if (parent_element && parent_element->elementData().m_type == ElementData::Terminal)
+	{
+		setFlag(QGraphicsItem::ItemIsSelectable, false);
+		setFlag(QGraphicsItem::ItemIsMovable, false);
+		setAcceptedMouseButtons(Qt::NoButton);
+		setAcceptHoverEvents(false);
+	}
 	connect(this, &DynamicElementTextItem::textEdited, [this](const QString &old_str, const QString &new_str)
 	{
 		if(this->m_parent_element && this->m_parent_element->diagram())

@@ -64,3 +64,22 @@ TEST_CASE("Wires crossing at one point get one hop", "[wirehops]")
 	const QPainterPath path = WireHops::path(wire, hops, WireHops::Mode::Horizontal);
 	CHECK(path.boundingRect().top() == Approx(-WireHops::radius));
 }
+
+TEST_CASE("A crossing near the piece a wire comes to its terminal by hops", "[wirehops]")
+{
+		//A wire comes to its terminal by a short piece in line with the
+		//rest: the crossing 3 from where they meet hopped on neither piece
+		//(T87, the trunk of a bus bar 8 from the terminals)
+	const QVector<QPointF> wire {QPointF(720, 465), QPointF(820, 465), QPointF(831, 465)};
+	const QList<QVector<QPointF>> trunk {line(823, 440, 823, 500)};
+	CHECK(WireHops::crossings(wire, trunk, WireHops::Mode::Horizontal).isEmpty());
+	const QVector<QPointF> simple = WireHops::simplified(wire);
+	REQUIRE(simple.size() == 2);
+	CHECK(simple.last() == QPointF(831, 465));
+	const QList<QPointF> hops = WireHops::crossings(simple, trunk, WireHops::Mode::Horizontal);
+	REQUIRE(hops.size() == 1);
+	CHECK(hops.first() == QPointF(823, 465));
+		//A bend is kept, and a wire turning back on itself too
+	CHECK(WireHops::simplified({QPointF(0, 0), QPointF(10, 0), QPointF(10, 10)}).size() == 3);
+	CHECK(WireHops::simplified({QPointF(0, 0), QPointF(10, 0), QPointF(5, 0)}).size() == 3);
+}

@@ -54,13 +54,16 @@ namespace
 	const QString example = QStringLiteral("2612_ats_singlephase.qet");
 	const QPointF drag(40, 0);
 
-	/// An element of @p diagram turned by @p degrees, with a text of its own
+	/// An element of @p diagram turned by @p degrees, with a text of its own;
+	/// not a terminal of a strip, whose texts are selected by no click
+	/// since T87
 	Element *turnedWithText(Diagram *diagram, int degrees)
 	{
 		const DiagramContent content(diagram, false);
 		for (Element *element : content.m_elements)
 		{
 			if (qRound(element->rotation()) % 360 == degrees
+					&& element->elementData().m_type != ElementData::Terminal
 					&& !element->dynamicTextItems().isEmpty()) {
 				return element;
 			}
@@ -68,12 +71,27 @@ namespace
 		return nullptr;
 	}
 
-	/// The first folio of the project holding such an element
+	/// The first folio of the project holding such an element; else an
+	/// element with a text, turned here - the example turns by 180 and 270
+	/// degrees only terminals of strips
 	Element *turnedWithText(UiBench::Project &project, int degrees)
 	{
 		for (Diagram *diagram : project.diagrams()) {
 			if (Element *element = turnedWithText(diagram, degrees)) {
 				return element;
+			}
+		}
+		for (Diagram *diagram : project.diagrams())
+		{
+			const DiagramContent content(diagram, false);
+			for (Element *element : content.m_elements)
+			{
+				if (element->elementData().m_type != ElementData::Terminal
+				    && !element->dynamicTextItems().isEmpty())
+				{
+					element->setRotation(degrees);
+					return element;
+				}
 			}
 		}
 		return nullptr;

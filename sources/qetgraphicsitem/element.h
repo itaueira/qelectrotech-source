@@ -363,6 +363,7 @@ class Element : public QetGraphicsItem
 				const QStyleOptionGraphicsItem *,
 				QWidget *) override;
 		QRectF boundingRect() const override;
+		QPainterPath shape() const override;
 		QRectF drawnRect() const;
 	protected:
 		void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;

@@ -20,6 +20,8 @@
 #include "../qet.h"
 #include "../qetproject.h"
 #include "../TerminalStrip/terminalstrip.h"
+#include "../TerminalStrip/realterminal.h"
+#include "../TerminalStrip/terminalstripbridge.h"
 #include "../TerminalStrip/ui/terminalstripeditorwindow.h"
 #include "../dataBase/projectdatabase.h"
 #include "../conductorautonumerotation.h"
@@ -1363,6 +1365,38 @@ void Terminal::setMasterLabelIndex(int index)
 	update();
 }
 
+namespace {
+	/**
+		The terminals of the components the bridge of the strip of
+		@a element joins to it - those on a folio, and on its own folio
+		only unless @a all_diagram -: a bus bar is one potential (T87)
+	*/
+	QList<Terminal *> bridgedTerminals(const Element *element, bool all_diagram)
+	{
+		QList<Terminal *> list;
+		const auto *terminal_element = qobject_cast<const TerminalElement *>(element);
+		if (!terminal_element) {
+			return list;
+		}
+		const QSharedPointer<RealTerminal> real = terminal_element->realTerminal();
+		const QSharedPointer<TerminalStripBridge> bridge = real ? real->bridge() : QSharedPointer<TerminalStripBridge>();
+		if (!bridge) {
+			return list;
+		}
+		const QVector<QSharedPointer<RealTerminal>> joined = bridge->realTerminals();
+		for (const QSharedPointer<RealTerminal> &other : joined)
+		{
+			Element *other_element = other && other != real ? other->element() : nullptr;
+			if (!other_element || !other_element->diagram()
+			    || (!all_diagram && other_element->diagram() != element->diagram())) {
+				continue;
+			}
+			list << other_element->terminals();
+		}
+		return list;
+	}
+}
+
 /**
 	@brief Conductor::relatedPotentialTerminal
 	Return terminal at the same potential from the same
@@ -1445,6 +1479,8 @@ QList<Terminal *> relatedPotentialTerminal (
 
 		QList <Terminal *> terminals = terminal->parentElement()->terminals();
 		terminals.removeAll(const_cast<Terminal *>(terminal));
+			//And the terminals the bridge of its strip joins to it (T87)
+		terminals << bridgedTerminals(terminal->parentElement(), all_diagram);
 		return terminals;
 	}
 

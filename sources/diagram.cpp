@@ -44,6 +44,7 @@
 #include "qetgraphicsitem/independenttextitem.h"
 #include "qetgraphicsitem/locationareaitem.h"
 #include "qetgraphicsitem/stripframeitem.h"
+#include "qetgraphicsitem/terminalbusitem.h"
 #include "qetgraphicsitem/qetshapeitem.h"
 #include "qetgraphicsitem/terminal.h"
 #include "qetxml.h"
@@ -3003,6 +3004,10 @@ void Diagram::refreshContents()
 	for (auto &strip :std::as_const(dc_.m_terminal_strip)) {
 		strip->refreshPending();
 	}
+
+		//The bus bars of the bridges of the strips that join terminals of
+		//this folio (T87)
+	TerminalBusItem::syncFolio(this);
 }
 
 /**

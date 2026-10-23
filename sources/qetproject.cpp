@@ -36,6 +36,7 @@
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/dynamicelementtextitem.h"
 #include "qetgraphicsitem/locationareaitem.h"
+#include "qetgraphicsitem/terminalbusitem.h"
 #include "qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
 #include "qetgraphicsitem/ViewItem/projectdbmodel.h"
 #include "qetapp.h"
@@ -5333,6 +5334,19 @@ void QETProject::watchTerminalStrip(TerminalStrip *strip, bool watch)
 	if (watch) {
 		connect(strip, &TerminalStrip::orderChanged, &m_data_base, &projectDataBase::spareTerminalsChanged);
 		connect(strip, &TerminalStrip::dataChanged, &m_data_base, &projectDataBase::spareTerminalsChanged);
+			//A bridge made, changed or undone, in the strip manager or on
+			//a folio: the bus bars of the folios drawn again (T87). On the
+			//database as the context, so that the disconnect above stops
+			//it too
+		const auto buses = [this]() {
+			const QList<Diagram *> folios = builtFolios();
+			for (Diagram *folio : folios) {
+				TerminalBusItem::syncFolio(folio);
+			}
+		};
+		connect(strip, &TerminalStrip::bridgeChanged, &m_data_base, buses);
+		connect(strip, &TerminalStrip::bridgeColorChanged, &m_data_base, buses);
+		connect(strip, &TerminalStrip::orderChanged, &m_data_base, buses);
 	}
 	m_data_base.spareTerminalsChanged();
 }

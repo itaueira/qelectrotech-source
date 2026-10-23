@@ -439,6 +439,11 @@ class QetScriptApi : public QObject
 		Q_INVOKABLE QVariantMap conductorArm(int folioIndex, const QString &conductorUuid) const;
 		// -- the frame of a strip drawn round its terminals (T85) --
 		Q_INVOKABLE bool drawStripFrame(int folioIndex, const QStringList &elementUuids, const QString &name);
+		// -- terminals joined into a bus bar (T87) --
+		Q_INVOKABLE bool joinBus(int folioIndex, const QStringList &elementUuids,
+								 const QString &newStripName = QString());
+		Q_INVOKABLE QVariantList buses(int folioIndex) const;
+		Q_INVOKABLE bool addTerminalStripItem(int folioIndex, int stripIndex, double x, double y);
 		Q_INVOKABLE QVariantList stripFrames(int folioIndex) const;
 		// -- locations, and the areas that hold them on a folio (T32, T85) --
 		Q_INVOKABLE QString addLocation(const QString &code, const QString &name,

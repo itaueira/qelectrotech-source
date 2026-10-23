@@ -118,6 +118,7 @@
 #include "qetgraphicsitem/elementtextitemgroup.h"
 #include "qetgraphicsitem/qetgraphicsitem.h"
 #include "qetgraphicsitem/stripframeitem.h"
+#include "qetgraphicsitem/terminalbusitem.h"
 #include "qeticons.h"
 #include "qetmessagebox.h"
 #include "recentfiles.h"
@@ -690,6 +691,28 @@ void QETDiagramEditor::setUpActions()
 		connect(take_out, &QAction::triggered, this, [this, selected]() {
 			if (DiagramView *view = currentDiagramView()) {
 				StripFrameItem::takeOut(view->diagram(), selected());
+			}
+		});
+			//The selected terminals joined by a bridge of their strip, a
+			//comb the fitter puts on them, and the wires it makes
+			//redundant taken out (T87)
+		menu->addSeparator();
+		QAction *bus = menu->addAction(tr("Join into a bus bar"));
+		bus->setStatusTip(tr("Join the selected terminals with a bridge of their strip, fed by one wire", "status bar tip"));
+		connect(bus, &QAction::triggered, this, [this, selected]() {
+			DiagramView *view = currentDiagramView();
+			const QList<Element *> terminals = selected();
+			if (!view || terminals.isEmpty()) return;
+			QString name;
+			if (TerminalBusItem::needsStripName(terminals))
+			{
+				bool ok = false;
+				name = StripFrameItem::askName(this, QString(), &ok);
+				if (!ok) return;
+			}
+			QString why;
+			if (!TerminalBusItem::join(view->diagram(), terminals, name, &why) && !why.isEmpty()) {
+				QET::QetMessageBox::information(this, tr("Join into a bus bar"), why);
 			}
 		});
 	}

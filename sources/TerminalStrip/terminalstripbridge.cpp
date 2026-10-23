@@ -64,6 +64,37 @@ void TerminalStripBridge::setColor(const QColor &color) {
 }
 
 /**
+ * @brief TerminalStripBridge::setFeed
+ * The wire of uuid @a conductor_uuid feeds this bridge: the folios draw a
+ * mark on it where it comes to the bridge (T87)
+ */
+void TerminalStripBridge::setFeed(const QUuid &conductor_uuid)
+{
+	if (m_feed == conductor_uuid) {
+		return;
+	}
+	m_feed = conductor_uuid;
+	if (m_strip) {
+		emit m_strip->bridgeChanged();
+	}
+}
+
+/**
+ * @brief TerminalStripBridge::setSide
+ * The bridge drawn by the terminal @a side of its components (T87)
+ */
+void TerminalStripBridge::setSide(int side)
+{
+	if (m_side == side) {
+		return;
+	}
+	m_side = side;
+	if (m_strip) {
+		emit m_strip->bridgeChanged();
+	}
+}
+
+/**
  * @brief TerminalStripBridge::realTerminals
  * @return the real terminals who are bridged by this bridge
  */
@@ -83,6 +114,12 @@ QDomElement TerminalStripBridge::toXml(QDomDocument &parent_document) const
 
 	root_elmt.setAttribute(QStringLiteral("uuid"), m_uuid.toString());
 	root_elmt.setAttribute(QStringLiteral("color"), m_color.name());
+	if (!m_feed.isNull()) {
+		root_elmt.setAttribute(QStringLiteral("feed"), m_feed.toString());
+	}
+	if (m_side >= 0) {
+		root_elmt.setAttribute(QStringLiteral("side"), m_side);
+	}
 
 	auto terminals_elmt = parent_document.createElement(QStringLiteral("real_terminals"));
 	for (const auto &real_t : std::as_const(m_real_terminals))
@@ -107,6 +144,10 @@ void TerminalStripBridge::fromXml(const QDomElement &dom_element)
 
 	m_uuid = QUuid(dom_element.attribute(QStringLiteral("uuid"), m_uuid.toString()));
 	m_color = QColor(dom_element.attribute(QStringLiteral("color")));
+	m_feed = QUuid(dom_element.attribute(QStringLiteral("feed")));
+	bool side_ok = false;
+	const int side = dom_element.attribute(QStringLiteral("side")).toInt(&side_ok);
+	m_side = side_ok ? side : -1;
 
 	const auto real_t_vector = QETXML::subChild(dom_element,
 										 QStringLiteral("real_terminals"),

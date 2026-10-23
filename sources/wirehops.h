@@ -60,6 +60,10 @@ namespace WireHops
 	QPainterPath path(const QVector<QPointF> &wire,
 					  const QList<QPointF> &hops,
 					  Mode mode);
+		///The points of @a wire without those in a straight run: a wire
+		///comes to its terminal by a short piece in line with the rest,
+		///and a crossing near where they meet hopped on neither (T87)
+	QVector<QPointF> simplified(const QVector<QPointF> &wire);
 }
 
 #endif // WIREHOPS_H

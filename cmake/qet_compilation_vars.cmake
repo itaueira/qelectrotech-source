@@ -945,6 +945,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/qetgraphicsitem/locationareaitem.h
   ${QET_DIR}/sources/qetgraphicsitem/stripframeitem.cpp
   ${QET_DIR}/sources/qetgraphicsitem/stripframeitem.h
+  ${QET_DIR}/sources/qetgraphicsitem/terminalbusitem.cpp
+  ${QET_DIR}/sources/qetgraphicsitem/terminalbusitem.h
   ${QET_DIR}/sources/qetgraphicsitem/masterelement.cpp
   ${QET_DIR}/sources/qetgraphicsitem/masterelement.h
   ${QET_DIR}/sources/qetgraphicsitem/qetgraphicsitem.cpp

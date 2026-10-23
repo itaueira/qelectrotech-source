@@ -102,6 +102,34 @@ WireHops::Mode WireHops::fromString(const QString &string)
 	two wires reads as one wire crossed, which the person refused on
 	23/10/2026.
 */
+QVector<QPointF> WireHops::simplified(const QVector<QPointF> &wire)
+{
+	QVector<QPointF> points;
+	for (const QPointF &point : wire)
+	{
+		if (!points.isEmpty() && qAbs(point.x() - points.last().x()) < tolerance
+		    && qAbs(point.y() - points.last().y()) < tolerance) {
+			continue;
+		}
+		if (points.size() >= 2)
+		{
+			const QPointF &a = points.at(points.size() - 2);
+			const QPointF &b = points.last();
+			const bool straight = (isHorizontal(a, b) && isHorizontal(b, point)
+					       && (b.x() - a.x()) * (point.x() - b.x()) > 0)
+					|| (isVertical(a, b) && isVertical(b, point)
+					    && (b.y() - a.y()) * (point.y() - b.y()) > 0);
+			if (straight)
+			{
+				points.last() = point;
+				continue;
+			}
+		}
+		points << point;
+	}
+	return points;
+}
+
 QList<QPointF> WireHops::crossings(const QVector<QPointF> &wire,
 								   const QList<QVector<QPointF>> &others,
 								   Mode mode)

@@ -43,6 +43,16 @@ class TerminalStripBridge
 		void setColor(const QColor &color);
 		QVector<QSharedPointer<RealTerminal>> realTerminals() const;
 
+			/// The wire that feeds the bridge, by its uuid: one of the
+			/// wires on its terminals, which the person marks (T87)
+		QUuid feed() const noexcept {return m_feed;}
+		void setFeed(const QUuid &conductor_uuid);
+			/// The terminal of its components the bridge is drawn by on
+			/// a folio - the index in Element::terminals(), the side of the
+			/// strip -, -1 when none was chosen (T87)
+		int side() const noexcept {return m_side;}
+		void setSide(int side);
+
 		static QString xmlTagName() {return QStringLiteral("terminal_strip_bridge");}
 		QDomElement toXml(QDomDocument &parent_document) const;
 		void fromXml(const QDomElement &dom_element);
@@ -59,6 +69,8 @@ class TerminalStripBridge
 		QVector<QSharedPointer<RealTerminal>> m_real_terminals;
 		QColor m_color = Qt::darkGray;
 		QUuid m_uuid = QUuid::createUuid();
+		QUuid m_feed;
+		int m_side = -1;
 		QWeakPointer<TerminalStripBridge> m_this_weak;
 };
 

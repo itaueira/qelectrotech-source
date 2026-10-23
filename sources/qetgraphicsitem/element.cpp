@@ -720,6 +720,25 @@ QRectF Element::boundingRect() const
 }
 
 /**
+	@brief Element::shape
+	@return where a click takes this element: the box its definition
+	declares, but for a terminal of a strip, which a click takes only where
+	it is drawn. The terminals of a strip stand close together, and the box
+	of a terminal symbol is wider than its drawing: a click on one terminal
+	took its neighbour (T87, asked by the Renan on 23/10/2026)
+*/
+QPainterPath Element::shape() const
+{
+	QPainterPath path;
+	if (m_data.m_type == ElementData::Terminal) {
+		path.addRect(drawnRect().adjusted(-1, -1, 1, 1));
+	} else {
+		path.addRect(boundingRect());
+	}
+	return path;
+}
+
+/**
 	@brief Element::drawnRect
 	@return the part of the symbol that is drawn, in the element's
 	coordinates. boundingRect() is the box the definition declares, which

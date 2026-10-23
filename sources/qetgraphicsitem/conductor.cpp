@@ -44,6 +44,7 @@
 #include "../QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../utils/qetutils.h"
 #include "../wirehops.h"
+#include "terminalbusitem.h"
 
 #include <QFontMetricsF>
 #include <QLineF>
@@ -3805,6 +3806,17 @@ QPainterPath Conductor::paintedPath() const
 			}
 			s_hop_candidates.append(candidate);
 		}
+			//And the trunks of the bus bars: a wire crossing one hops over
+			//it (T87)
+		const QList<QVector<QPointF>> trunks = TerminalBusItem::trunksOn(parent_diagram);
+		for (const QVector<QPointF> &trunk : trunks)
+		{
+			HopCandidate candidate;
+			candidate.conductor = nullptr;
+			candidate.rect = QRectF(trunk.first(), trunk.last()).normalized();
+			candidate.points = trunk;
+			s_hop_candidates.append(candidate);
+		}
 		s_hop_candidates_diagram = parent_diagram;
 		s_hop_candidates_generation = s_conductor_geometry_generation;
 	}
@@ -3813,7 +3825,9 @@ QPainterPath Conductor::paintedPath() const
 	m_hops_generation = s_conductor_geometry_generation;
 	m_hops_mode = int(mode);
 
-	const QList<QPointF> points = segmentsToPoints();
+		//Without the points of a straight run: the short piece a wire comes
+		//to its terminal by would keep a crossing near it from hopping (T87)
+	const QList<QPointF> points = WireHops::simplified(segmentsToPoints());
 	if (points.size() < 2) {
 		return m_hops_path;
 	}
@@ -4400,11 +4414,12 @@ QPainterPath Conductor::ownPiecePaintedPath() const
 		return plain;
 	}
 	QVector<QPointF> local;
+	for (int i = 0 ; i < plain.elementCount() ; ++i) {
+		local << QPointF(plain.elementAt(i).x, plain.elementAt(i).y);
+	}
+	local = WireHops::simplified(local);
 	QVector<QPointF> wire;
-	for (int i = 0 ; i < plain.elementCount() ; ++i)
-	{
-		const QPointF point(plain.elementAt(i).x, plain.elementAt(i).y);
-		local << point;
+	for (const QPointF &point : std::as_const(local)) {
 		wire << mapToScene(point);
 	}
 	const QRectF rect = mapRectToScene(plain.boundingRect()).adjusted(-1, -1, 1, 1);
@@ -4423,6 +4438,8 @@ QPainterPath Conductor::ownPiecePaintedPath() const
 		}
 		others << points;
 	}
+		//And the trunks of the bus bars (T87)
+	others << TerminalBusItem::trunksOn(parent_diagram);
 	const QList<QPointF> scene_hops = WireHops::crossings(wire, others, mode);
 	if (scene_hops.isEmpty()) {
 		return plain;
@@ -4432,6 +4449,11 @@ QPainterPath Conductor::ownPiecePaintedPath() const
 		hops << mapFromScene(hop);
 	}
 	return WireHops::path(local, hops, mode);
+}
+
+void Conductor::othersChangedShape()
+{
+	conductorGeometryChanged();
 }
 
 Conductor::TextPlacementDeferral::TextPlacementDeferral()
