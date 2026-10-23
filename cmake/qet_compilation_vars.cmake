@@ -134,6 +134,8 @@ set(QET_SRC_FILES
   ${QET_DIR}/sources/logging/crashhandler.h
   ${QET_DIR}/sources/logging/eventloopwatchdog.cpp
   ${QET_DIR}/sources/logging/eventloopwatchdog.h
+  ${QET_DIR}/sources/logging/stallsampler.cpp
+  ${QET_DIR}/sources/logging/stallsampler.h
   ${QET_DIR}/sources/logging/logring.cpp
   ${QET_DIR}/sources/logging/logring.h
   ${QET_DIR}/sources/logging/qetlogger.cpp

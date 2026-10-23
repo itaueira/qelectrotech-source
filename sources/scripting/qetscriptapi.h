@@ -447,6 +447,8 @@ class QetScriptApi : public QObject
 		Q_INVOKABLE bool addLocationArea(int folioIndex, double x1, double y1, double x2, double y2,
 									 const QString &path, const QString &mask = QString());
 		Q_INVOKABLE QVariantList locationAreas(int folioIndex) const;
+		// -- how long the folio takes to draw, as the view draws it --
+		Q_INVOKABLE QVariantMap renderTiming(int folioIndex, int times = 5, double scale = 2.0) const;
 
 		// -- conductor properties, applied to the whole potential --
 		Q_INVOKABLE QStringList conductors(int folioIndex) const;

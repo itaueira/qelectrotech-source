@@ -116,6 +116,7 @@
 #include "../cable/cablepart.h"
 #include <QFont>
 #include <QImage>
+#include <QElapsedTimer>
 #include <QPixmap>
 #include <QTextStream>
 #include <QUndoCommand>
@@ -1364,6 +1365,35 @@ bool QetScriptApi::addLocationArea(int folioIndex, double x1, double y1, double 
 	is out of the project, "mask", the colour chosen for it (#AARRGGBB,
 	empty for the default), and "fill", the one it is painted with (T85)
 */
+/**
+	@brief QetScriptApi::renderTiming
+	The folio drawn @a times times into an image, at @a scale, as a view
+	draws it at that zoom: "first", the milliseconds of the first time,
+	which pays for what is worked out once, and "mean", of the others. For
+	measuring, before and after a change, what makes a folio slow to show.
+*/
+QVariantMap QetScriptApi::renderTiming(int folioIndex, int times, double scale) const
+{
+	if (!m_project || folioIndex < 0 || folioIndex >= m_project->folios().count() || times < 1) return {};
+	Diagram *diagram = built(m_project->folios().at(folioIndex));
+	const QRectF source = diagram->sceneRect();
+	QImage image((source.size() * scale).toSize(), QImage::Format_ARGB32_Premultiplied);
+	qint64 first = 0, rest = 0;
+	for (int i = 0 ; i < times ; ++i)
+	{
+		image.fill(Qt::white);
+		QPainter painter(&image);
+		painter.setRenderHint(QPainter::Antialiasing);
+		QElapsedTimer timer;
+		timer.start();
+		diagram->render(&painter, QRectF(QPointF(0, 0), image.size()), source);
+		const qint64 ms = timer.elapsed();
+		if (i == 0) first = ms; else rest += ms;
+	}
+	return QVariantMap{{QStringLiteral("first"), first},
+			   {QStringLiteral("mean"), times > 1 ? double(rest) / (times - 1) : double(first)}};
+}
+
 QVariantList QetScriptApi::locationAreas(int folioIndex) const
 {
 	QVariantList list;

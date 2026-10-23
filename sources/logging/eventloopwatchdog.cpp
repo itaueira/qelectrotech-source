@@ -17,6 +17,8 @@
 */
 #include "eventloopwatchdog.h"
 
+#include "stallsampler.h"
+
 #include <QDebug>
 #include <QProcessEnvironment>
 
@@ -42,6 +44,8 @@ void EventLoopWatchdog::start()
 
 	m_elapsed.start();
 	m_timer.start(kTickIntervalMs);
+		//And where a stall goes, sampled from a thread of its own
+	StallSampler::start();
 }
 
 void EventLoopWatchdog::tick()
@@ -49,10 +53,16 @@ void EventLoopWatchdog::tick()
 	// restart() returns the elapsed time and resets the clock in one
 	// call, so this tick's own cost is never counted against the next.
 	const qint64 actual_ms = m_elapsed.restart();
+	StallSampler::heartbeat();
 
 	if (actual_ms > kStallThresholdMs) {
 		qWarning() << "EventLoopWatchdog: main thread stalled for"
 			   << actual_ms << "ms (expected a tick every"
 			   << kTickIntervalMs << "ms)";
+	}
+		//Ready a tick or two after the stall it is about
+	const QStringList report = StallSampler::takeReport();
+	for (const QString &line : report) {
+		qWarning().noquote() << line;
 	}
 }

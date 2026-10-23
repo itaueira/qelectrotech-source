@@ -5237,6 +5237,24 @@ bool QETDiagramEditor::addProject(QETProject *project, bool update_panel)
 	ProjectView *project_view = new ProjectView(project);
 	addProjectView(project_view);
 
+		//Diagnosis: with QET_SHOW_FOLIO=n, the folio n is shown two seconds
+		//after the project opens, as a click on its tab shows it - for
+		//measuring how long a folio takes to come up (the watchdog and its
+		//stall sampler say where the time went), with no hand on the mouse
+	bool show_folio_ok = false;
+	const int show_folio = qEnvironmentVariableIntValue("QET_SHOW_FOLIO", &show_folio_ok);
+	if (show_folio_ok && show_folio > 0)
+	{
+		QPointer<ProjectView> view = project_view;
+		QTimer::singleShot(2000, this, [view, project, show_folio]() {
+				//folios(), and not diagrams(), which builds every folio
+			const QList<Diagram *> diagrams = project->folios();
+			if (view && show_folio <= diagrams.size()) {
+				view->showDiagram(diagrams.at(show_folio - 1));
+			}
+		});
+	}
+
 	undo_group.addStack(project -> undoStack());
 
 	connect(project, &QETProject::projectModified, this, [this](QETProject *modified_project, bool) {
