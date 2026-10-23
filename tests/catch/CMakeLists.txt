@@ -1175,6 +1175,8 @@ if(TARGET qelectrotech_objects)
         src/ui/wirearrangement_test.cpp
         # T86: a wire released over a wire branches off it, and follows it.
         src/ui/branchwire_test.cpp
+        # T85: the frame of a strip drawn round its terminals, and following them.
+        src/ui/stripframe_test.cpp
         # T83: an element drawn at another scale on the folio.
         src/ui/elementscale_test.cpp
         # T70: the cross-section of a point, from its components, on its

@@ -2412,6 +2412,9 @@ QList<QAction *> DiagramView::contextMenuActions() const
 					//The elements drawn smaller or larger on the folio,
 					//their symbol as it is (T83)
 				list << qde->m_element_scale;
+					//The frame of a strip round the selected terminals
+					//(T85): left out by the loop below when none is one
+				list << qde->m_strip_frame;
 			}
 				//Only for one element, and one mounted on a plate: an entry
 				//for a component that is on no plate would open a window to

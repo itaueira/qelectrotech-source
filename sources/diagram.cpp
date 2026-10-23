@@ -43,6 +43,7 @@
 #include "qetgraphicsitem/elementtextitemgroup.h"
 #include "qetgraphicsitem/independenttextitem.h"
 #include "qetgraphicsitem/locationareaitem.h"
+#include "qetgraphicsitem/stripframeitem.h"
 #include "qetgraphicsitem/qetshapeitem.h"
 #include "qetgraphicsitem/terminal.h"
 #include "qetxml.h"
@@ -1614,6 +1615,7 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 	QVector<DiagramImageItem *> list_images;
 	QVector<QetShapeItem *> list_shapes;
 	QVector<LocationAreaItem *> list_location_areas;
+	QVector<StripFrameItem *> list_strip_frames;
 	QVector<QetGraphicsTableItem *> table_vector;
 	QVector<TerminalStripItem *> strip_vector;
 	QVector<MountingLayoutViewItem *> layout_view_vector;
@@ -1670,6 +1672,14 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 				auto area = static_cast<LocationAreaItem *>(qgi);
 				if (whole_content || area->isSelected())
 					list_location_areas << area;
+				break;
+			}
+				//The frame of a strip goes with the whole folio only: it is
+				//no part of a selection, and a copy of its terminals is a
+				//copy of other terminals (T85)
+			case StripFrameItem::Type: {
+				if (whole_content)
+					list_strip_frames << static_cast<StripFrameItem *>(qgi);
 				break;
 			}
 			case QetGraphicsTableItem::Type: {
@@ -1793,6 +1803,17 @@ QDomDocument Diagram::toXml(bool whole_content, bool is_copy_command) {
 
 	if (!strip_vector.isEmpty()) {
 		dom_root.appendChild(TerminalStripItemXml::toXml(strip_vector, document));
+	}
+
+		//The frames drawn round the terminals of a strip (T85), under a tag
+		//of their own for the reason the location areas have one. A frame
+		//whose terminals are all gone is not written
+	{
+		auto dom_frames = document.createElement(StripFrameItem::listTagName());
+		for (auto frame : std::as_const(list_strip_frames)) {
+			if (!frame->terminals().isEmpty()) dom_frames.appendChild(frame->toXml(document));
+		}
+		if (dom_frames.hasChildNodes()) dom_root.appendChild(dom_frames);
 	}
 
 		//The views of the mounting layout go under a tag of their own, for
@@ -2639,6 +2660,16 @@ bool Diagram::fromXml(QDomElement &document,
 		added_location_areas << area;
 	}
 
+		//The frames drawn round the terminals of a strip (T85), round the
+		//components just read
+	for (const auto &frame_xml : QET::findInDomElement(root,
+							     StripFrameItem::listTagName(),
+							     StripFrameItem::tagName())) {
+		if (auto frame = StripFrameItem::fromXml(frame_xml, added_elements)) {
+			addItem(frame);
+		}
+	}
+
 		//Load tables
 	QVector<QetGraphicsTableItem *> added_tables;
 	for (const auto &dom_table : QETXML::subChild(root,
@@ -3002,6 +3033,11 @@ void Diagram::addItem(QGraphicsItem *item)
 		}
 		default: {break;}
 	}
+		//A terminal back on the folio: the frame of its strip is drawn
+		//round it again (T85)
+	if (item->type() == Element::Type) {
+		StripFrameItem::refreshAll(this);
+	}
 }
 
 /**
@@ -3042,6 +3078,10 @@ void Diagram::removeItem(QGraphicsItem *item)
 	}
 
 	QGraphicsScene::removeItem(item);
+		//A terminal off the folio: the frame of its strip shrinks (T85)
+	if (item->type() == Element::Type) {
+		StripFrameItem::refreshAll(this);
+	}
 }
 /**
 	@brief Diagram::titleChanged

@@ -117,6 +117,7 @@
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/elementtextitemgroup.h"
 #include "qetgraphicsitem/qetgraphicsitem.h"
+#include "qetgraphicsitem/stripframeitem.h"
 #include "qeticons.h"
 #include "qetmessagebox.h"
 #include "recentfiles.h"
@@ -657,6 +658,38 @@ void QETDiagramEditor::setUpActions()
 					if (!qFuzzyCompare(element->symbolScale(), action->data().toReal())) all_at = false;
 				}
 				action->setChecked(all_at);
+			}
+		});
+	}
+
+		//The frame of a strip drawn round the selected terminals, with its
+		//name, and the terminals taken out of it (T85)
+	m_strip_frame = new QAction(tr("Drawn terminal strip"), this);
+	m_strip_frame->setStatusTip(tr("Draw the frame of a strip round the selected terminals, with its name", "status bar tip"));
+	{
+		auto *menu = new QMenu(this);
+		m_strip_frame->setMenu(menu);
+		const auto selected = [this]() {
+			DiagramView *view = currentDiagramView();
+			return view && view->diagram()
+					? StripFrameItem::stripTerminals(view->diagram()->selectedItems())
+					: QList<Element *>();
+		};
+		QAction *draw = menu->addAction(tr("Draw round the selected terminals..."));
+		connect(draw, &QAction::triggered, this, [this, selected]() {
+			DiagramView *view = currentDiagramView();
+			const QList<Element *> terminals = selected();
+			if (!view || terminals.isEmpty()) return;
+			bool ok = false;
+			const QString name = StripFrameItem::askName(this, StripFrameItem::suggestedName(terminals), &ok);
+			if (ok) {
+				StripFrameItem::drawAround(view->diagram(), terminals, name);
+			}
+		});
+		QAction *take_out = menu->addAction(tr("Take the selected terminals out of their strip"));
+		connect(take_out, &QAction::triggered, this, [this, selected]() {
+			if (DiagramView *view = currentDiagramView()) {
+				StripFrameItem::takeOut(view->diagram(), selected());
 			}
 		});
 	}
@@ -4270,6 +4303,7 @@ void QETDiagramEditor::setUpMenu()
 	arrange_menu -> addAction(m_mirror_horizontal);
 	arrange_menu -> addAction(m_mirror_vertical);
 	arrange_menu -> addAction(m_element_scale);
+	arrange_menu -> addAction(m_strip_frame);
 	arrange_menu -> addSeparator();
 	QMenu *group_menu = arrange_menu -> addMenu(QET::Icons::textGroup, tr("Group", "fr: Grouper"));
 	group_menu -> addAction(m_group_selection);
@@ -6164,6 +6198,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 			    << m_mirror_horizontal
 			    << m_mirror_vertical
 			    << m_element_scale
+			    << m_strip_frame
 			    << m_replace_element
 			    << m_exchange_elements
 			    << m_reset_symbol_texts
@@ -6200,6 +6235,7 @@ void QETDiagramEditor::slot_updateComplexActions()
 	m_apply_text_format->setEnabled(!ro && selected_elements_count >= 1 && ElementTextFormatPattern::hasPattern());
 	m_place_texts->setEnabled(!ro && selected_elements_count >= 1);
 	m_element_scale->setEnabled(!ro && selected_elements_count >= 1);
+	m_strip_frame->setEnabled(!ro && !StripFrameItem::stripTerminals(diagram_->selectedItems()).isEmpty());
 	m_mirror_horizontal->setEnabled(!ro && selected_elements_count);
 	m_mirror_vertical->setEnabled(!ro && selected_elements_count);
 	m_replace_element->setEnabled(!ro && selected_elements_count);

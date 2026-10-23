@@ -70,6 +70,7 @@
 #include "../qetgraphicsitem/dynamicelementtextitem.h"
 #include "../qetgraphicsitem/independenttextitem.h"
 #include "../qetgraphicsitem/qetshapeitem.h"
+#include "../qetgraphicsitem/stripframeitem.h"
 #include "../undocommand/mirrorselectioncommand.h"
 #include "../undocommand/promoteshapecommand.h"
 #include "../TerminalStrip/UndoCommand/addterminalstripcommand.h"
@@ -1222,6 +1223,59 @@ QVariantMap QetScriptApi::conductorArm(int folioIndex, const QString &conductorU
 			{QStringLiteral("own_from"), c->ownPieceStart()}};
 }
 
+/**
+	@brief QetScriptApi::drawStripFrame
+	The frame of the strip @a name drawn round the elements @a elementUuids
+	of the folio, those of them that are terminals of a strip, as "Drawn
+	terminal strip" does with them selected (T85). One undo step.
+	@return true when a frame was drawn
+*/
+bool QetScriptApi::drawStripFrame(int folioIndex, const QStringList &elementUuids, const QString &name)
+{
+	if (!m_project || m_project->isReadOnly()) return false;
+	QList<Element *> terminals;
+	for (const QString &uuid : elementUuids)
+	{
+		Element *element = findElement(folioIndex, uuid);
+		if (StripFrameItem::isStripTerminal(element)) terminals << element;
+	}
+	if (terminals.isEmpty()) {
+		log(QStringLiteral("qet.drawStripFrame: none of those elements is a terminal of a strip"));
+		return false;
+	}
+	Diagram *diagram = built(m_project->folios().at(folioIndex));
+	const int steps = diagram->undoStack().count();
+	StripFrameItem::drawAround(diagram, terminals, name);
+	return diagram->undoStack().count() > steps;
+}
+
+/**
+	@brief QetScriptApi::stripFrames
+	The frames of strips drawn on the folio (T85): for each, "name", the
+	rectangle "left", "top", "right", "bottom" and the uuids of its
+	"terminals"
+*/
+QVariantList QetScriptApi::stripFrames(int folioIndex) const
+{
+	QVariantList list;
+	if (!m_project || folioIndex < 0 || folioIndex >= m_project->folios().count()) return list;
+	Diagram *diagram = built(m_project->folios().at(folioIndex));
+	const QList<QGraphicsItem *> items = diagram->items();
+	for (QGraphicsItem *item : items)
+	{
+		auto *frame = qgraphicsitem_cast<StripFrameItem *>(item);
+		if (!frame) continue;
+		QStringList uuids;
+		for (const Element *terminal : frame->terminals()) uuids << terminal->uuid().toString();
+		const QRectF r = frame->frameRect();
+		list << QVariantMap{{QStringLiteral("name"), frame->stripName()},
+				    {QStringLiteral("left"), r.left()}, {QStringLiteral("top"), r.top()},
+				    {QStringLiteral("right"), r.right()}, {QStringLiteral("bottom"), r.bottom()},
+				    {QStringLiteral("terminals"), uuids}};
+	}
+	return list;
+}
+
 namespace {
 /// "{element uuid} terminal N", the form conductors() prints an end in and
 /// the conductor calls take as element uuid + terminal index.
@@ -2310,6 +2364,23 @@ QStringList QetScriptApi::texts(int folioIndex) const
 }
 
 /**
+	@brief QetScriptApi::textGeometry
+	Where a free-standing text is drawn on the folio, in folio coordinates:
+	left, top, right, bottom of the text itself, without the margin of its
+	document (T84). Empty for an out-of-range index.
+*/
+QVariantMap QetScriptApi::textGeometry(int folioIndex, int textIndex) const
+{
+	const QList<IndependentTextItem *> list = sortedTexts(folioIndex);
+	if (textIndex < 0 || textIndex >= list.count()) return {};
+	const IndependentTextItem *t = list.at(textIndex);
+	const qreal m = t->document()->documentMargin();
+	const QRectF r = t->sceneBoundingRect().adjusted(m, m, -m, -m);
+	return {{QStringLiteral("left"), r.left()}, {QStringLiteral("top"), r.top()},
+			{QStringLiteral("right"), r.right()}, {QStringLiteral("bottom"), r.bottom()}};
+}
+
+/**
 	@brief QetScriptApi::addText
 	Place a free-standing text, as the "add text" tool does.
 	@return its index in texts(), or -1
@@ -2840,6 +2911,44 @@ QVariantList QetScriptApi::shapePolygon(int folioIndex, int shapeIndex) const
 	for (const QPointF &p : shape->polygon())
 		result << pointFToVariant(shape->mapToScene(p));
 	return result;
+}
+
+/**
+	@brief QetScriptApi::shapeGeometry
+	Where a shape is drawn on the folio, in folio coordinates: its type
+	("line", "rectangle", "ellipse", "polygon" or "path") and the box of
+	what it draws - left, top, right, bottom -, without the pen width and
+	the margin of shapes() (T84). A line has its two ends too: x1, y1, x2,
+	y2. Empty for an out-of-range index.
+*/
+QVariantMap QetScriptApi::shapeGeometry(int folioIndex, int shapeIndex) const
+{
+	const QList<QetShapeItem *> list = sortedShapes(folioIndex);
+	if (shapeIndex < 0 || shapeIndex >= list.count()) return {};
+	const QetShapeItem *shape = list.at(shapeIndex);
+	const QRectF r = shape->sceneOutlineRect();
+	QString type;
+	switch (shape->shapeType())
+	{
+		case QetShapeItem::Line:      type = QStringLiteral("line"); break;
+		case QetShapeItem::Rectangle: type = QStringLiteral("rectangle"); break;
+		case QetShapeItem::Ellipse:   type = QStringLiteral("ellipse"); break;
+		case QetShapeItem::Polygon:   type = QStringLiteral("polygon"); break;
+		default:                      type = QStringLiteral("path"); break;
+	}
+	QVariantMap m{{QStringLiteral("type"), type},
+				  {QStringLiteral("left"), r.left()}, {QStringLiteral("top"), r.top()},
+				  {QStringLiteral("right"), r.right()}, {QStringLiteral("bottom"), r.bottom()}};
+	if (shape->shapeType() == QetShapeItem::Line)
+	{
+		const QPointF p1 = shape->mapToScene(shape->rect().topLeft());
+		const QPointF p2 = shape->mapToScene(shape->rect().bottomRight());
+		m.insert(QStringLiteral("x1"), p1.x());
+		m.insert(QStringLiteral("y1"), p1.y());
+		m.insert(QStringLiteral("x2"), p2.x());
+		m.insert(QStringLiteral("y2"), p2.y());
+	}
+	return m;
 }
 
 /**

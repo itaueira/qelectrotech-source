@@ -437,6 +437,9 @@ class QetScriptApi : public QObject
 		Q_INVOKABLE QString addBranch(int folioIndex, const QString &elementUuid, int terminalIndex,
 									  const QString &armUuid, double x, double y);
 		Q_INVOKABLE QVariantMap conductorArm(int folioIndex, const QString &conductorUuid) const;
+		// -- the frame of a strip drawn round its terminals (T85) --
+		Q_INVOKABLE bool drawStripFrame(int folioIndex, const QStringList &elementUuids, const QString &name);
+		Q_INVOKABLE QVariantList stripFrames(int folioIndex) const;
 
 		// -- conductor properties, applied to the whole potential --
 		Q_INVOKABLE QStringList conductors(int folioIndex) const;
@@ -502,6 +505,7 @@ class QetScriptApi : public QObject
 		Q_INVOKABLE bool setTextColor(int folioIndex, int textIndex, const QString &color);
 		Q_INVOKABLE bool setTextRotation(int folioIndex, int textIndex, double angle);
 		Q_INVOKABLE bool deleteText(int folioIndex, int textIndex);
+		Q_INVOKABLE QVariantMap textGeometry(int folioIndex, int textIndex) const;
 
 		// -- cables --
 		Q_INVOKABLE QString addCable(int folioIndex, const QString &designation,
@@ -516,6 +520,7 @@ class QetScriptApi : public QObject
 								 double x1, double y1, double x2, double y2);
 		Q_INVOKABLE bool deleteShape(int folioIndex, int shapeIndex);
 		Q_INVOKABLE QString shapeProperty(int folioIndex, int shapeIndex, const QString &property) const;
+		Q_INVOKABLE QVariantMap shapeGeometry(int folioIndex, int shapeIndex) const;
 		Q_INVOKABLE bool setShapeProperty(int folioIndex, int shapeIndex,
 										  const QString &property, const QString &value);
 
