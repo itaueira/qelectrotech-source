@@ -57,8 +57,9 @@ class StripFrameItem : public QetGraphicsItem
 	Q_OBJECT
 
 	public:
-			///Enable qgraphicsitem_cast
-		enum { Type = UserType + 1013 };
+			///Enable qgraphicsitem_cast. Out of the run the upstream numbers
+			///its items in, for the reason LocationAreaItem::Type gives.
+		enum { Type = UserType + 1451 };
 		explicit StripFrameItem(const QString &strip_name = QString(),
 					QGraphicsItem *parent = nullptr);
 		~StripFrameItem() override = default;

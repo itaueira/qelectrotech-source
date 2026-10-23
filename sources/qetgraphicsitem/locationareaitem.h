@@ -77,8 +77,11 @@ class LocationAreaItem : public QetShapeItem
 		void locationPathChanged();
 
 	public:
-			///Enable qgraphicsitem_cast, and keep areas out of the shape paths
-		enum { Type = UserType + 1012 };
+			///Enable qgraphicsitem_cast, and keep areas out of the shape paths.
+			///Out of the run the upstream numbers its items in (1000, 1001...):
+			///it was 1012 until the cable of the upstream took 1012 too, and the
+			///properties dock read a drawn area as a cable and crashed.
+		enum { Type = UserType + 1450 };
 
 		explicit LocationAreaItem(const QPointF &p1,
 					  const QPointF &p2 = QPointF(),

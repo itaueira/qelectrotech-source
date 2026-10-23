@@ -19,17 +19,34 @@
 
 #include "../qt_catch_tostring.h"
 
+#include "../../../../sources/QetGraphicsItemModeler/qetgraphicshandleritem.h"
+#include "../../../../sources/TerminalStrip/GraphicsItem/terminalstripitem.h"
 #include "../../../../sources/TerminalStrip/terminalstrip.h"
 #include "../../../../sources/TerminalStrip/terminalstripautoimport.h"
 #include "../../../../sources/dataBase/projectdatabase.h"
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/elementsmover.h"
+#include "../../../../sources/factory/propertieseditorfactory.h"
+#include "../../../../sources/cable/cablepart.h"
+#include "../../../../sources/PropertiesEditor/propertieseditorwidget.h"
 #include "../../../../sources/location/bomcollector.h"
 #include "../../../../sources/location/locationtree.h"
 #include "../../../../sources/location/projectlocation.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
+#include "../../../../sources/qetgraphicsitem/conductortextitem.h"
+#include "../../../../sources/qetgraphicsitem/crossrefitem.h"
+#include "../../../../sources/qetgraphicsitem/diagramimageitem.h"
+#include "../../../../sources/qetgraphicsitem/dynamicelementtextitem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/locationareaitem.h"
+#include "../../../../sources/qetgraphicsitem/independenttextitem.h"
+#include "../../../../sources/qetgraphicsitem/qetshapeitem.h"
+#include "../../../../sources/qetgraphicsitem/stripframeitem.h"
+#include "../../../../sources/qetgraphicsitem/ViewItem/mountinglayoutviewitem.h"
+#include "../../../../sources/qetgraphicsitem/ViewItem/qetgraphicsheaderitem.h"
+#include "../../../../sources/qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
+#include "../../../../sources/location/layout/mountedpartitem.h"
+#include "../../../../sources/location/layout/mountedprofileitem.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetinformation.h"
 #include "../../../../sources/qetproject.h"
@@ -401,4 +418,61 @@ TEST_CASE("CU-85.7 - Out of the field region, back in the lists", "[T85][fieldre
 	CHECK(bench.pathOf(QStringLiteral("B1")).isEmpty());
 	CHECK(bench.bom() == 4);
 	CHECK(bench.wiringView() == 2);
+}
+
+TEST_CASE("T85 - A drawn region, selected, is no cable to the properties dock", "[T85][fieldregion]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+	LocationAreaItem *region = bench.drawRegion();
+
+		//What the dock does when the selection changes: it read the region
+		//as a cable part, the two types having the same number, and fell on
+		//the cable a region does not have
+	bench.sheet->clearSelection();
+	region->setSelected(true);
+	PropertiesEditorWidget *editor = PropertiesEditorFactory::propertiesEditor(
+			bench.sheet->selectedItems(), nullptr, nullptr);
+	CHECK(editor == nullptr);
+	if (editor) CHECK(QString(editor->metaObject()->className()) != QStringLiteral("CablePropertiesEditorWidget"));
+	delete editor;
+	CHECK(qgraphicsitem_cast<CablePart *>(static_cast<QGraphicsItem *>(region)) == nullptr);
+}
+
+TEST_CASE("T85 - Every item of a folio has a type of its own", "[T85][fieldregion]")
+{
+		//A type shared by two items makes each switch on item->type() take
+		//one for the other - the location area and the cable part of the
+		//upstream did, and drawing a region crashed the program
+	const QList<std::pair<const char *, int>> types {
+		{"Element", Element::Type},
+		{"Conductor", Conductor::Type},
+		{"Terminal", Terminal::Type},
+		{"DiagramTextItem", DiagramTextItem::Type},
+		{"IndependentTextItem", IndependentTextItem::Type},
+		{"ConductorTextItem", ConductorTextItem::Type},
+		{"DiagramImageItem", DiagramImageItem::Type},
+		{"QetShapeItem", QetShapeItem::Type},
+		{"CrossRefItem", CrossRefItem::Type},
+		{"DynamicElementTextItem", DynamicElementTextItem::Type},
+		{"TerminalStripItem", TerminalStripItem::Type},
+		{"CablePart", CablePart::Type},
+		{"LocationAreaItem", LocationAreaItem::Type},
+		{"StripFrameItem", StripFrameItem::Type},
+		{"QetGraphicsHandlerItem", QetGraphicsHandlerItem::Type},
+		{"QetGraphicsTableItem", QetGraphicsTableItem::Type},
+		{"QetGraphicsHeaderItem", QetGraphicsHeaderItem::Type},
+		{"MountingLayoutViewItem", MountingLayoutViewItem::Type},
+		{"MountedPartItem", MountedPartItem::Type},
+		{"MountedProfileItem", MountedProfileItem::Type}};
+	QStringList shared;
+	for (int i = 0 ; i < types.size() ; ++i) {
+		for (int j = i + 1 ; j < types.size() ; ++j) {
+			if (types.at(i).second == types.at(j).second) {
+				shared << QStringLiteral("%1 = %2").arg(QLatin1String(types.at(i).first),
+									QLatin1String(types.at(j).first));
+			}
+		}
+	}
+	CHECK(shared == QStringList());
 }
