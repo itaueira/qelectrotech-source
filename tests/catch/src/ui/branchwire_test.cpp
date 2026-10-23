@@ -23,6 +23,7 @@
 #include "../../../../sources/diagramcontent.h"
 #include "../../../../sources/QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
+#include "../../../../sources/qetgraphicsitem/conductortextitem.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetproject.h"
@@ -763,4 +764,66 @@ TEST_CASE("T86 - Arranging puts each arm next to the column of its branches", "[
 		//One undo puts it all back
 	sheet->undoStack().undo();
 	CHECK(laneOf(arm1) > column + 100);
+}
+
+TEST_CASE("T86 - Opened again, each name is where placing it again puts it", "[T86][branch]")
+{
+		//Reading a folio places the names of its wires once, at the end
+		//(Conductor::TextPlacementDeferral): placed then, and not as each
+		//wire came in, they are where the folio has them on a second look
+	Setup setup;
+	UiBench::ScratchProject project(columnFixture());
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	QList<Terminal *> x;
+	for (int i = 1 ; i <= 8 ; ++i) x << terminalOf(sheet, QStringLiteral("X%1").arg(i));
+	REQUIRE_FALSE(x.contains(nullptr));
+	Conductor *arm1 = drawTo(sheet, terminalOf(sheet, QStringLiteral("T1")), x.at(3)->dockConductor());
+	Conductor *arm2 = drawTo(sheet, terminalOf(sheet, QStringLiteral("T2")), x.at(7)->dockConductor());
+	REQUIRE(arm1);
+	REQUIRE(arm2);
+	for (int i : {0, 1, 2}) {
+		REQUIRE(drawTo(sheet, x.at(i), QPointF(laneOf(arm1) + 1, x.at(i)->dockConductor().y())));
+	}
+	for (int i : {4, 5, 6}) {
+		REQUIRE(drawTo(sheet, x.at(i), QPointF(laneOf(arm2) + 1, x.at(i)->dockConductor().y())));
+	}
+	for (Conductor *c : sheet->conductors())
+	{
+		ConductorProperties properties = c->properties();
+		properties.text = c->relatedPotentialConductors().contains(arm1) || c == arm1
+				? QStringLiteral("W1") : QStringLiteral("W2");
+		c->setProperties(properties);
+	}
+	REQUIRE(sheet->conductors().size() == 8);
+
+	REQUIRE(project.saveAndReopen());
+	sheet = project.diagram(0);
+	const QList<Conductor *> wires = sheet->conductors();
+	REQUIRE(wires.size() == 8);
+	QHash<Conductor *, QPointF> read;
+	QHash<Conductor *, bool> shown;
+	for (Conductor *c : wires)
+	{
+		REQUIRE(c->textItem());
+		read.insert(c, c->textItem()->pos());
+		shown.insert(c, c->textItem()->isVisible());
+	}
+		//Not all at the place a name has before it is placed
+	QList<QPointF> places;
+	for (const QPointF &p : std::as_const(read))
+	{
+		bool known = false;
+		for (const QPointF &q : std::as_const(places)) known = known || sameAs(p, q);
+		if (!known) places << p;
+	}
+	CHECK(places.size() > 2);
+
+	for (Conductor *c : wires) c->calculateTextItemPosition();
+	for (Conductor *c : wires)
+	{
+		INFO(c->properties().text.toStdString());
+		CHECK(sameAs(c->textItem()->pos(), read.value(c)));
+		CHECK(c->textItem()->isVisible() == shown.value(c));
+	}
 }

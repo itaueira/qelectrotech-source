@@ -246,6 +246,24 @@ class Conductor : public QGraphicsObject
 		static QPointF nearestOnPath(const QList<QPointF> &points, const QPointF &point,
 					     int *segment = nullptr);
 		static void linkArms(const QList<Conductor *> &conductors);
+
+		/**
+			@brief While one of these lives, a conductor asked to place its
+			name only notes it, and the names are placed once, each, when
+			the last one goes: what reading a folio does (Diagram::fromXml()).
+			Placed as each wire came in, the name of each conductor of a
+			point was placed again every time another wire of the point
+			changed - the arm and its branches all of them -, and a folio of
+			17 branches took 18 s to show (23/10/2026)
+		*/
+		class TextPlacementDeferral
+		{
+			public:
+				TextPlacementDeferral();
+				~TextPlacementDeferral();
+				TextPlacementDeferral(const TextPlacementDeferral &) = delete;
+				TextPlacementDeferral &operator=(const TextPlacementDeferral &) = delete;
+		};
 			/// The own piece of a branch as the person left it, in scene
 			/// coordinates, from the arm to its terminal; empty while it is the
 			/// automatic one, straight out of the terminal (T86, 23/10/2026)

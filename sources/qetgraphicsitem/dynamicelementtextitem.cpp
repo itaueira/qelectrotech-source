@@ -136,7 +136,7 @@ DynamicElementTextItem::DynamicElementTextItem(Element *parent_element) :
 	setFont(QETApp::dynamicTextsItemFont());
 	setText(tr("Text"));
 	setParentItem(parent_element);
-	QSettings settings;
+	QETApp::SettingsReader settings;
 	setRotation(settings.value("dynamic_text_rotation", 0).toInt());
 	setKeepVisualRotation(true);
 	setTextWidth(settings.value("dynamic_text_width", -1).toInt());

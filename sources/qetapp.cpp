@@ -77,6 +77,7 @@
 #include <QProcessEnvironment>
 #include <QRegularExpression>
 #include <QSettings>
+#include <QThread>
 #include <QStyleFactory>
 #include <QStyleHints>
 #include <QVBoxLayout>
@@ -1560,6 +1561,80 @@ bool QETApp::closeEveryEditor()
 	return(every_window_closed);
 }
 
+namespace {
+		/// What the SettingsSnapshot living on the main thread read: each
+		/// key once, an invalid value for a key the settings do not have
+	struct SettingsRead
+	{
+		QSettings settings;
+		QHash<QString, QVariant> values;
+	};
+	int s_settings_snapshots = 0;
+	SettingsRead *s_settings_snapshot = nullptr;
+
+	bool onMainThread()
+	{
+		return QCoreApplication::instance()
+				&& QThread::currentThread() == QCoreApplication::instance()->thread();
+	}
+
+		/// The value of @a key in the snapshot, read from the settings
+		/// the first time only
+	QVariant snapshotValue(const QString &key)
+	{
+		if (!s_settings_snapshot->values.contains(key)) {
+			s_settings_snapshot->values.insert(key, s_settings_snapshot->settings.value(key));
+		}
+		return s_settings_snapshot->values.value(key);
+	}
+}
+
+QETApp::SettingsSnapshot::SettingsSnapshot() :
+	m_counted(onMainThread())
+{
+	if (m_counted && s_settings_snapshots++ == 0) {
+		s_settings_snapshot = new SettingsRead;
+	}
+}
+
+QETApp::SettingsSnapshot::~SettingsSnapshot()
+{
+	if (m_counted && --s_settings_snapshots == 0)
+	{
+		delete s_settings_snapshot;
+		s_settings_snapshot = nullptr;
+	}
+}
+
+QETApp::SettingsReader::SettingsReader()
+{
+	if (!s_settings_snapshot || !onMainThread()) {
+		m_own = new QSettings;
+	}
+}
+
+QETApp::SettingsReader::~SettingsReader()
+{
+	delete m_own;
+}
+
+QVariant QETApp::SettingsReader::value(const QString &key, const QVariant &default_value) const
+{
+	if (m_own) {
+		return m_own->value(key, default_value);
+	}
+	const QVariant value = snapshotValue(key);
+	return value.isValid() ? value : default_value;
+}
+
+bool QETApp::SettingsReader::contains(const QString &key) const
+{
+	if (m_own) {
+		return m_own->contains(key);
+	}
+	return snapshotValue(key).isValid();
+}
+
 /**
 	@brief QETApp::diagramTextsFont
 	The font to use
@@ -1569,7 +1644,7 @@ bool QETApp::closeEveryEditor()
 */
 QFont QETApp::diagramTextsFont(qreal size)
 {
-	QSettings settings;
+	SettingsReader settings;
 
 	//Font to use
 	QString diagram_texts_family = settings.value("diagramitemfont",
@@ -1603,7 +1678,7 @@ QFont QETApp::diagramTextsFont(qreal size)
 */
 QFont QETApp::diagramTextsItemFont(qreal size)
 {
-	QSettings settings;
+	SettingsReader settings;
 
 	//Font to use
 	QString diagram_texts_item_family = settings.value("diagramitemfont",
@@ -1637,7 +1712,7 @@ QFont QETApp::diagramTextsItemFont(qreal size)
 */
 QFont QETApp::dynamicTextsItemFont(qreal size)
 {
-	QSettings settings;
+	SettingsReader settings;
 	//Font to use
 	QFont font_ = diagramTextsItemFont();
 	if (settings.contains("diagrameditor/dynamic_text_font")) {
@@ -1661,7 +1736,7 @@ QFont QETApp::dynamicTextsItemFont(qreal size)
 */
 QFont QETApp::indiTextsItemFont(qreal size)
 {
-	QSettings settings;
+	SettingsReader settings;
 	//Font to use
 	QFont font_ = diagramTextsItemFont();
 	if (settings.contains("diagrameditor/independent_text_font")) {

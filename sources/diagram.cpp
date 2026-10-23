@@ -2374,6 +2374,10 @@ bool Diagram::fromXml(QDomElement &document,
 				DiagramContent *content_ptr,
 				QList<CablePart *> *cables_added)
 {
+		//The names of the wires placed once, when the folio is all in;
+		//and the settings opened once, and not for each text built
+	const Conductor::TextPlacementDeferral names_at_the_end;
+	const QETApp::SettingsSnapshot settings_once;
 	const QDomElement& root = document;
 		// The first element must be a diagram
 	if (root.tagName() != QLatin1String("diagram")) {
@@ -2982,9 +2986,14 @@ void Diagram::refreshContents()
 	}
 		//And every name placed again, now that the whole folio is there:
 		//where a name goes depends on the conductors around it (T71), and
-		//each one was placed as it was added, before the ones after it
-	for (auto &conductor : dc_.conductors()) {
-		conductor->calculateTextItemPosition();
+		//each one was placed as it was added, before the ones after it.
+		//Each once: placed one by one, the others of a point were placed
+		//again with each of them
+	{
+		const Conductor::TextPlacementDeferral once_each;
+		for (auto &conductor : dc_.conductors()) {
+			conductor->calculateTextItemPosition();
+		}
 	}
 
 	for (auto &table : std::as_const(dc_.m_tables)) {

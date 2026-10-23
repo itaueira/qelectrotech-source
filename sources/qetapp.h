@@ -26,7 +26,9 @@
 #include <QPalette>
 #include <QSystemTrayIcon>
 #include <QTranslator>
+#include <QVariant>
 
+class QSettings;
 class QSplashScreen;
 class QMenu;
 class QAction;
@@ -206,6 +208,44 @@ class QETApp : public QObject
 		static QFont diagramTextsItemFont(qreal = -1.0);
 		static QFont dynamicTextsItemFont(qreal = -1.0);
 		static QFont indiTextsItemFont (qreal = -1.0);
+		/**
+			@brief While one of these lives, what the main thread reads
+			through a SettingsReader is read once, and kept. Reading a
+			folio (Diagram::fromXml()) builds texts by the thousand, and
+			each read the settings five times for its font and its
+			rotation: a quarter of the time a project of 14 folios took to
+			show (23/10/2026). On Windows the settings are the registry,
+			and Qt asks it again at each read of a key, so one QSettings
+			kept open is not enough: the values are kept. Nothing writes
+			the settings while a folio is read.
+		*/
+		class SettingsSnapshot
+		{
+			public:
+				SettingsSnapshot();
+				~SettingsSnapshot();
+				SettingsSnapshot(const SettingsSnapshot &) = delete;
+				SettingsSnapshot &operator=(const SettingsSnapshot &) = delete;
+			private:
+				bool m_counted = false;
+		};
+		/**
+			@brief Reads the settings: from the SettingsSnapshot living on
+			this thread, else from a QSettings of its own
+		*/
+		class SettingsReader
+		{
+			public:
+				SettingsReader();
+				~SettingsReader();
+				SettingsReader(const SettingsReader &) = delete;
+				SettingsReader &operator=(const SettingsReader &) = delete;
+				QVariant value(const QString &key,
+					       const QVariant &default_value = QVariant()) const;
+				bool contains(const QString &key) const;
+			private:
+				QSettings *m_own = nullptr;
+		};
 		/**
 			@brief The font the texts of a cable (designation, type,
 			installation, location, length) are written with when the

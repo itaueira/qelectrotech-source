@@ -49,6 +49,8 @@
 #include <QLineF>
 #include <QMultiHash>
 #include <QPainterPathStroker>
+#include <QPointer>
+#include <QSet>
 #include <QTextBlock>
 #include <QTextDocument>
 #include <QTextLayout>
@@ -81,6 +83,14 @@ namespace {
 	const Diagram *s_hop_candidates_diagram = nullptr;
 	quint64 s_hop_candidates_generation = 0;
 	QVector<HopCandidate> s_hop_candidates;
+
+		//The conductor whose visibility is changing (itemChange())
+	const Conductor *s_visibility_changing = nullptr;
+
+		//The names to place once a folio is read (TextPlacementDeferral)
+	int s_text_deferral = 0;
+	QList<QPointer<Conductor>> s_text_pending;
+	QSet<const Conductor *> s_text_pending_set;
 
 		/// The own piece of a branch dragged by hand, and back with the
 		/// undo (T86): where it comes off the arm, and its shape
@@ -850,6 +860,7 @@ void Conductor::elementInformationChanged(const DiagramContext &old_info,
 */
 Conductor::~Conductor()
 {
+	s_text_pending_set.remove(this);
 	if (m_arm) {
 		m_arm->m_branches.removeAll(this);
 	}
@@ -1629,8 +1640,20 @@ QVariant Conductor::itemChange(GraphicsItemChange change, const QVariant &value)
 		else if (scene() && isSelected())
 			addHandler();
 	}
+		//Shown or hidden: placed again. Not when Qt polishes a conductor
+		//just added, which tells it so with nothing changing: its name was
+		//placed when it came in (ItemSceneHasChanged), and placed again
+		//here, each of a point placing the others too, a folio of 17
+		//branches took a second more to show (23/10/2026)
+	else if (change == QGraphicsItem::ItemVisibleChange) {
+		s_visibility_changing = isVisible() != value.toBool() ? this : nullptr;
+	}
 	else if (change == QGraphicsItem::ItemVisibleHasChanged) {
-		calculateTextItemPosition();
+		if (s_visibility_changing == this)
+		{
+			s_visibility_changing = nullptr;
+			calculateTextItemPosition();
+		}
 	}
 	else if (change == QGraphicsItem::ItemPositionHasChanged && isSelected()) {
 		adjustHandlerPos();
@@ -2554,6 +2577,18 @@ void Conductor::calculateTextItemPosition()
 {
 	if (!m_text_item || !diagram() || m_properties.type != ConductorProperties::Multi)
 		return;
+
+		//A folio being read: once, at the end (TextPlacementDeferral)
+	if (s_text_deferral > 0)
+	{
+		if (!s_text_pending_set.contains(this))
+		{
+			s_text_pending_set.insert(this);
+			s_text_pending << this;
+		}
+		return;
+	}
+	s_text_pending_set.remove(this);
 
 	if (diagram() -> defaultConductorProperties.m_one_text_per_folio == true &&
 		relatedPotentialConductors(false).size() > 0)
@@ -4397,6 +4432,29 @@ QPainterPath Conductor::ownPiecePaintedPath() const
 		hops << mapFromScene(hop);
 	}
 	return WireHops::path(local, hops, mode);
+}
+
+Conductor::TextPlacementDeferral::TextPlacementDeferral()
+{
+	++s_text_deferral;
+}
+
+Conductor::TextPlacementDeferral::~TextPlacementDeferral()
+{
+	if (--s_text_deferral > 0) {
+		return;
+	}
+		//Each placed once: one of a point places the others of the point
+		//with it (calculateTextItemPosition()), and they leave the set
+		//then - a point of n wires placed n + 1 times, and not n (n + 1)
+	const QList<QPointer<Conductor>> pending = s_text_pending;
+	s_text_pending.clear();
+	for (const QPointer<Conductor> &conductor : pending) {
+		if (conductor && s_text_pending_set.contains(conductor)) {
+			conductor->calculateTextItemPosition();
+		}
+	}
+	s_text_pending_set.clear();
 }
 
 /**

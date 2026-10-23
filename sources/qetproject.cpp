@@ -837,20 +837,26 @@ void QETProject::buildFolios(const QList<Diagram *> &folios) const
 		for (Diagram *d : folios)
 			if (!d->isLoaded()) ++waiting_;
 	}
-	for (Diagram *d : folios)
 	{
-		if (d->buildDeferred())
+			//The names of the wires placed once, when every folio is
+			//built and refreshed: reading each folio, then refreshing it,
+			//placed them twice (Conductor::TextPlacementDeferral)
+		const Conductor::TextPlacementDeferral names_at_the_end;
+		for (Diagram *d : folios)
 		{
-			built << d;
-				//Someone shows the progress (a long build, opening the
-				//terminal block manager...)
-			if (m_folio_build_observer) {
-				m_folio_build_observer(built.size(), waiting_);
+			if (d->buildDeferred())
+			{
+				built << d;
+					//Someone shows the progress (a long build, opening
+					//the terminal block manager...)
+				if (m_folio_build_observer) {
+					m_folio_build_observer(built.size(), waiting_);
+				}
 			}
 		}
+		for (Diagram *d : std::as_const(built))
+			self->folioLoaded(d);
 	}
-	for (Diagram *d : std::as_const(built))
-		self->folioLoaded(d);
 	self->m_data_base.blockSignals(signals_were_blocked);
 	if (!signals_were_blocked && !built.isEmpty()) {
 		emit self->m_data_base.dataBaseUpdated();
