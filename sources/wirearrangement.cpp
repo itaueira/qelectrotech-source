@@ -570,6 +570,9 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 	QSet<Conductor *> movable;
 	for (Conductor *c : all)
 	{
+			//A branch follows its arm (T86): arranging the arm arranges it,
+			//and it is no conductor of the point to make a trunk of
+		if (c->arm()) continue;
 		const bool given = conductors.contains(c);
 		switch (scope)
 		{

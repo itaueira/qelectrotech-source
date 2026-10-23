@@ -2814,6 +2814,8 @@ bool Diagram::fromXml(QDomElement &document,
 				delete c;
 		}
 	}
+		//The branches to their arms, now that the folio has all its wires (T86)
+	Conductor::linkArms(added_conductors);
 	if (consider_informations && moved_ends) {
 		qInfo().noquote() << "Diagram::fromXml():"
 						  << moved_ends

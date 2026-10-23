@@ -1161,6 +1161,67 @@ bool QetScriptApi::addConductor(int folioIndex,
 	return t1->isLinkedTo(t2);
 }
 
+/**
+	@brief QetScriptApi::addBranch
+	A wire from terminal @a terminalIndex of the element to the wire
+	@a armUuid, branching off it at the point of it nearest to (@a x, @a y),
+	as releasing the end of a new wire over another does (T86). In the
+	panel it is a wire of the end of the arm nearer to that point, and it is
+	made as addConductor() makes one to that terminal; then it follows the
+	arm.
+	@return the uuid of the new wire, or an empty string
+*/
+QString QetScriptApi::addBranch(int folioIndex, const QString &elementUuid, int terminalIndex,
+								const QString &armUuid, double x, double y)
+{
+	if (!m_project) return QString();
+	const QString caller = QStringLiteral("addBranch");
+	Terminal *t = findTerminal(folioIndex, elementUuid, terminalIndex, caller);
+	Conductor *arm = findConductorByUuid(folioIndex, armUuid, caller);
+	if (!t || !arm) return QString();
+	const QPointF at = Conductor::nearestOnPath(arm->scenePathPoints(), QPointF(x, y));
+	Terminal *end = arm->nearerEndTo(at);
+	if (!end || end == t || t->isLinkedTo(end) || !t->canBeLinkedTo(end)) {
+		log(QStringLiteral("qet.addBranch: that terminal cannot be wired to the end of that wire"));
+		return QString();
+	}
+	const QList<Terminal *> terminals {t, end};
+	if (ConductorCreator::needsPotentialChoice(terminals)) {
+		log(QStringLiteral("qet.addBranch: those terminals are on two different existing "
+						   "potentials -- refusing rather than open a dialog no script can answer"));
+		return QString();
+	}
+	Diagram *diagram = built(m_project->folios().at(folioIndex));
+	ConductorCreator creator(diagram, terminals);
+	Q_UNUSED(creator)
+	for (Conductor *c : t->conductors())
+	{
+		if ((c->terminal1 == end || c->terminal2 == end) && c->setArm(arm, at)) {
+			return c->uuid().toString();
+		}
+	}
+	return QString();
+}
+
+/**
+	@brief QetScriptApi::conductorArm
+	The wire the wire @a conductorUuid branches off (T86): "arm", its uuid,
+	empty for a wire of its own; "x" and "y", the point on it; "own_from",
+	the index in conductorPath() where the branch's own piece starts.
+	Empty if there is no such wire.
+*/
+QVariantMap QetScriptApi::conductorArm(int folioIndex, const QString &conductorUuid) const
+{
+	auto *self = const_cast<QetScriptApi *>(this);
+	Conductor *c = self->findConductorByUuid(folioIndex, conductorUuid, QStringLiteral("conductorArm"));
+	if (!c) return {};
+	Conductor *arm = c->arm();
+	return {{QStringLiteral("arm"), arm ? arm->uuid().toString() : QString()},
+			{QStringLiteral("x"), c->armPoint().x()},
+			{QStringLiteral("y"), c->armPoint().y()},
+			{QStringLiteral("own_from"), c->ownPieceStart()}};
+}
+
 namespace {
 /// "{element uuid} terminal N", the form conductors() prints an end in and
 /// the conductor calls take as element uuid + terminal index.

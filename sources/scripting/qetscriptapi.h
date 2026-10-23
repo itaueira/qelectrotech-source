@@ -433,6 +433,10 @@ class QetScriptApi : public QObject
 		Q_INVOKABLE bool addConductor(int folioIndex,
 									  const QString &elementUuidA, int terminalIndexA,
 									  const QString &elementUuidB, int terminalIndexB);
+		// -- a wire branching off another (T86) --
+		Q_INVOKABLE QString addBranch(int folioIndex, const QString &elementUuid, int terminalIndex,
+									  const QString &armUuid, double x, double y);
+		Q_INVOKABLE QVariantMap conductorArm(int folioIndex, const QString &conductorUuid) const;
 
 		// -- conductor properties, applied to the whole potential --
 		Q_INVOKABLE QStringList conductors(int folioIndex) const;

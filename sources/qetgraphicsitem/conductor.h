@@ -221,7 +221,36 @@ class Conductor : public QGraphicsObject
 		QList<QPointF> junctions() const;
 		QPainterPath paintedPath() const;
 
+			/// The wire this one branches off (T86): its path is the path
+			/// of the arm from the terminal they share to the point, and its
+			/// own piece from there to its other terminal. nullptr for a
+			/// wire of its own, and while the arm is off the folio
+		Conductor *arm() const;
+			/// Where on its arm this wire branches off, in scene coordinates
+		QPointF armPoint() const {return m_arm_point;}
+		bool canBranchOff(const Conductor *arm) const;
+		bool setArm(Conductor *arm, const QPointF &scene_point);
+		void clearArm();
+			/// The wires that branch off this one
+		QList<Conductor *> branches() const;
+			/// The path of this conductor, in scene coordinates, from
+			/// terminal1 to terminal2
+		QList<QPointF> scenePathPoints() const;
+			/// Where the own piece of a branch starts on its path, counted in
+			/// points from terminal1; -1 for a wire of its own
+		int ownPieceStart() const {return m_own_from;}
+		static Terminal *sharedTerminal(const Conductor *a, const Conductor *b);
+			/// The end of this wire nearer to @a scene_point along it: the
+			/// terminal a branch off that point shares the wire from
+		Terminal *nearerEndTo(const QPointF &scene_point) const;
+		static QPointF nearestOnPath(const QList<QPointF> &points, const QPointF &point,
+					     int *segment = nullptr);
+		static void linkArms(const QList<Conductor *> &conductors);
+
 	private:
+		void followArm();
+		QList<QPointF> branchPathPoints(int *own_from = nullptr) const;
+		QPainterPath ownPiecePath() const;
 		void setUpConnectionForFormula(
 				QString old_formula, QString new_formula);
 		autonum::sequentialNumbers m_autoNum_seq;
@@ -344,6 +373,15 @@ class Conductor : public QGraphicsObject
 		bool m_freeze_label = false;
 			/// See isAutoArranged()
 		bool m_auto_arranged = false;
+			/// See arm(): the arm, kept while it is off the folio - deleted,
+			/// and back with an undo -, the point on it, the wires that
+			/// branch off this one, and the arm read from the file before the
+			/// folio has all its wires (linkArms())
+		QPointer<Conductor> m_arm;
+		QPointF m_arm_point;
+		QList<QPointer<Conductor>> m_branches;
+		QUuid m_pending_arm;
+		int m_own_from = -1;
 		QUuid m_uuid;
 			/// false when m_uuid was synthesized by fromXml() because the
 			/// file had none -- toXml() must not persist that value, or

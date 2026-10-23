@@ -46,6 +46,7 @@
 #include "../wirehops.h"
 
 #include <QFontMetricsF>
+#include <QLineF>
 #include <QMultiHash>
 #include <QPainterPathStroker>
 #include <QTextBlock>
@@ -55,6 +56,7 @@
 #include <QtDebug>
 
 #include <algorithm>
+#include <limits>
 
 namespace {
 		//Bumped whenever a conductor changes shape, moves, or enters or
@@ -822,6 +824,9 @@ void Conductor::elementInformationChanged(const DiagramContext &old_info,
 */
 Conductor::~Conductor()
 {
+	if (m_arm) {
+		m_arm->m_branches.removeAll(this);
+	}
 	conductorGeometryChanged();
 	removeHandler();
 	terminal1->removeConductor(this);
@@ -847,6 +852,13 @@ bool Conductor::isValid() const
 	@see QGraphicsPathItem::update()
 */
 void Conductor::updatePath(const QRectF &rect) {
+		//A branch has the path its arm gives it (T86)
+	if (arm())
+	{
+		followArm();
+		QGraphicsObject::update(rect);
+		return;
+	}
 	QPointF p1, p2;
 	p1 = terminal1 -> dockConductor();
 	p2 = terminal2 -> dockConductor();
@@ -881,6 +893,14 @@ void Conductor::segmentsToPath()
 	path.lineTo(segment -> secondPoint());
 
 	setPath(path);
+
+		//The branches of this wire follow it (T86)
+	for (const QPointer<Conductor> &branch : std::as_const(m_branches))
+	{
+		if (branch && branch->m_arm == this && branch->arm()) {
+			branch->followArm();
+		}
+	}
 
 		//If conductor is selected and he's not being modified
 		//we update the position of the handlers
@@ -1369,7 +1389,8 @@ void Conductor::paint(QPainter *painter, const QStyleOptionGraphicsItem *options
 	painter -> setPen(final_conductor_pen);
 
 		//Draw the conductor, with a hop at each crossing if the project asks for them
-	const QPainterPath painted_path = paintedPath();
+		//A branch draws its own piece: the rest is its arm's (T86)
+	const QPainterPath painted_path = arm() ? ownPiecePath() : paintedPath();
 	painter -> drawPath(painted_path);
 		//Draw the second color
 	if(m_properties.m_bicolor)
@@ -1558,6 +1579,23 @@ QVariant Conductor::itemChange(GraphicsItemChange change, const QVariant &value)
 	else if (change == QGraphicsItem::ItemSceneHasChanged)
 	{
 		conductorGeometryChanged();
+			//An arm deleted leaves its branches the paths they have, as wires
+			//of their own; back with an undo, they follow it again. And a
+			//branch back follows its arm (T86)
+		for (const QPointer<Conductor> &branch : std::as_const(m_branches))
+		{
+			if (!branch || branch->m_arm != this) continue;
+			if (branch->arm()) {
+				branch->followArm();
+			} else if (branch->segments) {
+				branch->saveProfile(false);
+				branch->prepareGeometryChange();
+				branch->update();
+			}
+		}
+		if (arm()) {
+			followArm();
+		}
 		calculateTextItemPosition();
 
 		if(!scene())
@@ -1798,6 +1836,11 @@ void Conductor::handlerMouseReleaseEvent(QetGraphicsHandlerItem *qghi, QGraphics
 */
 void Conductor::addHandler()
 {
+		//The path of a branch is its arm's and the automatic piece from it:
+		//nothing of it to drag (T86)
+	if (arm()) {
+		return;
+	}
 	if (m_handler_vector.isEmpty() && scene())
 	{
 		m_handler_vector = QetGraphicsHandlerItem::handlerForPoint(mapToScene(handlerPoints()), QETUtils::graphicsHandlerSize(this));
@@ -1846,7 +1889,9 @@ QPainterPath Conductor::shape() const
 	pps.setWidth(m_mouse_over? 5 : 1);
 	pps.setJoinStyle(conductor_pen.joinStyle());
 
-	QPainterPath shape_(pps.createStroke(path()));
+		//A branch catches the mouse on its own piece only: over the arm,
+		//the arm is what is clicked (T86)
+	QPainterPath shape_(pps.createStroke(arm() ? ownPiecePath() : path()));
 
 	return shape_;
 }
@@ -1970,6 +2015,16 @@ bool Conductor::fromXml(QDomElement &dom_element)
 
 	m_freeze_label = dom_element.attribute("freezeLabel") == "true" ? true : false;
 
+		//The wire this one branches off: linked by linkArms() once the
+		//folio has all its wires (T86)
+	m_pending_arm = QUuid(dom_element.attribute(QStringLiteral("arm")));
+	if (!m_pending_arm.isNull())
+	{
+		const qreal arm_x = dom_element.attribute(QStringLiteral("arm_x")).toDouble();
+		const qreal arm_y = dom_element.attribute(QStringLiteral("arm_y")).toDouble();
+		m_arm_point = QPointF(qIsFinite(arm_x) ? arm_x : 0, qIsFinite(arm_y) ? arm_y : 0);
+	}
+
 		//Changed through the project database while its folio was not
 		//built (lazy folios): the change, not what the file says
 	if (diagram() && diagram()->project())
@@ -2059,6 +2114,14 @@ QDomElement Conductor::toXml(QDomDocument &dom_document,
 
 	if (modified_path && m_auto_arranged)
 		dom_element.setAttribute(QStringLiteral("autoarranged"), QStringLiteral("true"));
+
+		//The wire this one branches off, and where (T86)
+	if (const Conductor *a = arm())
+	{
+		dom_element.setAttribute(QStringLiteral("arm"), a->uuid().toString());
+		dom_element.setAttribute(QStringLiteral("arm_x"), QString::number(m_arm_point.x()));
+		dom_element.setAttribute(QStringLiteral("arm_y"), QString::number(m_arm_point.y()));
+	}
 
 	QDomElement dom_seq = m_autoNum_seq.toXml(dom_document);
 	dom_element.appendChild(dom_seq);
@@ -2259,6 +2322,8 @@ bool Conductor::setArrangedPath(const QList<QPointF> &scene_points)
 bool Conductor::applyPathPoints(const QList<QPointF> &scene_points, bool by_hand)
 {
 	if (scene_points.size() < 2 || !terminal1 || !terminal2) return false;
+		//The path of a branch is the one its arm gives it (T86)
+	if (arm()) return false;
 	const auto isNear = [](const QPointF &a, const QPointF &b) {
 		return qAbs(a.x() - b.x()) < 0.5 && qAbs(a.y() - b.y()) < 0.5;
 	};
@@ -3764,6 +3829,308 @@ QList<QPointF> Conductor::junctions() const
 		if (is_junction) junctions_list << point;
 	}
 	return(junctions_list);
+}
+
+/**
+	@brief Conductor::sharedTerminal
+	@return the terminal @a a and @a b both end at - the first one of @a a
+	when they share two -, or nullptr
+*/
+Terminal *Conductor::sharedTerminal(const Conductor *a, const Conductor *b)
+{
+	if (!a || !b) {
+		return nullptr;
+	}
+	for (Terminal *t : {a->terminal1, a->terminal2}) {
+		if (t && (t == b->terminal1 || t == b->terminal2)) return t;
+	}
+	return nullptr;
+}
+
+Terminal *Conductor::nearerEndTo(const QPointF &scene_point) const
+{
+	const QList<QPointF> points = scenePathPoints();
+	if (points.size() < 2) {
+		return terminal1;
+	}
+	int segment = 0;
+	const QPointF on = nearestOnPath(points, scene_point, &segment);
+	qreal from_first = 0;
+	for (int i = 0 ; i < segment ; ++i) {
+		from_first += QLineF(points.at(i), points.at(i + 1)).length();
+	}
+	from_first += QLineF(points.at(segment), on).length();
+	qreal total = 0;
+	for (int i = 0 ; i + 1 < points.size() ; ++i) {
+		total += QLineF(points.at(i), points.at(i + 1)).length();
+	}
+	return from_first <= total - from_first ? terminal1 : terminal2;
+}
+
+QList<QPointF> Conductor::scenePathPoints() const
+{
+	QList<QPointF> points;
+	const QList<QPointF> local = segmentsToPoints();
+	for (const QPointF &point : local) {
+		points << mapToScene(point);
+	}
+	return points;
+}
+
+/**
+	@brief Conductor::nearestOnPath
+	@return the point of the path @a points nearest to @a point, and in
+	@a segment the index of the segment it lies on, from 0
+*/
+QPointF Conductor::nearestOnPath(const QList<QPointF> &points, const QPointF &point, int *segment)
+{
+	QPointF nearest = points.isEmpty() ? point : points.first();
+	qreal distance = std::numeric_limits<qreal>::max();
+	int index = 0;
+	for (int i = 0 ; i + 1 < points.size() ; ++i)
+	{
+		const QPointF a = points.at(i);
+		const QPointF ab = points.at(i + 1) - a;
+		const qreal length = QPointF::dotProduct(ab, ab);
+		const qreal t = length > 0 ? std::clamp(QPointF::dotProduct(point - a, ab) / length, 0.0, 1.0) : 0.0;
+		const QPointF on = a + ab * t;
+		const qreal d = QLineF(on, point).length();
+		if (d < distance)
+		{
+			distance = d;
+			nearest = on;
+			index = i;
+		}
+	}
+	if (segment) *segment = index;
+	return nearest;
+}
+
+/**
+	@brief Conductor::arm
+	@return the wire this one branches off (T86), when both are on the same
+	folio: an arm deleted, which an undo may bring back, leaves its branches
+	wires of their own until it is back
+*/
+Conductor *Conductor::arm() const
+{
+	if (!m_arm || !scene() || m_arm->scene() != scene()) {
+		return nullptr;
+	}
+	return m_arm;
+}
+
+/**
+	@brief Conductor::canBranchOff
+	@return true when this wire may branch off @a arm: the two end at one
+	terminal, the one the branch then shares the path of the arm from, and
+	the arm does not branch off this wire, directly or through another
+*/
+bool Conductor::canBranchOff(const Conductor *arm) const
+{
+	if (!arm || arm == this || !sharedTerminal(this, arm)) {
+		return false;
+	}
+	int depth = 0;
+	for (const Conductor *c = arm ; c ; c = c->m_arm)
+	{
+		if (c == this || ++depth > 1000) return false;
+	}
+	return true;
+}
+
+/**
+	@brief Conductor::setArm
+	Make this wire a branch of @a arm, off the point of it nearest to
+	@a scene_point: its path becomes the path of the arm from the terminal
+	they share to that point, and its own piece from there (T86). What the
+	wire connects does not change: in the panel, the wires of a point are
+	joined at the terminal, and the branch is a way of drawing them.
+	@return false, changing nothing, when it cannot (canBranchOff())
+*/
+bool Conductor::setArm(Conductor *arm, const QPointF &scene_point)
+{
+	if (!canBranchOff(arm)) {
+		return false;
+	}
+	if (m_arm && m_arm != arm) {
+		m_arm->m_branches.removeAll(this);
+	}
+	m_arm = arm;
+	m_arm_point = scene_point;
+	m_pending_arm = QUuid();
+	if (!arm->m_branches.contains(this)) {
+		arm->m_branches << this;
+	}
+	followArm();
+	return true;
+}
+
+/**
+	@brief Conductor::clearArm
+	Make this branch a wire of its own again, with the path it has
+*/
+void Conductor::clearArm()
+{
+	if (m_arm) {
+		m_arm->m_branches.removeAll(this);
+	}
+	m_arm = nullptr;
+	m_pending_arm = QUuid();
+	m_own_from = -1;
+	if (segments) {
+		saveProfile(false);
+	}
+	prepareGeometryChange();
+	update();
+}
+
+QList<Conductor *> Conductor::branches() const
+{
+	QList<Conductor *> list;
+	for (const QPointer<Conductor> &branch : m_branches) {
+		if (branch && branch->m_arm == this) list << branch;
+	}
+	return list;
+}
+
+/**
+	@brief Conductor::branchPathPoints
+	@return the path of this branch in scene coordinates, from terminal1
+	to terminal2: the path of the arm from the terminal they share to the
+	point, then the own piece, leaving the arm across it towards the other
+	terminal, as an automatic path leaves a terminal. In @a own_from, the
+	index of the point on the arm. Empty when this is no branch.
+*/
+QList<QPointF> Conductor::branchPathPoints(int *own_from) const
+{
+	const Conductor *a = arm();
+	Terminal *shared = sharedTerminal(this, a);
+	if (!a || !shared) {
+		return {};
+	}
+	QList<QPointF> along = a->scenePathPoints();
+	if (along.size() < 2) {
+		return {};
+	}
+	if (shared != a->terminal1) {
+		std::reverse(along.begin(), along.end());
+	}
+	int segment = 0;
+	const QPointF at = nearestOnPath(along, m_arm_point, &segment);
+
+	QList<QPointF> points;
+	for (int i = 0 ; i <= segment ; ++i)
+	{
+		if (points.isEmpty() || (along.at(i) - points.last()).manhattanLength() > 0.01) {
+			points << along.at(i);
+		}
+	}
+	if ((at - points.last()).manhattanLength() > 0.01) {
+		points << at;
+	}
+	const int on_arm = int(points.size()) - 1;
+
+	Terminal *own = terminal1 == shared ? terminal2 : terminal1;
+	const QPointF end = own->dockConductor();
+	const QPointF from = along.at(segment);
+	const QPointF to = along.at(segment + 1);
+	Qet::Orientation leave;
+	if (qAbs(from.x() - to.x()) < 0.01) {
+		leave = end.x() >= at.x() ? Qet::East : Qet::West;
+	} else {
+		leave = end.y() >= at.y() ? Qet::South : Qet::North;
+	}
+	const QList<QPointF> piece = automaticPath(mapFromScene(at), leave, mapFromScene(end), own->orientation());
+	for (int i = 1 ; i < piece.size() ; ++i)
+	{
+		const QPointF point = mapToScene(piece.at(i));
+		if ((point - points.last()).manhattanLength() > 0.01) {
+			points << point;
+		}
+	}
+
+	int index = on_arm;
+	if (terminal1 != shared)
+	{
+		std::reverse(points.begin(), points.end());
+		index = int(points.size()) - 1 - on_arm;
+	}
+	if (own_from) *own_from = index;
+	return points;
+}
+
+/**
+	@brief Conductor::followArm
+	Give this branch the path its arm gives it now (T86)
+*/
+void Conductor::followArm()
+{
+	int own_from = -1;
+	const QList<QPointF> points = branchPathPoints(&own_from);
+	if (points.size() < 2) {
+		return;
+	}
+	QList<QPointF> local;
+	for (const QPointF &point : points) {
+		local << mapFromScene(point);
+	}
+	prepareGeometryChange();
+	m_own_from = own_from;
+		//The path is the arm's and its own: saved with the wire, for a
+		//program that does not know branches to draw it the same
+	modified_path = true;
+	pointsToSegments(local);
+	segmentsToPath();
+	calculateTextItemPosition();
+	update();
+}
+
+/**
+	@brief Conductor::ownPiecePath
+	@return the piece of this branch that is its own, from the point on the
+	arm to its other terminal, in its own coordinates: what is drawn and
+	what the mouse catches. The rest is the arm's
+*/
+QPainterPath Conductor::ownPiecePath() const
+{
+	const QList<QPointF> points = segmentsToPoints();
+	if (!arm() || m_own_from < 0 || m_own_from >= points.size() || !terminal1) {
+		return path();
+	}
+	const bool first_is_shared = sharedTerminal(this, m_arm) == terminal1;
+	const int from = first_is_shared ? m_own_from : 0;
+	const int to = first_is_shared ? int(points.size()) - 1 : m_own_from;
+	QPainterPath piece;
+	if (to <= from) {
+		return piece;
+	}
+	piece.moveTo(points.at(from));
+	for (int i = from + 1 ; i <= to ; ++i) {
+		piece.lineTo(points.at(i));
+	}
+	return piece;
+}
+
+/**
+	@brief Conductor::linkArms
+	Link the branches read from a file to their arms, once all the wires of
+	the folio are there: an arm may come after its branch in the file
+*/
+void Conductor::linkArms(const QList<Conductor *> &conductors)
+{
+	QHash<QUuid, Conductor *> by_uuid;
+	for (Conductor *c : conductors) {
+		by_uuid.insert(c->uuid(), c);
+	}
+	for (Conductor *c : conductors)
+	{
+		if (c->m_pending_arm.isNull()) continue;
+		Conductor *a = by_uuid.value(c->m_pending_arm);
+		if (!a || !c->setArm(a, c->m_arm_point)) {
+			c->m_pending_arm = QUuid();
+		}
+	}
 }
 
 /**

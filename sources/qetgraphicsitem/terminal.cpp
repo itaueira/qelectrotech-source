@@ -42,7 +42,55 @@
 #include <QToolTip>
 
 #include <QtCore/qnumeric.h>
+#include <QLineF>
 #include <utility>
+
+namespace
+{
+		/// The wire nearest to @a point on @a diagram, no further than 4,
+		/// and in @a on the point of it nearest to @a point (T86)
+	Conductor *wireUnder(Diagram *diagram, const QPointF &point, QPointF *on)
+	{
+		if (!diagram) {
+			return nullptr;
+		}
+		Conductor *nearest = nullptr;
+		qreal distance = 4.0;
+		const QList<QGraphicsItem *> items = diagram->items(QRectF(point - QPointF(4, 4), QSizeF(8, 8)));
+		for (QGraphicsItem *item : items)
+		{
+			Conductor *c = qgraphicsitem_cast<Conductor *>(item);
+			if (!c) continue;
+			const QPointF at = Conductor::nearestOnPath(c->scenePathPoints(), point);
+			const qreal d = QLineF(at, point).length();
+			if (d <= distance)
+			{
+				distance = d;
+				nearest = c;
+				if (on) *on = at;
+			}
+		}
+		return nearest;
+	}
+
+		/// The wire lit while the end of a new wire is over it: released
+		/// there, the new wire branches off it (T86)
+	QPointer<Conductor> s_lit_wire;
+
+	void lightWire(Conductor *wire)
+	{
+		if (s_lit_wire == wire) {
+			return;
+		}
+		if (s_lit_wire) {
+			s_lit_wire->setHighlighted(Conductor::None);
+		}
+		s_lit_wire = wire;
+		if (wire) {
+			wire->setHighlighted(Conductor::Normal);
+		}
+	}
+}
 
 QColor Terminal::neutralColor      = QColor(Qt::blue);
 QColor Terminal::allowedColor      = QColor(Qt::darkGreen);
@@ -634,13 +682,25 @@ void Terminal::mouseMoveEvent(QGraphicsSceneMouseEvent *e)
 	Q_ASSERT_X(!(qgis.isEmpty()), "Terminal::mouseMoveEvent", "La liste d'items ne devrait pas etre vide");
 
 	// s'il n'y rien d'autre que le poseur de conducteur dans la liste, on arrete la
-	if (qgis.size() <= 1) return;
+	if (qgis.size() <= 1)
+	{
+		lightWire(nullptr);
+		return;
+	}
 
 	// sinon on prend le deuxieme element de la liste et on verifie s'il s'agit d'une borne
 	QGraphicsItem *qgi = qgis.at(1);
 	// si le qgi est une borne...
 	Terminal *other_terminal = qgraphicsitem_cast<Terminal *>(qgi);
-	if (!other_terminal) return;
+	if (!other_terminal)
+	{
+			//Over a wire: lit, to say that released there the new wire
+			//branches off it (T86)
+		Conductor *wire = wireUnder(diag, e -> scenePos(), nullptr);
+		lightWire(wire && wire->terminal1 != this && wire->terminal2 != this ? wire : nullptr);
+		return;
+	}
+	lightWire(nullptr);
 	m_previous_terminal = other_terminal;
 
 	// s'il s'agit d'une borne, on lui applique l'effet hover approprie
@@ -665,6 +725,7 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 {
 	m_previous_terminal = nullptr;
 	m_hovered_color     = neutralColor;
+	lightWire(nullptr);
 
 	if (!diagram()) return;
 
@@ -673,11 +734,20 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 
 	//Get item under cursor
 	QGraphicsItem *qgi = diagram() -> itemAt(e -> scenePos(), QTransform());
-	if (!qgi) return;
 
-	//Element must be a terminal
+	//Element must be a terminal - or a wire: released over a wire, the new
+	//wire branches off it (T86), and in the panel it is a wire of the
+	//terminal the wire leaves, joined there
 	Terminal *other_terminal = qgraphicsitem_cast<Terminal *>(qgi);
-	if (!other_terminal) return;
+	Conductor *arm = nullptr;
+	QPointF arm_point;
+	if (!other_terminal)
+	{
+		arm = wireUnder(diagram(), e -> scenePos(), &arm_point);
+		if (!arm) return;
+		other_terminal = arm -> nearerEndTo(arm_point);
+		if (!other_terminal || other_terminal == this) return;
+	}
 
 	other_terminal -> m_hovered_color = neutralColor;
 	other_terminal -> m_hovered       = false;
@@ -702,6 +772,11 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 
 	//Create conductor
 	Conductor *new_conductor = new Conductor(this, other_terminal);
+	if (arm && !new_conductor->setArm(arm, arm_point))
+	{
+		delete new_conductor;
+		return;
+	}
 
 	//Get all conductors at the same potential of new conductors
 		//Not a wire left out of the numbering: nobody takes its name (T77)
@@ -762,8 +837,11 @@ void Terminal::mouseReleaseEvent(QGraphicsSceneMouseEvent *e)
 		can.numerate();
 	}
 		//Its bridge in the free space, and its neighbours with it (T67),
-		//in the same undo step as the conductor
-	WireArrangement::arrangeNewConductors(diagram(), {new_conductor}, undo);
+		//in the same undo step as the conductor. Not a branch, which
+		//follows its arm (T86)
+	if (!arm) {
+		WireArrangement::arrangeNewConductors(diagram(), {new_conductor}, undo);
+	}
 	//Add undo command to the parent diagram
 	diagram() -> undoStack().push(undo);
 	if (use_properties)
