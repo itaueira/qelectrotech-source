@@ -54,6 +54,8 @@
 #include <QTextLayout>
 #include <QTransform>
 #include <QtDebug>
+#include <QUndoCommand>
+#include <QUndoStack>
 
 #include <algorithm>
 #include <limits>
@@ -79,6 +81,30 @@ namespace {
 	const Diagram *s_hop_candidates_diagram = nullptr;
 	quint64 s_hop_candidates_generation = 0;
 	QVector<HopCandidate> s_hop_candidates;
+
+		/// The own piece of a branch dragged by hand, and back with the
+		/// undo (T86): where it comes off the arm, and its shape
+	class BranchShapeCommand : public QUndoCommand
+	{
+		public:
+			BranchShapeCommand(Conductor *branch,
+					   const QPointF &old_point, const QList<QPointF> &old_shape,
+					   const QPointF &new_point, const QList<QPointF> &new_shape) :
+				QUndoCommand(QObject::tr("Shape a branch")),
+				m_branch(branch),
+				m_old_point(old_point), m_old_shape(old_shape),
+				m_new_point(new_point), m_new_shape(new_shape)
+			{}
+			void undo() override {if (m_branch) m_branch->setBranchShape(m_old_point, m_old_shape);}
+			void redo() override {if (m_branch) m_branch->setBranchShape(m_new_point, m_new_shape);}
+
+		private:
+			QPointer<Conductor> m_branch;
+			QPointF m_old_point;
+			QList<QPointF> m_old_shape;
+			QPointF m_new_point;
+			QList<QPointF> m_new_shape;
+	};
 }
 
 #define PR(x) qDebug() << #x " = " << x;
@@ -1794,7 +1820,20 @@ void Conductor::handlerMouseReleaseEvent(QetGraphicsHandlerItem *qghi, QGraphics
 
 	m_moving_segment = false;
 	m_drag_points.clear();
-	if (has_to_save_profile)
+	if (has_to_save_profile && arm())
+	{
+			//A branch keeps the shape of its own piece, and where it comes
+			//off the arm, and not a profile: its path is redone from the arm
+			//every time the arm moves (T86)
+		has_to_save_profile = false;
+		const QList<QPointF> shape = ownPiecePoints();
+		if (shape.size() >= 2 && diagram())
+		{
+			diagram()->undoStack().push(new BranchShapeCommand(
+				this, m_arm_point, m_own_points, shape.first(), shape));
+		}
+	}
+	else if (has_to_save_profile)
 	{
 			//With the conductors that share the line, one undo step for
 			//all of them (T67, tenth adjustment)
@@ -1836,17 +1875,20 @@ void Conductor::handlerMouseReleaseEvent(QetGraphicsHandlerItem *qghi, QGraphics
 */
 void Conductor::addHandler()
 {
-		//The path of a branch is its arm's and the automatic piece from it:
-		//nothing of it to drag (T86)
-	if (arm()) {
-		return;
-	}
 	if (m_handler_vector.isEmpty() && scene())
 	{
 		m_handler_vector = QetGraphicsHandlerItem::handlerForPoint(mapToScene(handlerPoints()), QETUtils::graphicsHandlerSize(this));
 
-		for(QetGraphicsHandlerItem *handler : m_handler_vector)
+		for (int i = 0 ; i < m_handler_vector.size() ; ++i)
 		{
+			QetGraphicsHandlerItem *handler = m_handler_vector.at(i);
+				//A branch is dragged by its own piece only: the rest of its
+				//path is its arm's, and goes where the arm goes (T86). The
+				//handlers of the rest are kept off the folio, so that the
+				//index of a handler is still the index of its segment
+			if (arm() && !isOwnSegment(i + 1)) {
+				continue;
+			}
 			handler->setColor(Qt::blue);
 			scene()->addItem(handler);
 			handler->installSceneEventFilter(this);
@@ -2023,6 +2065,27 @@ bool Conductor::fromXml(QDomElement &dom_element)
 		const qreal arm_x = dom_element.attribute(QStringLiteral("arm_x")).toDouble();
 		const qreal arm_y = dom_element.attribute(QStringLiteral("arm_y")).toDouble();
 		m_arm_point = QPointF(qIsFinite(arm_x) ? arm_x : 0, qIsFinite(arm_y) ? arm_y : 0);
+			//Its own piece as the person left it, "x,y;x,y;...", none for
+			//the automatic one
+		m_own_points.clear();
+		const QStringList corners = dom_element.attribute(QStringLiteral("own_shape"))
+					    .split(QLatin1Char(';'), Qt::SkipEmptyParts);
+		for (const QString &corner : corners)
+		{
+			const QStringList xy = corner.split(QLatin1Char(','));
+			bool ok_x = false, ok_y = false;
+			const qreal x = xy.value(0).toDouble(&ok_x);
+			const qreal y = xy.value(1).toDouble(&ok_y);
+			if (xy.size() != 2 || !ok_x || !ok_y || !qIsFinite(x) || !qIsFinite(y))
+			{
+				m_own_points.clear();
+				break;
+			}
+			m_own_points << QPointF(x, y);
+		}
+		if (m_own_points.size() < 2) {
+			m_own_points.clear();
+		}
 	}
 
 		//Changed through the project database while its folio was not
@@ -2121,6 +2184,14 @@ QDomElement Conductor::toXml(QDomDocument &dom_document,
 		dom_element.setAttribute(QStringLiteral("arm"), a->uuid().toString());
 		dom_element.setAttribute(QStringLiteral("arm_x"), QString::number(m_arm_point.x()));
 		dom_element.setAttribute(QStringLiteral("arm_y"), QString::number(m_arm_point.y()));
+		if (!m_own_points.isEmpty())
+		{
+			QStringList corners;
+			for (const QPointF &p : std::as_const(m_own_points)) {
+				corners << QString::number(p.x()) + QLatin1Char(',') + QString::number(p.y());
+			}
+			dom_element.setAttribute(QStringLiteral("own_shape"), corners.join(QLatin1Char(';')));
+		}
 	}
 
 	QDomElement dom_seq = m_autoNum_seq.toXml(dom_document);
@@ -4016,8 +4087,20 @@ QList<QPointF> Conductor::branchPathPoints(int *own_from) const
 	if (shared != a->terminal1) {
 		std::reverse(along.begin(), along.end());
 	}
+	Terminal *own = terminal1 == shared ? terminal2 : terminal1;
+	const QPointF end = own->dockConductor();
+
+		//Where it comes off the arm: where the person left it when they
+		//shaped the piece by hand; else straight out of its terminal, onto
+		//the arm, when the terminal faces it (T86, 23/10/2026: "the wire
+		//leaves the terminal straight to the other wire"); else the point
+		//of the arm nearest to where it was dropped
 	int segment = 0;
-	const QPointF at = nearestOnPath(along, m_arm_point, &segment);
+	QPointF at;
+	const bool shaped = m_own_points.size() >= 2;
+	if (shaped || !straightOnto(along, end, own->orientation(), &at, &segment)) {
+		at = nearestOnPath(along, m_arm_point, &segment);
+	}
 
 	QList<QPointF> points;
 	for (int i = 0 ; i <= segment ; ++i)
@@ -4031,20 +4114,28 @@ QList<QPointF> Conductor::branchPathPoints(int *own_from) const
 	}
 	const int on_arm = int(points.size()) - 1;
 
-	Terminal *own = terminal1 == shared ? terminal2 : terminal1;
-	const QPointF end = own->dockConductor();
-	const QPointF from = along.at(segment);
-	const QPointF to = along.at(segment + 1);
-	Qet::Orientation leave;
-	if (qAbs(from.x() - to.x()) < 0.01) {
-		leave = end.x() >= at.x() ? Qet::East : Qet::West;
-	} else {
-		leave = end.y() >= at.y() ? Qet::South : Qet::North;
+	QList<QPointF> piece;
+	if (shaped) {
+		piece = keptShape(m_own_points, at, end);
 	}
-	const QList<QPointF> piece = automaticPath(mapFromScene(at), leave, mapFromScene(end), own->orientation());
+	if (piece.isEmpty())
+	{
+		const QPointF from = along.at(segment);
+		const QPointF to = along.at(segment + 1);
+		Qet::Orientation leave;
+		if (qAbs(from.x() - to.x()) < 0.01) {
+			leave = end.x() >= at.x() ? Qet::East : Qet::West;
+		} else {
+			leave = end.y() >= at.y() ? Qet::South : Qet::North;
+		}
+		const QList<QPointF> automatic = automaticPath(mapFromScene(at), leave, mapFromScene(end), own->orientation());
+		for (const QPointF &point : automatic) {
+			piece << mapToScene(point);
+		}
+	}
 	for (int i = 1 ; i < piece.size() ; ++i)
 	{
-		const QPointF point = mapToScene(piece.at(i));
+		const QPointF point = piece.at(i);
 		if ((point - points.last()).manhattanLength() > 0.01) {
 			points << point;
 		}
@@ -4058,6 +4149,150 @@ QList<QPointF> Conductor::branchPathPoints(int *own_from) const
 	}
 	if (own_from) *own_from = index;
 	return points;
+}
+
+/**
+	@brief Conductor::straightOnto
+	Where a wire leaving @a end in the direction @a orientation first meets
+	@a along, a path that turns at right angles: in @a at, with the segment
+	of @a along in @a segment.
+	@return false when it never meets it - the terminal does not face it
+*/
+bool Conductor::straightOnto(const QList<QPointF> &along, const QPointF &end,
+			     Qet::Orientation orientation, QPointF *at, int *segment)
+{
+	QPointF direction;
+	switch (orientation)
+	{
+		case Qet::North: direction = QPointF(0, -1); break;
+		case Qet::South: direction = QPointF(0, 1); break;
+		case Qet::East:  direction = QPointF(1, 0); break;
+		default:         direction = QPointF(-1, 0); break;
+	}
+	const bool across_x = qFuzzyIsNull(direction.y());
+	qreal nearest = std::numeric_limits<qreal>::max();
+	bool found = false;
+	for (int i = 0 ; i + 1 < along.size() ; ++i)
+	{
+		const QPointF a = along.at(i);
+		const QPointF b = along.at(i + 1);
+		QPointF meet;
+		if (across_x)
+		{
+				//A wire across x meets a segment that runs along y
+			if (qAbs(a.x() - b.x()) > 0.01
+			    || end.y() < std::min(a.y(), b.y()) - 0.01
+			    || end.y() > std::max(a.y(), b.y()) + 0.01) continue;
+			meet = QPointF(a.x(), end.y());
+		}
+		else
+		{
+			if (qAbs(a.y() - b.y()) > 0.01
+			    || end.x() < std::min(a.x(), b.x()) - 0.01
+			    || end.x() > std::max(a.x(), b.x()) + 0.01) continue;
+			meet = QPointF(end.x(), a.y());
+		}
+		const qreal ahead = QPointF::dotProduct(meet - end, direction);
+		if (ahead > 0.01 && ahead < nearest)
+		{
+			nearest = ahead;
+			if (at) *at = meet;
+			if (segment) *segment = i;
+			found = true;
+		}
+	}
+	return found;
+}
+
+/**
+	@brief Conductor::keptShape
+	@return the own piece @a points the person shaped, from the arm to the
+	terminal, its ends brought to where the arm @a at and the terminal
+	@a end are now, the segments next to them kept upright - as a wire
+	follows a component that moves; empty when there is nothing to keep
+*/
+QList<QPointF> Conductor::keptShape(QList<QPointF> points, const QPointF &at, const QPointF &end)
+{
+	const auto upright = [](const QPointF &a, const QPointF &b) {
+		return qAbs(a.x() - b.x()) < 0.01;
+	};
+	const int n = int(points.size());
+	if (n < 2) {
+		return {};
+	}
+	if (n >= 4)
+	{
+		if (upright(points.at(0), points.at(1))) points[1].setX(at.x()); else points[1].setY(at.y());
+		if (upright(points.at(n - 2), points.at(n - 1))) points[n - 2].setX(end.x()); else points[n - 2].setY(end.y());
+	}
+	else if (n == 3)
+	{
+		points[1] = upright(points.at(0), points.at(1)) ? QPointF(at.x(), end.y()) : QPointF(end.x(), at.y());
+	}
+	else if (qAbs(at.x() - end.x()) > 0.01 && qAbs(at.y() - end.y()) > 0.01)
+	{
+			//A straight piece that no longer lines up turns once
+		points.insert(1, upright(points.at(0), points.at(1)) ? QPointF(at.x(), end.y()) : QPointF(end.x(), at.y()));
+	}
+	points.first() = at;
+	points.last() = end;
+	return points;
+}
+
+/**
+	@brief Conductor::ownPiecePoints
+	See the header. Read off the path, from the terminal back to the first
+	point that lies on the arm: the person may have dragged the point along
+	the arm, and the index of the point counted from the other end too
+*/
+QList<QPointF> Conductor::ownPiecePoints() const
+{
+	const Conductor *a = arm();
+	Terminal *shared = sharedTerminal(this, a);
+	if (!a || !shared) {
+		return {};
+	}
+	QList<QPointF> points = scenePathPoints();
+	if (shared == terminal1) {
+		std::reverse(points.begin(), points.end());
+	}
+	const QList<QPointF> along = a->scenePathPoints();
+	QList<QPointF> own;
+	for (int i = 0 ; i < points.size() ; ++i)
+	{
+		own.prepend(points.at(i));
+		if (i > 0 && QLineF(nearestOnPath(along, points.at(i)), points.at(i)).length() < 0.01) {
+			break;
+		}
+	}
+	return own;
+}
+
+/**
+	@brief Conductor::isOwnSegment
+	See the header. Segment @a index runs from point @a index to the next
+*/
+bool Conductor::isOwnSegment(int index) const
+{
+	if (!arm() || m_own_from < 0) {
+		return false;
+	}
+	return sharedTerminal(this, m_arm) == terminal1 ? index >= m_own_from : index < m_own_from;
+}
+
+/**
+	@brief Conductor::setBranchShape
+	This branch off its arm at @a arm_point, its own piece @a own_points -
+	in scene coordinates, from the arm to its terminal; none for the
+	automatic one, straight out of the terminal (T86)
+*/
+void Conductor::setBranchShape(const QPointF &arm_point, const QList<QPointF> &own_points)
+{
+	m_arm_point = arm_point;
+	m_own_points = own_points.size() >= 2 ? own_points : QList<QPointF>();
+	if (arm()) {
+		followArm();
+	}
 }
 
 /**

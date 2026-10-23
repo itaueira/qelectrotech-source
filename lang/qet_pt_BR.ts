@@ -5514,19 +5514,19 @@ Continuar?</translation>
 <context>
     <name>Conductor</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="1808"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="1847"/>
         <source>move the line a point shares</source>
         <comment>undo caption</comment>
         <translation>mover a linha comum do ponto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="3463"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="3534"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="3468"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="3539"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
@@ -28691,6 +28691,11 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
             <numerusform>Escalar %n elemento para %1 %</numerusform>
             <numerusform>Escalar %n elementos para %1 %</numerusform>
         </translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="93"/>
+        <source>Shape a branch</source>
+        <translation>Mudar o traçado de uma derivação</translation>
     </message>
 </context>
 <context>

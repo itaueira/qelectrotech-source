@@ -21,6 +21,7 @@
 
 #include "../../../../sources/diagram.h"
 #include "../../../../sources/diagramcontent.h"
+#include "../../../../sources/QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
@@ -406,4 +407,159 @@ TEST_CASE("CU-86.6 - A branch off a branch", "[T86][branch]")
 		//And no branch makes its arm a branch of itself
 	CHECK_FALSE(arm->canBranchOff(one));
 	CHECK_FALSE(one->canBranchOff(sub));
+}
+
+namespace
+{
+		/// Whether every segment of @a points runs along x or along y
+	bool upright(const QList<QPointF> &points)
+	{
+		for (int i = 0 ; i + 1 < points.size() ; ++i)
+		{
+			if (qAbs(points.at(i).x() - points.at(i + 1).x()) > 0.01
+			    && qAbs(points.at(i).y() - points.at(i + 1).y()) > 0.01) return false;
+		}
+		return true;
+	}
+
+		/// The handlers on the folio, the ones a hand can take
+	QList<QetGraphicsHandlerItem *> handlers(Diagram *sheet)
+	{
+		QList<QetGraphicsHandlerItem *> list;
+		for (QGraphicsItem *item : sheet->items()) {
+			if (auto *h = qgraphicsitem_cast<QetGraphicsHandlerItem *>(item)) list << h;
+		}
+		return list;
+	}
+
+		/// A handler taken and moved by @a movement, as a hand does
+	void drag(Diagram *sheet, QetGraphicsHandlerItem *handler, const QPointF &movement)
+	{
+		const QPointF from = handler->scenePos();
+		QGraphicsSceneMouseEvent press(QEvent::GraphicsSceneMousePress);
+		press.setScenePos(from);
+		press.setButton(Qt::LeftButton);
+		press.setButtons(Qt::LeftButton);
+		sheet->sendEvent(handler, &press);
+		QGraphicsSceneMouseEvent move(QEvent::GraphicsSceneMouseMove);
+		move.setScenePos(from + movement);
+		move.setButtons(Qt::LeftButton);
+		sheet->sendEvent(handler, &move);
+		QGraphicsSceneMouseEvent release(QEvent::GraphicsSceneMouseRelease);
+		release.setScenePos(from + movement);
+		release.setButton(Qt::LeftButton);
+		sheet->sendEvent(handler, &release);
+	}
+}
+
+TEST_CASE("T86 - The branch leaves its terminal straight to the arm", "[T86][branch]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *arm = drawTo(bench.sheet, bench.b, bench.s3->dockConductor());
+	REQUIRE(arm);
+
+		//Dropped 30 below the line of S1, on the arm: it comes off the arm
+		//where the line of S1 meets it, and runs straight (23/10/2026)
+	Conductor *one = drawTo(bench.sheet, bench.s1, QPointF(201, 190));
+	REQUIRE(one);
+	REQUIRE(one->arm() == arm);
+	CHECK(sameAs(one->scenePathPoints().at(one->ownPieceStart()), QPointF(200, 160)));
+	const QList<QPointF> own = one->ownPiecePoints();
+	REQUIRE(own.size() >= 2);
+	CHECK(sameAs(own.first(), QPointF(200, 160)));
+	CHECK(sameAs(own.last(), bench.s1->dockConductor()));
+	for (const QPointF &p : own) {
+		CHECK(qAbs(p.y() - 160) < 0.01);
+	}
+	CHECK(one->ownShape().isEmpty());
+}
+
+TEST_CASE("T86 - The own piece of a branch dragged like a wire", "[T86][branch]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *arm = drawTo(bench.sheet, bench.b, bench.s3->dockConductor());
+	Conductor *one = drawTo(bench.sheet, bench.s1, QPointF(201, 160));
+	REQUIRE(arm);
+	REQUIRE(one);
+	REQUIRE(one->arm() == arm);
+
+		//Selected, it offers handlers on its own piece only, right of the arm
+	bench.sheet->clearSelection();
+	one->setSelected(true);
+	const QList<QetGraphicsHandlerItem *> offered = handlers(bench.sheet);
+	REQUIRE_FALSE(offered.isEmpty());
+	QetGraphicsHandlerItem *middle = nullptr;
+	for (QetGraphicsHandlerItem *h : offered)
+	{
+		CHECK(h->scenePos().x() > 200);
+		if (!middle || qAbs(h->scenePos().x() - 245) < qAbs(middle->scenePos().x() - 245)) middle = h;
+	}
+
+		//Its long segment taken down 20, as a wire between two components
+	const int steps = bench.sheet->undoStack().count();
+	drag(bench.sheet, middle, QPointF(0, 20));
+	CHECK(bench.sheet->undoStack().count() == steps + 1);
+	CHECK(one->arm() == arm);
+	const QList<QPointF> shaped = one->ownPiecePoints();
+	CHECK_FALSE(one->ownShape().isEmpty());
+	CHECK(upright(one->scenePathPoints()));
+	CHECK(sameAs(shaped.last(), bench.s1->dockConductor()));
+	bool lowered = false;
+	for (const QPointF &p : shaped) {
+		if (qAbs(p.y() - 180) < 0.01) lowered = true;
+	}
+	CHECK(lowered);
+	CHECK(sharesThePathOf(one, arm));
+
+		//The shape kept when the component moves: the wire still upright,
+		//still ending at its terminal
+	Element *s1 = bench.s1->parentElement();
+	s1->setPos(s1->pos() + QPointF(10, 10));
+	one->updatePath();
+	CHECK(upright(one->scenePathPoints()));
+	CHECK(sameAs(one->ownPiecePoints().last(), bench.s1->dockConductor()));
+	s1->setPos(s1->pos() - QPointF(10, 10));
+	one->updatePath();
+
+		//Saved and opened again with its shape
+	const QUuid one_uuid = one->uuid();
+	const QList<QPointF> path = one->scenePathPoints();
+	REQUIRE(bench.project.saveAndReopen());
+	REQUIRE(bench.open());
+	Conductor *again = bench.byUuid(one_uuid);
+	REQUIRE(again);
+	CHECK(again->arm() != nullptr);
+	CHECK(again->scenePathPoints() == path);
+	CHECK_FALSE(again->ownShape().isEmpty());
+}
+
+TEST_CASE("T86 - Undoing the shape of a branch straightens it again", "[T86][branch]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *arm = drawTo(bench.sheet, bench.b, bench.s3->dockConductor());
+	Conductor *one = drawTo(bench.sheet, bench.s1, QPointF(201, 160));
+	REQUIRE(arm);
+	REQUIRE(one);
+	const QList<QPointF> straight = one->scenePathPoints();
+	bench.sheet->clearSelection();
+	one->setSelected(true);
+	QetGraphicsHandlerItem *middle = nullptr;
+	for (QetGraphicsHandlerItem *h : handlers(bench.sheet)) {
+		if (!middle || qAbs(h->scenePos().x() - 245) < qAbs(middle->scenePos().x() - 245)) middle = h;
+	}
+	REQUIRE(middle);
+	drag(bench.sheet, middle, QPointF(0, 20));
+	REQUIRE_FALSE(one->ownShape().isEmpty());
+
+	bench.sheet->undoStack().undo();
+	CHECK(one->ownShape().isEmpty());
+	CHECK(one->scenePathPoints() == straight);
+	bench.sheet->undoStack().redo();
+	CHECK_FALSE(one->ownShape().isEmpty());
 }

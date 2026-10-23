@@ -246,11 +246,25 @@ class Conductor : public QGraphicsObject
 		static QPointF nearestOnPath(const QList<QPointF> &points, const QPointF &point,
 					     int *segment = nullptr);
 		static void linkArms(const QList<Conductor *> &conductors);
+			/// The own piece of a branch as the person left it, in scene
+			/// coordinates, from the arm to its terminal; empty while it is the
+			/// automatic one, straight out of the terminal (T86, 23/10/2026)
+		QList<QPointF> ownShape() const {return m_own_points;}
+		void setBranchShape(const QPointF &arm_point, const QList<QPointF> &own_points);
+			/// The own piece of a branch, in scene coordinates, from the arm to
+			/// its terminal, as it is drawn now
+		QList<QPointF> ownPiecePoints() const;
+			/// Whether the segment @a index of the path is of the own piece of
+			/// this branch - the only ones a branch lets the mouse drag
+		bool isOwnSegment(int index) const;
 
 	private:
 		void followArm();
 		QList<QPointF> branchPathPoints(int *own_from = nullptr) const;
 		QPainterPath ownPiecePath() const;
+		static bool straightOnto(const QList<QPointF> &along, const QPointF &end,
+					 Qet::Orientation orientation, QPointF *at, int *segment);
+		static QList<QPointF> keptShape(QList<QPointF> points, const QPointF &at, const QPointF &end);
 		void setUpConnectionForFormula(
 				QString old_formula, QString new_formula);
 		autonum::sequentialNumbers m_autoNum_seq;
@@ -382,6 +396,8 @@ class Conductor : public QGraphicsObject
 		QList<QPointer<Conductor>> m_branches;
 		QUuid m_pending_arm;
 		int m_own_from = -1;
+			/// See ownShape()
+		QList<QPointF> m_own_points;
 		QUuid m_uuid;
 			/// false when m_uuid was synthesized by fromXml() because the
 			/// file had none -- toXml() must not persist that value, or
