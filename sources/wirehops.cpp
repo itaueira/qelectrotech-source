@@ -96,8 +96,11 @@ WireHops::Mode WireHops::fromString(const QString &string)
 	A crossing is kept only if it lies strictly inside the segment of the
 	other wire (a wire ending or bending on this one is a junction, not a
 	crossing) and at least one hop radius from the ends of this wire's
-	segment, so the arc fits. Of two crossings closer than one arc
-	width, only the first hops.
+	segment, so the arc fits. Several wires crossing at one point - an arm
+	and the branches drawn along it - make one hop. Two crossings closer
+	than one arc width make two hops, each smaller (path()): one hop over
+	two wires reads as one wire crossed, which the person refused on
+	23/10/2026.
 */
 QList<QPointF> WireHops::crossings(const QVector<QPointF> &wire,
 								   const QList<QVector<QPointF>> &others,
@@ -147,8 +150,7 @@ QList<QPointF> WireHops::crossings(const QVector<QPointF> &wire,
 		});
 		for (const QPointF &crossing : std::as_const(on_segment))
 		{
-			if (!hops.isEmpty()
-				&& QLineF(hops.last(), crossing).length() < 2 * radius + tolerance) {
+			if (!hops.isEmpty() && QLineF(hops.last(), crossing).length() < 0.5) {
 				continue;
 			}
 			hops.append(crossing);
@@ -190,17 +192,24 @@ QPainterPath WireHops::path(const QVector<QPointF> &wire,
 				//1 when the wire runs towards +x (or +y), -1 otherwise
 			const qreal direction = horizontal ? (b.x() > a.x() ? 1 : -1)
 											   : (b.y() > a.y() ? 1 : -1);
-			for (const QPointF &hop : hopsOnSegment(a, b, hops, horizontal))
+			const QList<QPointF> here = hopsOnSegment(a, b, hops, horizontal);
+			for (int k = 0 ; k < here.size() ; ++k)
 			{
-				const QRectF circle(hop.x() - radius, hop.y() - radius,
-									2 * radius, 2 * radius);
+				const QPointF &hop = here.at(k);
+					//Smaller where the next crossing is near, so that each
+					//wire crossed has its own hop
+				qreal r = radius;
+				if (k > 0) r = std::min(r, QLineF(here.at(k - 1), hop).length() / 2 - 0.5);
+				if (k + 1 < here.size()) r = std::min(r, QLineF(hop, here.at(k + 1)).length() / 2 - 0.5);
+				r = std::max(r, min_radius);
+				const QRectF circle(hop.x() - r, hop.y() - r, 2 * r, 2 * r);
 				if (horizontal) {
 						//Over the top: from the left end to the right one, or back
-					path.lineTo(hop.x() - direction * radius, hop.y());
+					path.lineTo(hop.x() - direction * r, hop.y());
 					path.arcTo(circle, direction > 0 ? 180 : 0, direction > 0 ? -180 : 180);
 				} else {
 						//On the right: from the top end to the bottom one, or back
-					path.lineTo(hop.x(), hop.y() - direction * radius);
+					path.lineTo(hop.x(), hop.y() - direction * r);
 					path.arcTo(circle, direction > 0 ? 90 : 270, direction > 0 ? -180 : 180);
 				}
 			}

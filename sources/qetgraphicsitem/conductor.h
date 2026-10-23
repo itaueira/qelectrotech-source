@@ -262,6 +262,7 @@ class Conductor : public QGraphicsObject
 		void followArm();
 		QList<QPointF> branchPathPoints(int *own_from = nullptr) const;
 		QPainterPath ownPiecePath() const;
+		QPainterPath ownPiecePaintedPath() const;
 		static bool straightOnto(const QList<QPointF> &along, const QPointF &end,
 					 Qet::Orientation orientation, QPointF *at, int *segment);
 		static QList<QPointF> keptShape(QList<QPointF> points, const QPointF &at, const QPointF &end);

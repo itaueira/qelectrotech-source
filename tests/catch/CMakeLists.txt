@@ -143,6 +143,7 @@ add_executable(
     src/connectorswap_test.cpp
     src/csvwriter_test.cpp
     src/bomquery_test.cpp
+    src/wirehops_test.cpp
     src/foliovariables_test.cpp
     src/projectrevision_test.cpp
     src/apppreferences_test.cpp
@@ -424,6 +425,10 @@ add_executable(
     # The queries made of them need a project open and stay out.
     ${QET_DIR}/sources/dataBase/bomquery.cpp
     ${QET_DIR}/sources/dataBase/bomquery.h
+    # The hops of a wire over the wires it crosses: points and paths, no
+    # folio.
+    ${QET_DIR}/sources/wirehops.cpp
+    ${QET_DIR}/sources/wirehops.h
     # The preferences of the workstation: what an omitted key means, and the
     # three states of the backup copy question. QSettings and QString, no
     # QETApp and no project - which is what lets the defect it was written

@@ -1416,7 +1416,7 @@ void Conductor::paint(QPainter *painter, const QStyleOptionGraphicsItem *options
 
 		//Draw the conductor, with a hop at each crossing if the project asks for them
 		//A branch draws its own piece: the rest is its arm's (T86)
-	const QPainterPath painted_path = arm() ? ownPiecePath() : paintedPath();
+	const QPainterPath painted_path = arm() ? ownPiecePaintedPath() : paintedPath();
 	painter -> drawPath(painted_path);
 		//Draw the second color
 	if(m_properties.m_bicolor)
@@ -4345,6 +4345,58 @@ QPainterPath Conductor::ownPiecePath() const
 		piece.lineTo(points.at(i));
 	}
 	return piece;
+}
+
+/**
+	@brief Conductor::ownPiecePaintedPath
+	@return the own piece of this branch as it is drawn: with a hop where a
+	wire crosses it, as any wire has (T86, 23/10/2026: the wires crossing a
+	branch crossed it with no hop)
+*/
+QPainterPath Conductor::ownPiecePaintedPath() const
+{
+	const QPainterPath plain = ownPiecePath();
+	const Diagram *parent_diagram = diagram();
+	if (!parent_diagram || !parent_diagram->project() || plain.elementCount() < 2) {
+		return plain;
+	}
+	const WireHops::Mode mode = parent_diagram->project()->wireHops();
+	if (mode == WireHops::Mode::None) {
+		return plain;
+	}
+	QVector<QPointF> local;
+	QVector<QPointF> wire;
+	for (int i = 0 ; i < plain.elementCount() ; ++i)
+	{
+		const QPointF point(plain.elementAt(i).x, plain.elementAt(i).y);
+		local << point;
+		wire << mapToScene(point);
+	}
+	const QRectF rect = mapRectToScene(plain.boundingRect()).adjusted(-1, -1, 1, 1);
+	QList<QVector<QPointF>> others;
+	const QList<Conductor *> conductors = parent_diagram->conductors();
+	for (const Conductor *conductor : conductors)
+	{
+		if (conductor == this
+		    || !rect.intersects(conductor->mapRectToScene(conductor->path().boundingRect())
+					.adjusted(-1, -1, 1, 1))) {
+			continue;
+		}
+		QVector<QPointF> points;
+		for (const QPointF &point : conductor->segmentsToPoints()) {
+			points << conductor->mapToScene(point);
+		}
+		others << points;
+	}
+	const QList<QPointF> scene_hops = WireHops::crossings(wire, others, mode);
+	if (scene_hops.isEmpty()) {
+		return plain;
+	}
+	QList<QPointF> hops;
+	for (const QPointF &hop : scene_hops) {
+		hops << mapFromScene(hop);
+	}
+	return WireHops::path(local, hops, mode);
 }
 
 /**

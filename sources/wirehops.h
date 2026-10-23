@@ -48,6 +48,8 @@ namespace WireHops
 
 		///Radius of a hop, in scene units (a grid step is 10)
 	constexpr qreal radius = 4.0;
+		///The smallest a hop gets, between two crossings close together
+	constexpr qreal min_radius = 1.5;
 
 	QString toString(Mode mode);
 	Mode fromString(const QString &string);
