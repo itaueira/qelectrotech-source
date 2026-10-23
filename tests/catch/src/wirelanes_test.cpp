@@ -403,3 +403,45 @@ TEST_CASE("T67 — A chain with no room in common: each wire on its own", "[T67]
 	CHECK(result.at.at(1) == Approx(70));
 	CHECK(result.at.at(2) == Approx(115));
 }
+
+TEST_CASE("T67 - A group too wide for its shared room splits", "[T67][wirelanes]")
+{
+		//Folio 5 of the request (23/10/2026): two wires of a power supply
+		//end at x 873, just right of a strip whose terminals end at 860;
+		//eight wires of field components end inside the zone of the
+		//components, from 874.5. Their runs overlap: one group, whose
+		//shared room was 860 to 873, and the ten lanes went a unit apart
+	Request r;
+	r.unit = 1;
+	r.frames << Frame{874.5, 1100, 220, 640};
+	r.wires << wire(247, 324, 860, 873) << wire(252, 336, 860, 873);
+	const QList<std::pair<double, double>> field {{278, 373}, {307, 396}, {337, 419}, {400, 442},
+						      {446, 465}, {456, 488}, {496, 511}, {506, 534}};
+	for (const auto &run : field) {
+		r.wires << wire(run.first, run.second, 860, 960);
+	}
+	const WireLanes::Result result = WireLanes::arrange(r);
+	for (int i = 0 ; i < 2 ; ++i)
+	{
+		CHECK(result.at.at(i) > 860);
+		CHECK(result.at.at(i) < 873);
+	}
+	for (int i = 2 ; i < r.wires.size() ; ++i)
+	{
+		CHECK(result.at.at(i) > 874.5);
+		CHECK(result.at.at(i) < 960);
+	}
+		//No two lanes whose runs overlap closer than the minimum
+	for (int i = 0 ; i < r.wires.size() ; ++i)
+	{
+		for (int j = i + 1 ; j < r.wires.size() ; ++j)
+		{
+			const Wire &a = r.wires.at(i);
+			const Wire &b = r.wires.at(j);
+			const bool overlap = std::min(a.to, b.to) > std::max(a.from, b.from);
+			if (overlap) {
+				CHECK(std::abs(result.at.at(i) - result.at.at(j)) >= r.min_pitch - 0.01);
+			}
+		}
+	}
+}

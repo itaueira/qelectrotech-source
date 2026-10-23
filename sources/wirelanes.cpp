@@ -452,7 +452,20 @@ WireLanes::Result WireLanes::arrange(const Request &request)
 	}
 
 	int next_group = 0;
-	const auto place = [&](const QVector<int> &members) {
+		/// Where a group would go: whether its wires share any room, the
+		/// piece chosen in it, and whether the lanes there are no closer
+		/// than the minimum
+	struct Plan
+	{
+		bool shared = false;
+		bool placeable = false;
+		bool fits = false;
+		Piece piece{0, 0, 0};
+		QVector<int> lane;
+		int count = 0;
+	};
+	const auto plan = [&](const QVector<int> &members) {
+		Plan p;
 		double low = -std::numeric_limits<double>::infinity();
 		double high = std::numeric_limits<double>::infinity();
 		double span_low = std::numeric_limits<double>::infinity();
@@ -467,40 +480,83 @@ WireLanes::Result WireLanes::arrange(const Request &request)
 			span_high = std::max(span_high, spanHigh(w));
 			wires << w;
 		}
-		if (high - low <= eps) return false;
+		if (high - low <= eps) return p;
+		p.shared = true;
 
-		const QVector<int> lane = lanes(wires, request.gap);
-		const int count = *std::max_element(lane.cbegin(), lane.cend()) + 1;
+		p.lane = lanes(wires, request.gap);
+		p.count = *std::max_element(p.lane.cbegin(), p.lane.cend()) + 1;
 
 		QVector<Piece> candidates = pieces(low, high, span_low, span_high,
 						   request.blocks, request.frames);
-		if (candidates.isEmpty()) return true;
+		if (candidates.isEmpty()) return p;
+		p.placeable = true;
 		std::stable_sort(candidates.begin(), candidates.end(), [](const Piece &a, const Piece &b) {
 			if (a.frames != b.frames) return a.frames < b.frames;
 			return a.high - a.low > b.high - b.low;
 		});
-		const Piece *chosen = nullptr;
-		for (const Piece &p : candidates)
+		for (const Piece &piece : std::as_const(candidates))
 		{
-			if ((p.high - p.low) / (count + 1) >= request.min_pitch - eps) {
-				chosen = &p;
-				break;
+			if ((piece.high - piece.low) / (p.count + 1) >= request.min_pitch - eps)
+			{
+				p.piece = piece;
+				p.fits = true;
+				return p;
 			}
 		}
-		if (!chosen) {
-			chosen = &*std::max_element(candidates.cbegin(), candidates.cend(),
-						    [](const Piece &a, const Piece &b) {
-				return a.high - a.low < b.high - b.low;
-			});
-		}
-
-		const QVector<double> at = positions(count, chosen->low, chosen->high, request.unit);
+		p.piece = *std::max_element(candidates.cbegin(), candidates.cend(),
+					    [](const Piece &a, const Piece &b) {
+			return a.high - a.low < b.high - b.low;
+		});
+		return p;
+	};
+	const auto commit = [&](const QVector<int> &members, const Plan &p) {
+		if (!p.placeable) return;
+		const QVector<double> at = positions(p.count, p.piece.low, p.piece.high, request.unit);
 		const int id = next_group++;
 		for (int k = 0 ; k < members.size() ; ++k)
 		{
-			result.at[members.at(k)] = at.at(lane.at(k));
+			result.at[members.at(k)] = at.at(p.lane.at(k));
 			result.group[members.at(k)] = id;
 		}
+	};
+	const auto place = [&](const QVector<int> &members) {
+		const Plan whole = plan(members);
+		if (!whole.shared) return false;
+		if (whole.fits || !whole.placeable || members.size() < 2)
+		{
+			commit(members, whole);
+			return true;
+		}
+			//The room all of them share is too narrow for their lanes:
+			//the group in two, by how far each wire's own room reaches,
+			//each half in a piece of its own, apart. Folio 5 of the
+			//request (23/10/2026): two wires of a power supply just over
+			//a strip shared the group of ten wires of field components,
+			//whose room reached into the zone of the components; the
+			//shared room was the 13 between the strip and the supply,
+			//and the ten lanes went a unit apart
+		for (const bool by_high : {true, false})
+		{
+			QVector<int> order = members;
+			std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
+				const Wire &wa = request.wires.at(a);
+				const Wire &wb = request.wires.at(b);
+				return by_high ? wa.high < wb.high : wa.low > wb.low;
+			});
+			for (int k = 1 ; k < order.size() ; ++k)
+			{
+				const QVector<int> first = order.mid(0, k);
+				const QVector<int> second = order.mid(k);
+				const Plan a = plan(first);
+				const Plan b = plan(second);
+				if (!a.fits || !b.fits) continue;
+				if (a.piece.high > b.piece.low + eps && b.piece.high > a.piece.low + eps) continue;
+				commit(first, a);
+				commit(second, b);
+				return true;
+			}
+		}
+		commit(members, whole);
 		return true;
 	};
 
