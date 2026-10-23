@@ -573,6 +573,13 @@ QList<WireArrangement::Change> WireArrangement::plan(Diagram *diagram,
 			//A branch follows its arm (T86): arranging the arm arranges it,
 			//and it is no conductor of the point to make a trunk of
 		if (c->arm()) continue;
+			//And an arm with branches is a structure the person built by
+			//hand, and stays where they put it, as a wire placed by hand
+			//does (T86, 23/10/2026): arranged as a wire alone, it went to a
+			//lane in the middle of the corridor, chosen without its
+			//branches, and they crossed every wire between it and their
+			//terminals. In the way of the others, with its branches
+		if (!c->branches().isEmpty()) continue;
 		const bool given = conductors.contains(c);
 		switch (scope)
 		{

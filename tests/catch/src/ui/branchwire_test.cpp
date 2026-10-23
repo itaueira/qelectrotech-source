@@ -563,3 +563,41 @@ TEST_CASE("T86 - Undoing the shape of a branch straightens it again", "[T86][bra
 	bench.sheet->undoStack().redo();
 	CHECK_FALSE(one->ownShape().isEmpty());
 }
+
+TEST_CASE("T86 - Arranging the folio leaves an arm with branches where it is", "[T86][branch]")
+{
+	Setup setup;
+	Bench bench;
+	REQUIRE(bench.open());
+	Conductor *arm = drawTo(bench.sheet, bench.b, bench.s3->dockConductor());
+	REQUIRE(arm);
+
+		//Alone, the arm is a wire like any other: its run put at x = 150 by
+		//an arrangement, arranging the folio gives it its lane again
+	QList<QPointF> shifted = arm->scenePathPoints();
+	for (QPointF &p : shifted) {
+		if (qAbs(p.x() - 200) < 0.01) p.setX(150);
+	}
+	REQUIRE(arm->setArrangedPath(shifted));
+	const auto planned = [&bench](const Conductor *c) {
+		const QList<WireArrangement::Change> changes
+				= WireArrangement::plan(bench.sheet, {}, WireArrangement::Scope::Folio);
+		for (const WireArrangement::Change &change : changes) {
+			if (change.conductor == c) return true;
+		}
+		return false;
+	};
+	REQUIRE(planned(arm));
+
+		//With branches, it is the arm the person built, where they put it
+		//(23/10/2026: arranged alone, it went to the middle of the corridor
+		//and its branches crossed every wire on the way to it)
+	Conductor *one = drawTo(bench.sheet, bench.s1, QPointF(151, 160));
+	REQUIRE(one);
+	REQUIRE(one->arm() == arm);
+	CHECK_FALSE(planned(arm));
+	const QList<QPointF> path = arm->scenePathPoints();
+	WireArrangement::arrange(bench.sheet, {}, WireArrangement::Scope::Folio);
+	CHECK(arm->scenePathPoints() == path);
+	CHECK(sharesThePathOf(one, arm));
+}
