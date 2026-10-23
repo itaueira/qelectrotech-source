@@ -1942,3 +1942,45 @@ TEST_CASE("T81 — Removing the wires keeps the marked wire, not the off-list on
 	CHECK(kept.size() == 1);
 	CHECK(kept.contains(wires.value(1)));
 }
+
+TEST_CASE("T77 - Left out, the underscore of a new wire goes", "[T77][wirenames]")
+{
+		//The "_" a new wire has is no name: left out of the numbering, it
+		//stayed on the wire as if it were one (the Renan, 23/10/2026)
+	Bench bench(twoFolios());
+	REQUIRE(bench.project.isOpen());
+	Diagram *one = bench.project.diagram(0);
+	followScheme(bench.project.project(), {one, bench.project.diagram(1)});
+	showFolio(one);
+	Conductor *wire = drawBetween(bench, 0, 1);
+	REQUIRE(wire != nullptr);
+	QUndoStack &stack = bench.stack();
+		//As a new wire is where no scheme numbers it: no formula, "_"
+	ConductorProperties underscore = wire->properties();
+	underscore.m_formula.clear();
+	underscore.text = QStringLiteral("_");
+	stack.push(new QPropertyUndoCommand(wire, "properties",
+					    QVariant::fromValue(wire->properties()),
+					    QVariant::fromValue(underscore)));
+	REQUIRE(wire->properties().text == QLatin1String("_"));
+
+	QUndoCommand *undo = ConductorPropertiesEditorWidget::leaveOutCommand({wire}, true);
+	REQUIRE(undo);
+	stack.push(undo);
+	CHECK(wire->isFreezeLabel());
+	CHECK(wire->properties().text.isEmpty());
+	stack.undo();
+	CHECK_FALSE(wire->isFreezeLabel());
+	CHECK(wire->properties().text == QLatin1String("_"));
+
+	SECTION("a name typed stays")
+	{
+		ConductorProperties typed = wire->properties();
+		typed.text = QStringLiteral("JUMPER");
+		stack.push(new QPropertyUndoCommand(wire, "properties",
+						    QVariant::fromValue(wire->properties()),
+						    QVariant::fromValue(typed)));
+		stack.push(ConductorPropertiesEditorWidget::leaveOutCommand({wire}, true));
+		CHECK(wire->properties().text == QLatin1String("JUMPER"));
+	}
+}

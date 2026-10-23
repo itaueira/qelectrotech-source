@@ -125,8 +125,27 @@ ConductorAutoNumerotation::ConductorAutoNumerotation(
 void ConductorAutoNumerotation::numerate()
 {
 	if (!m_conductor) return;
-		//Left out of the numbering: its text is not written (T77)
-	if (isIgnored(m_conductor.data())) return;
+		//Left out of the numbering: its text is not written (T77); the "_"
+		//of a new wire is no name, and goes
+	if (isIgnored(m_conductor.data()))
+	{
+		if (m_conductor->properties().text == QLatin1String("_"))
+		{
+			ConductorProperties without = m_conductor->properties();
+			without.text.clear();
+			if (m_parent_undo)
+			{
+				QVariant before, after;
+				before.setValue(m_conductor->properties());
+				after.setValue(without);
+				new QPropertyUndoCommand(m_conductor, "properties", before, after, m_parent_undo);
+			}
+			else {
+				m_conductor->setProperties(without);
+			}
+		}
+		return;
+	}
 		//A wire of a panel already built keeps its number, whoever asks
 		//(T29). Every caller today hands in a conductor it has just
 		//created, which is never in the photograph; this is what keeps it

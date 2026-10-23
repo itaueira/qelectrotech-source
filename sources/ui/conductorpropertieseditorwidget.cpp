@@ -155,6 +155,18 @@ QUndoCommand *ConductorPropertiesEditorWidget::leaveOutCommand(const QList<Condu
 		if (c && c->isFreezeLabel() != ignored) {
 			new QPropertyUndoCommand(c, "freezeLabel", c->isFreezeLabel(), ignored, undo);
 		}
+			//Left out, a wire whose text is still the "_" a new wire has
+			//shows nothing: it is no name, and it stayed on the wire as if
+			//it were one (T77, the Renan on 23/10/2026). A name typed stays
+		if (c && ignored && c->properties().text == QLatin1String("_"))
+		{
+			ConductorProperties without = c->properties();
+			without.text.clear();
+			QVariant before, after;
+			before.setValue(c->properties());
+			after.setValue(without);
+			new QPropertyUndoCommand(c, "properties", before, after, undo);
+		}
 	}
 	if (!undo->childCount()) {
 		delete undo;
