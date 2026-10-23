@@ -18,6 +18,7 @@
 #include "terminalstripautoimport.h"
 
 #include "../elementprovider.h"
+#include "../location/locatableelement.h"
 #include "../qetgraphicsitem/terminalelement.h"
 #include "../qetinformation.h"
 #include "../qetproject.h"
@@ -140,11 +141,17 @@ TerminalStripAutoImport::ImportResult TerminalStripAutoImport::importFreeTermina
 		//Group every real terminal of the project, the free ones and
 		//the ones already in a strip alike
 	QMap<QString, StripGroup> groups_;
-	const auto collect_ = [&groups_](const QSharedPointer<RealTerminal> &real_,
+	const LocationTree tree_ = project->locationTree();
+	const auto collect_ = [&groups_, &tree_](const QSharedPointer<RealTerminal> &real_,
 									 TerminalStrip *current_)
 	{
 		if (!real_ || !real_->element()) {
 			return;		//Spare terminals (no element) are left alone
+		}
+			//A free terminal out of the project (T85) is in no strip of this
+			//panel; one somebody already put in a strip stays where it is
+		if (!current_ && isOutsideProject(real_->element(), tree_)) {
+			return;
 		}
 		const auto name_ = stripNameForLabel(real_->label());
 		if (name_.isEmpty()) {

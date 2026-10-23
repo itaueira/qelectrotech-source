@@ -19,6 +19,8 @@
 #define LOCATABLEELEMENT_H
 
 #include "../qetgraphicsitem/element.h"
+#include "../qetinformation.h"
+#include "locationtree.h"
 
 /**
 	@brief isLocatableElement
@@ -55,6 +57,25 @@ inline bool isLocatableElement(const Element *element)
 		default:
 			return false;
 	}
+}
+
+/**
+	@brief isOutsideProject
+	@param element any item of a folio, or nullptr
+	@param tree the locations of its project
+	@return true when the element sits in a location out of the project
+	(T85): a sensor in the field, a component of another panel drawn for
+	reference. The lists that read the folios rather than the data base
+	ask this; the ones that read the data base ask the same tree through
+	QETBom::insideProjectCondition().
+*/
+inline bool isOutsideProject(const Element *element, const LocationTree &tree)
+{
+	if (!element) {
+		return false;
+	}
+	return tree.isOutsideProject(element->elementInformations()
+			.value(QETInformation::ELMT_LOCATION_PATH).toString());
 }
 
 #endif // LOCATABLEELEMENT_H

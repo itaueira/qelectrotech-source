@@ -126,6 +126,17 @@ class ProjectLocation
 		int part_revision = 0;
 			/// true when this location must not produce a line of its own
 		bool virtual_part = false;
+		/**
+			true when what is mounted here is not part of the project at
+			all: the sensors in the field, the components of another panel
+			drawn for reference. Not a stronger virtual_part - that one
+			keeps the components and drops only the line of the place;
+			this one drops the components themselves, from the bill of
+			material, the layout, the wiring, cable and strip lists, and
+			the wires that end on them. Holds for the locations inside
+			this one too (LocationTree::isOutsideProject).
+		*/
+		bool outside_project = false;
 };
 
 #endif // PROJECTLOCATION_H

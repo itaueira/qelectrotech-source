@@ -137,6 +137,9 @@ void projectDataBase::updateDB()
 	populateConductorTable();
 	populateLinkTable();
 	populateDrawingItemTables();
+		//The tree is read with the project, after the database is made, and
+		//only a change made later reaches locationTreeChanged()
+	populateOutsideLocationTable();
 	dropKeptRows();
 	flushConductorProperties();
 	m_content_changed = false;
@@ -1669,7 +1672,11 @@ int projectDataBase::namelessComponentCount()
 			       " WHERE (exclude_from_bom IS NOT 'true')"
 			       " AND NOT ")
 		+ QETBom::informationPresentCondition(
-			QString(), QETInformation::elementInfoKeys());
+			QString(), QETInformation::elementInfoKeys())
+			//Out of the project is out of every list, the count of
+			//what a list withholds included (T85)
+		+ QStringLiteral(" AND ")
+		+ QETBom::insideProjectCondition(QStringLiteral("location_path"));
 
 	QSqlQuery query = newQuery(statement);
 		//No alias, because the view already publishes the information
@@ -1932,6 +1939,45 @@ void projectDataBase::populateSpareTerminalTable()
 					qDebug() << "projectDataBase::populateSpareTerminalTable insert error : " << query_.lastError();
 				}
 			}
+		}
+	}
+}
+
+/**
+	@brief projectDataBase::locationTreeChanged
+	See the header. Called by QETProject::setLocationTree(), which is where
+	marking a location out of the project or back in ends up.
+*/
+void projectDataBase::locationTreeChanged()
+{
+	populateOutsideLocationTable();
+	notifyUpdated();
+}
+
+/**
+	@brief projectDataBase::populateOutsideLocationTable
+	Fill the outside_location table with the paths of the tree that are out
+	of the project (T85). The lists read the rule from this table by
+	QETBom::insideProjectCondition(); the rule itself is the tree's,
+	LocationTree::isOutsideProject(), and this only copies its answer.
+*/
+void projectDataBase::populateOutsideLocationTable()
+{
+	QSqlQuery query_(m_data_base);
+	query_.exec(QStringLiteral("DELETE FROM ") + QETBom::outsideLocationTable());
+	if (!m_project) {
+		return;
+	}
+
+	query_.prepare(QStringLiteral("INSERT OR IGNORE INTO ")
+		       + QETBom::outsideLocationTable()
+		       + QStringLiteral(" (path) VALUES (:path)"));
+	const QStringList paths_ = m_project->locationTree().outsidePaths();
+	for (const QString &path_ : paths_)
+	{
+		query_.bindValue(QStringLiteral(":path"), path_);
+		if (!query_.exec()) {
+			qDebug() << "projectDataBase::populateOutsideLocationTable insert error : " << query_.lastError();
 		}
 	}
 }
@@ -3139,6 +3185,13 @@ bool projectDataBase::createDataBase()
 		qDebug() << " spare_terminal_table query : " << query_.lastError();
 	}
 
+		//The paths of the locations out of the project (T85), before the
+		//views that read it
+	if (!query_.exec(QStringLiteral("CREATE TABLE ") + QETBom::outsideLocationTable()
+			 + QStringLiteral(" (path VARCHAR(255) PRIMARY KEY NOT NULL)"))) {
+		qDebug() << " outside_location table query : " << query_.lastError();
+	}
+
 	createElementNomenclatureView();
 	createElementLabelView();
 	createSummaryView();
@@ -3282,7 +3335,12 @@ QString projectDataBase::nomenclatureCondition()
 				 " AND m.sub_type = '%3'))")
 			.arg(ElementData::typeToString(ElementData::Terminal),
 			     ElementData::typeToString(ElementData::Master),
-			     ElementData::masterTypeToString(ElementData::StripTerminal));
+			     ElementData::masterTypeToString(ElementData::StripTerminal))
+			//What sits in a location out of the project (T85): the
+			//sensors in the field are bought by somebody else, and the
+			//layout reads its pieces from here too (bomElements())
+		+ QStringLiteral(" AND ")
+		+ QETBom::insideProjectCondition(QStringLiteral("ei.location_path"));
 }
 
 QList<projectDataBase::BomElement> projectDataBase::bomElements()
@@ -3529,6 +3587,11 @@ void projectDataBase::createSummaryView()
 	by insertTerminal() running for each endpoint before the conductor row
 	is written.
 
+	With one exception, which is a decision and not a loss: a wire with an
+	end on a component out of the project (T85) - a sensor in the field -
+	is not wired in this panel, and is left out. A component with no
+	element_info row has no location, and its wires stay.
+
 	wire_color is the conductor's colour column, which names the colour the
 	wire is drawn in when none was typed (bindConductorProperties()).
 */
@@ -3555,6 +3618,10 @@ void projectDataBase::createWiringListView()
 						 " LEFT JOIN element_info ei1 ON t1.element_uuid = ei1.element_uuid"
 						 " LEFT JOIN element_info ei2 ON t2.element_uuid = ei2.element_uuid"
 						 " LEFT JOIN diagram d ON c.diagram_uuid = d.uuid");
+	create_view += QStringLiteral(" WHERE ")
+		+ QETBom::insideProjectCondition(QStringLiteral("ei1.location_path"))
+		+ QStringLiteral(" AND ")
+		+ QETBom::insideProjectCondition(QStringLiteral("ei2.location_path"));
 
 	QSqlQuery query(m_data_base);
 	if (!query.exec(create_view)) {

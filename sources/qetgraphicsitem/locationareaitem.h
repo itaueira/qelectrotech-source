@@ -23,6 +23,7 @@
 #include "qetshapeitem.h"
 
 class Diagram;
+class LocationTree;
 class QWidget;
 
 /**
@@ -68,6 +69,9 @@ class LocationAreaItem : public QetShapeItem
 		   READ locationPath
 		   WRITE setLocationPath
 		   NOTIFY locationPathChanged)
+	Q_PROPERTY(QColor maskColor
+		   READ maskColor
+		   WRITE setMaskColor)
 
 	signals:
 		void locationPathChanged();
@@ -86,10 +90,21 @@ class LocationAreaItem : public QetShapeItem
 		QString locationPath() const { return m_location_path; }
 		void setLocationPath(const QString &path);
 
+			/// The fill chosen for this area, invalid for the default one
+		QColor maskColor() const { return m_mask_color; }
+		void setMaskColor(const QColor &color);
+		QColor fillColor() const;
+		static QColor defaultMaskColor();
+		bool isOutsideProject() const;
+
 		QRectF sceneRect() const;
 
 		QString name() const override;
 		void editProperty() override;
+		void applyProperties(const QString &path, const QColor &mask);
+		static void refreshAll(Diagram *diagram);
+			/// What the corner of the area says
+		QString captionText() const;
 
 		QDomElement toXml(QDomDocument &document) const override;
 		bool fromXml(const QDomElement &e) override;
@@ -108,6 +123,10 @@ class LocationAreaItem : public QetShapeItem
 					  const QString &current,
 					  QWidget *parent,
 					  bool *accepted);
+		static bool askForProperties(const Diagram *diagram,
+					     QWidget *parent,
+					     QString *path,
+					     QColor *mask);
 
 	protected:
 		void paint(QPainter *painter,
@@ -117,11 +136,14 @@ class LocationAreaItem : public QetShapeItem
 
 	private:
 		QRectF captionRect() const;
-		QString captionText() const;
+		static void locationChoices(const LocationTree &tree,
+					    QStringList *labels,
+					    QStringList *paths);
 
 		///ATTRIBUTES
 	private:
 		QString m_location_path;
+		QColor m_mask_color;
 };
 
 #endif // LOCATIONAREAITEM_H

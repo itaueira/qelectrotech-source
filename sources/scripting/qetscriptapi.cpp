@@ -71,6 +71,9 @@
 #include "../qetgraphicsitem/independenttextitem.h"
 #include "../qetgraphicsitem/qetshapeitem.h"
 #include "../qetgraphicsitem/stripframeitem.h"
+#include "../qetgraphicsitem/locationareaitem.h"
+#include "../undocommand/addgraphicsobjectcommand.h"
+#include "../undocommand/assignlocationcommand.h"
 #include "../undocommand/mirrorselectioncommand.h"
 #include "../undocommand/promoteshapecommand.h"
 #include "../TerminalStrip/UndoCommand/addterminalstripcommand.h"
@@ -1272,6 +1275,113 @@ QVariantList QetScriptApi::stripFrames(int folioIndex) const
 				    {QStringLiteral("left"), r.left()}, {QStringLiteral("top"), r.top()},
 				    {QStringLiteral("right"), r.right()}, {QStringLiteral("bottom"), r.bottom()},
 				    {QStringLiteral("terminals"), uuids}};
+	}
+	return list;
+}
+
+/**
+	@brief QetScriptApi::addLocation
+	A location of the project, under the one at @a parentPath (none for the
+	top level), marked out of the project when @a outsideProject (T85).
+	Not an undo step: the manager of locations is.
+	@return the path of the location, empty when it was refused
+*/
+QString QetScriptApi::addLocation(const QString &code, const QString &name,
+								 const QString &parentPath, bool outsideProject)
+{
+	if (!m_project || m_project->isReadOnly()) return QString();
+	LocationTree tree = m_project->locationTree();
+	ProjectLocation location(code, name);
+	if (!parentPath.isEmpty()) {
+		location.parent_uuid = tree.uuidOfPath(parentPath);
+		if (location.parent_uuid.isEmpty()) {
+			log(QStringLiteral("qet.addLocation: no location at ") + parentPath);
+			return QString();
+		}
+	}
+	location.outside_project = outsideProject;
+	QString error;
+	const QString uuid = tree.append(location, &error);
+	if (uuid.isEmpty()) {
+		log(QStringLiteral("qet.addLocation: ") + error);
+		return QString();
+	}
+	m_project->setLocationTree(tree);
+	return tree.path(uuid);
+}
+
+/**
+	@brief QetScriptApi::setLocationOutside
+	Mark the location at @a path out of the project, or back in (T85), as the
+	column of the manager of locations does. Not an undo step.
+*/
+bool QetScriptApi::setLocationOutside(const QString &path, bool outsideProject)
+{
+	if (!m_project || m_project->isReadOnly()) return false;
+	LocationTree tree = m_project->locationTree();
+	ProjectLocation location = tree.location(tree.uuidOfPath(path));
+	if (location.isNull()) return false;
+	location.outside_project = outsideProject;
+	if (!tree.update(location)) return false;
+	m_project->setLocationTree(tree);
+	return true;
+}
+
+/**
+	@brief QetScriptApi::addLocationArea
+	A rectangle of location drawn on the folio from (@a x1, @a y1) to
+	(@a x2, @a y2), for the location at @a path, as the tool draws one: the
+	components inside take its path, in the same undo step. @a mask is the
+	fill, #AARRGGBB, empty for the default one (T85).
+*/
+bool QetScriptApi::addLocationArea(int folioIndex, double x1, double y1, double x2, double y2,
+								  const QString &path, const QString &mask)
+{
+	if (!m_project || m_project->isReadOnly()
+	    || folioIndex < 0 || folioIndex >= m_project->folios().count()) return false;
+	Diagram *diagram = built(m_project->folios().at(folioIndex));
+	auto *area = new LocationAreaItem(QPointF(x1, y1), QPointF(x2, y2));
+	area->setRect(area->rect().normalized());
+	area->setLocationPath(path);
+	if (!mask.isEmpty()) area->setMaskColor(QColor::fromString(mask));
+		//On the folio before the rule is asked, as the tool has it
+	diagram->addItem(area);
+
+	auto *undo = new QUndoCommand(QStringLiteral("Add a location area"));
+	new AddGraphicsObjectCommand(area, diagram, QPointF(), undo);
+	const QList<LocationAssignment> assignments{
+		LocationAreaItem::pendingAssignments(diagram, LocationAreaItem::areasOf(diagram))};
+	if (!assignments.isEmpty())
+		new AssignLocationCommand(assignments, QStringLiteral("Assign the components of an area"), undo);
+	diagram->undoStack().push(undo);
+	return true;
+}
+
+/**
+	@brief QetScriptApi::locationAreas
+	The rectangles of location on the folio: for each, "path", the
+	rectangle "left", "top", "right", "bottom", "outside" when its location
+	is out of the project, "mask", the colour chosen for it (#AARRGGBB,
+	empty for the default), and "fill", the one it is painted with (T85)
+*/
+QVariantList QetScriptApi::locationAreas(int folioIndex) const
+{
+	QVariantList list;
+	if (!m_project || folioIndex < 0 || folioIndex >= m_project->folios().count()) return list;
+	Diagram *diagram = built(m_project->folios().at(folioIndex));
+	const QList<QGraphicsItem *> items = diagram->items();
+	for (QGraphicsItem *item : items)
+	{
+		auto *area = qgraphicsitem_cast<LocationAreaItem *>(item);
+		if (!area) continue;
+		const QRectF r = area->sceneRect();
+		list << QVariantMap{{QStringLiteral("path"), area->locationPath()},
+				    {QStringLiteral("left"), r.left()}, {QStringLiteral("top"), r.top()},
+				    {QStringLiteral("right"), r.right()}, {QStringLiteral("bottom"), r.bottom()},
+				    {QStringLiteral("outside"), area->isOutsideProject()},
+				    {QStringLiteral("mask"), area->maskColor().isValid()
+						? area->maskColor().name(QColor::HexArgb) : QString()},
+				    {QStringLiteral("fill"), area->fillColor().name(QColor::HexArgb)}};
 	}
 	return list;
 }

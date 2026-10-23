@@ -18,6 +18,7 @@ struct ElementInfo {
     QStringList links;
     QString label;
     QString name;
+    QString location_path; // the location it is mounted in (T32)
     bool isPlaceholder = false;
 };
 

@@ -25,14 +25,22 @@
 #include "../qetproject.h"
 #include "element.h"
 
+#include <QColorDialog>
+#include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDomDocument>
 #include <QFontMetrics>
+#include <QFormLayout>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
+#include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPixmap>
+#include <QPushButton>
 #include <QUndoStack>
 
 namespace
@@ -59,6 +67,17 @@ namespace
 	QColor areaInk()
 	{
 		return QColor(60, 84, 120);
+	}
+
+	/**
+		@brief The faint wash inside an area of the project, when nobody
+		chose another fill for it.
+	*/
+	QColor areaWash()
+	{
+		QColor wash{areaInk()};
+		wash.setAlpha(fill_alpha);
+		return wash;
 	}
 
 	/**
@@ -95,6 +114,11 @@ namespace
 	cannot restyle one area and have it stay restyled, and there is no shape
 	style editor to reach it from either, since an area is not a shape.
 
+	One exception since T85, and it is the fill: an area whose location is
+	out of the project - the field, another panel - is a mask over what is
+	not ours, light grey by default, and its colour and transparency are
+	chosen in the properties of the area and saved with it (maskColor).
+
 	The stacking order starts low, below the elements at 10 and the
 	conductors at 11, because the area is the paper the circuit is drawn on
 	and not something drawn over it. That costs one thing worth knowing
@@ -114,11 +138,85 @@ LocationAreaItem::LocationAreaItem(const QPointF &p1, const QPointF &p2, QGraphi
 	border_pen.setColor(areaInk());
 	setPen(border_pen);
 
-	QColor wash{areaInk()};
-	wash.setAlpha(fill_alpha);
-	setBrush(QBrush(wash));
+	setBrush(QBrush(areaWash()));
 
 	setZValue(-10);
+}
+
+/**
+	@brief LocationAreaItem::setMaskColor
+	@param color the fill of this area, invalid for the default one
+*/
+void LocationAreaItem::setMaskColor(const QColor &color)
+{
+	if (m_mask_color == color) {
+		return;
+	}
+	m_mask_color = color;
+	update();
+}
+
+/**
+	@brief LocationAreaItem::defaultMaskColor
+	@return the fill of an area out of the project nobody chose another
+	fill for: light grey, half see-through, so that the symbols and the
+	wires drawn over it read as they do on white paper
+*/
+QColor LocationAreaItem::defaultMaskColor()
+{
+	return QColor(192, 192, 192, 128);
+}
+
+/**
+	@brief LocationAreaItem::isOutsideProject
+	@return true when the location of this area is out of the project
+	(LocationTree::isOutsideProject), asked of the tree each time: marking
+	the location in the manager is what turns the area into a mask
+*/
+bool LocationAreaItem::isOutsideProject() const
+{
+	const Diagram *diagram_ptr = diagram();
+	if (!diagram_ptr || !diagram_ptr->project()) {
+		return false;
+	}
+	return diagram_ptr->project()->locationTree().isOutsideProject(m_location_path);
+}
+
+/**
+	@brief LocationAreaItem::fillColor
+	@return what the inside of the area is painted with: the colour chosen
+	for it, else the grey mask when it is out of the project, else the
+	faint wash of every area
+*/
+QColor LocationAreaItem::fillColor() const
+{
+	if (m_mask_color.isValid()) {
+		return m_mask_color;
+	}
+	return isOutsideProject() ? defaultMaskColor() : areaWash();
+}
+
+/**
+	@brief LocationAreaItem::refreshAll
+	@param diagram the folio whose areas are painted again
+	The tree of locations changed: an area may have become a mask or
+	stopped being one, and its caption may name another thing, of another
+	width - hence the geometry and not only the picture.
+*/
+void LocationAreaItem::refreshAll(Diagram *diagram)
+{
+	if (!diagram) {
+		return;
+	}
+	const QList<QGraphicsItem *> items{diagram->items()};
+	for (QGraphicsItem *item : items)
+	{
+		if (auto *area = qgraphicsitem_cast<LocationAreaItem *>(item))
+		{
+			area->prepareGeometryChange();
+			area->update();
+		}
+	}
 }
 
 /**
@@ -203,34 +301,71 @@ void LocationAreaItem::editProperty()
 				 ? nullptr
 				 : diagram_ptr->views().first();
 
-	bool accepted = false;
-	const QString path{askForPath(diagram_ptr, m_location_path, dialog_parent, &accepted)};
-	if (!accepted || path == m_location_path) {
+	QString path{m_location_path};
+	QColor mask{m_mask_color};
+	if (!askForProperties(diagram_ptr, dialog_parent, &path, &mask)) {
+		return;
+	}
+	applyProperties(path, mask);
+}
+
+/**
+	@brief LocationAreaItem::applyProperties
+	@param path the location chosen for this area, empty for none
+	@param mask the fill chosen for it, invalid for the default one
+
+	What editProperty() does once the person has answered: one undo step
+	for the two, whichever of them changed. Apart from the dialog so that
+	the bench, which cannot answer a modal window, proves all of the rest.
+*/
+void LocationAreaItem::applyProperties(const QString &path, const QColor &mask)
+{
+	Diagram *diagram_ptr = diagram();
+	if (!diagram_ptr || diagram_ptr->isReadOnly()) {
 		return;
 	}
 
-	const QString old_path{m_location_path};
+	const bool path_changed{path != m_location_path};
+	const bool mask_changed{mask != m_mask_color};
+	if (!path_changed && !mask_changed) {
+		return;
+	}
 
-	//Written onto the area before the rule is asked anything. The rule reads
-	//the areas off the folio rather than being told about them, so the folio
-	//has to already say what the person just chose.
-	setLocationPath(path);
+	auto *undo = new QUndoCommand(path_changed
+				      ? tr("Modifier la localisation d'une zone")
+				      : tr("Change the mask of an area"));
 
-	auto *undo = new QUndoCommand(tr("Modifier la localisation d'une zone"));
-	new QPropertyUndoCommand(this, "locationPath", old_path, path, undo);
-
-	const QList<LocationAssignment> assignments{
-		pendingAssignments(diagram_ptr, areasOf(diagram_ptr))};
-
-	//An empty list is not an empty command, it is no command at all: the rule
-	//hands back nothing for a component already carrying the right path,
-	//which is the same test the command itself applies, so an empty list here
-	//means the command would have counted zero components and said so.
-	if (!assignments.isEmpty())
+	if (mask_changed)
 	{
-		new AssignLocationCommand(assignments,
-					  tr("Affecter les composants d'une zone"),
-					  undo);
+		const QColor old_mask{m_mask_color};
+		setMaskColor(mask);
+		new QPropertyUndoCommand(this, "maskColor", old_mask, mask, undo);
+	}
+
+	if (path_changed)
+	{
+		const QString old_path{m_location_path};
+
+		//Written onto the area before the rule is asked anything. The rule
+		//reads the areas off the folio rather than being told about them, so
+		//the folio has to already say what the person just chose.
+		setLocationPath(path);
+		new QPropertyUndoCommand(this, "locationPath", old_path, path, undo);
+
+		const QList<LocationAssignment> assignments{
+			pendingAssignments(diagram_ptr, areasOf(diagram_ptr))};
+
+		//An empty list is not an empty command, it is no command at all: the
+		//rule hands back nothing for a component already carrying the right
+		//path, which is the same test the command itself applies, so an empty
+		//list here means the command would have counted zero components and
+		//said so.
+		if (!assignments.isEmpty())
+		{
+			new AssignLocationCommand(assignments,
+						  tr("Affecter les composants d'une zone"),
+						  undo);
+		}
 	}
 
 	diagram_ptr->undoStack().push(undo);
@@ -246,7 +381,9 @@ void LocationAreaItem::editProperty()
 	radius, because none of those is a property of an area - see the
 	constructor for what that costs. The stacking order is saved because it
 	is the one piece of appearance a person can change on purpose, by sending
-	an area behind the drawing.
+	an area behind the drawing; and the mask, the other one (T85), only when
+	somebody chose it, as #AARRGGBB - a file written before keeps opening
+	with the default fill.
 
 	The rectangle is straightened on the way out, unlike the shapes, which
 	store the two corners in the order they were clicked. A file that always
@@ -267,6 +404,9 @@ QDomElement LocationAreaItem::toXml(QDomDocument &document) const
 	//on purpose: one word for one idea, for whoever opens the .qet by hand.
 	result.setAttribute("location_path", m_location_path);
 	result.setAttribute("z", QString::number(zValue()));
+	if (m_mask_color.isValid()) {
+		result.setAttribute("mask", m_mask_color.name(QColor::HexArgb));
+	}
 
 	return result;
 }
@@ -295,6 +435,8 @@ bool LocationAreaItem::fromXml(const QDomElement &e)
 	setRect(QRectF(p1, p2).normalized());
 	setLocationPath(e.attribute("location_path"));
 	setZValue(e.attribute("z", QString::number(zValue())).toDouble());
+	const QString mask{e.attribute("mask")};
+	setMaskColor(mask.isEmpty() ? QColor() : QColor::fromString(mask));
 
 	return true;
 }
@@ -497,25 +639,7 @@ QString LocationAreaItem::askForPath(const Diagram *diagram,
 
 	QStringList labels;
 	QStringList paths;
-
-	labels << tr("(sans localisation)");
-	paths  << QString();
-
-	const QStringList tree_paths{tree.paths()};
-	for (const QString &path : tree_paths)
-	{
-		const QString uuid{tree.uuidOfPath(path)};
-		const QString display{uuid.isEmpty() ? path : tree.displayPath(uuid)};
-
-		//The code is shown beside the name because the code is what the
-		//caption of the area will say on the paper, and because it is what
-		//tells two locations somebody named alike apart. It is derived from
-		//the path, so the labels are exactly as unique as the paths are, and
-		//looking a label up below cannot land on the wrong one.
-		labels << QStringLiteral("%1  (%2)")
-			  .arg(display, LocationTree::iecTag(path));
-		paths  << path;
-	}
+	locationChoices(tree, &labels, &paths);
 
 	int index = paths.indexOf(current);
 	if (index < 0) {
@@ -545,6 +669,149 @@ QString LocationAreaItem::askForPath(const Diagram *diagram,
 	}
 
 	return paths.at(chosen_index);
+}
+
+/**
+	@brief LocationAreaItem::locationChoices
+	@param tree the locations of the project
+	@param labels filled with what the person reads, one per choice
+	@param paths filled with the path of each choice, empty for none
+
+	The first choice is always no location. The code is shown beside the
+	name because the code is what the caption of the area will say on the
+	paper, and because it is what tells two locations somebody named alike
+	apart. It is derived from the path, so the labels are exactly as unique
+	as the paths are, and looking a label up cannot land on the wrong one.
+	A location out of the project says so (T85): choosing it turns the area
+	into a mask.
+*/
+void LocationAreaItem::locationChoices(const LocationTree &tree,
+				       QStringList *labels,
+				       QStringList *paths)
+{
+	*labels << tr("(sans localisation)");
+	*paths  << QString();
+
+	const QStringList tree_paths{tree.paths()};
+	for (const QString &path : tree_paths)
+	{
+		const QString uuid{tree.uuidOfPath(path)};
+		const QString display{uuid.isEmpty() ? path : tree.displayPath(uuid)};
+
+		QString label{QStringLiteral("%1  (%2)")
+			      .arg(display, LocationTree::iecTag(path))};
+		if (tree.isOutsideProject(path)) {
+			label += QStringLiteral("  - ") + tr("out of project");
+		}
+		*labels << label;
+		*paths  << path;
+	}
+}
+
+/**
+	@brief LocationAreaItem::askForProperties
+	@param diagram the folio the area belongs to
+	@param parent widget the dialogue belongs to, may be nullptr
+	@param path the location of the area on the way in, the one chosen on
+	the way out
+	@param mask its fill on the way in, invalid for the default one, and
+	the one chosen on the way out
+	@return true when the person pressed OK
+
+	The properties of an area: its location, as askForPath() offers it, and
+	its fill - the colour and the transparency of the mask (T85), in the
+	colour dialogue with its alpha channel, and a button back to the
+	default, which follows the location: grey for a location out of the
+	project, the faint wash for the others.
+*/
+bool LocationAreaItem::askForProperties(const Diagram *diagram,
+					QWidget *parent,
+					QString *path,
+					QColor *mask)
+{
+	if (!diagram || !diagram->project() || !path || !mask) {
+		return false;
+	}
+
+	const LocationTree tree{diagram->project()->locationTree()};
+	QStringList labels;
+	QStringList paths;
+	locationChoices(tree, &labels, &paths);
+
+	QDialog dialog(parent);
+	dialog.setWindowTitle(tr("Zone de localisation"));
+
+	auto *combo = new QComboBox(&dialog);
+	combo->addItems(labels);
+	const int index = paths.indexOf(*path);
+	combo->setCurrentIndex(index < 0 ? 0 : index);
+
+	QColor chosen{*mask};
+	auto *color_button = new QPushButton(&dialog);
+	auto *default_button = new QPushButton(tr("Default"), &dialog);
+
+	const auto shown = [&]() -> QColor {
+		if (chosen.isValid()) {
+			return chosen;
+		}
+		return tree.isOutsideProject(paths.value(combo->currentIndex()))
+			? defaultMaskColor()
+			: areaWash();
+	};
+	const auto refresh = [&]() {
+		QPixmap swatch(32, 16);
+		swatch.fill(Qt::white);
+		QPainter painter(&swatch);
+		painter.fillRect(swatch.rect(), shown());
+		painter.setPen(Qt::black);
+		painter.drawRect(swatch.rect().adjusted(0, 0, -1, -1));
+		painter.end();
+		color_button->setIcon(QIcon(swatch));
+		color_button->setText(chosen.isValid()
+				      ? tr("%1 % opaque").arg(qRound(chosen.alphaF() * 100))
+				      : tr("Default"));
+		default_button->setEnabled(chosen.isValid());
+	};
+
+	QObject::connect(color_button, &QPushButton::clicked, &dialog, [&]() {
+		const QColor picked{QColorDialog::getColor(
+				shown(), &dialog, tr("Mask colour"),
+				QColorDialog::ShowAlphaChannel)};
+		if (picked.isValid()) {
+			chosen = picked;
+			refresh();
+		}
+	});
+	QObject::connect(default_button, &QPushButton::clicked, &dialog, [&]() {
+		chosen = QColor();
+		refresh();
+	});
+	QObject::connect(combo, &QComboBox::currentIndexChanged, &dialog, [&]() {
+		refresh();
+	});
+	refresh();
+
+	auto *mask_row = new QHBoxLayout;
+	mask_row->addWidget(color_button, 1);
+	mask_row->addWidget(default_button);
+
+	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok
+					     | QDialogButtonBox::Cancel, &dialog);
+	QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+	QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+	auto *form = new QFormLayout(&dialog);
+	form->addRow(tr("Localisation de cette zone :"), combo);
+	form->addRow(tr("Mask:"), mask_row);
+	form->addRow(buttons);
+
+	if (dialog.exec() != QDialog::Accepted) {
+		return false;
+	}
+
+	*path = paths.value(combo->currentIndex());
+	*mask = chosen;
+	return true;
 }
 
 /**
@@ -580,7 +847,7 @@ void LocationAreaItem::paint(QPainter *painter,
 	painter->setRenderHint(QPainter::Antialiasing, true);
 
 	painter->setPen(Qt::NoPen);
-	painter->setBrush(brush());
+	painter->setBrush(QBrush(fillColor()));
 	painter->drawRect(area);
 
 	//Solid and thicker while hovered or selected. The border is the only
@@ -668,11 +935,28 @@ QRectF LocationAreaItem::captionRect() const
 
 	An area with no path says so instead of saying nothing. Unnamed is a
 	state somebody chose, and an empty corner reads as a defect.
+
+	An area out of the project (T85) says its name and not its code: it is
+	no place of this panel, so it has no designation on the paper, and what
+	the person wrote in the free text it replaces was a name - "Elementos de
+	Campo", or the tag of another panel, which a code could not even hold.
+	The code when the location has no name.
 */
 QString LocationAreaItem::captionText() const
 {
 	if (m_location_path.isEmpty()) {
 		return tr("(sans localisation)");
+	}
+
+	if (isOutsideProject())
+	{
+		const LocationTree tree{diagram()->project()->locationTree()};
+		const QString name{tree.location(tree.uuidOfPath(m_location_path)).name.trimmed()};
+		if (!name.isEmpty()) {
+			return name;
+		}
+		const QStringList codes{LocationTree::splitPath(m_location_path)};
+		return codes.isEmpty() ? m_location_path : codes.last();
 	}
 
 	return LocationTree::iecTag(m_location_path);

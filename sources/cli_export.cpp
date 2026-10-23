@@ -940,20 +940,23 @@ QString purchaseRevision(int revision)
 	collector or counted there, never both and never neither.
 
 	Spliced rather than written out again, so that the columns and the
-	order of the rows keep the one spelling the collector gives them. A
-	collector statement that grew a WHERE of its own would come out of
-	here with two, fail to run, and stop the export with exit 1 - which is
-	the loud way for this to break.
+	order of the rows keep the one spelling the collector gives them. The
+	collector statement has a WHERE of its own since T85 - what is out of
+	the project never comes in -, so the clause joins it with AND; both
+	halves of the complement above carry that condition, and the
+	complement still holds among the rows that come in.
 */
 QString purchaseRowsStatement()
 {
+	QString statement = BomCollector::selectStatement();
+	const bool filtered = statement.contains(QStringLiteral(" WHERE "));
 	const QString named =
-		QStringLiteral(" WHERE (exclude_from_bom = 'true' OR ")
+		(filtered ? QStringLiteral(" AND (exclude_from_bom = 'true' OR ")
+			  : QStringLiteral(" WHERE (exclude_from_bom = 'true' OR "))
 		% QETBom::informationPresentCondition(
 			QString(), QETInformation::elementInfoKeys())
 		% QStringLiteral(")");
 
-	QString statement = BomCollector::selectStatement();
 	const int order = int(statement.indexOf(QStringLiteral(" ORDER BY ")));
 	if (order < 0)
 	{

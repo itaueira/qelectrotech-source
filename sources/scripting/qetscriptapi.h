@@ -440,6 +440,13 @@ class QetScriptApi : public QObject
 		// -- the frame of a strip drawn round its terminals (T85) --
 		Q_INVOKABLE bool drawStripFrame(int folioIndex, const QStringList &elementUuids, const QString &name);
 		Q_INVOKABLE QVariantList stripFrames(int folioIndex) const;
+		// -- locations, and the areas that hold them on a folio (T32, T85) --
+		Q_INVOKABLE QString addLocation(const QString &code, const QString &name,
+									 const QString &parentPath = QString(), bool outsideProject = false);
+		Q_INVOKABLE bool setLocationOutside(const QString &path, bool outsideProject);
+		Q_INVOKABLE bool addLocationArea(int folioIndex, double x1, double y1, double x2, double y2,
+									 const QString &path, const QString &mask = QString());
+		Q_INVOKABLE QVariantList locationAreas(int folioIndex) const;
 
 		// -- conductor properties, applied to the whole potential --
 		Q_INVOKABLE QStringList conductors(int folioIndex) const;

@@ -65,6 +65,30 @@ QString QETBom::informationPresentCondition(const QString &prefix,
 }
 
 /**
+	@brief QETBom::outsideLocationTable
+	See the header.
+*/
+QString QETBom::outsideLocationTable()
+{
+	return QStringLiteral("outside_location");
+}
+
+/**
+	@brief QETBom::insideProjectCondition
+	See the header.
+*/
+QString QETBom::insideProjectCondition(const QString &column)
+{
+		//COALESCE for the reason informationPresentCondition() gives: a
+		//component with no location holds NULL, and NULL NOT IN (...) is
+		//NULL, which a WHERE reads as false - every component nobody
+		//placed would leave every list.
+	return QStringLiteral("(COALESCE(") + column
+		+ QStringLiteral(", '') NOT IN (SELECT path FROM ")
+		+ outsideLocationTable() + QStringLiteral("))");
+}
+
+/**
 	@brief QETBom::groupByColumns
 	See the header.
 */

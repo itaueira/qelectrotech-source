@@ -82,6 +82,28 @@ namespace QETBom
 					    const QStringList &keys);
 
 		/**
+			@brief The table of the data base holding the paths out of the
+			project, one per row in its column path.
+
+			Filled from LocationTree::outsidePaths(), and only from there:
+			the rule is the tree's, and this table is how SQL reads it.
+		*/
+	QString outsideLocationTable();
+
+		/**
+			@brief The SQL condition that is true of a component inside the
+			project - one whose location is not out of it.
+			@param column : the location path column, alias included
+			("ei.location_path"), or the bare name over a view
+			@return a parenthesised condition, without a leading operator
+
+			Every list that drops what is out of the project - the bill of
+			material, the purchase list, the layout, the wiring list - asks
+			it by this one spelling.
+		*/
+	QString insideProjectCondition(const QString &column);
+
+		/**
 			@brief What a purchase list has to group by.
 			@param published : the columns the list shows, in order
 			@return the columns of the GROUP BY, in order

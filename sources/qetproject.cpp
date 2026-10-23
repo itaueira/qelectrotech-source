@@ -35,6 +35,7 @@
 #include "qetgraphicsitem/element.h"
 #include "qetgraphicsitem/conductor.h"
 #include "qetgraphicsitem/dynamicelementtextitem.h"
+#include "qetgraphicsitem/locationareaitem.h"
 #include "qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
 #include "qetgraphicsitem/ViewItem/projectdbmodel.h"
 #include "qetapp.h"
@@ -3856,6 +3857,8 @@ void QETProject::readProjectXml(QDomDocument &xml_project)
 		//carries even when the tree that explained it is gone.
 	m_location_tree.fromXml(xml_project.documentElement().firstChildElement(
 					LocationTree::tagName()));
+		//What is out of the project, for the lists (T85)
+	m_data_base.locationTreeChanged();
 
 		//What is mounted where. Tolerant the same way: no element means
 		//nothing has been laid out yet, which is where every project
@@ -5146,6 +5149,14 @@ void QETProject::setLocationTree(const LocationTree &tree)
 	}
 	m_location_tree = tree;
 	setModified(true);
+
+		//A location marked out of the project or back in changes the lists
+		//and the mask of its areas on the folios (T85); the areas read the
+		//tree when they paint, so a repaint is all they need
+	m_data_base.locationTreeChanged();
+	for (Diagram *diagram : diagrams()) {
+		LocationAreaItem::refreshAll(diagram);
+	}
 }
 
 /**

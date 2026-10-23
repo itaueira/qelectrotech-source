@@ -22,6 +22,7 @@
 #include "mountingprofile.h"
 #include "undrawnparts.h"
 
+#include "../dataBase/bomquery.h"
 #include "../qetinformation.h"
 
 #include <algorithm>
@@ -147,8 +148,13 @@ QString selectStatement()
 		//part arrive together and arrive in the same order twice. Where
 		//the component sits breaks the tie, which makes the paths of a
 		//line read in folio order.
+		//What is out of the project never comes in (T85): it is not a
+		//row the purchase leaves out, which the count of excluded rows
+		//would report, it is not a row of this panel at all
 	return QStringLiteral("SELECT ") + columns().join(QStringLiteral(", "))
 			+ QStringLiteral(" FROM ") + viewName()
+			+ QStringLiteral(" WHERE ")
+			+ QETBom::insideProjectCondition(QStringLiteral("location_path"))
 			+ QStringLiteral(" ORDER BY part_code, part_revision,"
 					 " diagram_position, position, label");
 }

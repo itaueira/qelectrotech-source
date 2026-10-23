@@ -13,6 +13,7 @@
 #include <QTextStream>
 #include <QDomDocument>
 #include <QFile>
+#include <QSet>
 #include <algorithm>
 
 WiringListExport::WiringListExport(QETProject *project, QWidget *parent) :
@@ -274,6 +275,7 @@ QMap<QString, ElementInfo> WiringListExport::collectElementsInfo(const QDomEleme
                 QString nameAttr = eic.attribute("name").toLower();
                 if (nameAttr == "label") info.label = eic.text().trimmed();
                 if (nameAttr == "name") info.name = eic.text().trimmed();
+                if (nameAttr == "location_path") info.location_path = eic.text().trimmed();
             }
         }
 
@@ -613,10 +615,27 @@ QString WiringListExport::toCsvString() const
         return !at.isEmpty() && !bt.isEmpty() && at != bt;
     };
 
+    // A wire with an end on a component out of the project (T85) - a
+    // sensor in the field - is not wired in this panel. When the end that
+    // stays is a folio report, the half drawn on the other folio is the
+    // same wire, and goes too: the reports it leads to are kept here.
+    const LocationTree tree = m_project->locationTree();
+    auto outside = [&tree, &elementsInfo](const QString &uuid) {
+        return tree.isOutsideProject(elementsInfo.value(uuid).location_path);
+    };
+    QSet<QString> reportsToOutside;
+
     for (int i = 0; i < conductors.size(); ++i) {
         ConductorData c = conductors[i];
 
         if (conductorDefinitionUuids.contains(c.el1_uuid) || conductorDefinitionUuids.contains(c.el2_uuid)) {
+            continue;
+        }
+
+        if (outside(c.el1_uuid) || outside(c.el2_uuid)) {
+            for (const QString &end : {c.el1_uuid, c.el2_uuid}) {
+                if (elementsInfo.value(end).isPlaceholder) reportsToOutside.insert(end);
+            }
             continue;
         }
 
@@ -659,6 +678,11 @@ QString WiringListExport::toCsvString() const
         const QStringList links = elementsInfo.value(ph_uuid).links;
         const QString matching_ph_uuid = links.isEmpty() ? QString() : links.first();
         const QList<ConductorData> others = partialWires.value(matching_ph_uuid);
+
+        // The other half ends out of the project (T85): so does the wire
+        if (!matching_ph_uuid.isEmpty() && reportsToOutside.contains(matching_ph_uuid)) {
+            continue;
+        }
 
         if (it.value().size() != 1 || others.size() != 1 || written.contains(matching_ph_uuid)) {
             uniqueConductors.append(it.value());

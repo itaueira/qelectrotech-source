@@ -630,3 +630,46 @@ TEST_CASE("T32 — o componente segue a árvore por consulta direta, e o vizinho
 					== QString("QCM1"));
 	}
 }
+
+TEST_CASE("T85 - out of the project holds for what is inside, too", "[localizacao][T85]")
+{
+	LocationTree arvore;
+	ProjectLocation campo(QString("CAMPO"), QString("Elementos de Campo"));
+	campo.outside_project = true;
+	const QString campo_uuid = arvore.append(campo);
+	REQUIRE_FALSE(campo_uuid.isEmpty());
+
+	ProjectLocation caixa(QString("CX1"));
+	caixa.parent_uuid = campo_uuid;
+	REQUIRE_FALSE(arvore.append(caixa).isEmpty());
+	REQUIRE_FALSE(arvore.append(ProjectLocation(QString("QCM1"))).isEmpty());
+
+	CHECK(arvore.isOutsideProject(QString("CAMPO")));
+	CHECK(arvore.isOutsideProject(QString("CAMPO/CX1")));
+	CHECK_FALSE(arvore.isOutsideProject(QString("QCM1")));
+	// What the tree does not know stays in: dropped by mistake, a
+	// component would vanish from every list without a trace
+	CHECK_FALSE(arvore.isOutsideProject(QString()));
+	CHECK_FALSE(arvore.isOutsideProject(QString("CAMPO2")));
+	CHECK(arvore.outsidePaths() == QStringList({QString("CAMPO"), QString("CAMPO/CX1")}));
+}
+
+TEST_CASE("T85 - the mark out of the project goes to the file and back", "[localizacao][T85]")
+{
+	ProjectLocation campo(QString("CAMPO"));
+	campo.uuid = QString("{85000000-0000-4000-8000-000000000001}");
+	campo.outside_project = true;
+
+	QDomDocument documento;
+	const QDomElement elemento = campo.toXml(documento);
+	CHECK(elemento.attribute(QString("outside")) == QString("true"));
+
+	ProjectLocation lida;
+	REQUIRE(lida.fromXml(elemento));
+	CHECK(lida.outside_project);
+	CHECK(lida == campo);
+
+	lida.outside_project = false;
+	CHECK(lida != campo);
+	CHECK_FALSE(lida.toXml(documento).hasAttribute(QString("outside")));
+}

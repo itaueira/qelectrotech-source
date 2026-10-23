@@ -21,6 +21,7 @@
 #include "../cable/cable.h"
 #include "../conductorproperties.h"
 #include "../diagram.h"
+#include "../location/locatableelement.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
 #include "../qetgraphicsitem/terminal.h"
@@ -29,6 +30,7 @@
 
 #include <QHash>
 #include <QLineF>
+#include <QSet>
 
 #include <algorithm>
 #include <climits>
@@ -221,6 +223,13 @@ QVector<QMap<QString, QString>> CableList::rows(QETProject *project)
 		//cable goes on over there, and the landing on the far sheet is
 		//what counts as its end.
 	QHash<QUuid, QVector<CableEnd>> arrivals;
+		//A core with an end on a component out of the project (T85) is
+		//not wired in this panel, and neither is a cable all of whose
+		//cores are such: the cable to a sensor in the field. A cable with
+		//some cores inside is listed by those.
+	const LocationTree tree = project->locationTree();
+	QSet<QUuid> cores_inside;
+	QSet<QUuid> cores_outside;
 	for (Diagram *diagram : project->diagrams())
 	{
 		for (Conductor *conductor : diagram->conductors())
@@ -232,6 +241,13 @@ QVector<QMap<QString, QString>> CableList::rows(QETProject *project)
 			if (!conductor->terminal1 || !conductor->terminal2) {
 				continue;
 			}
+			if (isOutsideProject(conductor->terminal1->parentElement(), tree)
+			    || isOutsideProject(conductor->terminal2->parentElement(), tree))
+			{
+				cores_outside.insert(properties.m_cable_uuid);
+				continue;
+			}
+			cores_inside.insert(properties.m_cable_uuid);
 
 			Terminal *terminals[2] = {conductor->terminal1, conductor->terminal2};
 			for (Terminal *terminal : terminals)
@@ -273,6 +289,11 @@ QVector<QMap<QString, QString>> CableList::rows(QETProject *project)
 
 	for (Cable *cable : project->cables())
 	{
+		if (cores_outside.contains(cable->uuid())
+		    && !cores_inside.contains(cable->uuid())) {
+			continue;
+		}
+
 			//Several cores landing on one piece are one end: the highest
 			//of their landings speaks for it.
 		QHash<QUuid, CableEnd> grouped;

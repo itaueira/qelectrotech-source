@@ -91,6 +91,10 @@ QDomElement ProjectLocation::toXml(QDomDocument &document) const
 		element.setAttribute(QStringLiteral("virtual"),
 				     QStringLiteral("true"));
 	}
+	if (outside_project) {
+		element.setAttribute(QStringLiteral("outside"),
+				     QStringLiteral("true"));
+	}
 
 	return element;
 }
@@ -126,6 +130,8 @@ bool ProjectLocation::fromXml(const QDomElement &element)
 
 	virtual_part = element.attribute(QStringLiteral("virtual"))
 		       == QLatin1String("true");
+	outside_project = element.attribute(QStringLiteral("outside"))
+			  == QLatin1String("true");
 
 	return true;
 }
@@ -206,7 +212,8 @@ bool ProjectLocation::operator==(const ProjectLocation &other) const
 		&& description == other.description
 		&& part_code == other.part_code
 		&& part_revision == other.part_revision
-		&& virtual_part == other.virtual_part;
+		&& virtual_part == other.virtual_part
+		&& outside_project == other.outside_project;
 }
 
 bool ProjectLocation::operator!=(const ProjectLocation &other) const

@@ -406,6 +406,9 @@ class projectDataBase : public QObject
 		static QString elementTypeClause(ElementData::Types types,
 						 const QString &column);
 		void spareTerminalsChanged();
+			/// The tree of locations changed: what is out of the project
+			/// is read again from it, and the lists are told (T85)
+		void locationTreeChanged();
 
 	signals:
 		void dataBaseUpdated();
@@ -427,6 +430,7 @@ class projectDataBase : public QObject
 		void populateElementInfoTable();
 		void populateElementInfoTableFromFolios();
 		void populateSpareTerminalTable();
+		void populateOutsideLocationTable();
 		void populateDiagramInfoTable();
 		void populateConductorTable();
 		static void bindElementValues(QSqlQuery &query, Element *element, Diagram *diagram);

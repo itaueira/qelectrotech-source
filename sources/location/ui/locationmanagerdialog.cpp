@@ -59,6 +59,7 @@ namespace
 		PathColumn,
 		PartColumn,
 		VirtualColumn,
+		OutsideColumn,
 		CountColumn,
 		ColumnCount
 	};
@@ -151,7 +152,12 @@ void LocationManagerDialog::buildWidgets()
 				<< tr("Désignation")
 				<< tr("Pièce")
 				<< tr("Hors nomenclature")
+				<< tr("Out of project")
 				<< tr("Composants"));
+	m_tree->headerItem()->setToolTip(OutsideColumn, tr(
+		"What is mounted here is not part of this project: it leaves the "
+		"bill of materials, the layout and the wiring, cable and terminal "
+		"lists, with the wires that end on it."));
 	m_tree->setRootIsDecorated(true);
 	m_tree->setAlternatingRowColors(true);
 	m_tree->setEditTriggers(QAbstractItemView::DoubleClicked
@@ -330,6 +336,8 @@ void LocationManagerDialog::addRow(QTreeWidgetItem *parent,
 	item->setText(CountColumn, QString::number(m_counts.value(path)));
 	item->setCheckState(VirtualColumn,
 			    location.virtual_part ? Qt::Checked : Qt::Unchecked);
+	item->setCheckState(OutsideColumn,
+			    location.outside_project ? Qt::Checked : Qt::Unchecked);
 	item->setData(CodeColumn, UUID_ROLE, uuid);
 	item->setFlags(item->flags() | Qt::ItemIsEditable);
 
@@ -409,6 +417,18 @@ void LocationManagerDialog::itemEdited(QTreeWidgetItem *item, int column)
 			? tr("Retirer « %1 » de la nomenclature").arg(location.code)
 			: tr("Compter « %1 » dans la nomenclature").arg(location.code);
 		location.virtual_part = wanted;
+	}
+	else if (column == OutsideColumn)
+	{
+		const bool wanted =
+			item->checkState(OutsideColumn) == Qt::Checked;
+		if (wanted == location.outside_project) {
+			return;
+		}
+		label = wanted
+			? tr("Put « %1 » out of the project").arg(location.code)
+			: tr("Bring « %1 » back into the project").arg(location.code);
+		location.outside_project = wanted;
 	}
 	else
 	{

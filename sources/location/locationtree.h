@@ -200,6 +200,22 @@ class LocationTree
 		QStringList paths() const;
 
 		/**
+			@brief Whether what is mounted on this path is out of the
+			project: the location or one of the locations holding it is
+			marked outside (ProjectLocation::outside_project).
+			@param path a path of codes, QCM1/PORTE
+
+			The one rule every list asks, so that no list can answer it
+			differently. A path the tree does not know - empty, or left on
+			a component after its location was deleted - is inside: a
+			component the lists keep by mistake is seen, and one they drop
+			by mistake is not.
+		*/
+		bool isOutsideProject(const QString &path) const;
+			/// @return every path of the tree out of the project, parents first
+		QStringList outsidePaths() const;
+
+		/**
 			@brief Turn a path into the designation the drawing carries.
 			@param path a path of codes, QCM1/PORTE
 			@return +QCM1+PORTE, the repeated prefix form of IEC 81346

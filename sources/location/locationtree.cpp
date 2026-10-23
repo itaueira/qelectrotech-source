@@ -534,6 +534,46 @@ QStringList LocationTree::paths() const
 }
 
 /**
+	@brief LocationTree::isOutsideProject
+	See the header.
+*/
+bool LocationTree::isOutsideProject(const QString &path) const
+{
+	QString uuid = uuidOfPath(path);
+		//Bounded by the size of the tree, so that a parent loop a hand
+		//edited file could carry ends the walk instead of hanging it
+	for (int steps = 0 ; !uuid.isEmpty() && steps <= count() ; ++steps)
+	{
+		const int index = indexOfUuid(uuid);
+		if (index < 0) {
+			return false;
+		}
+		if (at(index).outside_project) {
+			return true;
+		}
+		uuid = at(index).parent_uuid;
+	}
+	return false;
+}
+
+/**
+	@brief LocationTree::outsidePaths
+	@return every path of the tree out of the project, parents first
+*/
+QStringList LocationTree::outsidePaths() const
+{
+	QStringList list;
+	const QStringList all = paths();
+	for (const QString &each : all)
+	{
+		if (isOutsideProject(each)) {
+			list << each;
+		}
+	}
+	return list;
+}
+
+/**
 	@brief LocationTree::iecTag
 	@param path
 	@return the designation IEC 81346 writes for that path
