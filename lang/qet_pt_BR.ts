@@ -5514,19 +5514,19 @@ Continuar?</translation>
 <context>
     <name>Conductor</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="1871"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="1942"/>
         <source>move the line a point shares</source>
         <comment>undo caption</comment>
         <translation>mover a linha comum do ponto</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="3570"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="3663"/>
         <source>Edit conductor properties</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de um condutor</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="3575"/>
+        <location filename="../sources/qetgraphicsitem/conductor.cpp" line="3668"/>
         <source>Edit the properties of several conductors</source>
         <comment>undo caption</comment>
         <translation>Editar as propriedades de vários condutores</translation>
@@ -6503,7 +6503,7 @@ Continuar?</translation>
 <context>
     <name>Diagram</name>
     <message>
-        <location filename="../sources/diagram.cpp" line="3438"/>
+        <location filename="../sources/diagram.cpp" line="3441"/>
         <source>Change the depth</source>
         <translation>Modificar a profundidade</translation>
     </message>
@@ -20565,8 +20565,8 @@ Todas as suas outras configurações serão mantidas.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="252"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7320"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="7323"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7326"/>
         <source>QElectroTech</source>
         <comment>window title</comment>
         <translation>QElectroTech</translation>
@@ -20583,195 +20583,195 @@ Todas as suas outras configurações serão mantidas.</translation>
         <translation>Coleções</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1088"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1334"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1348"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2277"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2287"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2296"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1091"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1337"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1351"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2280"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2290"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2299"/>
         <source>Éditeur de schémas</source>
         <translation>Editor de esquemas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1095"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1098"/>
         <source>Montrer sur la plaque</source>
         <translation>Mostrar na placa</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1096"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1099"/>
         <source>Ouvre l&apos;implantation de la plaque où ce composant est monté, avec la pièce sélectionnée.</source>
         <translation>Abre o layout da placa em que este componente está montado, com a peça selecionada.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1147"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1150"/>
         <source>Contrôle du projet</source>
         <translation>Verificar projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1148"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1151"/>
         <source>Vérifie le projet : bobine sans contact, contact sans bobine, borne hors bornier. La liste reste affichée et mène au composant.</source>
         <translation>Verifica o projeto: bobina sem contato, contato sem bobina, borne fora de régua de bornes. A lista permanece exibida e leva até o componente.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1214"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1217"/>
         <source>Générer des blocs de brochage…</source>
         <translation>Gerar blocos de pinagem…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1216"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1219"/>
         <source>Dessine le symbole d&apos;une pièce à partir du brochage que le catalogue connaît, en un bloc ou en plusieurs.</source>
         <translation>Desenha o símbolo de uma peça a partir da pinagem que o catálogo conhece, em um bloco ou em vários.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1228"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1231"/>
         <source>Générer des circuits par table…</source>
         <translation>Gerar circuitos por tabela…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1230"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1233"/>
         <source>Dessine d&apos;un coup les circuits d&apos;une table : une ligne par circuit, un macro et ses valeurs.</source>
         <translation>Desenha de uma vez os circuitos de uma tabela: uma linha por circuito, uma macro e os valores dela.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1242"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1245"/>
         <source>Importer une liste d&apos;E/S…</source>
         <translation>Importar uma lista de E/S…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1244"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1247"/>
         <source>Lit une feuille de calcul d&apos;entrées / sorties et la fond avec celle du projet, sans rien effacer de ce qui est déjà placé.</source>
         <translation>Lê uma planilha de entradas / saídas e a funde com a do projeto, sem apagar nada do que já está posto.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1253"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1256"/>
         <source>Affecter des E/S à une carte…</source>
         <translation>Atribuir E/S a um cartão…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1255"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1258"/>
         <source>Place les points d&apos;entrées / sorties déjà importés dans les voies libres d&apos;une carte d&apos;automate, et les en retire.</source>
         <translation>Põe os pontos de entradas / saídas já importados nos canais livres de um cartão de CLP, e os retira da lista.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1264"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1267"/>
         <source>Liste des E/S…</source>
         <translation>Lista de E/S…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1266"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1269"/>
         <source>Montre les entrées / sorties du projet, les automates et leurs cartes au-dessus, et laisse les corriger sur place.</source>
         <translation>Mostra as entradas / saídas do projeto, os CLPs e os cartões deles acima, e permite corrigi-las ali mesmo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1275"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1278"/>
         <source>Marquer comme barre par défaut…</source>
         <translation>Marcar como barra padrão…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1277"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1280"/>
         <source>Dit que les éléments sélectionnés servent de barre d&apos;alimentation ou de retour pour les communs.</source>
         <translation>Diz que os elementos selecionados servem de barra de alimentação ou de retorno para os comuns.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1284"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1287"/>
         <source>Raccorder les communs…</source>
         <translation>Ligar os comuns…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1286"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1289"/>
         <source>Tire d&apos;un coup les fils entre les communs des cartes et les barres marquées de leur folio.</source>
         <translation>Puxa de uma vez os fios entre os comuns dos cartões e as barras marcadas na folha delas.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1327"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1330"/>
         <source>Remplacer l&apos;élément…</source>
         <translation>Substituir o elemento…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1328"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1331"/>
         <source>Met un autre élément à la place des éléments sélectionnés, en gardant leurs fils</source>
         <comment>status bar tip</comment>
         <translation>Põe outro elemento no lugar dos selecionados, mantendo os fios</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1356"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7909"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1359"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7912"/>
         <source>Rétablir les textes du symbole</source>
         <translation>Repor os textos do símbolo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1357"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1360"/>
         <source>Remet les textes des éléments sélectionnés comme leur symbole les a, en gardant leurs valeurs</source>
         <comment>status bar tip</comment>
         <translation>Repõe os textos dos elementos selecionados como o símbolo os tem, mantendo os valores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1415"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1418"/>
         <source>Garde tous les points de raccordement visibles.</source>
         <translation>Mantém todos os pontos de ligação visíveis.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1544"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1547"/>
         <source>État de montage du projet…</source>
         <translation>Estado de montagem do projeto…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1545"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1548"/>
         <source>Fige ce qui est déjà câblé et étiqueté : l&apos;automatisation ne numérote plus que ce qui sera dessiné après.</source>
         <translation>Congela o que já está cabeado e etiquetado: a automação só numera mais o que for desenhado depois.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1588"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1591"/>
         <source>Calepinage de l&apos;armoire…</source>
         <translation>Layout do painel…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1589"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1592"/>
         <source>Implante la platine en millimètre : ce qui est vissé dessus, et où. Se glisse à la souris.</source>
         <translation>Implanta a placa em milímetro: o que está parafusado nela, e onde. Arrasta-se com o mouse.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1597"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1600"/>
         <source>Poser le calepinage sur le folio…</source>
         <translation>Pôr o layout na folha…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1598"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1601"/>
         <source>Dessine une platine du projet sur le folio courant, à l&apos;échelle choisie. Le dessin suit la platine.</source>
         <translation>Desenha uma placa do projeto na folha atual, na escala escolhida. O desenho acompanha a placa.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1779"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1782"/>
         <source>&amp;Cascade</source>
         <translation>&amp;Cascata</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2175"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2178"/>
         <source>Ajouter une zone de localisation</source>
         <translation>Adicionar uma zona de localização</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2286"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2289"/>
         <source>Revenir dans l&apos;historique des folios</source>
         <translation>Voltar no histórico de folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2295"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2298"/>
         <source>Avancer dans l&apos;historique des folios</source>
         <translation>Avançar no histórico de folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5918"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5921"/>
         <source>The smallest pitch at which no text overlaps the next one</source>
         <translation>O menor passo em que nenhum texto invade o do vizinho</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5920"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5923"/>
         <source>Smaller than the automatic pitch: some texts will overlap.</source>
         <translation>Menor que o automático: alguns textos vão se sobrepor.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7864"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7867"/>
         <source>%n élément(s) non redessiné(s) : leurs bornes ont changé.</source>
         <translation>
             <numerusform>%n elemento não redesenhado: os terminais mudaram.</numerusform>
@@ -20779,17 +20779,17 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7867"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7870"/>
         <source>Relancez la commande et acceptez de recharger le projet.</source>
         <translation>Use o comando de novo e aceite recarregar o projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7906"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7909"/>
         <source>Les textes sont déjà ceux du symbole.</source>
         <translation>Os textos já são os do símbolo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8031"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8034"/>
         <source>Le projet n&apos;a pas pu être rechargé ; il reste ouvert.
 
 %1</source>
@@ -20798,23 +20798,23 @@ Todas as suas outras configurações serão mantidas.</translation>
 %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2194"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2197"/>
         <source>Dessine sur le folio actuel une zone qui affecte les composants qu&apos;elle contient</source>
         <translation>Desenha na folha atual uma zona que atribui a localização aos componentes que ela contém</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2276"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2279"/>
         <source>Naviguer vers la référence</source>
         <translation>Navegar até a referência</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2278"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2281"/>
         <source>Atteint l&apos;autre représentation de l&apos;objet sélectionné</source>
         <comment>status bar tip</comment>
         <translation>Vai até a outra representação do objeto selecionado</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2639"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2642"/>
         <source>%n bloc(s) enregistré(s) dans la bibliothèque.</source>
         <translation>
             <numerusform>%n bloco salvo na biblioteca.</numerusform>
@@ -20822,140 +20822,140 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2960"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2977"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2963"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2980"/>
         <source>Poser le calepinage sur le folio</source>
         <translation>Pôr o layout na folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2961"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2964"/>
         <source>Ce projet n&apos;a encore aucune platine. Ouvrez « Calepinage de l&apos;armoire… » pour en créer une.</source>
         <translation>Este projeto ainda não tem nenhuma placa. Abra « Layout do painel… » para criar uma.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2978"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2981"/>
         <source>Quelle platine dessiner sur ce folio ?</source>
         <translation>Qual placa desenhar nesta folha?</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3013"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3016"/>
         <source>Unités de folio par millimètre. À %1, une platine de %2 × %3 mm est dessinée %4 × %5.</source>
         <translation>Unidades de folha por milímetro. Em %1, uma placa de %2 × %3 mm é desenhada em %4 × %5.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3020"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3023"/>
         <source>Unités de folio par millimètre. Cette platine n&apos;est pas mesurée : seuls ses composants seront dessinés.</source>
         <translation>Unidades de folha por milímetro. Esta placa não está medida: somente seus componentes serão desenhados.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3026"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3029"/>
         <source>Échelle du calepinage</source>
         <translation>Escala do layout</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3244"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3247"/>
         <source>Aucun élément sélectionné</source>
         <translation>Nenhum elemento selecionado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3245"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3248"/>
         <source>Sélectionnez le ou les éléments qui font office de barre sur leur folio.</source>
         <translation>Selecione o elemento ou os elementos que servem de barra na folha deles.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3253"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3256"/>
         <source>Aucune</source>
         <translation>Nenhuma</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3268"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3271"/>
         <source>Barre par défaut</source>
         <translation>Barra padrão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3269"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3272"/>
         <source>Ces éléments servent de barre pour :</source>
         <translation>Estes elementos servem de barra para:</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3304"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3307"/>
         <source>Ces éléments portaient déjà cette marque.</source>
         <translation>Estes elementos já tinham esta marca.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3312"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3315"/>
         <source>%1 élément(s) ne servent plus de barre.</source>
         <translation>%1 elemento(s) não servem mais de barra.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3314"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3317"/>
         <source>%1 élément(s) marqués comme barre « %2 ».</source>
         <translation>%1 elemento(s) marcado(s) como barra « %2 ».</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3372"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3375"/>
         <source>Aucune carte</source>
         <translation>Nenhum cartão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3373"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3376"/>
         <source>Ce projet ne contient aucune carte d&apos;automate. Sélectionnez les éléments dont les communs sont à raccorder.</source>
         <translation>Este projeto não contém nenhum cartão de CLP. Selecione os elementos cujos comuns devem ser ligados.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3392"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3397"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3395"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3400"/>
         <source>Raccorder les communs</source>
         <translation>Ligar os comuns</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5047"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5050"/>
         <source>Fichier de restauration</source>
         <comment>message box title</comment>
         <translation>Arquivo de restauração</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5668"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5671"/>
         <source>Cliquez-glissez, ou cliquez les deux coins, pour dessiner la zone. Click droit pour annuler</source>
         <translation>Clique e arraste, ou clique nos dois cantos, para desenhar a zona. Clique com o botão direito para cancelar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1065"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1068"/>
         <source>Classes et propriétés du catalogue</source>
         <translation>Classes e propriedades do catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1072"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1075"/>
         <source>Parcourir le catalogue</source>
         <translation>Percorrer o catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1107"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1110"/>
         <source>Composants sans pièce</source>
         <translation>Componentes sem peça</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1118"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1121"/>
         <source>Pièces sans vue physique</source>
         <translation>Peças sem vista física</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1119"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1122"/>
         <source>Liste les composants dont la pièce n&apos;a ni largeur ni hauteur au catalogue : ce qui reste à mesurer avant de dessiner une implantation.</source>
         <translation>Lista os componentes cuja peça não tem largura nem altura no catálogo: o que falta medir antes de desenhar a disposição física do painel.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1158"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1161"/>
         <source>Environnement de travail</source>
         <translation>Ambiente de trabalho</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1302"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1305"/>
         <source>Insérer un groupement…</source>
         <translation>Inserir um agrupamento…</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="1379"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1382"/>
         <source>%n composant(s) ont changé de pièce. Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>
             <numerusform>%n componente mudou de peça. Ctrl+Z desfaz tudo de uma vez.</numerusform>
@@ -20963,59 +20963,59 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1398"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1401"/>
         <source>La grille fine sert au dessin ; les points de raccordement, eux, doivent rester sur la grille principale.</source>
         <translation>A grade fina serve para o desenho; os pontos de ligação, esses, têm de ficar na grade principal.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1421"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1424"/>
         <source>À laisser désactivé pour le travail courant : un point visible est un point qu&apos;on déplace par accident.</source>
         <translation>Deixe desligado no trabalho do dia a dia: um ponto visível é um ponto que se arrasta sem querer.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1484"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1487"/>
         <source>Remplace le fait de déplacer chaque texte à la main.</source>
         <translation>Substitui arrastar cada texto à mão.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1510"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1518"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1513"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1521"/>
         <source>Lier un accessoire</source>
         <translation>Vincular um acessório</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1511"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1514"/>
         <source>Sélectionnez un seul accessoire.</source>
         <translation>Selecione um acessório só.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1519"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1522"/>
         <source>Sélectionnez l&apos;accessoire à rattacher.</source>
         <translation>Selecione o acessório a vincular.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1524"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1527"/>
         <source>Accessoire rattaché. Ctrl+Z annule.</source>
         <translation>Acessório vinculado. Ctrl+Z desfaz.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1684"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1687"/>
         <source>Applique les éléments modifiés dans la collection et les redessine</source>
         <translation>Aplica os elementos alterados na coleção e os redesenha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2455"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2509"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2458"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2512"/>
         <source>Aucun composant sélectionné</source>
         <translation>Nenhum componente selecionado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2456"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2459"/>
         <source>Sélectionnez le ou les composants qui doivent recevoir la pièce.</source>
         <translation>Selecione o componente, ou os componentes, que devem receber a peça.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2478"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2481"/>
         <source>Pièce %1 attribuée à %n composant(s).</source>
         <translation>
             <numerusform>Peça %1 atribuída a %n componente.</numerusform>
@@ -21023,12 +21023,12 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2510"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2513"/>
         <source>Sélectionnez les symboles du composant — la bobine et tous ses contacts — avant d&apos;enregistrer la pièce.</source>
         <translation>Selecione os símbolos do componente — a bobina e todos os contatos dele — antes de salvar a peça.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2527"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2530"/>
         <source>Pièce %1 enregistrée et attribuée à %n composant(s).</source>
         <translation>
             <numerusform>Peça %1 salva e atribuída a %n componente.</numerusform>
@@ -21036,7 +21036,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="2568"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2571"/>
         <source>%n composant(s) renuméroté(s). Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>
             <numerusform>%n componente renumerado. Ctrl+Z desfaz tudo de uma vez.</numerusform>
@@ -21044,47 +21044,47 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2593"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2596"/>
         <source>Créer un symbole</source>
         <translation>Criar um símbolo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2613"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2616"/>
         <source>Symbole enregistré : %1</source>
         <translation>Símbolo gravado: %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3420"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3423"/>
         <source>Enregistrer un groupement</source>
         <translation>Gravar um agrupamento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3421"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3424"/>
         <source>Rien n&apos;est sélectionné. Sélectionnez le morceau de schéma à enregistrer.</source>
         <translation>Nada está selecionado. Selecione o pedaço de esquema a gravar.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3434"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3437"/>
         <source>Groupement enregistré : %1</source>
         <translation>Agrupamento gravado: %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3473"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3476"/>
         <source>Insérer un groupement</source>
         <translation>Inserir um agrupamento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3474"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3477"/>
         <source>« %1 » n&apos;a rien apporté sur la folio.</source>
         <translation>« %1 » não trouxe nada para a folha.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3485"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3488"/>
         <source>« %1 » inséré. Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>« %1 » inserido. Ctrl+Z desfaz tudo de uma vez.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3489"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3492"/>
         <source>« %1 » inséré avec %n pièce(s) déjà attribuée(s). Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>
             <numerusform>« %1 » inserido com %n peça já atribuída. Ctrl+Z desfaz tudo de uma vez.</numerusform>
@@ -21092,25 +21092,25 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1315"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3517"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3538"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3560"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1318"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3520"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3541"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3563"/>
         <source>Éclater le symbole</source>
         <translation>Explodir o símbolo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3518"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3521"/>
         <source>Sélectionnez le ou les symboles à éclater.</source>
         <translation>Selecione o símbolo, ou os símbolos, a explodir.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3540"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3543"/>
         <source>Aucun des symboles sélectionnés n&apos;a pu être éclaté.</source>
         <translation>Nenhum dos símbolos selecionados pôde ser explodido.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3550"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3553"/>
         <source>%n symbole(s) éclaté(s) en %1 formes et textes. Ctrl+Z annule tout d&apos;un coup.</source>
         <translation>
             <numerusform>%n símbolo explodido em %1 formas e textos. Ctrl+Z desfaz tudo de uma vez.</numerusform>
@@ -21118,7 +21118,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3555"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3558"/>
         <source>%n symbole(s) refusé(s).</source>
         <translation>
             <numerusform>%n símbolo recusado.</numerusform>
@@ -21126,22 +21126,22 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4078"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4081"/>
         <source>Numéro des conducteurs</source>
         <translation>Número dos condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4079"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4082"/>
         <source>Sélectionnez les conducteurs dont le numéro doit être affiché ou masqué.</source>
         <translation>Selecione os condutores cujo número deve ser exibido ou ocultado.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4089"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4092"/>
         <source>Les conducteurs sélectionnés sont déjà comme ça.</source>
         <translation>Os condutores selecionados já estão assim.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="4098"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4101"/>
         <source>Numéro affiché sur %n conducteur(s). Le numéro lui-même n&apos;a pas changé.</source>
         <translation>
             <numerusform>Número exibido em %n condutor. O número em si não mudou.</numerusform>
@@ -21149,7 +21149,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="4100"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4103"/>
         <source>Numéro masqué sur %n conducteur(s). Le numéro lui-même n&apos;a pas changé.</source>
         <translation>
             <numerusform>Número ocultado em %n condutor. O número em si não mudou.</numerusform>
@@ -21157,183 +21157,183 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1478"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4135"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1481"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4138"/>
         <source>Aligner les numéros</source>
         <translation>Alinhar os números</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1082"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1085"/>
         <source>Attribuer une pièce</source>
         <translation>Atribuir uma peça</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1083"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1086"/>
         <source>Attribue une pièce du catalogue aux composants sélectionnés : informations, numéros de bornes et accessoires suivent.</source>
         <translation>Atribui uma peça do catálogo aos componentes selecionados: informações, números de bornes e acessórios acompanham.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1100"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1103"/>
         <source>Enregistrer une pièce</source>
         <translation>Cadastrar uma peça</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1101"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1104"/>
         <source>Crée une pièce du catalogue à partir des composants sélectionnés, avec une broche par borne.</source>
         <translation>Cria uma peça do catálogo a partir dos componentes selecionados, com um pino por borne.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1165"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1168"/>
         <source>Importer des pièces…</source>
         <translation>Importar peças…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1166"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1169"/>
         <source>Importe des pièces depuis un fichier .csv ou .xlsx, avec un rapport de ce qui est entré et de ce qui a été refusé.</source>
         <translation>Importa peças de um arquivo .csv ou .xlsx, com relatório do que entrou e do que foi recusado.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1176"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1179"/>
         <source>Répertoire partagé…</source>
         <translation>Repositório compartilhado…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1177"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1180"/>
         <source>Cherche et publie des pièces dans le répertoire partagé du bureau.</source>
         <translation>Procura e publica peças no repositório compartilhado do escritório.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1187"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1190"/>
         <source>Renuméroter…</source>
         <translation>Renumerar…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1188"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1191"/>
         <source>Renumérote les composants du projet, avec la table « de → vers » affichée avant d&apos;appliquer.</source>
         <translation>Renumera os componentes do projeto, com a tabela « de → para » exibida antes de aplicar.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1200"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1203"/>
         <source>Créer un symbole…</source>
         <translation>Criar um símbolo…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1202"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1205"/>
         <source>Transforme le dessin sélectionné en symbole de la bibliothèque : les points de raccordement sont déduits des bouts libres du dessin.</source>
         <translation>Transforma o desenho selecionado em símbolo da biblioteca: os pontos de ligação são deduzidos das pontas livres do desenho.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1293"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1296"/>
         <source>Enregistrer un groupement…</source>
         <translation>Gravar um agrupamento…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1295"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1298"/>
         <source>Garde le morceau de schéma sélectionné dans la bibliothèque, avec les pièces déjà attribuées.</source>
         <translation>Guarda o pedaço de esquema selecionado na biblioteca, com as peças já atribuídas.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1303"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1306"/>
         <source>Insère un morceau de schéma de la bibliothèque, pièces comprises.</source>
         <translation>Insere um pedaço de esquema da biblioteca, peças incluídas.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1316"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1319"/>
         <source>Rend le composant sélectionné à ses lignes et ses textes, pour les reprendre et refaire le bloc.</source>
         <translation>Devolve o componente selecionado às linhas e aos textos dele, para retocar e refazer o bloco.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1366"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1369"/>
         <source>Remplacer une pièce…</source>
         <translation>Substituir uma peça…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1367"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1370"/>
         <source>Échange une pièce contre une autre sur tous les composants du projet, en une seule fois annulable.</source>
         <translation>Troca uma peça por outra em todos os componentes do projeto, de uma vez e desfazível.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1389"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1392"/>
         <source>Grille fine</source>
         <translation>Grade fina</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1390"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1393"/>
         <source>Affiche la grille fine sous la principale. Elle sert au dessin ; les points de raccordement, eux, doivent rester sur la principale.</source>
         <translation>Exibe a grade fina sob a principal. Ela serve para o desenho; os pontos de ligação, esses, têm de ficar na principal.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1414"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1417"/>
         <source>Points de raccordement</source>
         <translation>Pontos de ligação</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1436"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1439"/>
         <source>Attributs vides</source>
         <translation>Atributos vazios</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1437"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1440"/>
         <source>Montre en gris les champs de texte qui n&apos;ont pas encore de valeur, pour pouvoir les placer.</source>
         <translation>Mostra em cinza os campos de texto que ainda não têm valor, para dar para posicioná-los.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1460"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1463"/>
         <source>Afficher le numéro</source>
         <translation>Exibir o número</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1461"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1464"/>
         <source>Réaffiche le numéro sur les conducteurs sélectionnés. Le numéro lui-même ne change pas.</source>
         <translation>Exibe de novo o número nos condutores selecionados. O número em si não muda.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1469"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1472"/>
         <source>Masquer le numéro</source>
         <translation>Ocultar o número</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1470"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1473"/>
         <source>Cache le numéro sur les conducteurs sélectionnés. Le numéro lui-même ne change pas : il reste dans la liste de câblage.</source>
         <translation>Esconde o número nos condutores selecionados. O número em si não muda: continua na lista de fiação.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1479"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1482"/>
         <source>Aligne sur un même axe le numéro des conducteurs sélectionnés. Remplace le fait de déplacer chaque texte à la main.</source>
         <translation>Alinha num mesmo eixo o número dos condutores selecionados. Substitui arrastar cada texto à mão.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1492"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1495"/>
         <source>Lier un accessoire…</source>
         <translation>Vincular um acessório…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1493"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1496"/>
         <source>Dit à quel composant appartient l&apos;accessoire sélectionné.</source>
         <translation>Diz a qual componente pertence o acessório selecionado.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1529"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1532"/>
         <source>Structure CEI 81346…</source>
         <translation>Estrutura IEC 81346…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1530"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1533"/>
         <source>Active la structure d&apos;identification de la norme pour ce projet, et choisit ce qui est écrit sur le dessin.</source>
         <translation>Liga a estrutura de identificação da norma neste projeto, e escolhe o que é escrito no desenho.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4136"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4139"/>
         <source>Sélectionnez au moins deux conducteurs dont le numéro est affiché.</source>
         <translation>Selecione pelo menos dois condutores com o número exibido.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4187"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4190"/>
         <source>Les numéros sont déjà alignés.</source>
         <translation>Os números já estão alinhados.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="4192"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4195"/>
         <source>%n numéro(s) alignés sur un même axe.</source>
         <translation>
             <numerusform>%n número alinhado num mesmo eixo.</numerusform>
@@ -21341,133 +21341,133 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4208"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4211"/>
         <source>&amp;Catalogue</source>
         <translation>&amp;Catálogo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1560"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1563"/>
         <source>Armoires et localisations…</source>
         <translation>Painéis e localizações…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1561"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1564"/>
         <source>Fait les armoires du projet, les emboîte, et met la sélection dans l&apos;une d&apos;elles en un geste.</source>
         <translation>Faz os painéis do projeto, encaixa um dentro do outro, e põe a seleção em um deles num só gesto.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1569"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1572"/>
         <source>Composants sans localisation…</source>
         <translation>Componentes sem localização…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1570"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1573"/>
         <source>Liste ce qui n&apos;est encore dans aucune armoire, folio par folio, et permet de les y mettre.</source>
         <translation>Lista o que ainda não está em nenhum painel, folha por folha, e permite colocá-los em um painel.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1578"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1581"/>
         <source>Liste de matériel par localisation…</source>
         <translation>Lista de material por localização…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1579"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1582"/>
         <source>Ce qu&apos;il faut sortir du magasin pour une armoire, sous-localisations comprises. S&apos;exporte, et se pose sur le folio.</source>
         <translation>O que é preciso retirar do estoque para um painel, sublocalizações incluídas. A lista se exporta, e se põe na folha.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1134"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1137"/>
         <source>Contrôle des connecteurs</source>
         <translation>Conferência dos conectores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1135"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1138"/>
         <source>Liste les connecteurs dont le nombre de voies ne peut pas être établi et les broches qui n&apos;appartiennent à aucun connecteur, et permet d&apos;y remédier depuis la liste.</source>
         <translation>Lista os conectores cujo número de vias não dá para estabelecer e os pinos que não pertencem a conector nenhum, e deixa corrigir isso a partir da lista.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1866"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1869"/>
         <source>Nouveau à partir d&apos;un modèle…</source>
         <translation>Novo a partir de um modelo…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1868"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1871"/>
         <source>Crée un projet à partir d&apos;un projet modèle, sans toucher au modèle</source>
         <comment>status bar tip</comment>
         <translation>Cria um projeto a partir de um projeto modelo, sem tocar no modelo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4650"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4653"/>
         <source>Nouveau projet à partir d&apos;un modèle</source>
         <comment>dialog title</comment>
         <translation>Novo projeto a partir de um modelo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4678"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4681"/>
         <source>Impossible d&apos;ouvrir le modèle</source>
         <comment>message box title</comment>
         <translation>Não foi possível abrir o modelo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4687"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4690"/>
         <source>Nouveau projet créé à partir du modèle %1. Il n&apos;a pas encore de fichier : « Enregistrer » demandera où le ranger.</source>
         <translation>Novo projeto criado a partir do modelo %1. Ele ainda não tem arquivo: «Salvar» vai perguntar onde guardá-lo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7705"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7731"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7968"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7975"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7708"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7734"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7971"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7978"/>
         <source>Recharger les dessins des éléments</source>
         <translation>Renderizar novamente os elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2288"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2291"/>
         <source>Revient au folio vu avant celui-ci</source>
         <comment>status bar tip</comment>
         <translation>Volta à folha vista antes desta</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2297"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2300"/>
         <source>Retourne au folio quitté en revenant</source>
         <comment>status bar tip</comment>
         <translation>Avança para a folha de onde voltou</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2353"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2356"/>
         <source>Scripts</source>
         <comment>toolbar title</comment>
         <translation>Scripts</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3648"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3712"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3752"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3651"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3715"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3755"/>
         <source>Remplacer l&apos;élément</source>
         <translation>Substituir o elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3649"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3652"/>
         <source>L&apos;élément choisi n&apos;a pas pu être ajouté au projet.</source>
         <translation>O elemento escolhido não pôde ser acrescentado ao projeto.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3686"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3689"/>
         <source>Fil sans numéro, sur %1</source>
         <translation>Fio sem número, em %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3688"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3691"/>
         <source>Fil « %1 », sur %2</source>
         <translation>Fio &quot;%1&quot;, em %2</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3694"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3697"/>
         <source>Renvoi de %1 vers %2</source>
         <translation>Referência cruzada de %1 para %2</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3704"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3707"/>
         <source>%n fil(s) sans borne dans le nouvel élément : il(s) sera(ont) supprimé(s).</source>
         <translation>
             <numerusform>%n fio sem borne no elemento novo: ele será apagado.</numerusform>
@@ -21475,7 +21475,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3708"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3711"/>
         <source>%n renvoi(s) sera(ont) perdu(s).</source>
         <translation>
             <numerusform>%n referência cruzada será perdida.</numerusform>
@@ -21483,17 +21483,17 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3710"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3713"/>
         <source>Ctrl+Z annule le remplacement.</source>
         <translation>Ctrl+Z desfaz a substituição.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3716"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3719"/>
         <source>Remplacer</source>
         <translation>Substituir</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3736"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3739"/>
         <source>remplacer %n élément(s)</source>
         <comment>undo caption</comment>
         <translation>
@@ -21502,7 +21502,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3745"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3748"/>
         <source>%n élément(s) remplacé(s)</source>
         <translation>
             <numerusform>%n elemento substituído</numerusform>
@@ -21510,7 +21510,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3747"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3750"/>
         <source>%n fil(s) gardé(s)</source>
         <translation>
             <numerusform>%n fio mantido</numerusform>
@@ -21518,44 +21518,44 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4282"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4285"/>
         <source>Collage spécial</source>
         <translation>Colar especial</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4322"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4325"/>
         <source>Organiser</source>
         <translation>Organizar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4339"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4342"/>
         <source>Conducteurs</source>
         <translation>Condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4365"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4368"/>
         <source>Symboles et circuits</source>
         <translation>Símbolos e circuitos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4377"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4380"/>
         <source>Entrées et sorties</source>
         <translation>Entradas e saídas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4418"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8268"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4421"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8271"/>
         <source>Scripts</source>
         <translation>Scripts</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5048"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5051"/>
         <source>QElectroTech s&apos;est arrêté pendant que ce projet était ouvert. Ouvrir la copie de restauration du %1 au lieu du fichier enregistré ?</source>
         <comment>message box content</comment>
         <translation>O QElectroTech foi encerrado com este projeto aberto. Abrir a cópia de restauração de %1 em vez do arquivo salvo?</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7706"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7709"/>
         <source>%n élément(s) ont été modifiés dans le projet et dans la collection. Utiliser la version de la collection ?</source>
         <translation>
             <numerusform>%n elemento foi alterado no projeto e na coleção. Usar a versão da coleção?</numerusform>
@@ -21563,28 +21563,28 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7711"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7714"/>
         <source>Utiliser la collection</source>
         <translation>Usar a da coleção</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7713"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7716"/>
         <source>Garder le projet</source>
         <translation>Manter a do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7735"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7738"/>
         <source>Recharger</source>
         <translation>Recarregar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7736"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7739"/>
         <source>Pas maintenant</source>
         <translation>Agora não</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8398"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8442"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8401"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8445"/>
         <source>Assistant</source>
         <translation>Assistente</translation>
     </message>
@@ -21638,7 +21638,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         <translation>Desfazer</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5586"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5589"/>
         <source>Cancel</source>
         <comment>cancel</comment>
         <translation>Desfazer</translation>
@@ -21694,86 +21694,86 @@ Todas as suas outras configurações serão mantidas.</translation>
         <translation>Cola os elementos da área de transferência na folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="762"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="765"/>
         <source>Reset conductors</source>
         <translation>Reinicializar os condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="811"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="814"/>
         <source>Automatic creation conductor (s)</source>
         <comment>Tool tip of auto conductor</comment>
         <translation>Criação automática de condutor(es)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="812"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="815"/>
         <source>Using the automatic creation of conductor (s) when possible</source>
         <comment>Status tip of auto conductor</comment>
         <translation>Utilizar a criação automática de fios quando possível</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="849"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="852"/>
         <source>Display the grid</source>
         <translation>Exibir a grade</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="851"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="854"/>
         <source>Display or hide the grid of sheet</source>
         <translation>Mostrar ou ocultar a grade das folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="983"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="986"/>
         <source>Sheet properties</source>
         <translation>Propriedades da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="995"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="998"/>
         <source>Project properties</source>
         <translation>Propriedades do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1002"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1005"/>
         <source>Add a sheet</source>
         <translation>Acrescentar uma folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1011"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7015"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7038"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1014"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7018"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7041"/>
         <source>Delete this sheet</source>
         <translation>Excluir esta folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1016"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1019"/>
         <source>Clean project</source>
         <translation>Limpar o projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1044"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1047"/>
         <source>Add a summary</source>
         <translation>Adicionar um resumo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1757"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1760"/>
         <source>using tabs</source>
         <translation>Usando abas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1763"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1766"/>
         <source>using windows</source>
         <translation>Usando janelas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1785"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1788"/>
         <source>Select</source>
         <translation>Modo de seleção</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1798"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1801"/>
         <source>Move</source>
         <translation>Modo de visualização</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1774"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1777"/>
         <source>&amp;Tile</source>
         <translation>&amp;Mosaico</translation>
     </message>
@@ -21792,92 +21792,92 @@ Todas as suas outras configurações serão mantidas.</translation>
         <location filename="../sources/qetdiagrameditor.cpp" line="553"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="554"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="572"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="728"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="752"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="763"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="772"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="776"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="783"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="791"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="795"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="799"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="806"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="827"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="831"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="850"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="871"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="910"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="926"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="939"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="984"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="996"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1003"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1012"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1017"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1028"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1036"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1045"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1053"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1608"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1634"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1645"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1657"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1669"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1682"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1690"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1697"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1716"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1733"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1738"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1750"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1758"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1764"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1775"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1780"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1786"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1799"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1817"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1822"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1835"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1836"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1837"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="731"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="755"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="766"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="775"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="779"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="786"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="794"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="798"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="802"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="809"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="830"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="834"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="853"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="874"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="913"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="929"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="942"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="987"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="999"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1006"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1015"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1020"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1031"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1039"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1048"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1056"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1611"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1637"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1648"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1660"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1672"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1685"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1693"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1700"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1719"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1736"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1741"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1753"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1761"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1767"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1778"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1783"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1789"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1802"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1820"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1825"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="1838"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="1839"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1850"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1901"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1919"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1920"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1921"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1840"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1841"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1842"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1853"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1904"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="1922"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1923"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="1924"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="1925"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1926"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="1927"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="1928"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1945"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1958"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1981"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1995"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2010"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2036"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2037"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2047"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2067"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2084"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2097"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2098"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2099"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1929"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1930"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1931"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1948"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1961"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1984"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1998"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2013"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2039"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2040"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2050"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2070"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2087"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2100"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2101"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="2102"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2103"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2128"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2129"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2130"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2105"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2106"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="2131"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="2132"/>
         <location filename="../sources/qetdiagrameditor.cpp" line="2133"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2236"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2248"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2259"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2134"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2135"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2136"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2239"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2251"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2262"/>
         <source>Diagram editors</source>
         <translation>Editor de esquemas</translation>
     </message>
@@ -21899,7 +21899,7 @@ Todas as suas outras configurações serão mantidas.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="488"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6617"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6620"/>
         <source>Paste element information</source>
         <translation>Colar as informações do elemento</translation>
     </message>
@@ -21916,227 +21916,227 @@ Todas as suas outras configurações serão mantidas.</translation>
         <translation>Copia as informações preenchidas do elemento da área de transferência para os elementos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="830"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="833"/>
         <source>Automatic disconnection of conductor(s)</source>
         <comment>Tool tip of auto break conductor</comment>
         <translation>Corte automático de condutor(es)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="832"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="835"/>
         <source>Automatically cut existing conductors when placing an element</source>
         <comment>Status tip of auto break conductor</comment>
         <translation>Cortar automaticamente os condutores existentes ao posicionar um elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="909"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="912"/>
         <source>View the guides</source>
         <translation>Exibir as guias</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="911"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="914"/>
         <source>Shows or hides the guides</source>
         <translation>Exibe ou oculta as guias</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="951"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="954"/>
         <source>Show</source>
         <translation>Exibir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="953"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="956"/>
         <source>Element texts</source>
         <translation>Textos dos elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="954"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="957"/>
         <source>Conductor texts</source>
         <translation>Textos dos condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="955"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="958"/>
         <source>Text fields</source>
         <translation>Campos de texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="956"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="959"/>
         <source>Shapes</source>
         <translation>Formas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="957"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="960"/>
         <source>Pictures</source>
         <translation>Imagens</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="958"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="961"/>
         <source>Tables</source>
         <translation>Tabelas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="959"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="962"/>
         <source>Cross-references</source>
         <translation>Referências cruzadas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="976"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="979"/>
         <source>See Display &gt; Show</source>
         <translation>Veja Exibir &gt; Exibir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1027"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1030"/>
         <source>Export to CSV</source>
         <translation>Exportar em formato CSV</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1052"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1055"/>
         <source>Terminal block manager (DEV)</source>
         <translation>Gerenciador de régua de bornes (DEV)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1607"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1610"/>
         <source>Launch the terminal block creation plugin</source>
         <translation>Iniciar o plugin de criação de réguas de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1633"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1636"/>
         <source>Export the list of names of wires</source>
         <translation>Exportar a lista de nomes dos condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1644"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1647"/>
         <source>Export the wiring diagram</source>
         <translation>Exportar o plano de fiação</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1668"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1671"/>
         <source>Automatic numbering of terminals</source>
         <translation>Numeração automática dos bornes</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1704"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1707"/>
         <source>Record a macro</source>
         <translation>Gravar uma macro</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1706"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1709"/>
         <source>Records what you do on the project, for an AI assistant to make a script of; click again to stop</source>
         <translation>Grava o que você faz no projeto, para que um assistente de IA faça um script com isso; clique de novo para parar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1719"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1722"/>
         <source>Manage scripts…</source>
         <translation>Gerenciar os scripts…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1720"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1723"/>
         <source>Write a script and make it a button with an icon</source>
         <translation>Escrever um script e transformá-lo em botão com ícone</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1737"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1740"/>
         <source>Open the scripts folder</source>
         <translation>Abrir a pasta dos scripts</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1740"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1743"/>
         <source>Every .js file in this folder that starts with a // ==QETScript== header becomes a button</source>
         <translation>Cada arquivo .js desta pasta que começa com um cabeçalho // ==QETScript== vira um botão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1749"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1752"/>
         <source>Export the internal project database</source>
         <translation>Exportar o banco de dados interno do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1816"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1819"/>
         <source>Next project</source>
         <translation>Projeto seguinte</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1821"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1824"/>
         <source>Previous project</source>
         <translation>Projeto anterior</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1827"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1830"/>
         <source>&amp;New</source>
         <translation>&amp;Novo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1828"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1831"/>
         <source>&amp;Open</source>
         <translation>&amp;Abrir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1829"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1832"/>
         <source>&amp;Save</source>
         <translation>&amp;Salvar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1830"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1833"/>
         <source>Save as</source>
         <translation>Salvar como</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1833"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8356"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1836"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8359"/>
         <source>&amp;Close</source>
         <translation>&amp;Fechar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1841"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1844"/>
         <source>Creates a new project</source>
         <comment>status bar tip</comment>
         <translation>Cria um novo projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1842"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1845"/>
         <source>Opens an existing project</source>
         <comment>status bar tip</comment>
         <translation>Abre um projeto existente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1843"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1846"/>
         <source>Closes the current project</source>
         <comment>status bar tip</comment>
         <translation>Fecha o projeto atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1844"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1847"/>
         <source>Saves the current project and all its sheets</source>
         <comment>status bar tip</comment>
         <translation>Salva o projeto atual e todas as suas folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1845"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1848"/>
         <source>Saves the current project with a different file name</source>
         <comment>status bar tip</comment>
         <translation>Salva o projeto atual com outro nome de arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1883"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1886"/>
         <source>Add a column</source>
         <translation>Adicionar uma coluna</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1884"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1887"/>
         <source>Remove a column</source>
         <translation>Eliminar uma coluna</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1885"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1888"/>
         <source>Add row</source>
         <comment>Add row</comment>
         <translation>Adicionar uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2170"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2173"/>
         <source>Add line</source>
         <comment>Draw line</comment>
         <translation>Adicionar uma linha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1886"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1889"/>
         <source>Remove a row</source>
         <comment>Remove row</comment>
         <translation>Excluir uma linha</translation>
@@ -22197,7 +22197,7 @@ Todas as suas outras configurações serão mantidas.</translation>
     </message>
     <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="700"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="715"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="718"/>
         <source>Join into a bus bar</source>
         <translation>Unir em barramento</translation>
     </message>
@@ -22208,469 +22208,469 @@ Todas as suas outras configurações serão mantidas.</translation>
         <translation>Une os bornes selecionados com uma ponte da régua, alimentada por um fio</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="771"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="774"/>
         <source>Arrange conductors</source>
         <translation>Arrumar os condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="773"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="776"/>
         <source>Put the bend of each selected conductor in the middle of the free space, on its own lane</source>
         <comment>status bar tip</comment>
         <translation>Põe a curva de cada condutor selecionado no meio do espaço livre, numa linha só dele</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="775"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="778"/>
         <source>Arrange the folio&apos;s conductors</source>
         <translation>Arrumar os condutores da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="777"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="780"/>
         <source>Arrange every conductor of the folio not dragged by hand</source>
         <comment>status bar tip</comment>
         <translation>Arruma todos os condutores da folha que não foram arrastados à mão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="782"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="785"/>
         <source>Update the wire cross-sections</source>
         <translation>Atualizar a bitola dos fios</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="784"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="787"/>
         <source>Give every conductor of the project the largest cross-section of the components of its point</source>
         <comment>status bar tip</comment>
         <translation>Dá a cada condutor do projeto a maior bitola entre os componentes do ponto dele</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="790"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="793"/>
         <source>Convert the wire names</source>
         <translation>Converter os nomes dos fios</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="792"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="795"/>
         <source>Name every wire of the project F&lt;folio&gt;-&lt;number&gt; (colour cross-section), keeping the number it has</source>
         <comment>status bar tip</comment>
         <translation>Dá a cada fio do projeto o nome F&lt;folha&gt;-&lt;número&gt; (cor bitola), mantendo o número que ele já tem</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="794"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="797"/>
         <source>Renumber the wires…</source>
         <translation>Renumerar os fios…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="796"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="799"/>
         <source>Number the wires again from their place on the folio, from 1 on each folio</source>
         <comment>status bar tip</comment>
         <translation>Numera os fios de novo pela posição na folha, de 1 em cada folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="798"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="801"/>
         <source>Remove the wires…</source>
         <translation>Apagar os fios…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="800"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="803"/>
         <source>Remove every wire of the project or of this folio, but those left out of automatic numbering and those of a panel marked as built</source>
         <comment>status bar tip</comment>
         <translation>Apaga todos os fios do projeto ou desta folha, menos os ignorados na numeração automática e os de um quadro montado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="804"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="807"/>
         <source>Leave out of automatic numbering</source>
         <translation>Ignorar na numeração automática</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="807"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="810"/>
         <source>Automatic numbering does not change the selected wires, and does not count their numbers</source>
         <comment>status bar tip</comment>
         <translation>A numeração automática não muda os fios selecionados e não conta os números deles</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="870"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="873"/>
         <source>Folio-wide crosshair</source>
         <translation>Mira em toda a folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="872"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="875"/>
         <source>Show two lines across the whole folio under the mouse, to see whether parts are in line</source>
         <translation>Mostra duas linhas em toda a folha sob o mouse, para ver se os elementos estão alinhados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1341"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4039"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1344"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4042"/>
         <source>Swap elements</source>
         <translation>Trocar os elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1342"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1345"/>
         <source>Puts each of the two selected elements in the place of the other; the wires stay, and each one takes those of its new place</source>
         <comment>status bar tip</comment>
         <translation>Põe cada um dos dois elementos selecionados no lugar do outro; os fios ficam, e cada um pega os do lugar novo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1689"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8078"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1692"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8081"/>
         <source>Round the terminals of the symbols</source>
         <translation>Arredondar os bornes dos símbolos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1691"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1694"/>
         <source>Move each terminal of the project&apos;s symbols to the nearest whole number, so that the wires on it can run straight</source>
         <comment>status bar tip</comment>
         <translation>Leva cada borne dos símbolos do projeto ao número inteiro mais próximo, para que os fios ligados a ele corram retos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1888"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1891"/>
         <source>Add a column to the sheet</source>
         <comment>status bar tip</comment>
         <translation>Adiciona uma coluna à folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1889"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1892"/>
         <source>Remove a column from the sheet</source>
         <comment>status bar tip</comment>
         <translation>Elimina uma coluna da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1890"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1893"/>
         <source>Expands the sheet height</source>
         <comment>status bar tip</comment>
         <translation>Aumenta a altura da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1891"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1894"/>
         <source>Shrinks the sheet height</source>
         <comment>status bar tip</comment>
         <translation>Diminui a altura da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1907"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1910"/>
         <source>Delete</source>
         <translation>Excluir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1908"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1911"/>
         <source>Rotate</source>
         <translation>Girar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1909"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1912"/>
         <source>Rotate the group</source>
         <translation>Girar o grupo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1910"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1913"/>
         <source>Choose texts orientation</source>
         <translation>Escolha a orientação dos textos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1911"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1914"/>
         <source>Horizontal mirror</source>
         <translation>Espelhar horizontalmente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1912"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1915"/>
         <source>Vertical mirror</source>
         <translation>Espelhar verticalmente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1913"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1916"/>
         <source>Find in the panel</source>
         <translation>Procurar no painel</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1914"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1917"/>
         <source>Edit the selected item</source>
         <translation>Editar o item selecionado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1916"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4331"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1919"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4334"/>
         <source>Group</source>
         <comment>fr: Grouper</comment>
         <translation>Agrupar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1917"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1920"/>
         <source>Ungroup</source>
         <translation>Desagrupar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2015"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2018"/>
         <source>Removes selected elements from the sheet</source>
         <comment>status bar tip</comment>
         <translation>Remove os elementos selecionados da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2016"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2019"/>
         <source>Rotate selected elements and texts</source>
         <comment>status bar tip</comment>
         <translation>Gira os elementos e textos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2017"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2020"/>
         <source>Rotates the selection as a group around its centre, rather than each element in place</source>
         <comment>status bar tip</comment>
         <translation>Gira a seleção como um grupo em torno do seu centro, em vez de cada elemento no próprio lugar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2018"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2021"/>
         <source>Rotate selected texts to a specific angle</source>
         <comment>status bar tip</comment>
         <translation>Gira os textos selecionados para um ângulo definido</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2019"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2022"/>
         <source>Flips the selected elements from left to right</source>
         <comment>status bar tip</comment>
         <translation>Inverte os elementos selecionados da esquerda para a direita</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2020"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2023"/>
         <source>Flips the selected elements from top to bottom</source>
         <comment>status bar tip</comment>
         <translation>Inverte os elementos selecionados de cima para baixo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2021"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2024"/>
         <source>Find the selected item in the panel</source>
         <comment>status bar tip</comment>
         <translation>Procurar o elemento selecionado no painel</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2038"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2041"/>
         <source>Groups the selected elements, texts, shapes and images: they are selected, moved and copied together</source>
         <comment>status bar tip</comment>
         <translation>Agrupa os elementos, textos, formas e imagens selecionados: eles são selecionados, movidos e copiados juntos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2039"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2042"/>
         <source>Breaks up the selected groups</source>
         <comment>status bar tip</comment>
         <translation>Desfaz os grupos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2057"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2060"/>
         <source>Align left</source>
         <translation>Alinhar à esquerda</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2057"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2060"/>
         <source>Aligns the left edges of the selected items</source>
         <comment>status bar tip</comment>
         <translation>Alinha as bordas esquerdas dos objetos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2058"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2061"/>
         <source>Centre horizontally</source>
         <translation>Centralizar horizontalmente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2058"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2061"/>
         <source>Aligns the selected items on one vertical line, by their origin point for elements</source>
         <comment>status bar tip</comment>
         <translation>Alinha os objetos selecionados em uma mesma vertical, pelo ponto de origem no caso dos elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2059"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2062"/>
         <source>Align right</source>
         <translation>Alinhar à direita</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2059"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2062"/>
         <source>Aligns the right edges of the selected items</source>
         <comment>status bar tip</comment>
         <translation>Alinha as bordas direitas dos objetos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2060"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2063"/>
         <source>Align top</source>
         <translation>Alinhar ao topo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2060"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2063"/>
         <source>Aligns the top edges of the selected items</source>
         <comment>status bar tip</comment>
         <translation>Alinha as bordas superiores dos objetos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2061"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2064"/>
         <source>Centre vertically</source>
         <translation>Centralizar verticalmente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2061"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2064"/>
         <source>Aligns the selected items on one horizontal line, by their origin point for elements</source>
         <comment>status bar tip</comment>
         <translation>Alinha os objetos selecionados em uma mesma horizontal, pelo ponto de origem no caso dos elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2062"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2065"/>
         <source>Align bottom</source>
         <translation>Alinhar embaixo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2062"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2065"/>
         <source>Aligns the bottom edges of the selected items</source>
         <comment>status bar tip</comment>
         <translation>Alinha as bordas inferiores dos objetos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2078"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2081"/>
         <source>Distribute vertically…</source>
         <translation>Distribuir na vertical…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2078"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2081"/>
         <source>Spaces the selected items evenly downwards, the top one staying in place</source>
         <comment>status bar tip</comment>
         <translation>Espaça os objetos selecionados por igual para baixo; o de cima fica no lugar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2079"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2082"/>
         <source>Distribute horizontally…</source>
         <translation>Distribuir na horizontal…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2079"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2082"/>
         <source>Spaces the selected items evenly to the right, the left one staying in place</source>
         <comment>status bar tip</comment>
         <translation>Espaça os objetos selecionados por igual para a direita; o da esquerda fica no lugar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2091"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2094"/>
         <source>Select All</source>
         <translation>Selecionar tudo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2092"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2095"/>
         <source>Select none</source>
         <translation>Desmarcar todos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2093"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2096"/>
         <source>Invert selection</source>
         <translation>Inverter a seleção</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2105"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2108"/>
         <source>Selects all elements on the sheet</source>
         <comment>status bar tip</comment>
         <translation>Seleciona todos os elementos da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2106"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2109"/>
         <source>Deselect all elements on the sheet</source>
         <comment>status bar tip</comment>
         <translation>Desmarca todos os elementos da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2107"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2110"/>
         <source>Inverts selection of elements</source>
         <comment>status bar tip</comment>
         <translation>Alterna a seleção dos elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2120"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2123"/>
         <source>Zoom In</source>
         <translation>Aumentar Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2121"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2124"/>
         <source>Zoom Out</source>
         <translation>Diminuir Zoom</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2122"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2125"/>
         <source>Zoom content</source>
         <translation>Zoom sobre o conteúdo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2123"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2126"/>
         <source>Fit in view</source>
         <translation>Ajustar à janela</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2124"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2127"/>
         <source>Reset zoom</source>
         <translation>Restaurar zoom</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2125"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2128"/>
         <source>Centre on the cursor</source>
         <translation>Centralizar no cursor</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2135"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2138"/>
         <source>Expand the sheet</source>
         <comment>status bar tip</comment>
         <translation>Aumenta a folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2136"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2139"/>
         <source>Shrinks the sheet</source>
         <comment>status bar tip</comment>
         <translation>Diminui a folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2137"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2140"/>
         <source>Adjusts the zoom to display all the contents of sheet regardless of context</source>
         <translation>Ajusta o zoom para exibir toda a folha independentemente das bordas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2138"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2141"/>
         <source>Adjusts the zoom on exactly the part of the sheet</source>
         <comment>status bar tip</comment>
         <translation>Ajusta o zoom exatamente sobre as bordas da folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2139"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2142"/>
         <source>Restores default zoom level</source>
         <comment>status bar tip</comment>
         <translation>Restaura o zoom padrão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2140"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2143"/>
         <source>Centres the sheet on the point under the mouse cursor, without changing the zoom</source>
         <comment>status bar tip</comment>
         <translation>Centraliza a folha no ponto sob o cursor do mouse, sem alterar o zoom</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2165"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2168"/>
         <source>Add a textfield</source>
         <translation>Adicionar um campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2166"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2169"/>
         <source>Add a picture</source>
         <translation>Adicionar uma imagem</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2168"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2171"/>
         <source>Add a PDF</source>
         <translation>Adicionar um PDF</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2171"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2174"/>
         <source>Add a rectangle</source>
         <translation>Adicionar um retângulo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2172"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2175"/>
         <source>Add an ellipse</source>
         <translation>Adicionar uma elipse</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2173"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2176"/>
         <source>Add an arc</source>
         <translation>Adicionar um arco</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2174"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2177"/>
         <source>Add a polygon</source>
         <translation>Adicionar uma linha poligonal</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3776"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3779"/>
         <source>%n conductor(s) arranged</source>
         <comment>status bar message</comment>
         <translation>
@@ -22679,13 +22679,13 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3777"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3780"/>
         <source>Nothing to arrange: the conductors are already in place</source>
         <comment>status bar message</comment>
         <translation>Nada a arrumar: os condutores já estão no lugar</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3800"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3803"/>
         <source>Cross-section updated on %n conductor(s)</source>
         <comment>status bar message</comment>
         <translation>
@@ -22694,13 +22694,13 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3801"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3804"/>
         <source>The conductors already have the cross-section of their components</source>
         <comment>status bar message</comment>
         <translation>Os condutores já estão com a bitola dos componentes</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3827"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3830"/>
         <source>%n wire name(s) converted</source>
         <comment>status bar message</comment>
         <translation>
@@ -22709,56 +22709,56 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3828"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3831"/>
         <source>The wires already carry the standard name</source>
         <comment>status bar message</comment>
         <translation>Os fios já estão com o nome padrão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3855"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3858"/>
         <source>Renumber the wires</source>
         <translation>Renumerar os fios</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3857"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3916"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3860"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3919"/>
         <source>Whole project</source>
         <translation>Todo o projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3859"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3918"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3862"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3921"/>
         <source>This folio only</source>
         <translation>Só esta folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3862"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3865"/>
         <source>Top to bottom, then left to right</source>
         <translation>De cima para baixo, depois da esquerda para a direita</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3863"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3866"/>
         <source>Left to right, then top to bottom</source>
         <translation>Da esquerda para a direita, depois de cima para baixo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3872"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3875"/>
         <source>Renumber</source>
         <translation>Renumerar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3876"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3939"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3879"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3942"/>
         <source>Scope</source>
         <translation>Escopo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3877"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3880"/>
         <source>Reading order</source>
         <translation>Ordem de leitura</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3890"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3893"/>
         <source>%n wire(s) renumbered</source>
         <comment>status bar message</comment>
         <translation>
@@ -22767,28 +22767,28 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3891"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3894"/>
         <source>The wires are already numbered in this order</source>
         <comment>status bar message</comment>
         <translation>Os fios já estão numerados nesta ordem</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3914"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3917"/>
         <source>Remove the wires</source>
         <translation>Apagar os fios</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3923"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3926"/>
         <source>Remove</source>
         <translation>Apagar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3929"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3932"/>
         <source>%1 wire(s) will be removed. Kept: %2 left out of automatic numbering, %3 of a panel marked as built. One undo puts them all back.</source>
         <translation>%1 fio(s) serão apagados. Ficam: %2 ignorado(s) na numeração automática, %3 de quadro montado. Um desfazer devolve todos.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="3947"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3950"/>
         <source>%n wire(s) removed</source>
         <comment>status bar message</comment>
         <translation>
@@ -22797,7 +22797,7 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="4019"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4022"/>
         <source>Select two elements to swap them (%n selected)</source>
         <translation>
             <numerusform>Selecione dois elementos para trocá-los (%n selecionado)</numerusform>
@@ -22805,17 +22805,17 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4036"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4039"/>
         <source>Wire without a number</source>
         <translation>Fio sem número</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4037"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4040"/>
         <source>Wire « %1 »</source>
         <translation>Fio &quot;%1&quot;</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="4040"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4043"/>
         <source>%n wire(s) would end on no terminal of the other element, and will be deleted.</source>
         <translation>
             <numerusform>%n fio não termina em nenhum borne do outro elemento, e será apagado.</numerusform>
@@ -22823,23 +22823,23 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4042"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4045"/>
         <source>Ctrl+Z undoes the swap.</source>
         <translation>Ctrl+Z desfaz a troca.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4045"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4048"/>
         <source>Swap</source>
         <translation>Trocar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4055"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4058"/>
         <source>%1 and %2 swapped</source>
         <comment>the labels of the two elements</comment>
         <translation>%1 e %2 trocados</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="4058"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4061"/>
         <source>%n wire(s) handed over</source>
         <translation>
             <numerusform>%n fio passou de elemento</numerusform>
@@ -22847,13 +22847,13 @@ Todas as suas outras configurações serão mantidas.</translation>
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5207"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5210"/>
         <source>Elements not loaded</source>
         <comment>message box title</comment>
         <translation>Elementos não carregados</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="5208"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5211"/>
         <source>%n elements could not be loaded: their definition is missing from the project and from the collections.
 
 They are not shown, but they are kept in the file as they are, with their conductors, and come back once their definition is available again.</source>
@@ -22868,7 +22868,7 @@ Eles não aparecem, mas ficam no arquivo como estão, com seus condutores, e vol
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="5225"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5228"/>
         <source>%n conductors could not be joined to their terminals and were not loaded. The element&apos;s definition is missing, or was replaced by another one with different terminals.
 
 They are not shown, but they are kept in the file as they are, and join their terminals again once the definition has them where they were.</source>
@@ -22883,27 +22883,27 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5913"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5916"/>
         <source> × grid</source>
         <translation> × grade</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5914"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5917"/>
         <source>From the centre of one item to the centre of the next, in grid steps</source>
         <translation>Do centro de um objeto ao centro do próximo, em passos da grade</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5917"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5920"/>
         <source>Automatic</source>
         <translation>Automático</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5926"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5929"/>
         <source>Pitch:</source>
         <translation>Passo:</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="6005"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6008"/>
         <source>%n items distributed</source>
         <translation>
             <numerusform>%n objeto distribuído</numerusform>
@@ -22911,18 +22911,18 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6017"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6020"/>
         <source>The selection is already distributed at this pitch</source>
         <translation>A seleção já está distribuída com esse passo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6396"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6399"/>
         <source>Edit the information of the elements</source>
         <comment>edit several elements</comment>
         <translation>Editar as informações dos elementos</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7828"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7831"/>
         <source>%n element(s) keep texts arranged on the folio, which stayed where they are.</source>
         <translation>
             <numerusform>%n elemento tem textos ajeitados na folha, que ficaram onde estavam.</numerusform>
@@ -22930,33 +22930,33 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7832"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7835"/>
         <source>Some are rotated: tick “Rotate about its own centre” on the text in the symbol editor, so that the text stays next to them.</source>
         <translation>Alguns estão girados: marque “Girar em torno do próprio centro” no texto, no editor de símbolos, para o texto ficar junto deles.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7841"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7844"/>
         <source>Bring these too</source>
         <translation>Trazer também esses</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7842"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7845"/>
         <source>Keep them</source>
         <translation>Deixar como estão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8086"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8089"/>
         <source>Left as they are, two of their terminals would meet:</source>
         <translation>Se ficassem como estão, dois de seus bornes se encontrariam:</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8096"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8099"/>
         <source>The terminals of the symbols are already on whole numbers</source>
         <comment>status bar message</comment>
         <translation>Os bornes dos símbolos já estão em números inteiros</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="8106"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8109"/>
         <source>%n symbol(s) left as they are: two of their terminals would meet.</source>
         <translation>
             <numerusform>%n símbolo ficou como está: dois de seus bornes se encontrariam.</numerusform>
@@ -22964,7 +22964,7 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="8122"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8125"/>
         <source>%n terminal(s) of the symbols are off whole numbers. Put them on whole numbers?</source>
         <translation>
             <numerusform>%n borne dos símbolos está fora dos números inteiros. Pô-lo nos inteiros?</numerusform>
@@ -22972,17 +22972,17 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8125"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8128"/>
         <source>The project is reloaded: the undo history is cleared. Nothing is saved on the disk.</source>
         <translation>O projeto é recarregado: o histórico de desfazer é apagado. Nada é gravado no disco.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8128"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8131"/>
         <source>Put on whole numbers</source>
         <translation>Pôr nos inteiros</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="8147"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8150"/>
         <source>%n terminal(s) put on whole numbers, in %1 symbol(s).</source>
         <translation>
             <numerusform>%n borne posto nos inteiros, em %1 símbolo(s).</numerusform>
@@ -22990,7 +22990,7 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="8152"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8155"/>
         <source>%n conductor(s) left out: their terminal was not found.</source>
         <translation>
             <numerusform>%n condutor ficou de fora: o borne dele não foi encontrado.</numerusform>
@@ -22998,12 +22998,12 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8547"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8550"/>
         <source>Text format of &quot;%1&quot; copied</source>
         <translation>Formato do texto de &quot;%1&quot; copiado</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="8616"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8619"/>
         <source>Text format applied to %n element(s)</source>
         <translation>
             <numerusform>Formato do texto aplicado a %n elemento</numerusform>
@@ -23029,291 +23029,291 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         <translation>Fechar o aplicativo QElectroTech</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="764"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="767"/>
         <source>Reset the conductors path ignoring the user changes</source>
         <comment>status bar tip</comment>
         <translation>Redefinir os caminhos dos condutores ignorando as modificações do usuário</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="985"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="988"/>
         <source>Edits the properties of the sheet (size, title block information, conductor properties...)</source>
         <comment>status bar tip</comment>
         <translation>Edite as propriedades da folha (dimensões, informações do bloco de legenda, propriedades dos condutores...)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1765"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1768"/>
         <source>Shows the various opened projects in windows</source>
         <comment>status bar tip</comment>
         <translation>Exibe os vários projetos abertos em janelas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1759"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1762"/>
         <source>Shows the various opened projects in tabs</source>
         <comment>status bar tip</comment>
         <translation>Exibe os vários projetos abertos em abas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1787"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1790"/>
         <source>Allows to select elements</source>
         <comment>status bar tip</comment>
         <translation>Permite selecionar elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1800"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1803"/>
         <source>Allows to view the sheet without modifying it</source>
         <comment>status bar tip</comment>
         <translation>Permite visualizar a folha, porém sem poder editá-la</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1776"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1779"/>
         <source>Arranges windows in a tile pattern</source>
         <comment>status bar tip</comment>
         <translation>Dispõe as janelas lado a lado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1035"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1038"/>
         <source>Add a nomenclature</source>
         <translation>Adicionar lista de material</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1781"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1784"/>
         <source>Arranges windows in a cascade pattern</source>
         <comment>status bar tip</comment>
         <translation>Dispõe as janelas em cascata</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1818"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1821"/>
         <source>Activates the next project</source>
         <comment>status bar tip</comment>
         <translation>Ativa o próximo projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1823"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1826"/>
         <source>Activates the previous project</source>
         <comment>status bar tip</comment>
         <translation>Ativa o projeto anterior</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1915"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1918"/>
         <source>Group selected texts</source>
         <translation>Agrupar textos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2178"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2181"/>
         <source>Add a terminal plan</source>
         <translation>Adicionar um plano de bornes</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2184"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2187"/>
         <source>Adds a text field to the current sheet</source>
         <translation>Adiciona um campo de texto à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2185"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2188"/>
         <source>Add an image to the current sheet</source>
         <translation>Adiciona uma imagem à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2187"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2190"/>
         <source>Adds a PDF page to the current sheet</source>
         <translation>Adiciona uma página do PDF na folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2189"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2192"/>
         <source>Add a line to the current sheet</source>
         <translation>Adiciona uma linha à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2190"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2193"/>
         <source>Adds a rectangle on the current sheet</source>
         <translation>Adiciona um retângulo à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2191"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2194"/>
         <source>Add an ellipse to the current sheet</source>
         <translation>Adiciona uma elipse à folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2192"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2195"/>
         <source>Adds an arc on the current sheet</source>
         <translation>Adiciona um arco na folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2193"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2196"/>
         <source>Adds a polyline to the current sheet</source>
         <translation>Adiciona uma polilinha na folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2197"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2200"/>
         <source>Adds a terminal plan to the current sheet</source>
         <translation>Adiciona um plano de régua de bornes na folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2247"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2250"/>
         <source>Search / Replace</source>
         <translation>Localizar / substituir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2258"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2261"/>
         <source>Navigate to an element</source>
         <translation>Ir para um elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2260"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2263"/>
         <source>Quickly search for and select an element in the sheet</source>
         <comment>status bar tip</comment>
         <translation>Procura e seleciona rapidamente um elemento da folha</translation>
     </message>
     <message>
         <location filename="../sources/diagramtoolbarsettings.cpp" line="67"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2313"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2316"/>
         <source>Tools</source>
         <translation>Ferramentas</translation>
     </message>
     <message>
         <location filename="../sources/diagramtoolbarsettings.cpp" line="69"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2316"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2319"/>
         <source>Display</source>
         <translation>Exibir</translation>
     </message>
     <message>
         <location filename="../sources/diagramtoolbarsettings.cpp" line="71"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2319"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2322"/>
         <source>Diagram</source>
         <translation>Esquema</translation>
     </message>
     <message>
         <location filename="../sources/diagramtoolbarsettings.cpp" line="73"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2322"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2325"/>
         <source>Add</source>
         <translation>Adicionar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4336"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4339"/>
         <source>Depth</source>
         <translation>Profundidade</translation>
     </message>
     <message>
         <location filename="../sources/diagramtoolbarsettings.cpp" line="75"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2325"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2328"/>
         <source>Depth</source>
         <comment>toolbar title</comment>
         <translation>Profundidade</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4201"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4204"/>
         <source>&amp;File</source>
         <translation>&amp;Arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4202"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4205"/>
         <source>&amp;Edit</source>
         <translation>&amp;Editar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4203"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4206"/>
         <source>&amp;Project</source>
         <translation>&amp;Projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4209"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4212"/>
         <source>Displ&amp;ay</source>
         <translation>E&amp;xibir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4211"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4214"/>
         <source>Wi&amp;ndows</source>
         <translation>Ja&amp;nelas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4242"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4245"/>
         <source>&amp;Latest files</source>
         <translation>Abertos &amp;recentemente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4468"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4471"/>
         <source>Display or hide the main toolbar</source>
         <translation>Alterna a exibição da barra de ferramentas &quot;Principal&quot;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4469"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4472"/>
         <source>Display or hide the Display toolbar</source>
         <translation>Alterna a exibição da barra de ferramentas &quot;Exibir&quot;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4470"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4473"/>
         <source>Display or hide the Diagram toolbar</source>
         <translation>Alterna a exibição da barra de ferramentas &quot;Esquema&quot;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4471"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4474"/>
         <source>Show or hide the elements panel</source>
         <translation>Alterna a exibição do painel de elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4472"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4475"/>
         <source>Display or hide the undo list</source>
         <translation>Alterna a exibição da lista de alterações</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4476"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4479"/>
         <source>Display projects</source>
         <translation>Exibir os projetos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4588"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4611"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4591"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4614"/>
         <source>Project %1 registered in the directory: %2.</source>
         <translation>Projeto %1 salvo na pasta: %2.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4718"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4721"/>
         <source>Open a file</source>
         <translation>Abrir um arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4957"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4973"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4960"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4976"/>
         <source>Unable to open file</source>
         <comment>message box title</comment>
         <translation>Não é possível abrir o arquivo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4959"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4962"/>
         <source>It appears the %1 file which you are trying to open does not exist or does not exist anymore.</source>
         <translation>Aparentemente o arquivo %1 que você está tentando abrir não existe.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4974"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4977"/>
         <source>The file you try to open does not seem readable and can not be opened. Please check the file permissions.</source>
         <translation>Aparentemente o arquivo que você está tentando abrir não é acessível para leitura. Portanto, é impossível abri-lo. Por favor, verifique as permissões do arquivo.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4987"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5147"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4990"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5150"/>
         <source>Opening the file read-only</source>
         <comment>message box title</comment>
         <translation>Abrir o projeto em modo somente de leitura</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4988"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4991"/>
         <source>The project you try to open does not seem writable. It will be opened read-only.</source>
         <translation>Aparentemente o projeto que você está tentando abrir não é acessível para escrita. Portanto ele será aberto em modo somente de leitura.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5104"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5107"/>
         <source>Unable to open project</source>
         <comment>message box title</comment>
         <translation>Não é possível abrir o projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5106"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5109"/>
         <source>The file %1 does not appear to be a QElectroTech project file. Thus it cannot be opened.</source>
         <comment>message box content</comment>
         <translation>Parece que o arquivo %1 não é um arquivo de projeto QElectroTech. Portanto, ele não pode ser aberto.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="5169"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5172"/>
         <source>%n font descriptions written in a foreign or corrupted format have been restored. They will be rewritten in a stable format the next time the project is saved.</source>
         <comment>message box content</comment>
         <translation>
@@ -23322,7 +23322,7 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="5177"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5180"/>
         <source>%n font descriptions could not be read; the default font will be used for these texts.</source>
         <comment>message box content</comment>
         <translation>
@@ -23331,307 +23331,307 @@ Eles não aparecem, mas ficam no arquivo como estão, e voltam a se ligar aos bo
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5184"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5187"/>
         <source>Project fonts</source>
         <comment>message box title</comment>
         <translation>Fontes do projeto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5777"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5780"/>
         <source>Unable to delete the terminal</source>
         <translation>Não é possível apagar o borne</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5778"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5781"/>
         <source>The deletion cannot be performed because the selection contains one or more terminals that are bridged and/or belong to a multi-level terminal.
 Unbridge and/or remove the levels from the affected terminals so that they can be deleted</source>
         <translation>Não dá para apagar porque a seleção tem um ou mais bornes em ponte, ou que pertencem a um borne de vários níveis.
 Desfaça a ponte, ou apague os níveis dos bornes envolvidos, para poder apagá-los</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5893"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5896"/>
         <source>Group</source>
         <translation>Grupo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6406"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6409"/>
         <source>Edit the element</source>
         <comment>edit element</comment>
         <translation>Editar o elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6413"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6416"/>
         <source>Edit the text field</source>
         <comment>edit text field</comment>
         <translation>Editar o campo de texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6420"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6423"/>
         <source>Edit the image</source>
         <comment>edit image</comment>
         <translation>Editar a imagem</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6434"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6437"/>
         <source>Edit conductor</source>
         <comment>edit conductor</comment>
         <translation>Editar o condutor</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6442"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6445"/>
         <source>Edit the selected object</source>
         <comment>edit selected item</comment>
         <translation>Editar o objeto selecionado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6792"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6795"/>
         <source>Activates the project « %1 »</source>
         <translation>Ativar o projeto « %1 »</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7016"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7019"/>
         <source>Are you sure you want to delete this sheet?</source>
         <translation>Tem certeza de que quer apagar esta folha?</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7021"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7024"/>
         <source>Delete the sheets</source>
         <translation>Apagar as folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7022"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7025"/>
         <source>Are you sure you want to delete the selected %1 sheets ?</source>
         <translation>Tem certeza de que quer apagar as %1 folhas selecionadas?</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7039"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7042"/>
         <source>Delete %1 sheets</source>
         <translation>Apagar %1 folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7077"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7095"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7113"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7131"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7149"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7167"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7185"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7080"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7098"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7116"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7134"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7152"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7170"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7188"/>
         <source>Move the sheets</source>
         <translation>Mover as folhas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7260"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7263"/>
         <source>Error</source>
         <comment>message box title</comment>
         <translation>Erro</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="727"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="730"/>
         <source>&amp;Duplicate</source>
         <translation>Dupli&amp;car</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="729"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="732"/>
         <source>Copies the selection, offset by the configured spacing</source>
         <comment>status bar tip</comment>
         <translation>Copia a seleção, deslocada pelo espaçamento configurado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="751"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="754"/>
         <source>Configure duplication...</source>
         <translation>Configurar a duplicação...</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="753"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="756"/>
         <source>Choose the spacing and direction used by Duplicate</source>
         <comment>status bar tip</comment>
         <translation>Escolher o espaçamento e a direção usados por Duplicar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="882"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="885"/>
         <source>Text grid</source>
         <translation>Grade dos textos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="889"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="892"/>
         <source>Snap grid for texts moved with the mouse.
 Hold Ctrl while moving to place freely.</source>
         <translation>Grade de encaixe dos textos movidos com o mouse.
 Mantenha Ctrl pressionado durante o movimento para posicionar livremente.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="895"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="898"/>
         <source>Disabled</source>
         <translation>Desativada</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="925"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="928"/>
         <source>Keep headers visible</source>
         <translation>Manter os cabeçalhos visíveis</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="927"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="930"/>
         <source>Keeps the sheet&apos;s column numbers and row letters visible at the edge of the view</source>
         <translation>Mantém os números de coluna e as letras de linha da folha visíveis na borda da visualização</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="938"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="941"/>
         <source>Show cell boundaries</source>
         <translation>Exibir os limites das zonas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="940"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="943"/>
         <source>Draws the boundaries of the sheet&apos;s columns and rows on the diagram, on screen only</source>
         <translation>Desenha os limites das colunas e linhas da folha no esquema, somente na tela</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1656"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1659"/>
         <source>Wiring list (database)</source>
         <translation>Lista de fiação (banco de dados)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1681"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7839"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7857"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7873"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1684"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7842"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7860"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7876"/>
         <source>Reload element drawings</source>
         <translation>Renderizar novamente os elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1696"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1699"/>
         <source>Run a script...</source>
         <translation>Executar um script...</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1699"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1702"/>
         <source>Runs a JavaScript script on the current project (see qet.* in the script for the available API)</source>
         <translation>Executa um script JavaScript no projeto atual (veja qet.* no script para a API disponível)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1938"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1941"/>
         <source>Insert the last element</source>
         <translation>Inserir o último elemento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1940"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1943"/>
         <source>Places the last inserted element again</source>
         <comment>status bar tip</comment>
         <translation>Posiciona novamente o último elemento inserido</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1952"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1955"/>
         <source>Search for a command…</source>
         <translation>Pesquisar um comando…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1954"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1957"/>
         <source>Type part of a command name and press Enter to launch it</source>
         <comment>status bar tip</comment>
         <translation>Digite parte do nome de um comando e pressione Enter para executá-lo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1974"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1977"/>
         <source>Insert an element…</source>
         <translation>Inserir um elemento…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1976"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1979"/>
         <source>Opens the element picker at the cursor position</source>
         <comment>status bar tip</comment>
         <translation>Abre o seletor de elementos na posição do cursor</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1989"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1992"/>
         <source>Shortcut bar</source>
         <translation>Barra de atalhos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1991"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1994"/>
         <source>Opens, at the cursor position, the commands useful for the selection, and the element picker</source>
         <comment>status bar tip</comment>
         <translation>Abre, na posição do cursor, os comandos úteis para a seleção e o seletor de elementos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2003"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2006"/>
         <source>Repeat the last command</source>
         <translation>Repetir o último comando</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2005"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2008"/>
         <source>Relaunches the last drawing tool or element insertion (Enter on the sheet)</source>
         <comment>status bar tip</comment>
         <translation>Executa novamente a última ferramenta de desenho ou a última inserção de elemento (Enter na folha)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2046"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2049"/>
         <source>Align to grid</source>
         <translation>Alinhar à grade</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2048"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2051"/>
         <source>Puts the selected elements, images and texts back on the grid</source>
         <comment>status bar tip</comment>
         <translation>Recoloca na grade os elementos, imagens e textos selecionados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2094"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2097"/>
         <source>Select all conductors</source>
         <translation>Selecionar todos os condutores</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2095"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2098"/>
         <source>Select all text fields</source>
         <translation>Selecionar todos os campos de texto</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2108"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2111"/>
         <source>Selects all conductors on the sheet, deselects the rest</source>
         <comment>status bar tip</comment>
         <translation>Seleciona todos os condutores da folha e desmarca o restante</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2109"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2112"/>
         <source>Selects all text fields on the sheet, deselects the rest</source>
         <comment>status bar tip</comment>
         <translation>Seleciona todos os campos de texto da folha e desmarca o restante</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2177"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2180"/>
         <source>Add a fillet</source>
         <translation>Adicionar arredondamento</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2196"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2199"/>
         <source>Rounds the corner between two lines of the current sheet</source>
         <translation>Arredonda o canto entre duas linhas da folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="3866"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="3869"/>
         <source>Every wire gets a new number from its place, from 1 on each folio. A wire left out of automatic numbering loses the name the numbering gave it, and keeps a name typed by hand; those of a panel marked as built keep theirs.</source>
         <translation>Cada fio recebe um número novo pela posição, de 1 em cada folha. Um fio ignorado na numeração automática perde o nome que a numeração lhe deu e guarda o nome digitado; os de um quadro montado ficam com o deles.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4306"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4309"/>
         <source>Selection</source>
         <translation>Seleção</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4776"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4779"/>
         <source>%1 is being opened by another session of QElectroTech.</source>
         <translation>%1 está sendo aberto por outra sessão do QElectroTech.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4779"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4782"/>
         <source>%1 is open by %2 on %3 since %4</source>
         <translation>%1 está aberto por %2 em %3 desde %4</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4785"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4788"/>
         <source> (active just now).</source>
         <translation> (ativo agora há pouco).</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="4786"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4789"/>
         <source> (active %n minute(s) ago).</source>
         <translation>
             <numerusform> (ativo há %n minuto).</numerusform>
@@ -23639,107 +23639,107 @@ Mantenha Ctrl pressionado durante o movimento para posicionar livremente.</trans
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4792"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4795"/>
         <source>Project in use</source>
         <comment>message box title</comment>
         <translation>Projeto em uso</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4793"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4796"/>
         <source>Open it read-only to look at it without changing it. Open it anyway only if you know that session is not using it any more: both of you could then save over each other.</source>
         <translation>Abra-o somente para leitura para vê-lo sem alterá-lo. Abra-o assim mesmo só se tiver certeza de que aquela sessão não o está mais usando: os dois poderiam então salvar por cima um do outro.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4796"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4799"/>
         <source>Open read-only</source>
         <translation>Abrir somente para leitura</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4797"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4800"/>
         <source>Open anyway</source>
         <translation>Abrir assim mesmo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4823"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4851"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4862"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4905"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4826"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4854"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4865"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4908"/>
         <source>Cannot open %1</source>
         <translation>Não foi possível abrir %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4825"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4828"/>
         <source>The file %1 cannot be read as a QElectroTech project.</source>
         <translation>O arquivo %1 não pode ser lido como um projeto QElectroTech.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4826"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4829"/>
         <source>The project file is damaged:
 %1</source>
         <translation>O arquivo do projeto está danificado:
 %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4831"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4834"/>
         <source>Open the version saved %1</source>
         <translation>Abrir a versão salva em %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4836"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4839"/>
         <source>Recover what can be read</source>
         <translation>Recuperar o que puder ser lido</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4838"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4841"/>
         <source>Either opens as a new project, &quot;%1&quot;; %2 is left as it is.</source>
         <translation>Qualquer uma das duas abre como um novo projeto, &quot;%1&quot;; %2 permanece como está.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4852"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4855"/>
         <source>Nothing can be recovered from it:
 %1</source>
         <translation>Nada pôde ser recuperado dele:
 %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4866"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4869"/>
         <source>Project recovered</source>
         <translation>Projeto recuperado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4867"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4870"/>
         <source>What could be read of %1 is open as a new project. Some parts could not be read and were left out: see the details.</source>
         <translation>O que pôde ser lido de %1 está aberto como um novo projeto. Algumas partes não puderam ser lidas e ficaram de fora: veja os detalhes.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4887"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4890"/>
         <source>%1 (recovered)</source>
         <translation>%1 (recuperado)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4890"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4893"/>
         <source>%1 (recovered %2)</source>
         <translation>%1 (recuperado %2)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5126"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5129"/>
         <source>%1 on %2 has taken over %3. Save your changes with Save As to keep them.</source>
         <translation>%1 em %2 assumiu %3. Salve suas alterações com Salvar como para mantê-las.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5197"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5201"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5200"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5204"/>
         <source>Sheet %1: %2</source>
         <translation>Folha %1: %2</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5224"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5227"/>
         <source>Conductors not loaded</source>
         <comment>message box title</comment>
         <translation>Condutores não carregados</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="6007"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6010"/>
         <source>%n items aligned</source>
         <translation>
             <numerusform>%n objeto alinhado</numerusform>
@@ -23747,32 +23747,32 @@ Mantenha Ctrl pressionado durante o movimento para posicionar livremente.</trans
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6015"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6018"/>
         <source>Select at least two unlocked elements, images, texts, shapes or groups</source>
         <translation>Selecione pelo menos dois elementos, imagens, textos, formas ou grupos não travados</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6019"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6022"/>
         <source>The selection is already aligned, to the nearest grid step</source>
         <translation>A seleção já está alinhada, salvo pelo encaixe na grade</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7386"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7389"/>
         <source>Repeat: insert &quot;%1&quot;</source>
         <translation>Repetir: inserir « %1 »</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7387"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7390"/>
         <source>Repeat: %1</source>
         <translation>Repetir: %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7796"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7799"/>
         <source>sheet %1</source>
         <translation>folha %1</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7804"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7807"/>
         <source>%n elements redrawn.</source>
         <translation>
             <numerusform>%n elemento redesenhado.</numerusform>
@@ -23780,7 +23780,7 @@ Mantenha Ctrl pressionado durante o movimento para posicionar livremente.</trans
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="7813"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7816"/>
         <source>%n elements for which no definition could be found or which were illegible: their current design has been retained.</source>
         <translation>
             <numerusform>%n elemento cuja definição não foi encontrada ou está ilegível: o desenho atual foi mantido.</numerusform>
@@ -23788,13 +23788,13 @@ Mantenha Ctrl pressionado durante o movimento para posicionar livremente.</trans
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8176"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8180"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8179"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8183"/>
         <source>Run a script</source>
         <translation>Executar um script</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8205"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8208"/>
         <source>Scripts are disabled.
 
 A script runs with your permissions: it can read and modify the open project and write files. Only run scripts whose origin you know.
@@ -23807,28 +23807,28 @@ Um script é executado com as suas permissões: ele pode ler e modificar o proje
 Ativar os scripts? Esta configuração pode ser alterada em Configurar o QElectroTech &gt; Geral &gt; Projetos.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8182"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8185"/>
         <source>JavaScript scripts (*.js);;All files (*)</source>
         <translation>Scripts JavaScript (*.js);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8282"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8285"/>
         <source>Ignored: %1</source>
         <translation>Ignorado: %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8318"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8379"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8321"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8382"/>
         <source>Stop</source>
         <translation>Parar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8319"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8322"/>
         <source>Stop recording the macro</source>
         <translation>Parar a gravação da macro</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="8329"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8332"/>
         <source>● Recording: %n steps</source>
         <translation>
             <numerusform>● Gravando: %n passo</numerusform>
@@ -23836,12 +23836,12 @@ Ativar os scripts? Esta configuração pode ser alterada em Configurar o QElectr
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8344"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8347"/>
         <source>Macro recorded</source>
         <translation>Macro gravada</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="8345"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8348"/>
         <source>“%1”: %n steps.
 
 To make a script of it, ask your AI assistant: the button below copies the request, just paste it into its window.</source>
@@ -23855,83 +23855,83 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8354"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8357"/>
         <source>&amp;Copy the request for the assistant</source>
         <translation>&amp;Copiar o pedido para o assistente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8355"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8358"/>
         <source>&amp;Open the folder</source>
         <translation>&amp;Abrir a pasta</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8361"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8364"/>
         <source>Request copied: paste it into the assistant&apos;s window</source>
         <translation>Pedido copiado: cole-o na janela do assistente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8380"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8383"/>
         <source>Close the assistant&apos;s connection for the rest of the session</source>
         <translation>Cortar a conexão do assistente até o fim da sessão</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8389"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8392"/>
         <source>Live mode: assistant connected</source>
         <translation>Modo direto: assistente conectado</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8390"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8393"/>
         <source>Live mode: waiting for an assistant</source>
         <translation>Modo direto: aguardando um assistente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8402"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8405"/>
         <source>Ask before running a script the assistant wrote</source>
         <translation>Perguntar antes de executar um script escrito pelo assistente</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8404"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8407"/>
         <source>Remembered after a restart</source>
         <translation>Mantido após reiniciar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8459"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8462"/>
         <source>Live mode: %1 %2 at %3</source>
         <translation>Modo direto: %1 %2 às %3</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8517"/>
-        <location filename="../sources/qetdiagrameditor.cpp" line="8522"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8520"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8525"/>
         <source>Texts %1</source>
         <translation>Textos %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2176"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2179"/>
         <source>Add a curve</source>
         <translation>Adicionar uma curva</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2195"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2198"/>
         <source>Adds a Bézier curve to the current sheet</source>
         <translation>Adiciona uma curva de Bézier ao fólio atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4298"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4301"/>
         <source>&amp;Add</source>
         <translation>Adi&amp;cionar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4311"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4314"/>
         <source>Align</source>
         <translation>Alinhar</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4355"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4358"/>
         <source>Rows and columns</source>
         <translation>Linhas e colunas</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="6003"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6006"/>
         <source>%n items put back on the grid</source>
         <translation>
             <numerusform>%n objeto recolocado na grade</numerusform>
@@ -23939,12 +23939,12 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6013"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6016"/>
         <source>The selection is already on the grid</source>
         <translation>A seleção já está na grade</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="6023"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6026"/>
         <source>(%n locked objects left in place)</source>
         <translation>
             <numerusform>(%n objeto travado mantido no lugar)</numerusform>
@@ -23952,90 +23952,90 @@ Para transformá-la em script, peça ao seu assistente de IA: o botão abaixo co
         </translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1612"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1615"/>
         <source>Add a cable list</source>
         <translation>Adicionar uma lista de cabos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1620"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1623"/>
         <source>Export the cable list to CSV format</source>
         <translation>Exportar a lista de cabos em formato CSV</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1674"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1677"/>
         <source>Cable numbering</source>
         <translation>Numeração dos cabos</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1676"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1679"/>
         <source>Shows the cable numbering rule of the project and renumbers its cables with it</source>
         <translation>Mostra a regra de numeração dos cabos do projeto e renumera os seus cabos com ela</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1832"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1835"/>
         <source>Save a copy for an older QElectroTech</source>
         <translation>Salvar uma cópia para um QElectroTech mais antigo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="1846"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="1849"/>
         <source>Writes a copy of the current project as a .qet file, which versions of QElectroTech that cannot open a .qetz open</source>
         <comment>status bar tip</comment>
         <translation>Grava uma cópia do projeto atual como arquivo .qet, que as versões do QElectroTech que não abrem um .qetz conseguem abrir</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2179"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2182"/>
         <source>Add a generic device…</source>
         <translation>Adicionar um dispositivo genérico…</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2182"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2185"/>
         <source>Draw a cable</source>
         <translation>Desenhar um cabo</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2198"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2201"/>
         <source>Makes a box symbol with terminals on any side and places it on the current sheet</source>
         <translation>Cria um símbolo em caixa com bornes em qualquer lado e o posiciona na folha atual</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="2199"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="2202"/>
         <source>Draws the main line of a cable: every conductor crossed becomes one of its cores</source>
         <translation>Desenha a linha principal de um cabo: cada condutor atravessado se torna uma das suas veias</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4206"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4209"/>
         <source>Numbering</source>
         <translation>Numeração</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4207"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4210"/>
         <source>Lists</source>
         <translation>Listas</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="4720"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="4723"/>
         <source>XML Files (*.xml);;All files (*)</source>
         <translation>Arquivos XML (*.xml);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5148"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5151"/>
         <source>This project was saved by a later version of QElectroTech. It is opened read-only, so that saving it cannot lose what this version does not know. Use Save As to keep a copy in this version&apos;s format.</source>
         <translation>Este projeto foi salvo por uma versão mais recente do QElectroTech. Ele é aberto somente para leitura, para que salvá-lo não faça perder o que esta versão não conhece. Use Salvar como para manter uma cópia no formato desta versão.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5573"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5576"/>
         <source>Automatic numbering</source>
         <comment>window title</comment>
         <translation>Numeração automática</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5574"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5577"/>
         <source>No automatic cable numbering is defined.</source>
         <comment>shown when a project has no cable numbering rule</comment>
         <translation>Nenhuma numeração automática de cabos está definida.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5578"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5581"/>
         <source>Do you want to define one now?
 
 You can also number the cables automatically later: the rule is set at any time in the project properties, on the &quot;Auto Numbering&quot; page.</source>
@@ -24045,25 +24045,25 @@ You can also number the cables automatically later: the rule is set at any time 
 Você também pode numerar os cabos automaticamente mais tarde: a regra pode ser definida a qualquer momento nas propriedades do projeto, na página &quot;Autonumeração&quot;.</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5584"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5587"/>
         <source>Yes</source>
         <comment>yes</comment>
         <translation>Sim</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="5585"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="5588"/>
         <source>No</source>
         <comment>no</comment>
         <translation>Não</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="6427"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="6430"/>
         <source>Edit the cable</source>
         <comment>edit cable</comment>
         <translation>Editar o cabo</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/qetdiagrameditor.cpp" line="8501"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="8504"/>
         <source>%n kinds of items hidden</source>
         <translation>
             <numerusform>%n tipo de objeto oculto</numerusform>
@@ -25965,10 +25965,15 @@ O que você deseja fazer?</translation>
         <translation>Coleção</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="529"/>
-        <location filename="../sources/elementsmover.cpp" line="532"/>
+        <location filename="../sources/elementsmover.cpp" line="560"/>
+        <location filename="../sources/elementsmover.cpp" line="563"/>
         <source>Affecter les composants d&apos;une zone</source>
         <translation>Atribuir os componentes de uma zona</translation>
+    </message>
+    <message>
+        <location filename="../sources/elementsmover.cpp" line="593"/>
+        <source>Move the location area with what is in it</source>
+        <translation>Mover a zona com o que está nela</translation>
     </message>
     <message>
         <location filename="../sources/qetinformation.cpp" line="476"/>
@@ -26020,22 +26025,22 @@ O que você deseja fazer?</translation>
         <translation>Tag da referência de folha</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7536"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7539"/>
         <source>To install the plugin qet_tb_generator&lt;br&gt;Visit :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;Requires python 3.5 or above.&lt;br&gt;&lt;B&gt;&lt;U&gt; First install on Windows&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. Install, if required, python 3.5 or above&lt;br&gt; Visit :&lt;br&gt;&lt;a href=&apos;https://www.python.org/downloads/&apos;&gt;python.org&lt;/a&gt;&lt;br&gt;2. pip install qet_tb_generator&lt;br&gt;&lt;B&gt;&lt;U&gt; Update on Windows&lt;/B&gt;&lt;/U&gt;&lt;br&gt;python -m pip install --upgrade qet_tb_generator&lt;br&gt;&gt;&gt;user could launch in a terminal this script in this directory&lt;br&gt; C:\users\XXXX\AppData\Local\Programs\Python\Python36-32\Scripts   &lt;br&gt;</source>
         <translation>Para instalar o plugin qet_tb_generator - Visite :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;Requer python 3.5 ou superior.&lt;br&gt;&lt;B&gt;&lt;U&gt; Primeira instalação no Windows&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. Instale, se necessário, python 3.5 ou superior&lt;br&gt;Visite :&lt;br&gt;&lt;a href=&apos;https://www.python.org/downloads/&apos;&gt;python.org&lt;/a&gt;&lt;br&gt;2. pip install qet_tb_generator&lt;br&gt;&lt;B&gt;&lt;U&gt;Atualização no Windows&lt;/B&gt;&lt;/U&gt; &lt;br&gt;python -m pip install --upgrade qet_tb_generator&lt;br&gt;&gt;&gt; o usuário pode iniciar em um terminal esse script neste diretório &lt;br&gt;C: \ users \ XXXX \ AppData \ Local \ Programas \ Python \ Python36-32 \ Scripts&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7556"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7559"/>
         <source>To install the plugin qet_tb_generator&lt;br&gt;Visit  :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; First install on macOSX&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. Install, if required, python 3.11 bundle only, &lt;a href=&apos;https://www.python.org/ftp/python/3.11.2/python-3.11.2-macos11.pkg&apos;&gt;python-3.11.2-macos11.pkg&lt;/a&gt;&lt;br&gt;2 Run Profile.command script&lt;br&gt;because program use hardcoded PATH for localise qet-tb-generator plugin &lt;br&gt; Visit :&lt;br&gt;&lt;a href=&apos;https://qelectrotech.org/forum/viewtopic.php?pid=5674#p5674&apos;&gt;howto&lt;/a&gt;&lt;br&gt;2. pip3 install qet_tb_generator&lt;br&gt;&lt;B&gt;&lt;U&gt; Update on macOSX&lt;/B&gt;&lt;/U&gt;&lt;br&gt; pip3 install --upgrade qet_tb_generator&lt;br&gt;</source>
         <translation>Para instalar o plug-in qet_tb_generator&lt;br&gt;Acesse  :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; Primeira instalação no macOSX&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. Instale, se necessário, apenas o pacote python 3.11, &lt;a href=&apos;https://www.python.org/ftp/python/3.11.2/python-3.11.2-macos11.pkg&apos;&gt;python-3.11.2- macos11.pkg&lt;/a&gt;&lt;br&gt;2 Execute o script Profile.command&lt;br&gt;porque o programa usa PATH codificado para localização Plug-in qet-tb-generator &lt;br&gt; Visite:&lt;br&gt;&lt;a href=&apos;https://qelectrotech.org/forum/viewtopic.php?pid=5674#p5674&apos;&gt;como fazer&lt;/a&gt;&lt;br&gt;2. pip3 install qet_tb_generator&lt;br&gt;&lt;B&gt;&lt;U&gt; Atualização no macOSX&lt;/B&gt;&lt;/U&gt;&lt;br&gt; pip3 install --upgrade qet_tb_generator&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7575"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7578"/>
         <source>To install the plugin qet_tb_generator&lt;br&gt;Visit :&lt;br&gt;&lt;a href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;&lt;br&gt;Requires python 3.5 or above.&lt;br&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; First install on Linux&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. check you have pip3 installed: pip3 --version&lt;br&gt;If not install with: sudo apt-get install python3-pip&lt;br&gt;2. Install the program: sudo pip3 install qet_tb_generator&lt;br&gt;3. Run the program: qet_tb_generator&lt;br&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; Update on Linux&lt;/B&gt;&lt;/U&gt;&lt;br&gt;sudo pip3 install --upgrade qet_tb_generator&lt;br&gt;</source>
         <translation>Para instalar o plugin qet_tb_generator&lt;br&gt;Visite :&lt;br&gt;&lt;a&gt; href=&apos;https://pypi.python.org/pypi/qet-tb-generator&apos;&gt;qet-tb-generator&lt;/a&gt;&lt;br&gt;&lt;br&gt;Requer python 3.5 ou superior.&lt;br&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt; Primeira instalação no Linux&lt;/B&gt;&lt;/U&gt;&lt;br&gt;1. verifique se o pip3 está instalado: pip3 --version&lt;br&gt;Se não for instalado com: sudo apt-get install python3-pip&lt;br&gt;2. Instale o programa: sudo pip3 install qet_tb_generator&lt;br&gt;3. Execute o programa: qet_tb_generator&lt;br&gt;&lt;br&gt;&lt;B&gt;&lt;U&gt;Atualizar no Linux&lt;/B&gt;&lt;/U&gt;&lt;br&gt;sudo pip3 install --upgrade qet_tb_generator&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../sources/qetdiagrameditor.cpp" line="7595"/>
+        <location filename="../sources/qetdiagrameditor.cpp" line="7598"/>
         <source>Error launching qet_tb_generator plugin</source>
         <translation>Erro ao abrir qet_tb_generator plugin</translation>
     </message>
@@ -27311,7 +27316,7 @@ the translated name of this folder could not be read, so its folder name is disp
         <translation>Projeto sem título</translation>
     </message>
     <message>
-        <location filename="../sources/elementsmover.cpp" line="201"/>
+        <location filename="../sources/elementsmover.cpp" line="215"/>
         <source>This group cannot be moved: the position of one of its elements is locked.</source>
         <translation>Este grupo não pode ser movido: a posição de um de seus elementos está travada.</translation>
     </message>
@@ -28259,7 +28264,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
     </message>
     <message numerus="yes">
         <location filename="../sources/editor/UndoCommand/alignpartscommand.cpp" line="188"/>
-        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="270"/>
+        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="349"/>
         <source>Distribute %n items</source>
         <translation>
             <numerusform>Distribuir %n objeto</numerusform>
@@ -28268,7 +28273,7 @@ Faça o download seguindo o link abaixo e descompacte-o na pasta de instalação
     </message>
     <message numerus="yes">
         <location filename="../sources/editor/UndoCommand/alignpartscommand.cpp" line="190"/>
-        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="307"/>
+        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="386"/>
         <source>Align %n items</source>
         <translation>
             <numerusform>Alinhar %n objeto</numerusform>
@@ -28514,7 +28519,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         <translation>Coleção da empresa</translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/elementsmover.cpp" line="469"/>
+        <location filename="../sources/elementsmover.cpp" line="500"/>
         <source>Add %n conductors</source>
         <comment>add a numbers of conductor one or more</comment>
         <translation>
@@ -28652,7 +28657,7 @@ Para ativá-la: Configurar o QElectroTech &gt; Geral &gt; Projetos, ou defina a 
         </translation>
     </message>
     <message numerus="yes">
-        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="241"/>
+        <location filename="../sources/undocommand/alignselectioncommand.cpp" line="320"/>
         <source>Align %n objects to the grid</source>
         <translation>
             <numerusform>Alinhar %n objeto à grade</numerusform>
@@ -31244,73 +31249,73 @@ Os outros campos não são utilizados.</translation>
 <context>
     <name>StripFrameItem</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="213"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="232"/>
         <source>a drawn terminal strip</source>
         <translation>uma régua desenhada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="381"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="400"/>
         <source>Space the terminals of the strip %1</source>
         <translation>Espaçar os bornes da régua %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="690"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="709"/>
         <source>Rename the terminal strip %1</source>
         <translation>Renomear a régua %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="710"/>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1176"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="729"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1200"/>
         <source>Rotate the drawn terminal strip %1</source>
         <translation>Girar a régua desenhada %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="794"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="816"/>
         <source>Delete the drawn terminal strip %1</source>
         <translation>Apagar a régua desenhada %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="828"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="852"/>
         <source>Rename the strip...</source>
         <translation>Renomear a régua...</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="829"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="853"/>
         <source>Rotate the strip</source>
         <translation>Girar a régua</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="830"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="854"/>
         <source>Delete the drawn strip</source>
         <translation>Apagar a régua desenhada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="985"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1009"/>
         <source>Drawn terminal strip</source>
         <translation>Régua desenhada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="985"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1009"/>
         <source>Name of the strip:</source>
         <translation>Nome da régua:</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1032"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1056"/>
         <source>Draw the terminal strip %1</source>
         <translation>Desenhar a régua %1</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1087"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1111"/>
         <source>Take terminals out of their drawn strip</source>
         <translation>Tirar bornes da régua desenhada</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1177"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1201"/>
         <source>Rotate the selection</source>
         <translation>Girar a seleção</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1229"/>
+        <location filename="../sources/qetgraphicsitem/stripframeitem.cpp" line="1253"/>
         <source>Delete</source>
         <translation>Excluir</translation>
     </message>
@@ -33657,64 +33662,95 @@ Os outros campos não são utilizados.</translation>
 <context>
     <name>TerminalBusItem</name>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="225"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="320"/>
         <source>Join into a bus bar</source>
         <translation>Unir em barramento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="316"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="429"/>
         <source>Choose the feed wire of the bus bar</source>
         <translation>Escolher o fio que alimenta o barramento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="353"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="468"/>
         <source>a bus bar</source>
         <translation>um barramento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="694"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="809"/>
         <source>Feed wire</source>
         <translation>Fio de alimentação</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="704"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="819"/>
         <source>(no number)</source>
         <translation>(sem número)</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="711"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="826"/>
         <source>None</source>
         <translation>Nenhum</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="715"/>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1128"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="830"/>
+        <source>Color</source>
+        <translation>Cor</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="851"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="863"/>
+        <source>Add the selected terminals</source>
+        <translation>Acrescentar os bornes selecionados</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="853"/>
+        <source>Select the bus bar and the terminals to add, then choose this</source>
+        <translation>Selecione o barramento e os bornes a acrescentar e escolha isto</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="855"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1371"/>
         <source>Remove the bus bar</source>
         <translation>Remover o barramento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="894"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1061"/>
+        <source>The terminals are in two bus bars.</source>
+        <translation>Os bornes estão em dois barramentos.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1071"/>
         <source>Select two or more terminals of a strip.</source>
         <translation>Selecione dois ou mais bornes de uma régua.</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="906"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1080"/>
+        <source>Select the terminals to add with the bus bar.</source>
+        <translation>Selecione os bornes a acrescentar junto com o barramento.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1093"/>
         <source>The terminals are in different strips.</source>
         <translation>Os bornes estão em réguas diferentes.</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="914"/>
-        <source>Some of the terminals are not in the strip %1: put them in it in the terminal strip manager first.</source>
-        <translation>Alguns bornes não estão na régua %1: coloque-os nela pelo gerenciador de régua de bornes antes.</translation>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1281"/>
+        <source>Add terminals to the bus bar</source>
+        <translation>Acrescentar bornes ao barramento</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="918"/>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="979"/>
+        <source>Some of the terminals are not in the strip %1: put them in it in the terminal strip manager first.</source>
+        <translation type="vanished">Alguns bornes não estão na régua %1: coloque-os nela pelo gerenciador de régua de bornes antes.</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1119"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1125"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1163"/>
         <source>A bus bar joins neighbouring terminals of one level of the strip %1.</source>
         <translation>O barramento une só bornes vizinhos do mesmo nível da régua %1.</translation>
     </message>
     <message>
-        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="926"/>
+        <location filename="../sources/qetgraphicsitem/terminalbusitem.cpp" line="1133"/>
         <source>Give the strip a name.</source>
         <translation>Dê um nome à régua.</translation>
     </message>
