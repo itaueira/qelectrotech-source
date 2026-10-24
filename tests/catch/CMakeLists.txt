@@ -1180,6 +1180,8 @@ if(TARGET qelectrotech_objects)
         src/ui/wirearrangement_test.cpp
         # T86: a wire released over a wire branches off it, and follows it.
         src/ui/branchwire_test.cpp
+        # T67: a run that leaves its terminal to the side has its handle.
+        src/ui/wirehandle_test.cpp
         # T85: the frame of a strip drawn round its terminals, and following them.
         src/ui/stripframe_test.cpp
         # T85: the field region, a grey mask, and what sits in it out of every list.

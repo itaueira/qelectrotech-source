@@ -1728,6 +1728,73 @@ void Conductor::adjustHandlerPos()
 	}
 }
 
+namespace
+{
+		/// The way @a terminal points, a step long; null without one
+	QPointF outwardOf(const Terminal *terminal)
+	{
+		if (!terminal) return QPointF();
+		switch (terminal->orientation())
+		{
+			case Qet::North: return QPointF(0, -1);
+			case Qet::South: return QPointF(0, 1);
+			case Qet::West:  return QPointF(-1, 0);
+			case Qet::East:  return QPointF(1, 0);
+		}
+		return QPointF();
+	}
+
+		/// Whether the segment @a index of @a conductor, the first or the
+		/// last, leaves its terminal to the side - across the way the
+		/// terminal points - instead of going on from it
+	bool leavesSideways(const Conductor *conductor, int index)
+	{
+		const QList<ConductorSegment *> list = conductor->segmentsList();
+		const int last = list.size() - 1;
+		if (last < 1 || (index != 0 && index != last)) return false;
+		const QPointF out = outwardOf(index == 0 ? conductor->terminal1 : conductor->terminal2);
+		const ConductorSegment *segment = list.at(index);
+		if (out.isNull() || qAbs(segment->length()) < 0.01) return false;
+		return out.x() == 0 ? segment->isHorizontal() : segment->isVertical();
+	}
+
+		/// The path of @a conductor ready for WirePath::dragged() to drag its
+		/// segment @a *index: a first or last segment that leaves its
+		/// terminal to the side gets a segment of that terminal of no length
+		/// yet, which the drag makes as long as the run goes away from the
+		/// terminal; *index is then the index of the run in the points
+	QList<QPointF> dragPointsOf(const Conductor *conductor, int *index)
+	{
+		QList<QPointF> points;
+		const QList<ConductorSegment *> list = conductor->segmentsList();
+		for (const ConductorSegment *segment : list)
+		{
+			if (points.isEmpty()) points << segment->firstPoint();
+			points << segment->secondPoint();
+		}
+		const int last = points.size() - 2;
+		if (points.size() < 3 || !leavesSideways(conductor, *index)) return points;
+		if (*index == 0)
+		{
+			points.prepend(points.first());
+			*index = 1;
+		}
+		else if (*index == last) {
+			points.append(points.last());
+		}
+		return points;
+	}
+
+		/// WirePath::dragged() for @a conductor, a segment of its terminals
+		/// of no length kept from growing into them
+	QList<QPointF> draggedOf(const Conductor *conductor, const QList<QPointF> &points, int index,
+				 const QPointF &delta, QPointF *middle = nullptr)
+	{
+		return WirePath::dragged(points, index, delta, middle, 1.0,
+					 outwardOf(conductor->terminal1), outwardOf(conductor->terminal2));
+	}
+}
+
 /**
 	@brief Conductor::handlerMousePressEvent
 	@param qghi
@@ -1738,13 +1805,15 @@ void Conductor::handlerMousePressEvent(QetGraphicsHandlerItem *qghi, QGraphicsSc
 	Q_UNUSED(event);
 
 		//we get the segment corresponding to the handler
-	if (m_vector_index > -1)
+	const QList<int> handled = handlerSegments();
+	if (m_vector_index > -1 && m_vector_index < handled.size())
 	{
 		qghi->setColor(Qt::cyan);
 		m_moving_segment = true;
-		m_drag_points = segmentsToPoints();
-		m_drag_segment = m_vector_index + 1;
-		m_drag_middle = segmentsList().at(m_drag_segment)->middle();
+		const int grabbed_index = handled.at(m_vector_index);
+		m_drag_segment = grabbed_index;
+		m_drag_points = dragPointsOf(this, &m_drag_segment);
+		m_drag_middle = (m_drag_points.at(m_drag_segment) + m_drag_points.at(m_drag_segment + 1)) / 2;
 		before_mov_text_pos_ = m_text_item -> pos();
 		if (!m_live_drag)
 		{
@@ -1756,7 +1825,7 @@ void Conductor::handlerMousePressEvent(QetGraphicsHandlerItem *qghi, QGraphicsSc
 			//with it (T67, tenth adjustment): dragging the line a point
 			//shares drags it for all of its conductors
 		m_drag_partners.clear();
-		const ConductorSegment *grabbed = segmentsList().at(m_drag_segment);
+		const ConductorSegment *grabbed = segmentsList().at(grabbed_index);
 		const QPointF a = mapToScene(grabbed->firstPoint());
 		const QPointF b = mapToScene(grabbed->secondPoint());
 		const QSet<Conductor *> same = relatedPotentialConductors(false);
@@ -1771,7 +1840,9 @@ void Conductor::handlerMousePressEvent(QetGraphicsHandlerItem *qghi, QGraphicsSc
 				if (alongOneLine(a, b, other->mapToScene(theirs.at(i)->firstPoint()),
 						 other->mapToScene(theirs.at(i)->secondPoint())))
 				{
-					m_drag_partners << DragPartner{other, other->segmentsToPoints(), i};
+					int segment = i;
+					const QList<QPointF> points = dragPointsOf(other, &segment);
+					m_drag_partners << DragPartner{other, points, segment};
 					other->before_mov_text_pos_ = other->m_text_item->pos();
 					break;
 				}
@@ -1801,7 +1872,7 @@ void Conductor::handlerMouseMoveEvent(QetGraphicsHandlerItem *qghi, QGraphicsSce
 			//segment of a terminal gets shorter instead of a tail, and the
 			//limit at the terminal holds through the whole drag (T68)
 		QPointF middle;
-		pointsToSegments(WirePath::dragged(m_drag_points, m_drag_segment, pos_ - m_drag_middle, &middle));
+		pointsToSegments(draggedOf(this, m_drag_points, m_drag_segment, pos_ - m_drag_middle, &middle));
 
 			//Apply the movement
 		modified_path = true;
@@ -1818,8 +1889,8 @@ void Conductor::handlerMouseMoveEvent(QetGraphicsHandlerItem *qghi, QGraphicsSce
 			if (!c) {
 				continue;
 			}
-			c->pointsToSegments(WirePath::dragged(partner.points, partner.segment,
-							      c->mapFromScene(to) - c->mapFromScene(from)));
+			c->pointsToSegments(draggedOf(c, partner.points, partner.segment,
+						      c->mapFromScene(to) - c->mapFromScene(from)));
 			c->modified_path = true;
 			c->has_to_save_profile = true;
 			c->segmentsToPath();
@@ -1902,6 +1973,7 @@ void Conductor::addHandler()
 	if (m_handler_vector.isEmpty() && scene())
 	{
 		m_handler_vector = QetGraphicsHandlerItem::handlerForPoint(mapToScene(handlerPoints()), QETUtils::graphicsHandlerSize(this));
+		const QList<int> handled = handlerSegments();
 
 		for (int i = 0 ; i < m_handler_vector.size() ; ++i)
 		{
@@ -1910,7 +1982,7 @@ void Conductor::addHandler()
 				//path is its arm's, and goes where the arm goes (T86). The
 				//handlers of the rest are kept off the folio, so that the
 				//index of a handler is still the index of its segment
-			if (arm() && !isOwnSegment(i + 1)) {
+			if (arm() && !isOwnSegment(handled.value(i, -1))) {
 				continue;
 			}
 			handler->setColor(Qt::blue);
@@ -2319,25 +2391,42 @@ bool Conductor::pathFromXml(const QDomElement &e) {
 /**
 	@brief Conductor::handlerPoints
 	@return The points used to draw the handler square, used to modify
-	the path of the conductor.
-	The points stored in the QVector are the middle point of each segments that compose the conductor,
-	at exception of the first and last segment because there just here to extend the terminal.
+	the path of the conductor: the middle of each segment of
+	handlerSegments(), in its order.
 */
 QVector<QPointF> Conductor::handlerPoints() const
 {
-	QList <ConductorSegment *> sl = segmentsList();
-	if (sl.size() >= 3)
-	{
-		sl.removeFirst();
-		sl.removeLast();
-	}
-
+	const QList<ConductorSegment *> sl = segmentsList();
 	QVector <QPointF> middle_points;
-
-	foreach(ConductorSegment *segment, sl)
-		middle_points.append(segment->middle());
-
+	const QList<int> handled = handlerSegments();
+	for (int index : handled) {
+		middle_points.append(sl.at(index)->middle());
+	}
 	return middle_points;
+}
+
+/**
+	@brief Conductor::handlerSegments
+	@return the indexes in segmentsList() of the segments that have a
+	handler, one per handler and in their order: every segment but the first
+	and the last, which only extend their terminal - and the first or the
+	last too when it leaves its terminal to the side, a run of its own. The
+	arrangement draws a conductor from a terminal that points up or down to
+	one that points to the side leaving the first at the height of its end
+	(T67), and that run had no handler, the one segment of the conductor
+	that could not be moved (asked by the Renan on 23/10/2026). Dragged, it
+	gets a segment of its terminal, as long as it went away (dragPointsOf()).
+*/
+QList<int> Conductor::handlerSegments() const
+{
+	QList<int> indexes;
+	const int last = segmentsList().size() - 1;
+	for (int i = 0 ; i <= last ; ++i)
+	{
+		if ((i == 0 || i == last) && !leavesSideways(this, i)) continue;
+		indexes << i;
+	}
+	return indexes;
 }
 
 /// @return les segments de ce conducteur
@@ -2361,7 +2450,9 @@ const QList<ConductorSegment *> Conductor::segmentsList() const
 	Move one segment of this conductor by (dx, dy), the same rule
 	handlerMouseMoveEvent() applies on a manual drag (WirePath::dragged):
 	only the part of the movement across the segment counts, and a static
-	(terminal-anchored) segment does not move. Unlike a drag this commits
+	(terminal-anchored) segment does not move - but the first or the last
+	when it leaves its terminal to the side does (handlerSegments()).
+	Unlike a drag this commits
 	the whole move as a single undo step.
 	@param index a segmentsList() index
 	@param dx @param dy the movement, in the diagram's own coordinates
@@ -2373,7 +2464,9 @@ bool Conductor::moveSegment(int index, qreal dx, qreal dy)
 	if (index < 0 || index >= segs.count()) return false;
 
 	before_mov_text_pos_ = m_text_item->pos();
-	pointsToSegments(WirePath::dragged(segmentsToPoints(), index, QPointF(dx, dy)));
+	int segment = index;
+	const QList<QPointF> points = dragPointsOf(this, &segment);
+	pointsToSegments(draggedOf(this, points, segment, QPointF(dx, dy)));
 	modified_path = true;
 	segmentsToPath();
 	calculateTextItemPosition();

@@ -162,6 +162,7 @@ class Conductor : public QGraphicsObject
 
 	public:
 		QVector <QPointF> handlerPoints() const;
+		QList<int> handlerSegments() const;
 		const QList<ConductorSegment *> segmentsList() const;
 		bool moveSegment(int index, qreal dx, qreal dy);
 		bool setPathPoints(const QList<QPointF> &scene_points);

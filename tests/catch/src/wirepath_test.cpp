@@ -125,3 +125,33 @@ TEST_CASE("CU-68.7 — Dragging a segment, without a sheet", "[T68][wirepath]")
 		CHECK(WirePath::dragged(long_arm, 2, QPointF(50, 0)) == stopped);
 	}
 }
+
+/*
+	A run that leaves its terminal to the side (Conductor::handlerSegments()):
+	a terminal pointing down at (0, 0), the run going right at its end to
+	(100, 0), then down. The path is handed over with the segment of the
+	terminal of no length - the first point twice -, and the way the
+	terminal points.
+*/
+TEST_CASE("T67 - A run that leaves its terminal to the side drags", "[T67][wirepath]")
+{
+	const QList<QPointF> path{{0, 0}, {0, 0}, {100, 0}, {100, 50}, {110, 50}};
+	const QPointF down(0, 1);
+	SECTION("away from the terminal, its segment grows")
+	{
+		QPointF middle;
+		const QList<QPointF> moved{{0, 0}, {0, 20}, {100, 20}, {100, 50}, {110, 50}};
+		CHECK(WirePath::dragged(path, 1, QPointF(0, 20), &middle, 1.0, down) == moved);
+		CHECK(middle == QPointF(50, 20));
+	}
+	SECTION("into the terminal, it stays at its end")
+	{
+		const QList<QPointF> kept{{0, 0}, {100, 0}, {100, 50}, {110, 50}};
+		CHECK(WirePath::dragged(path, 1, QPointF(0, -20), nullptr, 1.0, down) == kept);
+	}
+	SECTION("the way unknown, any way, as before")
+	{
+		const QList<QPointF> moved{{0, 0}, {0, -20}, {100, -20}, {100, 50}, {110, 50}};
+		CHECK(WirePath::dragged(path, 1, QPointF(0, -20)) == moved);
+	}
+}

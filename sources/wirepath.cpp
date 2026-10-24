@@ -69,22 +69,33 @@ namespace
 
 		/// Whether the segment of a terminal, from @a dock, still points
 		/// the way it did - to @a was - and is at least @a minimum long,
-		/// or as long as it was if it was shorter
-	bool endHolds(const QPointF &dock, const QPointF &was, const QPointF &now, double minimum)
+		/// or as long as it was if it was shorter. A segment of no length,
+		/// with @a out the way its terminal points: it may grow that way,
+		/// and never into the terminal
+	bool endHolds(const QPointF &dock, const QPointF &was, const QPointF &now, double minimum,
+		      const QPointF &out)
 	{
 		const QPointF o = was - dock;
 		const QPointF n = now - dock;
 		const double length = std::abs(o.x()) + std::abs(o.y());
-		if (length < near) return true;
+		if (length < near)
+		{
+			if (out.isNull()) return true;
+			const double along = n.x() * out.x() + n.y() * out.y();
+			const double across = std::abs(out.x() * n.y() - out.y() * n.x());
+			return across < near && along > -near;
+		}
 		const double along = (o.x() * n.x() + o.y() * n.y()) / length;
 		const double across = std::abs(o.x() * n.y() - o.y() * n.x()) / length;
 		return across < near && along >= std::min(minimum, length) - 1e-6;
 	}
 
-	bool endsHold(const QList<QPointF> &before, const QList<QPointF> &after, double minimum)
+	bool endsHold(const QList<QPointF> &before, const QList<QPointF> &after, double minimum,
+		      const QPointF &first_out, const QPointF &last_out)
 	{
-		return endHolds(before.first(), before.at(1), after.at(1), minimum)
-				&& endHolds(before.last(), before.at(before.size() - 2), after.at(after.size() - 2), minimum);
+		return endHolds(before.first(), before.at(1), after.at(1), minimum, first_out)
+				&& endHolds(before.last(), before.at(before.size() - 2), after.at(after.size() - 2),
+					    minimum, last_out);
 	}
 }
 
@@ -138,10 +149,19 @@ QList<QPointF> WirePath::simplified(const QList<QPointF> &points)
 	Computed from where the drag started and the whole of it, and not move
 	by move: what one move of the mouse did never limits the next.
 	@param middle : where the middle of the dragged segment is now
+	@param first_out, last_out : the way the terminal of the first and of
+	the last point points, for a segment of that terminal of no length -
+	put before a run that leaves the terminal to the side, so that the run
+	drags (Conductor::handlerSegments()): it grows that way and never into
+	the terminal. Null: such a segment may grow any way, as before
 */
 QList<QPointF> WirePath::dragged(const QList<QPointF> &points, int index, const QPointF &delta,
-				 QPointF *middle, double minimum_end)
+				 QPointF *middle, double minimum_end,
+				 const QPointF &first_out, const QPointF &last_out)
 {
+	const auto holds = [&](const QList<QPointF> &before, const QList<QPointF> &after) {
+		return endsHold(before, after, minimum_end, first_out, last_out);
+	};
 	const auto unchanged = [&]() {
 		if (middle && index >= 0 && index + 1 < points.size()) {
 			*middle = (points.at(index) + points.at(index + 1)) / 2;
@@ -160,7 +180,7 @@ QList<QPointF> WirePath::dragged(const QList<QPointF> &points, int index, const 
 	};
 	double d = horizontal ? delta.y() : delta.x();
 	QList<QPointF> result = attempt(d);
-	if (!endsHold(points, result, minimum_end))
+	if (!holds(points, result))
 	{
 			// The largest part of the drag that keeps the two ends
 		double good = 0;
@@ -168,15 +188,15 @@ QList<QPointF> WirePath::dragged(const QList<QPointF> &points, int index, const 
 		for (int i = 0 ; i < 48 ; ++i)
 		{
 			const double half = (good + bad) / 2;
-			if (endsHold(points, attempt(half), minimum_end)) good = half;
+			if (holds(points, attempt(half))) good = half;
 			else bad = half;
 		}
 			// On a whole hundredth when that holds too: the drag of the
 			// mouse is on the grid, the limit is not
 		const double nearest = std::round(good * 100) / 100;
 		const double inside = std::trunc(good * 100) / 100;
-		d = endsHold(points, attempt(nearest), minimum_end) ? nearest
-		  : endsHold(points, attempt(inside), minimum_end) ? inside
+		d = holds(points, attempt(nearest)) ? nearest
+		  : holds(points, attempt(inside)) ? inside
 		  : good;
 		result = attempt(d);
 	}
