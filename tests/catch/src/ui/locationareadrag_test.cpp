@@ -21,6 +21,7 @@
 
 #include "../../../../sources/QetGraphicsItemModeler/qetgraphicshandleritem.h"
 #include "../../../../sources/diagram.h"
+#include "../../../../sources/diagramcontent.h"
 #include "../../../../sources/elementsmover.h"
 #include "../../../../sources/qetgraphicsitem/conductor.h"
 #include "../../../../sources/qetgraphicsitem/element.h"
@@ -29,11 +30,13 @@
 #include "../../../../sources/qetgraphicsitem/qetshapeitem.h"
 #include "../../../../sources/qetgraphicsitem/terminal.h"
 #include "../../../../sources/qetproject.h"
+#include "../../../../sources/undocommand/alignselectioncommand.h"
 
 #include <catch2/catch.hpp>
 
 #include <QCoreApplication>
 #include <QGraphicsSceneMouseEvent>
+#include <QKeyEvent>
 #include <QUndoStack>
 
 #include <cmath>
@@ -484,4 +487,118 @@ TEST_CASE("T85 - A lone component in a dragged area gets no new wire", "[T85][zo
 		//And the project keeps its automatic wires for the next drag
 	CHECK(bench.project->autoConductor());
 	CHECK(same(area->sceneRect().topLeft(), QPointF(140, 300)));
+}
+
+namespace
+{
+	void key(QGraphicsScene *scene, Qt::Key k)
+	{
+		QKeyEvent press(QEvent::KeyPress, k, Qt::NoModifier);
+		QCoreApplication::sendEvent(scene, &press);
+		QKeyEvent release(QEvent::KeyRelease, k, Qt::NoModifier);
+		QCoreApplication::sendEvent(scene, &release);
+	}
+}
+
+TEST_CASE("T85 - The area moved by the arrows takes what is in it", "[T85][zone]")
+{
+	Bench bench(threeParts());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.open(3, 2));
+	Diagram *sheet = bench.sheet;
+	LocationAreaItem *area = bench.drawArea(QPointF(100, 100), QPointF(400, 300));
+	auto *text_in = new IndependentTextItem(QStringLiteral("note"));
+	sheet->addItem(text_in);
+	text_in->setPos(250, 230);
+	Element *a = bench.element(QStringLiteral("A"));
+	Element *b = bench.element(QStringLiteral("B"));
+	Element *c = bench.element(QStringLiteral("C"));
+	REQUIRE(a != nullptr);
+	REQUIRE(c != nullptr);
+	Conductor *bc = bench.wire(b, c);
+	REQUIRE(bc != nullptr);
+	const QRectF area_was = area->sceneRect();
+	const QPointF a_was = a->pos();
+	const QPointF b_was = b->pos();
+	const QPointF c_was = c->pos();
+	const QPointF text_was = text_in->pos();
+
+		//Only the area selected, out of edition, as a click leaves it
+	sheet->clearSelection();
+	area->setSelected(true);
+	const int index = sheet->undoStack().index();
+	key(sheet, Qt::Key_Right);
+
+		//By one step of the arrows, whatever the grid: the area, and what is
+		//in it by the same
+	const QPointF moved = area->sceneRect().topLeft() - area_was.topLeft();
+	INFO("moved " << text(moved).toStdString());
+	CHECK(moved.x() > 0);
+	CHECK(moved.y() == Approx(0));
+	CHECK(same(a->pos(), a_was + moved));
+	CHECK(same(b->pos(), b_was + moved));
+	CHECK(same(text_in->pos(), text_was + moved));
+	CHECK(same(c->pos(), c_was));
+	CHECK(joined(bc));
+	CHECK(sheet->conductors().size() == 2);
+		//One step, and the area selected alone again
+	CHECK(sheet->undoStack().index() == index + 1);
+	CHECK(sheet->selectedItems() == QList<QGraphicsItem *>{area});
+
+	sheet->undoStack().undo();
+	QCoreApplication::processEvents();
+	CHECK(same(area->sceneRect(), area_was));
+	CHECK(same(a->pos(), a_was));
+	CHECK(same(text_in->pos(), text_was));
+	CHECK(joined(bc));
+
+		//In edition, the arrows move the area alone
+	area->setEditing(true);
+	REQUIRE(area->isEditing());
+	key(sheet, Qt::Key_Down);
+	CHECK(area->sceneRect().top() > area_was.top());
+	CHECK(same(a->pos(), a_was));
+	sheet->undoStack().undo();
+	QCoreApplication::processEvents();
+	CHECK(same(area->sceneRect(), area_was));
+}
+
+TEST_CASE("T85 - The area lines up with a component, and takes what is in it", "[T85][zone]")
+{
+	Bench bench(threeParts());
+	INFO(bench.project.error().toStdString());
+	REQUIRE(bench.open(3, 2));
+	Diagram *sheet = bench.sheet;
+	LocationAreaItem *area = bench.drawArea(QPointF(100, 100), QPointF(400, 300));
+	Element *a = bench.element(QStringLiteral("A"));
+	Element *c = bench.element(QStringLiteral("C"));
+	REQUIRE(a != nullptr);
+	REQUIRE(c != nullptr);
+	const QRectF area_was = area->sceneRect();
+	const QPointF a_was = a->pos();
+	const QPointF c_was = c->pos();
+
+		//The area and C, out of it, selected; A inside, selected too, is
+		//the area's to move, and not lined up once more
+	sheet->clearSelection();
+	area->setSelected(true);
+	c->setSelected(true);
+	a->setSelected(true);
+	CHECK(AlignSelectionCommand::unitCount(DiagramContent(sheet)) == 2);
+	auto *align = new AlignSelectionCommand(sheet, AlignSelectionCommand::AlignRight);
+	REQUIRE(align->isValid());
+	sheet->undoStack().push(align);
+
+		//The right of the area on the right of C, within a step of the grid;
+		//A moved with it, C where it was
+	const QPointF moved = area->sceneRect().topLeft() - area_was.topLeft();
+	INFO("moved " << text(moved).toStdString());
+	CHECK(moved.x() > 100);
+	CHECK(std::abs(area->sceneRect().right() - c->sceneBoundingRect().right()) <= 10);
+	CHECK(same(a->pos(), a_was + moved));
+	CHECK(same(c->pos(), c_was));
+
+	sheet->undoStack().undo();
+	CHECK(same(area->sceneRect(), area_was));
+	CHECK(same(a->pos(), a_was));
 }

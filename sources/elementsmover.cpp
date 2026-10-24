@@ -34,6 +34,11 @@
 #include "qetapp.h"
 #include "qetdiagrameditor.h"
 #include "qetgraphicsitem/locationareaitem.h"
+#include "qetgraphicsitem/stripframeitem.h"
+#include "qetgraphicsitem/ViewItem/mountinglayoutviewitem.h"
+#include "qetgraphicsitem/ViewItem/qetgraphicstableitem.h"
+#include "QPropertyUndoCommand/qpropertyundocommand.h"
+#include "TerminalStrip/GraphicsItem/terminalstripitem.h"
 #include "undocommand/movegraphicsitemcommand.h"
 #include "utils/qetutils.h"
 #include "wirearrangement.h"
@@ -189,6 +194,15 @@ int ElementsMover::beginMovement(Diagram *diagram, QGraphicsItem *driver_item)
 		// At the beginning of movement, move is NULL
 	m_current_movement -= m_current_movement;
 
+		//A movement without a driver - by the keys - carries what a
+		//selected area or drawn strip holds, as dragging it does
+	m_followers.clear();
+	m_carrier_selection.clear();
+	m_carrying = false;
+	if (!driver_item) {
+		carrySelected(diagram);
+	}
+
 	m_moved_content = DiagramContent(diagram);
 	m_moved_content.removeNonMovableItems();
 
@@ -217,7 +231,11 @@ int ElementsMover::beginMovement(Diagram *diagram, QGraphicsItem *driver_item)
 		}
 	}
 
-	if (!m_moved_content.count()) return(-1);
+	if (!m_moved_content.count() && m_followers.isEmpty())
+	{
+		restoreSelection();
+		return(-1);
+	}
 
 		//Steps left over by a gesture which never reached its end are
 		//never worth keeping: whatever starts here starts from nothing.
@@ -351,6 +369,16 @@ void ElementsMover::moveAlong(const QPointF &movement, bool with_driver)
 		qgi->setPos(qgi->pos() + QETUtils::movementInParentOf(qgi, movement));
 	}
 
+		//What a selected area carries and the movement does not move
+		//itself, past QetGraphicsItem::setPos(), which would put each on
+		//the grid again (carrySelected())
+	for (const Follower &follower : std::as_const(m_followers))
+	{
+		if (follower.item) {
+			follower.item->setPos(follower.item->pos() + movement);
+		}
+	}
+
 	QVector<Conductor *>list_conductors;
 	for(auto *con : m_moved_content.m_conductors_to_move){
 		list_conductors << con;
@@ -447,11 +475,14 @@ void ElementsMover::endMovement()
 		//There is only one element moved, and project authorize auto conductor,
 		//we try auto connection of conductor;
 	typedef DiagramContent dc;
+		//Not for a component an area or a strip carried: it was not
+		//placed by hand (LocationAreaItem::endCarry())
 	if (m_moved_content.items(dc::TextFields
 								| dc::Images
 								| dc::Shapes
 								| dc::TerminalStrip).isEmpty()
 		&& m_moved_content.items(dc::Elements).size() == 1
+		&& !m_carrying
 		&& m_diagram->project()->autoConductor())
 	{
 		const Element *elmt{m_moved_content.m_elements.first()};
@@ -539,6 +570,30 @@ void ElementsMover::endMovement()
 		//one single step for the whole gesture: taking it back has to
 		//take all of it back, or half the selection would stay where
 		//the gesture left it.
+		//The areas carried, which the step of the movement does not take
+		//back, in a step of their own (LocationAreaItem::endCarry())
+	if (!m_followers.isEmpty())
+	{
+		auto *areas_step = new QUndoCommand();
+		for (const Follower &follower : std::as_const(m_followers))
+		{
+			if (follower.item && follower.item->type() == LocationAreaItem::Type
+			    && follower.item->pos() != follower.from)
+			{
+				new QPropertyUndoCommand(follower.item.data(), "pos", follower.from,
+							 follower.item->pos(), areas_step);
+			}
+		}
+		if (areas_step->childCount()) {
+			m_extra_commands.append(areas_step);
+		} else {
+			delete areas_step;
+		}
+		if (undo_object->text().isEmpty()) {
+			undo_object->setText(QObject::tr("Move the location area with what is in it"));
+		}
+	}
+
 	QList<QUndoCommand *> steps = m_extra_commands;
 	m_extra_commands.clear();
 	steps.append(cable_steps);
@@ -573,6 +628,7 @@ void ElementsMover::endMovement()
 	m_moved_cables.clear();
 	m_start_positions.clear();
 	Conductor::endLiveMove();
+	restoreSelection();
 
 		//Keep saying why a held group did not move
 	if (m_status_bar && !m_driver_held) {
@@ -642,12 +698,121 @@ void ElementsMover::cancelMovement()
 	qDeleteAll(m_extra_commands);
 	m_extra_commands.clear();
 
+		//What a selected area carried goes back with the rest
+	for (const Follower &follower : std::as_const(m_followers))
+	{
+		if (follower.item) {
+			follower.item->setPos(follower.from);
+		}
+	}
+
 	m_current_movement -= m_current_movement;
 	m_movement_running = false;
 	m_moved_content.clear();
 	Conductor::endLiveMove();
+	restoreSelection();
 
 	if (m_status_bar && !m_driver_held) {
 		m_status_bar->clearMessage();
+	}
+}
+
+/**
+	@brief ElementsMover::carrySelected
+	A movement by the keys of a selected location area, or of the frame of
+	a drawn strip, is the movement of what is in it, as dragging it is (asked
+	by the Renan on 23/10/2026: the area and the strip did not move with the
+	arrows): the content of the area (LocationAreaItem::carriedItems()) and
+	the terminals of the strip are selected with them, for the movement to
+	move them and stretch their wires, and the areas, the tables, the strips
+	and the views of a plate the movement does not move itself follow it
+	here (moveAlong()). The selection is given back at the end
+	(restoreSelection()). An area in edition moves alone, as by the mouse -
+	before, it did not move at all.
+*/
+void ElementsMover::carrySelected(Diagram *diagram)
+{
+	const QList<QGraphicsItem *> selection = diagram->selectedItems();
+	QList<QGraphicsItem *> carried;
+	QSet<QGraphicsObject *> followed;
+	const auto follow = [this, &followed](QGraphicsItem *item) {
+		QGraphicsObject *object = item->toGraphicsObject();
+		if (!object || followed.contains(object)) return;
+		followed.insert(object);
+		m_followers.append(Follower{object, object->pos()});
+	};
+	for (QGraphicsItem *item : selection)
+	{
+		if (auto *frame = qgraphicsitem_cast<StripFrameItem *>(item))
+		{
+			const QList<Element *> terminals = frame->terminals();
+			for (Element *terminal : terminals) {
+				carried << terminal;
+			}
+			continue;
+		}
+		auto *area = qgraphicsitem_cast<LocationAreaItem *>(item);
+		if (!area || !area->isMovable()) continue;
+		follow(area);
+			//In edition, the area alone
+		if (area->isEditing()) continue;
+		const QList<QGraphicsItem *> inside = area->carriedItems();
+		for (QGraphicsItem *thing : inside)
+		{
+			carried << thing;
+			switch (thing->type())
+			{
+				case LocationAreaItem::Type:
+				case QetGraphicsTableItem::Type:
+				case TerminalStripItem::Type:
+				case MountingLayoutViewItem::Type:
+					follow(thing);
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	if (carried.isEmpty() && m_followers.isEmpty()) {
+		return;
+	}
+	m_carrying = true;
+	m_carrier_selection = selection;
+		//In one change of the selection, as LocationAreaItem::selectOnly()
+	const bool was_blocked = diagram->blockSignals(true);
+	for (QGraphicsItem *item : std::as_const(carried)) {
+		item->setSelected(true);
+	}
+	diagram->blockSignals(was_blocked);
+	if (!was_blocked) {
+		emit diagram->selectionChanged();
+	}
+}
+
+/**
+	@brief ElementsMover::restoreSelection
+	The selection of the folio as it was before carrySelected() added the
+	content of the areas and of the strips to it
+*/
+void ElementsMover::restoreSelection()
+{
+	const bool carrying = m_carrying;
+	m_carrying = false;
+	m_followers.clear();
+	const QList<QGraphicsItem *> selection = m_carrier_selection;
+	m_carrier_selection.clear();
+	if (!carrying || !m_diagram) {
+		return;
+	}
+	const QSet<QGraphicsItem *> kept(selection.cbegin(), selection.cend());
+	const bool was_blocked = m_diagram->blockSignals(true);
+	const QList<QGraphicsItem *> now = m_diagram->selectedItems();
+	for (QGraphicsItem *item : now)
+	{
+		if (!kept.contains(item)) item->setSelected(false);
+	}
+	m_diagram->blockSignals(was_blocked);
+	if (!was_blocked) {
+		emit m_diagram->selectionChanged();
 	}
 }

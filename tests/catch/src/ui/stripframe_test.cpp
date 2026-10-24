@@ -31,9 +31,11 @@
 #include "../../../../sources/qetinformation.h"
 #include "../../../../sources/qetproject.h"
 #include "../../../../sources/undocommand/deleteqgraphicsitemcommand.h"
+#include "../../../../sources/undocommand/alignselectioncommand.h"
 
 #include <catch2/catch.hpp>
 
+#include <QKeyEvent>
 #include <QListWidget>
 #include <QPainterPath>
 #include <QUndoStack>
@@ -604,14 +606,17 @@ TEST_CASE("T85 - Delete takes the frame off and leaves its terminals", "[T85][st
 	{
 		CHECK(e->scene() == bench.sheet);
 		CHECK(StripFrameItem::frameOf(e) == nullptr);
-			//Still of that strip, and the text that says so shows again
-		CHECK(comment(e) == QStringLiteral("X1"));
+			//The name of the strip out of the comment, as when a terminal
+			//is taken out of it: it would be written beside every terminal
+			//(asked on 23/10/2026)
+		CHECK(comment(e).isEmpty());
 		CHECK(commentText(e)->isVisible());
 	}
 	bench.sheet->undoStack().undo();
 	REQUIRE(bench.frames().size() == 1);
 	CHECK(frame->terminals().size() == 4);
 	CHECK(StripFrameItem::frameOf(bench.terminals.at(0)) == frame);
+	CHECK(comment(bench.terminals.at(0)) == QStringLiteral("X1"));
 	CHECK_FALSE(commentText(bench.terminals.at(0))->isVisible());
 	CHECK(frame->frameRect() == rect);
 
@@ -643,4 +648,80 @@ TEST_CASE("T85 - Delete takes the frame off and leaves its terminals", "[T85][st
 	REQUIRE(bench.frames().size() == 1);
 	CHECK(frame->terminals().size() == 4);
 	CHECK(frame->frameRect() == rect);
+}
+
+TEST_CASE("T85 - The frame selected moves its terminals by the arrows", "[T85][stripframe]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+	StripFrameItem::drawAround(bench.sheet, bench.first(4), QStringLiteral("X1"));
+	REQUIRE(bench.frames().size() == 1);
+	StripFrameItem *frame = bench.frames().first();
+	QList<QPointF> before;
+	for (Element *e : bench.terminals) {
+		before << e->pos();
+	}
+
+		//Only the frame selected, as a click on it leaves it
+	bench.sheet->clearSelection();
+	frame->setSelected(true);
+	const int index = bench.sheet->undoStack().index();
+	QKeyEvent press(QEvent::KeyPress, Qt::Key_Down, Qt::NoModifier);
+	QCoreApplication::sendEvent(bench.sheet, &press);
+	QKeyEvent release(QEvent::KeyRelease, Qt::Key_Down, Qt::NoModifier);
+	QCoreApplication::sendEvent(bench.sheet, &release);
+
+		//Its four terminals down, the other two where they were, one step
+	const qreal moved = bench.terminals.at(0)->pos().y() - before.at(0).y();
+	CHECK(moved > 0);
+	for (int i = 0 ; i < 4 ; ++i)
+	{
+		CAPTURE(i);
+		CHECK(samePoint(bench.terminals.at(i)->pos(), before.at(i) + QPointF(0, moved)));
+	}
+	CHECK(samePoint(bench.terminals.at(4)->pos(), before.at(4)));
+	CHECK(bench.sheet->undoStack().index() == index + 1);
+		//The frame selected alone again, and following them
+	CHECK(bench.sheet->selectedItems() == QList<QGraphicsItem *>{frame});
+	CHECK(frame->frameRect().contains(bench.terminals.at(0)->mapRectToScene(bench.terminals.at(0)->drawnRect())));
+
+	bench.sheet->undoStack().undo();
+	QCoreApplication::processEvents();
+	for (int i = 0 ; i < 4 ; ++i) {
+		CHECK(samePoint(bench.terminals.at(i)->pos(), before.at(i)));
+	}
+}
+
+TEST_CASE("T85 - The frame selected lines up with a component", "[T85][stripframe]")
+{
+	Bench bench;
+	REQUIRE(bench.open());
+	StripFrameItem::drawAround(bench.sheet, bench.first(4), QStringLiteral("X1"));
+	REQUIRE(bench.frames().size() == 1);
+	StripFrameItem *frame = bench.frames().first();
+		//The terminal 5, out of the frame, lower: the frame comes down to it
+	Element *other = bench.terminals.at(4);
+	other->setPos(other->pos() + QPointF(0, 100));
+	const qreal other_bottom = other->sceneBoundingRect().bottom();
+	const QPointF first_before = bench.terminals.at(0)->pos();
+
+	bench.sheet->clearSelection();
+	frame->setSelected(true);
+	other->setSelected(true);
+	REQUIRE(AlignSelectionCommand::unitCount(DiagramContent(bench.sheet)) == 2);
+	auto *align = new AlignSelectionCommand(bench.sheet, AlignSelectionCommand::AlignBottom);
+	REQUIRE(align->isValid());
+	bench.sheet->undoStack().push(align);
+
+		//The frame's bottom on the lower of the two bottoms - the
+		//component's -, its four terminals moved by one amount, the first
+		//on the grid, which keeps it within a step of it
+	const qreal moved = bench.terminals.at(0)->pos().y() - first_before.y();
+	CHECK(moved > 50);
+	for (int i = 1 ; i < 4 ; ++i) {
+		CHECK(bench.terminals.at(i)->pos().y() == Approx(bench.terminals.at(0)->pos().y()));
+	}
+	CHECK(std::abs(frame->frameRect().bottom() - other_bottom) <= 10);
+	bench.sheet->undoStack().undo();
+	CHECK(samePoint(bench.terminals.at(0)->pos(), first_before));
 }

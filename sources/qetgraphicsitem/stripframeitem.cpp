@@ -166,6 +166,25 @@ namespace
 		}
 	}
 
+		/// The name of the strip taken out of the comment of @a terminals,
+		/// those whose comment is that name and nothing else, in @a undo
+	void clearName(const QList<QPointer<Element>> &terminals, const QString &name, QUndoCommand *undo)
+	{
+		QMap<QPointer<Element>, QPair<DiagramContext, DiagramContext>> changes;
+		for (const QPointer<Element> &terminal : terminals)
+		{
+			if (!terminal) continue;
+			const DiagramContext before = terminal->elementInformations();
+			if (name.isEmpty() || before.value(QETInformation::ELMT_COMMENT).toString() != name) continue;
+			DiagramContext after = before;
+			after.remove(QETInformation::ELMT_COMMENT);
+			changes.insert(terminal, qMakePair(before, after));
+		}
+		if (!changes.isEmpty()) {
+			new ChangeElementInformationCommand(changes, undo);
+		}
+	}
+
 		/// @a delta turned by @a angle degrees, the way
 		/// QGraphicsItem::setRotation() turns - clockwise on the folio -;
 		/// exact for the right angles, which the Rotate command only gives,
@@ -770,8 +789,7 @@ void StripFrameItem::turnTerminals(qreal angle, QUndoCommand *undo)
 
 /**
 	@brief StripFrameItem::remove
-	The frame off the folio, in one undo step. The terminals keep the name
-	in their comment: they are still of that strip
+	The frame off the folio, in one undo step, see removeCommand()
 */
 void StripFrameItem::remove()
 {
@@ -783,7 +801,11 @@ void StripFrameItem::remove()
 /**
 	@brief StripFrameItem::removeCommand
 	@return the undo step that takes the frame off the folio and leaves its
-	terminals, not yet run; nullptr when it cannot be taken off
+	terminals, not yet run; nullptr when it cannot be taken off. Their
+	comment loses the name of the strip, as when they are taken out of it
+	(takeOut()): the frame hid it, and with the frame gone it was written
+	again beside every terminal (asked by the Renan on 23/10/2026). A
+	comment that says something else is left as it is
 */
 QUndoCommand *StripFrameItem::removeCommand()
 {
@@ -792,9 +814,11 @@ QUndoCommand *StripFrameItem::removeCommand()
 		return nullptr;
 	}
 	auto *undo = new QUndoCommand(tr("Delete the drawn terminal strip %1").arg(m_name));
-	FrameState after = stateOf(this);
+	const FrameState before = stateOf(this);
+	FrameState after = before;
 	after.on_folio = false;
-	new StripFrameChange(this, folio, stateOf(this), after, undo);
+	new StripFrameChange(this, folio, before, after, undo);
+	clearName(before.terminals, m_name, undo);
 	return undo;
 }
 

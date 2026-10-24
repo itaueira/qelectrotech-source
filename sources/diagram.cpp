@@ -687,7 +687,10 @@ void Diagram::keyPressEvent(QKeyEvent *event)
 	qreal top_position = 0;
 	qreal left_position = 0;
 	DiagramContent dc(this);
-	if (dc.items(DiagramContent::All).isEmpty())
+		//The frame of a drawn strip is no content, and moves its terminals
+		//by the keys too (ElementsMover::carrySelected())
+	if (dc.items(DiagramContent::All).isEmpty()
+	    && StripFrameItem::stripFrames(selectedItems()).isEmpty())
 	{
 		event->ignore();
 		QGraphicsScene::keyPressEvent(event);

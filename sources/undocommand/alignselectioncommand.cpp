@@ -28,9 +28,12 @@
 #include "../qetgraphicsitem/element.h"
 #include "../qetgraphicsitem/elementtextitemgroup.h"
 #include "../qetgraphicsitem/independenttextitem.h"
+#include "../qetgraphicsitem/locationareaitem.h"
 #include "../qetgraphicsitem/qetshapeitem.h"
+#include "../qetgraphicsitem/stripframeitem.h"
 
 #include <QHash>
+#include <QSet>
 #include <QSettings>
 
 namespace {
@@ -47,6 +50,10 @@ namespace {
 			/// What is not to touch the next item when distributing: for a
 			/// symbol, its outline and its texts together
 		QRectF box;
+			/// What moves with it, by the same amount: what a location area
+			/// holds, the terminals of a drawn strip - whose frame is no
+			/// item that moves, and is item null
+		QList<QGraphicsObject *> passengers = {};
 	};
 
 	/**
@@ -107,7 +114,72 @@ namespace {
 			const QRectF rect = shape->sceneOutlineRect();
 			entries << Entry{shape, {rect, rect.center()}, rect.topLeft(), 1, rect};
 		}
-		return entries;
+
+			//A location area lines up by its rectangle and takes what it
+			//holds along, as dragging it does; a drawn strip by its frame,
+			//its terminals moving, the first on the grid (asked by the
+			//Renan on 23/10/2026: neither could be aligned with the
+			//components). What they carry is theirs alone: selected too, it
+			//is not lined up a second time on its own
+		QList<Entry> carriers;
+		for (LocationAreaItem *area : std::as_const(dc.m_location_areas))
+		{
+			const QRectF rect = area->sceneRect();
+			Entry entry{area, {rect, rect.center()}, rect.topLeft(), 1, rect};
+			if (!area->isEditing())
+			{
+				const QList<QGraphicsItem *> inside = area->carriedItems();
+				for (QGraphicsItem *thing : inside) {
+					if (QGraphicsObject *object = thing->toGraphicsObject()) entry.passengers << object;
+				}
+			}
+			carriers << entry;
+		}
+			//A strip in a selected area goes with the area, and not once
+			//more with its frame
+		QSet<const QGraphicsItem *> in_areas;
+		for (const Entry &carrier : std::as_const(carriers))
+		{
+			for (const QGraphicsObject *passenger : carrier.passengers) {
+				in_areas << passenger;
+			}
+		}
+		const QList<StripFrameItem *> frames = StripFrameItem::stripFrames(dc.m_selected_items);
+		for (StripFrameItem *frame : frames)
+		{
+			const QList<Element *> terminals = frame->orderedTerminals();
+			if (terminals.isEmpty() || in_areas.contains(terminals.first())) continue;
+			const QRectF rect = frame->frameRect();
+			Entry entry{nullptr, {rect, rect.center()}, terminals.first()->pos(), 1, rect};
+			for (Element *terminal : terminals) {
+				entry.passengers << terminal;
+			}
+			carriers << entry;
+		}
+		if (carriers.isEmpty()) {
+			return entries;
+		}
+		QSet<const QGraphicsItem *> carried;
+		for (const Entry &carrier : std::as_const(carriers))
+		{
+			for (const QGraphicsObject *passenger : carrier.passengers) {
+				carried << passenger;
+			}
+		}
+		QList<Entry> kept;
+		for (const Entry &entry : std::as_const(entries))
+		{
+			bool inside = false;
+			for (const QGraphicsItem *up = entry.item ; up && !inside ; up = up->parentItem()) {
+				inside = carried.contains(up);
+			}
+			if (!inside) kept << entry;
+		}
+		for (const Entry &carrier : std::as_const(carriers))
+		{
+			if (!carried.contains(carrier.item)) kept << carrier;
+		}
+		return kept;
 	}
 
 	/**
@@ -228,16 +300,23 @@ AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, int pi
 	const QList<Entry> entries = entriesOf(dc, text_divisor);
 	m_item_count = entries.size();
 
-	auto move = [this](QGraphicsObject *item, const QPointF &offset)
+	auto moveItem = [this](QGraphicsObject *item, const QPointF &offset)
 	{
-		if (!offset.isNull())
+		if (item && !offset.isNull())
 			new QPropertyUndoCommand(item, "pos", item->pos(), item->pos() + offset, this);
+	};
+		//An item with what it carries (Entry::passengers)
+	auto move = [&moveItem](const Entry &entry, const QPointF &offset)
+	{
+		moveItem(entry.item, offset);
+		for (QGraphicsObject *passenger : entry.passengers)
+			moveItem(passenger, offset);
 	};
 
 	if (mode == SnapToGrid)
 	{
 		for (const Entry &entry : std::as_const(entries))
-			move(entry.item, Alignment::gridOffset(entry.snap_point, x_grid, y_grid, entry.divisor));
+			move(entry, Alignment::gridOffset(entry.snap_point, x_grid, y_grid, entry.divisor));
 		setText(QObject::tr("Align %n objects to the grid", "", childCount()));
 		return;
 	}
@@ -266,7 +345,7 @@ AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, int pi
 																	qreal(steps) * grid);
 		for (int u = 0 ; u < units.size() ; ++u)
 			for (int i : units.at(u))
-				move(entries.at(i).item, offsets.at(u));
+				move(entries.at(i), offsets.at(u));
 		setText(QObject::tr("Distribute %n items", "", childCount()));
 		return;
 	}
@@ -302,7 +381,7 @@ AlignSelectionCommand::AlignSelectionCommand(Diagram *diagram, Mode mode, int pi
 		const QPointF offset = Alignment::snappedOffset(first.snap_point, offsets.at(u), edge,
 								x_grid, y_grid, first.divisor);
 		for (int i : units.at(u))
-			move(entries.at(i).item, offset);
+			move(entries.at(i), offset);
 	}
 	setText(QObject::tr("Align %n items", "", childCount()));
 }

@@ -28,7 +28,9 @@ class DiagramContent;
 	@brief The AlignSelectionCommand class
 	Moves each selected item by its own amount, as one undo step.
 	Symbols, pictures, free texts and shapes take part; locked items are left
-	where they are and counted, so the caller can say so.
+	where they are and counted, so the caller can say so. A location area
+	takes part by its rectangle, with what it holds, and the frame of a drawn
+	strip by its frame, with its terminals (asked on 23/10/2026).
 */
 class AlignSelectionCommand : public QUndoCommand
 {

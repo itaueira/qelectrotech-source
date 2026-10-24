@@ -18,6 +18,7 @@
 #ifndef ELEMENTS_MOVER_H
 #define ELEMENTS_MOVER_H
 
+#include <QGraphicsObject>
 #include <QHash>
 #include <QPointF>
 #include <QPointer>
@@ -80,6 +81,8 @@ class ElementsMover {
 
 	private:
 		void moveAlong(const QPointF &movement, bool with_driver);
+		void carrySelected(Diagram *diagram);
+		void restoreSelection();
 
 		// attributes
 	private:
@@ -101,6 +104,19 @@ class ElementsMover {
 			///Where every item of the movement stood when it began, so
 			///that calling it off puts them all back exactly there
 		QHash<QGraphicsItem *, QPointF> m_start_positions;
+			///A movement by the keys of a selected location area or drawn
+			///strip carries what is in it (carrySelected()): the items
+			///the movement does not move itself, moved here by the same
+			///amount - the areas, the tables, the strips and the views of
+			///a plate -, where each stood, and the selection to give back
+		struct Follower
+		{
+			QPointer<QGraphicsObject> item;
+			QPointF from;
+		};
+		QList<Follower> m_followers;
+		QList<QGraphicsItem *> m_carrier_selection;
+		bool m_carrying{false};
 
 };
 #endif
