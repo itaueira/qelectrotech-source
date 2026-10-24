@@ -98,8 +98,9 @@ namespace
 
 		/// @a first_comment: the comment of the terminals 1.1 and 1.2, X4 as
 		/// the others; another leaves them out of the strip X4 the first
-		/// bus bar makes
-	QString fixture(const QString &first_comment = QStringLiteral("X4"))
+		/// bus bar makes. @a more: the terminals 4.1, 4.2, 5.1 and 5.2 too,
+		/// below them, with no comment
+	QString fixture(const QString &first_comment = QStringLiteral("X4"), bool more = false)
 	{
 		const QString sides = QStringLiteral("<terminal x=\"-14\" y=\"0\" orientation=\"w\"/>"
 						    "<terminal x=\"14\" y=\"0\" orientation=\"e\"/>");
@@ -113,6 +114,14 @@ namespace
 		for (int i = 0 ; i < labels.size() ; ++i) {
 			xml += element("bus-strip.elmt", 400, 200 + 20 * i, labels.at(i),
 				       i < 2 ? first_comment : QStringLiteral("X4"), i);
+		}
+		if (more)
+		{
+			const QStringList below {QStringLiteral("4.1"), QStringLiteral("4.2"),
+						 QStringLiteral("5.1"), QStringLiteral("5.2")};
+			for (int i = 0 ; i < below.size() ; ++i) {
+				xml += element("bus-strip.elmt", 400, 320 + 20 * i, below.at(i), QString(), 40 + i);
+			}
 		}
 		xml += element("bus-strip.elmt", 300, 120, QStringLiteral("5"), QStringLiteral("X1"), 10);
 		for (int i = 0 ; i < 3 ; ++i)
@@ -648,5 +657,118 @@ TEST_CASE("T87 - A wire crossing a bus bar hops over it whatever the folio does"
 		Conductor::othersChangedShape();
 		const QRectF painted = output->mapRectToScene(output->paintedPath().boundingRect());
 		CHECK(painted.top() < y - 2);
+	}
+}
+
+TEST_CASE("T87 - A bus bar on each level of the same terminals", "[T87][bus]")
+{
+	Setup setup;
+	UiBench::ScratchProject project(fixture());
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Wired wired(sheet);
+	REQUIRE(wired.feed);
+		//The commons, on the second level, and then the signals, on the
+		//first: two bridges of one strip
+	REQUIRE(TerminalBusItem::join(sheet, wired.commons(), QString()));
+	QString why;
+	REQUIRE(TerminalBusItem::join(sheet, {wired.x4.at(0), wired.x4.at(2), wired.x4.at(4)}, QString(), &why));
+	CAPTURE(why);
+	REQUIRE(project->terminalStrip().size() == 1);
+	TerminalStrip *strip = project->terminalStrip().first();
+	CHECK(strip->physicalTerminalCount() == 3);
+	const QSharedPointer<TerminalStripBridge> signals_ = TerminalBusItem::realTerminalOf(wired.x4.at(0))->bridge();
+	const QSharedPointer<TerminalStripBridge> commons = TerminalBusItem::realTerminalOf(wired.x4.at(1))->bridge();
+	REQUIRE(signals_);
+	REQUIRE(commons);
+	CHECK(signals_ != commons);
+	CHECK(signals_->realTerminals().size() == 3);
+	CHECK(commons->realTerminals().size() == 3);
+
+		//Two bus bars by the left of the strip, whose stretches overlap: the
+		//first level inside, 8 off the ends of the terminals at 386, the
+		//second 12 further out, room for a hop between them
+	const QList<TerminalBusItem *> buses = TerminalBusItem::busesOn(sheet);
+	REQUIRE(buses.size() == 2);
+	TerminalBusItem *inner = buses.at(0)->bridge() == signals_ ? buses.at(0) : buses.at(1);
+	TerminalBusItem *outer = inner == buses.at(0) ? buses.at(1) : buses.at(0);
+	CHECK(inner->trunk().p1().x() == Approx(386 - 8));
+	CHECK(outer->trunk().p1().x() == Approx(386 - 8 - 12));
+		//The teeth of the commons, at 220 and 260, hop over the trunk of the
+		//signals, which runs from 200 to 280; the one at 300 is past its end
+	const QList<QPointF> hops = outer->toothHops();
+	CHECK(hops.size() == 2);
+	CHECK(hops.contains(QPointF(378, 220)));
+	CHECK(hops.contains(QPointF(378, 260)));
+	CHECK(inner->toothHops().isEmpty());
+
+		//One undo: the bus bar of the commons alone, back next to the
+		//terminals
+	sheet->undoStack().undo();
+	REQUIRE(TerminalBusItem::busesOn(sheet).size() == 1);
+	CHECK(TerminalBusItem::busesOn(sheet).first()->trunk().p1().x() == Approx(386 - 8));
+}
+
+TEST_CASE("T87 - A second bus bar of a strip goes into it", "[T87][bus]")
+{
+	Setup setup;
+		//The terminals 4 and 5, of no strip and with no comment, below the
+		//strip X4 the first bus bar makes
+	UiBench::ScratchProject project(fixture(QStringLiteral("X4"), true));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Wired wired(sheet);
+	REQUIRE(wired.feed);
+	REQUIRE(TerminalBusItem::join(sheet, wired.commons(), QString()));
+	REQUIRE(project->terminalStrip().size() == 1);
+	TerminalStrip *strip = project->terminalStrip().first();
+	REQUIRE(strip->physicalTerminalCount() == 3);
+	Element *four = byLabel(sheet, QStringLiteral("4.2"));
+	Element *five = byLabel(sheet, QStringLiteral("5.2"));
+	REQUIRE(four);
+	REQUIRE(five);
+
+		//Named X4 when asked: into the strip X4, and not a second one
+	REQUIRE(TerminalBusItem::needsStripName({four, five}));
+	QString why;
+	REQUIRE(TerminalBusItem::join(sheet, {four, five}, QStringLiteral("X4"), &why));
+	CAPTURE(why);
+	CHECK(project->terminalStrip().size() == 1);
+	CHECK(strip->physicalTerminalCount() == 5);
+	const QSharedPointer<TerminalStripBridge> second = TerminalBusItem::realTerminalOf(four)->bridge();
+	REQUIRE(second);
+	CHECK(second != TerminalBusItem::realTerminalOf(wired.x4.at(1))->bridge());
+	CHECK(second->realTerminals().size() == 2);
+		//One after the other on one level: both next to the terminals
+	const QList<TerminalBusItem *> buses = TerminalBusItem::busesOn(sheet);
+	REQUIRE(buses.size() == 2);
+	CHECK(buses.at(0)->trunk().p1().x() == Approx(386 - 8));
+	CHECK(buses.at(1)->trunk().p1().x() == Approx(386 - 8));
+}
+
+TEST_CASE("T87 - A bus bar more of a strip goes by the side of the others", "[T87][bus]")
+{
+	Setup setup;
+	UiBench::ScratchProject project(fixture());
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Wired wired(sheet);
+	REQUIRE(wired.feed);
+	REQUIRE(TerminalBusItem::join(sheet, wired.commons(), QString()));
+	const QSharedPointer<TerminalStripBridge> commons = TerminalBusItem::realTerminalOf(wired.x4.at(1))->bridge();
+	REQUIRE(commons);
+	REQUIRE(commons->side() == 0);
+		//The signals with a wire by the right, where they have the fewest:
+		//alone, their bus bar would be drawn there
+	wire(sheet, wired.x4.at(0)->terminals().at(1), byLabel(sheet, QStringLiteral("Y1"))->terminals().at(0));
+	REQUIRE(TerminalBusItem::join(sheet, {wired.x4.at(0), wired.x4.at(2), wired.x4.at(4)}, QString()));
+	const QSharedPointer<TerminalStripBridge> signals_ = TerminalBusItem::realTerminalOf(wired.x4.at(0))->bridge();
+	REQUIRE(signals_);
+		//By the left, with the commons, in the lane inside
+	CHECK(signals_->side() == 0);
+	const QList<TerminalBusItem *> buses = TerminalBusItem::busesOn(sheet);
+	REQUIRE(buses.size() == 2);
+	for (const TerminalBusItem *bus : buses) {
+		CHECK(bus->trunk().p1().x() == Approx(bus->bridge() == signals_ ? 386 - 8 : 386 - 8 - 12));
 	}
 }

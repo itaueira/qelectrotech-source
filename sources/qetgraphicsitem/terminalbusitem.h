@@ -78,6 +78,7 @@ class TerminalBusItem : public QetGraphicsItem
 		QLineF trunk() const;
 		QVector<QLineF> teeth() const;
 		QPolygonF feedMark() const;
+		QList<QPointF> toothHops() const;
 		void terminalsChanged();
 
 		QRectF boundingRect() const override;
@@ -106,6 +107,7 @@ class TerminalBusItem : public QetGraphicsItem
 	private:
 		void computeGeometry() const;
 		void watchTerminals();
+		static void restack(const QList<TerminalBusItem *> &buses);
 
 		QWeakPointer<TerminalStripBridge> m_bridge;
 		QList<QMetaObject::Connection> m_connections;

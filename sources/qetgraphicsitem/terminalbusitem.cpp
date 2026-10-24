@@ -54,6 +54,7 @@
 #include <QUndoStack>
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 
 namespace
@@ -73,11 +74,165 @@ namespace
 	constexpr qreal mark_length{6.0};
 	constexpr qreal mark_half_width{3.0};
 
+		///How much further out each bus bar is from the one inside it, when
+		///two of one side of a strip run along each other
+	constexpr qreal lane_pitch{12.0};
+		///The hop of a tooth over the trunk of another bus bar: clear of
+		///that trunk by 3 on each side
+	constexpr qreal tooth_hop_radius{trunk_width / 2 + 3.0};
+		///How wide the white round the arc of a tooth's hop is, past the
+		///tooth: it cuts the trunk under it, so that two grey bars do not
+		///look joined where one passes over the other
+	constexpr qreal hop_clearance{1.5};
+
+		/// @a tooth with a hop of radius @a radius over each point of
+		/// @a hops: above a tooth that lies, right of one that stands, as a
+		/// wire hops (WireHops::path()). With @a arcs_only, the arcs alone
+	QPainterPath toothPath(const QLineF &tooth, QList<QPointF> hops, qreal radius, bool arcs_only = false)
+	{
+		const QPointF a = tooth.p1();
+		const QPointF b = tooth.p2();
+		const bool lying = std::abs(tooth.dy()) < 0.01;
+		const qreal direction = lying ? (b.x() > a.x() ? 1 : -1) : (b.y() > a.y() ? 1 : -1);
+		std::sort(hops.begin(), hops.end(), [&a](const QPointF &p, const QPointF &q) {
+			return QLineF(a, p).length() < QLineF(a, q).length();
+		});
+		QPainterPath path(a);
+		for (const QPointF &hop : std::as_const(hops))
+		{
+			const qreal r = std::max(1.5, std::min(radius, std::min(QLineF(a, hop).length(),
+										  QLineF(hop, b).length()) - 0.5));
+			const QRectF circle(hop.x() - r, hop.y() - r, 2 * r, 2 * r);
+			const QPointF start = lying ? QPointF(hop.x() - direction * r, hop.y())
+						    : QPointF(hop.x(), hop.y() - direction * r);
+			if (arcs_only) {
+				path.moveTo(start);
+			} else {
+				path.lineTo(start);
+			}
+			if (lying) {
+				path.arcTo(circle, direction > 0 ? 180 : 0, direction > 0 ? -180 : 180);
+			} else {
+				path.arcTo(circle, direction > 0 ? 90 : 270, direction > 0 ? -180 : 180);
+			}
+		}
+		if (!arcs_only) {
+			path.lineTo(b);
+		}
+		return path;
+	}
+
 		/// The bus bars of each folio
 	QHash<const QGraphicsScene *, QList<QPointer<TerminalBusItem>>> &busesOnScene()
 	{
 		static QHash<const QGraphicsScene *, QList<QPointer<TerminalBusItem>>> buses;
 		return buses;
+	}
+
+		/// Where a bus bar is, before it is drawn: the ends of its joined
+		/// terminals by its side, the way they point, how far out they reach,
+		/// and the stretch of the strip it runs along
+	struct Footprint
+	{
+		bool valid = false;
+		struct End { QPointF dock; Qet::Orientation orientation; };
+		QList<End> ends;
+		Qet::Orientation orientation = Qet::North;
+			/// The trunk runs up and down, the ends pointing to the side
+		bool vertical = true;
+			/// -1 when the ends point left or up
+		qreal outward = 1;
+			/// The furthest end, across the trunk
+		qreal across = 0;
+		qreal from = 0;
+		qreal to = 0;
+		int level = 0;
+	};
+
+	Footprint footprintOf(const TerminalBusItem *bus)
+	{
+		Footprint f;
+		const int side = bus->side();
+		const QList<Element *> list = bus->terminals();
+		for (const Element *element : list)
+		{
+			const Terminal *terminal = element->terminals().value(side);
+			if (terminal) f.ends << Footprint::End{terminal->dockConductor(), terminal->orientation()};
+		}
+		if (f.ends.isEmpty()) {
+			return f;
+		}
+		f.valid = true;
+		f.orientation = f.ends.first().orientation;
+		f.vertical = f.orientation == Qet::West || f.orientation == Qet::East;
+		f.outward = (f.orientation == Qet::West || f.orientation == Qet::North) ? -1 : 1;
+		f.across = f.vertical ? f.ends.first().dock.x() : f.ends.first().dock.y();
+		f.from = std::numeric_limits<qreal>::max();
+		f.to = std::numeric_limits<qreal>::lowest();
+		for (const Footprint::End &end : std::as_const(f.ends))
+		{
+			const qreal a = f.vertical ? end.dock.x() : end.dock.y();
+			const qreal along = f.vertical ? end.dock.y() : end.dock.x();
+			f.across = f.outward < 0 ? std::min(f.across, a) : std::max(f.across, a);
+			f.from = std::min(f.from, along);
+			f.to = std::max(f.to, along);
+		}
+		const QSharedPointer<TerminalStripBridge> bridge = bus->bridge();
+		const QVector<QSharedPointer<RealTerminal>> joined = bridge ? bridge->realTerminals()
+									     : QVector<QSharedPointer<RealTerminal>>();
+		f.level = joined.isEmpty() || !joined.first() ? 0 : joined.first()->level();
+		return f;
+	}
+
+		/**
+			The lane of @a bus: 0 for the trunk next to the terminals, 1 for
+			one further out, and so on. Bus bars of one side of a strip
+			whose stretches overlap - the bridges of two levels of the same
+			terminals, asked by the Renan on 23/10/2026 - each take one, the
+			lower level inside; bus bars that do not overlap share lane 0, as
+			two bridges one after the other on one level. Worked out from all
+			the bus bars of the folio, the same way by each of them.
+		*/
+	int laneOf(const TerminalBusItem *bus)
+	{
+		const Footprint own = footprintOf(bus);
+		if (!own.valid || !bus->scene()) {
+			return 0;
+		}
+		struct Placed { const TerminalBusItem *bus; Footprint f; };
+		QList<Placed> group;
+		const QList<TerminalBusItem *> buses = TerminalBusItem::busesOn(bus->scene());
+		for (const TerminalBusItem *other : buses)
+		{
+			const Footprint f = other == bus ? own : footprintOf(other);
+			if (f.valid && f.vertical == own.vertical && f.outward == own.outward
+			    && std::abs(f.across - own.across) < 1) {
+				group << Placed{other, f};
+			}
+		}
+		std::stable_sort(group.begin(), group.end(), [](const Placed &a, const Placed &b) {
+			return a.f.level != b.f.level ? a.f.level < b.f.level : a.f.from < b.f.from;
+		});
+		QHash<const TerminalBusItem *, int> lanes;
+		for (int i = 0 ; i < group.size() ; ++i)
+		{
+			const Footprint &f = group.at(i).f;
+			int lane = 0;
+			bool taken = true;
+			while (taken)
+			{
+				taken = false;
+				for (int j = 0 ; j < i && !taken ; ++j)
+				{
+					const Footprint &g = group.at(j).f;
+					taken = lanes.value(group.at(j).bus) == lane
+						&& f.from <= g.to + lane_pitch && g.from <= f.to + lane_pitch;
+				}
+				if (taken) ++lane;
+			}
+			lanes.insert(group.at(i).bus, lane);
+		}
+		return lanes.value(bus);
 	}
 
 		/// The terminal of @a conductor on @a element, or nullptr
@@ -588,10 +743,74 @@ QPolygonF TerminalBusItem::feedMark() const
 */
 void TerminalBusItem::terminalsChanged()
 {
-	prepareGeometryChange();
-	m_dirty = true;
-	update();
+		//The others of the folio too: one moved or made longer may take or
+		//give back the lane of another (laneOf())
+	QList<TerminalBusItem *> buses = scene() ? busesOn(scene()) : QList<TerminalBusItem *>();
+	if (!buses.contains(this)) {
+		buses << this;
+	}
+	for (TerminalBusItem *bus : std::as_const(buses))
+	{
+		bus->prepareGeometryChange();
+		bus->m_dirty = true;
+		bus->update();
+	}
+	restack(buses);
 	Conductor::othersChangedShape();
+}
+
+/**
+	@brief TerminalBusItem::restack
+	Each of @a buses a little higher the further out its lane (laneOf()):
+	the tooth of a bus bar outside hops over the trunk of the one inside,
+	and is drawn over it, whichever was made first
+*/
+void TerminalBusItem::restack(const QList<TerminalBusItem *> &buses)
+{
+	for (TerminalBusItem *bus : buses)
+	{
+		if (bus && bus->scene()) bus->setZValue(10.5 + 0.01 * laneOf(bus));
+	}
+}
+
+/**
+	@brief TerminalBusItem::toothHops
+	@return where the teeth of this bus bar cross the trunk of another bus
+	bar of the folio, in scene coordinates: the tooth of a bus bar further
+	out passes over the trunk of the one inside it, and hops over it, as a
+	wire does - a tooth drawn straight across it would join the two
+*/
+QList<QPointF> TerminalBusItem::toothHops() const
+{
+	QList<QPointF> hops;
+	if (!scene()) {
+		return hops;
+	}
+	const QVector<QLineF> own = teeth();
+	const QList<TerminalBusItem *> buses = busesOn(scene());
+	for (const TerminalBusItem *other : buses)
+	{
+		if (other == this) continue;
+		const QLineF trunk_ = other->trunk();
+		if (trunk_.isNull()) continue;
+		const bool standing = std::abs(trunk_.dx()) < 0.01;
+		for (const QLineF &tooth : own)
+		{
+			const bool lying_tooth = std::abs(tooth.dy()) < 0.01;
+			if (standing != lying_tooth) continue;
+			const QPointF crossing = standing ? QPointF(trunk_.p1().x(), tooth.p1().y())
+							  : QPointF(tooth.p1().x(), trunk_.p1().y());
+			const auto inside = [](qreal value, qreal a, qreal b, qreal margin) {
+				return value > std::min(a, b) + margin && value < std::max(a, b) - margin;
+			};
+			const bool on_tooth = standing ? inside(crossing.x(), tooth.p1().x(), tooth.p2().x(), 1)
+						       : inside(crossing.y(), tooth.p1().y(), tooth.p2().y(), 1);
+			const bool on_trunk = standing ? inside(crossing.y(), trunk_.p1().y(), trunk_.p2().y(), -trunk_width / 2)
+						       : inside(crossing.x(), trunk_.p1().x(), trunk_.p2().x(), -trunk_width / 2);
+			if (on_tooth && on_trunk) hops << crossing;
+		}
+	}
+	return hops;
 }
 
 void TerminalBusItem::watchTerminals()
@@ -628,34 +847,20 @@ void TerminalBusItem::computeGeometry() const
 	m_teeth.clear();
 	m_feed_mark.clear();
 
-	struct End { QPointF dock; Qet::Orientation orientation; };
-	QList<End> ends;
-	const int side_ = side();
-	const QList<Element *> list = terminals();
-	for (const Element *element : list)
-	{
-		const Terminal *terminal = element->terminals().value(side_);
-		if (terminal) ends << End{terminal->dockConductor(), terminal->orientation()};
-	}
-	if (ends.isEmpty()) {
+	const Footprint footprint = footprintOf(this);
+	if (!footprint.valid) {
 		return;
 	}
-	const Qet::Orientation orientation = ends.first().orientation;
-	const bool vertical_trunk = orientation == Qet::West || orientation == Qet::East;
-	qreal across = vertical_trunk ? ends.first().dock.x() : ends.first().dock.y();
-	qreal from = std::numeric_limits<qreal>::max(), to = std::numeric_limits<qreal>::lowest();
-	for (const End &end : std::as_const(ends))
-	{
-		const qreal a = vertical_trunk ? end.dock.x() : end.dock.y();
-		const qreal along = vertical_trunk ? end.dock.y() : end.dock.x();
-		across = (orientation == Qet::West || orientation == Qet::North) ? std::min(across, a) : std::max(across, a);
-		from = std::min(from, along);
-		to = std::max(to, along);
-	}
-	const qreal outward = (orientation == Qet::West || orientation == Qet::North) ? -1 : 1;
-	const qreal trunk_at = across + outward * trunk_offset;
+	const int side_ = side();
+	const QList<Element *> list = terminals();
+	const bool vertical_trunk = footprint.vertical;
+	const qreal outward = footprint.outward;
+	const qreal from = footprint.from;
+	const qreal to = footprint.to;
+		//Further out, past another bus bar of the same terminals (laneOf())
+	const qreal trunk_at = footprint.across + outward * (trunk_offset + laneOf(this) * lane_pitch);
 	m_trunk = vertical_trunk ? QLineF(trunk_at, from, trunk_at, to) : QLineF(from, trunk_at, to, trunk_at);
-	for (const End &end : std::as_const(ends))
+	for (const Footprint::End &end : std::as_const(footprint.ends))
 	{
 		const QPointF foot = vertical_trunk ? QPointF(trunk_at, end.dock.y()) : QPointF(end.dock.x(), trunk_at);
 		m_teeth << QLineF(foot, end.dock);
@@ -767,8 +972,29 @@ void TerminalBusItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
 		}
 	}
 	painter->setPen(QPen(color, tooth_width, Qt::SolidLine, Qt::FlatCap));
-	for (const QLineF &tooth : std::as_const(m_teeth)) {
-		painter->drawLine(tooth);
+		//Over the trunk of a bus bar inside this one, a hop (toothHops()),
+		//wider than that trunk: the two bars plainly apart
+	const QList<QPointF> hops = toothHops();
+	for (const QLineF &tooth : std::as_const(m_teeth))
+	{
+		QList<QPointF> here;
+		for (const QPointF &hop : hops)
+		{
+			if (QLineF(tooth.p1(), hop).length() + QLineF(hop, tooth.p2()).length()
+			    < tooth.length() + 0.01) here << hop;
+		}
+		if (here.isEmpty()) {
+			painter->drawLine(tooth);
+			continue;
+		}
+			//The colour of the folio round the arcs first, over the trunk
+			//under them, then the tooth with its arcs, the joins round
+		const QPen tooth_pen = painter->pen();
+		painter->setPen(QPen(Diagram::background_color, tooth_width + 2 * hop_clearance, Qt::SolidLine, Qt::FlatCap, Qt::RoundJoin));
+		painter->drawPath(toothPath(tooth, here, tooth_hop_radius, true));
+		painter->setPen(QPen(color, tooth_width, Qt::SolidLine, Qt::FlatCap, Qt::RoundJoin));
+		painter->drawPath(toothPath(tooth, here, tooth_hop_radius));
+		painter->setPen(tooth_pen);
 	}
 	painter->setPen(QPen(color, trunk_width, Qt::SolidLine, Qt::SquareCap));
 	painter->drawLine(m_trunk);
@@ -787,6 +1013,17 @@ QVariant TerminalBusItem::itemChange(GraphicsItemChange change, const QVariant &
 	{
 		QList<QPointer<TerminalBusItem>> &list = busesOnScene()[scene()];
 		list.removeAll(this);
+			//Those left may take back the lane this one had (laneOf())
+		QList<TerminalBusItem *> others;
+		for (const QPointer<TerminalBusItem> &other : std::as_const(list))
+		{
+			if (!other) continue;
+			other->prepareGeometryChange();
+			other->m_dirty = true;
+			other->update();
+			others << other;
+		}
+		restack(others);
 		if (list.isEmpty()) busesOnScene().remove(scene());
 		Conductor::othersChangedShape();
 	}
@@ -1050,13 +1287,16 @@ bool TerminalBusItem::needsStripName(const QList<Element *> &selection)
 	wires that join the bus bar to one same point out of it, all but one -
 	the arm, when they are the branches of an arm (T86). The bus bar is
 	drawn by the side of the strip where the fewest wires are left, the
-	inside of the panel; the one wire left on that side is its feed.
+	inside of the panel - by the side of the other bus bars of the strip
+	when it has some -; the one wire left on that side is its feed.
 
 	A terminal of a bus bar among them brings the whole bus bar, and the
 	others are added to it - by its side, with its feed - (asked by the
 	Renan on 23/10/2026): the terminals in no strip yet go into the strip of
 	the bus bar, with the other levels of theirs, each where its name goes
-	among the terminals of the strip.
+	among the terminals of the strip. Terminals of no strip whose strip the
+	project has already, by name, go into it the same way: a strip has a
+	bus bar per level, and several on one level.
 	@param message : why nothing was done, when nothing was
 	@return true when the terminals were joined
 */
@@ -1130,6 +1370,24 @@ bool TerminalBusItem::join(Diagram *diagram, const QList<Element *> &selection,
 	QVector<QVector<QSharedPointer<RealTerminal>>> to_add;
 	QVector<int> places;
 	QString name;
+		//None of them in a strip, and the project has the strip of their
+		//name already: they go into it, with its other bus bars. A second
+		//bus bar of a strip made a second strip of the same name before
+		//(asked by the Renan on 23/10/2026: a strip has several bus bars)
+	if (!strip)
+	{
+		QString wanted = nameForNewStrip(chosen);
+		if (wanted.isEmpty()) wanted = new_strip_name.trimmed();
+		const QVector<TerminalStrip *> existing_strips = diagram->project()->terminalStrip();
+		for (TerminalStrip *candidate : existing_strips)
+		{
+			if (!wanted.isEmpty() && candidate && candidate->name() == wanted)
+			{
+				strip = candidate;
+				break;
+			}
+		}
+	}
 	if (strip && free_one)
 	{
 			//Terminals put in the strip of the others, with the other levels
@@ -1255,6 +1513,23 @@ bool TerminalBusItem::join(Diagram *diagram, const QList<Element *> &selection,
 		//the wire stays
 	if (existing && existing->side() >= 0) {
 		side_ = existing->side();
+	}
+		//A bus bar more of a strip goes by the side of its others, in a lane
+		//of its own when they run along each other (laneOf()): the Renan
+		//prefers the bus bars of a strip together, on one side, and there
+		//may be more than two (24/10/2026)
+	else if (strip)
+	{
+		const QVector<QSharedPointer<RealTerminal>> reals = strip->realTerminals();
+		for (const QSharedPointer<RealTerminal> &real : reals)
+		{
+			const QSharedPointer<TerminalStripBridge> other = real ? real->bridge() : QSharedPointer<TerminalStripBridge>();
+			if (other && other->side() >= 0)
+			{
+				side_ = other->side();
+				break;
+			}
+		}
 	}
 	Conductor *feed_wire = on_side.value(side_).size() == 1 ? on_side.value(side_).first() : nullptr;
 	QUuid kept_feed;
