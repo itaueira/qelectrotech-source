@@ -29,6 +29,7 @@
 class Conductor;
 class QColor;
 class Diagram;
+class Terminal;
 class Element;
 class RealTerminal;
 class TerminalStripBridge;
@@ -87,6 +88,7 @@ class TerminalBusItem : public QetGraphicsItem
 		static QSharedPointer<RealTerminal> realTerminalOf(const Element *element);
 		static QList<TerminalBusItem *> busesOn(const QGraphicsScene *scene);
 		static QList<QVector<QPointF>> trunksOn(const QGraphicsScene *scene);
+		static bool wireStart(const Terminal *terminal, QPointF *start);
 		static void syncFolio(Diagram *diagram);
 		static QString nameForNewStrip(const QList<Element *> &selection);
 		static bool needsStripName(const QList<Element *> &selection);

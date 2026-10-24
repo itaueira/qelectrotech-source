@@ -83,3 +83,23 @@ TEST_CASE("A crossing near the piece a wire comes to its terminal by hops", "[wi
 	CHECK(WireHops::simplified({QPointF(0, 0), QPointF(10, 0), QPointF(10, 10)}).size() == 3);
 	CHECK(WireHops::simplified({QPointF(0, 0), QPointF(10, 0), QPointF(5, 0)}).size() == 3);
 }
+
+TEST_CASE("T87 - A hop is drawn on the segment it lies on, either way", "[wirehops][T87]")
+{
+		//Right, then down: a trunk standing crosses the first segment, one
+		//lying crosses the second - a bus bar is hopped over whichever way
+		//it runs
+	const QVector<QPointF> wire {QPointF(0, 0), QPointF(100, 0), QPointF(100, 100)};
+	const QList<QVector<QPointF>> trunks {line(50, -20, 50, 20), line(80, 50, 120, 50)};
+	QList<QPointF> hops = WireHops::crossings(wire, trunks, WireHops::Mode::Horizontal);
+	hops << WireHops::crossings(wire, trunks, WireHops::Mode::Vertical);
+	REQUIRE(hops.size() == 2);
+
+	const QPainterPath both = WireHops::path(wire, hops, WireHops::Mode::Horizontal);
+		//Above the first segment, and right of the second
+	CHECK(both.boundingRect().top() == Approx(-WireHops::radius));
+	CHECK(both.boundingRect().right() == Approx(100 + WireHops::radius));
+		//With no hop asked for, none
+	const QPainterPath plain = WireHops::path(wire, hops, WireHops::Mode::None);
+	CHECK(plain.boundingRect() == QRectF(0, 0, 100, 100));
+}

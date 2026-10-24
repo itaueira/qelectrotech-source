@@ -597,3 +597,56 @@ TEST_CASE("T87 - The colour of a bus bar, and the bar under the wires", "[T87][b
 	sheet->undoStack().redo();
 	CHECK(bus->bridge()->color() == after);
 }
+
+TEST_CASE("T87 - The wire of a joined terminal starts past the trunk", "[T87][bus]")
+{
+	Setup setup;
+	UiBench::ScratchProject project(fixture());
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Wired wired(sheet);
+	REQUIRE(wired.feed);
+	REQUIRE(TerminalBusItem::join(sheet, wired.commons(), QString()));
+	TerminalBusItem *bus = busOf(sheet);
+	REQUIRE(bus);
+	REQUIRE(bus->side() == 0);
+		//The trunk at 378, 8 off the left ends of the terminals at 386, and
+		//3.5 wide: the feed, which comes to 1.2 from the left, is drawn from
+		//its outer edge, and is still joined to the end of 1.2
+	const qreal edge = 386 - 8 - 3.5 / 2;
+	const QRectF plain = wired.feed->mapRectToScene(wired.feed->path().boundingRect());
+	const QRectF painted = wired.feed->mapRectToScene(wired.feed->paintedPath().boundingRect());
+	CHECK(plain.right() == Approx(386));
+	CHECK(painted.right() == Approx(edge));
+	CHECK(wired.feed->terminal2->dockConductor().x() == Approx(386));
+		//A wire by the other side of a joined terminal is drawn whole
+	Conductor *field = wired.field.at(0);
+	CHECK(field->mapRectToScene(field->paintedPath().boundingRect()).left() == Approx(414));
+		//And a wire of a terminal out of the bus bar too
+	Conductor *output = wired.outputs.at(0);
+	CHECK(output->mapRectToScene(output->paintedPath().boundingRect()).right()
+	      == Approx(output->mapRectToScene(output->path().boundingRect()).right()));
+}
+
+TEST_CASE("T87 - A wire crossing a bus bar hops over it whatever the folio does", "[T87][bus]")
+{
+	Setup setup;
+	UiBench::ScratchProject project(fixture());
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Wired wired(sheet);
+	REQUIRE(wired.feed);
+	REQUIRE(TerminalBusItem::join(sheet, wired.commons(), QString()));
+		//The output to 2.1 crosses the trunk at y = 240: it hops with no
+		//hop drawn between the wires, and with the vertical wires hopping
+	Conductor *output = wired.outputs.at(1);
+	const qreal y = 240;
+	for (const WireHops::Mode mode : {WireHops::Mode::None, WireHops::Mode::Vertical, WireHops::Mode::Horizontal})
+	{
+		CAPTURE(int(mode));
+		project->setWireHops(mode);
+		Conductor::othersChangedShape();
+		const QRectF painted = output->mapRectToScene(output->paintedPath().boundingRect());
+		CHECK(painted.top() < y - 2);
+	}
+}

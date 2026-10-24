@@ -3859,6 +3859,8 @@ bool isContained(const QPointF &a, const QPointF &b, const QPointF &c) {
 	);
 }
 
+static bool startPastTrunks(const Conductor *conductor, QVector<QPointF> &wire);
+
 /**
 	@brief Conductor::paintedPath
 	@return the path drawn for this conductor: path(), with a hop at each
@@ -3868,6 +3870,13 @@ bool isContained(const QPointF &a, const QPointF &b, const QPointF &c) {
 	A moved conductor still repaints the hops of the others: a crossing
 	lies inside the bounding rect of both conductors, which Qt repaints
 	when either moves.
+
+	A bus bar is no wire (T87, asked by the Renan on 23/10/2026): a wire
+	that crosses its trunk hops over it whatever the project does with the
+	crossings of the wires, and whichever way the bar runs; and a wire that
+	leaves a joined terminal by the side of the bar is drawn from past the
+	trunk (TerminalBusItem::wireStart()), the tooth joining the terminal to
+	the bar on its own.
 */
 QPainterPath Conductor::paintedPath() const
 {
@@ -3876,7 +3885,7 @@ QPainterPath Conductor::paintedPath() const
 		return path();
 	}
 	const WireHops::Mode mode = parent_diagram->project()->wireHops();
-	if (mode == WireHops::Mode::None) {
+	if (mode == WireHops::Mode::None && TerminalBusItem::busesOn(parent_diagram).isEmpty()) {
 		return path();
 	}
 	if (m_hops_generation == s_conductor_geometry_generation
@@ -3920,37 +3929,97 @@ QPainterPath Conductor::paintedPath() const
 
 		//Without the points of a straight run: the short piece a wire comes
 		//to its terminal by would keep a crossing near it from hopping (T87)
-	const QList<QPointF> points = WireHops::simplified(segmentsToPoints());
+	QList<QPointF> points = WireHops::simplified(segmentsToPoints());
 	if (points.size() < 2) {
 		return m_hops_path;
 	}
 	QVector<QPointF> wire;
-	for (const QPointF &point : points) {
+	for (const QPointF &point : std::as_const(points)) {
 		wire.append(mapToScene(point));
+	}
+	const bool trimmed = startPastTrunks(this, wire);
+	if (trimmed)
+	{
+		points.first() = mapFromScene(wire.first());
+		points.last() = mapFromScene(wire.last());
 	}
 
 		//A conductor crossing this one has path bounds overlapping its own;
 		//adjusted by 1 because a straight conductor's bounds have no width
 	const QRectF rect = mapRectToScene(path().boundingRect()).adjusted(-1, -1, 1, 1);
 	QList<QVector<QPointF>> others;
+	QList<QVector<QPointF>> trunks;
 	for (const HopCandidate &candidate : std::as_const(s_hop_candidates))
 	{
 		if (candidate.conductor != this
 			&& rect.intersects(candidate.rect.adjusted(-1, -1, 1, 1))) {
-			others.append(candidate.points);
+			(candidate.conductor ? others : trunks).append(candidate.points);
 		}
 	}
 
-	const QList<QPointF> scene_hops = WireHops::crossings(wire, others, mode);
-	if (!scene_hops.isEmpty())
+		//The hops over the wires, as the project draws them, and over the
+		//trunks of the bus bars, always: on a horizontal segment over a
+		//trunk that stands, on a vertical one over a trunk that lies
+	QList<QPointF> scene_on_horizontal = WireHops::crossings(wire, trunks, WireHops::Mode::Horizontal);
+	QList<QPointF> scene_on_vertical = WireHops::crossings(wire, trunks, WireHops::Mode::Vertical);
+	if (mode == WireHops::Mode::Horizontal) {
+		scene_on_horizontal << WireHops::crossings(wire, others, mode);
+	} else if (mode == WireHops::Mode::Vertical) {
+		scene_on_vertical << WireHops::crossings(wire, others, mode);
+	}
+	if (trimmed || !scene_on_horizontal.isEmpty() || !scene_on_vertical.isEmpty())
 	{
+			//Each hop drawn on the segment it lies on, whichever way it
+			//runs (WireHops::path())
 		QList<QPointF> hops;
-		for (const QPointF &hop : scene_hops) {
+		for (const QPointF &hop : std::as_const(scene_on_horizontal)) {
 			hops.append(mapFromScene(hop));
 		}
-		m_hops_path = WireHops::path(QVector<QPointF>(points.begin(), points.end()), hops, mode);
+		for (const QPointF &hop : std::as_const(scene_on_vertical)) {
+			hops.append(mapFromScene(hop));
+		}
+		m_hops_path = WireHops::path(QVector<QPointF>(points.begin(), points.end()),
+					     hops, WireHops::Mode::Horizontal);
 	}
 	return m_hops_path;
+}
+
+/**
+	@brief startPastTrunks
+	@a wire, the points of @a conductor in scene coordinates, made to
+	start past the trunk of a bus bar at an end on a joined terminal, by the
+	side the bar is drawn, when the wire goes on out of it beyond the trunk
+	(TerminalBusItem::wireStart()). For the drawing only: the conductor
+	stays joined to its terminal.
+	@return true when an end was moved
+*/
+static bool startPastTrunks(const Conductor *conductor, QVector<QPointF> &wire)
+{
+	if (wire.size() < 2) {
+		return false;
+	}
+	bool moved = false;
+	for (int end = 0 ; end < 2 ; ++end)
+	{
+		QPointF start;
+		if (!TerminalBusItem::wireStart(end == 0 ? conductor->terminal1 : conductor->terminal2, &start)) continue;
+		const int i = end == 0 ? 0 : int(wire.size()) - 1;
+		const int j = end == 0 ? 1 : int(wire.size()) - 2;
+		const QPointF dock = wire.at(i);
+		const QPointF next = wire.at(j);
+			//Out of the terminal on its line, and past the trunk by more
+			//than a little
+		const bool across_x = std::abs(dock.y() - next.y()) < 0.01 && std::abs(start.y() - dock.y()) < 0.01
+				&& (start.x() - dock.x()) * (next.x() - start.x()) > 0.25;
+		const bool across_y = std::abs(dock.x() - next.x()) < 0.01 && std::abs(start.x() - dock.x()) < 0.01
+				&& (start.y() - dock.y()) * (next.y() - start.y()) > 0.25;
+		if (across_x || across_y)
+		{
+			wire[i] = start;
+			moved = true;
+		}
+	}
+	return moved;
 }
 
 /**
@@ -4503,7 +4572,7 @@ QPainterPath Conductor::ownPiecePaintedPath() const
 		return plain;
 	}
 	const WireHops::Mode mode = parent_diagram->project()->wireHops();
-	if (mode == WireHops::Mode::None) {
+	if (mode == WireHops::Mode::None && TerminalBusItem::busesOn(parent_diagram).isEmpty()) {
 		return plain;
 	}
 	QVector<QPointF> local;
@@ -4531,17 +4600,27 @@ QPainterPath Conductor::ownPiecePaintedPath() const
 		}
 		others << points;
 	}
-		//And the trunks of the bus bars (T87)
-	others << TerminalBusItem::trunksOn(parent_diagram);
-	const QList<QPointF> scene_hops = WireHops::crossings(wire, others, mode);
-	if (scene_hops.isEmpty()) {
+		//And the trunks of the bus bars, hopped over always (T87, see
+		//paintedPath())
+	const QList<QVector<QPointF>> trunks = TerminalBusItem::trunksOn(parent_diagram);
+	QList<QPointF> scene_on_horizontal = WireHops::crossings(wire, trunks, WireHops::Mode::Horizontal);
+	QList<QPointF> scene_on_vertical = WireHops::crossings(wire, trunks, WireHops::Mode::Vertical);
+	if (mode == WireHops::Mode::Horizontal) {
+		scene_on_horizontal << WireHops::crossings(wire, others, mode);
+	} else if (mode == WireHops::Mode::Vertical) {
+		scene_on_vertical << WireHops::crossings(wire, others, mode);
+	}
+	if (scene_on_horizontal.isEmpty() && scene_on_vertical.isEmpty()) {
 		return plain;
 	}
 	QList<QPointF> hops;
-	for (const QPointF &hop : scene_hops) {
+	for (const QPointF &hop : std::as_const(scene_on_horizontal)) {
 		hops << mapFromScene(hop);
 	}
-	return WireHops::path(local, hops, mode);
+	for (const QPointF &hop : std::as_const(scene_on_vertical)) {
+		hops << mapFromScene(hop);
+	}
+	return WireHops::path(local, hops, WireHops::Mode::Horizontal);
 }
 
 void Conductor::othersChangedShape()

@@ -192,7 +192,12 @@ QList<QPointF> WireHops::crossings(const QVector<QPointF> &wire,
 	@param wire : the points of the wire
 	@param hops : the points where the wire hops, from WireHops::crossings,
 	in the same coordinates as @a wire
-	@param mode : which wire of a crossing hops
+	@param mode : Mode::None for no hop at all; with another, each hop is
+	drawn on the segment it lies on, whichever way that segment runs - the
+	hops crossings() gives for a mode lie on segments of one way, and the
+	hops over the trunk of a bus bar on segments of both, the bar being
+	hopped over whichever way it runs and whatever the folio does with the
+	crossings of the wires (T87, asked on 23/10/2026)
 	@return the path of the wire, with a half circle at each hop: above a
 	horizontal wire, right of a vertical one. With no hop, the same path
 	as the plain wire.
@@ -205,22 +210,29 @@ QPainterPath WireHops::path(const QVector<QPointF> &wire,
 	if (wire.isEmpty()) {
 		return path;
 	}
+	const QList<QPointF> none;
+	const QList<QPointF> &drawn = mode == Mode::None ? none : hops;
 
-	const bool horizontal = mode == Mode::Horizontal;
 	path.moveTo(wire.first());
 	for (int i = 0 ; i < wire.size() - 1 ; ++i)
 	{
 		const QPointF a = wire.at(i);
 		const QPointF b = wire.at(i + 1);
-		const bool hops_here = mode != Mode::None
-				&& (horizontal ? isHorizontal(a, b) : isVertical(a, b));
+		const bool horizontal = isHorizontal(a, b);
+		const bool hops_here = horizontal || isVertical(a, b);
 
 		if (hops_here)
 		{
 				//1 when the wire runs towards +x (or +y), -1 otherwise
 			const qreal direction = horizontal ? (b.x() > a.x() ? 1 : -1)
 											   : (b.y() > a.y() ? 1 : -1);
-			const QList<QPointF> here = hopsOnSegment(a, b, hops, horizontal);
+				//One hop at one place, the same crossing being handed in
+				//twice, over a wire and over a trunk
+			QList<QPointF> here;
+			const QList<QPointF> found = hopsOnSegment(a, b, drawn, horizontal);
+			for (const QPointF &hop : found) {
+				if (here.isEmpty() || QLineF(here.last(), hop).length() >= 0.5) here << hop;
+			}
 			for (int k = 0 ; k < here.size() ; ++k)
 			{
 				const QPointF &hop = here.at(k);

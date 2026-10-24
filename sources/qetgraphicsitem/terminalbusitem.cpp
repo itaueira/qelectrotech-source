@@ -927,6 +927,40 @@ QList<QVector<QPointF>> TerminalBusItem::trunksOn(const QGraphicsScene *scene)
 }
 
 /**
+	@brief TerminalBusItem::wireStart
+	@return true when @a terminal is the end of a joined terminal by which
+	its bus bar is drawn, with in @a start, in scene coordinates, where a
+	wire leaving it starts to be drawn: just past the trunk, on the line of
+	the terminal. The tooth joins the terminal to the trunk, and a wire drawn
+	over the tooth and across the trunk hid them both (asked by the Renan on
+	23/10/2026: the wire starts after the trunk). The wire is still joined
+	to the end of the terminal: only its drawing starts there.
+*/
+bool TerminalBusItem::wireStart(const Terminal *terminal, QPointF *start)
+{
+	const Element *element = terminal ? terminal->parentElement() : nullptr;
+	if (!element || !terminal->scene() || !start) {
+		return false;
+	}
+	const QList<TerminalBusItem *> buses = busesOn(terminal->scene());
+	for (const TerminalBusItem *bus : buses)
+	{
+		if (!bus->terminals().contains(const_cast<Element *>(element))) continue;
+		if (element->terminals().value(bus->side()) != terminal) return false;
+		const QLineF line = bus->trunk();
+		if (line.isNull()) return false;
+		const QPointF dock = terminal->dockConductor();
+		const Qet::Orientation orientation = terminal->orientation();
+		const qreal outward = (orientation == Qet::West || orientation == Qet::North) ? -1 : 1;
+		*start = (orientation == Qet::West || orientation == Qet::East)
+				? QPointF(line.p1().x() + outward * trunk_width / 2, dock.y())
+				: QPointF(dock.x(), line.p1().y() + outward * trunk_width / 2);
+		return true;
+	}
+	return false;
+}
+
+/**
 	@brief TerminalBusItem::syncFolio
 	A bus bar on @a diagram for each bridge that joins two or more of its
 	terminals, and none for a bridge that is gone: what the bridges of the
