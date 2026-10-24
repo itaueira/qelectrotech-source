@@ -96,7 +96,10 @@ namespace
 			.arg(x).arg(y).arg(QLatin1String(def)).arg(n, 2, 10, QLatin1Char('0')).arg(label, comment);
 	}
 
-	QString fixture()
+		/// @a first_comment: the comment of the terminals 1.1 and 1.2, X4 as
+		/// the others; another leaves them out of the strip X4 the first
+		/// bus bar makes
+	QString fixture(const QString &first_comment = QStringLiteral("X4"))
 	{
 		const QString sides = QStringLiteral("<terminal x=\"-14\" y=\"0\" orientation=\"w\"/>"
 						    "<terminal x=\"14\" y=\"0\" orientation=\"e\"/>");
@@ -108,7 +111,8 @@ namespace
 		const QStringList labels {QStringLiteral("1.1"), QStringLiteral("1.2"), QStringLiteral("2.1"),
 					  QStringLiteral("2.2"), QStringLiteral("3.1"), QStringLiteral("3.2")};
 		for (int i = 0 ; i < labels.size() ; ++i) {
-			xml += element("bus-strip.elmt", 400, 200 + 20 * i, labels.at(i), QStringLiteral("X4"), i);
+			xml += element("bus-strip.elmt", 400, 200 + 20 * i, labels.at(i),
+				       i < 2 ? first_comment : QStringLiteral("X4"), i);
 		}
 		xml += element("bus-strip.elmt", 300, 120, QStringLiteral("5"), QStringLiteral("X1"), 10);
 		for (int i = 0 ; i < 3 ; ++i)
@@ -501,4 +505,95 @@ TEST_CASE("T87 - The strip the manager generates draws the bridge", "[T87][bus]"
 		for (int x = 0 ; x < without.width() ; ++x)
 			if (without.pixel(x, y) != with_bridge.pixel(x, y)) ++changed;
 	CHECK(changed > 20);
+}
+
+TEST_CASE("T87 - Terminals added to a bus bar", "[T87][bus]")
+{
+	Setup setup;
+		//The terminals 1.1 and 1.2 of no strip yet: the bus bar of 2.2 and
+		//3.2 makes the strip X4 of the terminals 2 and 3 only
+	UiBench::ScratchProject project(fixture(QString()));
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Wired wired(sheet);
+	REQUIRE(wired.feed);
+	REQUIRE(TerminalBusItem::join(sheet, {wired.x4.at(3), wired.x4.at(5)}, QString()));
+	REQUIRE(project->terminalStrip().size() == 1);
+	TerminalStrip *strip = project->terminalStrip().first();
+	REQUIRE(strip->physicalTerminalCount() == 2);
+	TerminalBusItem *bus = busOf(sheet);
+	REQUIRE(bus);
+	const QSharedPointer<TerminalStripBridge> bridge = bus->bridge();
+	REQUIRE(bridge);
+	REQUIRE(bridge->realTerminals().size() == 2);
+	const int side = bridge->side();
+	const int wires_before = sheet->conductors().size();
+
+		//The bus bar selected with 1.2: what Join into a bus bar is given
+	const QList<Element *> selection = TerminalBusItem::joinable({bus, wired.x4.at(1)});
+	CHECK(selection.size() == 3);
+	CHECK(selection.contains(wired.x4.at(1)));
+
+	QString why;
+	REQUIRE(TerminalBusItem::join(sheet, selection, QString(), &why));
+	CHECK(why.isEmpty());
+	CAPTURE(why);
+		//The terminal 1, with its two levels, before 2 in the strip, and not
+		//after 3, where the strip puts what it is given: the bus bar joins
+		//neighbours only
+	REQUIRE(strip->physicalTerminalCount() == 3);
+	const auto first = strip->physicalTerminal(0);
+	REQUIRE(first->realTerminalCount() == 2);
+	CHECK(first->realTerminals().at(0)->element() == wired.x4.at(0));
+	CHECK(first->realTerminals().at(1)->element() == wired.x4.at(1));
+	CHECK(strip->physicalTerminal(1)->realTerminals().at(1)->element() == wired.x4.at(3));
+		//The same bridge, given the terminal: its side, and its feed - the
+		//wire from X1 now, the one from 1.2 to the bus bar gone with it
+	CHECK(TerminalBusItem::realTerminalOf(wired.x4.at(1))->bridge() == bridge);
+	CHECK(bridge->realTerminals().size() == 3);
+	CHECK(bridge->side() == side);
+	CHECK(bridge->feed() == wired.feed->uuid());
+	CHECK(sheet->conductors().size() == wires_before - 1);
+	REQUIRE(busOf(sheet));
+	CHECK(busOf(sheet)->teeth().size() == 3);
+	CHECK(sheet->undoStack().undoText() == QStringLiteral("Add terminals to the bus bar"));
+
+		//One undo: the terminal out of the strip, the bridge as it was
+	sheet->undoStack().undo();
+	CHECK(strip->physicalTerminalCount() == 2);
+	CHECK_FALSE(TerminalBusItem::realTerminalOf(wired.x4.at(1))->parentStrip());
+	CHECK(bridge->realTerminals().size() == 2);
+	CHECK(sheet->conductors().size() == wires_before);
+	sheet->undoStack().redo();
+	CHECK(strip->physicalTerminalCount() == 3);
+	CHECK(bridge->realTerminals().size() == 3);
+
+		//The bus bar alone with its terminals: nothing to add
+	CHECK_FALSE(TerminalBusItem::join(sheet, TerminalBusItem::joinable({busOf(sheet)}), QString(), &why));
+	CHECK_FALSE(why.isEmpty());
+}
+
+TEST_CASE("T87 - The colour of a bus bar, and the bar under the wires", "[T87][bus]")
+{
+	Setup setup;
+	UiBench::ScratchProject project(fixture());
+	REQUIRE(project.isOpen());
+	Diagram *sheet = project.diagram(0);
+	Wired wired(sheet);
+	REQUIRE(wired.feed);
+	REQUIRE(TerminalBusItem::join(sheet, wired.commons(), QString()));
+	TerminalBusItem *bus = busOf(sheet);
+	REQUIRE(bus);
+		//A wire that hops over the bar is drawn on it, and not under it
+	CHECK(bus->zValue() < wired.outputs.at(1)->zValue());
+	CHECK(bus->zValue() > wired.x4.at(1)->zValue());
+
+	const QColor before = bus->bridge()->color();
+	const QColor after = before == QColor(Qt::blue) ? QColor(Qt::red) : QColor(Qt::blue);
+	TerminalBusItem::setColor(bus, after);
+	CHECK(bus->bridge()->color() == after);
+	sheet->undoStack().undo();
+	CHECK(bus->bridge()->color() == before);
+	sheet->undoStack().redo();
+	CHECK(bus->bridge()->color() == after);
 }

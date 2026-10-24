@@ -27,6 +27,7 @@
 #include <QWeakPointer>
 
 class Conductor;
+class QColor;
 class Diagram;
 class Element;
 class RealTerminal;
@@ -91,6 +92,8 @@ class TerminalBusItem : public QetGraphicsItem
 		static bool needsStripName(const QList<Element *> &selection);
 		static bool join(Diagram *diagram, const QList<Element *> &selection,
 				 const QString &new_strip_name, QString *message = nullptr);
+		static QList<Element *> joinable(const QList<QGraphicsItem *> &selection);
+		static void setColor(TerminalBusItem *bus, const QColor &color);
 		static void setFeed(TerminalBusItem *bus, Conductor *conductor);
 		static void remove(TerminalBusItem *bus);
 

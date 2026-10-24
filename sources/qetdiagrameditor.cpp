@@ -699,9 +699,12 @@ void QETDiagramEditor::setUpActions()
 		menu->addSeparator();
 		QAction *bus = menu->addAction(tr("Join into a bus bar"));
 		bus->setStatusTip(tr("Join the selected terminals with a bridge of their strip, fed by one wire", "status bar tip"));
-		connect(bus, &QAction::triggered, this, [this, selected]() {
+		connect(bus, &QAction::triggered, this, [this]() {
 			DiagramView *view = currentDiagramView();
-			const QList<Element *> terminals = selected();
+				//A bus bar selected with terminals is given them
+			const QList<Element *> terminals = view && view->diagram()
+					? TerminalBusItem::joinable(view->diagram()->selectedItems())
+					: QList<Element *>();
 			if (!view || terminals.isEmpty()) return;
 			QString name;
 			if (TerminalBusItem::needsStripName(terminals))

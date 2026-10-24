@@ -17,10 +17,14 @@
 */
 #include "terminalbusitem.h"
 
+#include "../TerminalStrip/physicalterminal.h"
 #include "../TerminalStrip/realterminal.h"
 #include "../TerminalStrip/terminalstrip.h"
 #include "../TerminalStrip/terminalstripbridge.h"
 #include "../TerminalStrip/UndoCommand/bridgeterminalscommand.h"
+#include "../TerminalStrip/UndoCommand/changeterminalstripcolor.h"
+#include "../wirecolorname.h"
+#include "../qetmessagebox.h"
 #include "../diagram.h"
 #include "../diagramcontent.h"
 #include "../properties/elementdata.h"
@@ -36,8 +40,11 @@
 
 #include <QCollator>
 #include <QGraphicsSceneContextMenuEvent>
+#include <QGraphicsView>
 #include <QHash>
+#include <QIcon>
 #include <QMenu>
+#include <QPixmap>
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QPointer>
@@ -168,6 +175,91 @@ namespace
 		return groups;
 	}
 
+		/**
+			The terminals of @a diagram in no strip that are levels of the
+			terminals N of @a elements - labelled N.M - and in line with the
+			first of them: in the same column when @a line spreads taller
+			than wide, in the same row else. @a line is what tells the way
+			the strip runs: the chosen terminals, a terminal added to a bus
+			bar alone included
+		*/
+	QList<Element *> levelsOf(Diagram *diagram, const QList<Element *> &elements,
+				  const QList<Element *> &line)
+	{
+		QList<Element *> members;
+		if (elements.isEmpty()) return members;
+		QSet<QString> numbers;
+		for (Element *element : elements)
+		{
+			QString physical;
+			int level = 0;
+			if (splitLevel(element->actualLabel(), &physical, &level)) numbers << physical;
+		}
+		QRectF spread;
+		for (Element *element : line) {
+			spread |= QRectF(element->pos(), QSizeF(0.001, 0.001));
+		}
+		const bool column = spread.height() >= spread.width();
+		const QPointF first_at = elements.first()->pos();
+		const QList<Element *> all = diagram->elements();
+		for (Element *element : all)
+		{
+			const QSharedPointer<RealTerminal> real = TerminalBusItem::realTerminalOf(element);
+			QString physical;
+			int level = 0;
+			if (!real || real->parentStrip() || !splitLevel(element->actualLabel(), &physical, &level)
+			    || !numbers.contains(physical)) continue;
+			const qreal off = column ? element->pos().x() - first_at.x() : element->pos().y() - first_at.y();
+			if (qAbs(off) < 1) members << element;
+		}
+		return members;
+	}
+
+		/// The name of the physical terminal @a group makes: N for the
+		/// levels N.M, else the label of its terminal
+	QString physicalName(const QVector<QSharedPointer<RealTerminal>> &group)
+	{
+		Element *element = group.isEmpty() || !group.first() ? nullptr : group.first()->element();
+		if (!element) return QString();
+		QString physical;
+		int level = 0;
+		return splitLevel(element->actualLabel(), &physical, &level) ? physical
+									     : element->actualLabel().trimmed();
+	}
+
+		/**
+			@a added, the physical terminals of terminals put in a strip that
+			has @a groups already, each put before the first of the strip
+			whose name comes after its own - numbers as numbers -, at the end
+			when none does: terminal 5 added to the strip 1 to 4 goes after
+			4, terminal 0 before 1. @a groups becomes the strip made; the
+			places, in the order of @a added, are where each went, one after
+			the other (TerminalBusItem::join(), JoinBusCommand).
+		*/
+	QVector<int> insertInOrder(QVector<QVector<QSharedPointer<RealTerminal>>> &groups,
+				   const QVector<QVector<QSharedPointer<RealTerminal>>> &added)
+	{
+		QCollator collator;
+		collator.setNumericMode(true);
+		QVector<int> places;
+		for (const auto &group : added)
+		{
+			const QString name = physicalName(group);
+			int at = groups.size();
+			for (int i = 0 ; i < groups.size() ; ++i)
+			{
+				if (collator.compare(physicalName(groups.at(i)), name) > 0)
+				{
+					at = i;
+					break;
+				}
+			}
+			groups.insert(at, group);
+			places << at;
+		}
+		return places;
+	}
+
 		/// Whether the strip made of @a groups lets @a joined be bridged:
 		/// one level, neighbouring physical terminals (TerminalStrip::isBridgeable())
 	bool plannedBridgeable(const QVector<QVector<QSharedPointer<RealTerminal>>> &groups,
@@ -209,15 +301,18 @@ namespace
 	class JoinBusCommand : public QUndoCommand
 	{
 		public:
+				/// @a places: where each group of @a to_add goes in a
+				/// strip that exists, see insertInOrder(); none: at the end
 			JoinBusCommand(Diagram *diagram, TerminalStrip *strip, const QString &new_strip_name,
 				       const QVector<QVector<QSharedPointer<RealTerminal>>> &to_add,
 				       const QVector<QSharedPointer<RealTerminal>> &joined,
-				       int side, const QUuid &feed) :
+				       int side, const QUuid &feed, const QVector<int> &places = QVector<int>()) :
 				m_diagram(diagram),
 				m_project(diagram ? diagram->project() : nullptr),
 				m_strip(strip),
 				m_new_name(new_strip_name),
 				m_to_add(to_add),
+				m_places(places),
 				m_joined(joined),
 				m_side(side),
 				m_feed(feed)
@@ -242,6 +337,23 @@ namespace
 				}
 				if (!m_to_add.isEmpty()) {
 					m_strip->addAndGroupTerminals(m_to_add);
+				}
+					//The physical terminals the strip made last, each put
+					//where its name goes: before the bridge is made, which
+					//joins neighbours only
+				if (m_places.size() == m_to_add.size() && !m_places.isEmpty())
+				{
+					QVector<QSharedPointer<PhysicalTerminal>> order = m_strip->physicalTerminal();
+					const int count = m_to_add.size();
+					if (order.size() >= count)
+					{
+						const QVector<QSharedPointer<PhysicalTerminal>> made = order.mid(order.size() - count);
+						order.resize(order.size() - count);
+						for (int k = 0 ; k < count ; ++k) {
+							order.insert(std::min<int>(m_places.at(k), order.size()), made.at(k));
+						}
+						m_strip->setOrderTo(order);
+					}
 				}
 				if (!m_bridge_command) {
 					m_bridge_command = new BridgeTerminalsCommand(m_strip, m_joined);
@@ -292,6 +404,7 @@ namespace
 			bool m_created = false;
 			bool m_first = true;
 			QVector<QVector<QSharedPointer<RealTerminal>>> m_to_add;
+			QVector<int> m_places;
 			QVector<QSharedPointer<RealTerminal>> m_added;
 			QVector<QSharedPointer<RealTerminal>> m_joined;
 			BridgeTerminalsCommand *m_bridge_command = nullptr;
@@ -336,8 +449,10 @@ namespace
 
 /**
 	@brief TerminalBusItem::TerminalBusItem
-	The bus bar of @a bridge. Over the wires, whose ends its teeth cover,
-	and under the texts of the components.
+	The bus bar of @a bridge. Over the components, whose terminals its teeth
+	reach, and under the wires (Conductor: 11): a wire that crosses the bar
+	hops over it, and the hop is drawn on the bar and not hidden by it
+	(asked by the Renan on 23/10/2026, the bar drawn over the hops).
 */
 TerminalBusItem::TerminalBusItem(const QSharedPointer<TerminalStripBridge> &bridge, QGraphicsItem *parent) :
 	QetGraphicsItem(parent),
@@ -345,7 +460,7 @@ TerminalBusItem::TerminalBusItem(const QSharedPointer<TerminalStripBridge> &brid
 {
 	setMovable(false);
 	setFlag(QGraphicsItem::ItemIsSelectable, true);
-	setZValue(11);
+	setZValue(10.5);
 }
 
 QString TerminalBusItem::name() const
@@ -711,15 +826,51 @@ void TerminalBusItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 	QAction *none = feed_menu->addAction(tr("None"));
 	none->setCheckable(true);
 	none->setChecked(!current);
+		//The colour of the jumper, the one the strip manager offers
+	QMenu *color_menu = menu.addMenu(tr("Color"));
+	QHash<QAction *, QColor> colors;
+	const QSharedPointer<TerminalStripBridge> bridge_ = bridge();
+	const QVector<QColor> palette = TerminalStripBridge::bridgeColor();
+	for (const QColor &color : palette)
+	{
+		QPixmap swatch(16, 16);
+		swatch.fill(color);
+		QAction *action = color_menu->addAction(QIcon(swatch), WireColorName::name(color));
+		action->setCheckable(true);
+		action->setChecked(bridge_ && bridge_->color() == color);
+		colors.insert(action, color);
+	}
+		//The terminals selected with it added to it, as Join into a bus
+		//bar does with this selection
+	const QList<Element *> selected = joinable(folio->selectedItems());
+	const QList<Element *> joined_now = terminals();
+	bool more = false;
+	for (const Element *element : selected) {
+		if (!joined_now.contains(const_cast<Element *>(element))) more = true;
+	}
+	QAction *add = menu.addAction(tr("Add the selected terminals"));
+	add->setEnabled(more);
+	add->setStatusTip(tr("Select the bus bar and the terminals to add, then choose this"));
 	menu.addSeparator();
 	QAction *erase = menu.addAction(tr("Remove the bus bar"));
 	QAction *chosen = menu.exec(event->screenPos());
-	if (chosen == erase) {
+	if (chosen == add)
+	{
+		QString why;
+		if (!join(folio, selected, QString(), &why) && !why.isEmpty())
+		{
+			QWidget *parent = folio->views().isEmpty() ? nullptr : folio->views().first()->window();
+			QET::QetMessageBox::information(parent, tr("Add the selected terminals"), why);
+		}
+	}
+	else if (chosen == erase) {
 		remove(this);
 	} else if (chosen == none) {
 		setFeed(this, nullptr);
 	} else if (choices.contains(chosen)) {
 		setFeed(this, choices.value(chosen));
+	} else if (colors.contains(chosen)) {
+		setColor(this, colors.value(chosen));
 	}
 	event->accept();
 }
@@ -866,6 +1017,12 @@ bool TerminalBusItem::needsStripName(const QList<Element *> &selection)
 	the arm, when they are the branches of an arm (T86). The bus bar is
 	drawn by the side of the strip where the fewest wires are left, the
 	inside of the panel; the one wire left on that side is its feed.
+
+	A terminal of a bus bar among them brings the whole bus bar, and the
+	others are added to it - by its side, with its feed - (asked by the
+	Renan on 23/10/2026): the terminals in no strip yet go into the strip of
+	the bus bar, with the other levels of theirs, each where its name goes
+	among the terminals of the strip.
 	@param message : why nothing was done, when nothing was
 	@return true when the terminals were joined
 */
@@ -881,17 +1038,47 @@ bool TerminalBusItem::join(Diagram *diagram, const QList<Element *> &selection,
 	}
 	QList<Element *> chosen;
 	QVector<QSharedPointer<RealTerminal>> joined;
-	for (Element *element : selection)
-	{
+	const auto choose = [&](Element *element) {
 		const QSharedPointer<RealTerminal> real = realTerminalOf(element);
 		if (real && !chosen.contains(element) && element->diagram() == diagram)
 		{
 			chosen << element;
 			joined << real;
 		}
+	};
+	for (Element *element : selection) {
+		choose(element);
+	}
+		//A terminal of a bus bar brings the whole bus bar: what is chosen
+		//with it is added to it (asked by the Renan on 23/10/2026, the bus
+		//bar could not be given another terminal)
+	QSharedPointer<TerminalStripBridge> existing;
+	for (int i = 0 ; i < joined.size() ; ++i)
+	{
+		const QSharedPointer<TerminalStripBridge> bridge_ = joined.at(i)->bridge();
+		if (!bridge_) continue;
+		if (existing && existing != bridge_) {
+			return fail(tr("The terminals are in two bus bars."));
+		}
+		existing = bridge_;
+		const QVector<QSharedPointer<RealTerminal>> members = bridge_->realTerminals();
+		for (const QSharedPointer<RealTerminal> &member : members)
+		{
+			if (Element *element = member ? member->element() : nullptr) choose(element);
+		}
 	}
 	if (chosen.size() < 2) {
 		return fail(tr("Select two or more terminals of a strip."));
+	}
+	if (existing && chosen.size() == existing->realTerminals().size())
+	{
+		bool all_in = true;
+		for (const QSharedPointer<RealTerminal> &real : std::as_const(joined)) {
+			if (real->bridge() != existing) all_in = false;
+		}
+		if (all_in) {
+			return fail(tr("Select the terminals to add with the bus bar."));
+		}
 	}
 
 		//The strip
@@ -907,13 +1094,33 @@ bool TerminalBusItem::join(Diagram *diagram, const QList<Element *> &selection,
 	}
 	TerminalStrip *strip = strips.isEmpty() ? nullptr : *strips.cbegin();
 	QVector<QVector<QSharedPointer<RealTerminal>>> to_add;
+	QVector<int> places;
 	QString name;
-	if (strip)
+	if (strip && free_one)
 	{
-		if (free_one) {
-			return fail(tr("Some of the terminals are not in the strip %1: put them in it in the terminal strip manager first.")
-				    .arg(strip->name()));
+			//Terminals put in the strip of the others, with the other levels
+			//of theirs on the folio, each where its name goes in the strip
+		QList<Element *> free_ones;
+		for (Element *element : std::as_const(chosen)) {
+			if (!realTerminalOf(element)->parentStrip()) free_ones << element;
 		}
+		QList<Element *> members = levelsOf(diagram, free_ones, chosen);
+		for (Element *element : std::as_const(free_ones)) {
+			if (!members.contains(element)) members << element;
+		}
+		to_add = groupsOf(members);
+		QVector<QVector<QSharedPointer<RealTerminal>>> planned;
+		const QVector<QSharedPointer<PhysicalTerminal>> physicals = strip->physicalTerminal();
+		for (const QSharedPointer<PhysicalTerminal> &physical : physicals) {
+			planned << physical->realTerminals();
+		}
+		places = insertInOrder(planned, to_add);
+		if (!plannedBridgeable(planned, joined)) {
+			return fail(tr("A bus bar joins neighbouring terminals of one level of the strip %1.").arg(strip->name()));
+		}
+	}
+	else if (strip)
+	{
 		if (!strip->isBridgeable(joined)) {
 			return fail(tr("A bus bar joins neighbouring terminals of one level of the strip %1.").arg(strip->name()));
 		}
@@ -944,32 +1151,9 @@ bool TerminalBusItem::join(Diagram *diagram, const QList<Element *> &selection,
 				}
 			}
 		}
-			//Else the other levels of the chosen ones: the terminals in
-			//line with them labelled as a level of the same terminal N
-		if (members.isEmpty())
-		{
-			QSet<QString> numbers;
-			QRectF spread;
-			for (Element *element : std::as_const(chosen))
-			{
-				QString physical;
-				int level = 0;
-				if (splitLevel(element->actualLabel(), &physical, &level)) numbers << physical;
-				spread |= QRectF(element->pos(), QSizeF(0.001, 0.001));
-			}
-			const bool column = spread.height() >= spread.width();
-			const QPointF first_at = chosen.first()->pos();
-			const QList<Element *> elements = diagram->elements();
-			for (Element *element : elements)
-			{
-				const QSharedPointer<RealTerminal> real = realTerminalOf(element);
-				QString physical;
-				int level = 0;
-				if (!real || real->parentStrip() || !splitLevel(element->actualLabel(), &physical, &level)
-				    || !numbers.contains(physical)) continue;
-				const qreal off = column ? element->pos().x() - first_at.x() : element->pos().y() - first_at.y();
-				if (qAbs(off) < 1) members << element;
-			}
+			//Else the other levels of the chosen ones
+		if (members.isEmpty()) {
+			members = levelsOf(diagram, chosen, chosen);
 		}
 		for (Element *element : std::as_const(chosen)) {
 			if (!members.contains(element)) members << element;
@@ -1033,7 +1217,25 @@ bool TerminalBusItem::join(Diagram *diagram, const QList<Element *> &selection,
 	int side_ = 0;
 	const int on_0 = on_side.value(0).size(), on_1 = on_side.value(1).size();
 	if (on_1 && (!on_0 || on_1 < on_0)) side_ = 1;
+		//A bus bar given more terminals keeps its side, and its feed while
+		//the wire stays
+	if (existing && existing->side() >= 0) {
+		side_ = existing->side();
+	}
 	Conductor *feed_wire = on_side.value(side_).size() == 1 ? on_side.value(side_).first() : nullptr;
+	QUuid kept_feed;
+	if (existing && !existing->feed().isNull())
+	{
+		bool gone = false;
+		for (const Conductor *conductor : std::as_const(redundant)) {
+			if (conductor->uuid() == existing->feed()) gone = true;
+		}
+		if (!gone)
+		{
+			kept_feed = existing->feed();
+			feed_wire = nullptr;
+		}
+	}
 
 		//The feed comes to the joined terminal nearest to where it comes
 		//from: the bridge carries it to the others, and a feed landing on
@@ -1071,9 +1273,13 @@ bool TerminalBusItem::join(Diagram *diagram, const QList<Element *> &selection,
 			redundant << feed_wire;
 		}
 	}
-	const QUuid feed_ = new_feed ? new_feed->uuid() : feed_wire ? feed_wire->uuid() : QUuid();
+	const QUuid feed_ = !kept_feed.isNull() ? kept_feed
+			  : new_feed ? new_feed->uuid() : feed_wire ? feed_wire->uuid() : QUuid();
 
-	auto *undo = new JoinBusCommand(diagram, strip, name, to_add, joined, side_, feed_);
+	auto *undo = new JoinBusCommand(diagram, strip, name, to_add, joined, side_, feed_, places);
+	if (existing) {
+		undo->setText(tr("Add terminals to the bus bar"));
+	}
 	if (!redundant.isEmpty())
 	{
 		DiagramContent content;
@@ -1086,6 +1292,43 @@ bool TerminalBusItem::join(Diagram *diagram, const QList<Element *> &selection,
 	diagram->undoStack().push(undo);
 	if (message) message->clear();
 	return true;
+}
+
+/**
+	@brief TerminalBusItem::joinable
+	@return the terminals of strips among @a selection, and those of the bus
+	bars among it: what Join into a bus bar joins - a bus bar selected with
+	terminals is given them
+*/
+QList<Element *> TerminalBusItem::joinable(const QList<QGraphicsItem *> &selection)
+{
+	QList<Element *> list = StripFrameItem::stripTerminals(selection);
+	for (QGraphicsItem *item : selection)
+	{
+		const auto *bus = qgraphicsitem_cast<TerminalBusItem *>(item);
+		if (!bus) continue;
+		const QList<Element *> joined = bus->terminals();
+		for (Element *element : joined) {
+			if (!list.contains(element)) list << element;
+		}
+	}
+	return list;
+}
+
+/**
+	@brief TerminalBusItem::setColor
+	The bridge of @a bus given @a color, in one undo step: the colour of the
+	jumper, which the strip manager shows and the bill of materials lists
+	(asked by the Renan on 23/10/2026, in the menu of the bus bar)
+*/
+void TerminalBusItem::setColor(TerminalBusItem *bus, const QColor &color)
+{
+	Diagram *folio = bus ? bus->diagram() : nullptr;
+	const QSharedPointer<TerminalStripBridge> bridge_ = bus ? bus->bridge() : QSharedPointer<TerminalStripBridge>();
+	if (!folio || folio->isReadOnly() || !bridge_ || bridge_->color() == color) {
+		return;
+	}
+	folio->undoStack().push(new ChangeTerminalStripColor(bridge_, color));
 }
 
 /**
